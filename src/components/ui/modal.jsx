@@ -3,11 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 export function Modal({ title, children, isOpen, onClose }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="bg-gray-200 text-black rounded-lg p-4">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        {children}
+        <div className="bg-gray-200 p-0 rounded-lg">
+          {children}
+        </div>
       </DialogContent>
     </Dialog>
   );
