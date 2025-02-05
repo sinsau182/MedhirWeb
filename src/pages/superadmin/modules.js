@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/modal";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 import dynamic from "next/dynamic";
 import { Edit, Search, Trash, UserPlus } from "lucide-react";
+import { fetchUsers, createUser,  } from "@/utils/api";
 
 export default function SuperadminModules() {
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false);

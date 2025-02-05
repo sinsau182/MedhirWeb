@@ -9,10 +9,12 @@ const companySchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    phone: {
-        type: String,
-        required: true,
-    },
+    phone: { 
+        type: String, 
+        required: true, 
+        unique: true, 
+        match: [/^\d{10}$/, "Please enter a valid 10-digit phone number"]
+      },
     gst: {
         type: String,
         required: true,

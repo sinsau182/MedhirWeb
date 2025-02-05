@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import SuperadminNavbar from "@/components/SuperadminNavbar";
+import HradminNavbar from "@/components/HradminNavbar";
 import { Input } from "@/components/ui/input";
 import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
@@ -8,7 +9,7 @@ import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
 import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/utils/api";
 
-export default function SuperadminCompanies() {
+export default function HradminCompanies() {
     const deleteButtonRef = useRef(null);
     const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
@@ -140,7 +141,7 @@ export default function SuperadminCompanies() {
             <header className="fixed top-0 left-0 w-full bg-gray-100 shadow-md px-8 py-4 flex justify-between items-center z-50">
                 <div className="flex flex-row items-baseline space-x-20">
                     <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
-                    <h2 className="text-lg font-normal text-gray-700">Welcome, SuperAdmin</h2>
+                    <h2 className="text-lg font-normal text-gray-700">Welcome, HR Admin</h2>
                 </div>
                 <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
             </header>
@@ -148,7 +149,7 @@ export default function SuperadminCompanies() {
             <div className="h-16" />
 
             <div className="p-8">
-                <SuperadminNavbar />
+                <HradminNavbar />
                 <div className="mt-6 p-4 rounded-lg">
                     <div className="mt-4 bg-gray-200 p-4 rounded-lg flex justify-between items-center">
                         <div className="relative w-1/3">

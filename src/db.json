@@ -1,0 +1,20 @@
+{
+  "companies": [
+    {
+      "id": "1ef4",
+      "name": "Sadvsdvsdvuv",
+      "email": "saav@gmail.com",
+      "phone": "7762910765",
+      "gst": "1236",
+      "regAdd": "superan"
+    },
+    {
+      "id": "8011",
+      "name": "Saurav Singh",
+      "email": "singhsaurav@gmail.com",
+      "phone": "7762910640",
+      "gst": "123456",
+      "regAdd": "superank"
+    }
+  ]
+}
