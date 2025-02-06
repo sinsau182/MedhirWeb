@@ -236,6 +236,40 @@ export default function EmployeeForm() {
               </div>
             </>
           )}
+          {selectedTab === "Salary Details" && (
+            <>
+              <div>
+                <input
+                  placeholder="Total Ctc"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="Basic"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="Allowances"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="HRA"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="PF"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+            </>
+          )}
         </div>
       </Card>
     </div>
