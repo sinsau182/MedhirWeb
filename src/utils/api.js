@@ -39,7 +39,7 @@ export const fetchCompanies = async () => {
 
 
 
-  
+
   export const fetchUsers = async () => {
     const res = await fetch("/api/superadmin/user");
     return res.json();
@@ -72,4 +72,40 @@ export const fetchCompanies = async () => {
         });
         return res.json();
     };
+
+
+
+
+
+    export const fetchEmployees = async () => {
+        const res = await fetch("/api/hradmin/employee");
+        return res.json();
+      };
+
+        export const createEmployee = async (employeeData) => {
+            const res = await fetch("/api/hradmin/employee", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(employeeData),
+            });
+            return res.json();
+        };
+
+        export const updateEmployee = async (id, updateData) => {
+            const res = await fetch("/api/hradmin/employee", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, ...updateData }),
+            });
+            return res.json();
+        };
+
+        export const deleteEmployee = async (id) => {
+            const res = await fetch("/api/hradmin/employee", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+            });
+            return res.json();
+        };
   

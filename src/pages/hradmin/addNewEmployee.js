@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
 import { motion } from "framer-motion";
+import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/utils/api";
 
 export default function HradminCompanies() {
     const [activeTab, setActiveTab] = useState("Basic");
