@@ -7,8 +7,10 @@ import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
 import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/utils/api";
+import Link from "next/link";
 
 export default function SuperadminCompanies() {
+    const [activeTab, setActiveTab] = useState("Companies");
     const deleteButtonRef = useRef(null);
     const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
@@ -137,18 +139,27 @@ export default function SuperadminCompanies() {
 
     return (
         <div className="bg-white text-black min-h-screen">
-            <header className="fixed top-0 left-0 w-full bg-gray-100 shadow-md px-8 py-4 flex justify-between items-center z-50">
-                <div className="flex flex-row items-baseline space-x-20">
-                    <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
-                    <h2 className="text-lg font-normal text-gray-700">Welcome, SuperAdmin</h2>
-                </div>
+            <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
+                <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
+                <nav className="flex flex-grow justify-center space-x-40 text-xl font-medium">
+                    {["Companies", "Modules", "Settings"].map((item, index) => (
+                        <Link key={index} href={`/superadmin/${item.toLowerCase()}`} passHref>
+                            <button
+                                onClick={() => setActiveTab(item)}
+                                className={`hover:text-blue-600 ${activeTab === item ? "text-blue-600 font-bold" : "text-black"}`}
+                            >
+                                {item}
+                            </button>
+                        </Link>
+                    ))}
+                </nav>
                 <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
             </header>
 
-            <div className="h-16" />
+            <div className="h-4" />
 
-            <div className="p-8">
-                <SuperadminNavbar />
+            <div className="p-10">
+                
                 <div className="mt-6 p-4 rounded-lg">
                     <div className="mt-4 bg-gray-200 p-4 rounded-lg flex justify-between items-center">
                         <div className="relative w-1/3">

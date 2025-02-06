@@ -6,7 +6,7 @@ import { Search, UserPlus } from "lucide-react";
 import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
 
 export default function HradminCompanies() {
-    const [activeTab, setActiveTab] = useState("Basic");
+    const [activeTab, setActiveTab] = useState("Employee");
     const router = useRouter();
 
     const employees = [
@@ -19,7 +19,7 @@ export default function HradminCompanies() {
             {/* Top Navbar */}
             <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
                 <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
-                <nav className="flex flex-grow justify-center space-x-16 text-xl font-medium">
+                <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
                     {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
                         <button 
                             key={index} 
@@ -52,7 +52,7 @@ export default function HradminCompanies() {
                 </div>
 
                 {/* Sub Navbar */}
-                <div className="bg-gray-300 p-4 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
+                <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
                     {["Basic", "ID Proofs", "Salary", "Bank Details", "Leaves Policy"].map((tab, index) => (
                         <button 
                             key={index} 

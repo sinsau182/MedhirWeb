@@ -13,7 +13,7 @@ export default function SuperadminNavbar() {
   const selectedNav = router.pathname.split('/')[2] || 'companies'; // Defaults to 'companies' if no path is selected
 
   return (
-    <nav className="flex justify-between bg-[#1F1F1F] p-4 rounded-full border border-gray-600 mb-6 w-[60%] mx-auto">
+    <nav className="flex justify-between p-4 rounded-full border border-gray-600 mb-6 w-[60%] mx-auto">
       {navItems.map((item) => (
         <Link key={item} href={`/superadmin/${item.toLowerCase()}`} className="flex-1 text-center">
           <NavButton

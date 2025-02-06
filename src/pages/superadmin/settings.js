@@ -7,28 +7,36 @@ import { Modal } from "@/components/ui/modal";
 import { Select, SelectTrigger, SelectContent, SelectItem } from "@/components/ui/select";
 import dynamic from "next/dynamic";
 import { Edit, Search, Trash, UserPlus } from "lucide-react";
+import Link from "next/link";
 
 
 export default function SuperadminSettings() {
+  const [activeTab, setActiveTab] = useState("Settings");
   return (
     <div className="bg-white text-black min-h-screen">
       {/* Fixed Header */}
-      <header className="fixed top-0 left-0 w-full bg-gray-100 shadow-md px-8 py-4 flex justify-between items-center z-50">
-        <div className="flex flex-row items-baseline space-x-20">
-          <h1 className="text-2xl font-bold text-gray-900">MEDHIR</h1>
-          <h2 className="text-lg font-normal text-gray-700">Welcome, SuperAdmin</h2>
-        </div>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
-      </header>
+      <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
+                <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
+                <nav className="flex flex-grow justify-center space-x-40 text-xl font-medium">
+                    {["Companies", "Modules", "Settings"].map((item, index) => (
+                        <Link key={index} href={`/superadmin/${item.toLowerCase()}`} passHref>
+                            <button
+                                onClick={() => setActiveTab(item)}
+                                className={`hover:text-blue-600 ${activeTab === item ? "text-blue-600 font-bold" : "text-black"}`}
+                            >
+                                {item}
+                            </button>
+                        </Link>
+                    ))}
+                </nav>
+                <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
+            </header>
       
       {/* Spacer to prevent content from being hidden behind the fixed header */}
-      <div className="h-16" />
+      <div className="h-4" />
 
       {/* Main Content */}
-      <div className="p-8">
-
-        {/* Use the navbar here */}
-        <SuperadminNavbar /> {/* Navbar imported and used here */}
+      <div className="p-10">
 
         <div className="mt-6 p-4 rounded-lg">
                 <div className="mt-4 bg-gray-200 p-4 rounded-lg flex justify-between items-center">
