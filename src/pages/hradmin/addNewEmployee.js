@@ -1,42 +1,105 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, UserPlus } from "lucide-react";
-import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
-import { motion } from "framer-motion";
-import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/utils/api";
+import { Card } from "@/components/ui/card";
 
-export default function HradminCompanies() {
-    const [activeTab, setActiveTab] = useState("Basic");
-    const [employees] = useState([  
-        { name: "John Doe", email: "john@example.com", phone: "1234567890", department: "HR", gender: "Male", title: "Manager", manager: "Jane Smith" },
-        { name: "Alice Brown", email: "alice@example.com", phone: "9876543210", department: "Finance", gender: "Female", title: "Analyst", manager: "Bob Johnson" }
-    ]);
+export default function EmployeeForm() {
+  const [selectedTab, setSelectedTab] = useState("ID Proofs");
+  const [employeeName, setEmployeeName] = useState("");
+  const tabs = ["ID Proofs", "Bank Details", "Salary Details", "Leaves & Policies"];
 
-    return (
-        <div className="bg-white text-black min-h-screen">
-            <header className="fixed top-0 left-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-center z-50">
-                <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
-                <nav className="flex space-x-24 text-xl font-medium">
-                    <button className="text-black hover:text-gray-600">Employees</button>
-                    <a href="/hradmin/attendance" className="text-black hover:text-gray-600">Attendance</a>
-                    <a href="/hradmin/payroll" className="text-black hover:text-gray-600">Payroll</a>
-                    <a href="/hradmin/settings" className="text-black hover:text-gray-600">Settings</a>
-                </nav>
-                <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
-            </header>
-            <div className="h-10" />
-            <div className="p-10">
-                <div className="mt-2 p-4 rounded-lg bg-gray-200 flex justify-between items-center">
-                    <Button className="bg-blue-600 hover:bg-blue-500 text-white flex items-center">
-                        <UserPlus className="mr-2" size={20} /> Add New Employee
-                    </Button>
-                    <div className="relative w-1/3">
-                        <Input placeholder="Search" className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg" />
-                        <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={24} />
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="p-6">
+      <Card className="p-6 bg-gray-100 shadow-lg rounded-xl">
+        {/* Employee Name & Details */}
+        <div className="pb-4 mb-4">
+          <input
+            className="text-3xl font-bold text-gray-500 border-b-2 border-gray-500 focus:border-black w-[60%] bg-transparent focus:outline-none"
+            value={employeeName}
+            onChange={(e) => setEmployeeName(e.target.value)}
+            placeholder="Employee Name"
+            onFocus={(e) => (e.target.style.color = 'black')}
+          />
+          <div className="mt-2">
+            <input
+              className="w-[30%] bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-black focus:outline-none text-gray-400"
+              placeholder="Job Title"
+            />
+          </div>
         </div>
-    );
+
+        {/* Employee Fields */}
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <input placeholder="Email" className="w-full bg-transparent border-b focus:outline-none" />
+          </div>
+          <div>
+            <input placeholder="Department" className="w-full bg-transparent border-b focus:outline-none" />
+          </div>
+          <div>
+            <input placeholder="Phone No" className="w-full bg-transparent border-b focus:outline-none" />
+          </div>
+          <div>
+            <input placeholder="Gender" className="w-full bg-transparent border-b focus:outline-none" />
+          </div>
+          <div>
+            <input placeholder="Reporting Manager" className="w-full bg-transparent border-b focus:outline-none" />
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mt-6 border-b flex space-x-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              className={`p-2 px-4 font-bold text-black border border-black rounded-md bg-transparent ${selectedTab === tab ? "border-b-0" : ""}`}
+              onClick={() => setSelectedTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="mt-4 grid grid-cols-2 gap-6">
+          {selectedTab === "ID Proofs" && (
+            <>
+              <div>
+                <input placeholder="Aadhar No." className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="Driving License" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="PAN No." className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="Voter ID" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="Passport" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+            </>
+          )}
+          {selectedTab === "Bank Details" && (
+            <>
+              <div>
+                <input placeholder="Account No." className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="Bank Name" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="Account Holder Name" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="IFSC Code" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+              <div>
+                <input placeholder="Branch Name" className="w-full bg-transparent border-b focus:outline-none" />
+              </div>
+            </>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
 }
