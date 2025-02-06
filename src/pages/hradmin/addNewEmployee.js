@@ -271,7 +271,6 @@ export default function EmployeeForm() {
               </div>
             </>
           )}
-
         </div>
       </Card>
     </div>
