@@ -149,22 +149,23 @@ export default function EmployeeForm() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="relative mt-6 flex space-x-0 before:absolute before:bottom-0 before:left-0 before:w-[3%] before:border-b-2 before:border-gray-400 after:absolute after:bottom-0 after:left-[41.5%] after:w-[60%] after:border-b-2 after:border-gray-400">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
-                selectedTab === tab
-                  ? "border-b-0 bg-gray-300 text-black "
-                  : "text-black hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+{/* Tabs */}
+<div className="relative mt-6 flex space-x-0 before:absolute before:bottom-0 before:left-0 before:w-10 before:border-b-2 before:border-gray-400 after:bottom-0 after:left-50 after:w-[56%] after:border-b-2 after:border-gray-400">
+  {tabs.map((tab) => (
+    <button
+      key={tab}
+      className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
+        selectedTab === tab
+          ? "border-b-0 bg-gray-300 text-black"
+          : "text-black hover:bg-gray-200"
+      }`}
+      onClick={() => setSelectedTab(tab)}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
+
 
         {/* Tab Content */}
         <div className="mt-4 grid grid-cols-2 gap-6">
@@ -236,6 +237,41 @@ export default function EmployeeForm() {
               </div>
             </>
           )}
+          {selectedTab === "Salary Details" && (
+            <>
+              <div>
+                <input
+                  placeholder="Total Ctc"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="Basic"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="Allowances"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="HRA"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+              <div>
+                <input
+                  placeholder="PF"
+                  className="w-full bg-transparent border-b focus:outline-none"
+                />
+              </div>
+            </>
+          )}
+
         </div>
       </Card>
     </div>
