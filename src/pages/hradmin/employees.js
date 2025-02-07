@@ -7,7 +7,7 @@ import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@
 import { fetchEmployees } from "@/utils/api";
 
 export default function HradminCompanies() {
-    const [activeTab, setActiveTab] = useState("Employee");
+    const [activeTab, setActiveTab] = useState("Basic");
     const [employees, setEmployees] = useState([]);
     const router = useRouter();
 
@@ -80,21 +80,91 @@ export default function HradminCompanies() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                {["Name", "Email", "Phone no.", "Department", "Gender", "Title", "Reporting Manager"].map((heading, index) => (
-                                    <TableHead key={index} className="text-left">{heading}</TableHead>
-                                ))}
+                                {activeTab === 'Basic' && (
+                                    <>
+                                        <TableHead className="text-left">Name</TableHead>
+                                        <TableHead className="text-left">Email</TableHead>
+                                        <TableHead className="text-left">Phone no.</TableHead>
+                                        <TableHead className="text-left">Department</TableHead>
+                                        <TableHead className="text-left">Gender</TableHead>
+                                        <TableHead className="text-left">Title</TableHead>
+                                        <TableHead className="text-left">Reporting Manager</TableHead>
+                                    </>
+                                )}
+                                {activeTab === 'ID Proofs' && (
+                                    <>
+                                        <TableHead className="text-left">Name</TableHead>
+                                        <TableHead className="text-left">Aadhar no.</TableHead>
+                                        <TableHead className="text-left">Pan no.</TableHead>
+                                        <TableHead className="text-left">Voter ID</TableHead>
+                                        <TableHead className="text-left">Passport no.</TableHead>
+                                    </>
+                                )}
+                                {activeTab === 'Salary' && (
+                                    <>
+                                        <TableHead className="text-left">Name</TableHead>
+                                        <TableHead className="text-left">Total Ctc</TableHead>
+                                        <TableHead className="text-left">Basic</TableHead>
+                                        <TableHead className="text-left">HRA</TableHead>
+                                        <TableHead className="text-left">Allowance</TableHead>
+                                        <TableHead className="text-left">PF</TableHead>
+                                    </>
+                                )}
+                                {activeTab === 'Bank Details' && (
+                                    <>
+                                        <TableHead className="text-left">Name</TableHead>
+                                        <TableHead className="text-left">Account no.</TableHead>
+                                        <TableHead className="text-left">Bank Name</TableHead>
+                                        <TableHead className="text-left">IFSC</TableHead>
+                                        <TableHead className="text-left">Branch Name</TableHead>
+            
+                                    </>
+                                )}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {employees.map((employees, index) => (
+                            {employees.map((employee, index) => (
                                 <TableRow key={index}>
-                                <TableCell>{employees.name}</TableCell>
-                                <TableCell>{employees.email}</TableCell>
-                                <TableCell>{employees.phone}</TableCell>
-                                <TableCell>{employees.department}</TableCell>
-                                <TableCell>{employees.gender}</TableCell>
-                                <TableCell>{employees.title}</TableCell>
-                                <TableCell>{employees.reportingManager}</TableCell>
+                                    {activeTab === 'Basic' && (
+                                        <>
+                                            <TableCell>{employee.name}</TableCell>
+                                            <TableCell>{employee.email}</TableCell>
+                                            <TableCell>{employee.phone}</TableCell>
+                                            <TableCell>{employee.department}</TableCell>
+                                            <TableCell>{employee.gender}</TableCell>
+                                            <TableCell>{employee.title}</TableCell>
+                                            <TableCell>{employee.reportingManager}</TableCell>
+                                        </>
+                                    )}
+                                 {activeTab === 'ID Proofs' && (
+    <>
+        <TableCell>{employee.name}</TableCell>
+        <TableCell>{employee.idProofs?.aadharNo }</TableCell>
+        <TableCell>{employee.idProofs?.panNo }</TableCell>
+        <TableCell>{employee.idProofs?.voterId }</TableCell>
+        <TableCell>{employee.idProofs?.passport }</TableCell>
+    </>
+)}
+                                    {activeTab === 'Salary' && (
+                                        <>
+                                            <TableCell>{employee.name}</TableCell>
+                                            <TableCell>{employee.salaryDetails?.totalCtc}</TableCell>
+                                            <TableCell>{employee.salaryDetails?.basic}</TableCell>
+                                            <TableCell>{employee.salaryDetails?.hra}</TableCell>
+                                            <TableCell>{employee.salaryDetails?.allowances}</TableCell>
+                                            <TableCell>{employee.salaryDetails?.pf}</TableCell>
+                                        </>
+                                    )}
+                                    {activeTab === 'Bank Details' && (
+                                        <>
+                                            <TableCell>{employee.name}</TableCell>
+                                            <TableCell>{employee.bankDetails?.accountNumber}</TableCell>
+                                            <TableCell>{employee.bankDetails?.bankName}</TableCell>
+                                            <TableCell>{employee.bankDetails?.ifscCode}</TableCell>
+                                            <TableCell>{employee.bankDetails?.branchName}</TableCell>
+                                            {/* <TableCell>{employee.upiId}</TableCell> */}
+                                        </>
+                                    )}
                                 </TableRow>
                             ))}
                         </TableBody>
