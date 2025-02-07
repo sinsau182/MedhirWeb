@@ -94,6 +94,7 @@ export default function EmployeeForm() {
           pf: ""
         }
       });
+      router.push("/hradmin/employees");
     } catch (error) {
       setError(error.response?.data?.error || "Something went wrong");
     } finally {
@@ -182,6 +183,7 @@ export default function EmployeeForm() {
           <input
             className="w-[30%] bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-black focus:outline-none text-gray-400"
             placeholder="Job Title"
+            onChange={(e) => setEmployeeData({ ...employeeData, title: e.target.value })}
           />
         </div>
 
@@ -280,7 +282,6 @@ export default function EmployeeForm() {
         </Button>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        {success && <p className="text-green-500 text-sm">{success}</p>}
 
         <Button
           className="bg-red-600 hover:bg-red-500 text-white ml-4"

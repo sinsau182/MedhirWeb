@@ -20,32 +20,30 @@ export default async function handler(req, res) {
         }
 
         const validGenders = ["male", "female", "other"];
-        if (gender && !validGenders.includes(gender.toLowerCase())) {
-          return res.status(400).json({ error: "Invalid gender. Allowed values: male, female, other" });
+        const processedGender = gender && validGenders.includes(gender.toLowerCase()) ? gender.toLowerCase() : undefined;
+
+        try {
+          const newEmployee = new Employee({
+            name,
+            email: email || undefined,
+            phone: phone || undefined,
+            department: department || undefined,
+            gender: processedGender,
+            title: title || undefined,
+            reportingManager: reportingManager || undefined,
+            permanentAddress: permanentAddress || undefined,
+            currentAddress: currentAddress || undefined,
+            idProofs: idProofs || {},
+            bankDetails: bankDetails || {},
+            salaryDetails: salaryDetails || {},
+          });
+
+          await newEmployee.save();
+          return res.status(201).json({ message: "Employee created successfully", employee: newEmployee });
+        } catch (saveError) {
+          console.error("Database Save Error:", saveError);
+          return res.status(500).json({ error: "Failed to save employee" });
         }
-
-        const existingEmployee = await Employee.findOne({ $or: [{ email }, { phone }] });
-        if (existingEmployee) {
-          return res.status(409).json({ error: "Employee with this email or phone already exists" });
-        }
-
-        const newEmployee = new Employee({
-          name,
-          email,
-          phone,
-          department,
-          gender: gender?.toLowerCase(),
-          title,
-          reportingManager,
-          permanentAddress,
-          currentAddress,
-          idProofs,
-          bankDetails,
-          salaryDetails,
-        });
-
-        await newEmployee.save();
-        return res.status(201).json({ message: "Employee created successfully", employee: newEmployee });
 
       case "PUT":
         const { id, ...updates } = req.body;
@@ -82,4 +80,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
-

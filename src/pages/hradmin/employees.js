@@ -1,18 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
+import { fetchEmployees } from "@/utils/api";
 
 export default function HradminCompanies() {
     const [activeTab, setActiveTab] = useState("Employee");
+    const [employees, setEmployees] = useState([]);
     const router = useRouter();
 
-    const employees = [
-        { name: "John Doe", email: "john@example.com", phone: "1234567890", department: "HR", gender: "Male", title: "Manager", manager: "Jane Smith" },
-        { name: "Alice Brown", email: "alice@example.com", phone: "9876543210", department: "Finance", gender: "Female", title: "Analyst", manager: "Bob Johnson" }
-    ];
+    const fetchEmployees = async () => {
+        try {
+            const response = await fetch('/api/hradmin/employees'); // Adjust the API endpoint as needed
+            const data = await response.json();
+            setEmployees(data);
+        } catch (error) {
+            console.error("Failed to fetch employees:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchEmployees();
+    }, []);
 
     return (
         <div className="bg-white text-black min-h-screen p-6">
@@ -75,15 +86,15 @@ export default function HradminCompanies() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {employees.map((emp, index) => (
+                            {employees.map((employees, index) => (
                                 <TableRow key={index}>
-                                    <TableCell>{emp.name}</TableCell>
-                                    <TableCell>{emp.email}</TableCell>
-                                    <TableCell>{emp.phone}</TableCell>
-                                    <TableCell>{emp.department}</TableCell>
-                                    <TableCell>{emp.gender}</TableCell>
-                                    <TableCell>{emp.title}</TableCell>
-                                    <TableCell>{emp.manager}</TableCell>
+                                <TableCell>{employees.name}</TableCell>
+                                <TableCell>{employees.email}</TableCell>
+                                <TableCell>{employees.phone}</TableCell>
+                                <TableCell>{employees.department}</TableCell>
+                                <TableCell>{employees.gender}</TableCell>
+                                <TableCell>{employees.title}</TableCell>
+                                <TableCell>{employees.reportingManager}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
