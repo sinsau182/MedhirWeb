@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { fetchEmployees, createEmployee, updateEmployee, deleteEmployee } from "@/utils/api";
 
 export default function EmployeeForm() {
   const router = useRouter();
@@ -74,9 +75,8 @@ export default function EmployeeForm() {
             </div>
           </div>
         </div>
-
-        {/* Sub Navbar */}
-        <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto">
+                      {/* Sub Navbar */}
+                      <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto">
           {[
             "Basic",
             "ID Proofs",
@@ -97,6 +97,8 @@ export default function EmployeeForm() {
         </div>
       </div>
 
+
+
       <Card className="p-6 bg-gray-100 shadow-lg rounded-xl">
         {/* Employee Name & Details */}
         <div className="pb-4 mb-4">
@@ -115,38 +117,25 @@ export default function EmployeeForm() {
           </div>
         </div>
 
+
         {/* Employee Fields */}
         <div className="grid grid-cols-2 gap-6">
-          <div>
-            <input
-              placeholder="Email"
-              className="w-full bg-transparent border-b focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              placeholder="Department"
-              className="w-full bg-transparent border-b focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              placeholder="Phone No"
-              className="w-full bg-transparent border-b focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              placeholder="Gender"
-              className="w-full bg-transparent border-b focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              placeholder="Reporting Manager"
-              className="w-full bg-transparent border-b focus:outline-none"
-            />
-          </div>
+          {[
+            "Email",
+            "Department",
+            "Phone No",
+            "Gender",
+            "Reporting Manager",
+          ].map((label, index) => (
+            <div key={index} className="flex items-center space-x-0">
+              <label className="text-gray-600 text-sm min-w-[150px]">
+                {label}
+              </label>
+              <input
+                className="w-[60%] bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+              />
+            </div>
+          ))}
         </div>
 
 {/* Tabs */}
@@ -166,109 +155,46 @@ export default function EmployeeForm() {
   ))}
 </div>
 
-
         {/* Tab Content */}
         <div className="mt-4 grid grid-cols-2 gap-6">
           {selectedTab === "ID Proofs" && (
             <>
-              <div>
-                <input
-                  placeholder="Aadhar No."
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Driving License"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="PAN No."
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Voter ID"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Passport"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
+              {[
+                "Aadhar No.",
+                "Driving License",
+                "PAN No.",
+                "Voter ID",
+                "Passport",
+              ].map((label, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <label className="text-gray-600 text-sm min-w-[150px]">
+                    {label}
+                  </label>
+                  <input
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                  />
+                </div>
+              ))}
             </>
           )}
           {selectedTab === "Bank Details" && (
             <>
-              <div>
-                <input
-                  placeholder="Account Holder Name"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Bank Name"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Account No."
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="IFSC Code"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Branch Name"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-            </>
-          )}
-          {selectedTab === "Salary Details" && (
-            <>
-              <div>
-                <input
-                  placeholder="Total Ctc"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Basic"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="Allowances"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="HRA"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
-              <div>
-                <input
-                  placeholder="PF"
-                  className="w-full bg-transparent border-b focus:outline-none"
-                />
-              </div>
+              {[
+                "Account Holder Name",
+                "Bank Name",
+                "Account No.",
+                "IFSC Code",
+                "Branch Name",
+              ].map((label, index) => (
+                <div key={index} className="flex items-center space-x-4">
+                  <label className="text-gray-600 text-sm min-w-[150px]">
+                    {label}
+                  </label>
+                  <input
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                  />
+                </div>
+              ))}
             </>
           )}
         </div>
