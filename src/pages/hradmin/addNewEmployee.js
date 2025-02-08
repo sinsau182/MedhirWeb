@@ -28,29 +28,35 @@ export default function EmployeeForm() {
       panNo: "",
       passport: "",
       drivingLicense: "",
-      voterId: ""
+      voterId: "",
     },
     bankDetails: {
       accountNumber: "",
       accountHolderName: "",
       ifscCode: "",
       bankName: "",
-      branchName: ""
+      branchName: "",
     },
     salaryDetails: {
       totalCtc: "",
       basic: "",
       allowances: "",
       hra: "",
-      pf: ""
-    }
+      pf: "",
+    },
   });
 
   useEffect(() => {
     if (router.query.employee) {
       try {
         const employee = JSON.parse(router.query.employee);
-        setEmployeeData((prev) => ({ ...prev, ...employee }));
+        setEmployeeData((prev) => ({
+          ...prev,
+          ...employee,
+          idProofs: { ...prev.idProofs, ...employee.idProofs },
+          bankDetails: { ...prev.bankDetails, ...employee.bankDetails },
+          salaryDetails: { ...prev.salaryDetails, ...employee.salaryDetails },
+        }));
         setEmployeeId(employee._id);
       } catch (error) {
         console.error("Error parsing employee data", error);
@@ -73,8 +79,8 @@ export default function EmployeeForm() {
     setEmployeeData((prev) => ({
       ...prev,
       [section]: {
-        ...prev[section],
-        [key]: e.target.value,
+        ...prev[section], // Ensure existing data isn't lost
+        [key]: e.target.value || "", // Set default empty value
       },
     }));
   };
@@ -87,7 +93,9 @@ export default function EmployeeForm() {
 
     try {
       const filteredData = JSON.parse(
-        JSON.stringify(employeeData, (key, value) => (value === "" ? undefined : value))
+        JSON.stringify(employeeData, (key, value) =>
+          value === "" ? undefined : value
+        )
       );
 
       if (employeeId) {
@@ -106,8 +114,19 @@ export default function EmployeeForm() {
     }
   };
 
-  const mainTabs = ["Basic", "ID Proofs", "Salary", "Bank Details", "Leaves Policy"];
-  const subTabs = ["ID Proofs", "Bank Details", "Salary Details", "Leaves & Policies"];
+  const mainTabs = [
+    "Basic",
+    "ID Proofs",
+    "Salary",
+    "Bank Details",
+    "Leaves Policy",
+  ];
+  const subTabs = [
+    "ID Proofs",
+    "Bank Details",
+    "Salary Details",
+    "Leaves & Policies",
+  ];
 
   return (
     <div className="p-6">
@@ -115,20 +134,30 @@ export default function EmployeeForm() {
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
         <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
-            <Link key={index} href={`/hradmin/${item.toLowerCase()}`} passHref>
-              <button
-                onClick={() => setActiveTab(item)}
-                className={`hover:text-blue-600 ${
-                  activeTab === item ? "text-blue-600 font-bold" : "text-black"
-                }`}
+          {["Employees", "Attendance", "Payroll", "Settings"].map(
+            (item, index) => (
+              <Link
+                key={index}
+                href={`/hradmin/${item.toLowerCase()}`}
+                passHref
               >
-                {item}
-              </button>
-            </Link>
-          ))}
+                <button
+                  onClick={() => setActiveTab(item)}
+                  className={`hover:text-blue-600 ${
+                    activeTab === item
+                      ? "text-blue-600 font-bold"
+                      : "text-black"
+                  }`}
+                >
+                  {item}
+                </button>
+              </Link>
+            )
+          )}
         </nav>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
+        <Button className="bg-green-600 hover:bg-green-500 text-white">
+          Logout
+        </Button>
       </header>
 
       <div className="h-5" />
@@ -172,117 +201,139 @@ export default function EmployeeForm() {
         </div>
       </div>
 
-<form onSubmit={handleEmployeeSubmit}>
-      {/* Employee Card */}
-      <Card className="p-6 bg-gray-100 shadow-lg rounded-xl mt-0 flex flex-col justify-start">
-        <div className="flex items-center justify-between">
-          <input
-            className="text-3xl font-bold text-gray-500 border-b-2 border-gray-300 focus:border-black w-[60%] bg-transparent focus:outline-none"
-            value={employeeData.name}
-            onChange={handleInputChange}
-            placeholder="Employee Name"
-            onFocus={(e) => (e.target.style.color = "black")}
-          />
-        </div>
+      <form onSubmit={handleEmployeeSubmit}>
+        {/* Employee Card */}
+        <Card className="p-6 bg-gray-100 shadow-lg rounded-xl mt-0 flex flex-col justify-start">
+          <div className="flex items-center justify-between">
+            <input
+              name="name"
+              className="text-3xl font-bold text-gray-500 border-b-2 border-gray-300 focus:border-black w-[60%] bg-transparent focus:outline-none"
+              value={employeeData.name}
+              onChange={handleInputChange}
+              placeholder="Employee Name"
+              onFocus={(e) => (e.target.style.color = "black")}
+            />
+          </div>
 
-        <div className="mt-2">
-          <input
-            className="w-[30%] bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-black focus:outline-none text-gray-400"
-            placeholder="Job Title"
-            onChange={handleInputChange}
-            value={employeeData.title}
-          />
-        </div>
+          <div className="mt-2">
+            <input
+              name="title"
+              className="w-[30%] bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-black focus:outline-none text-gray-400"
+              placeholder="Job Title"
+              onChange={handleInputChange}
+              value={employeeData.title}
+            />
+          </div>
 
-{/* Employee Fields */}
-<div className="grid grid-cols-2 gap-6 mt-6">
-  {[
-    { label: "Email", key: "email" },
-    { label: "Reporting Manager", key: "reportingManager" },
-    { label: "Phone", key: "phone" },
-    { label: "Permanent Address", key: "permanentAddress" },
-    { label: "Gender", key: "gender" },
-    { label: "Current Address", key: "currentAddress" },
-    { label: "Department", key: "department" },
-  ].map(({ label, key }, index) => (
-    <div key={index} className="flex items-center space-x-0">
-      <label className="text-gray-600 text-sm min-w-[150px]">{label}</label>
-      <input
-        className="w-[60%] bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-        value={employeeData[key]}
-        onChange={handleInputChange}
-      />
-    </div>
-  ))}
-</div>
-
-
-        {/* Tabs */}
-        <div className="relative mt-6 flex space-x-0 before:absolute before:bottom-0 before:left-0 before:w-10 before:border-b-2 before:border-gray-400 after:bottom-0 after:left-50 after:w-[56%] after:border-b-2 after:border-gray-400">
-          {subTabs.map((tab) => (
-            <button
-              key={tab}
-              className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
-                selectedTab === tab
-                  ? "border-b-0 bg-gray-300 text-black"
-                  : "text-black hover:bg-gray-200"
-              }`}
-              onClick={() => setSelectedTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        <div className="mt-4 grid grid-cols-2 gap-6">
-          {selectedTab === "ID Proofs" &&
-            Object.keys(employeeData.idProofs).map((key) => (
-              <div key={key} className="flex items-center space-x-4">
-                <label className="text-gray-600 text-sm min-w-[150px] capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+          {/* Employee Fields */}
+          <div className="grid grid-cols-2 gap-6 mt-6">
+            {[
+              { label: "Email", key: "email" },
+              { label: "Reporting Manager", key: "reportingManager" },
+              { label: "Phone", key: "phone" },
+              { label: "Permanent Address", key: "permanentAddress" },
+              { label: "Gender", key: "gender" },
+              { label: "Current Address", key: "currentAddress" },
+              { label: "Department", key: "department" },
+            ].map(({ label, key }, index) => (
+              <div key={index} className="flex items-center space-x-0">
+                <label className="text-gray-600 text-sm min-w-[150px]">
+                  {label}
+                </label>
                 <input
-                  className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                  value={employeeData.idProofs[key] || ""}
-                  onChange={(e) => handleNestedInputChange(e, "idProofs", key)}
+                  name={key}
+                  className="w-[60%] bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                  value={employeeData[key]}
+                  onChange={handleInputChange}
                 />
               </div>
             ))}
+          </div>
 
-          {selectedTab === "Bank Details" && (
-            <>
-              {["Account Holder Name", "Bank Name", "Account No.", "IFSC Code", "Branch Name"].map(
-                (label, index) => (
-                  <div key={index} className="flex items-center space-x-4">
-                    <label className="text-gray-600 text-sm min-w-[150px]">{label}</label>
-                    <input className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                      onChange={(e) => setEmployeeData({ ...employeeData, bankDetails: { ...employeeData.bankDetails, [label.toLowerCase().replace(/\s/g, "")]: e.target.value } })}
-                    />
-                  </div>
-                )
-              )}
-            </>
-          )}
-          {selectedTab === "Salary Details" && (
-            <>
-              {["Total CTC", "Basic", "Allowances", "HRA", "PF"].map((label, index) => (
-                <div key={index} className="flex items-center space-x-4">
-                  <label className="text-gray-600 text-sm min-w-[150px]">{label}</label>
-                  <input className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                    onChange={(e) => setEmployeeData({ ...employeeData, salaryDetails: { ...employeeData.salaryDetails, [label.toLowerCase()]: e.target.value } })}
+          {/* Tabs */}
+          <div className="relative mt-6 flex space-x-0 before:absolute before:bottom-0 before:left-0 before:w-10 before:border-b-2 before:border-gray-400 after:bottom-0 after:left-50 after:w-[56%] after:border-b-2 after:border-gray-400">
+            {subTabs.map((tab) => (
+              <button
+                key={tab}
+                type="button" // Prevent form submission
+                className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
+                  selectedTab === tab
+                    ? "border-b-0 bg-gray-300 text-black"
+                    : "text-black hover:bg-gray-200"
+                }`}
+                onClick={(e) => {
+                  e.preventDefault(); // Prevent unintended form submission
+                  setSelectedTab(tab);
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="mt-4 grid grid-cols-2 gap-6">
+            {selectedTab === "ID Proofs" &&
+              Object.keys(employeeData.idProofs).map((key) => (
+                <div key={key} className="flex items-center space-x-4">
+                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                    {key.replace(/([A-Z])/g, " $1").trim()}
+                  </label>
+                  <input
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                    value={employeeData.idProofs[key] || ""}
+                    onChange={(e) =>
+                      handleNestedInputChange(e, "idProofs", key)
+                    }
                   />
                 </div>
-              )
-              )}
-            </>
+              ))}
 
-          )}
-        </div>
-      </Card>
+            {selectedTab === "Bank Details" &&
+              Object.keys(employeeData.bankDetails).map((key) => (
+                <div key={key} className="flex items-center space-x-4">
+                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                    {key.replace(/([A-Z])/g, " $1").trim()}
+                  </label>
+                  <input
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                    value={employeeData.bankDetails[key] || ""}
+                    onChange={(e) =>
+                      handleNestedInputChange(e, "bankDetails", key)
+                    }
+                  />
+                </div>
+              ))}
+            {selectedTab === "Salary Details" &&
+              Object.keys(employeeData.salaryDetails).map((key) => (
+                <div key={key} className="flex items-center space-x-4">
+                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                    {key.replace(/([A-Z])/g, " $1").trim()}
+                  </label>
+                  <input
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                    value={employeeData.salaryDetails[key] || ""}
+                    onChange={(e) =>
+                      handleNestedInputChange(e, "salaryDetails", key)
+                    }
+                  />
+                </div>
+              ))}
+          </div>
+        </Card>
 
-      {/* Submit Button */}
-      <div className="mt-6 flex justify-end">
-      <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white" disabled={loading}>
-            {loading ? "Saving..." : employeeId ? "Update Employee" : "Add Employee"}
+        {/* Submit Button */}
+        <div className="mt-6 flex justify-end">
+          <Button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-500 text-white"
+            disabled={loading}
+          >
+            {loading
+              ? "Saving..."
+              : employeeId
+              ? "Update Employee"
+              : "Add Employee"}
           </Button>
           <Button
             className="bg-red-600 hover:bg-red-500 text-white ml-4"
@@ -291,9 +342,8 @@ export default function EmployeeForm() {
             Cancel
           </Button>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-      
-      </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+        </div>
       </form>
     </div>
   );
