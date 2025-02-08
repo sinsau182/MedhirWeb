@@ -68,6 +68,14 @@ export default function EmployeeForm() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+
+  const handleTabClick = (tab) => {
+    router.push({
+      pathname: '/hradmin/employees',
+      query: { tab }
+    });
+  };
+
   const handleInputChange = (e) => {
     setEmployeeData((prev) => ({
       ...prev,
@@ -190,7 +198,7 @@ export default function EmployeeForm() {
           {mainTabs.map((tab, index) => (
             <button
               key={index}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabClick(tab)}
               className={`ml-10 mr-10 hover:text-blue-600 ${
                 activeTab === tab ? "text-blue-600 font-bold" : "text-black"
               }`}

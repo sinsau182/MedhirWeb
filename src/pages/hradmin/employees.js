@@ -29,7 +29,11 @@ export default function HradminCompanies() {
       }
     };
     fetchEmployees();
-  }, []);
+    
+    if (router.query.tab) {
+        setActiveTab(router.query.tab);
+      }
+    }, [router.query.tab]);
 
   const handleRowClick = (employee) => {
     router.push({
