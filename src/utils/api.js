@@ -81,13 +81,40 @@ export const createEmployee = async (employeeData) => {
 }
 
 export const updateEmployee = async (id, updateData) => {
-  const res = await fetch("/api/hradmin/employee", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, ...updateData }),
-  });
-  return res.json();
+  try {
+    const res = await fetch("/api/hradmin/employee", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...updateData }),
+    });
+
+    let responseData;
+    try {
+      responseData = await res.json(); // Read response once
+    } catch (error) {
+      console.log("Error parsing JSON response:", error);
+      console.error("Error parsing JSON response:", error);
+      responseData = { error: "Invalid JSON response from server" }; // Handle JSON parsing errors
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to update employee: ${responseData.error || JSON.stringify(responseData)}`);
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error("Error updating employee:", error);
+    return { error: error.message };
+  }
 };
+
+
+
+
+
+
+
+
 
 export const deleteEmployee = async (id) => {
   const res = await fetch("/api/hradmin/employee", {

@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { createEmployee } from "@/utils/api";
+import { createEmployee, updateEmployee } from "@/utils/api";
 
 export default function EmployeeForm() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Employee");
+  const [employeeId, setEmployeeId] = useState(null);
   const [selectedTab, setSelectedTab] = useState("ID Proofs");
 
   const [employeeData, setEmployeeData] = useState({
@@ -45,58 +46,61 @@ export default function EmployeeForm() {
     }
   });
 
+  useEffect(() => {
+    if (router.query.employee) {
+      try {
+        const employee = JSON.parse(router.query.employee);
+        setEmployeeData((prev) => ({ ...prev, ...employee }));
+        setEmployeeId(employee._id);
+      } catch (error) {
+        console.error("Error parsing employee data", error);
+      }
+    }
+  }, [router.query.employee]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  const handleEmployeeSubmit = async () => {
+  const handleInputChange = (e) => {
+    setEmployeeData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleNestedInputChange = (e, section, key) => {
+    setEmployeeData((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [key]: e.target.value,
+      },
+    }));
+  };
+
+  const handleEmployeeSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      // Remove empty fields before submitting
-      const filteredData = JSON.parse(JSON.stringify(employeeData, (key, value) => {
-        return value === "" ? undefined : value;
-      }));
+      const filteredData = JSON.parse(
+        JSON.stringify(employeeData, (key, value) => (value === "" ? undefined : value))
+      );
 
-      const response = await createEmployee(filteredData);
-      setSuccess(response.message);
-      setEmployeeData({
-        name: "",
-        email: "",
-        phone: "",
-        department: "",
-        gender: "",
-        title: "",
-        reportingManager: "",
-        permanentAddress: "",
-        currentAddress: "",
-        idProofs: {
-          aadharNo: "",
-          panNo: "",
-          passport: "",
-          drivingLicense: "",
-          voterId: ""
-        },
-        bankDetails: {
-          accountNumber: "",
-          accountHolderName: "",
-          ifscCode: "",
-          bankName: "",
-          branchName: ""
-        },
-        salaryDetails: {
-          totalCtc: "",
-          basic: "",
-          allowances: "",
-          hra: "",
-          pf: ""
-        }
-      });
+      if (employeeId) {
+        await updateEmployee(employeeId, filteredData);
+        setSuccess("Employee updated successfully");
+      } else {
+        await createEmployee(filteredData);
+        setSuccess("Employee created successfully");
+      }
+
       router.push("/hradmin/employees");
     } catch (error) {
-      setError(error.response?.data?.error || "Something went wrong");
+      setError(error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -168,12 +172,14 @@ export default function EmployeeForm() {
         </div>
       </div>
 
+<form onSubmit={handleEmployeeSubmit}>
       {/* Employee Card */}
       <Card className="p-6 bg-gray-100 shadow-lg rounded-xl mt-0 flex flex-col justify-start">
         <div className="flex items-center justify-between">
           <input
             className="text-3xl font-bold text-gray-500 border-b-2 border-gray-300 focus:border-black w-[60%] bg-transparent focus:outline-none"
-            onChange={(e) => setEmployeeData({ ...employeeData, name: e.target.value })}
+            value={employeeData.name}
+            onChange={handleInputChange}
             placeholder="Employee Name"
             onFocus={(e) => (e.target.style.color = "black")}
           />
@@ -183,7 +189,8 @@ export default function EmployeeForm() {
           <input
             className="w-[30%] bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-black focus:outline-none text-gray-400"
             placeholder="Job Title"
-            onChange={(e) => setEmployeeData({ ...employeeData, title: e.target.value })}
+            onChange={handleInputChange}
+            value={employeeData.title}
           />
         </div>
 
@@ -202,7 +209,8 @@ export default function EmployeeForm() {
       <label className="text-gray-600 text-sm min-w-[150px]">{label}</label>
       <input
         className="w-[60%] bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-        onChange={(e) => setEmployeeData({ ...employeeData, [key]: e.target.value })}
+        value={employeeData[key]}
+        onChange={handleInputChange}
       />
     </div>
   ))}
@@ -228,18 +236,18 @@ export default function EmployeeForm() {
 
         {/* Tab Content */}
         <div className="mt-4 grid grid-cols-2 gap-6">
-          {selectedTab === "ID Proofs" && (
-            <>
-              {["Aadhar No.", "PAN No.", "Driving License", "Voter ID", "Passport"].map((label, index) => (
-                <div key={index} className="flex items-center space-x-4">
-                  <label className="text-gray-600 text-sm min-w-[150px]">{label}</label>
-                  <input className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                    onChange={(e) => setEmployeeData({ ...employeeData, idProofs: { ...employeeData.idProofs, [label.toLowerCase()]: e.target.value } })}
-                  />
-                </div>
-              ))}
-            </>
-          )}
+          {selectedTab === "ID Proofs" &&
+            Object.keys(employeeData.idProofs).map((key) => (
+              <div key={key} className="flex items-center space-x-4">
+                <label className="text-gray-600 text-sm min-w-[150px] capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
+                <input
+                  className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                  value={employeeData.idProofs[key] || ""}
+                  onChange={(e) => handleNestedInputChange(e, "idProofs", key)}
+                />
+              </div>
+            ))}
+
           {selectedTab === "Bank Details" && (
             <>
               {["Account Holder Name", "Bank Name", "Account No.", "IFSC Code", "Branch Name"].map(
@@ -273,22 +281,20 @@ export default function EmployeeForm() {
 
       {/* Submit Button */}
       <div className="mt-6 flex justify-end">
-        <Button
-          className="bg-blue-600 hover:bg-blue-500 text-white"
-          onClick={handleEmployeeSubmit}
-          disabled={loading}
-        >
-          {loading ? "Loading..." : "Submit"}
-        </Button>
+      <Button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white" disabled={loading}>
+            {loading ? "Saving..." : employeeId ? "Update Employee" : "Add Employee"}
+          </Button>
+          <Button
+            className="bg-red-600 hover:bg-red-500 text-white ml-4"
+            onClick={() => router.push("/hradmin/employees")}
+          >
+            Cancel
+          </Button>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
-
-        <Button
-          className="bg-red-600 hover:bg-red-500 text-white ml-4"
-          onClick={() => router.push("/hradmin/employees")}
-        > Cancel </Button>
-
+      
       </div>
+      </form>
     </div>
   );
 }
