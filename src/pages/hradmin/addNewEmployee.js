@@ -9,6 +9,7 @@ import { createEmployee, updateEmployee } from "@/utils/api";
 
 export default function EmployeeForm() {
   const router = useRouter();
+  const [activePage, setActivePage] = useState("Employees");
   const [activeTab, setActiveTab] = useState("Employee");
   const [employeeId, setEmployeeId] = useState(null);
   const [selectedTab, setSelectedTab] = useState("ID Proofs");
@@ -150,9 +151,9 @@ export default function EmployeeForm() {
                 passHref
               >
                 <button
-                  onClick={() => setActiveTab(item)}
+                  onClick={() => setActivePage(item)}
                   className={`hover:text-blue-600 ${
-                    activeTab === item
+                    activePage === item
                       ? "text-blue-600 font-bold"
                       : "text-black"
                   }`}

@@ -14,6 +14,7 @@ import {
 import { fetchEmployees } from "@/utils/api";
 
 export default function HradminCompanies() {
+    const [activePage, setActivePage] = useState("Employees");
   const [activeTab, setActiveTab] = useState("Basic");
   const [employees, setEmployees] = useState([]);
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function HradminCompanies() {
       }
     };
     fetchEmployees();
-    
+
     if (router.query.tab) {
         setActiveTab(router.query.tab);
       }
@@ -52,9 +53,9 @@ export default function HradminCompanies() {
             (item, index) => (
               <button
                 key={index}
-                onClick={() => setActiveTab(item)}
+                onClick={() => setActivePage(item)}
                 className={`hover:text-blue-600 ${
-                  activeTab === item ? "text-blue-600 font-bold" : "text-black"
+                  activePage === item ? "text-blue-600 font-bold" : "text-black"
                 }`}
               >
                 {item}
