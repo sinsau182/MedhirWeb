@@ -81,6 +81,10 @@ body {
   background-color: #e6e6ff; /* Lightest blue */
   color: #00008b; /* Dark blue */
 }
+.casual-leave-status {
+  background-color: #ffffe6; /* Lightest yellow */
+  color: #8b8b00; /* Dark yellow */
+}
 .date-column {
   display: flex;
   flex-direction: column;
@@ -102,6 +106,17 @@ body {
 .table-cell-center {
   text-align: center;
   vertical-align: middle;
+}
+.attendance-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%; /* Make the box take full width of the cell */
+  height: 100%; /* Make the box take full height of the cell */
+  padding: 2px; /* Reduce padding for smaller boxes */
+  box-sizing: border-box; /* Ensure padding is included in the width and height */
+  margin: 0 ; /* Equal margin on both left and right */
+  font-size: 0.75rem; /* Reduce font size */
 }
 
 

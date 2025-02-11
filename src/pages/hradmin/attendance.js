@@ -15,6 +15,7 @@ import { Search, UserPlus } from "lucide-react";
 import cn from "classnames";
 
 const dates = [
+  { month: "Jan", day: "01", weekday: "Sat" },
   { month: "Jan", day: "02", weekday: "Sun" },
   { month: "Jan", day: "03", weekday: "Mon" },
   { month: "Jan", day: "04", weekday: "Tue" },
@@ -33,6 +34,18 @@ const dates = [
   { month: "Jan", day: "17", weekday: "Mon" },
   { month: "Jan", day: "18", weekday: "Tue" },
   { month: "Jan", day: "19", weekday: "Wed" },
+  { month: "Jan", day: "20", weekday: "Thu" },
+  { month: "Jan", day: "21", weekday: "Fri" },
+  { month: "Jan", day: "22", weekday: "Sat" },
+  { month: "Jan", day: "23", weekday: "Sun" },
+  { month: "Jan", day: "24", weekday: "Mon" },
+  { month: "Jan", day: "25", weekday: "Tue" },
+  { month: "Jan", day: "26", weekday: "Wed" },
+  { month: "Jan", day: "27", weekday: "Thu" },
+  { month: "Jan", day: "28", weekday: "Fri" },
+  { month: "Jan", day: "29", weekday: "Sat" },
+  { month: "Jan", day: "30", weekday: "Sun" },
+  { month: "Jan", day: "31", weekday: "Mon" }
 ];
 
 export default function Attendance() {
@@ -164,87 +177,54 @@ export default function Attendance() {
           ))}
         </div>
 
-        <div className="p-6">
-          <Card className="overflow-auto">
-            <CardContent>
-              <Table className="border border-gray-300">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300">
-                    <TableHead className="border-r border-gray-300 h-12 text-center px-4">
-                      ID
-                    </TableHead>
-                    <TableHead className="border-r border-gray-300 h-12 px-4 text-left">
-                      Name
-                    </TableHead>
-                    <TableHead className="border-r border-gray-300 h-12 px-4 text-left">
-                      Department
-                    </TableHead>
-                    <TableHead className="border-r border-gray-300 h-12 px-4 text-center">
-                      P / T.W.D.
-                    </TableHead>
+        <div className="h-5" />
 
-                    {dates.map((date, index) => (
-                      <TableHead
-                        key={index}
-                        className="text-center border-r border-gray-300 text-sm px-2"
-                      >
-                        <div className="date-column flex flex-col">
-                          <span className="text-gray-500 text-xs">
-                            {date.month}
-                          </span>
-                          <span className="font-semibold">{date.day}</span>
-                          <span className="text-gray-500 text-xs">
-                            {date.weekday}
-                          </span>
-                        </div>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
+      {/* Attendance Table */}
+      <Table >
 
-                <TableBody>
-                  {attendanceData.map((employee) => (
-                    <TableRow
-                      key={employee.id}
-                      className="border-b border-gray-300"
-                    >
-                      <TableCell className="border-r border-gray-300">
-                        {employee.id}
-                      </TableCell>
-                      <TableCell className="border-r border-gray-300">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="border-r border-gray-300">
-                        {employee.department}
-                      </TableCell>
-                      <TableCell className="text-center border-r border-gray-300">
-                        {employee.p_twd}
-                      </TableCell>
-                      {employee.attendance.map((status, index) => (
-                        <TableCell
-                          key={index}
-                          className="text-center border-r border-gray-300 p-1"
-                        >
-                          <span
-                            className={cn(
-                              "w-12 h-11 rounded text-sm flex items-center justify-center glassmorphism",
-                              status === "P" && "present-status",
-                              status === "A" && "absent-status",
-                              status === "WK" && "weekoff-status",
-                              !status && "border border-gray-300"
-                            )}
-                          >
-                            {status}
-                          </span>
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
+          <TableRow>
+            <TableHead className="border-r border-gray-300 table-head-start">Employee ID</TableHead>
+            <TableHead className="border-r border-gray-300 table-head-start">Name</TableHead>
+            <TableHead className="border-r border-gray-300 table-head-start">Department</TableHead>
+            <TableHead className="border-r border-gray-300 table-head-start">P / T.W.D.</TableHead>
+            {dates.map((date, index) => (
+              <TableHead key={index} className="text-center border-r border-gray-300 text-xs table-head-center">
+                <div className="date-column">
+                  <span>{date.month}</span>
+                  <span>{date.day}</span>
+                  <span>{date.weekday}</span>
+                </div>
+              </TableHead>
+            ))}
+          </TableRow>
+
+        <TableBody>
+          {attendanceData.map((employee) => (
+            <TableRow key={employee.id} className="border-b border-gray-300">
+              <TableCell className="border-r border-gray-300 table-cell-center">{employee.id}</TableCell>
+              <TableCell className="border-r border-gray-300">{employee.name}</TableCell>
+              <TableCell className="border-r border-gray-300">{employee.department}</TableCell>
+              <TableCell className="text-center border-r border-gray-300">{employee.p_twd}</TableCell>
+              {employee.attendance.map((status, index) => (
+                <TableCell key={index} className="text-center border-r border-gray-300 p-1">
+                  <span
+                    className={cn(
+                      "w-7 h-7 rounded text-sm flex items-center justify-center glassmorphism",
+                      status === "P" && "present-status",
+                      status === "A" && "absent-status",
+                      status === "WK" && "weekoff-status",
+                      status === "CL" && "casual-leave-status",
+                      !status && "border border-gray-300"
+                    )}
+                  >
+                    {status}
+                  </span>
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
       </div>
     </div>
   );
