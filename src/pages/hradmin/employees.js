@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/table";
 import { fetchEmployees } from "@/utils/api";
 
-export default function HradminCompanies() {
-    const [activePage, setActivePage] = useState("Employees");
+const Employees = () => {
+  const [activePage, setActivePage] = useState("Employees");
   const [activeTab, setActiveTab] = useState("Basic");
   const [employees, setEmployees] = useState([]);
   const router = useRouter();
@@ -36,6 +36,12 @@ export default function HradminCompanies() {
       }
     }, [router.query.tab]);
 
+  useEffect(() => {
+    if (router.query.page) {
+      setActivePage(router.query.page);
+    }
+  }, [router.query.page]);
+
   const handleRowClick = (employee) => {
     router.push({
       pathname: "/hradmin/addNewEmployee",
@@ -49,19 +55,38 @@ export default function HradminCompanies() {
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
         <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map(
-            (item, index) => (
-              <button
-                key={index}
-                onClick={() => setActivePage(item)}
-                className={`hover:text-blue-600 ${
-                  activePage === item ? "text-blue-600 font-bold" : "text-black"
-                }`}
-              >
-                {item}
-              </button>
-            )
-          )}
+          <button
+            onClick={() => router.push("/hradmin/employees")}
+            className={`hover:text-blue-600 ${
+              activePage === "Employees" ? "text-blue-600 font-bold" : "text-black"
+            }`}
+          >
+            Employees
+          </button>
+          <button
+            onClick={() => router.push("/hradmin/attendance")}
+            className={`hover:text-blue-600 ${
+              activePage === "Attendance" ? "text-blue-600 font-bold" : "text-black"
+            }`}
+          >
+            Attendance
+          </button>
+          <button
+            onClick={() => router.push("/hradmin/payroll")}
+            className={`hover:text-blue-600 ${
+              activePage === "Payroll" ? "text-blue-600 font-bold" : "text-black"
+            }`}
+          >
+            Payroll
+          </button>
+          <button
+            onClick={() => router.push("/hradmin/settings")}
+            className={`hover:text-blue-600 ${
+              activePage === "Settings" ? "text-blue-600 font-bold" : "text-black"
+            }`}
+          >
+            Settings
+          </button>
         </nav>
         <Button className="bg-green-600 hover:bg-green-500 text-white">
           Logout
@@ -216,4 +241,6 @@ export default function HradminCompanies() {
       </div>
     </div>
   );
-}
+};
+
+export default Employees;
