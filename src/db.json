@@ -1,20 +1,40 @@
 {
-  "companies": [
+  "attendance": [
     {
-      "id": "1ef4",
-      "name": "Sadvsdvsdvuv",
-      "email": "saav@gmail.com",
-      "phone": "7762910765",
-      "gst": "1236",
-      "regAdd": "superan"
+      "id": "MED001",
+      "name": "Arun",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "P", "P", "A", "P", "WK", "WK", "P"]
     },
     {
-      "id": "8011",
-      "name": "Saurav Singh",
-      "email": "singhsaurav@gmail.com",
-      "phone": "7762910640",
-      "gst": "123456",
-      "regAdd": "superank"
+      "id": "MED002",
+      "name": "Naman",
+      "department": "Design",
+      "attendance": ["WK", "WK", "P", "A", "P", "P", "P", "WK", "WK", "P", "P", "P", "P", "A", "P", "WK", "WK", "P"]
+    },
+    {
+      "id": "MED003",
+      "name": "Amit",
+      "department": "Marketing",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "A", "P", "P", "P", "WK", "WK", "P"]
+    },
+    {
+      "id": "MED004",
+      "name": "Mahesh",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "A", "P", "P", "P", "P", "WK", "WK", "P", "P", "P", "A", "P", "P", "WK", "WK", "A"]
+    },
+    {
+      "id": "MED005",
+      "name": "Rohit",
+      "department": "HR",
+      "attendance": ["WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "P", "WK", "WK", "P"]
+    },
+    {
+      "id": "MED006",
+      "name": "Suresh",
+      "department": "IT",
+      "attendance": ["WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "A", "P", "P", "P", "P", "P", "WK", "WK", "A"]
     }
   ]
 }

@@ -1,14 +1,54 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
+import cn from "classnames";
 
-export default function HradminCompanies() {
-    const [activePage, setActivePage] = useState("attendance");
-  const [employees, setEmployees] = useState([]);   
+const dates = [
+  { month: "Jan", day: "02", weekday: "Sun" },
+  { month: "Jan", day: "03", weekday: "Mon" },
+  { month: "Jan", day: "04", weekday: "Tue" },
+  { month: "Jan", day: "05", weekday: "Wed" },
+  { month: "Jan", day: "06", weekday: "Thu" },
+  { month: "Jan", day: "07", weekday: "Fri" },
+  { month: "Jan", day: "08", weekday: "Sat" },
+  { month: "Jan", day: "09", weekday: "Sun" },
+  { month: "Jan", day: "10", weekday: "Mon" },
+  { month: "Jan", day: "11", weekday: "Tue" },
+  { month: "Jan", day: "12", weekday: "Wed" },
+  { month: "Jan", day: "13", weekday: "Thu" },
+  { month: "Jan", day: "14", weekday: "Fri" },
+  { month: "Jan", day: "15", weekday: "Sat" },
+  { month: "Jan", day: "16", weekday: "Sun" },
+  { month: "Jan", day: "17", weekday: "Mon" },
+  { month: "Jan", day: "18", weekday: "Tue" },
+  { month: "Jan", day: "19", weekday: "Wed" },
+];
+
+export default function Attendance() {
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [activePage, setActivePage] = useState("attendance");
+  const [employees, setEmployees] = useState([]);
   const router = useRouter();
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { month: "short" };
+    const month = date.toLocaleDateString("en-US", options);
+    const day = date.getDate();
+    const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+    return { month, day, weekday };
+  };
 
   const handleRowClick = (attendance) => {
     router.push({
@@ -16,6 +56,15 @@ export default function HradminCompanies() {
       query: { attendance: JSON.stringify(attendance) },
     });
   };
+
+  useEffect(() => {
+    fetch("http://localhost:5000/attendance")
+      .then((response) => response.json())
+      .then((data) => setAttendanceData(data))
+      .catch((error) =>
+        console.error("Error fetching attendance data:", error)
+      );
+  }, []);
 
   useEffect(() => {
     if (router.query.tab) {
@@ -90,12 +139,96 @@ export default function HradminCompanies() {
               key={tab.value}
               onClick={() => handleTabClick(tab)}
               className={`ml-10 mr-10 hover:text-blue-600 ${
-                activeTab === tab.value ? "text-blue-600 font-bold" : "text-black"
+                activeTab === tab.value
+                  ? "text-blue-600 font-bold"
+                  : "text-black"
               }`}
             >
               {tab.label}
             </button>
           ))}
+        </div>
+
+        <div className="p-6">
+          <Card className="overflow-auto">
+            <CardContent>
+              <Table className="border border-gray-300">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300">
+                    <TableHead className="border-r border-gray-300 h-12 text-center px-4">
+                      ID
+                    </TableHead>
+                    <TableHead className="border-r border-gray-300 h-12 px-4 text-left">
+                      Name
+                    </TableHead>
+                    <TableHead className="border-r border-gray-300 h-12 px-4 text-left">
+                      Department
+                    </TableHead>
+                    <TableHead className="border-r border-gray-300 h-12 px-4 text-center">
+                      P / T.W.D.
+                    </TableHead>
+
+                    {dates.map((date, index) => (
+                      <TableHead
+                        key={index}
+                        className="text-center border-r border-gray-300 text-sm px-2"
+                      >
+                        <div className="date-column flex flex-col">
+                          <span className="text-gray-500 text-xs">
+                            {date.month}
+                          </span>
+                          <span className="font-semibold">{date.day}</span>
+                          <span className="text-gray-500 text-xs">
+                            {date.weekday}
+                          </span>
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                  {attendanceData.map((employee) => (
+                    <TableRow
+                      key={employee.id}
+                      className="border-b border-gray-300"
+                    >
+                      <TableCell className="border-r border-gray-300">
+                        {employee.id}
+                      </TableCell>
+                      <TableCell className="border-r border-gray-300">
+                        {employee.name}
+                      </TableCell>
+                      <TableCell className="border-r border-gray-300">
+                        {employee.department}
+                      </TableCell>
+                      <TableCell className="text-center border-r border-gray-300">
+                        {employee.p_twd}
+                      </TableCell>
+                      {employee.attendance.map((status, index) => (
+                        <TableCell
+                          key={index}
+                          className="text-center border-r border-gray-300 p-1"
+                        >
+                          <span
+                            className={cn(
+                              "w-12 h-11 rounded text-sm flex items-center justify-center glassmorphism",
+                              status === "P" && "present-status",
+                              status === "A" && "absent-status",
+                              status === "WK" && "weekoff-status",
+                              !status && "border border-gray-300"
+                            )}
+                          >
+                            {status}
+                          </span>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

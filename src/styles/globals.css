@@ -61,6 +61,49 @@ body {
     --chart-5: 340 75% 55%;
   }
 }
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0px solid rgba(255, 255, 255, 0.2);
+}
+.present-status {
+  background-color: #e6ffe6; /* Lightest green */
+  color: #006400; /* Dark green */
+}
+.absent-status {
+  background-color: #ffe6e6; /* Lightest red */
+  color: #8b0000; /* Dark red */
+}
+.weekoff-status {
+  background-color: #e6e6ff; /* Lightest blue */
+  color: #00008b; /* Dark blue */
+}
+.date-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.date-column span {
+  display: block;
+}
+.table-head-start {
+  text-align: left;
+  vertical-align: top;
+}
+.table-head-center {
+  text-align: center;
+  vertical-align: middle;
+}
+.table-cell-center {
+  text-align: center;
+  vertical-align: middle;
+}
+
 
 @layer base {
   * {
