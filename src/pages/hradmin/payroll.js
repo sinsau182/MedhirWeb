@@ -32,7 +32,6 @@ export default function HradminCompanies() {
   const navigateToEmployees = () => {
     router.push("/hradmin/employees");
   };
-
   return (
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
@@ -40,23 +39,38 @@ export default function HradminCompanies() {
         <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
           <button
-            onClick={navigateToEmployees}
-            className="hover:text-blue-600 text-black"
+            onClick={() => router.push("/hradmin/employees")}
+            className={`hover:text-blue-600 ${
+              router.pathname === "/hradmin/employees" ? "text-blue-600 font-bold" : "text-black"
+            }`}
           >
             Employees
           </button>
           <button
             onClick={() => router.push("/hradmin/attendance")}
-            className="hover:text-blue-600 text-black"
+            className={`hover:text-blue-600 ${
+              router.pathname === "/hradmin/attendance" ? "text-blue-600 font-bold" : "text-black"
+            }`}
           >
             Attendance
           </button>
-          <button className="hover:text-blue-600 text-black">Payroll</button>
-          <button className="hover:text-blue-600 text-black">Settings</button>
+          <button
+            onClick={() => router.push("/hradmin/payroll")}
+            className={`hover:text-blue-600 ${
+              router.pathname === "/hradmin/payroll" ? "text-blue-600 font-bold" : "text-black"
+            }`}
+          >
+            Payroll
+          </button>
+          <button
+            onClick={() => router.push("/hradmin/settings")}
+            className={`hover:text-blue-600 ${
+              router.pathname === "/hradmin/settings" ? "text-blue-600 font-bold" : "text-black"
+            }`}
+          >
+            Settings
+          </button>
         </nav>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">
-          Logout
-        </Button>
       </header>
 
       {/* Search Box */}
@@ -101,3 +115,4 @@ export default function HradminCompanies() {
     </div>
   );
 }
+

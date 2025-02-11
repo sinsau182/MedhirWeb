@@ -58,7 +58,7 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/employees")}
             className={`hover:text-blue-600 ${
-              activePage === "Employees" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/employees" ? "text-blue-600 font-bold" : "text-black"
             }`}
           >
             Employees
@@ -66,7 +66,7 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/attendance")}
             className={`hover:text-blue-600 ${
-              activePage === "Attendance" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/attendance" ? "text-blue-600 font-bold" : "text-black"
             }`}
           >
             Attendance
@@ -74,7 +74,7 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/payroll")}
             className={`hover:text-blue-600 ${
-              activePage === "Payroll" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/payroll" ? "text-blue-600 font-bold" : "text-black"
             }`}
           >
             Payroll
@@ -82,15 +82,12 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/settings")}
             className={`hover:text-blue-600 ${
-              activePage === "Settings" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/settings" ? "text-blue-600 font-bold" : "text-black"
             }`}
           >
             Settings
           </button>
         </nav>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">
-          Logout
-        </Button>
       </header>
 
       {/* Search Box */}
