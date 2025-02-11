@@ -85,6 +85,10 @@ body {
   background-color: #ffffe6; /* Lightest yellow */
   color: #8b8b00; /* Dark yellow */
 }
+.half-day-status {
+  background-color: #e6e6e6; /* Lightest grey */
+  color: #000000; /* Black */
+}
 .date-column {
   display: flex;
   flex-direction: column;

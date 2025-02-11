@@ -64,7 +64,7 @@
       "id": "MED005",
       "name": "Rohit",
       "department": "HR",
-      "attendance": ["WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P"]
+      "attendance": ["WK", "WK", "P", "SL", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P"]
     },
     {
       "id": "MED006",

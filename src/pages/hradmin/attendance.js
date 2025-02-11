@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { format, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -14,54 +15,26 @@ import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import cn from "classnames";
 
-const dates = [
-  { month: "Jan", day: "01", weekday: "Sat" },
-  { month: "Jan", day: "02", weekday: "Sun" },
-  { month: "Jan", day: "03", weekday: "Mon" },
-  { month: "Jan", day: "04", weekday: "Tue" },
-  { month: "Jan", day: "05", weekday: "Wed" },
-  { month: "Jan", day: "06", weekday: "Thu" },
-  { month: "Jan", day: "07", weekday: "Fri" },
-  { month: "Jan", day: "08", weekday: "Sat" },
-  { month: "Jan", day: "09", weekday: "Sun" },
-  { month: "Jan", day: "10", weekday: "Mon" },
-  { month: "Jan", day: "11", weekday: "Tue" },
-  { month: "Jan", day: "12", weekday: "Wed" },
-  { month: "Jan", day: "13", weekday: "Thu" },
-  { month: "Jan", day: "14", weekday: "Fri" },
-  { month: "Jan", day: "15", weekday: "Sat" },
-  { month: "Jan", day: "16", weekday: "Sun" },
-  { month: "Jan", day: "17", weekday: "Mon" },
-  { month: "Jan", day: "18", weekday: "Tue" },
-  { month: "Jan", day: "19", weekday: "Wed" },
-  { month: "Jan", day: "20", weekday: "Thu" },
-  { month: "Jan", day: "21", weekday: "Fri" },
-  { month: "Jan", day: "22", weekday: "Sat" },
-  { month: "Jan", day: "23", weekday: "Sun" },
-  { month: "Jan", day: "24", weekday: "Mon" },
-  { month: "Jan", day: "25", weekday: "Tue" },
-  { month: "Jan", day: "26", weekday: "Wed" },
-  { month: "Jan", day: "27", weekday: "Thu" },
-  { month: "Jan", day: "28", weekday: "Fri" },
-  { month: "Jan", day: "29", weekday: "Sat" },
-  { month: "Jan", day: "30", weekday: "Sun" },
-  { month: "Jan", day: "31", weekday: "Mon" }
-];
+// Generate date array dynamically
+const getDatesForMonth = () => {
+  const today = new Date();
+  const dates = eachDayOfInterval({
+    start: startOfMonth(today),
+    end: endOfMonth(today),
+  }).map((date) => ({
+    month: format(date, "MMM"),
+    day: format(date, "dd"),
+    weekday: format(date, "EEE"),
+  }));
+  return dates;
+};
 
 export default function Attendance() {
   const [attendanceData, setAttendanceData] = useState([]);
   const [activePage, setActivePage] = useState("attendance");
   const [employees, setEmployees] = useState([]);
   const router = useRouter();
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const options = { month: "short" };
-    const month = date.toLocaleDateString("en-US", options);
-    const day = date.getDate();
-    const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
-    return { month, day, weekday };
-  };
+  const dates = getDatesForMonth();
 
   const handleRowClick = (attendance) => {
     router.push({
@@ -78,22 +51,6 @@ export default function Attendance() {
         console.error("Error fetching attendance data:", error)
       );
   }, []);
-
-  useEffect(() => {
-    if (router.query.tab) {
-      setActiveTab(router.query.tab);
-    }
-  }, [router.query.tab]);
-
-  const mainTabs = [];
-
-  const handleTabClick = (tab) => {
-    setActiveTab(tab.value);
-  };
-
-  const navigateToEmployees = () => {
-    router.push("/hradmin/employees");
-  };
 
   return (
     <div className="bg-white text-black min-h-screen p-6">
@@ -160,71 +117,59 @@ export default function Attendance() {
           </div>
         </div>
 
-        {/* Sub Navbar */}
-        <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
-          {mainTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => handleTabClick(tab)}
-              className={`ml-10 mr-10 hover:text-blue-600 ${
-                activeTab === tab.value
-                  ? "text-blue-600 font-bold"
-                  : "text-black"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
         <div className="h-5" />
 
-      {/* Attendance Table */}
-      <Table >
-
-          <TableRow>
-            <TableHead className="border-r border-gray-300 table-head-start">Employee ID</TableHead>
-            <TableHead className="border-r border-gray-300 table-head-start">Name</TableHead>
-            <TableHead className="border-r border-gray-300 table-head-start">Department</TableHead>
-            <TableHead className="border-r border-gray-300 table-head-start">P / T.W.D.</TableHead>
-            {dates.map((date, index) => (
-              <TableHead key={index} className="text-center border-r border-gray-300 text-xs table-head-center">
-                <div className="date-column">
-                  <span>{date.month}</span>
-                  <span>{date.day}</span>
-                  <span>{date.weekday}</span>
-                </div>
-              </TableHead>
-            ))}
-          </TableRow>
-
-        <TableBody>
-          {attendanceData.map((employee) => (
-            <TableRow key={employee.id} className="border-b border-gray-300">
-              <TableCell className="border-r border-gray-300 table-cell-center">{employee.id}</TableCell>
-              <TableCell className="border-r border-gray-300">{employee.name}</TableCell>
-              <TableCell className="border-r border-gray-300">{employee.department}</TableCell>
-              <TableCell className="text-center border-r border-gray-300">{employee.p_twd}</TableCell>
-              {employee.attendance.map((status, index) => (
-                <TableCell key={index} className="text-center border-r border-gray-300 p-1">
-                  <span
-                    className={cn(
-                      "w-7 h-7 rounded text-sm flex items-center justify-center glassmorphism",
-                      status === "P" && "present-status",
-                      status === "A" && "absent-status",
-                      status === "WK" && "weekoff-status",
-                      status === "CL" && "casual-leave-status",
-                      !status && "border border-gray-300"
-                    )}
-                  >
-                    {status}
-                  </span>
-                </TableCell>
+        {/* Attendance Table */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="border-r border-gray-300">Employee ID</TableHead>
+              <TableHead className="border-r border-gray-300">Name</TableHead>
+              <TableHead className="border-r border-gray-300">Department</TableHead>
+              <TableHead className="border-r border-gray-300">P / T.W.D.</TableHead>
+              {dates.map((date, index) => (
+                <TableHead key={index} className="text-center border-r border-gray-300 text-xs">
+                  <div className="flex flex-col items-center">
+                    <span>{date.month}</span>
+                    <span>{date.day}</span>
+                    <span>{date.weekday}</span>
+                  </div>
+                </TableHead>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody>
+            {attendanceData.map((employee) => (
+              <TableRow key={employee.id} className="border-b border-gray-300">
+                <TableCell className="border-r border-gray-300">{employee.id}</TableCell>
+                <TableCell className="border-r border-gray-300">{employee.name}</TableCell>
+                <TableCell className="border-r border-gray-300">{employee.department}</TableCell>
+                <TableCell className="border-r border-gray-300 text-center">{employee.p_twd}</TableCell>
+                {dates.map((_, index) => (
+                  <TableCell key={index} className="border-r border-gray-300 p-1 text-center">
+                    {employee.attendance[index] ? (
+                      <span
+                        className={cn(
+                          "w-7 h-7 rounded text-sm flex items-center justify-center",
+                          employee.attendance[index] === "P" && "present-status",
+                          employee.attendance[index] === "A" && "absent-status",
+                          employee.attendance[index] === "WK" && "weekoff-status",
+                          employee.attendance[index] === "CL" && "casual-leave-status",
+                          employee.attendance[index] === "SL" && "half-day-status"
+                        )}
+                      >
+                        {employee.attendance[index]}
+                      </span>
+                    ) : (
+                      <span className="border border-gray-300 w-7 h-7 flex items-center justify-center"></span>
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
