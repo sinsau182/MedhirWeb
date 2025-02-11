@@ -82,7 +82,7 @@ const Attendance = () => {
       </header>
 
       <div className="mt-20">
-        <div className="fixed top-20 left-0 right-0 bg-gray-200 p-4 z-40">
+        <div className="fixed top-20 left-5 right-5 bg-gray-200 p-4 z-20 mb-4 shadow-md">
           <div className="flex justify-between items-center">
             <Button
               className="bg-blue-600 hover:bg-blue-500 text-white flex items-center"
@@ -105,15 +105,15 @@ const Attendance = () => {
           </div>
         </div>
 
+        
         {/* Sub Navbar */}
-        <div className="bg-gray-300 p-3 rounded-md mt-24 flex justify-between text-lg shadow-md mx-auto">
+        <div className="bg-gray-300 p-3 rounded-md mt-36 flex justify-between text-lg shadow-md mx-auto">
           <button
             onClick={() => setActivePage("Basic")}
             className={`ml-10 mr-10 hover:text-blue-600 ${
               activePage === "Basic" ? "text-blue-600 font-bold" : "text-black"
             }`}
           >
-            Basic
           </button>
           <button
             onClick={() => setActivePage("ID Proofs")}
@@ -121,7 +121,6 @@ const Attendance = () => {
               activePage === "ID Proofs" ? "text-blue-600 font-bold" : "text-black"
             }`}
           >
-            ID Proofs
           </button>
         </div>
 
