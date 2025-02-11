@@ -124,6 +124,7 @@ const Attendance = () => {
           </button>
         </div>
 
+
         <div className="mt-10 max-h-[calc(100vh-300px)] overflow-auto">
           <div className="overflow-auto max-h-[calc(100vh-300px)]">
             <table className="min-w-full table-auto border-collapse border border-gray-300">
