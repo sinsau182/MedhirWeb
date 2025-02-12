@@ -4,6 +4,7 @@
       "id": "MED001",
       "name": "Arun",
       "department": "SALES",
+      "p_twd": "18/20",
       "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P"]
     },
     {

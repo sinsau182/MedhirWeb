@@ -151,6 +151,10 @@ body {
   z-index: 1; /* Ensure the header is above the table body */
 }
 
+.current-day-column {
+  background-color: #e6f7ff; /* Lightest blue */
+}
+
 @layer base {
   * {
     @apply border-border;

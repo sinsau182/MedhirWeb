@@ -137,7 +137,10 @@ const Attendance = () => {
                   <TableHead className="border-r border-gray-300 table-head-start text-xs">Department</TableHead>
                   <TableHead className="border-r border-gray-300 table-head-start text-xs">P / T.W.D.</TableHead>
                   {dates.map((date, index) => (
-                    <TableHead key={index} className="text-center border-r border-gray-300 text-xs table-head-center w-[80%]">
+                    <TableHead key={index} className={cn(
+                      "text-center border-r border-gray-300 text-xs table-head-center w-[80%]",
+                      date.day === "18" && date.month === "Jan" && "current-day-column"
+                    )}>
                       <div className="date-column">
                         <span>{date.month}</span>
                         <span>{date.day}</span>
@@ -155,7 +158,7 @@ const Attendance = () => {
                     <TableCell className="border-r border-gray-300 text-xs">{employee.department}</TableCell>
                     <TableCell className="text-center border-r border-gray-300">{employee.p_twd}</TableCell>
                     {employee.attendance.map((status, index) => (
-                      <TableCell key={index} className="text-center border-r border-gray-300 p-0 justify-center items-center">
+                      <TableCell key={index} className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center">
                         <span
                           className={cn(
                             "w-8 h-7 rounded text-sm glassmorphism",
