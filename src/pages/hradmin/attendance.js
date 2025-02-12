@@ -127,7 +127,8 @@ const Attendance = () => {
           ))}
         </div>
       </div>
-      <div className="overflow-container mt-[-2] max-h-[calc(100vh-300px)]">
+      {activeTab === "Attendance Tracker" && (
+        <div className="overflow-container mt-[-2] max-h-[calc(100vh-300px)]">
           <div className="overflow-container max-h-[calc(100vh-300px)]">
             <table className="min-w-full table-auto border-collapse border border-gray-300">
               <thead className="sticky top-0 bg-white z-10">
@@ -148,6 +149,19 @@ const Attendance = () => {
                       </div>
                     </TableHead>
                   ))}
+                  {activeTab === "Leave Tracker" && (
+                  <>
+                    <TableHead className="text-left">Name</TableHead>
+                    <TableHead className="text-left">Email</TableHead>
+                    <TableHead className="text-left">Phone no.</TableHead>
+                    <TableHead className="text-left">Department</TableHead>
+                    <TableHead className="text-left">Gender</TableHead>
+                    <TableHead className="text-left">Title</TableHead>
+                    <TableHead className="text-left">
+                      Reporting Manager
+                    </TableHead>
+                  </>
+                )}
                 </TableRow>
               </thead>
               <tbody>
@@ -178,7 +192,37 @@ const Attendance = () => {
               </tbody>
             </table>
           </div>
-        </div>
+          </div>
+        )}
+        {activeTab === "Leave Tracker" && (
+          <div className="overflow-auto max-h-[calc(100vh-300px)]">
+              <table className="min-w-full table-auto border-collapse border border-gray-300">
+                <thead className="sticky top-0 bg-white z-10">
+                  <TableRow>
+                    {["Employee ID", "Name", "Department", "No. of Payable Days", "Leaves Taken", "Leaves Earned", "Carried Forward Leaves", "Net Leaves"].map((heading, index) => (
+                      <TableHead key={index} className="border-r border-gray-300 text-xs">
+                        {heading}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </thead>
+                <tbody>
+                  {employees.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell className="border-r border-gray-300 text-xs">{employee.id}</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">{employee.name}</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">{employee.department}</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">25</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">2</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">1</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">3</TableCell>
+                      <TableCell className="border-r border-gray-300 text-xs">4</TableCell>
+                    </TableRow>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+        )}
     </div>
   );
 };
