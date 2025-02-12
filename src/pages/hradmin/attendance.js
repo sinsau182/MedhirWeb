@@ -8,6 +8,7 @@ import cn from "classnames";
 
 const Attendance = () => {
   const [activePage, setActivePage] = useState("attendance");
+  const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [employees, setEmployees] = useState([]);
   const [dates, setDates] = useState([]);
   const router = useRouter();
@@ -81,59 +82,64 @@ const Attendance = () => {
         </nav>
       </header>
 
-      <div className="mt-20">
-        <div className="fixed top-20 left-5 right-5 bg-gray-200 p-4 z-20 mb-4 shadow-md">
-          <div className="flex justify-between items-center">
-            <Button
-              className="bg-blue-600 hover:bg-blue-500 text-white flex items-center"
-              onClick={() => router.push("/hradmin/addNewEmployee")}
-            >
-              <UserPlus className="mr-2" size={20} /> Add New Employee
-            </Button>
-            <div className="flex w-screen justify-center">
-              <div className="relative w-[60%]">
-                <Input
-                  placeholder="Search"
-                  className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg"
-                />
-                <Search
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
-                  size={24}
-                />
-              </div>
+      {/* Search Box */}
+      <div className="h-5" />
+      <div className="p-10">
+        <div className="mt-2 p-4 rounded-lg bg-gray-200 flex justify-between items-center">
+          <Button
+            className="bg-blue-600 hover:bg-blue-500 text-white flex items-center"
+            onClick={() => router.push("/hradmin/addNewEmployee")}
+          >
+            <UserPlus className="mr-2" size={20} /> Add New Employee
+          </Button>
+          <div className="flex w-screen justify-center">
+            <div className="relative w-[60%]">
+              <Input
+                placeholder="Search"
+                className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg"
+              />
+              <Search
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
+                size={24}
+              />
             </div>
           </div>
         </div>
 
-        
+
         {/* Sub Navbar */}
-        <div className="bg-gray-300 p-3 rounded-md mt-36 flex justify-between text-lg shadow-md mx-auto">
-          <button
-            onClick={() => setActivePage("Basic")}
-            className={`ml-10 mr-10 hover:text-blue-600 ${
-              activePage === "Basic" ? "text-blue-600 font-bold" : "text-black"
-            }`}
-          >
-          </button>
-          <button
-            onClick={() => setActivePage("ID Proofs")}
-            className={`ml-10 mr-10 hover:text-blue-600 ${
-              activePage === "ID Proofs" ? "text-blue-600 font-bold" : "text-black"
-            }`}
-          >
-          </button>
+        <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
+          {[
+            "Attendance Tracker",
+            "Leave Tracker",
+            "Basic",
+            "ID Proofs",
+          ].map((tab, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveTab(tab)}
+              className={`ml-10 mr-10 hover:text-blue-600 ${
+                activeTab === tab ? "text-blue-600 font-bold" : "text-black"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
 
 
-        <div className="mt-10 max-h-[calc(100vh-300px)] overflow-auto">
+
+
+      </div>
+      <div className="mt-2 max-h-[calc(100vh-300px)] overflow-auto">
           <div className="overflow-auto max-h-[calc(100vh-300px)]">
             <table className="min-w-full table-auto border-collapse border border-gray-300">
               <thead className="sticky top-0 bg-white z-10">
                 <TableRow>
-                  <TableHead className="border-r border-gray-300 table-head-start">Employee ID</TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start">Name</TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start">Department</TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start">P / T.W.D.</TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">Employee ID</TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">Name</TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">Department</TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">P / T.W.D.</TableHead>
                   {dates.map((date, index) => (
                     <TableHead key={index} className="text-center border-r border-gray-300 text-xs table-head-center">
                       <div className="date-column">
@@ -148,12 +154,12 @@ const Attendance = () => {
               <tbody>
                 {employees.map((employee) => (
                   <TableRow key={employee.id} onClick={() => handleRowClick(employee)}>
-                    <TableCell className="border-r border-gray-300 table-cell-center">{employee.id}</TableCell>
-                    <TableCell className="border-r border-gray-300">{employee.name}</TableCell>
-                    <TableCell className="border-r border-gray-300">{employee.department}</TableCell>
+                    <TableCell className="border-r border-gray-300 table-cell-center text-xs">{employee.id}</TableCell>
+                    <TableCell className="border-r border-gray-300 text-xs">{employee.name}</TableCell>
+                    <TableCell className="border-r border-gray-300 text-xs">{employee.department}</TableCell>
                     <TableCell className="text-center border-r border-gray-300">{employee.p_twd}</TableCell>
                     {employee.attendance.map((status, index) => (
-                      <TableCell key={index} className="text-center border-r border-gray-300 p-1">
+                      <TableCell key={index} className="text-center border-r border-gray-300 p-0">
                         <span
                           className={cn(
                             "w-7 h-7 rounded text-sm flex items-center justify-center glassmorphism",
@@ -174,7 +180,6 @@ const Attendance = () => {
             </table>
           </div>
         </div>
-      </div>
     </div>
   );
 };

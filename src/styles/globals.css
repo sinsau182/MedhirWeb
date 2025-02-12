@@ -85,10 +85,6 @@ body {
   background-color: #ffffe6; /* Lightest yellow */
   color: #8b8b00; /* Dark yellow */
 }
-.half-day-status {
-  background-color: #e6e6e6; /* Lightest grey */
-  color: #000000; /* Black */
-}
 .date-column {
   display: flex;
   flex-direction: column;
@@ -119,7 +115,7 @@ body {
   height: 100%; /* Make the box take full height of the cell */
   padding: 2px; /* Reduce padding for smaller boxes */
   box-sizing: border-box; /* Ensure padding is included in the width and height */
-  margin: 0 ; /* Equal margin on both left and right */
+  margin: 0 2px; /* Equal margin on both left and right */
   font-size: 0.75rem; /* Reduce font size */
 }
 
