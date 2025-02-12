@@ -139,7 +139,7 @@ const Attendance = () => {
                   <TableHead className="border-r border-gray-300 table-head-start text-xs">P / T.W.D.</TableHead>
                   {dates.map((date, index) => (
                     <TableHead key={index} className={cn(
-                      "text-center border-r border-gray-300 text-xs table-head-center w-[80%]",
+                      "text-center border-r border-gray-300 text-xs table-head-center",
                       date.day === "18" && date.month === "Jan" && "current-day-column"
                     )}>
                       <div className="date-column">
@@ -149,19 +149,6 @@ const Attendance = () => {
                       </div>
                     </TableHead>
                   ))}
-                  {activeTab === "Leave Tracker" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-left">Email</TableHead>
-                    <TableHead className="text-left">Phone no.</TableHead>
-                    <TableHead className="text-left">Department</TableHead>
-                    <TableHead className="text-left">Gender</TableHead>
-                    <TableHead className="text-left">Title</TableHead>
-                    <TableHead className="text-left">
-                      Reporting Manager
-                    </TableHead>
-                  </>
-                )}
                 </TableRow>
               </thead>
               <tbody>
