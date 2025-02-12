@@ -126,13 +126,9 @@ const Attendance = () => {
             </button>
           ))}
         </div>
-
-
-
-
       </div>
-      <div className="mt-2 max-h-[calc(100vh-300px)] overflow-auto">
-          <div className="overflow-auto max-h-[calc(100vh-300px)]">
+      <div className="overflow-container mt-[-2] max-h-[calc(100vh-300px)]">
+          <div className="overflow-container max-h-[calc(100vh-300px)]">
             <table className="min-w-full table-auto border-collapse border border-gray-300">
               <thead className="sticky top-0 bg-white z-10">
                 <TableRow>
@@ -141,7 +137,7 @@ const Attendance = () => {
                   <TableHead className="border-r border-gray-300 table-head-start text-xs">Department</TableHead>
                   <TableHead className="border-r border-gray-300 table-head-start text-xs">P / T.W.D.</TableHead>
                   {dates.map((date, index) => (
-                    <TableHead key={index} className="text-center border-r border-gray-300 text-xs table-head-center">
+                    <TableHead key={index} className="text-center border-r border-gray-300 text-xs table-head-center w-[80%]">
                       <div className="date-column">
                         <span>{date.month}</span>
                         <span>{date.day}</span>
@@ -159,10 +155,10 @@ const Attendance = () => {
                     <TableCell className="border-r border-gray-300 text-xs">{employee.department}</TableCell>
                     <TableCell className="text-center border-r border-gray-300">{employee.p_twd}</TableCell>
                     {employee.attendance.map((status, index) => (
-                      <TableCell key={index} className="text-center border-r border-gray-300 p-0">
+                      <TableCell key={index} className="text-center border-r border-gray-300 p-0 justify-center items-center">
                         <span
                           className={cn(
-                            "w-7 h-7 rounded text-sm flex items-center justify-center glassmorphism",
+                            "w-8 h-7 rounded text-sm glassmorphism",
                             status === "P" && "present-status",
                             status === "A" && "absent-status",
                             status === "WK" && "weekoff-status",

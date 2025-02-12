@@ -61,7 +61,19 @@ body {
     --chart-5: 340 75% 55%;
   }
 }
+.overflow-container {
+  overflow-y: auto; /* Enable vertical scrolling */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.overflow-container::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
 .glassmorphism {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 2px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -107,6 +119,7 @@ body {
   text-align: center;
   vertical-align: middle;
 }
+
 .attendance-box {
   display: flex;
   align-items: center;
@@ -119,6 +132,24 @@ body {
   font-size: 0.75rem; /* Reduce font size */
 }
 
+.table {
+  table-layout: fixed; /* Ensure the table layout is fixed */
+  width: 100%; /* Make the table take full width of the container */
+  border-collapse: collapse; /* Ensure borders collapse into a single border */
+}
+
+.table th, .table td {
+  border: 1px solid #ddd; /* Add border to table cells */
+  padding: 0; /* Remove padding from table cells */
+  margin: 0; /* Remove margin from table cells */
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1; /* Ensure the header is above the table body */
+}
 
 @layer base {
   * {
