@@ -39,7 +39,9 @@ const Attendance = () => {
     fetch("http://localhost:5000/attendance")
       .then((response) => response.json())
       .then((data) => setEmployees(data))
-      .catch((error) => console.error("Error fetching attendance data:", error));
+      .catch((error) =>
+        console.error("Error fetching attendance data:", error)
+      );
   }, []);
 
   return (
@@ -50,7 +52,9 @@ const Attendance = () => {
           <button
             onClick={() => router.push("/hradmin/employees")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/employees" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/employees"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Employees
@@ -58,7 +62,9 @@ const Attendance = () => {
           <button
             onClick={() => router.push("/hradmin/attendance")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/attendance" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/attendance"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Attendance
@@ -66,7 +72,9 @@ const Attendance = () => {
           <button
             onClick={() => router.push("/hradmin/payroll")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/payroll" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/payroll"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Payroll
@@ -74,7 +82,9 @@ const Attendance = () => {
           <button
             onClick={() => router.push("/hradmin/settings")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/settings" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/settings"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Settings
@@ -106,25 +116,21 @@ const Attendance = () => {
           </div>
         </div>
 
-
         {/* Sub Navbar */}
         <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
-          {[
-            "Attendance Tracker",
-            "Leave Tracker",
-            "Basic",
-            "ID Proofs",
-          ].map((tab, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveTab(tab)}
-              className={`ml-10 mr-10 hover:text-blue-600 ${
-                activeTab === tab ? "text-blue-600 font-bold" : "text-black"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+          {["Attendance Tracker", "Leave Tracker", "Basic", "ID Proofs"].map(
+            (tab, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTab(tab)}
+                className={`ml-10 mr-10 hover:text-blue-600 ${
+                  activeTab === tab ? "text-blue-600 font-bold" : "text-black"
+                }`}
+              >
+                {tab}
+              </button>
+            )
+          )}
         </div>
       </div>
       {activeTab === "Attendance Tracker" && (
@@ -133,15 +139,28 @@ const Attendance = () => {
             <table className="min-w-full table-auto border-collapse border border-gray-300">
               <thead className="sticky top-0 bg-white z-10">
                 <TableRow>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">Employee ID</TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">Name</TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">Department</TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">P / T.W.D.</TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                    Employee ID
+                  </TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                    Name
+                  </TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                    Department
+                  </TableHead>
+                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                    P / T.W.D.
+                  </TableHead>
                   {dates.map((date, index) => (
-                    <TableHead key={index} className={cn(
-                      "text-center border-r border-gray-300 text-xs table-head-center",
-                      date.day === "18" && date.month === "Jan" && "current-day-column"
-                    )}>
+                    <TableHead
+                      key={index}
+                      className={cn(
+                        "text-center border-r border-gray-300 text-xs table-head-center",
+                        date.day === "18" &&
+                          date.month === "Jan" &&
+                          "current-day-column"
+                      )}
+                    >
                       <div className="date-column">
                         <span>{date.month}</span>
                         <span>{date.day}</span>
@@ -153,21 +172,36 @@ const Attendance = () => {
               </thead>
               <tbody>
                 {employees.map((employee) => (
-                  <TableRow key={employee.id} onClick={() => handleRowClick(employee)}>
-                    <TableCell className="border-r border-gray-300 table-cell-center text-xs">{employee.id}</TableCell>
-                    <TableCell className="border-r border-gray-300 text-xs">{employee.name}</TableCell>
-                    <TableCell className="border-r border-gray-300 text-xs">{employee.department}</TableCell>
-                    <TableCell className="text-center border-r border-gray-300">{employee.p_twd}</TableCell>
+                  <TableRow
+                    key={employee.id}
+                    onClick={() => handleRowClick(employee)}
+                  >
+                    <TableCell className="border-r border-gray-300 table-cell-center text-xs">
+                      {employee.id}
+                    </TableCell>
+                    <TableCell className="border-r border-gray-300 text-xs">
+                      {employee.name}
+                    </TableCell>
+                    <TableCell className="border-r border-gray-300 text-xs">
+                      {employee.department}
+                    </TableCell>
+                    <TableCell className="text-center border-r border-gray-300">
+                      {employee.p_twd}
+                    </TableCell>
                     {employee.attendance.map((status, index) => (
-                      <TableCell key={index} className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center">
+                      <TableCell
+                        key={index}
+                        className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center"
+                      >
                         <span
                           className={cn(
-                            "w-8 h-7 rounded text-sm glassmorphism",
+                            "w-8 h-7 rounded text-sm",
                             status === "P" && "present-status",
                             status === "A" && "absent-status",
                             status === "WK" && "weekoff-status",
                             status === "CL" && "casual-leave-status",
-                            !status && "border border-gray-300"
+                            status !== "" && "glassmorphism", // Apply glassmorphism only if status is not empty
+                            status === " " && "border border-gray-300"
                           )}
                         >
                           {status}
@@ -179,37 +213,65 @@ const Attendance = () => {
               </tbody>
             </table>
           </div>
-          </div>
-        )}
-        {activeTab === "Leave Tracker" && (
-          <div className="overflow-auto max-h-[calc(100vh-300px)]">
-              <table className="min-w-full table-auto border-collapse border border-gray-300">
-                <thead className="sticky top-0 bg-white z-10">
-                  <TableRow>
-                    {["Employee ID", "Name", "Department", "No. of Payable Days", "Leaves Taken", "Leaves Earned", "Carried Forward Leaves", "Net Leaves"].map((heading, index) => (
-                      <TableHead key={index} className="border-r border-gray-300 text-xs">
-                        {heading}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </thead>
-                <tbody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="border-r border-gray-300 text-xs">{employee.id}</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">{employee.name}</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">{employee.department}</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">25</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">2</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">1</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">3</TableCell>
-                      <TableCell className="border-r border-gray-300 text-xs">4</TableCell>
-                    </TableRow>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-        )}
+        </div>
+      )}
+      {activeTab === "Leave Tracker" && (
+        <div className="overflow-auto max-h-[calc(100vh-300px)]">
+          <table className="min-w-full table-auto border-collapse border border-gray-300">
+            <thead className="sticky top-0 bg-white z-10">
+              <TableRow>
+                {[
+                  "Employee ID",
+                  "Name",
+                  "Department",
+                  "No. of Payable Days",
+                  "Leaves Taken",
+                  "Leaves Earned",
+                  "Carried Forward Leaves",
+                  "Net Leaves",
+                ].map((heading, index) => (
+                  <TableHead
+                    key={index}
+                    className="border-r border-gray-300 text-xs"
+                  >
+                    {heading}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </thead>
+            <tbody>
+              {employees.map((employee) => (
+                <TableRow key={employee.id}>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    {employee.id}
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    {employee.name}
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    {employee.department}
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    25
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    2
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    1
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    3
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    4
+                  </TableCell>
+                </TableRow>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
