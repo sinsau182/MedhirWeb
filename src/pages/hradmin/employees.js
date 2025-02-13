@@ -45,7 +45,7 @@ const Employees = () => {
   const handleRowClick = (employee) => {
     router.push({
       pathname: "/hradmin/addNewEmployee",
-      query: { employee: JSON.stringify(employee) },
+      query: { employee: JSON.stringify(employee), activeMainTab: activeTab },
     });
   };
 
@@ -119,7 +119,7 @@ const Employees = () => {
           {[
             "Basic",
             "ID Proofs",
-            "Salary",
+            "Salary Details",
             "Bank Details",
             "Leaves Policy",
           ].map((tab, index) => (
@@ -162,7 +162,7 @@ const Employees = () => {
                     <TableHead className="text-left">Passport no.</TableHead>
                   </>
                 )}
-                {activeTab === "Salary" && (
+                {activeTab === "Salary Details" && (
                   <>
                     <TableHead className="text-left">Name</TableHead>
                     <TableHead className="text-left">Total Ctc</TableHead>
@@ -206,7 +206,7 @@ const Employees = () => {
                       <TableCell>{employee.idProofs?.passport}</TableCell>
                     </>
                   )}
-                  {activeTab === "Salary" && (
+                  {activeTab === "Salary Details" && (
                     <>
                       <TableCell>{employee.name}</TableCell>
                       <TableCell>{employee.salaryDetails?.totalCtc}</TableCell>

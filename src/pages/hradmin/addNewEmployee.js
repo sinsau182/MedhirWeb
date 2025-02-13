@@ -10,9 +10,10 @@ import { createEmployee, updateEmployee } from "@/utils/api";
 export default function EmployeeForm() {
   const router = useRouter();
   const [activePage, setActivePage] = useState("Employees");
-  const [activeTab, setActiveTab] = useState("Employee");
+  const { activeMainTab } = router.query;
+  const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
-  const [selectedTab, setSelectedTab] = useState("ID Proofs");
+  const [selectedTab, setSelectedTab] = useState(activeMainTab);
 
   const [employeeData, setEmployeeData] = useState({
     name: "",
@@ -126,16 +127,20 @@ export default function EmployeeForm() {
   const mainTabs = [
     "Basic",
     "ID Proofs",
-    "Salary",
+    "Salary Details",
     "Bank Details",
     "Leaves Policy",
   ];
   const subTabs = [
     "ID Proofs",
-    "Bank Details",
     "Salary Details",
+    "Bank Details",
     "Leaves & Policies",
   ];
+
+  useEffect(() => {
+    if (activeMainTab) setActiveMain(activeMainTab);
+  }, [activeMainTab]);
 
   return (
     <div className="p-6">
@@ -199,10 +204,10 @@ export default function EmployeeForm() {
           {mainTabs.map((tab, index) => (
             <button
               key={index}
-              onClick={() => handleTabClick(tab)}
-              className={`ml-10 mr-10 hover:text-blue-600 ${
-                activeTab === tab ? "text-blue-600 font-bold" : "text-black"
-              }`}
+              onClick={() => {handleTabClick(tab)
+              setActiveMain(tab)}
+              }
+              className={`px-4 py-2 rounded ${activeMain === tab ? "text-blue-600 font-bold" : "text-black"}`}
             >
               {tab}
             </button>
@@ -266,7 +271,7 @@ export default function EmployeeForm() {
                 key={tab}
                 type="button" // Prevent form submission
                 className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
-                  selectedTab === tab
+                  selectedTab === tab || selectedTab === "Basic" && tab === "ID Proofs"
                     ? "border-b-0 bg-gray-300 text-black"
                     : "text-black hover:bg-gray-200"
                 }`}
@@ -282,7 +287,7 @@ export default function EmployeeForm() {
 
           {/* Tab Content */}
           <div className="mt-4 grid grid-cols-2 gap-6">
-            {selectedTab === "ID Proofs" &&
+            {(selectedTab === "ID Proofs" || selectedTab === "Basic") &&
               Object.keys(employeeData.idProofs).map((key) => (
                 <div key={key} className="flex items-center space-x-4">
                   <label className="text-gray-600 text-sm min-w-[150px] capitalize">
@@ -293,22 +298,6 @@ export default function EmployeeForm() {
                     value={employeeData.idProofs[key] || ""}
                     onChange={(e) =>
                       handleNestedInputChange(e, "idProofs", key)
-                    }
-                  />
-                </div>
-              ))}
-
-            {selectedTab === "Bank Details" &&
-              Object.keys(employeeData.bankDetails).map((key) => (
-                <div key={key} className="flex items-center space-x-4">
-                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </label>
-                  <input
-                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                    value={employeeData.bankDetails[key] || ""}
-                    onChange={(e) =>
-                      handleNestedInputChange(e, "bankDetails", key)
                     }
                   />
                 </div>
@@ -324,6 +313,21 @@ export default function EmployeeForm() {
                     value={employeeData.salaryDetails[key] || ""}
                     onChange={(e) =>
                       handleNestedInputChange(e, "salaryDetails", key)
+                    }
+                  />
+                </div>
+              ))}
+              {selectedTab === "Bank Details" &&
+              Object.keys(employeeData.bankDetails).map((key) => (
+                <div key={key} className="flex items-center space-x-4">
+                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                    {key.replace(/([A-Z])/g, " $1").trim()}
+                  </label>
+                  <input
+                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                    value={employeeData.bankDetails[key] || ""}
+                    onChange={(e) =>
+                      handleNestedInputChange(e, "bankDetails", key)
                     }
                   />
                 </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus } from "lucide-react";
+import { Edit, Search, UserPlus } from "lucide-react";
 import { TableRow, TableHead, TableCell } from "@/components/ui/table";
 import cn from "classnames";
 
@@ -11,6 +11,7 @@ const Attendance = () => {
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [employees, setEmployees] = useState([]);
   const [dates, setDates] = useState([]);
+  const [searchInput, setSearchInput] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -28,13 +29,6 @@ const Attendance = () => {
     setDates(generateDates());
   }, []);
 
-  const handleRowClick = (attendance) => {
-    router.push({
-      pathname: "/hradmin/addNewEmployee",
-      query: { attendance: JSON.stringify(attendance) },
-    });
-  };
-
   useEffect(() => {
     fetch("http://localhost:5000/attendance")
       .then((response) => response.json())
@@ -43,6 +37,13 @@ const Attendance = () => {
         console.error("Error fetching attendance data:", error)
       );
   }, []);
+
+  const filteredEmployees = employees.filter((employee) =>
+    employee.name.toLowerCase().includes(searchInput.toLowerCase())
+  );
+  
+  console.log(filteredEmployees);
+  
 
   return (
     <div className="bg-white text-black min-h-screen p-6">
@@ -96,17 +97,20 @@ const Attendance = () => {
       <div className="h-5" />
       <div className="p-10">
         <div className="mt-2 p-4 rounded-lg bg-gray-200 flex justify-between items-center">
-          <Button
-            className="bg-blue-600 hover:bg-blue-500 text-white flex items-center"
-            onClick={() => router.push("/hradmin/addNewEmployee")}
+        <button
+            onClick={() => router.push("/hradmin/edit")}
+            className="flex items-center hover:text-blue-600 text-black"
           >
-            <UserPlus className="mr-2" size={20} /> Add New Employee
-          </Button>
+            <Edit className="mr-2" size={20} />
+            Edit
+          </button>
           <div className="flex w-screen justify-center">
             <div className="relative w-[60%]">
               <Input
                 placeholder="Search"
                 className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
               <Search
                 className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
@@ -171,10 +175,9 @@ const Attendance = () => {
                 </TableRow>
               </thead>
               <tbody>
-                {employees.map((employee) => (
+                {filteredEmployees.map((employee) => (
                   <TableRow
                     key={employee.id}
-                    onClick={() => handleRowClick(employee)}
                   >
                     <TableCell className="border-r border-gray-300 table-cell-center text-xs">
                       {employee.id}
@@ -240,7 +243,7 @@ const Attendance = () => {
               </TableRow>
             </thead>
             <tbody>
-              {employees.map((employee) => (
+              {filteredEmployees.map((employee) => (
                 <TableRow key={employee.id}>
                   <TableCell className="border-r border-gray-300 text-xs">
                     {employee.id}
