@@ -41,9 +41,8 @@ const Attendance = () => {
   const filteredEmployees = employees.filter((employee) =>
     employee.name.toLowerCase().includes(searchInput.toLowerCase())
   );
-  
+
   console.log(filteredEmployees);
-  
 
   return (
     <div className="bg-white text-black min-h-screen p-6">
@@ -97,7 +96,7 @@ const Attendance = () => {
       <div className="h-5" />
       <div className="p-10">
         <div className="mt-2 p-4 rounded-lg bg-gray-200 flex justify-between items-center">
-        <button
+          <button
             onClick={() => router.push("/hradmin/edit")}
             className="flex items-center hover:text-blue-600 text-black"
           >
@@ -176,9 +175,7 @@ const Attendance = () => {
               </thead>
               <tbody>
                 {filteredEmployees.map((employee) => (
-                  <TableRow
-                    key={employee.id}
-                  >
+                  <TableRow key={employee.id}>
                     <TableCell className="border-r border-gray-300 table-cell-center text-xs">
                       {employee.id}
                     </TableCell>

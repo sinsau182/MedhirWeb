@@ -110,7 +110,7 @@ export default function HradminCompanies() {
           <div className="w-[20%]"></div>
 
           {/* Centered Search Box */}
-          <div className="relative w-[60%] mx-auto">
+          <div className="relative w-[50%] mx-auto">
             <Input
               placeholder="Search"
               className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg"

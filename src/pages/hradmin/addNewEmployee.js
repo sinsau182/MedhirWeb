@@ -70,11 +70,10 @@ export default function EmployeeForm() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-
   const handleTabClick = (tab) => {
     router.push({
-      pathname: '/hradmin/employees',
-      query: { tab }
+      pathname: "/hradmin/employees",
+      query: { tab },
     });
   };
 
@@ -204,10 +203,13 @@ export default function EmployeeForm() {
           {mainTabs.map((tab, index) => (
             <button
               key={index}
-              onClick={() => {handleTabClick(tab)
-              setActiveMain(tab)}
-              }
-              className={`px-4 py-2 rounded ${activeMain === tab ? "text-blue-600 font-bold" : "text-black"}`}
+              onClick={() => {
+                handleTabClick(tab);
+                setActiveMain(tab);
+              }}
+              className={`px-4 py-2 rounded ${
+                activeMain === tab ? "text-blue-600 font-bold" : "text-black"
+              }`}
             >
               {tab}
             </button>
@@ -271,7 +273,8 @@ export default function EmployeeForm() {
                 key={tab}
                 type="button" // Prevent form submission
                 className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
-                  selectedTab === tab || selectedTab === "Basic" && tab === "ID Proofs"
+                  selectedTab === tab ||
+                  (selectedTab === "Basic" && tab === "ID Proofs")
                     ? "border-b-0 bg-gray-300 text-black"
                     : "text-black hover:bg-gray-200"
                 }`}
@@ -317,7 +320,7 @@ export default function EmployeeForm() {
                   />
                 </div>
               ))}
-              {selectedTab === "Bank Details" &&
+            {selectedTab === "Bank Details" &&
               Object.keys(employeeData.bankDetails).map((key) => (
                 <div key={key} className="flex items-center space-x-4">
                   <label className="text-gray-600 text-sm min-w-[150px] capitalize">
