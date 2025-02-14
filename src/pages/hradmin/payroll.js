@@ -10,13 +10,14 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { Edit, Search, Calendar } from "lucide-react";
+import { Edit, Search, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function HradminCompanies() {
   const [activePage, setActivePage] = useState("attendance");
   const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("Basic");
   const [selectedMonth, setSelectedMonth] = useState("January");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const router = useRouter();
 
@@ -120,37 +121,29 @@ export default function HradminCompanies() {
               size={24}
             />
           </div>
+
           {/* Right Controls */}
           <div className="flex items-center space-x-4">
-            {/* Month Picker Button */}
-            <div className="relative">
-              <button
-                onClick={() => setShowMonthPicker(!showMonthPicker)}
-                className="flex items-center space-x-2 bg-gray-100 border border-gray-300 text-black p-2 rounded-md"
-              >
-                <Calendar
-                  size={24}
-                  className="text-gray-500 absolute left-2 top-1/2 transform -translate-y-1/2"
-                />
-                <span className="pl-8">{selectedMonth}</span>
-              </button>
-              {showMonthPicker && (
-                <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-300 shadow-md rounded-lg p-2 grid grid-cols-3 gap-2 z-10">
-                  {months.map((month) => (
-                    <button
-                      key={month}
-                      onClick={() => {
-                        setSelectedMonth(month);
-                        setShowMonthPicker(false);
-                      }}
-                      className="p-2 text-center hover:bg-gray-300 rounded-md"
-                    >
-                      {month.slice(0, 3)}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+    <div className="relative">
+      <button onClick={() => setShowMonthPicker(!showMonthPicker)} className="flex items-center space-x-2 bg-gray-100 border border-gray-300 text-black p-2 rounded-md">
+        <Calendar size={24} className="text-gray-500 absolute left-2 top-1/2 transform -translate-y-1/2" />
+        <span className="pl-8">{selectedMonth} {selectedYear}</span>
+      </button>
+      {showMonthPicker && (
+        <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-300 shadow-md rounded-lg p-2 z-10">
+          <div className="flex justify-between items-center p-2 border-b">
+            <button onClick={() => setSelectedYear(selectedYear - 1)}><ChevronLeft size={20} /></button>
+            <span className="font-bold">{selectedYear}</span>
+            <button onClick={() => setSelectedYear(selectedYear + 1)}><ChevronRight size={20} /></button>
+          </div>
+          <div className="grid grid-cols-3 gap-2 p-2">
+            {months.map((month) => (
+              <button key={month} onClick={() => { setSelectedMonth(month); setShowMonthPicker(false); }} className="p-2 text-center hover:bg-gray-300 rounded-md">{month.slice(0, 3)}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
 
             {/* Edit Button */}
             <button
