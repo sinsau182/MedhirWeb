@@ -3,7 +3,14 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Edit, Search, UserPlus } from "lucide-react";
-import { TableRow, TableHead, TableCell } from "@/components/ui/table";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import cn from "classnames";
 
 const Attendance = () => {
@@ -216,60 +223,41 @@ const Attendance = () => {
         </div>
       )}
       {activeTab === "Leave Tracker" && (
-        <div className="overflow-auto max-h-[calc(100vh-300px)]">
-          <table className="min-w-full table-auto border-collapse border border-gray-300">
-            <thead className="sticky top-0 bg-white z-10">
-              <TableRow>
-                {[
-                  "Employee ID",
-                  "Name",
-                  "Department",
-                  "No. of Payable Days",
-                  "Leaves Taken",
-                  "Leaves Earned",
-                  "Carried Forward Leaves",
-                  "Net Leaves",
-                ].map((heading, index) => (
-                  <TableHead
-                    key={index}
-                    className="border-r border-gray-300 text-xs"
-                  >
-                    {heading}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </thead>
-            <tbody>
-              {filteredEmployees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    {employee.id}
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    {employee.name}
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    {employee.department}
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    25
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    2
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    1
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    3
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    4
-                  </TableCell>
+        <div className="overflow-container max-h-[calc(100vh-300px)]">
+          <div className="mt-2 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {[
+                    "Employee ID",
+                    "Name",
+                    "Department",
+                    "No. of Payable Days",
+                    "Leaves Taken",
+                    "Leaves Earned",
+                    "Carried Forward Leaves",
+                    "Net Leaves",
+                  ].map((heading, index) => (
+                    <TableHead key={index}>{heading}</TableHead>
+                  ))}
                 </TableRow>
-              ))}
-            </tbody>
-          </table>
+              </TableHeader>
+              <TableBody>
+                {filteredEmployees.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell>{employee.id}</TableCell>
+                    <TableCell>{employee.name}</TableCell>
+                    <TableCell>{employee.department}</TableCell>
+                    <TableCell>25</TableCell>
+                    <TableCell>2</TableCell>
+                    <TableCell>1</TableCell>
+                    <TableCell>3</TableCell>
+                    <TableCell>4</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
     </div>

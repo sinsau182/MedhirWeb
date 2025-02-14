@@ -34,8 +34,6 @@ export default function HradminCompanies() {
     }
   }, [router.query.tab]);
 
-  const mainTabs = [{ value: "salaryStatement", label: "Salary Statement" }];
-
   const handleTabClick = (tab) => {
     setActiveTab(tab.value);
   };
@@ -158,20 +156,21 @@ export default function HradminCompanies() {
 
         {/* Sub Navbar */}
         <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
-          {mainTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => handleTabClick(tab)}
-              className={`ml-10 mr-10 hover:text-blue-600 ${
-                activeTab === tab.value
-                  ? "text-blue-600 font-bold"
-                  : "text-black"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {["Salary Statement", "Advance", "Reimbursement", "Payment History"].map(
+            (tab, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTab(tab)}
+                className={`ml-10 mr-10 hover:text-blue-600 ${
+                  activeTab === tab ? "text-blue-600 font-bold" : "text-black"
+                }`}
+              >
+                {tab}
+              </button>
+            )
+          )}
         </div>
+        {activeTab === "Salary Statement" && (
         <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
           <Table>
             <TableHeader>
@@ -208,7 +207,8 @@ export default function HradminCompanies() {
             </TableBody>
           </Table>
         </div>
-      </div>
+        )}
+        </div>
     </div>
   );
 }
