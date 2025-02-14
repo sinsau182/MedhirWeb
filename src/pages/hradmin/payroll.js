@@ -120,7 +120,6 @@ export default function HradminCompanies() {
               size={24}
             />
           </div>
-
           {/* Right Controls */}
           <div className="flex items-center space-x-4">
             {/* Month Picker Button */}
