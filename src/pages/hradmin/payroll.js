@@ -21,7 +21,7 @@ import {
 export default function HradminCompanies() {
   const [activePage, setActivePage] = useState("attendance");
   const [employees, setEmployees] = useState([]);
-  const [activeTab, setActiveTab] = useState("Basic");
+  const [activeTab, setActiveTab] = useState("Salary Statement");
   const [selectedMonth, setSelectedMonth] = useState("January");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -320,7 +320,7 @@ export default function HradminCompanies() {
         )}
         {activeTab === "Reimbursement" && (
           <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
-            <Table>
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-left">Name</TableHead>

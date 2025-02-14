@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit, Search, UserPlus } from "lucide-react";
+import { Edit, Search, UserPlus, PersonStanding, CheckCircle, XCircle, CalendarCheck, HeartPulse, Plane, Stethoscope, Umbrella, Briefcase } from "lucide-react";
 import {
   Table,
   TableHead,
@@ -197,23 +197,35 @@ const Attendance = () => {
                     </TableCell>
                     {employee.attendance.map((status, index) => (
                       <TableCell
-                        key={index}
-                        className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center"
+                      key={index}
+                      className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center"
+                    >
+                      <span
+                        className={cn(
+                          "w-8 h-7 rounded text-sm flex justify-center items-center",
+                          status === "P" && "present-status",
+                          status === "A" && "absent-status",
+                          status === "WK" && "weekoff-status",
+                          status === "CL" && "casual-leave-status",
+                          status !== "" && "glassmorphism",
+                          status === " " && "border border-gray-300"
+                        )}
                       >
-                        <span
-                          className={cn(
-                            "w-8 h-7 rounded text-sm",
-                            status === "P" && "present-status",
-                            status === "A" && "absent-status",
-                            status === "WK" && "weekoff-status",
-                            status === "CL" && "casual-leave-status",
-                            status !== "" && "glassmorphism", // Apply glassmorphism only if status is not empty
-                            status === " " && "border border-gray-300"
-                          )}
-                        >
-                          {status}
-                        </span>
-                      </TableCell>
+                        {status === "P" ? (
+      <CheckCircle className="text-green-500" size={16} />
+    ) : status === "A" ? (
+      <XCircle className="text-red-500" size={16} />
+    ) : status === "WK" ? (
+      <CalendarCheck className="text-gray-500" size={16} />
+    ) : status === "SL" ? (
+      <Stethoscope className="text-blue-800" size={16} />
+    ) : status === "CL" ? (
+      <Briefcase className="text-purple-800" size={16} />
+    ) : (
+      status
+    )}
+                      </span>
+                    </TableCell>
                     ))}
                   </TableRow>
                 ))}

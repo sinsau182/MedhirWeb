@@ -81,20 +81,17 @@ body {
   -webkit-backdrop-filter: blur(10px);
   border: 0px solid rgba(255, 255, 255, 0.2);
 }
-.present-status {
-  background-color: #e6ffe6; /* Lightest green */
+.present-status { /* Lightest green */
   color: #006400; /* Dark green */
 }
-.absent-status {
-  background-color: #ffe6e6; /* Lightest red */
+.absent-status {/* Lightest red */
   color: #8b0000; /* Dark red */
 }
 .weekoff-status {
-  background-color: #e6e6ff; /* Lightest blue */
+   /* Lightest blue */
   color: #00008b; /* Dark blue */
 }
-.casual-leave-status {
-  background-color: #ffffe6; /* Lightest yellow */
+.casual-leave-status { /* Lightest yellow */
   color: #8b8b00; /* Dark yellow */
 }
 .date-column {
