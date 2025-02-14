@@ -242,6 +242,116 @@ export default function HradminCompanies() {
             </Table>
           </div>
         )}
+        {activeTab === "Payment History" && (
+          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <>
+                    <TableHead className="text-left">Name</TableHead>
+                    <TableHead className="text-left">Department</TableHead>
+                    <TableHead className="text-left">Monthly CTC</TableHead>
+                    <TableHead className="text-left">Amount Paid</TableHead>
+                    <TableHead className="text-left">
+                      Transaction index
+                    </TableHead>
+                    <TableHead className="text-left">UTR No.</TableHead>
+                    <TableHead className="text-left">Paid By</TableHead>
+                    <TableHead className="text-left">Status</TableHead>
+                  </>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-left">John Doe</TableCell>
+                  <TableCell className="text-left">Sales</TableCell>
+                  <TableCell className="text-left">₹55000</TableCell>
+                  <TableCell className="text-left">₹55000</TableCell>
+                  <TableCell className="text-left">56777</TableCell>
+                  <TableCell className="text-left">33444</TableCell>
+                  <TableCell className="text-left">aparna</TableCell>
+                  <TableCell className="text-left">paid</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        {activeTab === "Advance" && (
+          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left">Name</TableHead>
+                  <TableHead className="text-left">Department</TableHead>
+                  <TableHead className="text-left">Old Advance</TableHead>
+                  <TableHead className="text-left">This Month Advance</TableHead>
+                  <TableHead className="text-left">Deduct in this month</TableHead>
+                  <TableHead className="text-left">Balance for next month</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-left">John Doe</TableCell>
+                  <TableCell className="text-left">Sales</TableCell>
+                  <TableCell className="text-left">₹10000</TableCell>
+                  <TableCell className="text-left">₹2000</TableCell>
+                  <TableCell className="text-left">₹1500</TableCell>
+                  <TableCell className="text-left">₹500</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-left">Jane Smith</TableCell>
+                  <TableCell className="text-left">Marketing</TableCell>
+                  <TableCell className="text-left">₹8000</TableCell>
+                  <TableCell className="text-left">₹1000</TableCell>
+                  <TableCell className="text-left">₹500</TableCell>
+                  <TableCell className="text-left">₹500</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-left">Alice Johnson</TableCell>
+                  <TableCell className="text-left">HR</TableCell>
+                  <TableCell className="text-left">₹5000</TableCell>
+                  <TableCell className="text-left">₹1500</TableCell>
+                  <TableCell className="text-left">₹1000</TableCell>
+                  <TableCell className="text-left">₹500</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        {activeTab === "Reimbursement" && (
+          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-left">Name</TableHead>
+                  <TableHead className="text-left">Department</TableHead>
+                  <TableHead className="text-left">Monthly CTC</TableHead>
+                  <TableHead className="text-left">Total Reimbursement</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-left">John Doe</TableCell>
+                  <TableCell className="text-left">Sales</TableCell>
+                  <TableCell className="text-left">₹55000</TableCell>
+                  <TableCell className="text-left">₹5000</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-left">Jane Smith</TableCell>
+                  <TableCell className="text-left">Marketing</TableCell>
+                  <TableCell className="text-left">₹60000</TableCell>
+                  <TableCell className="text-left">₹7000</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-left">Alice Johnson</TableCell>
+                  <TableCell className="text-left">HR</TableCell>
+                  <TableCell className="text-left">₹50000</TableCell>
+                  <TableCell className="text-left">₹3000</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   );
