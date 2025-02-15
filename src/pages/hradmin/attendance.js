@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit, Search, UserPlus, PersonStanding, CheckCircle, XCircle, CalendarCheck, HeartPulse, Plane, Stethoscope, Umbrella, Briefcase } from "lucide-react";
+import { Edit, Search, UserPlus, PersonStanding, CheckCircle, XCircle, CalendarCheck, HeartPulse, Plane, Stethoscope, Umbrella, Briefcase, Activity, Palmtree, UmbrellaOff, UmbrellaIcon, BedDouble, Sofa, Syringe } from "lucide-react";
 import {
   Table,
   TableHead,
@@ -144,28 +144,27 @@ const Attendance = () => {
         </div>
       </div>
       {activeTab === "Attendance Tracker" && (
-        <div className="overflow-container mt-[-2] max-h-[calc(100vh-300px)]">
           <div className="overflow-container max-h-[calc(100vh-300px)]">
             <table className="min-w-full table-auto border-collapse border border-gray-300">
-              <thead className="sticky top-0 bg-white z-10">
+            <thead className="sticky top-0 bg-white z-10 border-gray-400 before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gray-400 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gray-400">
                 <TableRow>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                  <TableHead className="border-r border-l border-l-gray-600 border-r-gray-600 table-head-start text-xs text-gray-800">
                     Employee ID
                   </TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
                     Name
                   </TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
+                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
                     Department
                   </TableHead>
-                  <TableHead className="border-r border-gray-300 table-head-start text-xs">
-                    P / T.W.D.
+                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                    P / T.W.D
                   </TableHead>
                   {dates.map((date, index) => (
                     <TableHead
                       key={index}
                       className={cn(
-                        "text-center border-r border-gray-300 text-xs table-head-center",
+                        "text-center border-r border-gray-600 text-xs table-head-center text-gray-800",
                         date.day === "18" &&
                           date.month === "Jan" &&
                           "current-day-column"
@@ -192,7 +191,7 @@ const Attendance = () => {
                     <TableCell className="border-r border-gray-300 text-xs">
                       {employee.department}
                     </TableCell>
-                    <TableCell className="text-center border-r border-gray-300">
+                    <TableCell className="text-center border-r border-gray-300 text-xs">
                       {employee.p_twd}
                     </TableCell>
                     {employee.attendance.map((status, index) => (
@@ -216,11 +215,11 @@ const Attendance = () => {
     ) : status === "A" ? (
       <XCircle className="text-red-500" size={16} />
     ) : status === "WK" ? (
-      <CalendarCheck className="text-gray-500" size={16} />
+      <CalendarCheck className="text-gray-400" size={16} />
     ) : status === "SL" ? (
-      <Stethoscope className="text-blue-800" size={16} />
+      <Syringe className="text-blue-800" size={16} />
     ) : status === "CL" ? (
-      <Briefcase className="text-purple-800" size={16} />
+      <Sofa className="text-purple-800" size={16} />
     ) : (
       status
     )}
@@ -232,7 +231,6 @@ const Attendance = () => {
               </tbody>
             </table>
           </div>
-        </div>
       )}
       {activeTab === "Leave Tracker" && (
         <div className="overflow-container max-h-[calc(100vh-300px)]">

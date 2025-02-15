@@ -115,14 +115,15 @@ export default function HradminCompanies() {
           <div className="w-[20%]"></div>
 
           {/* Centered Search Box */}
-          <div className="relative w-[50%] mx-auto">
+          <div className="relative w-[30%] mx-auto">
             <Input
               placeholder="Search"
-              className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg"
+              className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg rounded-full py-1 px-3"
+              style={{ border: "none" }}
             />
             <Search
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
-              size={24}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+              size={20}
             />
           </div>
 
@@ -205,23 +206,17 @@ export default function HradminCompanies() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-left">Paid Days</TableHead>
-                    <TableHead className="text-left">Monthly CTC</TableHead>
-                    <TableHead className="text-left">
-                      This Month Salary
-                    </TableHead>
-                    <TableHead className="text-left">Basic</TableHead>
-                    <TableHead className="text-left">Deductions</TableHead>
-                    <TableHead className="text-left">Taxes</TableHead>
-                    <TableHead className="text-left">
-                      Professional Tax
-                    </TableHead>
-                    <TableHead className="text-left">Reimbursement</TableHead>
-                    <TableHead className="text-left">Advance Taken</TableHead>
-                    <TableHead className="text-left">Net Pay</TableHead>
-                  </>
+                  <TableHead className="text-left">Name</TableHead>
+                  <TableHead className="text-left">Paid Days</TableHead>
+                  <TableHead className="text-left">Monthly CTC</TableHead>
+                  <TableHead className="text-left">This Month Salary</TableHead>
+                  <TableHead className="text-left">Basic</TableHead>
+                  <TableHead className="text-left">Deductions</TableHead>
+                  <TableHead className="text-left">Taxes</TableHead>
+                  <TableHead className="text-left">Professional Tax</TableHead>
+                  <TableHead className="text-left">Reimbursement</TableHead>
+                  <TableHead className="text-left">Advance Taken</TableHead>
+                  <TableHead className="text-left">Net Pay</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,18 +242,14 @@ export default function HradminCompanies() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-left">Department</TableHead>
-                    <TableHead className="text-left">Monthly CTC</TableHead>
-                    <TableHead className="text-left">Amount Paid</TableHead>
-                    <TableHead className="text-left">
-                      Transaction index
-                    </TableHead>
-                    <TableHead className="text-left">UTR No.</TableHead>
-                    <TableHead className="text-left">Paid By</TableHead>
-                    <TableHead className="text-left">Status</TableHead>
-                  </>
+                  <TableHead className="text-left">Name</TableHead>
+                  <TableHead className="text-left">Department</TableHead>
+                  <TableHead className="text-left">Monthly CTC</TableHead>
+                  <TableHead className="text-left">Amount Paid</TableHead>
+                  <TableHead className="text-left">Transaction index</TableHead>
+                  <TableHead className="text-left">UTR No.</TableHead>
+                  <TableHead className="text-left">Paid By</TableHead>
+                  <TableHead className="text-left">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
