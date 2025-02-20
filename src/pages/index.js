@@ -5,7 +5,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/superadmin/companies"); // Change '/dashboard' to any page you want
+    router.replace("/hradmin/employees"); // Change '/dashboard' to any page you want
   }, []);
 
   return null; // Or a loading screen if needed

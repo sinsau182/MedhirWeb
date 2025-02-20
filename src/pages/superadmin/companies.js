@@ -8,6 +8,7 @@ import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
 import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/utils/api";
 import Link from "next/link";
+import { getAllCompanies } from "../../../services/grpcClient";
 
 export default function SuperadminCompanies() {
     const [activeTab, setActiveTab] = useState("Companies");
@@ -30,16 +31,17 @@ export default function SuperadminCompanies() {
     const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
     useEffect(() => {
-        const getCompanies = async () => {
-            try {
-                const fetchedCompanies = await fetchCompanies();
-                setCompanies(fetchedCompanies);
-            } catch (error) {
-                console.error("Error fetching companies:", error);
-            }
-        };
-        getCompanies();
-    }, []);
+        fetchCompanies();
+      }, []);
+
+      const fetchCompanies = async () => {
+        try {
+          const response = await getAllCompanies();
+          setCompanies(response.companiesList);
+        } catch (error) {
+          console.error("Error fetching companies:", error);
+        }
+      };
 
     const handleOpenCompanyModal = (company = null) => {
         setSelectedCompany(company);
@@ -210,7 +212,7 @@ export default function SuperadminCompanies() {
                                             <TableCell>{company.email}</TableCell>
                                             <TableCell>{company.phone}</TableCell>
                                             <TableCell>{company.gst}</TableCell>
-                                            <TableCell>{company.regAdd}</TableCell>
+                                            <TableCell>{company.regadd}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

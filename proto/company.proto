@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package com.example.company;
+
+option java_multiple_files = true;
+option java_package = "com.example.grpc.company";
+option java_outer_classname = "CompanyProto";
+
+service CompanyService {
+  rpc getCompany (CompanyRequest) returns (CompanyResponse);
+  rpc createCompany (Company) returns (CompanyResponse);
+  rpc getAllCompanies (EmptyRequest) returns (CompanyListResponse); // New method
+}
+
+message CompanyRequest {
+  string id = 1;
+}
+
+message EmptyRequest {} // Empty request for fetching all companies
+
+message Company {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string gst = 5;
+  string regAdd = 6;
+}
+
+message CompanyResponse {
+  string message = 1;
+  Company company = 2;
+}
+
+message CompanyListResponse { // New response message for returning multiple companies
+  string message = 1;
+  repeated Company companies = 2; // List of companies
+}
