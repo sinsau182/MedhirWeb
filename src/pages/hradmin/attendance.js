@@ -49,8 +49,6 @@ const Attendance = () => {
     employee.name.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  console.log(filteredEmployees);
-
   return (
     <div className="bg-white text-black min-h-screen p-6">
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
