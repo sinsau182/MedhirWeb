@@ -7,6 +7,7 @@ export const fetchEmployees = async () => {
   return res.json();
 };
 
+
 export const createEmployee = async (employeeData) => {
   const res = await fetch("/api/hradmin/employees", {
     method: "POST",
@@ -15,6 +16,7 @@ export const createEmployee = async (employeeData) => {
   });
   return res.json();
 }
+
 
 export const updateEmployee = async (id, updateData) => {
   try {
@@ -43,12 +45,6 @@ export const updateEmployee = async (id, updateData) => {
     return { error: error.message };
   }
 };
-
-
-
-
-
-
 
 
 
