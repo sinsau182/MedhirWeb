@@ -79,67 +79,6 @@ proto.com.example.company.CompanyServicePromiseClient =
 /**
  * @const
  * @type {!grpc.web.MethodDescriptor<
- *   !proto.com.example.company.CompanyRequest,
- *   !proto.com.example.company.CompanyResponse>}
- */
-const methodDescriptor_CompanyService_getCompany = new grpc.web.MethodDescriptor(
-  '/com.example.company.CompanyService/getCompany',
-  grpc.web.MethodType.UNARY,
-  proto.com.example.company.CompanyRequest,
-  proto.com.example.company.CompanyResponse,
-  /**
-   * @param {!proto.com.example.company.CompanyRequest} request
-   * @return {!Uint8Array}
-   */
-  function(request) {
-    return request.serializeBinary();
-  },
-  proto.com.example.company.CompanyResponse.deserializeBinary
-);
-
-
-/**
- * @param {!proto.com.example.company.CompanyRequest} request The
- *     request proto
- * @param {?Object<string, string>} metadata User defined
- *     call metadata
- * @param {function(?grpc.web.RpcError, ?proto.com.example.company.CompanyResponse)}
- *     callback The callback function(error, response)
- * @return {!grpc.web.ClientReadableStream<!proto.com.example.company.CompanyResponse>|undefined}
- *     The XHR Node Readable Stream
- */
-proto.com.example.company.CompanyServiceClient.prototype.getCompany =
-    function(request, metadata, callback) {
-  return this.client_.rpcCall(this.hostname_ +
-      '/com.example.company.CompanyService/getCompany',
-      request,
-      metadata || {},
-      methodDescriptor_CompanyService_getCompany,
-      callback);
-};
-
-
-/**
- * @param {!proto.com.example.company.CompanyRequest} request The
- *     request proto
- * @param {?Object<string, string>=} metadata User defined
- *     call metadata
- * @return {!Promise<!proto.com.example.company.CompanyResponse>}
- *     Promise that resolves to the response
- */
-proto.com.example.company.CompanyServicePromiseClient.prototype.getCompany =
-    function(request, metadata) {
-  return this.client_.unaryCall(this.hostname_ +
-      '/com.example.company.CompanyService/getCompany',
-      request,
-      metadata || {},
-      methodDescriptor_CompanyService_getCompany);
-};
-
-
-/**
- * @const
- * @type {!grpc.web.MethodDescriptor<
  *   !proto.com.example.company.Company,
  *   !proto.com.example.company.CompanyResponse>}
  */
@@ -256,6 +195,128 @@ proto.com.example.company.CompanyServicePromiseClient.prototype.getAllCompanies 
       request,
       metadata || {},
       methodDescriptor_CompanyService_getAllCompanies);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.com.example.company.UpdateCompanyRequest,
+ *   !proto.com.example.company.CompanyResponse>}
+ */
+const methodDescriptor_CompanyService_UpdateCompany = new grpc.web.MethodDescriptor(
+  '/com.example.company.CompanyService/UpdateCompany',
+  grpc.web.MethodType.UNARY,
+  proto.com.example.company.UpdateCompanyRequest,
+  proto.com.example.company.CompanyResponse,
+  /**
+   * @param {!proto.com.example.company.UpdateCompanyRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.com.example.company.CompanyResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.com.example.company.UpdateCompanyRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.com.example.company.CompanyResponse)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.com.example.company.CompanyResponse>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.com.example.company.CompanyServiceClient.prototype.updateCompany =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/com.example.company.CompanyService/UpdateCompany',
+      request,
+      metadata || {},
+      methodDescriptor_CompanyService_UpdateCompany,
+      callback);
+};
+
+
+/**
+ * @param {!proto.com.example.company.UpdateCompanyRequest} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.com.example.company.CompanyResponse>}
+ *     Promise that resolves to the response
+ */
+proto.com.example.company.CompanyServicePromiseClient.prototype.updateCompany =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/com.example.company.CompanyService/UpdateCompany',
+      request,
+      metadata || {},
+      methodDescriptor_CompanyService_UpdateCompany);
+};
+
+
+/**
+ * @const
+ * @type {!grpc.web.MethodDescriptor<
+ *   !proto.com.example.company.DeleteCompanyRequest,
+ *   !proto.com.example.company.DeleteCompanyResponse>}
+ */
+const methodDescriptor_CompanyService_DeleteCompany = new grpc.web.MethodDescriptor(
+  '/com.example.company.CompanyService/DeleteCompany',
+  grpc.web.MethodType.UNARY,
+  proto.com.example.company.DeleteCompanyRequest,
+  proto.com.example.company.DeleteCompanyResponse,
+  /**
+   * @param {!proto.com.example.company.DeleteCompanyRequest} request
+   * @return {!Uint8Array}
+   */
+  function(request) {
+    return request.serializeBinary();
+  },
+  proto.com.example.company.DeleteCompanyResponse.deserializeBinary
+);
+
+
+/**
+ * @param {!proto.com.example.company.DeleteCompanyRequest} request The
+ *     request proto
+ * @param {?Object<string, string>} metadata User defined
+ *     call metadata
+ * @param {function(?grpc.web.RpcError, ?proto.com.example.company.DeleteCompanyResponse)}
+ *     callback The callback function(error, response)
+ * @return {!grpc.web.ClientReadableStream<!proto.com.example.company.DeleteCompanyResponse>|undefined}
+ *     The XHR Node Readable Stream
+ */
+proto.com.example.company.CompanyServiceClient.prototype.deleteCompany =
+    function(request, metadata, callback) {
+  return this.client_.rpcCall(this.hostname_ +
+      '/com.example.company.CompanyService/DeleteCompany',
+      request,
+      metadata || {},
+      methodDescriptor_CompanyService_DeleteCompany,
+      callback);
+};
+
+
+/**
+ * @param {!proto.com.example.company.DeleteCompanyRequest} request The
+ *     request proto
+ * @param {?Object<string, string>=} metadata User defined
+ *     call metadata
+ * @return {!Promise<!proto.com.example.company.DeleteCompanyResponse>}
+ *     Promise that resolves to the response
+ */
+proto.com.example.company.CompanyServicePromiseClient.prototype.deleteCompany =
+    function(request, metadata) {
+  return this.client_.unaryCall(this.hostname_ +
+      '/com.example.company.CompanyService/DeleteCompany',
+      request,
+      metadata || {},
+      methodDescriptor_CompanyService_DeleteCompany);
 };
 
 

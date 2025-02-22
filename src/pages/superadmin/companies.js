@@ -6,9 +6,8 @@ import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@
 import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
-import { updateCompany, deleteCompany } from "@/utils/api";
 import Link from "next/link";
-import { getAllCompanies, createCompany } from "../../../services/grpcClient";
+import { getAllCompanies, createCompany, updateCompany, deleteCompany } from "../../../services/grpcClient";
 
 export default function SuperadminCompanies() {
     const [activeTab, setActiveTab] = useState("Companies");
@@ -79,9 +78,9 @@ export default function SuperadminCompanies() {
     };
 
     const handleSaveCompany = async () => {
-        const { name, email, phone, gst, regAdd } = companyData;
+        const { name, email, phone, gst, regadd } = companyData;
 
-        if (!name || !email || !phone || !gst || !regAdd) {
+        if (!name || !email || !phone || !gst || !regadd) {
             setError("All fields are required!");
             return;
         }
@@ -100,9 +99,19 @@ export default function SuperadminCompanies() {
         setEmailError("");
 
         try {
-            const createdCompany = await createCompany(companyData);
-            setCompanies([...companies, createdCompany.company]);
+            if (isEditing) {
+                await updateCompany({ id: selectedCompany.id, ...companyData });
+                setCompanies((prevCompanies) =>
+                    prevCompanies.map((company) =>
+                        company.id === selectedCompany.id ? { id: selectedCompany.id, ...companyData } : company
+                    )
+                );
+            } else {
+                const createdCompany = await createCompany(companyData);
+                setCompanies([...companies, createdCompany.company]);
+            }
             setIsCompanyModalOpen(false);
+            setSelectedCompany(null);
         } catch (error) {
             console.error("Error saving company:", error);
         }
@@ -272,7 +281,7 @@ export default function SuperadminCompanies() {
                         className="mt-4 bg-gray-100 text-black border border-gray-300"
                     />
                     <Input
-                        name="regAdd"
+                        name="regadd"
                         value={companyData.regadd}
                         onChange={handleInputChange}
                         placeholder="Register Address"

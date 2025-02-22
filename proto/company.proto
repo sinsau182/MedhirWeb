@@ -7,13 +7,30 @@ option java_package = "com.example.grpc.company";
 option java_outer_classname = "CompanyProto";
 
 service CompanyService {
-  rpc getCompany (CompanyRequest) returns (CompanyResponse);
   rpc createCompany (Company) returns (CompanyResponse);
-  rpc getAllCompanies (EmptyRequest) returns (CompanyListResponse); // New method
+  rpc getAllCompanies (EmptyRequest) returns (CompanyListResponse);
+  rpc UpdateCompany (UpdateCompanyRequest) returns (CompanyResponse);
+  rpc DeleteCompany (DeleteCompanyRequest) returns (DeleteCompanyResponse);// New method
 }
 
 message CompanyRequest {
   string id = 1;
+}
+message DeleteCompanyRequest {
+  string id = 1;
+}
+
+message UpdateCompanyRequest {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string phone = 4;
+  string gst = 5;
+  string regAdd = 6;
+}
+
+message DeleteCompanyResponse {
+  string message = 1;
 }
 
 message EmptyRequest {} // Empty request for fetching all companies
