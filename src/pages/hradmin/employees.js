@@ -32,9 +32,9 @@ const Employees = () => {
     fetchEmployees();
 
     if (router.query.tab) {
-        setActiveTab(router.query.tab);
-      }
-    }, [router.query.tab]);
+      setActiveTab(router.query.tab);
+    }
+  }, [router.query.tab]);
 
   useEffect(() => {
     if (router.query.page) {
@@ -58,7 +58,9 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/employees")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/employees" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/employees"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Employees
@@ -66,7 +68,9 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/attendance")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/attendance" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/attendance"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Attendance
@@ -74,7 +78,9 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/payroll")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/payroll" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/payroll"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Payroll
@@ -82,7 +88,9 @@ const Employees = () => {
           <button
             onClick={() => router.push("/hradmin/settings")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/settings" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/settings"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Settings
@@ -184,8 +192,11 @@ const Employees = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-            {employees.map((employee) => (
-                <TableRow key={employee.id} onClick={() => handleRowClick(employee)}>
+              {employees.map((employee) => (
+                <TableRow
+                  key={employee.id}
+                  onClick={() => handleRowClick(employee)}
+                >
                   {activeTab === "Basic" && (
                     <>
                       <TableCell>{employee.name}</TableCell>

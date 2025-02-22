@@ -2,7 +2,27 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Edit, Search, UserPlus, PersonStanding, CheckCircle, XCircle, CalendarCheck, HeartPulse, Plane, Stethoscope, Umbrella, Briefcase, Activity, Palmtree, UmbrellaOff, UmbrellaIcon, BedDouble, Sofa, Syringe } from "lucide-react";
+import {
+  Edit,
+  Search,
+  UserPlus,
+  PersonStanding,
+  CheckCircle,
+  XCircle,
+  CalendarCheck,
+  HeartPulse,
+  Plane,
+  Stethoscope,
+  Umbrella,
+  Briefcase,
+  Activity,
+  Palmtree,
+  UmbrellaOff,
+  UmbrellaIcon,
+  BedDouble,
+  Sofa,
+  Syringe,
+} from "lucide-react";
 import {
   Table,
   TableHead,
@@ -142,58 +162,58 @@ const Attendance = () => {
         </div>
       </div>
       {activeTab === "Attendance Tracker" && (
-          <div className="overflow-container max-h-[calc(100vh-300px)]">
-            <table className="min-w-full table-auto border-collapse border border-gray-300">
+        <div className="overflow-container max-h-[calc(100vh-300px)]">
+          <table className="min-w-full table-auto border-collapse border border-gray-300">
             <thead className="sticky top-0 bg-white z-10 border-gray-400 before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gray-400 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gray-400">
-                <TableRow>
-                  <TableHead className="border-r border-l border-l-gray-600 border-r-gray-600 table-head-start text-xs text-gray-800">
-                    Employee ID
+              <TableRow>
+                <TableHead className="border-r border-l border-l-gray-600 border-r-gray-600 table-head-start text-xs text-gray-800">
+                  Employee ID
+                </TableHead>
+                <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                  Name
+                </TableHead>
+                <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                  Department
+                </TableHead>
+                <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                  P / T.W.D
+                </TableHead>
+                {dates.map((date, index) => (
+                  <TableHead
+                    key={index}
+                    className={cn(
+                      "text-center border-r border-gray-600 text-xs table-head-center text-gray-800",
+                      date.day === "18" &&
+                        date.month === "Jan" &&
+                        "current-day-column"
+                    )}
+                  >
+                    <div className="date-column">
+                      <span>{date.month}</span>
+                      <span>{date.day}</span>
+                      <span>{date.weekday}</span>
+                    </div>
                   </TableHead>
-                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
-                    Name
-                  </TableHead>
-                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
-                    Department
-                  </TableHead>
-                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
-                    P / T.W.D
-                  </TableHead>
-                  {dates.map((date, index) => (
-                    <TableHead
-                      key={index}
-                      className={cn(
-                        "text-center border-r border-gray-600 text-xs table-head-center text-gray-800",
-                        date.day === "18" &&
-                          date.month === "Jan" &&
-                          "current-day-column"
-                      )}
-                    >
-                      <div className="date-column">
-                        <span>{date.month}</span>
-                        <span>{date.day}</span>
-                        <span>{date.weekday}</span>
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </thead>
-              <tbody>
-                {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="border-r border-gray-300 table-cell-center text-xs">
-                      {employee.id}
-                    </TableCell>
-                    <TableCell className="border-r border-gray-300 text-xs">
-                      {employee.name}
-                    </TableCell>
-                    <TableCell className="border-r border-gray-300 text-xs">
-                      {employee.department}
-                    </TableCell>
-                    <TableCell className="text-center border-r border-gray-300 text-xs">
-                      {employee.p_twd}
-                    </TableCell>
-                    {employee.attendance.map((status, index) => (
-                      <TableCell
+                ))}
+              </TableRow>
+            </thead>
+            <tbody>
+              {filteredEmployees.map((employee) => (
+                <TableRow key={employee.id}>
+                  <TableCell className="border-r border-gray-300 table-cell-center text-xs">
+                    {employee.id}
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    {employee.name}
+                  </TableCell>
+                  <TableCell className="border-r border-gray-300 text-xs">
+                    {employee.department}
+                  </TableCell>
+                  <TableCell className="text-center border-r border-gray-300 text-xs">
+                    {employee.p_twd}
+                  </TableCell>
+                  {employee.attendance.map((status, index) => (
+                    <TableCell
                       key={index}
                       className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center"
                     >
@@ -209,26 +229,26 @@ const Attendance = () => {
                         )}
                       >
                         {status === "P" ? (
-      <CheckCircle className="text-green-500" size={16} />
-    ) : status === "A" ? (
-      <XCircle className="text-red-500" size={16} />
-    ) : status === "WK" ? (
-      <CalendarCheck className="text-gray-400" size={16} />
-    ) : status === "SL" ? (
-      <Syringe className="text-blue-800" size={16} />
-    ) : status === "CL" ? (
-      <Sofa className="text-purple-800" size={16} />
-    ) : (
-      status
-    )}
+                          <CheckCircle className="text-green-500" size={16} />
+                        ) : status === "A" ? (
+                          <XCircle className="text-red-500" size={16} />
+                        ) : status === "WK" ? (
+                          <CalendarCheck className="text-gray-400" size={16} />
+                        ) : status === "SL" ? (
+                          <Syringe className="text-blue-800" size={16} />
+                        ) : status === "CL" ? (
+                          <Sofa className="text-purple-800" size={16} />
+                        ) : (
+                          status
+                        )}
                       </span>
                     </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </TableRow>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {activeTab === "Leave Tracker" && (
         <div className="overflow-container max-h-[calc(100vh-300px)]">

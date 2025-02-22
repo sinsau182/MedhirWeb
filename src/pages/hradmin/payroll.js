@@ -275,9 +275,15 @@ export default function HradminCompanies() {
                   <TableHead className="text-left">Name</TableHead>
                   <TableHead className="text-left">Department</TableHead>
                   <TableHead className="text-left">Old Advance</TableHead>
-                  <TableHead className="text-left">This Month Advance</TableHead>
-                  <TableHead className="text-left">Deduct in this month</TableHead>
-                  <TableHead className="text-left">Balance for next month</TableHead>
+                  <TableHead className="text-left">
+                    This Month Advance
+                  </TableHead>
+                  <TableHead className="text-left">
+                    Deduct in this month
+                  </TableHead>
+                  <TableHead className="text-left">
+                    Balance for next month
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -317,7 +323,9 @@ export default function HradminCompanies() {
                   <TableHead className="text-left">Name</TableHead>
                   <TableHead className="text-left">Department</TableHead>
                   <TableHead className="text-left">Monthly CTC</TableHead>
-                  <TableHead className="text-left">Total Reimbursement</TableHead>
+                  <TableHead className="text-left">
+                    Total Reimbursement
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

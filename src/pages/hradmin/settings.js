@@ -40,7 +40,9 @@ export default function HradminCompanies() {
           <button
             onClick={() => router.push("/hradmin/employees")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/employees" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/employees"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Employees
@@ -48,7 +50,9 @@ export default function HradminCompanies() {
           <button
             onClick={() => router.push("/hradmin/attendance")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/attendance" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/attendance"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Attendance
@@ -56,7 +60,9 @@ export default function HradminCompanies() {
           <button
             onClick={() => router.push("/hradmin/payroll")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/payroll" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/payroll"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Payroll
@@ -64,7 +70,9 @@ export default function HradminCompanies() {
           <button
             onClick={() => router.push("/hradmin/settings")}
             className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/settings" ? "text-blue-600 font-bold" : "text-black"
+              router.pathname === "/hradmin/settings"
+                ? "text-blue-600 font-bold"
+                : "text-black"
             }`}
           >
             Settings
@@ -74,5 +82,4 @@ export default function HradminCompanies() {
       {/* Rest of your component code */}
     </div>
   );
-};
-
+}
