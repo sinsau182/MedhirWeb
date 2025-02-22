@@ -47,7 +47,6 @@ export const updateEmployee = async (id, updateData) => {
 };
 
 
-
 export const deleteEmployee = async (id) => {
   const res = await fetch("/api/hradmin/employee", {
     method: "DELETE",
