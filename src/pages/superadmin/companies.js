@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import HradminSubNavbar from "@/components/HradminSubNavbar";
+import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { Input } from "@/components/ui/input";
 import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
-import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/utils/api";
+import Link from "next/link";
+import { getAllCompanies, createCompany, updateCompany, deleteCompany } from "../../../services/grpcClient";
 
-export default function HradminCompanies() {
+export default function SuperadminCompanies() {
+    const [activeTab, setActiveTab] = useState("Companies");
     const deleteButtonRef = useRef(null);
     const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
@@ -24,20 +26,22 @@ export default function HradminCompanies() {
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [error, setError] = useState(""); // Error state
     const [emailError, setEmailError] = useState(""); // New state for email error
+    const [searchInput, setSearchInput] = useState("");
 
     const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
     useEffect(() => {
-        const getCompanies = async () => {
-            try {
-                const fetchedCompanies = await fetchCompanies();
-                setCompanies(fetchedCompanies);
-            } catch (error) {
-                console.error("Error fetching companies:", error);
-            }
-        };
-        getCompanies();
-    }, []);
+        fetchCompanies();
+      }, []);
+
+      const fetchCompanies = async () => {
+        try {
+          const response = await getAllCompanies();
+          setCompanies(response.companiesList);
+        } catch (error) {
+          console.error("Error fetching companies:", error);
+        }
+      };
 
     const handleOpenCompanyModal = (company = null) => {
         setSelectedCompany(company);
@@ -74,48 +78,47 @@ export default function HradminCompanies() {
     };
 
     const handleSaveCompany = async () => {
-        // Validation: Check if any input field is empty
-        const { name, email, phone, gst, regAdd } = companyData;
-        
-        if (!name || !email || !phone || !gst || !regAdd) {
+        const { name, email, phone, gst, regadd } = companyData;
+
+        if (!name || !email || !phone || !gst || !regadd) {
             setError("All fields are required!");
             return;
-        } else {
-            setError(""); // Clear any existing error
         }
+        setError("");
 
-        // Phone validation
         if (!validatePhone(phone)) {
             setError("Please enter a valid 10-digit phone number.");
             return;
-        } else {
-            setError(""); // Clear phone error
         }
+        setError("");
 
-        // Email validation
         if (!validateEmail(email)) {
             setEmailError("Please enter a valid email address.");
             return;
-        } else {
-            setEmailError(""); // Clear email error
         }
+        setEmailError("");
 
         try {
-            if (isEditing && selectedCompany) {
-                await updateCompany(selectedCompany._id, companyData);
-                setCompanies(companies.map((c) => (c._id === selectedCompany._id ? { ...companyData, _id: c._id } : c)));
+            if (isEditing) {
+                await updateCompany({ id: selectedCompany.id, ...companyData });
+                setCompanies((prevCompanies) =>
+                    prevCompanies.map((company) =>
+                        company.id === selectedCompany.id ? { id: selectedCompany.id, ...companyData } : company
+                    )
+                );
             } else {
                 const createdCompany = await createCompany(companyData);
-                setCompanies([...companies, createdCompany]);
+                setCompanies([...companies, createdCompany.company]);
             }
             setIsCompanyModalOpen(false);
+            setSelectedCompany(null);
         } catch (error) {
             console.error("Error saving company:", error);
         }
     };
 
     const handleSelectCompany = (company) => {
-        if (selectedCompany && selectedCompany._id === company._id) {
+        if (selectedCompany && selectedCompany.id === company.id) {
             setSelectedCompany(null);
         } else {
             setSelectedCompany(company);
@@ -126,8 +129,8 @@ export default function HradminCompanies() {
         if (!selectedCompany) return;
     
         try {
-            await deleteCompany(selectedCompany._id);
-            setCompanies((prevCompanies) => prevCompanies.filter((company) => company._id !== selectedCompany._id));
+            await deleteCompany(selectedCompany.id);
+            setCompanies((prevCompanies) => prevCompanies.filter((company) => company.id !== selectedCompany.id));
             setIsDeleteConfirmationOpen(false);
             setSelectedCompany(null);
         } catch (error) {
@@ -135,24 +138,39 @@ export default function HradminCompanies() {
         }
     };
 
+    const filteredCompanies = companies.filter((company) =>
+        company.name.toLowerCase().includes(searchInput.toLowerCase())
+    );
+
     return (
         <div className="bg-white text-black min-h-screen">
-            <header className="fixed top-0 left-0 w-full bg-gray-100 shadow-md px-8 py-4 flex justify-between items-center z-50">
-                <div className="flex flex-row items-baseline space-x-20">
-                    <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
-                    <h2 className="text-lg font-normal text-gray-700">Welcome, HR Admin</h2>
-                </div>
+            <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
+                <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
+                <nav className="flex flex-grow justify-center space-x-40 text-xl font-medium">
+                    {["Companies", "Modules", "Settings"].map((item, index) => (
+                        <Link key={index} href={`/superadmin/${item.toLowerCase()}`} passHref>
+                            <button
+                                onClick={() => setActiveTab(item)}
+                                className={`hover:text-blue-600 ${activeTab === item ? "text-blue-600 font-bold" : "text-black"}`}
+                            >
+                                {item}
+                            </button>
+                        </Link>
+                    ))}
+                </nav>
                 <Button className="bg-green-600 hover:bg-green-500 text-white">Logout</Button>
             </header>
 
-            <div className="h-16" />
+            <div className="h-4" />
 
-            <div className="p-8">
-                <HradminSubNavbar />
+            <div className="p-10">
+                
                 <div className="mt-6 p-4 rounded-lg">
                     <div className="mt-4 bg-gray-200 p-4 rounded-lg flex justify-between items-center">
                         <div className="relative w-1/3">
-                            <Input placeholder="Search" className="w-full bg-gray-100 text-black border border-gray-300 pr-10" />
+                            <Input placeholder="Search" className="w-full bg-gray-100 text-black border border-gray-300 pr-10"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)} />
                             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
                         </div>
                         <div className="flex space-x-10 mr-16">
@@ -189,17 +207,17 @@ export default function HradminCompanies() {
                                     <TableHeader>Register Add.</TableHeader>
                                 </TableHead>
                                 <TableBody>
-                                    {companies.map((company) => (
+                                    {filteredCompanies.map((company) => (
                                         <TableRow
-                                            key={company._id}
+                                            key={company.id}
                                             onClick={() => handleSelectCompany(company)}
-                                            className={`cursor-pointer hover:bg-gray-200 ${selectedCompany && selectedCompany._id === company._id ? "bg-blue-100" : ""}`}
+                                            className={`cursor-pointer hover:bg-gray-200 ${selectedCompany && selectedCompany.id === company.id ? "bg-blue-100" : ""}`}
                                         >
                                             <TableCell>{company.name}</TableCell>
                                             <TableCell>{company.email}</TableCell>
                                             <TableCell>{company.phone}</TableCell>
                                             <TableCell>{company.gst}</TableCell>
-                                            <TableCell>{company.regAdd}</TableCell>
+                                            <TableCell>{company.regadd}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -263,8 +281,8 @@ export default function HradminCompanies() {
                         className="mt-4 bg-gray-100 text-black border border-gray-300"
                     />
                     <Input
-                        name="regAdd"
-                        value={companyData.regAdd}
+                        name="regadd"
+                        value={companyData.regadd}
                         onChange={handleInputChange}
                         placeholder="Register Address"
                         className="mt-4 bg-gray-100 text-black border border-gray-300"
