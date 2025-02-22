@@ -81,17 +81,20 @@ body {
   -webkit-backdrop-filter: blur(10px);
   border: 0px solid rgba(255, 255, 255, 0.2);
 }
-.present-status { /* Lightest green */
+.present-status {
+  /* Lightest green */
   color: #006400; /* Dark green */
 }
-.absent-status {/* Lightest red */
+.absent-status {
+  /* Lightest red */
   color: #8b0000; /* Dark red */
 }
 .weekoff-status {
-   /* Lightest blue */
+  /* Lightest blue */
   color: #00008b; /* Dark blue */
 }
-.casual-leave-status { /* Lightest yellow */
+.casual-leave-status {
+  /* Lightest yellow */
   color: #8b8b00; /* Dark yellow */
 }
 .date-column {
@@ -135,7 +138,8 @@ body {
   border-collapse: collapse; /* Ensure borders collapse into a single border */
 }
 
-.table th, .table td {
+.table th,
+.table td {
   border: 1px solid #ddd; /* Add border to table cells */
   padding: 0; /* Remove padding from table cells */
   margin: 0; /* Remove margin from table cells */
