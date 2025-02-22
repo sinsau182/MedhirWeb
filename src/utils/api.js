@@ -1,7 +1,3 @@
-const address = "/api/superadmin/companies";
-// /api/superadmin/companies
-// http://localhost:3001/companies
-
 export const fetchEmployees = async () => {
   const res = await fetch("/api/hradmin/employee");
   return res.json();
