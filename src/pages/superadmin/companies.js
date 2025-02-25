@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import SuperadminNavbar from "@/components/SuperadminNavbar";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCompanies } from "@/redux/slices/companiesSlice";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -14,12 +16,12 @@ import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import {
-  getAllCompanies,
-  createCompany,
-  updateCompany,
-  deleteCompany,
-} from "../../../services/grpcClient";
+// import {
+//   getAllCompanies,
+//   createCompany,
+//   updateCompany,
+//   deleteCompany,
+// } from "../../../services/grpcClient";
 
 export default function SuperadminCompanies() {
   const [activeTab, setActiveTab] = useState("Companies");
@@ -28,7 +30,6 @@ export default function SuperadminCompanies() {
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
     useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [companies, setCompanies] = useState([]);
   const [companyData, setCompanyData] = useState({
     name: "",
     email: "",
@@ -36,25 +37,34 @@ export default function SuperadminCompanies() {
     gst: "",
     regAdd: "",
   });
+
+
+  const dispatch = useDispatch();
+    const { companies, loading, error } = useSelector((state) => state.companies);
+  
+    useEffect(() => {
+      dispatch(fetchCompanies());
+    }, [dispatch]);
+
+
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [error, setError] = useState(""); // Error state
   const [emailError, setEmailError] = useState(""); // New state for email error
   const [searchInput, setSearchInput] = useState("");
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
+  // useEffect(() => {
+  //   fetchCompanies();
+  // }, []);
 
-  const fetchCompanies = async () => {
-    try {
-      const response = await getAllCompanies();
-      setCompanies(response.companiesList);
-    } catch (error) {
-      console.error("Error fetching companies:", error);
-    }
-  };
+  // const fetchCompanies = async () => {
+  //   try {
+  //     const response = await getAllCompanies();
+  //     setCompanies(response.companiesList);
+  //   } catch (error) {
+  //     console.error("Error fetching companies:", error);
+  //   }
+  // };
 
   const handleOpenCompanyModal = (company = null) => {
     setSelectedCompany(company);
@@ -91,9 +101,9 @@ export default function SuperadminCompanies() {
   };
 
   const handleSaveCompany = async () => {
-    const { name, email, phone, gst, regadd } = companyData;
+    const { name, email, phone, gst, regAdd } = companyData;
 
-    if (!name || !email || !phone || !gst || !regadd) {
+    if (!name || !email || !phone || !gst || !regAdd) {
       setError("All fields are required!");
       return;
     }
@@ -273,7 +283,7 @@ export default function SuperadminCompanies() {
                       <TableCell>{company.email}</TableCell>
                       <TableCell>{company.phone}</TableCell>
                       <TableCell>{company.gst}</TableCell>
-                      <TableCell>{company.regadd}</TableCell>
+                      <TableCell>{company.regAdd}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

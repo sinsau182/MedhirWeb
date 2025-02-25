@@ -104,7 +104,13 @@ const Employees = () => {
         <div className="mt-2 p-4 rounded-lg bg-gray-200 flex justify-between items-center">
           <Button
             className="bg-blue-600 hover:bg-blue-500 text-white flex items-center"
-            onClick={() => router.push("/hradmin/addNewEmployee")}
+            onClick={() =>
+              router.push({
+                pathname: "/hradmin/addNewEmployee",
+                query: { activeMainTab: activeTab },
+              })
+            }
+            
           >
             <UserPlus className="mr-2" size={20} /> Add New Employee
           </Button>
