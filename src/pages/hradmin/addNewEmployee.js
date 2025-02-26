@@ -4,16 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { useRouter } from "next/router";
+import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
-import { createEmployee, updateEmployee } from "@/utils/api";
+import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
 
 export default function EmployeeForm() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { employees } = useSelector((state) => state.employees);
+
+  const { activeMainTab, employee } = router.query;
   const [activePage, setActivePage] = useState("Employees");
-  const { activeMainTab } = router.query;
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
   const [selectedTab, setSelectedTab] = useState(activeMainTab);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const [employeeData, setEmployeeData] = useState({
     name: "",
@@ -25,73 +32,38 @@ export default function EmployeeForm() {
     reportingManager: "",
     permanentAddress: "",
     currentAddress: "",
-    idProofs: {
-      aadharNo: "",
-      panNo: "",
-      passport: "",
-      drivingLicense: "",
-      voterId: "",
-    },
-    bankDetails: {
-      accountNumber: "",
-      accountHolderName: "",
-      ifscCode: "",
-      bankName: "",
-      branchName: "",
-    },
-    salaryDetails: {
-      totalCtc: "",
-      basic: "",
-      allowances: "",
-      hra: "",
-      pf: "",
-    },
+    idProofs: { aadharNo: "", panNo: "", passport: "", drivingLicense: "", voterId: "" },
+    bankDetails: { accountNumber: "", accountHolderName: "", ifscCode: "", bankName: "", branchName: "" },
+    salaryDetails: { totalCtc: "", basic: "", allowances: "", hra: "", pf: "" },
   });
 
   useEffect(() => {
-    if (router.query.employee) {
+    if (employee) {
       try {
-        const employee = JSON.parse(router.query.employee);
+        const parsedEmployee = JSON.parse(employee);
         setEmployeeData((prev) => ({
           ...prev,
-          ...employee,
-          idProofs: { ...prev.idProofs, ...employee.idProofs },
-          bankDetails: { ...prev.bankDetails, ...employee.bankDetails },
-          salaryDetails: { ...prev.salaryDetails, ...employee.salaryDetails },
+          ...parsedEmployee,
+          idProofs: { ...prev.idProofs, ...parsedEmployee.idProofs },
+          bankDetails: { ...prev.bankDetails, ...parsedEmployee.bankDetails },
+          salaryDetails: { ...prev.salaryDetails, ...parsedEmployee.salaryDetails },
         }));
-        setEmployeeId(employee._id);
+        setEmployeeId(parsedEmployee.id);
       } catch (error) {
         console.error("Error parsing employee data", error);
       }
     }
-  }, [router.query.employee]);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-
-  const handleTabClick = (tab) => {
-    router.push({
-      pathname: "/hradmin/employees",
-      query: { tab },
-    });
-  };
+  }, [employee]);
 
   const handleInputChange = (e) => {
-    setEmployeeData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setEmployeeData({ ...employeeData, [e.target.name]: e.target.value });
   };
 
   const handleNestedInputChange = (e, section, key) => {
-    setEmployeeData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section], // Ensure existing data isn't lost
-        [key]: e.target.value || "", // Set default empty value
-      },
-    }));
+    setEmployeeData({
+      ...employeeData,
+      [section]: { ...employeeData[section], [key]: e.target.value || "" },
+    });
   };
 
   const handleEmployeeSubmit = async (event) => {
@@ -102,25 +74,28 @@ export default function EmployeeForm() {
 
     try {
       const filteredData = JSON.parse(
-        JSON.stringify(employeeData, (key, value) =>
-          value === "" ? undefined : value
-        )
+        JSON.stringify(employeeData, (key, value) => (value === "" ? undefined : value))
       );
 
       if (employeeId) {
-        await updateEmployee(employeeId, filteredData);
+        await dispatch(updateEmployee({ id: employeeId, updatedData: filteredData })).unwrap();
         setSuccess("Employee updated successfully");
       } else {
-        await createEmployee(filteredData);
+        await dispatch(createEmployee(filteredData)).unwrap();
         setSuccess("Employee created successfully");
       }
-
       router.push("/hradmin/employees");
     } catch (error) {
       setError(error.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
+  };
+  const handleTabClick = (tab) => {
+    router.push({
+      pathname: "/hradmin/employees",
+      query: { tab },
+    });
   };
 
   const mainTabs = [
@@ -140,6 +115,7 @@ export default function EmployeeForm() {
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
   }, [activeMainTab]);
+
 
   return (
     <div className="p-6">
@@ -359,6 +335,7 @@ export default function EmployeeForm() {
           </Button>
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
+          {success && <p className="text-green-500 text-sm">{success}</p>}
         </div>
       </form>
     </div>

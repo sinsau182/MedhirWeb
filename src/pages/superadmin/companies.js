@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCompanies } from "@/redux/slices/companiesSlice";
+import { fetchCompanies, createCompany, updateCompany, deleteCompany } from "@/redux/slices/companiesSlice";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -40,7 +40,7 @@ export default function SuperadminCompanies() {
 
 
   const dispatch = useDispatch();
-    const { companies, loading, error } = useSelector((state) => state.companies);
+  const { companies, loading} = useSelector((state) => state.companies);
   
     useEffect(() => {
       dispatch(fetchCompanies());
@@ -48,7 +48,9 @@ export default function SuperadminCompanies() {
 
 
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [emailError, setEmailError] = useState(""); // New state for email error
+  const [error, setError] = useState("");
+  const [emailError, setEmailError] = useState("");
+  
   const [searchInput, setSearchInput] = useState("");
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
@@ -102,45 +104,48 @@ export default function SuperadminCompanies() {
 
   const handleSaveCompany = async () => {
     const { name, email, phone, gst, regAdd } = companyData;
-
+  
+    // ✅ Validate required fields
     if (!name || !email || !phone || !gst || !regAdd) {
       setError("All fields are required!");
       return;
     }
     setError("");
-
+  
+    // ✅ Validate phone number
     if (!validatePhone(phone)) {
       setError("Please enter a valid 10-digit phone number.");
       return;
     }
     setError("");
-
+  
+    // ✅ Validate email
     if (!validateEmail(email)) {
       setEmailError("Please enter a valid email address.");
       return;
     }
     setEmailError("");
-
+  
     try {
       if (isEditing) {
-        await updateCompany({ id: selectedCompany.id, ...companyData });
-        setCompanies((prevCompanies) =>
-          prevCompanies.map((company) =>
-            company.id === selectedCompany.id
-              ? { id: selectedCompany.id, ...companyData }
-              : company
-          )
-        );
+        // ✅ Dispatch update action with Redux
+        await dispatch(updateCompany({ id: selectedCompany.id, updatedData: companyData }));
       } else {
-        const createdCompany = await createCompany(companyData);
-        setCompanies([...companies, createdCompany.company]);
+        // ✅ Dispatch create action with Redux
+        await dispatch(createCompany(companyData));
       }
+  
+      // ✅ Refetch updated list
+      dispatch(fetchCompanies());
+  
+      // ✅ Close modal and reset selection
       setIsCompanyModalOpen(false);
       setSelectedCompany(null);
     } catch (error) {
       console.error("Error saving company:", error);
     }
   };
+  
 
   const handleSelectCompany = (company) => {
     if (selectedCompany && selectedCompany.id === company.id) {
@@ -152,22 +157,22 @@ export default function SuperadminCompanies() {
 
   const handleDeleteCompany = async () => {
     if (!selectedCompany) return;
-
+  
     try {
-      await deleteCompany(selectedCompany.id);
-      setCompanies((prevCompanies) =>
-        prevCompanies.filter((company) => company.id !== selectedCompany.id)
-      );
+      await dispatch(deleteCompany(selectedCompany.id)); // Delete from backend & Redux store
+      dispatch(fetchCompanies()); // Refetch the updated list
       setIsDeleteConfirmationOpen(false);
       setSelectedCompany(null);
     } catch (error) {
       console.error("Error deleting company:", error);
     }
   };
-
-  const filteredCompanies = companies.filter((company) =>
-    company.name.toLowerCase().includes(searchInput.toLowerCase())
+  
+  
+  const filteredCompanies = companies.filter(
+    (company) => company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
+  
 
   return (
     <div className="bg-white text-black min-h-screen">
@@ -359,8 +364,8 @@ export default function SuperadminCompanies() {
             className="mt-4 bg-gray-100 text-black border border-gray-300"
           />
           <Input
-            name="regadd"
-            value={companyData.regadd}
+            name="regAdd"
+            value={companyData.regAdd}
             onChange={handleInputChange}
             placeholder="Register Address"
             className="mt-4 bg-gray-100 text-black border border-gray-300"

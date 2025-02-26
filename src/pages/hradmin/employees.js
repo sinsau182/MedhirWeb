@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchEmployees } from "@/redux/slices/employeeSlice"; // Corrected import
 import {
   Table,
   TableHead,
@@ -11,30 +13,18 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { fetchEmployees } from "@/utils/api";
 
 const Employees = () => {
   const [activePage, setActivePage] = useState("Employees");
   const [activeTab, setActiveTab] = useState("Basic");
-  const [employees, setEmployees] = useState([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const response = await fetch("/api/hradmin/employees");
-        const data = await response.json();
-        setEmployees(data);
-      } catch (error) {
-        console.error("Failed to fetch employees:", error);
-      }
-    };
-    fetchEmployees();
+  const dispatch = useDispatch();
+  const { employees, loading } = useSelector((state) => state.employees); // Corrected selector
 
-    if (router.query.tab) {
-      setActiveTab(router.query.tab);
-    }
-  }, [router.query.tab]);
+  useEffect(() => {
+    dispatch(fetchEmployees()); // Fetch employees from Redux store
+  }, [dispatch]);
 
   useEffect(() => {
     if (router.query.page) {
@@ -110,7 +100,6 @@ const Employees = () => {
                 query: { activeMainTab: activeTab },
               })
             }
-            
           >
             <UserPlus className="mr-2" size={20} /> Add New Employee
           </Button>

@@ -1,15 +1,15 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8080/superadmin/companies";
+const API_BASE_URL = "http://192.168.0.200:8080/hradmin/employees";
 
-// Fetch companies
-export const fetchCompanies = createAsyncThunk(
-  "companies/fetchCompanies",
+// Fetch employees
+export const fetchEmployees = createAsyncThunk(
+  "employees/fetchEmployees",
   async (_, { rejectWithValue }) => {
     try {
       const response = await fetch(API_BASE_URL);
       if (!response.ok) {
-        throw new Error("Failed to fetch companies");
+        throw new Error("Failed to fetch employees");
       }
       return await response.json();
     } catch (error) {
@@ -18,19 +18,19 @@ export const fetchCompanies = createAsyncThunk(
   }
 );
 
-// Create company
-export const createCompany = createAsyncThunk(
-  "companies/createCompany",
-  async (companyData, { rejectWithValue }) => {
+// Create employee
+export const createEmployee = createAsyncThunk(
+  "employees/createEmployee",
+  async (employeeData, { rejectWithValue }) => {
     try {
       const response = await fetch(API_BASE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(companyData),
+        body: JSON.stringify(employeeData),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create company");
+        throw new Error("Failed to create employee");
       }
 
       return await response.json();
@@ -40,9 +40,9 @@ export const createCompany = createAsyncThunk(
   }
 );
 
-// Update company
-export const updateCompany = createAsyncThunk(
-  "companies/updateCompany",
+// Update employee
+export const updateEmployee = createAsyncThunk(
+  "employees/updateEmployee",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
@@ -52,7 +52,7 @@ export const updateCompany = createAsyncThunk(
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update company");
+        throw new Error("Failed to update employee");
       }
 
       return await response.json();
@@ -62,9 +62,9 @@ export const updateCompany = createAsyncThunk(
   }
 );
 
-// Delete company
-export const deleteCompany = createAsyncThunk(
-  "companies/deleteCompany",
+// Delete employee
+export const deleteEmployee = createAsyncThunk(
+  "employees/deleteEmployee",
   async (id, { rejectWithValue }) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
@@ -72,49 +72,49 @@ export const deleteCompany = createAsyncThunk(
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete company");
+        throw new Error("Failed to delete employee");
       }
 
-      return id; // Return deleted company's ID
+      return id; // Return deleted employee's ID
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-const companiesSlice = createSlice({
-  name: "companies",
+const employeesSlice = createSlice({
+  name: "employees",
   initialState: {
-    companies: [],
+    employees: [],
     loading: false,
     error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchCompanies.pending, (state) => {
+      .addCase(fetchEmployees.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchCompanies.fulfilled, (state, action) => {
+      .addCase(fetchEmployees.fulfilled, (state, action) => {
         state.loading = false;
-        state.companies = action.payload;
+        state.employees = action.payload;
       })
-      .addCase(fetchCompanies.rejected, (state, action) => {
+      .addCase(fetchEmployees.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload; // Use `action.payload` for custom error messages
+        state.error = action.payload;
       })
-      .addCase(createCompany.fulfilled, (state, action) => {
-        state.companies.push(action.payload);
+      .addCase(createEmployee.fulfilled, (state, action) => {
+        state.employees.push(action.payload);
       })
-      .addCase(updateCompany.fulfilled, (state, action) => {
-        const index = state.companies.findIndex((c) => c._id === action.payload._id);
+      .addCase(updateEmployee.fulfilled, (state, action) => {
+        const index = state.employees.findIndex((e) => e._id === action.payload._id);
         if (index !== -1) {
-          state.companies[index] = action.payload;
+          state.employees[index] = action.payload;
         }
       })
-      .addCase(deleteCompany.fulfilled, (state, action) => {
-        state.companies = state.companies.filter((c) => c._id !== action.payload);
+      .addCase(deleteEmployee.fulfilled, (state, action) => {
+        state.employees = state.employees.filter((e) => e._id !== action.payload);
       })
       .addMatcher(
         (action) => action.type.endsWith("/rejected"),
@@ -126,4 +126,4 @@ const companiesSlice = createSlice({
   },
 });
 
-export default companiesSlice.reducer;
+export default employeesSlice.reducer;
