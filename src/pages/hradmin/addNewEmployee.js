@@ -32,8 +32,20 @@ export default function EmployeeForm() {
     reportingManager: "",
     permanentAddress: "",
     currentAddress: "",
-    idProofs: { aadharNo: "", panNo: "", passport: "", drivingLicense: "", voterId: "" },
-    bankDetails: { accountNumber: "", accountHolderName: "", ifscCode: "", bankName: "", branchName: "" },
+    idProofs: {
+      aadharNo: "",
+      panNo: "",
+      passport: "",
+      drivingLicense: "",
+      voterId: "",
+    },
+    bankDetails: {
+      accountNumber: "",
+      accountHolderName: "",
+      ifscCode: "",
+      bankName: "",
+      branchName: "",
+    },
     salaryDetails: { totalCtc: "", basic: "", allowances: "", hra: "", pf: "" },
   });
 
@@ -46,7 +58,10 @@ export default function EmployeeForm() {
           ...parsedEmployee,
           idProofs: { ...prev.idProofs, ...parsedEmployee.idProofs },
           bankDetails: { ...prev.bankDetails, ...parsedEmployee.bankDetails },
-          salaryDetails: { ...prev.salaryDetails, ...parsedEmployee.salaryDetails },
+          salaryDetails: {
+            ...prev.salaryDetails,
+            ...parsedEmployee.salaryDetails,
+          },
         }));
         setEmployeeId(parsedEmployee.id);
       } catch (error) {
@@ -74,11 +89,15 @@ export default function EmployeeForm() {
 
     try {
       const filteredData = JSON.parse(
-        JSON.stringify(employeeData, (key, value) => (value === "" ? undefined : value))
+        JSON.stringify(employeeData, (key, value) =>
+          value === "" ? undefined : value
+        )
       );
 
       if (employeeId) {
-        await dispatch(updateEmployee({ id: employeeId, updatedData: filteredData })).unwrap();
+        await dispatch(
+          updateEmployee({ id: employeeId, updatedData: filteredData })
+        ).unwrap();
         setSuccess("Employee updated successfully");
       } else {
         await dispatch(createEmployee(filteredData)).unwrap();
@@ -115,7 +134,6 @@ export default function EmployeeForm() {
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
   }, [activeMainTab]);
-
 
   return (
     <div className="p-6">
