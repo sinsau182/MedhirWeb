@@ -44,7 +44,7 @@ export default function SuperadminModules() {
   useEffect(() => {
     dispatch(fetchModules());
     dispatch(fetchUsers());
-  }, [dispatch]);
+  }, [dispatch, users]);
 
   const handleOpenAddModule = () => {
     setSelectedUser(null);
@@ -169,7 +169,7 @@ export default function SuperadminModules() {
                     <TableRow key={index}>
                       <TableCell>{module.moduleName}</TableCell>
                       <TableCell>{module.description}</TableCell>
-                      <TableCell>{module.user.name}</TableCell>
+                      <TableCell>{module.user?.name}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
