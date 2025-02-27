@@ -110,13 +110,17 @@ const companiesSlice = createSlice({
         state.companies.push(action.payload);
       })
       .addCase(updateCompany.fulfilled, (state, action) => {
-        const index = state.companies.findIndex((c) => c._id === action.payload._id);
+        const index = state.companies.findIndex(
+          (c) => c._id === action.payload._id
+        );
         if (index !== -1) {
           state.companies[index] = action.payload;
         }
       })
       .addCase(deleteCompany.fulfilled, (state, action) => {
-        state.companies = state.companies.filter((c) => c._id !== action.payload);
+        state.companies = state.companies.filter(
+          (c) => c._id !== action.payload
+        );
       })
       .addMatcher(
         (action) => action.type.endsWith("/rejected"),
