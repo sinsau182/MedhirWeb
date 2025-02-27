@@ -108,13 +108,17 @@ const employeesSlice = createSlice({
         state.employees.push(action.payload);
       })
       .addCase(updateEmployee.fulfilled, (state, action) => {
-        const index = state.employees.findIndex((e) => e._id === action.payload._id);
+        const index = state.employees.findIndex(
+          (e) => e._id === action.payload._id
+        );
         if (index !== -1) {
           state.employees[index] = action.payload;
         }
       })
       .addCase(deleteEmployee.fulfilled, (state, action) => {
-        state.employees = state.employees.filter((e) => e._id !== action.payload);
+        state.employees = state.employees.filter(
+          (e) => e._id !== action.payload
+        );
       })
       .addMatcher(
         (action) => action.type.endsWith("/rejected"),
