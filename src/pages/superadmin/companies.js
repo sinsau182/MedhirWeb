@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { useDispatch, useSelector } from "react-redux";
@@ -27,8 +28,7 @@ export default function SuperadminCompanies() {
   const [activeTab, setActiveTab] = useState("Companies");
   const deleteButtonRef = useRef(null);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
-    useState(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [companyData, setCompanyData] = useState({
     name: "",
@@ -40,17 +40,19 @@ export default function SuperadminCompanies() {
 
 
   const dispatch = useDispatch();
-  const { companies, loading} = useSelector((state) => state.companies);
-  
-    useEffect(() => {
-      dispatch(fetchCompanies());
-    }, [dispatch]);
-
-
-  const [selectedCompany, setSelectedCompany] = useState(null);
+  const { companies, loading, err } = useSelector((state) => state.companies);
   const [error, setError] = useState("");
-  const [emailError, setEmailError] = useState("");
   
+  useEffect(() => {
+    dispatch(fetchCompanies());
+  
+    if (err) {
+      toast.error("Operation Failed: " + err);
+    }
+  }, [dispatch, err]);
+
+  console.log(err);
+  const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchInput, setSearchInput] = useState("");
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
@@ -98,8 +100,13 @@ export default function SuperadminCompanies() {
   };
 
   const validatePhone = (phone) => {
-    const regex = /^\d{10}$/;
+    const regex = /^[0-9]{10}$/;
     return regex.test(phone);
+  };
+
+  const validateGST = (gst) => {
+    const regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}[A-Z]{1}[0-9]{1}$/;
+    return regex.test(gst);
   };
 
   const handleSaveCompany = async () => {
@@ -114,18 +121,26 @@ export default function SuperadminCompanies() {
   
     // ✅ Validate phone number
     if (!validatePhone(phone)) {
-      setError("Please enter a valid 10-digit phone number.");
+      setError("Please enter a valid phone number.");
       return;
     }
     setError("");
   
     // ✅ Validate email
     if (!validateEmail(email)) {
-      setEmailError("Please enter a valid email address.");
+      setError("Please enter a valid email address.");
       return;
     }
-    setEmailError("");
-  
+    setError("");
+
+    // ✅ Validate GST
+    if (!validateGST(gst)) {
+      setError("Please enter a valid GST number.");
+      return;
+    }
+    setError("");
+
+
     try {
       if (isEditing) {
         // ✅ Dispatch update action with Redux
@@ -142,7 +157,7 @@ export default function SuperadminCompanies() {
       setIsCompanyModalOpen(false);
       setSelectedCompany(null);
     } catch (error) {
-      console.error("Error saving company:", error);
+      console.log("Error saving company:", error);
     }
   };
   
@@ -347,7 +362,6 @@ export default function SuperadminCompanies() {
             placeholder="Email"
             className="mt-4 bg-gray-100 text-black border border-gray-300"
           />
-          {emailError && <p className="text-red-600 mt-2">{emailError}</p>}{" "}
           {/* Show email error message */}
           <Input
             name="phone"

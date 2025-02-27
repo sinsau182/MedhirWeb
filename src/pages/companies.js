@@ -4,7 +4,7 @@ import { fetchCompanies } from "../redux/slices/companiesSlice";
 
 export default function CompaniesPage() {
   const dispatch = useDispatch();
-  const { companies, loading, error } = useSelector((state) => state.companies);
+  const { companies, loading, err } = useSelector((state) => state.companies);
 
   useEffect(() => {
     dispatch(fetchCompanies());
@@ -14,7 +14,7 @@ export default function CompaniesPage() {
     <div>
       <h1>Companies</h1>
       {loading && <p>Loading companies...</p>}
-      {error && <p>Error: {error}</p>}
+      {err && <p>Error: {err}</p>}
       <ul>
         {companies.map((company) => (
           <li key={company.id}>{company.name} - {company.email} - {company.phone} - {company.regAdd} - {company.gst}</li>

@@ -29,11 +29,12 @@ export const createCompany = createAsyncThunk(
         body: JSON.stringify(companyData),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to create company");
+        throw new Error(data.error || "Failed to create company");
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -51,11 +52,12 @@ export const updateCompany = createAsyncThunk(
         body: JSON.stringify(updatedData),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to update company");
+        throw new Error(data.error || "Failed to update company");
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -87,14 +89,14 @@ const companiesSlice = createSlice({
   initialState: {
     companies: [],
     loading: false,
-    error: null,
+    err: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchCompanies.pending, (state) => {
         state.loading = true;
-        state.error = null;
+        state.err = null;
       })
       .addCase(fetchCompanies.fulfilled, (state, action) => {
         state.loading = false;
@@ -102,7 +104,7 @@ const companiesSlice = createSlice({
       })
       .addCase(fetchCompanies.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload; // Use `action.payload` for custom error messages
+        state.err = action.payload; // Use `action.payload` for custom error messages
       })
       .addCase(createCompany.fulfilled, (state, action) => {
         state.companies.push(action.payload);
@@ -120,7 +122,7 @@ const companiesSlice = createSlice({
         (action) => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
-          state.error = action.payload || "Something went wrong";
+          state.err = action.payload || "Something went wrong";
         }
       );
   },
