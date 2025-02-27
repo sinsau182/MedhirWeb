@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchModules, addModule } from "@/redux/slices/modulesSlice"; // Adjust the import path as needed
+// import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { Input } from "@/components/ui/input";
@@ -19,36 +22,75 @@ import {
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
 import { Edit, Search, Trash, UserPlus } from "lucide-react";
-import { fetchUsers, createUser } from "@/utils/api";
+import { fetchUsers, addUser } from "@/redux/slices/usersSlice"; // Adjust the import path as needed
 import Link from "next/link";
 
 export default function SuperadminModules() {
+  const dispatch = useDispatch();
+  const { modules, loading, error } = useSelector((state) => state.modules);
   const [activeTab, setActiveTab] = useState("Modules");
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
   const [newUser, setNewUser] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userPhone, setUserPhone] = useState("");
+  const [moduleName, setModuleName] = useState("");
+  const [moduleDescription, setModuleDescription] = useState("");
+  const { users } = useSelector((state) => state.users);
 
-  const users = ["Ajay Kumar", "Jayesh Singh", "Amit Kumar"];
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
+  useEffect(() => {
+    dispatch(fetchModules());
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
   const handleOpenAddModule = () => {
-    setSelectedUser("");
+    setSelectedUser(null);
     setIsAddModuleOpen(true);
   };
 
   const handleAddUser = () => {
-    // Assuming validation is done, save the new user
-    users.push(newUser); // Add new user to the list
-    setSelectedUser(newUser); // Set as the selected user
+    if (!newUser || !userEmail || !userPhone) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const userData = {
+      name: newUser,
+      email: userEmail,
+      phone: userPhone,
+    };
+
+    dispatch(addUser(userData)); // Dispatch createUser action
     setIsAddUserOpen(false); // Close the Add User form
 
     // Clear the input fields
     setNewUser("");
     setUserEmail("");
     setUserPhone("");
+  };
+
+  const handleAddModule = () => {
+    if (!moduleName || !moduleDescription || !selectedUser) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const moduleData = {
+      moduleName,
+      description: moduleDescription,
+      userId: selectedUser.id,
+    };
+
+    dispatch(addModule(moduleData)); // Dispatch addModule action
+    setIsAddModuleOpen(false); // Close the Add Module form
+
+    // Clear the input fields
+    setModuleName("");
+    setModuleDescription("");
+    setSelectedUser(null);
   };
 
   return (
@@ -123,21 +165,13 @@ export default function SuperadminModules() {
                   <TableHeader>Admin</TableHeader>
                 </TableHead>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>HR</TableCell>
-                    <TableCell>For Handling leaves, attendance</TableCell>
-                    <TableCell>Ajay Kumar</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Accounting</TableCell>
-                    <TableCell>For Handling Payments etc</TableCell>
-                    <TableCell>Jayesh Singh</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Sales</TableCell>
-                    <TableCell>For Handling total sales, orders</TableCell>
-                    <TableCell>Amit Kumar</TableCell>
-                  </TableRow>
+                  {modules.map((module, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{module.moduleName}</TableCell>
+                      <TableCell>{module.description}</TableCell>
+                      <TableCell>{module.user.name}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </ClientOnlyTable>
@@ -158,10 +192,14 @@ export default function SuperadminModules() {
           <Input
             placeholder="Module Name"
             className="mt-4 bg-gray-100 text-black border border-gray-300"
+            value={moduleName}
+            onChange={(e) => setModuleName(e.target.value)}
           />
           <Input
             placeholder="Description"
             className="mt-4 bg-gray-100 text-black border border-gray-300"
+            value={moduleDescription}
+            onChange={(e) => setModuleDescription(e.target.value)}
           />
 
           {/* Admin Select */}
@@ -173,20 +211,22 @@ export default function SuperadminModules() {
                 setUserPhone("");
                 setIsAddUserOpen(true);
               } else {
-                setSelectedUser(value);
+                const selected = users.find((user) => user.id === value);
+                setSelectedUser(selected || null);
                 setIsAddUserOpen(false);
               }
             }}
           >
             <SelectTrigger className="mt-4 bg-gray-100 text-black border border-gray-300">
-              {selectedUser || "Select Admin"}
+              {selectedUser ? selectedUser.name : "Select Admin"}
             </SelectTrigger>
             <SelectContent>
               {users.map((user, index) => (
-                <SelectItem key={index} value={user}>
-                  {user}
+                <SelectItem key={index} value={user.id}>
+                  {user.name}
                 </SelectItem>
               ))}
+
               <SelectItem value="addUser" className="text-blue-600 font-bold">
                 + Add User
               </SelectItem>
@@ -230,7 +270,7 @@ export default function SuperadminModules() {
           {/* Save and Cancel buttons */}
           {!isAddUserOpen && (
             <div className="mt-4 flex space-x-2">
-              <Button onClick={() => setIsAddModuleOpen(false)}>Save</Button>
+              <Button onClick={handleAddModule}>Save</Button>
               <Button
                 variant="outline"
                 onClick={() => setIsAddModuleOpen(false)}
