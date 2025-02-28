@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8080/hradmin/employees";
+const API_BASE_URL = "http://localhost:8080/hradmin/employees";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -29,11 +29,12 @@ export const createEmployee = createAsyncThunk(
         body: JSON.stringify(employeeData),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to create employee");
+        throw new Error(data.error || "Failed to create employee");
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -51,11 +52,12 @@ export const updateEmployee = createAsyncThunk(
         body: JSON.stringify(updatedData),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to update employee");
+        throw new Error(data.error || "Failed to update employee");
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -87,14 +89,14 @@ const employeesSlice = createSlice({
   initialState: {
     employees: [],
     loading: false,
-    error: null,
+    err: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchEmployees.pending, (state) => {
         state.loading = true;
-        state.error = null;
+        state.err = null;
       })
       .addCase(fetchEmployees.fulfilled, (state, action) => {
         state.loading = false;
@@ -102,7 +104,7 @@ const employeesSlice = createSlice({
       })
       .addCase(fetchEmployees.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.err = action.payload;
       })
       .addCase(createEmployee.fulfilled, (state, action) => {
         state.employees.push(action.payload);
@@ -124,7 +126,7 @@ const employeesSlice = createSlice({
         (action) => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
-          state.error = action.payload || "Something went wrong";
+          state.err = action.payload || "Something went wrong";
         }
       );
   },

@@ -6,12 +6,14 @@ import { Search, UserPlus } from "lucide-react";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
+import { toast } from "sonner";
 import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
 
 export default function EmployeeForm() {
   const router = useRouter();
   const dispatch = useDispatch();
-  const { employees } = useSelector((state) => state.employees);
+  const { employees, err } = useSelector((state) => state.employees);
+  console.log(err);
 
   const { activeMainTab, employee } = router.query;
   const [activePage, setActivePage] = useState("Employees");
@@ -87,10 +89,27 @@ export default function EmployeeForm() {
     setError(null);
     setSuccess(null);
 
+    const validatePhone = (phone) => {
+      const regex = /^[0-9]{10}$/;
+      return regex.test(phone);
+    };
+
+    if (!employeeData.name || !employeeData.phone) {
+      toast.error("Name and Phone are required fields.");
+      setLoading(false);
+      return;
+    }
+
+    if (!validatePhone(employeeData.phone)) {
+      toast.error("Invalid phone number.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const filteredData = JSON.parse(
         JSON.stringify(employeeData, (key, value) =>
-          value === "" ? undefined : value
+          value === "" ? null : value
         )
       );
 
@@ -98,18 +117,19 @@ export default function EmployeeForm() {
         await dispatch(
           updateEmployee({ id: employeeId, updatedData: filteredData })
         ).unwrap();
-        setSuccess("Employee updated successfully");
+        toast.success("Employee updated successfully");
       } else {
         await dispatch(createEmployee(filteredData)).unwrap();
-        setSuccess("Employee created successfully");
+        toast.success("Employee created successfully");
       }
       router.push("/hradmin/employees");
-    } catch (error) {
-      setError(error.message || "Something went wrong");
+    } catch (err) {
+      toast.error(err);
     } finally {
       setLoading(false);
     }
   };
+
   const handleTabClick = (tab) => {
     router.push({
       pathname: "/hradmin/employees",
@@ -222,6 +242,7 @@ export default function EmployeeForm() {
               onChange={handleInputChange}
               placeholder="Employee Name"
               onFocus={(e) => (e.target.style.color = "black")}
+              required
             />
           </div>
 
@@ -255,6 +276,7 @@ export default function EmployeeForm() {
                   className="w-[60%] bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
                   value={employeeData[key]}
                   onChange={handleInputChange}
+                  required={key === "name" || key === "phone"}
                 />
               </div>
             ))}
@@ -351,9 +373,6 @@ export default function EmployeeForm() {
           >
             Cancel
           </Button>
-
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          {success && <p className="text-green-500 text-sm">{success}</p>}
         </div>
       </form>
     </div>
