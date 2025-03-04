@@ -13,8 +13,9 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
+import withAuth from "@/components/withAuth";
 
-const Employees = () => {
+function Employees() {
   const [activePage, setActivePage] = useState("Employees");
   const [activeTab, setActiveTab] = useState("Basic");
   const router = useRouter();
@@ -86,6 +87,13 @@ const Employees = () => {
             Settings
           </button>
         </nav>
+        <Button onClick={() => {
+          router.push("/login")
+          localStorage.removeItem("token")
+        }}
+         className="bg-green-600 hover:bg-green-500 text-white">
+          Logout
+        </Button>
       </header>
 
       {/* Search Box */}
@@ -246,4 +254,4 @@ const Employees = () => {
   );
 };
 
-export default Employees;
+export default withAuth(Employees);

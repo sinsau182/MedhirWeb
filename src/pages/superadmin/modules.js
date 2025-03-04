@@ -24,8 +24,12 @@ import dynamic from "next/dynamic";
 import { Edit, Search, Trash, UserPlus } from "lucide-react";
 import { fetchUsers, addUser } from "@/redux/slices/usersSlice"; // Adjust the import path as needed
 import Link from "next/link";
+import { useRouter } from "next/router";
+import Loader from "@/components/Loader";
+import withAuth from "@/components/withAuth";
 
-export default function SuperadminModules() {
+function SuperadminModules() {
+  const router = useRouter();
   const dispatch = useDispatch();
   const { modules, loading, error } = useSelector((state) => state.modules);
   const [activeTab, setActiveTab] = useState("Modules");
@@ -115,7 +119,8 @@ export default function SuperadminModules() {
             </Link>
           ))}
         </nav>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">
+        <Button onClick={() => router.push("/login")}
+        className="bg-green-600 hover:bg-green-500 text-white">
           Logout
         </Button>
       </header>
@@ -284,3 +289,5 @@ export default function SuperadminModules() {
     </div>
   );
 }
+
+export default withAuth(SuperadminModules);

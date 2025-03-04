@@ -32,8 +32,9 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import cn from "classnames";
+import withAuth from "@/components/withAuth";
 
-const Attendance = () => {
+function Attendance() {
   const [activePage, setActivePage] = useState("attendance");
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [employees, setEmployees] = useState([]);
@@ -115,6 +116,15 @@ const Attendance = () => {
             Settings
           </button>
         </nav>
+        <Button
+          onClick={() => {
+            router.push("/login");
+            localStorage.removeItem("token");
+          }}
+          className="bg-green-600 hover:bg-green-500 text-white"
+        >
+          Logout
+        </Button>
       </header>
 
       {/* Search Box */}
@@ -290,6 +300,6 @@ const Attendance = () => {
       )}
     </div>
   );
-};
+}
 
-export default Attendance;
+export default withAuth(Attendance);

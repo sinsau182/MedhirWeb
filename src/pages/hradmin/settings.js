@@ -3,8 +3,9 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
+import withAuth from "@/components/withAuth";
 
-export default function HradminCompanies() {
+function HradminSettings() {
   const [activePage, setActivePage] = useState("attendance");
   const [employees, setEmployees] = useState([]);
   const router = useRouter();
@@ -78,8 +79,16 @@ export default function HradminCompanies() {
             Settings
           </button>
         </nav>
+        <Button onClick={() => {
+        router.push("/login")
+        localStorage.removeItem("token")
+        }}
+         className="bg-green-600 hover:bg-green-500 text-white">
+          Logout
+        </Button>
       </header>
-      {/* Rest of your component code */}
     </div>
   );
 }
+
+export default withAuth(HradminSettings);

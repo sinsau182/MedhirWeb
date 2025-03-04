@@ -7,7 +7,13 @@ export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const token = localStorage.getItem("token");
+      const response = await fetch(API_BASE_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
@@ -23,9 +29,13 @@ export const addUser = createAsyncThunk(
   "users/addUser",
   async (userData, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(userData),
       });
 

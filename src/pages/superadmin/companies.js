@@ -17,14 +17,12 @@ import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-// import {
-//   getAllCompanies,
-//   createCompany,
-//   updateCompany,
-//   deleteCompany,
-// } from "../../../services/grpcClient";
+import { useRouter } from "next/router";
+import Loader from "@/components/Loader";
+import withAuth from "@/components/withAuth";
 
-export default function SuperadminCompanies() {
+function SuperadminCompanies() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("Companies");
   const deleteButtonRef = useRef(null);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
@@ -38,37 +36,22 @@ export default function SuperadminCompanies() {
     regAdd: "",
   });
 
-
   const dispatch = useDispatch();
   const { companies, loading, err } = useSelector((state) => state.companies);
   const [error, setError] = useState("");
-  
+
   useEffect(() => {
     dispatch(fetchCompanies());
-  
+
     if (err) {
       toast.error("Operation Failed: " + err);
     }
   }, [dispatch, err]);
 
-  console.log(err);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchInput, setSearchInput] = useState("");
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
-
-  // useEffect(() => {
-  //   fetchCompanies();
-  // }, []);
-
-  // const fetchCompanies = async () => {
-  //   try {
-  //     const response = await getAllCompanies();
-  //     setCompanies(response.companiesList);
-  //   } catch (error) {
-  //     console.error("Error fetching companies:", error);
-  //   }
-  // };
 
   const handleOpenCompanyModal = (company = null) => {
     setSelectedCompany(company);
@@ -111,56 +94,54 @@ export default function SuperadminCompanies() {
 
   const handleSaveCompany = async () => {
     const { name, email, phone, gst, regAdd } = companyData;
-  
-    // ✅ Validate required fields
+
+    // Validate required fields
     if (!name || !email || !phone || !gst || !regAdd) {
       setError("All fields are required!");
       return;
     }
     setError("");
-  
-    // ✅ Validate phone number
+
+    // Validate phone number
     if (!validatePhone(phone)) {
       setError("Please enter a valid phone number.");
       return;
     }
     setError("");
-  
-    // ✅ Validate email
+
+    // Validate email
     if (!validateEmail(email)) {
       setError("Please enter a valid email address.");
       return;
     }
     setError("");
 
-    // ✅ Validate GST
+    // Validate GST
     if (!validateGST(gst)) {
       setError("Please enter a valid GST number.");
       return;
     }
     setError("");
 
-
     try {
       if (isEditing) {
-        // ✅ Dispatch update action with Redux
+        // Dispatch update action with Redux
         await dispatch(updateCompany({ id: selectedCompany.id, updatedData: companyData }));
       } else {
-        // ✅ Dispatch create action with Redux
+        // Dispatch create action with Redux
         await dispatch(createCompany(companyData));
       }
-  
-      // ✅ Refetch updated list
+
+      // Refetch updated list
       dispatch(fetchCompanies());
-  
-      // ✅ Close modal and reset selection
+
+      // Close modal and reset selection
       setIsCompanyModalOpen(false);
       setSelectedCompany(null);
     } catch (error) {
       console.log("Error saving company:", error);
     }
   };
-  
 
   const handleSelectCompany = (company) => {
     if (selectedCompany && selectedCompany.id === company.id) {
@@ -172,7 +153,7 @@ export default function SuperadminCompanies() {
 
   const handleDeleteCompany = async () => {
     if (!selectedCompany) return;
-  
+
     try {
       await dispatch(deleteCompany(selectedCompany.id)); // Delete from backend & Redux store
       dispatch(fetchCompanies()); // Refetch the updated list
@@ -182,15 +163,14 @@ export default function SuperadminCompanies() {
       console.error("Error deleting company:", error);
     }
   };
-  
-  
+
   const filteredCompanies = companies.filter(
     (company) => company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
-  
 
   return (
     <div className="bg-white text-black min-h-screen">
+      {loading && <Loader />}
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
         <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
         <nav className="flex flex-grow justify-center space-x-40 text-xl font-medium">
@@ -211,7 +191,11 @@ export default function SuperadminCompanies() {
             </Link>
           ))}
         </nav>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">
+        <Button onClick={() => {
+          router.push("/login")
+          localStorage.removeItem("token")
+        }}
+         className="bg-green-600 hover:bg-green-500 text-white">
           Logout
         </Button>
       </header>
@@ -271,44 +255,44 @@ export default function SuperadminCompanies() {
             </div>
           </div>
           <div className="mt-4 bg-gray-300 p-2 rounded-lg">
-            <ClientOnlyTable>
-              <Table className="company-table">
-                <TableHead>
-                  <TableHeader>Name</TableHeader>
-                </TableHead>
-                <TableHead>
-                  <TableHeader>Email</TableHeader>
-                </TableHead>
-                <TableHead>
-                  <TableHeader>Phone</TableHeader>
-                </TableHead>
-                <TableHead>
-                  <TableHeader>GST</TableHeader>
-                </TableHead>
-                <TableHead>
-                  <TableHeader>Register Add.</TableHeader>
-                </TableHead>
-                <TableBody>
-                  {filteredCompanies.map((company) => (
-                    <TableRow
-                      key={company.id}
-                      onClick={() => handleSelectCompany(company)}
-                      className={`cursor-pointer hover:bg-gray-200 ${
-                        selectedCompany && selectedCompany.id === company.id
-                          ? "bg-blue-100"
-                          : ""
-                      }`}
-                    >
-                      <TableCell>{company.name}</TableCell>
-                      <TableCell>{company.email}</TableCell>
-                      <TableCell>{company.phone}</TableCell>
-                      <TableCell>{company.gst}</TableCell>
-                      <TableCell>{company.regAdd}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ClientOnlyTable>
+              <ClientOnlyTable>
+                <Table className="company-table">
+                  <TableHead>
+                    <TableHeader>Name</TableHeader>
+                  </TableHead>
+                  <TableHead>
+                    <TableHeader>Email</TableHeader>
+                  </TableHead>
+                  <TableHead>
+                    <TableHeader>Phone</TableHeader>
+                  </TableHead>
+                  <TableHead>
+                    <TableHeader>GST</TableHeader>
+                  </TableHead>
+                  <TableHead>
+                    <TableHeader>Register Add.</TableHeader>
+                  </TableHead>
+                  <TableBody>
+                    {filteredCompanies.map((company) => (
+                      <TableRow
+                        key={company.id}
+                        onClick={() => handleSelectCompany(company)}
+                        className={`cursor-pointer hover:bg-gray-200 ${
+                          selectedCompany && selectedCompany.id === company.id
+                            ? "bg-blue-100"
+                            : ""
+                        }`}
+                      >
+                        <TableCell>{company.name}</TableCell>
+                        <TableCell>{company.email}</TableCell>
+                        <TableCell>{company.phone}</TableCell>
+                        <TableCell>{company.gst}</TableCell>
+                        <TableCell>{company.regAdd}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ClientOnlyTable>
           </div>
         </div>
       </div>
@@ -431,3 +415,5 @@ export default function SuperadminCompanies() {
     </div>
   );
 }
+
+export default withAuth(SuperadminCompanies);

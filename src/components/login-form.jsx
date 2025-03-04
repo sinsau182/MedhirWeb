@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/router";
+import { loginUser } from "@/redux/slices/authSlice";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,20 +13,41 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { jwtDecode } from "jwt-decode";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.auth);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (email === "superadmin@gmail.com" && password === "admin@123") {
-      router.push("/superadmin/companies");
-    } else if (email === "hradmin@gmail.com" && password === "admin@123") {
-      router.push("/hradmin/employees");
-    } else {
-      alert("Invalid credentials");
+  const handleChange = (e) => {
+    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await dispatch(loginUser(credentials));
+
+    if (result.meta.requestStatus === "fulfilled") {
+      const token = result.payload.token;
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", token);
+      }
+
+      // Decode token to get roles
+      const decodedToken = jwtDecode(token);
+      const roles = decodedToken.roles || [];
+
+      // Redirect based on role
+      if (roles.includes("SUPERADMIN")) {
+        router.push("/superadmin/companies");
+      } else if (roles.includes("HRADMIN")) {
+        router.push("/hradmin/employees");
+      } else {
+        router.push("/dashboard"); // Default route
+      }
     }
   };
 
@@ -45,10 +68,11 @@ export function LoginForm({ className, ...props }) {
                   <Input
                     id="email"
                     type="email"
+                    name="email"
                     placeholder="m@example.com"
+                    value={credentials.email}
+                    onChange={handleChange}
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -64,13 +88,16 @@ export function LoginForm({ className, ...props }) {
                   <Input
                     id="password"
                     type="password"
+                    name="password"
+                    placeholder="********"
                     required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={credentials.password}
+                    onChange={handleChange}
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Login
+                {error && <p className="text-red-600">{error}</p>}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Logging in..." : "Login"}
                 </Button>
               </div>
               <div className="text-center text-sm">

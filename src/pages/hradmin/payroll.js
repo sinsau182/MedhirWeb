@@ -17,8 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import withAuth from "@/components/withAuth";
 
-export default function HradminCompanies() {
+function HradminPayroll() {
   const [activePage, setActivePage] = useState("attendance");
   const [employees, setEmployees] = useState([]);
   const [activeTab, setActiveTab] = useState("Salary Statement");
@@ -106,6 +107,10 @@ export default function HradminCompanies() {
             Settings
           </button>
         </nav>
+        <Button onClick={() => router.push("/login")}
+         className="bg-green-600 hover:bg-green-500 text-white">
+          Logout
+        </Button>
       </header>
 
       <div className="h-5" />
@@ -173,7 +178,10 @@ export default function HradminCompanies() {
 
             {/* Edit Button */}
             <button
-              onClick={() => router.push("/hradmin/edit")}
+              onClick={() => {
+                router.push("/hradmin/edit")
+                localStorage.removeItem("token")
+              }}
               className="flex items-center hover:text-blue-600 text-black"
             >
               <Edit className="mr-2" size={20} />
@@ -355,3 +363,5 @@ export default function HradminCompanies() {
     </div>
   );
 }
+
+export default withAuth(HradminPayroll);

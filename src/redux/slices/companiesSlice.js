@@ -7,7 +7,12 @@ export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const token = localStorage.getItem("token");
+      const response = await fetch(API_BASE_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch companies");
       }
@@ -23,9 +28,13 @@ export const createCompany = createAsyncThunk(
   "companies/createCompany",
   async (companyData, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(companyData),
       });
 
@@ -46,9 +55,13 @@ export const updateCompany = createAsyncThunk(
   "companies/updateCompany",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(updatedData),
       });
 
@@ -69,8 +82,12 @@ export const deleteCompany = createAsyncThunk(
   "companies/deleteCompany",
   async (id, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {

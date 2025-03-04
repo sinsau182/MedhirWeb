@@ -8,8 +8,9 @@ import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
+import withAuth from "@/components/withAuth";
 
-export default function EmployeeForm() {
+function EmployeeForm() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, err } = useSelector((state) => state.employees);
@@ -378,3 +379,5 @@ export default function EmployeeForm() {
     </div>
   );
 }
+
+export default withAuth(EmployeeForm);

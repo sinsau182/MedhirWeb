@@ -20,8 +20,11 @@ import {
 import dynamic from "next/dynamic";
 import { Edit, Search, Trash, UserPlus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import withAuth from "@/components/withAuth";
 
-export default function SuperadminSettings() {
+function SuperadminSettings() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("Settings");
   return (
     <div className="bg-white text-black min-h-screen">
@@ -46,7 +49,8 @@ export default function SuperadminSettings() {
             </Link>
           ))}
         </nav>
-        <Button className="bg-green-600 hover:bg-green-500 text-white">
+        <Button onClick={() => router.push("/login")}
+        className="bg-green-600 hover:bg-green-500 text-white">
           Logout
         </Button>
       </header>
@@ -88,3 +92,5 @@ export default function SuperadminSettings() {
     </div>
   );
 }
+
+export default withAuth(SuperadminSettings);

@@ -1,13 +1,20 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://localhost:8080/hradmin/employees";
+const API_BASE_URL = "http://192.168.0.200:8080/hradmin/employees";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
   "employees/fetchEmployees",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const token = localStorage.getItem("token");
+      const response = await fetch(API_BASE_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+
       if (!response.ok) {
         throw new Error("Failed to fetch employees");
       }
@@ -23,9 +30,13 @@ export const createEmployee = createAsyncThunk(
   "employees/createEmployee",
   async (employeeData, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(employeeData),
       });
 
@@ -46,9 +57,13 @@ export const updateEmployee = createAsyncThunk(
   "employees/updateEmployee",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+         },
         body: JSON.stringify(updatedData),
       });
 
@@ -69,8 +84,12 @@ export const deleteEmployee = createAsyncThunk(
   "employees/deleteEmployee",
   async (id, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) {

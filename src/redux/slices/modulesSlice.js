@@ -12,7 +12,13 @@ export const fetchModules = createAsyncThunk(
   "modules/fetchModules",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const token = localStorage.getItem("token");
+      const response = await fetch(API_BASE_URL, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       if (!response.ok) {
         throw new Error("Failed to fetch modules");
       }
@@ -28,9 +34,13 @@ export const addModule = createAsyncThunk(
   "modules/addModule",
   async (moduleData, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+         },
         body: JSON.stringify(moduleData),
       });
 

@@ -3,6 +3,7 @@ import companiesReducer from "./slices/companiesSlice";
 import employeesReducer from "./slices/employeeSlice"; // Import employee slice
 import modulesReducer from "./slices/modulesSlice"; // Import module slice
 import usersReducer from "./slices/usersSlice"; // Import user slice
+import authReducer from "./slices/authSlice"; // Import auth slice
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     employees: employeesReducer, // Manages employee-related state
     modules: modulesReducer, // Manages module-related state
     users: usersReducer, // Manages user-related state
+    auth: authReducer, // Manages authentication state
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
