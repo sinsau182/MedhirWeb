@@ -15,7 +15,6 @@ import Link from "next/link";
 
 function HradminSettings() {
   const [activePage, setActivePage] = useState("Settings");
-  const [employees, setEmployees] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
