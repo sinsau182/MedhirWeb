@@ -34,7 +34,13 @@ import {
 } from "@/components/ui/table";
 import cn from "classnames";
 import withAuth from "@/components/withAuth";
-import { FaUserCircle, FaUsers, FaCalendarCheck, FaMoneyCheckAlt, FaCog } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaUsers,
+  FaCalendarCheck,
+  FaMoneyCheckAlt,
+  FaCog,
+} from "react-icons/fa";
 
 function Attendance() {
   const [activePage, setActivePage] = useState("attendance");
@@ -83,26 +89,55 @@ function Attendance() {
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">MEDHIR</h1>
+        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
+          MEDHIR
+        </h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
-            <button
-              key={index}
-              onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
-              className={`hover:text-black ${
-                router.pathname === `/hradmin/${item.toLowerCase()}`
-                  ? "text-black font-bold"
-                  : "text-[#6c757d]"
-              }`}
-              style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              {item === "Employees" && <FaUsers className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Attendance" && <FaCalendarCheck className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Payroll" && <FaMoneyCheckAlt className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Settings" && <FaCog className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item}
-            </button>
-          ))}
+          {["Employees", "Attendance", "Payroll", "Settings"].map(
+            (item, index) => (
+              <button
+                key={index}
+                onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
+                className={`hover:text-black ${
+                  router.pathname === `/hradmin/${item.toLowerCase()}`
+                    ? "text-black font-bold"
+                    : "text-[#6c757d]"
+                }`}
+                style={{
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                {item === "Employees" && (
+                  <FaUsers
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Attendance" && (
+                  <FaCalendarCheck
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Payroll" && (
+                  <FaMoneyCheckAlt
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Settings" && (
+                  <FaCog
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item}
+              </button>
+            )
+          )}
         </nav>
         <div className="relative">
           <button
@@ -153,9 +188,16 @@ function Attendance() {
                 key={index}
                 onClick={() => setActiveTab(tab)}
                 className={`ml-10 mr-10 hover:text-black ${
-                  activeTab === tab ? "text-gray-800 font-bold" : "text-gray-600 font-medium"
+                  activeTab === tab
+                    ? "text-gray-800 font-bold"
+                    : "text-gray-600 font-medium"
                 }`}
-                style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
+                style={{
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
               >
                 {tab}
               </button>
@@ -202,7 +244,10 @@ function Attendance() {
               </thead>
               <tbody>
                 {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id} className="even:bg-gray-100 odd:bg-white">
+                  <TableRow
+                    key={employee.id}
+                    className="even:bg-gray-100 odd:bg-white"
+                  >
                     <TableCell className="border-r border-gray-300 table-cell-center text-xs">
                       {employee.id}
                     </TableCell>
@@ -236,7 +281,10 @@ function Attendance() {
                           ) : status === "A" ? (
                             <XCircle className="text-red-500" size={16} />
                           ) : status === "WK" ? (
-                            <CalendarCheck className="text-gray-400" size={16} />
+                            <CalendarCheck
+                              className="text-gray-400"
+                              size={16}
+                            />
                           ) : status === "SL" ? (
                             <Syringe className="text-blue-800" size={16} />
                           ) : status === "CL" ? (
@@ -256,12 +304,12 @@ function Attendance() {
       )}
       {activeTab === "Leave Tracker" && (
         <div className="border border-gray-300 rounded-lg shadow-md">
-        {/* Scrollable Container */}
-        <div className="max-h-[430px] overflow-y-auto">
-          <table className="w-full border-collapse">
-            {/* Sticky Header */}
-            <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
-            <tr>
+          {/* Scrollable Container */}
+          <div className="max-h-[430px] overflow-y-auto">
+            <table className="w-full border-collapse">
+              {/* Sticky Header */}
+              <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
+                <tr>
                   {[
                     "Employee ID",
                     "Name",
@@ -272,17 +320,24 @@ function Attendance() {
                     "Carried Forward Leaves",
                     "Net Leaves",
                   ].map((heading, index) => (
-                    <th className="text-center p-2 font-bold text-sm" key={index}>{heading}</th>
+                    <th
+                      className="text-center p-2 font-bold text-sm"
+                      key={index}
+                    >
+                      {heading}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.map((employee, index) => (
-                  <tr key={employee.id}
+                  <tr
+                    key={employee.id}
                     className={cn(
                       "text-sm",
                       index % 2 === 0 ? "bg-gray-100" : "bg-white"
-                    )}>
+                    )}
+                  >
                     <td className="text-left p-2">{employee.id}</td>
                     <td className="text-left p-2">{employee.name}</td>
                     <td className="text-left p-2">{employee.department}</td>

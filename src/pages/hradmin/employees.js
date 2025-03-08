@@ -14,7 +14,13 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import withAuth from "@/components/withAuth";
-import { FaUserCircle, FaUsers, FaCalendarCheck, FaMoneyCheckAlt, FaCog } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaUsers,
+  FaCalendarCheck,
+  FaMoneyCheckAlt,
+  FaCog,
+} from "react-icons/fa";
 
 function Employees() {
   const [activePage, setActivePage] = useState("Employees");
@@ -52,26 +58,55 @@ function Employees() {
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">MEDHIR</h1>
+        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
+          MEDHIR
+        </h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
-            <button
-              key={index}
-              onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
-              className={`hover:text-black ${
-                router.pathname === `/hradmin/${item.toLowerCase()}`
-                  ? "text-black font-bold"
-                  : "text-[#6c757d]"
-              }`}
-              style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              {item === "Employees" && <FaUsers className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Attendance" && <FaCalendarCheck className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Payroll" && <FaMoneyCheckAlt className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Settings" && <FaCog className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item}
-            </button>
-          ))}
+          {["Employees", "Attendance", "Payroll", "Settings"].map(
+            (item, index) => (
+              <button
+                key={index}
+                onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
+                className={`hover:text-black ${
+                  router.pathname === `/hradmin/${item.toLowerCase()}`
+                    ? "text-black font-bold"
+                    : "text-[#6c757d]"
+                }`}
+                style={{
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                {item === "Employees" && (
+                  <FaUsers
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Attendance" && (
+                  <FaCalendarCheck
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Payroll" && (
+                  <FaMoneyCheckAlt
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Settings" && (
+                  <FaCog
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item}
+              </button>
+            )
+          )}
         </nav>
         <div className="relative">
           <button
@@ -138,9 +173,16 @@ function Employees() {
               key={index}
               onClick={() => setActiveTab(tab)}
               className={`ml-10 mr-10 ${
-                activeTab === tab ? "text-gray-800 font-bold" : "text-gray-600 font-medium"
+                activeTab === tab
+                  ? "text-gray-800 font-bold"
+                  : "text-gray-600 font-medium"
               } hover:text-black`}
-              style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
+              style={{
+                fontSize: "16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
             >
               {tab}
             </button>
@@ -149,17 +191,29 @@ function Employees() {
 
         {/* Table Section */}
         <div className="mt-6 even: bg-gray-100 border border-gray-300 rounded-lg shadow-md">
-          <Table >
-          <TableHeader className="bg-gray-300 text-gray-800 font-bold">
-              <TableRow >
+          <Table>
+            <TableHeader className="bg-gray-300 text-gray-800 font-bold">
+              <TableRow>
                 {activeTab === "Basic" && (
                   <>
-                    <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">Name</TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold" >Email</TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">Phone no.</TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">Department</TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">Gender</TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">Title</TableHead>
+                    <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
+                      Name
+                    </TableHead>
+                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
+                      Email
+                    </TableHead>
+                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
+                      Phone no.
+                    </TableHead>
+                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
+                      Department
+                    </TableHead>
+                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
+                      Gender
+                    </TableHead>
+                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
+                      Title
+                    </TableHead>
                     <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
                       Reporting Manager
                     </TableHead>
@@ -196,41 +250,72 @@ function Employees() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee,index) => (
+              {employees.map((employee, index) => (
                 <TableRow
                   key={employee.id}
                   onClick={() => handleRowClick(employee)}
                   className={`cursor-pointer hover:bg-gray-100 transition ${
                     index % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"
                   }`}
-                  
                 >
                   {activeTab === "Basic" && (
                     <>
-                      <TableCell  className="text-left">{employee.name}</TableCell>
-                      <TableCell  className="text-center">{employee.email}</TableCell>
-                      <TableCell  className="text-center">{employee.phone}</TableCell>
-                      <TableCell  className="text-center">{employee.department}</TableCell>
-                      <TableCell  className="text-center">{employee.gender}</TableCell>
-                      <TableCell  className="text-center">{employee.title}</TableCell>
-                      <TableCell  className="text-center">{employee.reportingManager}</TableCell>
+                      <TableCell className="text-left">
+                        {employee.name}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.email}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.phone}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.department}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.gender}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.title}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.reportingManager}
+                      </TableCell>
                     </>
                   )}
                   {activeTab === "ID Proofs" && (
                     <>
-                      <TableCell className="text-left">{employee.name}</TableCell>
-                      <TableCell className="text-center">{employee.idProofs?.aadharNo}</TableCell>
-                      <TableCell className="text-center">{employee.idProofs?.panNo}</TableCell>
-                      <TableCell className="text-center">{employee.idProofs?.voterId}</TableCell>
-                      <TableCell className="text-center">{employee.idProofs?.passport}</TableCell>
+                      <TableCell className="text-left">
+                        {employee.name}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.idProofs?.aadharNo}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.idProofs?.panNo}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.idProofs?.voterId}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.idProofs?.passport}
+                      </TableCell>
                     </>
                   )}
                   {activeTab === "Salary Details" && (
                     <>
-                      <TableCell className="text-left">{employee.name}</TableCell>
-                      <TableCell className="text-center">{employee.salaryDetails?.totalCtc}</TableCell>
-                      <TableCell className="text-center">{employee.salaryDetails?.basic}</TableCell>
-                      <TableCell className="text-center">{employee.salaryDetails?.hra}</TableCell>
+                      <TableCell className="text-left">
+                        {employee.name}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.salaryDetails?.totalCtc}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.salaryDetails?.basic}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.salaryDetails?.hra}
+                      </TableCell>
                       <TableCell className="text-center">
                         {employee.salaryDetails?.allowances}
                       </TableCell>
@@ -239,17 +324,27 @@ function Employees() {
                   )}
                   {activeTab === "Bank Details" && (
                     <>
-                      <TableCell className="text-left">{employee.name}</TableCell>
+                      <TableCell className="text-left">
+                        {employee.name}
+                      </TableCell>
                       <TableCell className="text-center">
                         {employee.bankDetails?.accountNumber}
                       </TableCell>
-                      <TableCell className="text-center">{employee.name}</TableCell>
+                      <TableCell className="text-center">
+                        {employee.name}
+                      </TableCell>
                       <TableCell className="text-center">
                         {employee.bankDetails?.accountNumber}
                       </TableCell>
-                      <TableCell className="text-center">{employee.bankDetails?.bankName}</TableCell>
-                      <TableCell className="text-center">{employee.bankDetails?.ifscCode}</TableCell>
-                      <TableCell className="text-center">{employee.bankDetails?.branchName}</TableCell>
+                      <TableCell className="text-center">
+                        {employee.bankDetails?.bankName}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.bankDetails?.ifscCode}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {employee.bankDetails?.branchName}
+                      </TableCell>
                       {/* <TableCell>{employee.upiId}</TableCell> */}
                     </>
                   )}

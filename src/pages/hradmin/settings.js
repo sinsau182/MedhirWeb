@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import withAuth from "@/components/withAuth";
-import { FaUserCircle, FaUsers, FaCalendarCheck, FaMoneyCheckAlt, FaCog } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaUsers,
+  FaCalendarCheck,
+  FaMoneyCheckAlt,
+  FaCog,
+} from "react-icons/fa";
 
 function HradminSettings() {
   const [activePage, setActivePage] = useState("attendance");
@@ -43,26 +49,55 @@ function HradminSettings() {
   return (
     <div className="bg-white text-black min-h-screen p-6">
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">MEDHIR</h1>
+        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
+          MEDHIR
+        </h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
-            <button
-              key={index}
-              onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
-              className={`hover:text-black ${
-                router.pathname === `/hradmin/${item.toLowerCase()}`
-                  ? "text-black font-bold"
-                  : "text-[#6c757d]"
-              }`}
-              style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              {item === "Employees" && <FaUsers className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Attendance" && <FaCalendarCheck className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Payroll" && <FaMoneyCheckAlt className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item === "Settings" && <FaCog className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
-              {item}
-            </button>
-          ))}
+          {["Employees", "Attendance", "Payroll", "Settings"].map(
+            (item, index) => (
+              <button
+                key={index}
+                onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
+                className={`hover:text-black ${
+                  router.pathname === `/hradmin/${item.toLowerCase()}`
+                    ? "text-black font-bold"
+                    : "text-[#6c757d]"
+                }`}
+                style={{
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                {item === "Employees" && (
+                  <FaUsers
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Attendance" && (
+                  <FaCalendarCheck
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Payroll" && (
+                  <FaMoneyCheckAlt
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item === "Settings" && (
+                  <FaCog
+                    className="inline-block text-black opacity-80"
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />
+                )}
+                {item}
+              </button>
+            )
+          )}
         </nav>
         <div className="relative">
           <button
