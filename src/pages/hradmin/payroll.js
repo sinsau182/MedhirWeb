@@ -18,6 +18,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import withAuth from "@/components/withAuth";
+import { FaUserCircle, FaUsers, FaCalendarCheck, FaMoneyCheckAlt, FaCog } from "react-icons/fa";
 
 function HradminPayroll() {
   const [activePage, setActivePage] = useState("attendance");
@@ -26,6 +27,8 @@ function HradminPayroll() {
   const [selectedMonth, setSelectedMonth] = useState("January");
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
   const handleRowClick = (employee) => {
@@ -60,80 +63,82 @@ function HradminPayroll() {
     "December",
   ];
 
+  const handleLogout = () => {
+    router.push("/login");
+    localStorage.removeItem("token");
+  };
+
   return (
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
-        <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
+        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">MEDHIR</h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          <button
-            onClick={() => router.push("/hradmin/employees")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/employees"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Employees
-          </button>
-          <button
-            onClick={() => router.push("/hradmin/attendance")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/attendance"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Attendance
-          </button>
-          <button
-            onClick={() => router.push("/hradmin/payroll")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/payroll"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Payroll
-          </button>
-          <button
-            onClick={() => router.push("/hradmin/settings")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/settings"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Settings
-          </button>
+          {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
+            <button
+              key={index}
+              onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
+              className={`hover:text-black ${
+                router.pathname === `/hradmin/${item.toLowerCase()}`
+                  ? "text-black font-bold"
+                  : "text-[#6c757d]"
+              }`}
+              style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              {item === "Employees" && <FaUsers className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item === "Attendance" && <FaCalendarCheck className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item === "Payroll" && <FaMoneyCheckAlt className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item === "Settings" && <FaCog className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item}
+            </button>
+          ))}
         </nav>
-        <Button onClick={() => router.push("/login")}
-         className="bg-green-600 hover:bg-green-500 text-white">
-          Logout
-        </Button>
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 text-black font-medium"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
+            <FaUserCircle className="text-2xl" />
+            HR Admin
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
+              <button
+                className="block w-full text-left px-4 py-2 text-black hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="h-5" />
       <div className="p-10">
-        <div className="mt-2 p-4 rounded-lg bg-gray-200 flex items-center justify-between">
-          {/* Left Spacer */}
-          <div className="w-[20%]"></div>
-
-          {/* Centered Search Box */}
-          <div className="relative w-[30%] mx-auto">
-            <Input
-              placeholder="Search"
-              className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg rounded-full py-1 px-3"
-              style={{ border: "none" }}
-            />
-            <Search
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              size={20}
-            />
+        <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="relative w-96 ml-0">
+              <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
+                <Search className="w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full pl-3 text-gray-700 bg-transparent focus:outline-none"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-
-          {/* Right Controls */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-8">
+            <button
+              className="flex items-left text-gray-400 cursor-not-allowed"
+              disabled
+            >
+              <Edit className="mr-2" size={20} />
+              Edit
+            </button>
             <div className="relative">
               <button
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
@@ -175,193 +180,1526 @@ function HradminPayroll() {
                 </div>
               )}
             </div>
-
-            {/* Edit Button */}
-            <button
-              onClick={() => {
-                router.push("/hradmin/edit")
-                localStorage.removeItem("token")
-              }}
-              className="flex items-center hover:text-blue-600 text-black"
-            >
-              <Edit className="mr-2" size={20} />
-              Edit
-            </button>
           </div>
         </div>
 
         {/* Sub Navbar */}
-        <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
-          {[
-            "Salary Statement",
-            "Advance",
-            "Reimbursement",
-            "Payment History",
-          ].map((tab, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveTab(tab)}
-              className={`ml-10 mr-10 hover:text-blue-600 ${
-                activeTab === tab ? "text-blue-600 font-bold" : "text-black"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="p-3 rounded-lg mt-4 flex justify-between text-lg mx-auto bg-gray-50 border border-gray-200">
+          {["Salary Statement", "Advance", "Reimbursement", "Payment History"].map(
+            (tab, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTab(tab)}
+                className={`ml-10 mr-10 hover:text-black ${
+                  activeTab === tab ? "text-gray-800 font-bold" : "text-gray-600 font-medium"
+                }`}
+                style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
+              >
+                {tab}
+              </button>
+            )
+          )}
         </div>
+
+
+        <div className="mt-6 overflow-y-auto max-h-[calc(100vh-200px)]">
+
         {activeTab === "Salary Statement" && (
-          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-left">Name</TableHead>
-                  <TableHead className="text-left">Paid Days</TableHead>
-                  <TableHead className="text-left">Monthly CTC</TableHead>
-                  <TableHead className="text-left">This Month Salary</TableHead>
-                  <TableHead className="text-left">Basic</TableHead>
-                  <TableHead className="text-left">Deductions</TableHead>
-                  <TableHead className="text-left">Taxes</TableHead>
-                  <TableHead className="text-left">Professional Tax</TableHead>
-                  <TableHead className="text-left">Reimbursement</TableHead>
-                  <TableHead className="text-left">Advance Taken</TableHead>
-                  <TableHead className="text-left">Net Pay</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-left">John Doe</TableCell>
-                  <TableCell className="text-left">20</TableCell>
-                  <TableCell className="text-left">₹5000</TableCell>
-                  <TableCell className="text-left">₹4500</TableCell>
-                  <TableCell className="text-left">₹3000</TableCell>
-                  <TableCell className="text-left">₹500</TableCell>
-                  <TableCell className="text-left">₹200</TableCell>
-                  <TableCell className="text-left">₹100</TableCell>
-                  <TableCell className="text-left">₹300</TableCell>
-                  <TableCell className="text-left">₹400</TableCell>
-                  <TableCell className="text-left">₹3500</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+  <div className="border border-gray-300 rounded-lg shadow-md">
+    {/* Scrollable Container */}
+    <div className="max-h-[440px] overflow-y-auto">
+      <table className="w-full border-collapse">
+        {/* Sticky Header */}
+        <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
+          <tr>
+          <th className="text-left p-2 font-bold text-sm">Name</th>
+<th className="text-center p-2 font-bold text-sm">Paid Days</th>
+<th className="text-center p-2 font-bold text-sm">Monthly CTC</th>
+<th className="text-center p-2 font-bold text-sm">This Month Salary</th>
+<th className="text-center p-2 font-bold text-sm">Basic</th>
+<th className="text-center p-2 font-bold text-sm">Deductions</th>
+<th className="text-center p-2 font-bold text-sm">Taxes</th>
+<th className="text-center p-2 font-bold text-sm">Professional Tax</th>
+<th className="text-center p-2 font-bold text-sm">Reimbursement</th>
+<th className="text-center p-2 font-bold text-sm">Advance Taken</th>
+<th className="text-center p-2 font-bold text-sm">Net Pay</th>
+          </tr>
+        </thead>
+        
+        {/* Scrollable Body */}
+        <tbody>
+          <tr>
+            <td className="text-left p-2">John Doe</td>
+            <td className="text-center p-2">20</td>
+            <td className="text-center p-2">₹5000</td>
+            <td className="text-center p-2">₹4500</td>
+            <td className="text-center p-2">₹3000</td>
+            <td className="text-center p-2">₹500</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹3500</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Jane Smith</td>
+            <td className="text-center p-2">22</td>
+            <td className="text-center p-2">₹6000</td>
+            <td className="text-center p-2">₹5500</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹600</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹500</td>
+            <td className="text-center p-2">₹4500</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+          <tr  className="even:bg-gray-100">
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">18</td>
+            <td className="text-center p-2">₹4000</td>
+            <td className="text-center p-2">₹3500</td>
+            <td className="text-center p-2">₹2500</td>
+            <td className="text-center p-2">₹400</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹100</td>
+            <td className="text-center p-2">₹300</td>
+            <td className="text-center p-2">₹200</td>
+            <td className="text-center p-2">₹3300</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
+        {activeTab === "Advance" && (
+          <div className="border border-gray-300 rounded-lg shadow-md">
+    {/* Scrollable Container */}
+    <div className="max-h-[440px] overflow-y-auto">
+      <table className="w-full border-collapse">
+        {/* Sticky Header */}
+        <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
+          <tr>
+          <th className="text-left p-2 font-bold text-sm">Name</th>
+<th className="text-center p-2 font-bold text-sm">Department</th>
+<th className="text-center p-2 font-bold text-sm">Old Advance</th>
+<th className="text-center p-2 font-bold text-sm">This Month Advance</th>
+<th className="text-center p-2 font-bold text-sm">Deduct in this month</th>
+<th className="text-center p-2 font-bold text-sm">Balance for next month</th>
+          </tr>
+        </thead>
+        
+        {/* Scrollable Body */}
+        <tbody>
+          <tr>
+            <td className="text-left p-2">John Doe</td>
+            <td className="text-center p-2">Sales</td>
+            <td className="text-center p-2">₹10000</td>
+            <td className="text-center p-2">₹2000</td>
+            <td className="text-center p-2">₹1500</td>
+            <td className="text-center p-2">₹500</td>
+          </tr>
+          <tr className="even:bg-gray-100">
+            <td className="text-left p-2">Jane Smith</td>
+            <td className="text-center p-2">Marketing</td>
+            <td className="text-center p-2">₹8000</td>
+            <td className="text-center p-2">₹1000</td>
+            <td className="text-center p-2">₹500</td>
+            <td className="text-center p-2">₹500</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">HR</td>
+            <td className="text-center p-2">₹5000</td>
+            <td className="text-center p-2">₹1500</td>
+            <td className="text-center p-2">₹1000</td>
+            <td className="text-center p-2">₹500</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+          </div>
+        )}
+        
+        {activeTab === "Reimbursement" && (
+          <div className="border border-gray-300 rounded-lg shadow-md">
+    {/* Scrollable Container */}
+    <div className="max-h-[440px] overflow-y-auto">
+      <table className="w-full border-collapse">
+        {/* Sticky Header */}
+        <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
+          <tr>
+          <th className="text-left p-2 font-bold text-sm">Name</th>
+<th className="text-center p-2 font-bold text-sm">Department</th>
+<th className="text-center p-2 font-bold text-sm">Reimbursement Amount</th>
+<th className="text-center p-2 font-bold text-sm">Status</th>
+          </tr>
+        </thead>
+
+        {/* Scrollable Body */}
+        <tbody>
+          <tr>
+            <td className="text-left p-2">John Doe</td>
+            <td className="text-center p-2">Sales</td>
+            <td className="text-center p-2">₹5000</td>
+            <td className="text-center p-2">Approved</td>
+          </tr>
+          <tr className="even:bg-gray-100">
+            <td className="text-left p-2">Jane Smith</td>
+            <td className="text-center p-2">Marketing</td>
+            <td className="text-center p-2">₹3000</td>
+            <td className="text-center p-2">Pending</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">HR</td>
+            <td className="text-center p-2">₹2000</td>
+            <td className="text-center p-2">Approved</td>
+          </tr>
+        </tbody>
+      </table>
+          </div>
           </div>
         )}
         {activeTab === "Payment History" && (
-          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-left">Name</TableHead>
-                  <TableHead className="text-left">Department</TableHead>
-                  <TableHead className="text-left">Monthly CTC</TableHead>
-                  <TableHead className="text-left">Amount Paid</TableHead>
-                  <TableHead className="text-left">Transaction index</TableHead>
-                  <TableHead className="text-left">UTR No.</TableHead>
-                  <TableHead className="text-left">Paid By</TableHead>
-                  <TableHead className="text-left">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-left">John Doe</TableCell>
-                  <TableCell className="text-left">Sales</TableCell>
-                  <TableCell className="text-left">₹55000</TableCell>
-                  <TableCell className="text-left">₹55000</TableCell>
-                  <TableCell className="text-left">56777</TableCell>
-                  <TableCell className="text-left">33444</TableCell>
-                  <TableCell className="text-left">aparna</TableCell>
-                  <TableCell className="text-left">paid</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {activeTab === "Advance" && (
-          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-left">Name</TableHead>
-                  <TableHead className="text-left">Department</TableHead>
-                  <TableHead className="text-left">Old Advance</TableHead>
-                  <TableHead className="text-left">
-                    This Month Advance
-                  </TableHead>
-                  <TableHead className="text-left">
-                    Deduct in this month
-                  </TableHead>
-                  <TableHead className="text-left">
-                    Balance for next month
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-left">John Doe</TableCell>
-                  <TableCell className="text-left">Sales</TableCell>
-                  <TableCell className="text-left">₹10000</TableCell>
-                  <TableCell className="text-left">₹2000</TableCell>
-                  <TableCell className="text-left">₹1500</TableCell>
-                  <TableCell className="text-left">₹500</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-left">Jane Smith</TableCell>
-                  <TableCell className="text-left">Marketing</TableCell>
-                  <TableCell className="text-left">₹8000</TableCell>
-                  <TableCell className="text-left">₹1000</TableCell>
-                  <TableCell className="text-left">₹500</TableCell>
-                  <TableCell className="text-left">₹500</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-left">Alice Johnson</TableCell>
-                  <TableCell className="text-left">HR</TableCell>
-                  <TableCell className="text-left">₹5000</TableCell>
-                  <TableCell className="text-left">₹1500</TableCell>
-                  <TableCell className="text-left">₹1000</TableCell>
-                  <TableCell className="text-left">₹500</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {activeTab === "Reimbursement" && (
-          <div className="mt-6 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
-            <Table className="w-full table-fixed">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-left">Name</TableHead>
-                  <TableHead className="text-left">Department</TableHead>
-                  <TableHead className="text-left">Monthly CTC</TableHead>
-                  <TableHead className="text-left">
-                    Total Reimbursement
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-left">John Doe</TableCell>
-                  <TableCell className="text-left">Sales</TableCell>
-                  <TableCell className="text-left">₹55000</TableCell>
-                  <TableCell className="text-left">₹5000</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-left">Jane Smith</TableCell>
-                  <TableCell className="text-left">Marketing</TableCell>
-                  <TableCell className="text-left">₹60000</TableCell>
-                  <TableCell className="text-left">₹7000</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="text-left">Alice Johnson</TableCell>
-                  <TableCell className="text-left">HR</TableCell>
-                  <TableCell className="text-left">₹50000</TableCell>
-                  <TableCell className="text-left">₹3000</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+          <div className="border border-gray-300 rounded-lg shadow-md">
+    {/* Scrollable Container */}
+    <div className="max-h-[440px] overflow-y-auto">
+      <table className="w-full border-collapse">
+        {/* Sticky Header */}
+        <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
+          <tr>
+          <th className="text-left p-2 font-bold text-sm">Name</th>
+<th className="text-center p-2 font-bold text-sm">Department</th>
+<th className="text-center p-2 font-bold text-sm">Payment Date</th>
+<th className="text-center p-2 font-bold text-sm">Amount</th>
+<th className="text-center p-2 font-bold text-sm">Payment Mode</th>
+<th className="text-center p-2 font-bold text-sm">Status</th>
+          </tr>
+        </thead>
+
+        {/* Scrollable Body */}
+        <tbody>
+          <tr>
+            <td className="text-left p-2">John Doe</td>
+            <td className="text-center p-2">Sales</td>
+            <td className="text-center p-2">12/09/2021</td>
+            <td className="text-center p-2">₹5000</td>
+            <td className="text-center p-2">Bank Transfer</td>
+            <td className="text-center p-2">Paid</td>
+          </tr>
+          <tr className="even:bg-gray-100">
+            <td className="text-left p-2">Jane Smith</td>
+            <td className="text-center p-2">Marketing</td>
+            <td className="text-center p-2">15/09/2021</td>
+            <td className="text-center p-2">₹3000</td>
+            <td className="text-center p-2">Cash</td>
+            <td className="text-center p-2">Paid</td>
+          </tr>
+          <tr>
+            <td className="text-left p-2">Alice Johnson</td>
+            <td className="text-center p-2">HR</td>
+            <td className="text-center p-2">18/09/2021</td>
+            <td className="text-center p-2">₹2000</td>
+            <td className="text-center p-2">Bank Transfer</td>
+            <td className="text-center p-2">Paid</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
           </div>
         )}
       </div>
     </div>
+    </div>
   );
-}
+};
 
 export default withAuth(HradminPayroll);

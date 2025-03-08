@@ -4,20 +4,21 @@ import { useRouter } from "next/router";
 const withAuth = (WrappedComponent) => {
   return (props) => {
     const router = useRouter();
-    const [isAuthChecked, setIsAuthChecked] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(null); // Initially null
 
     useEffect(() => {
       if (typeof window !== "undefined") {
         const token = localStorage.getItem("token");
         if (!token) {
-          router.replace("/login"); // Redirects after first render
+          router.replace("/login"); // Redirect immediately
+        } else {
+          setIsAuthenticated(true);
         }
-        setIsAuthChecked(true);
       }
     }, [router]);
 
-    if (!isAuthChecked) {
-      return null; // Prevents flickering before redirect
+    if (isAuthenticated === null) {
+      return null; // Prevent flickering before redirection
     }
 
     return <WrappedComponent {...props} />;

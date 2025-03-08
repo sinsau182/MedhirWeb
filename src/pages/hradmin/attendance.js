@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import cn from "classnames";
 import withAuth from "@/components/withAuth";
+import { FaUserCircle, FaUsers, FaCalendarCheck, FaMoneyCheckAlt, FaCog } from "react-icons/fa";
 
 function Attendance() {
   const [activePage, setActivePage] = useState("attendance");
@@ -40,8 +42,10 @@ function Attendance() {
   const [employees, setEmployees] = useState([]);
   const [dates, setDates] = useState([]);
   const [searchInput, setSearchInput] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
+  const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
   useEffect(() => {
     const generateDates = () => {
       return Array.from({ length: 31 }, (_, i) => {
@@ -58,7 +62,7 @@ function Attendance() {
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:5000/attendance")
+    fetch("http://192.168.0.200:5000/attendance")
       .then((response) => response.json())
       .then((data) => setEmployees(data))
       .catch((error) =>
@@ -70,100 +74,88 @@ function Attendance() {
     employee.name.toLowerCase().includes(searchInput.toLowerCase())
   );
 
+  const handleLogout = () => {
+    router.push("/login");
+    localStorage.removeItem("token");
+  };
+
   return (
     <div className="bg-white text-black min-h-screen p-6">
+      {/* Top Navbar */}
       <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
-        <h1 className="text-2xl font-bold text-black">MEDHIR</h1>
+        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">MEDHIR</h1>
         <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
-          <button
-            onClick={() => router.push("/hradmin/employees")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/employees"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Employees
-          </button>
-          <button
-            onClick={() => router.push("/hradmin/attendance")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/attendance"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Attendance
-          </button>
-          <button
-            onClick={() => router.push("/hradmin/payroll")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/payroll"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Payroll
-          </button>
-          <button
-            onClick={() => router.push("/hradmin/settings")}
-            className={`hover:text-blue-600 ${
-              router.pathname === "/hradmin/settings"
-                ? "text-blue-600 font-bold"
-                : "text-black"
-            }`}
-          >
-            Settings
-          </button>
+          {["Employees", "Attendance", "Payroll", "Settings"].map((item, index) => (
+            <button
+              key={index}
+              onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
+              className={`hover:text-black ${
+                router.pathname === `/hradmin/${item.toLowerCase()}`
+                  ? "text-black font-bold"
+                  : "text-[#6c757d]"
+              }`}
+              style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              {item === "Employees" && <FaUsers className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item === "Attendance" && <FaCalendarCheck className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item === "Payroll" && <FaMoneyCheckAlt className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item === "Settings" && <FaCog className="inline-block text-black opacity-80" style={{ fontSize: "16px", verticalAlign: "middle" }} />}
+              {item}
+            </button>
+          ))}
         </nav>
-        <Button
-          onClick={() => {
-            router.push("/login");
-            localStorage.removeItem("token");
-          }}
-          className="bg-green-600 hover:bg-green-500 text-white"
-        >
-          Logout
-        </Button>
+        <div className="relative">
+          <button
+            className="flex items-center gap-2 text-black font-medium"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
+            <FaUserCircle className="text-2xl" />
+            HR Admin
+          </button>
+          {isDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
+              <button
+                className="block w-full text-left px-4 py-2 text-black hover:bg-gray-100"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Search Box */}
       <div className="h-5" />
       <div className="p-10">
-        <div className="mt-2 p-4 rounded-lg bg-gray-200 flex justify-between items-center">
-          <button
-            onClick={() => router.push("/hradmin/edit")}
-            className="flex items-center hover:text-blue-600 text-black"
-          >
-            <Edit className="mr-2" size={20} />
-            Edit
-          </button>
-          <div className="flex w-screen justify-center">
-            <div className="relative w-[60%]">
-              <Input
-                placeholder="Search"
-                className="w-full bg-gray-100 text-black border border-gray-300 pr-10 text-lg"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <Search
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500"
-                size={24}
-              />
+        <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="relative w-96 ml-0">
+              <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
+                <Search className="w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full pl-3 text-gray-700 bg-transparent focus:outline-none"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Sub Navbar */}
-        <div className="bg-gray-300 p-3 rounded-md mt-4 flex justify-between text-lg shadow-md mx-auto ">
+        <div className="p-3 rounded-lg mt-4 flex justify-between text-lg mx-auto bg-gray-50 border border-gray-200">
           {["Attendance Tracker", "Leave Tracker", "Basic", "ID Proofs"].map(
             (tab, index) => (
               <button
                 key={index}
                 onClick={() => setActiveTab(tab)}
-                className={`ml-10 mr-10 hover:text-blue-600 ${
-                  activeTab === tab ? "text-blue-600 font-bold" : "text-black"
+                className={`ml-10 mr-10 hover:text-black ${
+                  activeTab === tab ? "text-gray-800 font-bold" : "text-gray-600 font-medium"
                 }`}
+                style={{ fontSize: "16px", display: "flex", alignItems: "center", gap: "6px" }}
               >
                 {tab}
               </button>
@@ -173,99 +165,103 @@ function Attendance() {
       </div>
       {activeTab === "Attendance Tracker" && (
         <div className="overflow-container max-h-[calc(100vh-300px)]">
-          <table className="min-w-full table-auto border-collapse border border-gray-300">
-            <thead className="sticky top-0 bg-white z-10 border-gray-400 before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gray-400 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gray-400">
-              <TableRow>
-                <TableHead className="border-r border-l border-l-gray-600 border-r-gray-600 table-head-start text-xs text-gray-800">
-                  Employee ID
-                </TableHead>
-                <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
-                  Name
-                </TableHead>
-                <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
-                  Department
-                </TableHead>
-                <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
-                  P / T.W.D
-                </TableHead>
-                {dates.map((date, index) => (
-                  <TableHead
-                    key={index}
-                    className={cn(
-                      "text-center border-r border-gray-600 text-xs table-head-center text-gray-800",
-                      date.day === "18" &&
-                        date.month === "Jan" &&
-                        "current-day-column"
-                    )}
-                  >
-                    <div className="date-column">
-                      <span>{date.month}</span>
-                      <span>{date.day}</span>
-                      <span>{date.weekday}</span>
-                    </div>
+          <div className="flex justify-between items-center">
+            <table className="min-w-full table-auto border-collapse border border-gray-300">
+              <thead className="sticky top-0 bg-white z-10 border-gray-400 before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-px before:bg-gray-400 after:content-[''] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-gray-400">
+                <TableRow>
+                  <TableHead className="border-r border-l border-l-gray-600 border-r-gray-600 table-head-start text-xs text-gray-800">
+                    Employee ID
                   </TableHead>
-                ))}
-              </TableRow>
-            </thead>
-            <tbody>
-              {filteredEmployees.map((employee) => (
-                <TableRow key={employee.id}>
-                  <TableCell className="border-r border-gray-300 table-cell-center text-xs">
-                    {employee.id}
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    {employee.name}
-                  </TableCell>
-                  <TableCell className="border-r border-gray-300 text-xs">
-                    {employee.department}
-                  </TableCell>
-                  <TableCell className="text-center border-r border-gray-300 text-xs">
-                    {employee.p_twd}
-                  </TableCell>
-                  {employee.attendance.map((status, index) => (
-                    <TableCell
+                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                    Name
+                  </TableHead>
+                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                    Department
+                  </TableHead>
+                  <TableHead className="border-r border-gray-600 table-head-start text-xs text-gray-800">
+                    P / T.W.D
+                  </TableHead>
+                  {dates.map((date, index) => (
+                    <TableHead
                       key={index}
-                      className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center"
+                      className={cn(
+                        "text-center border-r border-gray-600 text-xs table-head-center text-gray-800",
+                        date.day === "18" &&
+                          date.month === "Jan" &&
+                          "current-day-column"
+                      )}
                     >
-                      <span
-                        className={cn(
-                          "w-8 h-7 rounded text-sm flex justify-center items-center",
-                          status === "P" && "present-status",
-                          status === "A" && "absent-status",
-                          status === "WK" && "weekoff-status",
-                          status === "CL" && "casual-leave-status",
-                          status !== "" && "glassmorphism",
-                          status === " " && "border border-gray-300"
-                        )}
-                      >
-                        {status === "P" ? (
-                          <CheckCircle className="text-green-500" size={16} />
-                        ) : status === "A" ? (
-                          <XCircle className="text-red-500" size={16} />
-                        ) : status === "WK" ? (
-                          <CalendarCheck className="text-gray-400" size={16} />
-                        ) : status === "SL" ? (
-                          <Syringe className="text-blue-800" size={16} />
-                        ) : status === "CL" ? (
-                          <Sofa className="text-purple-800" size={16} />
-                        ) : (
-                          status
-                        )}
-                      </span>
-                    </TableCell>
+                      <div className="date-column">
+                        <span>{date.month}</span>
+                        <span>{date.day}</span>
+                        <span>{date.weekday}</span>
+                      </div>
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredEmployees.map((employee) => (
+                  <TableRow key={employee.id} className="even:bg-gray-100 odd:bg-white">
+                    <TableCell className="border-r border-gray-300 table-cell-center text-xs">
+                      {employee.id}
+                    </TableCell>
+                    <TableCell className="border-r border-gray-300 text-xs">
+                      {employee.name}
+                    </TableCell>
+                    <TableCell className="border-r border-gray-300 text-xs">
+                      {employee.department}
+                    </TableCell>
+                    <TableCell className="text-center border-r border-gray-300 text-xs">
+                      {employee.p_twd}
+                    </TableCell>
+                    {employee.attendance.map((status, index) => (
+                      <TableCell
+                        key={index}
+                        className="text-center border-r border-gray-300 p-0 pl-1 justify-center items-center"
+                      >
+                        <span
+                          className={cn(
+                            "w-8 h-7 rounded text-sm flex justify-center items-center",
+                            status === "P" && "present-status",
+                            status === "A" && "absent-status",
+                            status === "WK" && "weekoff-status",
+                            status === "CL" && "casual-leave-status",
+                            status !== "" && "glassmorphism",
+                            status === " " && "border border-gray-300"
+                          )}
+                        >
+                          {status === "P" ? (
+                            <CheckCircle className="text-green-500" size={16} />
+                          ) : status === "A" ? (
+                            <XCircle className="text-red-500" size={16} />
+                          ) : status === "WK" ? (
+                            <CalendarCheck className="text-gray-400" size={16} />
+                          ) : status === "SL" ? (
+                            <Syringe className="text-blue-800" size={16} />
+                          ) : status === "CL" ? (
+                            <Sofa className="text-purple-800" size={16} />
+                          ) : (
+                            status
+                          )}
+                        </span>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       {activeTab === "Leave Tracker" && (
-        <div className="overflow-container max-h-[calc(100vh-300px)]">
-          <div className="mt-2 bg-gradient-to-b from-gray-200 to-gray-300 p-4 shadow-md rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
+        <div className="border border-gray-300 rounded-lg shadow-md">
+        {/* Scrollable Container */}
+        <div className="max-h-[430px] overflow-y-auto">
+          <table className="w-full border-collapse">
+            {/* Sticky Header */}
+            <thead className="bg-gray-300 text-gray-800 font-bold sticky top-0 z-10">
+            <tr>
                   {[
                     "Employee ID",
                     "Name",
@@ -276,25 +272,29 @@ function Attendance() {
                     "Carried Forward Leaves",
                     "Net Leaves",
                   ].map((heading, index) => (
-                    <TableHead key={index}>{heading}</TableHead>
+                    <th className="text-center p-2 font-bold text-sm" key={index}>{heading}</th>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell>{employee.id}</TableCell>
-                    <TableCell>{employee.name}</TableCell>
-                    <TableCell>{employee.department}</TableCell>
-                    <TableCell>25</TableCell>
-                    <TableCell>2</TableCell>
-                    <TableCell>1</TableCell>
-                    <TableCell>3</TableCell>
-                    <TableCell>4</TableCell>
-                  </TableRow>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmployees.map((employee, index) => (
+                  <tr key={employee.id}
+                    className={cn(
+                      "text-sm",
+                      index % 2 === 0 ? "bg-gray-100" : "bg-white"
+                    )}>
+                    <td className="text-left p-2">{employee.id}</td>
+                    <td className="text-left p-2">{employee.name}</td>
+                    <td className="text-left p-2">{employee.department}</td>
+                    <td className="text-center p-2">25</td>
+                    <td className="text-center p-2">2</td>
+                    <td className="text-center p-2">1</td>
+                    <td className="text-center p-2">3</td>
+                    <td className="text-center p-2">4</td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         </div>
       )}
