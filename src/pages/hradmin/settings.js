@@ -19,13 +19,6 @@ function HradminSettings() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const router = useRouter();
 
-  const handleRowClick = (employee) => {
-    router.push({
-      pathname: "/hradmin/addNewEmployee",
-      query: { employee: JSON.stringify(employee) },
-    });
-  };
-
   useEffect(() => {
     if (router.query.tab) {
       setActiveTab(router.query.tab);
@@ -57,50 +50,50 @@ function HradminSettings() {
           {["Employees", "Attendance", "Payroll", "Settings"].map(
             (item, index) => (
               <Link
-              key={index}
-              href={`/hradmin/${item.toLowerCase()}`}
-              passHref
-            >
-              <button
-                onClick={() => setActivePage(item)}
-                className={`hover:text-[#4876D6] ${
-                  activePage === item
-                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                    : "text-[#6c757d]"
-                }`}
-                style={{
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
+                key={index}
+                href={`/hradmin/${item.toLowerCase()}`}
+                passHref
               >
-                {item === "Employees" && (
-                  <FaUsers
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Attendance" && (
-                  <FaCalendarCheck
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Payroll" && (
-                  <FaMoneyCheckAlt
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Settings" && (
-                  <FaCog
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item}
-              </button>
+                <button
+                  onClick={() => setActivePage(item)}
+                  className={`hover:text-[#4876D6] ${
+                    activePage === item
+                      ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
+                      : "text-[#6c757d]"
+                  }`}
+                  style={{
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  {item === "Employees" && (
+                    <FaUsers
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "Attendance" && (
+                    <FaCalendarCheck
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "Payroll" && (
+                    <FaMoneyCheckAlt
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "Settings" && (
+                    <FaCog
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item}
+                </button>
               </Link>
             )
           )}
