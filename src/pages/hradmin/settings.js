@@ -24,16 +24,6 @@ function HradminSettings() {
     }
   }, [router.query.tab]);
 
-  const mainTabs = [];
-
-  const handleTabClick = (tab) => {
-    setActiveTab(tab.value);
-  };
-
-  const navigateToEmployees = () => {
-    router.push("/hradmin/employees");
-  };
-
   const handleLogout = () => {
     router.push("/login");
     localStorage.removeItem("token");
