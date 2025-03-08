@@ -185,7 +185,7 @@ function SuperadminCompanies() {
 
   return (
     <div className="bg-white text-black min-h-screen">
-      <header className="fixed top-0 left-0 right-0 w-full bg-[#f8f8f8] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
+      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
         <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
           MEDHIR
         </h1>
@@ -198,8 +198,10 @@ function SuperadminCompanies() {
             >
               <button
                 onClick={() => setActiveTab(item)}
-                className={`hover:text-black ${
-                  activeTab === item ? "text-black font-bold" : "text-[#6c757d]"
+                className={`hover:text-[#4876D6] ${
+                  activeTab === item
+                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
+                    : "text-[#333333]"
                 }`}
                 style={{
                   fontSize: "16px",
@@ -252,10 +254,7 @@ function SuperadminCompanies() {
           )}
         </div>
       </header>
-
-      <div className="h-4" />
-
-      <div className="p-10">
+      <div className="p-5">
         <div className="mt-6 p-4 rounded-lg bg-white">
           <div className="mt-4 p-4 rounded-lg flex justify-between items-center">
             <div className="relative w-96">
@@ -406,6 +405,7 @@ function SuperadminCompanies() {
               </svg>
             </button>
           </div>
+
           <Input
             name="name"
             value={companyData.name}
@@ -491,3 +491,4 @@ function SuperadminCompanies() {
 }
 
 export default withAuth(SuperadminCompanies);
+

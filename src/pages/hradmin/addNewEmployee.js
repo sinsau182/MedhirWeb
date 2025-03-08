@@ -169,21 +169,25 @@ function EmployeeForm() {
   }, [activeMainTab]);
 
   return (
-    <div className="p-6">
+    <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
+      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
         <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
           MEDHIR
         </h1>
-        <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
+        <nav className="flex flex-grow justify-center space-x-20 text-xl font-medium">
           {["Employees", "Attendance", "Payroll", "Settings"].map(
             (item, index) => (
-              <button
-                key={index}
-                onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
-                className={`hover:text-black ${
-                  router.pathname === `/hradmin/${item.toLowerCase()}`
-                    ? "text-black font-bold"
+              <Link
+              key={index}
+              href={`/hradmin/${item.toLowerCase()}`}
+              passHref
+            >
+             <button
+                onClick={() => setActivePage(item)}
+                className={`hover:text-[#4876D6] ${
+                  activePage === item
+                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
                     : "text-[#6c757d]"
                 }`}
                 style={{
@@ -219,6 +223,7 @@ function EmployeeForm() {
                 )}
                 {item}
               </button>
+              </Link>
             )
           )}
         </nav>
@@ -250,11 +255,11 @@ function EmployeeForm() {
         <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center">
             <button
-              className="bg-gray-700 text-white px-5 py-1.5 rounded-md hover:bg-gray-800 transition flex items-center text-sm"
+              className="px-4 py-2 border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center"
               onClick={() =>
                 router.push({
                   pathname: "/hradmin/addNewEmployee",
-                  query: { activeMainTab: activeTab },
+                  query: { activeMainTab: activeMain },
                 })
               }
             >
@@ -408,10 +413,10 @@ function EmployeeForm() {
         </Card>
 
         {/* Submit Button */}
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end gap-4">
           <Button
             type="submit"
-            className="bg-gray-700 text-white px-5 rounded-md hover:bg-gray-800 transition flex items-center "
+            className="bg-gradient-to-r from-[#E3ECFB] to-[#B0D4FF] text-[#2458B4] hover:from-[#C7DBFA] hover:to-[#98C3F5] font-semibold px-4 py-2 rounded-md transition"
             disabled={loading}
           >
             {loading
@@ -421,7 +426,8 @@ function EmployeeForm() {
               : "Add Employee"}
           </Button>
           <Button
-            className="bg-gray-700 text-white px-5 py-1.5 rounded-md hover:bg-gray-800 transition flex items-center text-sm ml-4"
+            type="button"
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition"
             onClick={() => router.push("/hradmin/employees")}
           >
             Cancel

@@ -41,9 +41,10 @@ import {
   FaMoneyCheckAlt,
   FaCog,
 } from "react-icons/fa";
+import Link from "next/link";
 
 function Attendance() {
-  const [activePage, setActivePage] = useState("attendance");
+  const [activePage, setActivePage] = useState("Attendance");
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [employees, setEmployees] = useState([]);
   const [dates, setDates] = useState([]);
@@ -88,19 +89,23 @@ function Attendance() {
   return (
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
+      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md px-10 py-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] flex justify-between items-start z-50">
         <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
           MEDHIR
         </h1>
-        <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
+        <nav className="flex flex-grow justify-center space-x-20 text-xl font-medium">
           {["Employees", "Attendance", "Payroll", "Settings"].map(
             (item, index) => (
+              <Link
+              key={index}
+              href={`/hradmin/${item.toLowerCase()}`}
+              passHref
+            >
               <button
-                key={index}
-                onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
-                className={`hover:text-black ${
-                  router.pathname === `/hradmin/${item.toLowerCase()}`
-                    ? "text-black font-bold"
+                onClick={() => setActivePage(item)}
+                className={`hover:text-[#4876D6] ${
+                  activePage === item
+                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
                     : "text-[#6c757d]"
                 }`}
                 style={{
@@ -136,6 +141,7 @@ function Attendance() {
                 )}
                 {item}
               </button>
+              </Link>
             )
           )}
         </nav>

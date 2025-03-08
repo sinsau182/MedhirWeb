@@ -21,6 +21,7 @@ import {
   FaMoneyCheckAlt,
   FaCog,
 } from "react-icons/fa";
+import Link from "next/link";
 
 function Employees() {
   const [activePage, setActivePage] = useState("Employees");
@@ -54,22 +55,30 @@ function Employees() {
     localStorage.removeItem("token");
   };
 
+  const filteredEmployees = employees.filter((employee) =>
+    employee.name.toLowerCase().includes(searchInput.toLowerCase())
+  );
+
   return (
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 w-full bg-gray-100 shadow-md px-10 py-4 flex justify-between items-start z-50">
+      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
         <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
           MEDHIR
         </h1>
-        <nav className="flex flex-grow justify-center space-x-24 text-xl font-medium">
+        <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
           {["Employees", "Attendance", "Payroll", "Settings"].map(
             (item, index) => (
+              <Link
+              key={index}
+              href={`/hradmin/${item.toLowerCase()}`}
+              passHref
+            >
               <button
-                key={index}
-                onClick={() => router.push(`/hradmin/${item.toLowerCase()}`)}
-                className={`hover:text-black ${
-                  router.pathname === `/hradmin/${item.toLowerCase()}`
-                    ? "text-black font-bold"
+                onClick={() => setActivePage(item)}
+                className={`hover:text-[#4876D6] ${
+                  activePage === item
+                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
                     : "text-[#6c757d]"
                 }`}
                 style={{
@@ -105,6 +114,7 @@ function Employees() {
                 )}
                 {item}
               </button>
+              </Link>
             )
           )}
         </nav>
@@ -135,7 +145,7 @@ function Employees() {
         <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center">
             <button
-              className="bg-gray-700 text-white px-5 py-1.5 rounded-md hover:bg-gray-800 transition flex items-center text-sm"
+              className="px-4 py-2 border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center"
               onClick={() =>
                 router.push({
                   pathname: "/hradmin/addNewEmployee",
@@ -250,7 +260,7 @@ function Employees() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee, index) => (
+              {filteredEmployees.map((employee, index) => (
                 <TableRow
                   key={employee.id}
                   onClick={() => handleRowClick(employee)}
@@ -325,12 +335,6 @@ function Employees() {
                   {activeTab === "Bank Details" && (
                     <>
                       <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.accountNumber}
-                      </TableCell>
-                      <TableCell className="text-center">
                         {employee.name}
                       </TableCell>
                       <TableCell className="text-center">
