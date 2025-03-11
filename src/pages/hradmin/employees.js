@@ -55,9 +55,10 @@ function Employees() {
     localStorage.removeItem("token");
   };
 
-  const filteredEmployees = employees.filter((employee) =>
-    employee.name.toLowerCase().includes(searchInput.toLowerCase())
+  const filteredEmployees = (employees || []).filter((employee) =>
+    employee?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
+  
 
   return (
     <div className="bg-white text-black min-h-screen p-6">
