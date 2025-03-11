@@ -32,6 +32,7 @@ import { FaBuilding, FaUserCircle, FaCog } from "react-icons/fa"; // Import the 
 function SuperadminModules() {
   const router = useRouter();
   const dispatch = useDispatch();
+  const [searchInput, setSearchInput] = useState("");
   const { modules, loading, error } = useSelector((state) => state.modules);
   const [activeTab, setActiveTab] = useState("Modules");
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false);
@@ -103,6 +104,10 @@ function SuperadminModules() {
     router.push("/login");
     localStorage.removeItem("token");
   };
+
+  const filteredModules = modules.filter((module) =>
+    module.moduleName.toLowerCase().includes(searchInput.toLowerCase())
+  );
 
   return (
     <div className="bg-white text-[#4a4a4a] max-h-screen">
@@ -182,7 +187,9 @@ function SuperadminModules() {
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-300 shadow-sm bg-white"
+                className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg bg-white"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
@@ -231,9 +238,9 @@ function SuperadminModules() {
                     Admin
                   </TableHeader>
                 </TableHead>
-                
+
                 <TableBody>
-                  {modules.map((module, index) => (
+                  {filteredModules.map((module, index) => (
                     <TableRow
                       key={index}
                       className={`cursor-pointer hover:bg-gray-100 transition ${
