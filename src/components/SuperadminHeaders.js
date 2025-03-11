@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa"; // Import the icons
 import { Search, UserPlus, Trash, Edit, Grid2x2 } from "lucide-react";
@@ -7,8 +7,14 @@ import withAuth from "@/components/withAuth";
 
 export default function SuperadminHeaders() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("Companies");
+  const [activeTab, setActiveTab] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    // Update activeTab based on the current route
+    useEffect(() => {
+        const path = router.pathname.split("/").pop(); // Get the last part of the route
+        setActiveTab(path.charAt(0).toUpperCase() + path.slice(1)); // Capitalize first letter
+      }, [router.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
