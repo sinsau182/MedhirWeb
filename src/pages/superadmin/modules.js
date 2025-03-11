@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchModules, addModule } from "@/redux/slices/modulesSlice"; // Adjust the import path as needed
 // import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
-import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { Input } from "@/components/ui/input";
 import {
   Table,

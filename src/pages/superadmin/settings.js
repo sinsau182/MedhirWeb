@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { Input } from "@/components/ui/input";
 import {
   Table,

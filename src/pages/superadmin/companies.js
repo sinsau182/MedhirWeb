@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import SuperadminNavbar from "@/components/SuperadminNavbar";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchCompanies,
