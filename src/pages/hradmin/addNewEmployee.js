@@ -168,6 +168,14 @@ function EmployeeForm() {
     if (activeMainTab) setActiveMain(activeMainTab);
   }, [activeMainTab]);
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Handle the file upload logic here
+      console.log("Uploaded file:", file);
+    }
+  };
+
   return (
     <div className="bg-white text-black min-h-screen p-6">
       {/* Top Navbar */}
@@ -291,7 +299,7 @@ function EmployeeForm() {
 
       <form onSubmit={handleEmployeeSubmit}>
         {/* Employee Card */}
-        <Card className="p-6 bg-white ">
+        <Card className="p-6 bg-white relative">
           <div className="flex items-center justify-between">
             <input
               name="name"
@@ -302,6 +310,21 @@ function EmployeeForm() {
               onFocus={(e) => (e.target.style.color = "black")}
               required
             />
+            <div className="absolute top-6 right-6">
+              <input
+                type="file"
+                accept="image/*"
+                id="photo-upload"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+              <label
+                htmlFor="photo-upload"
+                className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition"
+              >
+                Upload Photo
+              </label>
+            </div>
           </div>
 
           <div className="mt-2">
