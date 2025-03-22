@@ -144,35 +144,33 @@ function Employees() {
       <div className="h-5" />
       <div className="p-10">
         <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
-          <div className="flex items-center">
-            <button
-              className="px-4 py-2 border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center"
-              onClick={() =>
-                router.push({
-                  pathname: "/hradmin/addNewEmployee",
-                  query: { activeMainTab: activeTab },
-                })
-              }
-            >
-              <UserPlus className="mr-2" size={22} /> Add New Employee
-            </button>
-            <div className="relative w-96 ml-4">
-              <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
-                <Search className="w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full pl-3 text-gray-700 bg-transparent focus:outline-none"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-              </div>
+          <button
+            className="px-4 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
+            onClick={() =>
+              router.push({
+                pathname: "/hradmin/addNewEmployee",
+                query: { activeMainTab: activeTab },
+              })
+            }
+          >
+            <UserPlus className="mr-2" size={22} /> Add New Employee
+          </button>
+          <div className="relative w-96 ml-auto">
+            <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
+              <Search className="w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-3 text-gray-700 bg-transparent focus:outline-none"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
             </div>
           </div>
         </div>
 
         {/* Sub Navbar */}
-        <div className="p-3 rounded-lg mt-4 flex justify-between text-lg mx-auto bg-gray-50 border border-gray-200">
+        <div className="p-3 rounded-lg mt-4 flex space-x-4 text-lg mx-auto bg-gray-50 border border-gray-200">
           {[
             "Basic",
             "ID Proofs",
@@ -183,9 +181,9 @@ function Employees() {
             <button
               key={index}
               onClick={() => setActiveTab(tab)}
-              className={`ml-10 mr-10 ${
+              className={`px-4 py-2 rounded-md ${
                 activeTab === tab
-                  ? "text-gray-800 font-bold"
+                  ? "bg-white shadow-md text-black font-bold"
                   : "text-gray-600 font-medium"
               } hover:text-black`}
               style={{

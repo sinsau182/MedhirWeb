@@ -263,7 +263,7 @@ function EmployeeForm() {
         <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center">
             <button
-              className="px-4 py-2 border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center"
+              className="px-4 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
               onClick={() =>
                 router.push({
                   pathname: "/hradmin/addNewEmployee",
@@ -277,7 +277,7 @@ function EmployeeForm() {
         </div>
 
         {/* Sub Navbar (Aligned with Employee Name) */}
-        <div className="p-3 rounded-lg mt-4 flex justify-between text-lg mx-auto bg-gray-50 border border-gray-200">
+        <div className="p-3 rounded-lg mt-4 flex space-x-4 text-lg bg-gray-50 border border-gray-200">
           {mainTabs.map((tab, index) => (
             <button
               key={index}
@@ -285,11 +285,11 @@ function EmployeeForm() {
                 handleTabClick(tab);
                 setActiveMain(tab);
               }}
-              className={`ml-10 mr-10 ${
+              className={`px-4 py-2 rounded-md ${
                 activeMain === tab
-                  ? "text-gray-800 font-bold"
+                  ? "bg-white shadow-md text-black font-bold"
                   : "text-gray-600 font-medium"
-              }`}
+              } hover:text-black`}
             >
               {tab}
             </button>
