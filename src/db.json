@@ -1,0 +1,148 @@
+{
+  "attendance": [
+    {
+      "id": "MED001",
+      "name": "Arun",
+      "department": "SALES",
+      "p_twd": "18/20",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED002",
+      "name": "Naman",
+      "department": "Design",
+      "attendance": ["WK", "WK", "P", "A", "P", "P", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED003",
+      "name": "Amit",
+      "department": "Marketing",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED004",
+      "name": "Mahesh",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "A", "P", "P", "P", "P", "WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED005",
+      "name": "Rohit",
+      "department": "HR",
+      "attendance": ["WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED006",
+      "name": "Suresh",
+      "department": "IT",
+      "attendance": ["WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "CL", "P", "P", "P", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED007",
+      "name": "Arun",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED008",
+      "name": "Naman",
+      "department": "Design",
+      "attendance": ["WK", "WK", "P", "A", "P", "P", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED009",
+      "name": "Amit",
+      "department": "Marketing",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED010",
+      "name": "Mahesh",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "A", "P", "P", "P", "P", "WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED011",
+      "name": "Rohit",
+      "department": "HR",
+      "attendance": ["WK", "WK", "P", "SL", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED012",
+      "name": "Suresh",
+      "department": "IT",
+      "attendance": ["WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "CL", "P", "P", "P", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },    {
+      "id": "MED013",
+      "name": "Arun",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED014",
+      "name": "Naman",
+      "department": "Design",
+      "attendance": ["WK", "WK", "P", "A", "P", "P", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED015",
+      "name": "Amit",
+      "department": "Marketing",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED016",
+      "name": "Mahesh",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "A", "P", "P", "P", "P", "WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED017",
+      "name": "Rohit",
+      "department": "HR",
+      "attendance": ["WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED018",
+      "name": "Suresh",
+      "department": "IT",
+      "attendance": ["WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "CL", "P", "P", "P", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED019",
+      "name": "Arun",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED020",
+      "name": "Naman",
+      "department": "Design",
+      "attendance": ["WK", "WK", "P", "A", "P", "P", "P", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED021",
+      "name": "Amit",
+      "department": "Marketing",
+      "attendance": ["WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED022",
+      "name": "Mahesh",
+      "department": "SALES",
+      "attendance": ["WK", "WK", "A", "P", "P", "P", "P", "WK", "WK", "P", "P", "P", "A", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED023",
+      "name": "Rohit",
+      "department": "HR",
+      "attendance": ["WK", "WK", "P", "SL", "P", "P", "A", "WK", "WK", "P", "P", "P", "P", "A", "WK", "WK", "P", "P", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    },
+    {
+      "id": "MED024",
+      "name": "Suresh",
+      "department": "IT",
+      "attendance": ["WK", "WK", "P", "P", "A", "P", "P", "WK", "WK", "CL", "P", "P", "P", "P", "WK", "WK", "P", "A", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+    }
+  ]
+}
