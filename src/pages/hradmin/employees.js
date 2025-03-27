@@ -20,6 +20,8 @@ import {
   FaCalendarCheck,
   FaMoneyCheckAlt,
   FaCog,
+  FaChartPie,
+  FaTasks,
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -68,11 +70,11 @@ function Employees() {
           MEDHIR
         </h1>
         <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map(
+          {["Overview", "My Task", "Employees", "Attendance", "Payroll", "Settings"].map(
             (item, index) => (
               <Link
                 key={index}
-                href={`/hradmin/${item.toLowerCase()}`}
+                href={`/hradmin/${item.toLowerCase().replace(" ", "")}`}
                 passHref
               >
                 <button
@@ -89,6 +91,18 @@ function Employees() {
                     gap: "6px",
                   }}
                 >
+                  {item === "Overview" && (
+                    <FaChartPie
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "My Task" && (
+                    <FaTasks
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
                   {item === "Employees" && (
                     <FaUsers
                       className="inline-block text-black opacity-80"
