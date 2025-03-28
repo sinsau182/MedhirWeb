@@ -4,44 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchEmployees } from "@/redux/slices/employeeSlice"; // Corrected import
-import {
-  Table,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
+import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
 import withAuth from "@/components/withAuth";
-import {
-  FaUserCircle,
-  FaUsers,
-  FaCalendarCheck,
-  FaMoneyCheckAlt,
-  FaCog,
-} from "react-icons/fa";
-import Link from "next/link";
+import Sidebar from "@/components/Sidebar";
+import HradminNavbar from "@/components/HradminNavbar";
 
 function Employees() {
-  const [activePage, setActivePage] = useState("Employees");
   const [activeTab, setActiveTab] = useState("Basic");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const router = useRouter();
-
   const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees); // Corrected selector
+  const { employees, loading } = useSelector((state) => state.employees);
 
   useEffect(() => {
-    dispatch(fetchEmployees()); // Fetch employees from Redux store
+    dispatch(fetchEmployees());
   }, [dispatch]);
-
-  useEffect(() => {
-    if (router.query.page) {
-      setActivePage(router.query.page);
-    }
-  }, [router.query.page]);
 
   const handleRowClick = (employee) => {
     router.push({
@@ -50,113 +29,40 @@ function Employees() {
     });
   };
 
-  const handleLogout = () => {
-    router.push("/login");
-    localStorage.removeItem("token");
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   const filteredEmployees = (employees || []).filter((employee) =>
     employee?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
-  
 
   return (
-    <div className="bg-white text-black min-h-screen p-6">
-      {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
-          MEDHIR
-        </h1>
-        <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map(
-            (item, index) => (
-              <Link
-                key={index}
-                href={`/hradmin/${item.toLowerCase()}`}
-                passHref
-              >
-                <button
-                  onClick={() => setActivePage(item)}
-                  className={`hover:text-[#4876D6] ${
-                    activePage === item
-                      ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                      : "text-[#6c757d]"
-                  }`}
-                  style={{
-                    fontSize: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  {item === "Employees" && (
-                    <FaUsers
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Attendance" && (
-                    <FaCalendarCheck
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Payroll" && (
-                    <FaMoneyCheckAlt
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Settings" && (
-                    <FaCog
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item}
-                </button>
-              </Link>
-            )
-          )}
-        </nav>
-        <div className="relative">
-          <button
-            className="flex items-center gap-2 text-black font-medium"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          >
-            <FaUserCircle className="text-2xl" />
-            HR Admin
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
-              <button
-                className="block w-full text-left px-4 py-2 text-black hover:bg-gray-100"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
+      {/* Sidebar */}
+      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      {/* Search Box */}
-      <div className="h-5" />
-      <div className="p-10">
-        <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
-          <div className="flex items-center">
+      {/* Main content container */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-64"}`}>
+        
+        {/* Navbar - Stays at the top */}
+        <HradminNavbar />
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto p-6 pt-24">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-800">Employees</h1>
             <button
-              className="px-4 py-2 border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center"
-              onClick={() =>
-                router.push({
-                  pathname: "/hradmin/addNewEmployee",
-                  query: { activeMainTab: activeTab },
-                })
-              }
+              className="px-4 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
+              onClick={() => router.push({ pathname: "/hradmin/addNewEmployee", query: { activeMainTab: activeTab } })}
             >
               <UserPlus className="mr-2" size={22} /> Add New Employee
             </button>
-            <div className="relative w-96 ml-4">
+          </div>
+
+          {/* Search Box */}
+          <div className="mt-4">
+            <div className="relative w-96">
               <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
                 <Search className="w-4 h-4 text-gray-500" />
                 <input
@@ -169,42 +75,27 @@ function Employees() {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Sub Navbar */}
-        <div className="p-3 rounded-lg mt-4 flex justify-between text-lg mx-auto bg-gray-50 border border-gray-200">
-          {[
-            "Basic",
-            "ID Proofs",
-            "Salary Details",
-            "Bank Details",
-            "Leaves Policy",
-          ].map((tab, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveTab(tab)}
-              className={`ml-10 mr-10 ${
-                activeTab === tab
-                  ? "text-gray-800 font-bold"
-                  : "text-gray-600 font-medium"
-              } hover:text-black`}
-              style={{
-                fontSize: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+          {/* Tabs */}
+          <div className="p-3 rounded-lg mt-4 flex space-x-4 text-lg mx-auto bg-gray-50 border border-gray-200">
+            {["Basic", "ID Proofs", "Salary Details", "Bank Details", "Leaves Policy"].map((tab, index) => (
+              <button
+                key={index}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-md ${
+                  activeTab === tab ? "bg-white shadow-md text-black font-bold" : "text-gray-600 font-medium"
+                } hover:text-black`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-        {/* Table Section */}
-        <div className="mt-6 even: bg-gray-100 border border-gray-300 rounded-lg shadow-md">
-          <Table>
-            <TableHeader className="bg-gray-300 text-gray-800 font-bold">
-              <TableRow>
+          {/* Table Section */}
+          <div className="mt-6 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
+            <Table>
+              <TableHeader className="bg-gray-300 text-gray-800 font-bold">
+                <TableRow>
                 {activeTab === "Basic" && (
                   <>
                     <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
@@ -258,9 +149,9 @@ function Employees() {
                     <TableHead className="text-center">Branch Name</TableHead>
                   </>
                 )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {filteredEmployees.map((employee, index) => (
                 <TableRow
                   key={employee.id}
@@ -355,8 +246,9 @@ function Employees() {
                   )}
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </div>
