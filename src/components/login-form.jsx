@@ -44,7 +44,7 @@ export function LoginForm({ className, ...props }) {
       if (roles.includes("SUPERADMIN")) {
         router.push("/superadmin/companies");
       } else if (roles.includes("HRADMIN")) {
-        router.push("/hradmin/employees");
+        router.push("/hradmin/dashboard");
       } else {
         router.push("/dashboard"); // Default route
       }
