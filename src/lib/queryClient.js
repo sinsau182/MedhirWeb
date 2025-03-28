@@ -19,18 +19,20 @@ export async function apiRequest(method, url, data) {
   return res;
 }
 
-const getQueryFn = ({ on401 }) => async ({ queryKey }) => {
-  const res = await fetch(queryKey[0], {
-    credentials: "include",
-  });
+const getQueryFn =
+  ({ on401 }) =>
+  async ({ queryKey }) => {
+    const res = await fetch(queryKey[0], {
+      credentials: "include",
+    });
 
-  if (on401 === "returnNull" && res.status === 401) {
-    return null;
-  }
+    if (on401 === "returnNull" && res.status === 401) {
+      return null;
+    }
 
-  await throwIfResNotOk(res);
-  return await res.json();
-};
+    await throwIfResNotOk(res);
+    return await res.json();
+  };
 
 export const queryClient = new QueryClient({
   defaultOptions: {

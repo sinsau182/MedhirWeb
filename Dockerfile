@@ -9,7 +9,7 @@ COPY package.json package-lock.json ./
 RUN npm install --production
 
 # Copy Next.js project files
-COPY . .
+COPY . /app
 
 # Ensure scripts have execution permissions
 RUN chmod +x node_modules/.bin/next
