@@ -29,7 +29,7 @@ return (
             {/* Logo and Role Badges */}
             <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Medhir</h1>
-                <RoleToggle />
+                <RoleToggle currentRole="hr" setRole={(role) => console.log(role)} />
 
             </div>
             

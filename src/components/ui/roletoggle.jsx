@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useRouter } from "next/router";
 
 const roleLabels = {
-  hr: "HR",
-  manager: "Manager",
   employee: "Employee",
+  manager: "Manager",
+  hr: "HR",
 };
 
 const roleColors = {
@@ -15,6 +17,7 @@ const roleColors = {
 };
 
 const RoleToggle = () => {
+  const router = useRouter();
   const roles = Object.keys(roleLabels);
   const [currentRole, setCurrentRole] = useState(null);
 
@@ -28,12 +31,22 @@ const RoleToggle = () => {
   }, []);
 
   const switchRole = (role) => {
+    
+  
     if (role !== currentRole) {
       setCurrentRole(role);
       localStorage.setItem("currentRole", role);
+      if (role === "hr") {
+        router.push("/hradmin/dashboard"); // Redirect to HR dashboard
+      } else if (role === "manager") {
+        router.push("/manager/dashboard"); // Redirect to Manager dashboard
+      } else if (role === "employee") {
+        router.push("/employee/dashboard"); // Redirect to Employee dashboard
+      }
     }
   };
 
+  console.log("Current Role:", currentRole); // For debugging purposes
   return (
     <div className="flex items-center gap-2">
       {roles.map((role) => (

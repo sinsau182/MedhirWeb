@@ -49,21 +49,12 @@ function Employees() {
         <HradminNavbar />
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto p-6 pt-24">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-800">Employees</h1>
-            <button
-              className="px-4 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
-              onClick={() => router.push({ pathname: "/hradmin/addNewEmployee", query: { activeMainTab: activeTab } })}
-            >
-              <UserPlus className="mr-2" size={22} /> Add New Employee
-            </button>
-          </div>
-
-          {/* Search Box */}
-          <div className="mt-4">
-            <div className="relative w-96">
-              <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
+            <div className="flex-1 overflow-y-auto p-6 pt-24">
+              <div className="flex justify-between items-center">
+                <h1 className="text-3xl font-bold text-gray-800">Team Members</h1>
+                {/* Search Box */}
+                <div className="relative w-96">
+                  <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
                 <Search className="w-4 h-4 text-gray-500" />
                 <input
                   type="text"
@@ -72,26 +63,10 @@ function Employees() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                 />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="p-3 rounded-lg mt-4 flex space-x-4 text-lg mx-auto bg-gray-50 border border-gray-200">
-            {["Basic", "ID Proofs", "Salary Details", "Bank Details", "Leaves Policy"].map((tab, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === tab ? "bg-white shadow-md text-black font-bold" : "text-gray-600 font-medium"
-                } hover:text-black`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Table Section */}
+              {/* Table Section */}
           <div className="mt-6 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
             <Table>
               <TableHeader className="bg-gray-300 text-gray-800 font-bold">
@@ -125,7 +100,7 @@ function Employees() {
                   <>
                     <TableHead className="text-left">Name</TableHead>
                     <TableHead className="text-center">Aadhar no.</TableHead>
-                    <TableHead className="text-center">PAN no.</TableHead>
+                    <TableHead className="text-center">Pan no.</TableHead>
                     <TableHead className="text-center">Voter ID</TableHead>
                     <TableHead className="text-center">Passport no.</TableHead>
                   </>
@@ -133,7 +108,7 @@ function Employees() {
                 {activeTab === "Salary Details" && (
                   <>
                     <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Total CTC</TableHead>
+                    <TableHead className="text-center">Total Ctc</TableHead>
                     <TableHead className="text-center">Basic</TableHead>
                     <TableHead className="text-center">HRA</TableHead>
                     <TableHead className="text-center">Allowance</TableHead>
@@ -143,7 +118,6 @@ function Employees() {
                 {activeTab === "Bank Details" && (
                   <>
                     <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Account Holder Name</TableHead>
                     <TableHead className="text-center">Account no.</TableHead>
                     <TableHead className="text-center">Bank Name</TableHead>
                     <TableHead className="text-center">IFSC</TableHead>
@@ -229,9 +203,6 @@ function Employees() {
                     <>
                       <TableCell className="text-left">
                         {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.accountHolderName}
                       </TableCell>
                       <TableCell className="text-center">
                         {employee.bankDetails?.accountNumber}

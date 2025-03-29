@@ -48,17 +48,11 @@ const COLORS = [
 
 const Overview = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
   const [showCharts, setShowCharts] = useState(false);
-
   const [activeIndex, setActiveIndex] = useState(null);
-
   // const [requestToggle, setRequestToggle] = useState(false);
-
   const [showRequestDetails, setShowRequestDetails] = useState(false); // New state
-
   const [activeTab, setActiveTab] = useState("leaveRequests");
 
   const toggleSidebar = () => {
@@ -73,11 +67,7 @@ const Overview = () => {
     console.log("Logout clicked");
   };
 
-  const handleAttendanceClick = () => {
-    setShowCharts((prevShowCharts) => !prevShowCharts); // Toggle Charts
-
-    setShowRequestDetails(false); // Ensure Request Details are hidden
-  };
+  
 
   const handleOpenRequestsClick = () => {
     setShowRequestDetails((prevShowRequestDetails) => !prevShowRequestDetails); // Toggle Request Details
@@ -114,38 +104,28 @@ const Overview = () => {
   const overviewData = [
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
-      label: "Total Employees",
-      count: 88,
-    },
-
-    {
-      icon: <FaCalendar className="h-6 w-6 text-green-500" />,
-      label: "Present Today",
-      count: 72,
-    },
-
-    {
-      icon: <FaClock className="h-6 w-6 text-yellow-500" />,
-      label: "Pending Tasks",
+      label: "Team Members",
       count: 12,
     },
 
     {
-      icon: <FaCreditCard className="h-6 w-6 text-purple-500" />,
-      label: "Payroll Status",
-      count: "Processed",
+      icon: <FaCalendar className="h-6 w-6 text-green-500" />,
+      label: "Leave Requests",
+      count: 5,
+    },
+
+    {
+      icon: <FaClock className="h-6 w-6 text-yellow-500" />,
+      label: "Performance",
+      count: 12,
     },
   ];
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+<div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
 
-      <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        currentRole={"hr"}
-      />
+      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"hr"} />
 
       {/* Main Content */}
 
@@ -163,7 +143,7 @@ const Overview = () => {
         <div className="pt-24 px-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
-              Company Overview Dashboard
+              Manager Dashboard
             </h1>
           </div>
 
@@ -176,11 +156,12 @@ const Overview = () => {
                 .filter((item) => item.label !== "Payroll Status")
 
                 .map((item, index) =>
-                  item.label === "Total Employees" ? (
+                  item.label === "Team Members" ? (
                     <div
                       key={index}
                       className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300"
                       style={{ height: "250px", width: "400px" }}
+                      onClick={() => window.location.href = '/manager/team'} // Updated click handler
                     >
                       <div className="flex justify-between items-center w-full">
                         <p className="text-gray-600 text-lg font-semibold">
@@ -198,7 +179,7 @@ const Overview = () => {
                         </p>
 
                         <p className="text-sm text-gray-500 mt-1">
-                          Active employees in the organization
+                          People in your department
                         </p>
                       </div>
 
@@ -208,16 +189,16 @@ const Overview = () => {
                         <span className="ml-1">+12 from last month</span>
                       </div>
                     </div>
-                  ) : item.label === "Present Today" ? (
+                  ) : item.label === "Leave Requests" ? (
                     <div
                       key={index}
                       className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
                       style={{ height: "250px", width: "400px" }}
-                      onClick={handleAttendanceClick} // Updated click handler
+                      onClick={handleOpenRequestsClick} // Updated click handler
                     >
                       <div className="flex justify-between items-center w-full">
                         <p className="text-gray-600 text-lg font-semibold">
-                          Attendance Rate
+                            {item.label}
                         </p>
 
                         <div className="p-2 bg-[#E3ECFB] rounded-full">
@@ -227,11 +208,11 @@ const Overview = () => {
 
                       <div className="mt-4">
                         <p className="text-4xl font-bold text-gray-800">
-                          93.8%
+                            {item.count}
                         </p>
 
                         <p className="text-sm text-gray-500 mt-1">
-                          Average monthly attendance rate
+                          Pending Approval from your team
                         </p>
                       </div>
 
@@ -241,16 +222,15 @@ const Overview = () => {
                         <span className="ml-1">+3.8% vs target (90%)</span>
                       </div>
                     </div>
-                  ) : item.label === "Pending Tasks" ? (
+                  ) : item.label === "Performance" ? (
                     <div
                       key={index}
                       className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
                       style={{ height: "250px", width: "400px" }}
-                      onClick={handleOpenRequestsClick} // Updated click handler
                     >
                       <div className="flex justify-between items-center w-full">
                         <p className="text-gray-600 text-lg font-semibold">
-                          Open Requests
+                            {item.label}
                         </p>
 
                         <div className="p-2 bg-[#E3ECFB] rounded-full">
@@ -259,10 +239,10 @@ const Overview = () => {
                       </div>
 
                       <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">17</p>
+                        <p className="text-4xl font-bold text-gray-800">94%</p>
 
                         <p className="text-sm text-gray-500 mt-1">
-                          Leave and expense requests pending
+                          Average Team Performance Score
                         </p>
                       </div>
 

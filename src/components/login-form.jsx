@@ -45,6 +45,7 @@ export function LoginForm({ className, ...props }) {
         router.push("/superadmin/companies");
       } else if (roles.includes("HRADMIN")) {
         router.push("/hradmin/dashboard");
+        localStorage.setItem("currentRole", "hr");
       } else {
         router.push("/dashboard"); // Default route
       }
