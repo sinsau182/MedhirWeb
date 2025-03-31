@@ -14,7 +14,10 @@ import {
   FaCalendarCheck,
   FaMoneyCheckAlt,
   FaCog,
+  FaArrowAltCircleUp,
 } from "react-icons/fa";
+import Sidebar from "@/components/Sidebar";
+import HradminNavbar from "@/components/HradminNavbar";
 
 function EmployeeForm() {
   const router = useRouter();
@@ -31,6 +34,9 @@ function EmployeeForm() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
   const [employeeData, setEmployeeData] = useState({
     name: "",
@@ -176,130 +182,32 @@ function EmployeeForm() {
     }
   };
 
+  const handleFileUpload = (e, key) => {
+    const file = e.target.files[0];
+    if (file) {
+      console.log(`Uploaded file for ${key}:`, file);
+    }
+  };
+
   return (
-    <div className="bg-white text-black min-h-screen p-6">
-      {/* Top Navbar */}
-      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
-          MEDHIR
-        </h1>
-        <nav className="flex flex-grow justify-center space-x-20 text-xl font-medium">
-          {["Employees", "Attendance", "Payroll", "Settings"].map(
-            (item, index) => (
-              <Link
-                key={index}
-                href={`/hradmin/${item.toLowerCase()}`}
-                passHref
-              >
-                <button
-                  onClick={() => setActivePage(item)}
-                  className={`hover:text-[#4876D6] ${
-                    activePage === item
-                      ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                      : "text-[#6c757d]"
-                  }`}
-                  style={{
-                    fontSize: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  {item === "Employees" && (
-                    <FaUsers
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Attendance" && (
-                    <FaCalendarCheck
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Payroll" && (
-                    <FaMoneyCheckAlt
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Settings" && (
-                    <FaCog
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item}
-                </button>
-              </Link>
-            )
-          )}
-        </nav>
-        <div className="relative">
-          <button
-            className="flex items-center gap-2 text-black font-medium"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          >
-            <FaUserCircle className="text-2xl" />
-            HR Admin
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
-              <button
-                className="block w-full text-left px-4 py-2 text-black hover:bg-gray-100"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="flex min-h-screen bg-gray-100">
 
-      <div className="h-5" />
+      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      {/* Add New Employee Button */}
-      <div className="p-10">
-        <div className="mt-2 p-4 rounded-lg flex justify-between items-center">
-          <div className="flex items-center">
-            <button
-              className="px-4 py-2 border border-blue-300 text-blue-800 bg-blue-100 hover:bg-blue-200 rounded-md flex items-center"
-              onClick={() =>
-                router.push({
-                  pathname: "/hradmin/addNewEmployee",
-                  query: { activeMainTab: activeMain },
-                })
-              }
-            >
-              <UserPlus className="mr-2" size={22} /> Add New Employee
-            </button>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-64"}`}>
+        <HradminNavbar />
+
+        <div className="p-4 pt-24">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-800 ml-2">New Employee</h1>
           </div>
-        </div>
-
-        {/* Sub Navbar (Aligned with Employee Name) */}
-        <div className="p-3 rounded-lg mt-4 flex justify-between text-lg mx-auto bg-gray-50 border border-gray-200">
-          {mainTabs.map((tab, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                handleTabClick(tab);
-                setActiveMain(tab);
-              }}
-              className={`ml-10 mr-10 ${
-                activeMain === tab
-                  ? "text-gray-800 font-bold"
-                  : "text-gray-600 font-medium"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <form onSubmit={handleEmployeeSubmit}>
+        
+          <form onSubmit={handleEmployeeSubmit}>
         {/* Employee Card */}
         <Card className="p-6 bg-white relative">
+
+
+
           <div className="flex items-center justify-between">
             <input
               name="name"
@@ -310,7 +218,7 @@ function EmployeeForm() {
               onFocus={(e) => (e.target.style.color = "black")}
               required
             />
-            <div className="absolute top-6 right-6">
+            {/* <div className="absolute top-6 right-6">
               <input
                 type="file"
                 accept="image/*"
@@ -324,7 +232,7 @@ function EmployeeForm() {
               >
                 Upload Photo
               </label>
-            </div>
+            </div> */}
           </div>
 
           <div className="mt-2">
@@ -364,82 +272,117 @@ function EmployeeForm() {
           </div>
 
           {/* Tabs */}
-          <div className="relative mt-6 flex space-x-0 before:absolute before:bottom-0 before:left-0 before:w-10 before:border-b-2 before:border-gray-400 after:bottom-0 after:left-50 after:w-[56%] after:border-b-2 after:border-gray-400">
-            {subTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button" // Prevent form submission
-                className={`p-2 ml-10 px-4 font-bold border border-black transition-all duration-300 ${
-                  selectedTab === tab ||
-                  (selectedTab === "Basic" && tab === "ID Proofs")
-                    ? "border-b-0 bg-gray-300 text-black"
-                    : "text-black hover:bg-gray-200"
-                }`}
-                onClick={(e) => {
-                  e.preventDefault(); // Prevent unintended form submission
-                  setSelectedTab(tab);
-                }}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          <div className="relative mt-6 flex items-center border-b-2 border-gray-400">
+  {subTabs.map((tab, index) => (
+    <button
+      key={tab}
+      type="button"
+      className={`relative px-6 py-2 font-semibold transition-all duration-300 border rounded-t-md ${
+        selectedTab === tab ||
+        (selectedTab === "Basic" && tab === "ID Proofs")
+          ? "bg-gray-300 border-b-2 border-gray-400 text-black"
+          : "text-black hover:bg-gray-200"
+      }`}
+      onClick={(e) => {
+        e.preventDefault();
+        setSelectedTab(tab);
+      }}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
+
 
           {/* Tab Content */}
           <div className="mt-4 grid grid-cols-2 gap-6">
-            {(selectedTab === "ID Proofs" || selectedTab === "Basic") &&
-              Object.keys(employeeData.idProofs).map((key) => (
-                <div key={key} className="flex items-center space-x-4">
-                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </label>
-                  <input
-                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                    value={employeeData.idProofs[key] || ""}
-                    onChange={(e) =>
-                      handleNestedInputChange(e, "idProofs", key)
-                    }
-                  />
-                </div>
-              ))}
-            {selectedTab === "Salary Details" &&
-              Object.keys(employeeData.salaryDetails).map((key) => (
-                <div key={key} className="flex items-center space-x-4">
-                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </label>
-                  <input
-                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                    value={employeeData.salaryDetails[key] || ""}
-                    onChange={(e) =>
-                      handleNestedInputChange(e, "salaryDetails", key)
-                    }
-                  />
-                </div>
-              ))}
-            {selectedTab === "Bank Details" &&
-              Object.keys(employeeData.bankDetails).map((key) => (
-                <div key={key} className="flex items-center space-x-4">
-                  <label className="text-gray-600 text-sm min-w-[150px] capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </label>
-                  <input
-                    className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
-                    value={employeeData.bankDetails[key] || ""}
-                    onChange={(e) =>
-                      handleNestedInputChange(e, "bankDetails", key)
-                    }
-                  />
-                </div>
-              ))}
-          </div>
-        </Card>
+            {/* ID Proofs Section */}
+                  {(selectedTab === "ID Proofs" || selectedTab === "Basic") &&
+                   [
+                    { label: "Aadhar No.", key: "aadharNo" },
+                    { label: "PAN No.", key: "panNo" },
+                    { label: "Passport", key: "passport" },
+                    { label: "Driving License", key: "drivingLicense" },
+                    { label: "Voter ID", key: "voterId" },
+                  ].map(({ label, key }, index) => (
+                    <div key={index} className="flex items-center space-x-4">
+                      <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                        {label}
+                      </label>
+                      <input
+                      className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                      value={employeeData.idProofs[key] || ""}
+                      onChange={(e) =>
+                        handleNestedInputChange(e, "idProofs", key)
+                      }
+                      />
+                      <div>
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        id={`upload-${key}`}
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, key)}
+                      />
+                      <label
+                        htmlFor={`upload-${key}`}
+                        className="cursor-pointer text-gray-500 hover:text-blue-600 transition"
+                      >
+                        <FaArrowAltCircleUp size={20} />
+                      </label>
+                      </div>
+                    </div>
+                    ))}
+                  {selectedTab === "Salary Details" &&
+                    [
+                      { label: "Total CTC", key: "totalCtc" },
+                      { label: "Basic", key: "basic" },
+                      { label: "Allowances", key: "allowances" },
+                      { label: "HRA", key: "hra" },
+                      { label: "PF", key: "pf" },
+                    ].map(({ label, key }, index) => (
+                      <div key={index} className="flex items-center space-x-4">
+                        <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                          {label}
+                        </label>
+                      <input
+                      className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                      value={employeeData.salaryDetails[key] || ""}
+                      onChange={(e) =>
+                        handleNestedInputChange(e, "salaryDetails", key)
+                      }
+                      />
+                    </div>
+                    ))}
+                  {selectedTab === "Bank Details" &&
+                    [
+                      { label: "Account Number", key: "accountNumber" },
+                      { label: "Account Holder Name", key: "accountHolderName" },
+                      { label: "IFSC", key: "ifscCode" },
+                      { label: "Bank Name", key: "bankName" },
+                      { label: "Branch Name", key: "branchName" },
+                    ].map(({ label, key }, index) => (
+                      <div key={index} className="flex items-center space-x-4">
+                        <label className="text-gray-600 text-sm min-w-[150px] capitalize">
+                          {label}
+                        </label>
+                      <input
+                      className="w-full bg-transparent border-b border-gray-300 focus:border-black focus:outline-none text-gray-700"
+                      value={employeeData.bankDetails[key] || ""}
+                      onChange={(e) =>
+                        handleNestedInputChange(e, "bankDetails", key)
+                      }
+                      />
+                    </div>
+                    ))}
+                  </div>
+                </Card>
 
-        {/* Submit Button */}
+                {/* Submit Button */}
         <div className="mt-6 flex justify-end gap-4">
           <Button
             type="submit"
-            className="bg-gradient-to-r from-[#E3ECFB] to-[#B0D4FF] text-[#2458B4] hover:from-[#C7DBFA] hover:to-[#98C3F5] font-semibold px-4 py-2 rounded-md transition"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition"
             disabled={loading}
           >
             {loading
@@ -457,6 +400,10 @@ function EmployeeForm() {
           </Button>
         </div>
       </form>
+
+
+        </div>
+      </div>
     </div>
   );
 }

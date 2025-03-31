@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import { ne } from "drizzle-orm";
 
 function Attendance() {
   const [searchInput, setSearchInput] = useState("");
