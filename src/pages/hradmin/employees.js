@@ -51,20 +51,22 @@ function Employees() {
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto p-6 pt-24">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-800">Employees</h1>
-            <button
-              className="px-4 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
-              onClick={() => router.push({ pathname: "/hradmin/addNewEmployee", query: { activeMainTab: activeTab } })}
-            >
-              <UserPlus className="mr-2" size={22} /> Add New Employee
-            </button>
+            <h1 className="text-3xl font-bold text-gray-800">Employees</h1>
           </div>
 
           {/* Search Box */}
           <div className="mt-4">
-            <div className="relative w-96">
+            <div className="flex justify-between items-center">
+
+            <button
+              className="px-6 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
+              onClick={() => router.push({ pathname: "/hradmin/addNewEmployee", query: { activeMainTab: activeTab } })}
+            >
+              <UserPlus className="mr-2" size={22} /> Add New Employee
+            </button>
+
               <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
-                <Search className="w-4 h-4 text-gray-500" />
+                <Search className="w-8 h-4 text-gray-500" />
                 <input
                   type="text"
                   placeholder="Search..."
@@ -73,6 +75,7 @@ function Employees() {
                   onChange={(e) => setSearchInput(e.target.value)}
                 />
               </div>
+
             </div>
           </div>
 

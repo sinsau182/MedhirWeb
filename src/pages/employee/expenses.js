@@ -1,13 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchExpenses } from "@/redux/slices/expenseSlice";
 
 const Expenses = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const dispatch = useDispatch();
+  const { expenses, loading, error } = useSelector((state) => state.expenses);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
+
+  // Fetch expenses when the component mounts
+  useEffect(() => {
+    dispatch(fetchExpenses());
+  }, [dispatch]);
 
   return (
     <div className="flex h-screen">
@@ -115,38 +124,48 @@ const Expenses = () => {
             <div>
               <h2 className="text-lg font-semibold mb-4">Recent Expenses</h2>
               <div className="space-y-4">
-                {/* Expense Item */}
-                <div className="bg-white shadow-md rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Travel</p>
-                    <p className="text-xs text-gray-500">15 Jun 2023 • ₹1,250</p>
-                  </div>
-                  <span className="bg-green-100 text-green-600 text-xs font-semibold px-2 py-1 rounded-full">
-                    Approved
-                  </span>
-                </div>
 
                 {/* Expense Item */}
-                <div className="bg-white shadow-md rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Meals</p>
-                    <p className="text-xs text-gray-500">22 Jun 2023 • ₹850</p>
-                  </div>
-                  <span className="bg-yellow-100 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-full">
-                    Pending
-                  </span>
-                </div>
+                {loading ? ( 
+                  <p className="text-gray-500">Loading...</p>
+                ) : error ? (
+                  <p className="text-red-500">Error: {error}</p>
+                ) : expenses.length === 0 ? (
+                  <p className="text-gray-500">No recent expenses found.</p>
+                ) : (
+                  expenses.map((expense) => {
+                    const formattedDate = new Date(expense.timestamp).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    });
+                  
+                    return (
+                      <div
+                        key={expense.id}
+                        className="bg-white shadow-md rounded-lg p-4 flex justify-between items-center"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{expense.category}</p>
+                          <p className="text-xs text-gray-500">
+                            {formattedDate} • ₹{expense.amount}
+                          </p>
+                        </div>
+                        <span
+                          className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                            expense.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-600"
+                          }`}
+                        >
+                          {expense.status}
+                        </span>
+                      </div>
+                    );
+                  })
+                  
+                )}
 
-                {/* Expense Item */}
-                <div className="bg-white shadow-md rounded-lg p-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">Equipment</p>
-                    <p className="text-xs text-gray-500">30 Jun 2023 • ₹5,000</p>
-                  </div>
-                  <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded-full">
-                    Rejected
-                  </span>
-                </div>
               </div>
             </div>
           </div>

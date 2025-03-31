@@ -51,25 +51,14 @@ const Leaves = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Leave Balance</h2>
               <div className="mb-4">
-                <p className="text-gray-600">Casual Leave</p>
-                <div className="w-full bg-gray-200 h-2 rounded-full">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: "66%" }}></div>
-                </div>
+                <p className="text-gray-600">Annual Leave</p>
+                
                 <p className="text-sm text-gray-500 mt-1">8 / 12 days</p>
               </div>
               <div className="mb-4">
-                <p className="text-gray-600">Sick Leave</p>
-                <div className="w-full bg-gray-200 h-2 rounded-full">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: "71%" }}></div>
-                </div>
+                <p className="text-gray-600">Comp-Off Leave</p>
+                
                 <p className="text-sm text-gray-500 mt-1">5 / 7 days</p>
-              </div>
-              <div>
-                <p className="text-gray-600">Privilege Leave</p>
-                <div className="w-full bg-gray-200 h-2 rounded-full">
-                  <div className="bg-blue-600 h-2 rounded-full" style={{ width: "80%" }}></div>
-                </div>
-                <p className="text-sm text-gray-500 mt-1">12 / 15 days</p>
               </div>
             </div>
 
@@ -135,7 +124,7 @@ const Leaves = () => {
               </ul>
             </div>
             <div className="bg-gray-50 shadow-md rounded-lg p-3">
-              <h3 className="text-md font-semibold text-gray-800">Sick Leave Policy</h3>
+              <h3 className="text-md font-semibold text-gray-800">Comp-off Leave Policy</h3>
               <ul className="list-disc list-inside text-gray-600 text-sm">
                 <li>All employees are entitled to 7 days of sick leave per year</li>
                 <li>Doctor's certificate required for sick leave of more than 2 consecutive days</li>
@@ -166,9 +155,8 @@ const Leaves = () => {
                       className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
                     >
                       <option value="">Select leave type</option>
-                      <option>Casual Leave</option>
-                      <option>Sick Leave</option>
-                      <option>Privilege Leave</option>
+                      <option>Annual Leave</option>
+                      <option>Comp-Off Leave</option>
                     </select>
                   </div>
                   <div className="mb-4 flex gap-4">
