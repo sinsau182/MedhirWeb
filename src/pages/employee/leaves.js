@@ -71,7 +71,7 @@ const Leaves = () => {
                 {/* Casual Leave */}
                 <div className="py-4 flex justify-between items-center">
                   <div>
-                    <p className="text-gray-600 font-medium">Casual Leave</p>
+                    <p className="text-gray-600 font-medium">Annual Leave</p>
                     <p className="text-sm text-gray-500">
                       May 12 - May 14, 2023
                     </p>
@@ -87,7 +87,7 @@ const Leaves = () => {
                 {/* Sick Leave */}
                 <div className="py-4 flex justify-between items-center">
                   <div>
-                    <p className="text-gray-600 font-medium">Sick Leave</p>
+                    <p className="text-gray-600 font-medium">Comp-Off Leave</p>
                     <p className="text-sm text-gray-500">Apr 3, 2023</p>
                   </div>
                   <div className="text-right">
@@ -98,21 +98,6 @@ const Leaves = () => {
                   </div>
                 </div>
 
-                {/* Privilege Leave */}
-                <div className="py-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-gray-600 font-medium">Privilege Leave</p>
-                    <p className="text-sm text-gray-500">
-                      Mar 15 - Mar 17, 2023
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="bg-red-100 text-red-600 text-xs font-semibold px-2 py-1 rounded-full">
-                      Rejected
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1">3 days</p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
