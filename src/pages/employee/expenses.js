@@ -36,7 +36,9 @@ const Expenses = () => {
         <div className="p-5 bg-gray-100 h-full">
           {/* Page Heading */}
           <div className="mb-6 pt-16">
-            <h1 className="text-2xl font-bold text-gray-800">Expense Management</h1>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Expense Management
+            </h1>
           </div>
 
           {/* Content Grid */}
@@ -48,7 +50,9 @@ const Expenses = () => {
                 {/* Amount and Category */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-medium text-black">Amount (₹)</label>
+                    <label className="block text-sm font-medium text-black">
+                      Amount (₹)
+                    </label>
                     <input
                       type="number"
                       placeholder="0.00"
@@ -56,10 +60,10 @@ const Expenses = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-black">Category</label>
-                    <select
-                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm text-gray-700 h-14 bg-white px-3"
-                    >
+                    <label className="block text-sm font-medium text-black">
+                      Category
+                    </label>
+                    <select className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm text-gray-700 h-14 bg-white px-3">
                       <option>Travel, Meals, Equipment</option>
                       <option>Travel</option>
                       <option>Meals</option>
@@ -70,7 +74,9 @@ const Expenses = () => {
 
                 {/* Description */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
                   <textarea
                     placeholder="Provide details about the expense"
                     className="w-full border border-gray-300 rounded-lg shadow-sm focus:ring-0 focus:border-gray-400 text-sm text-gray-700 px-3 py-2"
@@ -80,10 +86,14 @@ const Expenses = () => {
 
                 {/* Upload Receipt */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Upload Receipt</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Upload Receipt
+                  </label>
                   <div
                     className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 relative cursor-pointer hover:border-gray-400"
-                    onClick={() => document.getElementById("file-upload").click()}
+                    onClick={() =>
+                      document.getElementById("file-upload").click()
+                    }
                   >
                     <input
                       type="file"
@@ -124,9 +134,8 @@ const Expenses = () => {
             <div>
               <h2 className="text-lg font-semibold mb-4">Recent Expenses</h2>
               <div className="space-y-4">
-
                 {/* Expense Item */}
-                {loading ? ( 
+                {loading ? (
                   <p className="text-gray-500">Loading...</p>
                 ) : error ? (
                   <p className="text-red-500">Error: {error}</p>
@@ -134,19 +143,23 @@ const Expenses = () => {
                   <p className="text-gray-500">No recent expenses found.</p>
                 ) : (
                   expenses.map((expense) => {
-                    const formattedDate = new Date(expense.timestamp).toLocaleDateString("en-GB", {
+                    const formattedDate = new Date(
+                      expense.timestamp
+                    ).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
                     });
-                  
+
                     return (
                       <div
                         key={expense.id}
                         className="bg-white shadow-md rounded-lg p-4 flex justify-between items-center"
                       >
                         <div>
-                          <p className="text-sm font-medium text-gray-800">{expense.category}</p>
+                          <p className="text-sm font-medium text-gray-800">
+                            {expense.category}
+                          </p>
                           <p className="text-xs text-gray-500">
                             {formattedDate} • ₹{expense.amount}
                           </p>
@@ -162,9 +175,8 @@ const Expenses = () => {
                         </span>
                       </div>
                     );
-                  })        
+                  })
                 )}
-
               </div>
             </div>
           </div>
