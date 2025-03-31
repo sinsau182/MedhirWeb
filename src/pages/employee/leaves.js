@@ -97,7 +97,6 @@ const Leaves = () => {
                     <p className="text-sm text-gray-500 mt-1">1 day</p>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
