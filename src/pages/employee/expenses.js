@@ -162,8 +162,7 @@ const Expenses = () => {
                         </span>
                       </div>
                     );
-                  })
-                  
+                  })        
                 )}
 
               </div>
