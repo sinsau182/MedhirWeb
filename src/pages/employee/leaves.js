@@ -3,6 +3,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 
 const Leaves = () => {
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
 
@@ -18,6 +19,8 @@ const Leaves = () => {
     setIsModalOpen(false);
   };
 
+
+  
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
