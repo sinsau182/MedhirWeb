@@ -4,7 +4,7 @@ import {
   ProfileUpdate,
   ExpenseRequest,
   AdvanceRequest,
-} from "../schema.js";
+} from "@/schema.js";
 
 const RequestsCount = {
   leave: 0,

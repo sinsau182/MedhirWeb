@@ -1,537 +1,112 @@
-import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Check, X, Calendar, UserCog, DollarSign, Wallet, Eye } from "lucide-react";
-import { RequestTab } from "@/lib/types";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import {
+  FaBars,
+  FaAngleDoubleLeft,
+  FaChartPie,
+  FaUsers,
+  FaCalendarCheck,
+  FaMoneyCheckAlt,
+  FaCog,
+  FaDollarSign,
+} from "react-icons/fa";
+import { Briefcase, Calendar, ChartColumnIncreasing, Clock, CreditCard, DollarSign, DollarSignIcon, ReceiptIcon, User, Users } from "lucide-react";
+import Link from "next/link";
 
-import PropTypes from "prop-types";
+const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+  const [currentRole, setCurrentRole] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const router = useRouter();
 
-const RequestDetails = ({ activeTab, onTabChange }) => {
-  const { toast } = useToast();
+  useEffect(() => {
+    const role = localStorage.getItem("currentRole"); // Fetch role from localStorage
+    setCurrentRole(role);
 
-  // Fetch leave requests
-  const { data: leaveRequests = [], isLoading: isLoadingLeave } = useQuery({
-    queryKey: ["/api/leave-requests"],
-    enabled: activeTab === "leaveRequests",
-  });
+    // Listen to route change events
+    const handleRouteChangeStart = () => setIsLoading(true);
+    const handleRouteChangeComplete = () => setIsLoading(false);
 
-  // Fetch profile updates
-  const { data: profileUpdates = [], isLoading: isLoadingProfile } = useQuery({
-    queryKey: ["/api/profile-updates"],
-    enabled: activeTab === "profileUpdates",
-  });
+    router.events.on("routeChangeStart", handleRouteChangeStart);
+    router.events.on("routeChangeComplete", handleRouteChangeComplete);
+    router.events.on("routeChangeError", handleRouteChangeComplete);
 
-  // Fetch expense requests
-  const { data: expenseRequests = [], isLoading: isLoadingExpense } = useQuery({
-    queryKey: ["/api/expense-requests"],
-    enabled: activeTab === "expenseRequests",
-  });
+    // Cleanup event listeners on unmount
+    return () => {
+      router.events.off("routeChangeStart", handleRouteChangeStart);
+      router.events.off("routeChangeComplete", handleRouteChangeComplete);
+      router.events.off("routeChangeError", handleRouteChangeComplete);
+    };
+  }, [router.events]);
 
-  // Fetch advance requests
-  const { data: advanceRequests = [], isLoading: isLoadingAdvance } = useQuery({
-    queryKey: ["/api/advance-requests"],
-    enabled: activeTab === "advanceRequests",
-  });
+  // Define menu items based on the role
+  const menuItems = [
+    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/hradmin/dashboard", roles: ["hr"] },
+    { label: "Employees", icon: <Users />, link: "/hradmin/employees", roles: ["hr"] },
+    { label: "Attendance", icon: <Clock />, link: "/hradmin/attendance", roles: ["hr"] },
+    { label: "Payroll", icon: <ReceiptIcon />, link: "/hradmin/payroll", roles: ["hr"] },
+    { label: "Settings", icon: <FaCog />, link: "/hradmin/settings", roles: ["hr"] },
 
-  // Update leave request status
-  const updateLeaveStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/leave-requests/${id}/status`, { status });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
-      toast({
-        title: "Status updated",
-        description: "The leave request has been updated successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the leave request.",
-        variant: "destructive",
-      });
-    },
-  });
+    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/manager/dashboard", roles: ["manager"] },
+    { label: "Team", icon: <Briefcase />, link: "/manager/team", roles: ["manager"] },
+    { label: "Attendance", icon: <Clock />, link: "/manager/attendance", roles: ["manager"] },
 
-  // Update profile update status
-  const updateProfileStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest('PATCH', `/api/profile-updates/${id}/status`, { status });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profile-updates'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/requests/counts'] });
-      toast({
-        title: "Status updated",
-        description: "The profile update has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the profile update.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update expense request status
-  const updateExpenseStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest('PATCH', `/api/expense-requests/${id}/status`, { status });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/expense-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/requests/counts'] });
-      toast({
-        title: "Status updated",
-        description: "The expense request has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the expense request.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update advance request status
-  const updateAdvanceStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest('PATCH', `/api/advance-requests/${id}/status`, { status });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advance-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/requests/counts'] });
-      toast({
-        title: "Status updated",
-        description: "The advance request has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the advance request.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleApprove = (type, id) => {
-    switch (type) {
-      case "leaveRequests":
-        updateLeaveStatus.mutate({ id, status: "approved" });
-        break;
-      case "profileUpdates":
-        updateProfileStatus.mutate({ id, status: "approved" });
-        break;
-      case "expenseRequests":
-        updateExpenseStatus.mutate({ id, status: "approved" });
-        break;
-      case "advanceRequests":
-        updateAdvanceStatus.mutate({ id, status: "approved" });
-        break;
-    }
-  };
-
-  const handleReject = (type, id) => {
-    switch (type) {
-      case "leaveRequests":
-        updateLeaveStatus.mutate({ id, status: "rejected" });
-        break;
-      case "profileUpdates":
-        updateProfileStatus.mutate({ id, status: "rejected" });
-        break;
-      case "expenseRequests":
-        updateExpenseStatus.mutate({ id, status: "rejected" });
-        break;
-      case "advanceRequests":
-        updateAdvanceStatus.mutate({ id, status: "rejected" });
-        break;
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return format(new Date(dateString), "MMM dd, yyyy");
-  };
-
-  const isLoading = 
-    (activeTab === "leaveRequests" && isLoadingLeave) ||
-    (activeTab === "profileUpdates" && isLoadingProfile) ||
-    (activeTab === "expenseRequests" && isLoadingExpense) ||
-    (activeTab === "advanceRequests" && isLoadingAdvance);
-
-  // Hardcoded leave request data
-  const hardcodedLeaveRequests = [
-    {
-      id: 1,
-      employeeId: "EMP101",
-      name: "John Doe",
-      department: "Sales",
-      typeOfLeave: "Annual Leave",
-      startDate: "Jun 15, 2023",
-      endDate: "Jun 18, 2023",
-      leaveBalance: "15 days",
-      reason: "Family vacation"
-    },
-    {
-      id: 2,
-      employeeId: "EMP102",
-      name: "Jane Smith",
-      department: "Marketing",
-      typeOfLeave: "Sick Leave",
-      startDate: "Jun 20, 2023",
-      endDate: "Jun 21, 2023",
-      leaveBalance: "8 days",
-      reason: "Medical appointment"
-    },
-    {
-      id: 3,
-      employeeId: "EMP103",
-      name: "Michael Brown",
-      department: "Engineering",
-      typeOfLeave: "Emergency Leave",
-      startDate: "Jun 25, 2023",
-      endDate: "Jun 30, 2023",
-      leaveBalance: "5 days",
-      reason: "Personal emergency"
-    }
+    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/employee/dashboard", roles: ["employee"] },
+    { label: "Leave", icon: <Calendar />, link: "/employee/leaves", roles: ["employee"] },
+    { label: "Reimbursement", icon: <CreditCard />, link: "/employee/reimbursement", roles: ["employee"] },
+    { label: "Attendance", icon: <Clock />, link: "/employee/attendances", roles: ["employee"] },
+    { label: "My Payslips", icon: <ReceiptIcon />, link: "/employee/mypayslip", roles: ["employee"] },
   ];
 
-  // Hardcoded profile update data
-  const hardcodedProfileUpdates = [
-    {
-      id: 1,
-      employeeId: "EMP104",
-      name: "David Wilson",
-      department: "IT",
-      updateType: "Phone Number",
-      hasDetails: false,
-      reason: "Personal information update"
-    },
-    {
-      id: 2,
-      employeeId: "EMP105",
-      name: "Lisa Johnson",
-      department: "HR",
-      updateType: "3 fields updated",
-      hasDetails: true,
-      details: [
-        {
-          field: "Address",
-          oldValue: "123 Old Street, City",
-          newValue: "456 New Avenue, Town"
-        },
-        {
-          field: "Emergency Contact",
-          oldValue: "Mary Johnson - 9876543210",
-          newValue: "John Johnson - 8765432109"
-        },
-        {
-          field: "Phone Number",
-          oldValue: "9876543210",
-          newValue: "8765432109"
-        }
-      ],
-      reason: "Moved to new location and changed contact information"
-    },
-    {
-      id: 3,
-      employeeId: "EMP106",
-      name: "Robert Chen",
-      department: "Finance",
-      updateType: "2 fields updated",
-      hasDetails: false,
-      reason: "Updated personal details after marriage"
-    }
-  ];
-  
-  // Hardcoded expense request data
-  const hardcodedExpenseRequests = [
-    {
-      id: 1,
-      employeeId: "EMP107",
-      name: "Robert Johnson",
-      department: "Sales",
-      amount: "₹5000",
-      description: "Client meeting expenses",
-      hasReceipt: true
-    },
-    {
-      id: 2,
-      employeeId: "EMP108",
-      name: "Sarah Williams",
-      department: "Marketing",
-      amount: "₹7500",
-      description: "Marketing event costs",
-      hasReceipt: true
-    }
-  ];
-  
-  // Hardcoded advance request data
-  const hardcodedAdvanceRequests = [
-    {
-      id: 1,
-      employeeId: "EMP109",
-      name: "David Wilson",
-      department: "IT",
-      amount: "₹15000",
-      reason: "Home emergency repairs",
-      repaymentPlan: "6 months EMI"
-    },
-    {
-      id: 2,
-      employeeId: "EMP110",
-      name: "Emily Davis",
-      department: "HR",
-      amount: "₹10000",
-      reason: "Education fees",
-      repaymentPlan: "12 months EMI"
-    }
-  ];
+  // Filter menu items based on currentRole
+  const filteredMenu = menuItems.filter((item) => item.roles.includes(currentRole));
 
   return (
-    <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
-      <h2 className="text-xl font-semibold text-blue-800 mb-5 pl-2">Request Details</h2>
-      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value)}>
-        <TabsList className="grid grid-cols-4 gap-3 mb-5 bg-transparent p-0">
-          <TabsTrigger value="leaveRequests" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
-            <Calendar className="h-4 w-4 mr-2" />
-            <span>Leave Requests</span>
-          </TabsTrigger>
-          <TabsTrigger value="profileUpdates" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
-            <UserCog className="h-4 w-4 mr-2" />
-            <span>Profile Updates</span>
-          </TabsTrigger>
-          <TabsTrigger value="expenseRequests" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
-            <DollarSign className="h-4 w-4 mr-2" />
-            <span>Expense Requests</span>
-          </TabsTrigger>
-          <TabsTrigger value="advanceRequests" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
-            <Wallet className="h-4 w-4 mr-2" />
-            <span>Advance Requests</span>
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="leaveRequests">
-          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
-            <table className="w-full">
-              <thead className="bg-[#F0F4FB] text-gray-700">
-                <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Type of Leave</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Start Date</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">End Date</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Leave Balance</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Reason</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hardcodedLeaveRequests.map(request => (
-                  <tr key={request.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{request.employeeId}</td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.typeOfLeave}</td>
-                    <td className="px-5 py-4 text-sm">{request.startDate}</td>
-                    <td className="px-5 py-4 text-sm">{request.endDate}</td>
-                    <td className="px-5 py-4 text-sm">{request.leaveBalance}</td>
-                    <td className="px-5 py-4 text-sm">{request.reason}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleApprove("leaveRequests", request.id)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleReject("leaveRequests", request.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <>
+      {/* Spinner and Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
+
+      {/* Disable interaction with the page when loading */}
+      <div className={`${isLoading ? "pointer-events-none" : ""}`}>
+        <aside
+          className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white shadow-md transition-all duration-300 ${
+            isCollapsed ? "w-16" : "w-64"
+          }`}
+        >
+          <div className="p-4 flex items-center mb-4 mt-2">
+            <div className={`flex w-full ${isCollapsed ? "justify-center" : "justify-end"}`}>
+              <button className="text-gray-600 hover:text-gray-800" onClick={toggleSidebar}>
+                {isCollapsed ? <FaBars /> : <FaAngleDoubleLeft />}
+              </button>
+            </div>
           </div>
-        </TabsContent>
-        <TabsContent value="profileUpdates">
-          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
-            <table className="w-full">
-              <thead className="bg-[#F0F4FB] text-gray-700">
-                <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Updates</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Reason</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hardcodedProfileUpdates.map((update) => (
-                  <tr key={update.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{update.employeeId}</td>
-                    <td className="px-5 py-4 text-sm">{update.name}</td>
-                    <td className="px-5 py-4 text-sm">{update.department}</td>
-                    <td className="px-5 py-4 text-sm text-blue-500 cursor-pointer">
-                      {update.updateType} {update.hasDetails && <span>(View)</span>}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{update.reason}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleApprove("profileUpdates", update.id)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleReject("profileUpdates", update.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-        <TabsContent value="expenseRequests">
-          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
-            <table className="w-full">
-              <thead className="bg-[#F0F4FB] text-gray-700">
-                <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Amount</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Description</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Receipt</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hardcodedExpenseRequests.map((request) => (
-                  <tr key={request.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{request.employeeId}</td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.amount}</td>
-                    <td className="px-5 py-4 text-sm">{request.description}</td>
-                    <td className="px-5 py-4 text-sm">
-                      {request.hasReceipt && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleApprove("expenseRequests", request.id)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleReject("expenseRequests", request.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-        <TabsContent value="advanceRequests">
-          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
-            <table className="w-full">
-              <thead className="bg-[#F0F4FB] text-gray-700">
-                <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Amount</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Reason</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Repayment Plan</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hardcodedAdvanceRequests.map((request) => (
-                  <tr key={request.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{request.employeeId}</td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.amount}</td>
-                    <td className="px-5 py-4 text-sm">{request.reason}</td>
-                    <td className="px-5 py-4 text-sm">{request.repaymentPlan}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleApprove("advanceRequests", request.id)}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleReject("advanceRequests", request.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+
+          <nav className="flex-1">
+            <ul className="space-y-2">
+              {filteredMenu.map((item, index) => (
+                <li key={index}>
+                  <Link
+                    href={item.link}
+                    prefetch={true}
+                    className={`group flex items-center px-4 py-3 text-gray-600 transition-colors hover:bg-gray-100 hover:text-blue-600 ${
+                      isCollapsed ? "justify-center" : "gap-4"
+                    }`}
+                    aria-label={item.label}
+                  >
+                    <span className="text-xl">{item.icon}</span>
+                    {!isCollapsed && <span className="text-lg">{item.label}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+      </div>
+    </>
   );
 };
 
-// Move propTypes definition AFTER the component declaration
-RequestDetails.propTypes = {
-  activeTab: PropTypes.string.isRequired,
-  onTabChange: PropTypes.func.isRequired,
-};
-
-export default RequestDetails;
+export default Sidebar;

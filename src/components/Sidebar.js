@@ -7,7 +7,9 @@ import {
   FaUsers,
   FaCalendarCheck,
   FaMoneyCheckAlt,
+  FaCog,
 } from "react-icons/fa";
+import { Briefcase, Calendar, ChartColumnIncreasing, Clock, CreditCard, DollarSign, DollarSignIcon, ReceiptIcon, User, Users } from "lucide-react";
 import Link from "next/link";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
@@ -37,24 +39,29 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
   // Define menu items based on the role
   const menuItems = [
-    { label: "Dashboard", icon: <FaChartPie />, link: "/hradmin/dashboard", roles: ["hr"] },
-    { label: "Employees", icon: <FaUsers />, link: "/hradmin/employees", roles: ["hr"] },
-    { label: "Attendance", icon: <FaCalendarCheck />, link: "/hradmin/attendance", roles: ["hr"] },
-    { label: "Payroll", icon: <FaMoneyCheckAlt />, link: "/hradmin/payroll", roles: ["hr"] },
+    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/hradmin/dashboard", roles: ["hr"] },
+    { label: "Employees", icon: <Users />, link: "/hradmin/employees", roles: ["hr"] },
+    { label: "Attendance", icon: <Clock />, link: "/hradmin/attendance", roles: ["hr"] },
+    { label: "Payroll", icon: <ReceiptIcon />, link: "/hradmin/payroll", roles: ["hr"] },
+    { label: "Settings", icon: <FaCog />, link: "/hradmin/settings", roles: ["hr"] },
 
-    { label: "Dashboard", icon: <FaCalendarCheck />, link: "/manager/dashboard", roles: ["manager"] },
-    { label: "Team", icon: <FaChartPie />, link: "/manager/team", roles: ["manager"] },
-    { label: "Attendance", icon: <FaCalendarCheck />, link: "/manager/attendance", roles: ["manager"] },
+    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/manager/dashboard", roles: ["manager"] },
+    { label: "Team", icon: <Briefcase />, link: "/manager/team", roles: ["manager"] },
+    { label: "Attendance", icon: <Clock />, link: "/manager/attendance", roles: ["manager"] },
 
-    { label: "Dashboard", icon: <FaChartPie />, link: "/employee/dashboard", roles: ["employee"] },
-    { label: "Leave", icon: <FaUsers />, link: "/employee/leaves", roles: ["employee"] },
-    { label: "Expenses", icon: <FaCalendarCheck />, link: "/employee/expenses", roles: ["employee"] },
-    { label: "Attendance", icon: <FaCalendarCheck />, link: "/employee/attendances", roles: ["employee"] },
-    { label: "My Payslips", icon: <FaMoneyCheckAlt />, link: "/employee/mypayslip", roles: ["employee"] },
+    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/employee/dashboard", roles: ["employee"] },
+    { label: "Leave", icon: <Calendar />, link: "/employee/leaves", roles: ["employee"] },
+    { label: "Reimbursement", icon: <CreditCard />, link: "/employee/reimbursement", roles: ["employee"] },
+    { label: "Attendance", icon: <Clock />, link: "/employee/attendances", roles: ["employee"] },
+    { label: "My Payslips", icon: <ReceiptIcon />, link: "/employee/mypayslip", roles: ["employee"] },
   ];
 
   // Filter menu items based on currentRole
   const filteredMenu = menuItems.filter((item) => item.roles.includes(currentRole));
+
+  const isActiveLink = (link) => {
+    return router.pathname === link;
+  };
 
   return (
     <>
@@ -82,21 +89,34 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
           <nav className="flex-1">
             <ul className="space-y-2">
-              {filteredMenu.map((item, index) => (
-                <li key={index}>
-                  <Link
-                    href={item.link}
-                    prefetch={true}
-                    className={`group flex items-center px-4 py-3 text-gray-600 transition-colors hover:bg-gray-100 hover:text-blue-600 ${
-                      isCollapsed ? "justify-center" : "gap-4"
-                    }`}
-                    aria-label={item.label}
-                  >
-                    <span className="text-xl">{item.icon}</span>
-                    {!isCollapsed && <span className="text-lg">{item.label}</span>}
-                  </Link>
-                </li>
-              ))}
+              {filteredMenu.map((item, index) => {
+                const isActive = isActiveLink(item.link);
+                return (
+                  <li key={index}>
+                    <Link
+                      href={item.link}
+                      prefetch={true}
+                      className={`group flex items-center px-4 py-3 transition-all duration-200 ${
+                        isCollapsed ? "justify-center" : "gap-4"
+                      } ${
+                        isActive 
+                          ? "text-blue-600" 
+                          : "text-gray-600 hover:text-blue-600"
+                      }`}
+                      aria-label={item.label}
+                    >
+                      <span className={`text-xl ${isActive ? "text-blue-600" : "group-hover:text-blue-600"}`}>
+                        {item.icon}
+                      </span>
+                      {!isCollapsed && (
+                        <span className="text-lg">
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
         </aside>

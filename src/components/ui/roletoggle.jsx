@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 const roleLabels = {
   employee: "Employee",
   manager: "Manager",
-  hr: "HR",
+  hr: "HR Admin",
 };
 
 const roleColors = {

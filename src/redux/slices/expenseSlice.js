@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8084/payroll/expenses/emp123";
+const API_BASE_URL = "http://192.168.0.200:8084/expenses/emp123";
 
 // Fetch employees
 export const fetchExpenses = createAsyncThunk(
@@ -38,7 +38,7 @@ export const createExpense = createAsyncThunk(
           headers["Content-Type"] = "application/json";
         }
   
-        const response = await fetch("http://192.168.0.200:8084/payroll/expenses", {
+        const response = await fetch("http://192.168.0.200:8084/expenses", {
           method: "POST",
           body,
           headers,

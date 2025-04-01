@@ -19,7 +19,11 @@ const Expenses = () => {
     category: "",
     description: "",
     receipt: null,
+    expenseType: "project", // Default to project expenses
   });
+
+  const projectCategories = ["Travel", "Meals", "Fuel"];
+  const nonProjectCategories = ["Equipment", "Cleaning Liquid"];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -75,7 +79,7 @@ const Expenses = () => {
           {/* Page Heading */}
           <div className="mb-6 pt-16">
             <h1 className="text-2xl font-bold text-gray-800">
-              Expense Management
+            Reimbursements
             </h1>
           </div>
 
@@ -83,8 +87,51 @@ const Expenses = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Submit New Expense */}
             <div className="bg-white shadow-md rounded-lg p-6 md:border-r md:border-gray-300">
-              <h2 className="text-lg font-semibold mb-4">Submit New Expense</h2>
+              <h2 className="text-lg font-semibold mb-4">Submit New Reimbursement</h2>
               <form>
+                {/* Expense Type Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-black mb-2">
+                    Reimbursement Type
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="expenseType"
+                        value="project"
+                        checked={expenseData.expenseType === "project"}
+                        onChange={(e) => {
+                          setExpenseData(prev => ({
+                            ...prev,
+                            expenseType: e.target.value,
+                            category: "" // Reset category when type changes
+                          }));
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Project</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="expenseType"
+                        value="non-project"
+                        checked={expenseData.expenseType === "non-project"}
+                        onChange={(e) => {
+                          setExpenseData(prev => ({
+                            ...prev,
+                            expenseType: e.target.value,
+                            category: "" // Reset category when type changes
+                          }));
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700">Non-Project</span>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Amount and Category */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
@@ -98,6 +145,7 @@ const Expenses = () => {
                       onChange={handleChange}
                       placeholder="Enter amount"
                       className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm text-gray-700 h-14 bg-white px-3"
+                      required
                     />
                   </div>
                   <div>
@@ -109,11 +157,17 @@ const Expenses = () => {
                       value={expenseData.category}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm text-gray-700 h-14 bg-white px-3"
+                      required
                     >
-                      <option>Travel, Meals, Equipment</option>
-                      <option value="Travel">Travel</option>
-                      <option value="Meals">Meals</option>
-                      <option value="Equipment">Equipment</option>
+                      <option value="">Select a category</option>
+                      {expenseData.expenseType === "project" 
+                        ? projectCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))
+                        : nonProjectCategories.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))
+                      }
                     </select>
                   </div>
                 </div>
@@ -184,6 +238,7 @@ const Expenses = () => {
                       category: "",
                       description: "",
                       receipt: null,
+                      expenseType: "project",
                     });
                     toast.success("Expense submitted successfully!");
                   }}
@@ -197,13 +252,13 @@ const Expenses = () => {
             <div
               className={`bg-white shadow-md rounded-lg p-6 flex flex-col transition-all duration-300 ${
                 showAllExpenses ? "h-[600px]" : "h-[550px]"
-              }`} // Dynamic height adjustment
+              }`}
             >
               <h2 className="text-lg font-semibold mb-4">Recent Expenses</h2>
               <div
                 className={`space-y-4 ${
                   showAllExpenses ? "overflow-y-auto" : "overflow-hidden"
-                } flex-grow`} // Scroll only when "View More" is clicked
+                } flex-grow`}
               >
                 {/* Expense Item */}
                 {loading ? (
@@ -214,7 +269,7 @@ const Expenses = () => {
                   <p className="text-gray-500">No recent expenses found.</p>
                 ) : (
                   expenses
-                    .slice(0, showAllExpenses ? expenses.length : 5) // Show 5 or all expenses
+                    .slice(0, showAllExpenses ? expenses.length : 5)
                     .map((expense) => {
                       const formattedDate = new Date(
                         expense.timestamp

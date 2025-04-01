@@ -72,6 +72,8 @@ const EmployeeAttendance = () => {
                   <p className="text-2xl font-bold">2</p>
                   <hr className="my-2 border-gray-300" />
                   <div className="flex justify-between items-center">
+
+
                     {/* Absent with Leave */}
                     <div className="flex-1 text-center">
                       <span className="text-sm font-medium">Absent with Leave</span>
@@ -84,6 +86,7 @@ const EmployeeAttendance = () => {
                       <span className="text-sm font-medium">Absent with LOP</span>
                       <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
                     </div>
+                    
                   </div>
                 </div>
               </div>
