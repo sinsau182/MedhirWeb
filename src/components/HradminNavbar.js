@@ -25,7 +25,7 @@ const Navbar = () => {
 
 return (
     <header className="fixed top-0 left-0 right-0 z-50">
-        <nav className="flex justify-between items-center p-4 shadow-md bg-white w-full">
+        <nav className="flex justify-between items-center p-3 shadow-md bg-white w-full">
             {/* Logo and Role Badges */}
             <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold">Medhir</h1>

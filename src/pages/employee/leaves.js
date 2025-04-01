@@ -1,68 +1,83 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
-import DatePicker from "react-multi-date-picker"; // Import the multi-date picker
-import TimePicker from "react-multi-date-picker/plugins/time_picker"; // Import the time picker plugin
+import { Calendar, X } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchLeaves } from "@/redux/slices/leaveSlice";
+import CustomDatePicker from '@/components/CustomDatePicker';
 
 const Leaves = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Leave modal state
-  const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false); // Comp-off modal state
-  const [selectedDates, setSelectedDates] = useState([]); // Leave dates
-  const [compOffDate, setCompOffDate] = useState(null); // Comp-off date
-  const [startTime, setStartTime] = useState(""); // Start time for comp-off
-  const [endTime, setEndTime] = useState(""); // End time for comp-off
-  const [description, setDescription] = useState(""); // Description for comp-off
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
+  
+  // Simplified form states
+  const [leaveForm, setLeaveForm] = useState({
+    dates: [],
+    reason: ""
+  });
+  
+  const [compOffForm, setCompOffForm] = useState({
+    dates: [],
+    description: ""
+  });
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
+  const dispatch = useDispatch();
+  const { leaves, loading, error } = useSelector((state) => state.leaveReducer);
 
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
+  useEffect(() => {
+    dispatch(fetchLeaves());
+  }, [dispatch]);
 
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
     setIsModalOpen(false);
+    setLeaveForm({ dates: [], reason: "" });
   };
-
-  const openCompOffModal = () => {
-    setIsCompOffModalOpen(true); // Sets the state to true, making the modal visible
-  };
-
+  
+  const openCompOffModal = () => setIsCompOffModalOpen(true);
   const closeCompOffModal = () => {
     setIsCompOffModalOpen(false);
+    setCompOffForm({ dates: [], description: "" });
+  };
+
+  const handleLeaveFormChange = (e) => {
+    const { name, value } = e.target;
+    setLeaveForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLeaveDatesChange = (dates) => {
+    setLeaveForm(prev => ({ ...prev, dates }));
+  };
+
+  const handleCompOffDatesChange = (dates) => {
+    setCompOffForm(prev => ({ ...prev, dates }));
+  };
+
+  const handleCompOffFormChange = (e) => {
+    const { name, value } = e.target;
+    setCompOffForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Selected Dates:", selectedDates); // Handle selected dates
+    console.log("Leave Application:", leaveForm);
     closeModal();
   };
 
   const handleCompOffSubmit = (e) => {
     e.preventDefault();
-    console.log("Comp-off Date:", compOffDate);
-    console.log("Start Time:", startTime);
-    console.log("End Time:", endTime);
-    console.log("Description:", description);
+    console.log("Comp-off Application:", compOffForm);
     closeCompOffModal();
   };
 
   return (
     <div className="flex h-screen">
-      {/* Sidebar */}
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
-
-      {/* Main Content */}
-      <div
-        className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
-        } transition-all duration-300`}
-      >
-        {/* Navbar */}
+      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
         <HradminNavbar />
-
+        
         {/* Main Content Area */}
         <div className="p-5 bg-gray-100 h-full">
           {/* Page Heading */}
@@ -73,7 +88,7 @@ const Leaves = () => {
             <div className="flex gap-4">
               <button
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                onClick={openCompOffModal} // This function sets isCompOffModalOpen to true
+                onClick={openCompOffModal}
               >
                 Apply for Comp-off
               </button>
@@ -91,32 +106,35 @@ const Leaves = () => {
             {/* Leave Balance */}
             <div className="bg-white shadow-md rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Leave Balance</h2>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex justify-between">
-                  <p className="text-gray-600">Leaves Earned This Month</p>
-                  <p className="text-gray-800 font-medium">2</p>
-                </div>
-                <div className="flex justify-between">
-                  <p className="text-gray-600">Leaves Carried Forward</p>
+                  <p className="text-gray-600">Leave carried from previous year</p>
                   <p className="text-gray-800 font-medium">5</p>
                 </div>
                 <div className="flex justify-between">
-                  <p className="text-gray-600">Comp Off Earned This Month</p>
-                  <p className="text-gray-800 font-medium">1</p>
+                  <p className="text-gray-600">Leaves earned since January</p>
+                  <p className="text-gray-800 font-medium">12</p>
                 </div>
                 <div className="flex justify-between">
-                  <p className="text-gray-600">Comp Off Carried Forward</p>
+                  <p className="text-gray-600">Comp-off carried forward</p>
                   <p className="text-gray-800 font-medium">2</p>
                 </div>
                 <div className="flex justify-between">
-                  <p className="text-gray-600">Leaves Taken This Month</p>
-                  <p className="text-red-500 font-medium">-3</p>
+                  <p className="text-gray-600">Comp-off earned this month</p>
+                  <p className="text-gray-800 font-medium">1</p>
+                </div>
+                <div className="flex justify-between">
+                  <p className="text-gray-600">Leaves taken in this year</p>
+                  <p className="text-red-500 font-medium">-8</p>
                 </div>
               </div>
               <hr className="my-4" />
               <div className="flex justify-between">
                 <p className="text-gray-800 font-semibold">Total Balance</p>
-                <p className="text-gray-800 font-semibold">7</p>
+                <p className="text-gray-800 font-semibold">12</p>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">
+                * Total = Previous year leaves + Earned leaves + Comp-off (carried & earned) - Taken leaves
               </div>
             </div>
 
@@ -124,35 +142,47 @@ const Leaves = () => {
             <div className="bg-white shadow-md rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Leave History</h2>
               <div className="divide-y divide-gray-200">
-                {/* Casual Leave */}
-                <div className="py-4 flex justify-between items-center">
+
+                {leaves.map((leave) => {
+                const formattedStartDate = new Date(
+                  leave.startDate
+                ).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                });
+                const formattedEndDate = leave.endDate
+                  ? new Date(leave.endDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                  : "";
+
+                return (
+                  <div key={leave.id} className="py-4 flex justify-between">
                   <div>
-                    <p className="text-gray-600 font-medium">Annual Leave</p>
+                    <p className="text-gray-600 font-medium mb-2">{leave.leaveType}</p>
                     <p className="text-sm text-gray-500">
-                      May 12 - May 14, 2023
+                    {leave.leaveType === "Comp Off"
+                      ? formattedStartDate
+                      : `${formattedStartDate} - ${formattedEndDate}`}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="bg-green-100 text-green-600 text-xs font-semibold px-2 py-1 rounded-full">
-                      Approved
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                        leave.status === "Pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-600"
+                        }`}
+                    >
+                    {leave.status}
                     </span>
-                    <p className="text-sm text-gray-500 mt-1">3 days</p>
+                    <p className="text-sm text-gray-500 mt-2 mr-1">3 days</p>
                   </div>
-                </div>
-
-                {/* Sick Leave */}
-                <div className="py-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-gray-600 font-medium">Comp-Off Leave</p>
-                    <p className="text-sm text-gray-500">Apr 3, 2023</p>
                   </div>
-                  <div className="text-right">
-                    <span className="bg-green-100 text-green-600 text-xs font-semibold px-2 py-1 rounded-full">
-                      Approved
-                    </span>
-                    <p className="text-sm text-gray-500 mt-1">1 day</p>
-                  </div>
-                </div>
+                )}
+                )}
               </div>
             </div>
           </div>
@@ -192,153 +222,137 @@ const Leaves = () => {
               </ul>
             </div>
           </div>
+
+          {/* Improved Leave Modal */}
+          {isModalOpen && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 transform transition-all duration-300 scale-100">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">Apply for Leave</h2>
+                  <button 
+                    onClick={closeModal} 
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors duration-200"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Dates</label>
+                    <CustomDatePicker
+                      selectedDates={leaveForm.dates}
+                      onChange={(dates) => {
+                        setLeaveForm(prev => ({
+                          ...prev,
+                          dates: dates.map(d => ({
+                            date: d.date instanceof Date ? d.date : new Date(d.date),
+                            timeSlot: d.timeSlot
+                          }))
+                        }));
+                      }}
+                      maxDays={5}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Reason for Leave</label>
+                    <textarea
+                      name="reason"
+                      value={leaveForm.reason}
+                      onChange={handleLeaveFormChange}
+                      rows={4}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+                      placeholder="Please provide a reason for your leave request..."
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                    >
+                      Submit Request
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Improved Comp-off Modal */}
+          {isCompOffModalOpen && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 transform transition-all duration-300 scale-100">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">Apply for Comp-off</h2>
+                  <button 
+                    onClick={closeCompOffModal} 
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors duration-200"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCompOffSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+                    <CustomDatePicker
+                      selectedDates={compOffForm.dates}
+                      onChange={(dates) => {
+                        setCompOffForm(prev => ({
+                          ...prev,
+                          dates: dates.map(d => ({
+                            date: d.date instanceof Date ? d.date : new Date(d.date),
+                            timeSlot: d.timeSlot
+                          }))
+                        }));
+                      }}
+                      isCompOff={true}
+                      maxDays={1}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea
+                      name="description"
+                      value={compOffForm.description}
+                      onChange={handleCompOffFormChange}
+                      rows={4}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+                      placeholder="Please provide details about your comp-off request..."
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={closeCompOffModal}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                    >
+                      Submit Request
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-200 bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md shadow-lg p-6 w-full max-w-md border border-gray-300">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                New Leave Application
-              </h2>
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={closeModal}
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Leave Type
-                </label>
-                <p className="text-gray-800 font-medium">Leave</p> {/* Static text */}
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Dates
-                </label>
-                <DatePicker
-                  multiple
-                  value={selectedDates}
-                  onChange={setSelectedDates}
-                  className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Reason
-                </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
-                  rows="3"
-                  placeholder="Please provide a reason for your leave"
-                ></textarea>
-              </div>
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 text-sm"
-                  onClick={closeModal}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Comp-off Modal */}
-      {isCompOffModalOpen && (
-        <div className="fixed inset-0 bg-gray-200 bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-md shadow-lg p-6 w-full max-w-md border border-gray-300">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Apply for Comp-off
-              </h2>
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={closeCompOffModal} // Closes the modal
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleCompOffSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Select Date
-                </label>
-                <DatePicker
-                  value={compOffDate}
-                  onChange={setCompOffDate}
-                  className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Start Time
-                </label>
-                <DatePicker
-                  value={startTime}
-                  onChange={setStartTime}
-                  format="HH:mm"
-                  plugins={[<TimePicker position="bottom" />]}
-                  className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  End Time
-                </label>
-                <DatePicker
-                  value={endTime}
-                  onChange={setEndTime}
-                  format="HH:mm"
-                  plugins={[<TimePicker position="bottom" />]}
-                  className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-0 focus:border-gray-400 text-sm"
-                  rows="3"
-                  placeholder="Provide details about the work done"
-                ></textarea>
-              </div>
-              <div className="flex justify-end gap-4">
-                <button
-                  type="button"
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 text-sm"
-                  onClick={closeCompOffModal} // Closes the modal
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

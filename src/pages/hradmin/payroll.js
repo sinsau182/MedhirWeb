@@ -1,18 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@/components/ui/table";
-import { Calendar, Edit } from "lucide-react";
-import Sidebar from "@/components/Sidebar"; // Import Sidebar component
-import HradminNavbar from "@/components/HradminNavbar"; // Import HrAdminNavbar component
+import React, { useState } from "react";
+import { Search, Calendar, Edit } from "lucide-react";
+import Sidebar from "@/components/Sidebar";
+import HradminNavbar from "@/components/HradminNavbar";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPayrolls } from "@/redux/slices/payrollSlice";
 
 const payrollData = [
   {
@@ -82,6 +73,7 @@ const advanceData = [
     balanceForNextMonth: 200,
   },
 ];
+
 const reimbursementData = [
   {
     name: "John Doe",
@@ -102,6 +94,7 @@ const reimbursementData = [
     status: "Rejected",
   },
 ];
+
 const paymentHistoryData = [
   {
     name: "John Doe",
@@ -129,14 +122,7 @@ const paymentHistoryData = [
   },
 ];
 
-const sections = [
-  "Salary Statement",
-  "Advance",
-  "Reimbursement",
-  "Payment History",
-];
-
-export default function PayrollManagement() {
+function PayrollManagement() {
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -145,234 +131,211 @@ export default function PayrollManagement() {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  const getTableHeaders = () => {
+    switch (selectedSection) {
+      case "Salary Statement":
+        return [
+          { key: "name", label: "Name" },
+          { key: "paidDays", label: "Paid Days" },
+          { key: "ctc", label: "CTC" },
+          { key: "salary", label: "Salary" },
+          { key: "basic", label: "Basic" },
+          { key: "deductions", label: "Deductions" },
+          { key: "taxes", label: "Taxes" },
+          { key: "taxPro", label: "Tax Pro" },
+          { key: "reimbursement", label: "Reimbursement" },
+          { key: "advance", label: "Advance" },
+          { key: "netPay", label: "Net Pay" },
+        ];
+      case "Advance":
+        return [
+          { key: "name", label: "Name" },
+          { key: "department", label: "Department" },
+          { key: "oldAdvance", label: "Old Advance" },
+          { key: "thisMonthAdvance", label: "This Month" },
+          { key: "deductInThisMonth", label: "Deduction" },
+          { key: "balanceForNextMonth", label: "Balance" },
+        ];
+      case "Reimbursement":
+        return [
+          { key: "name", label: "Name" },
+          { key: "department", label: "Department" },
+          { key: "reimbursementAmount", label: "Amount" },
+          { key: "status", label: "Status" },
+        ];
+      case "Payment History":
+        return [
+          { key: "name", label: "Name" },
+          { key: "department", label: "Department" },
+          { key: "paymentDate", label: "Date" },
+          { key: "amount", label: "Amount" },
+          { key: "paymentMode", label: "Mode" },
+          { key: "status", label: "Status" },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const getTableData = () => {
+    switch (selectedSection) {
+      case "Salary Statement":
+        return payrollData;
+      case "Advance":
+        return advanceData;
+      case "Reimbursement":
+        return reimbursementData;
+      case "Payment History":
+        return paymentHistoryData;
+      default:
+        return [];
+    }
+  };
+
+  const headers = getTableHeaders();
+  const data = getTableData().filter(item => 
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (item.department && item.department.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      {/* Main content container */}
-      <div
-        className={`flex-1 flex flex-col transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
-        }`}
-      >
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Navbar */}
+      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
           <HradminNavbar />
 
-          {/* Content */}
-          <div className="mt-20 p-6">
-            <h1 className="text-2xl font-bold">Payroll Management</h1>
-            <p className="text-gray-500">
-              Manage and process employee payrolls
-            </p>
-
-            {/* Search Bar and Buttons in Single Row */}
-            <div className="mt-4 flex justify-between items-center">
-              <Input
-                placeholder="Search employees..."
-                className="w-full md:w-1/3 border-gray-300 focus:ring-2 focus:ring-blue-500"
+        <div className="p-6 mt-16">
+          {/* Header with Actions */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex gap-2">
+              <button className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                <Edit className="h-5 w-5" />
+                Edit
+              </button>
+              <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                <Calendar className="h-5 w-5" />
+                January 2025
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 pr-4 py-2 border rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex items-center gap-1">
-                  <Edit size={16} /> Edit
-                </Button>
-                <Button variant="outline" className="flex items-center gap-1">
-                  <Calendar size={16} /> January 2025
-                </Button>
+              <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
             </div>
 
-            <div className="mt-4 flex gap-2 bg-white p-3 rounded-lg shadow-lg border border-gray-200 w-[50%] justify-between">
-              {sections.map((section) => (
-                <Button
+          {/* Tabs */}
+          <div className="flex gap-4 mb-6 border-b">
+            {["Salary Statement", "Advance", "Reimbursement", "Payment History"].map((section) => (
+              <button
                   key={section}
-                  variant={selectedSection === section ? "default" : "ghost"}
-                  className={`px-4 py-2 rounded-md transition-all duration-300 ${
+                className={`px-4 py-2 text-sm font-medium ${
                     selectedSection === section
-                      ? "bg-gray-900 text-white shadow-md"
-                      : "hover:bg-gray-200"
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-blue-600"
                   }`}
                   onClick={() => setSelectedSection(section)}
                 >
                   {section}
-                </Button>
+              </button>
               ))}
             </div>
 
-            {/* Filtered Payroll Table */}
-            {selectedSection === "Salary Statement" && (
-              <>
-              <Card className="mt-4">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Paid Days</TableHead>
-                      <TableHead>Monthly CTC</TableHead>
-                      <TableHead>This Month Salary</TableHead>
-                      <TableHead>Basic</TableHead>
-                      <TableHead>Deductions</TableHead>
-                      <TableHead>Taxes</TableHead>
-                      <TableHead>Professional Tax</TableHead>
-                      <TableHead>Reimbursement</TableHead>
-                      <TableHead>Advance Taken</TableHead>
-                      <TableHead>Net Pay</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+          {/* Table */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <div className="w-full overflow-auto">
+              {selectedSection === "Salary Statement" ? (
+                <table className="w-full table-fixed">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Name</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Paid Days</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Monthly CTC</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">This Month</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Basic</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Deductions</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Taxes</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Pro Tax</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Reimbursement</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Advance</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Net Pay</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {payrollData
                       .filter((item) =>
-                        item.name
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
+                        item.name.toLowerCase().includes(searchQuery.toLowerCase())
                       )
                       .map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.paidDays}</TableCell>
-                          <TableCell>₹{item.ctc}</TableCell>
-                          <TableCell>₹{item.salary}</TableCell>
-                          <TableCell>₹{item.basic}</TableCell>
-                          <TableCell>₹{item.deductions}</TableCell>
-                          <TableCell>₹{item.taxes}</TableCell>
-                          <TableCell>₹{item.taxPro}</TableCell>
-                          <TableCell>₹{item.reimbursement}</TableCell>
-                          <TableCell>₹{item.advance}</TableCell>
-                          <TableCell className="font-bold">
-                            ₹{item.netPay}
-                          </TableCell>
-                        </TableRow>
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="py-2 px-2 text-xs text-gray-600">{item.name}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">{item.paidDays}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.ctc}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.salary}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.basic}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.deductions}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.taxes}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.taxPro}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.reimbursement}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.advance}</td>
+                          <td className="py-2 px-2 text-xs font-semibold text-gray-600">₹{item.netPay}</td>
+                        </tr>
                       ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-            </>
-            )}
-
-            {selectedSection === "Advance" && (
-              <>
-              <Card className="mt-4">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Old Advance</TableHead>
-                      <TableHead>This Month Advance</TableHead>
-                      <TableHead>Deduct in this Month</TableHead>
-                      <TableHead>Deductions</TableHead>
-                      <TableHead>Balance for next month</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {advanceData
-                      .filter((item) =>
-                        item.name
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                      )
-                      .map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.department}</TableCell>
-                          <TableCell>₹{item.oldAdvance}</TableCell>
-                          <TableCell>₹{item.thisMonthAdvance}</TableCell>
-                          <TableCell>₹{item.deductInThisMonth}</TableCell>
-                          <TableCell>₹{item.balanceForNextMonth}</TableCell>
-                        </TableRow>
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      {headers.map((header) => (
+                        <th
+                          key={header.key}
+                          className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap"
+                        >
+                          {header.label}
+                        </th>
                       ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-              </>
-            )}
-
-            {selectedSection === "Reimbursement" && (
-              <>
-              <Card className="mt-4">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Reimbursement Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reimbursementData
-                      .filter((item) =>
-                        item.name
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                      )
-                      .map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.department}</TableCell>
-                          <TableCell>₹{item.reimbursementAmount}</TableCell>
-                          <TableCell>{item.status}</TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-              </>
-            )}
-
-            {selectedSection === "Payment History" && (
-              <>
-              <Card className="mt-4">
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Payment Date</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Payment Mode</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paymentHistoryData
-                      .filter((item) =>
-                        item.name
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                      )
-                      .map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.department}</TableCell>
-                          <TableCell>{item.paymentDate}</TableCell>
-                          <TableCell>₹{item.amount}</TableCell>
-                          <TableCell>{item.paymentMode}</TableCell>
-                          <TableCell>{item.status}</TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-                      
-              </>
-            )}
-            {/* Footer Buttons */}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {data.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={headers.length}
+                          className="text-center py-2 px-2 text-xs text-gray-500"
+                        >
+                          No data found
+                        </td>
+                      </tr>
+                    ) : (
+                      data.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          {headers.map((header) => (
+                            <td
+                              key={header.key}
+                              className="py-2 px-2 text-xs text-gray-600 whitespace-nowrap"
+                            >
+                              {header.key.includes('amount') || header.key === 'oldAdvance' || header.key === 'thisMonthAdvance' || header.key === 'deductInThisMonth' || header.key === 'balanceForNextMonth' ? '₹' : ''}{item[header.key]}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+export default PayrollManagement;

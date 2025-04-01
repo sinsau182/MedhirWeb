@@ -1,11 +1,8 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
-import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -16,7 +13,7 @@ function Employees() {
   const [searchInput, setSearchInput] = useState("");
   const router = useRouter();
   const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees);
+  const { employees, loading, err } = useSelector((state) => state.employees);
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -37,221 +34,188 @@ function Employees() {
     employee?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
 
+  const tabs = ['Basic', 'ID Proofs', 'Salary Details', 'Bank Details', 'Leaves Policy'];
+
+  const getTableHeaders = () => {
+    switch (activeTab) {
+      case 'Basic':
+        return [
+          { key: 'name', label: 'Name' },
+          { key: 'email', label: 'Email' },
+          { key: 'phone', label: 'Phone no.' },
+          { key: 'department', label: 'Department' },
+          { key: 'gender', label: 'Gender' },
+          { key: 'title', label: 'Title' },
+          { key: 'reportingManager', label: 'Reporting Manager' },
+        ];
+      case 'ID Proofs':
+        return [
+          { key: 'name', label: 'Name' },
+          { key: 'aadharNo', label: 'Aadhar no.' },
+          { key: 'panNo', label: 'PAN no.' },
+          { key: 'voterId', label: 'Voter ID' },
+          { key: 'passport', label: 'Passport no.' },
+        ];
+      case 'Salary Details':
+        return [
+          { key: 'name', label: 'Name' },
+          { key: 'totalCtc', label: 'Total CTC' },
+          { key: 'basic', label: 'Basic' },
+          { key: 'hra', label: 'HRA' },
+          { key: 'allowances', label: 'Allowance' },
+          { key: 'pf', label: 'PF' },
+        ];
+      case 'Bank Details':
+        return [
+          { key: 'name', label: 'Name' },
+          { key: 'accountHolderName', label: 'Account Holder Name' },
+          { key: 'accountNumber', label: 'Account no.' },
+          { key: 'bankName', label: 'Bank Name' },
+          { key: 'ifscCode', label: 'IFSC' },
+          { key: 'branchName', label: 'Branch Name' },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const getCellValue = (employee, key) => {
+    if (!employee) return '';
+    
+    switch (activeTab) {
+      case 'Basic':
+        return employee[key] || '';
+      case 'ID Proofs':
+        if (key === 'name') return employee.name || '';
+        return employee.idProofs ? employee.idProofs[key] || '' : '';
+      case 'Salary Details':
+        if (key === 'name') return employee.name || '';
+        return employee.salaryDetails ? employee.salaryDetails[key] || '' : '';
+      case 'Bank Details':
+        if (key === 'name') return employee.name || '';
+        return employee.bankDetails ? employee.bankDetails[key] || '' : '';
+      default:
+        return '';
+    }
+  };
+
+  const headers = getTableHeaders();
+
+  if (err) {
+    return (
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+        <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+          <HradminNavbar />
+          <div className="p-6 mt-16">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              Error: {err}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      {/* Main content container */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-64"}`}>
-        
-        {/* Navbar - Stays at the top */}
+      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
         <HradminNavbar />
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto p-6 pt-24">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-800">Employees</h1>
-            <button
-              className="px-4 py-2 border border-[#1d4ed8] text-white bg-[#1d4ed8] hover:bg-[#2563eb] rounded-md flex items-center"
+        <div className="p-6 mt-16">
+          {/* Header with Add Employee button and Search */}
+          <div className="flex justify-between items-center mb-6">
+            <button 
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               onClick={() => router.push({ pathname: "/hradmin/addNewEmployee", query: { activeMainTab: activeTab } })}
             >
-              <UserPlus className="mr-2" size={22} /> Add New Employee
+              <UserPlus className="h-5 w-5" />
+              Add Employee
             </button>
-          </div>
-
-          {/* Search Box */}
-          <div className="mt-4">
-            <div className="relative w-96">
-              <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
-                <Search className="w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full pl-3 text-gray-700 bg-transparent focus:outline-none"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-              </div>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 pr-4 py-2 border rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
             </div>
           </div>
 
           {/* Tabs */}
-          <div className="p-3 rounded-lg mt-4 flex space-x-4 text-lg mx-auto bg-gray-50 border border-gray-200">
-            {["Basic", "ID Proofs", "Salary Details", "Bank Details", "Leaves Policy"].map((tab, index) => (
+          <div className="flex gap-4 mb-6 border-b">
+            {tabs.map((tab) => (
               <button
-                key={index}
+                key={tab}
+                className={`px-4 py-2 ${
+                  activeTab === tab
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md ${
-                  activeTab === tab ? "bg-white shadow-md text-black font-bold" : "text-gray-600 font-medium"
-                } hover:text-black`}
               >
                 {tab}
               </button>
             ))}
           </div>
 
-          {/* Table Section */}
-          <div className="mt-6 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
-            <Table>
-              <TableHeader className="bg-gray-300 text-gray-800 font-bold">
-                <TableRow>
-                {activeTab === "Basic" && (
-                  <>
-                    <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
-                      Name
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Email
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Phone no.
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Department
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Gender
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Title
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Reporting Manager
-                    </TableHead>
-                  </>
-                )}
-                {activeTab === "ID Proofs" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Aadhar no.</TableHead>
-                    <TableHead className="text-center">PAN no.</TableHead>
-                    <TableHead className="text-center">Voter ID</TableHead>
-                    <TableHead className="text-center">Passport no.</TableHead>
-                  </>
-                )}
-                {activeTab === "Salary Details" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Total CTC</TableHead>
-                    <TableHead className="text-center">Basic</TableHead>
-                    <TableHead className="text-center">HRA</TableHead>
-                    <TableHead className="text-center">Allowance</TableHead>
-                    <TableHead className="text-center">PF</TableHead>
-                  </>
-                )}
-                {activeTab === "Bank Details" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Account Holder Name</TableHead>
-                    <TableHead className="text-center">Account no.</TableHead>
-                    <TableHead className="text-center">Bank Name</TableHead>
-                    <TableHead className="text-center">IFSC</TableHead>
-                    <TableHead className="text-center">Branch Name</TableHead>
-                  </>
-                )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-              {filteredEmployees.map((employee, index) => (
-                <TableRow
-                  key={employee.id}
-                  onClick={() => handleRowClick(employee)}
-                  className={`cursor-pointer hover:bg-gray-100 transition ${
-                    index % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"
-                  }`}
-                >
-                  {activeTab === "Basic" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.email}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.phone}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.department}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.gender}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.title}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.reportingManager}
-                      </TableCell>
-                    </>
+          {/* Employee Table */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <div className="w-full overflow-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    {headers.map((header) => (
+                      <th 
+                        key={header.key} 
+                        className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap"
+                      >
+                        {header.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={headers.length} className="text-center py-3 text-sm text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
+                          Loading...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredEmployees.length === 0 ? (
+                    <tr>
+                      <td colSpan={headers.length} className="text-center py-3 text-sm text-gray-500">
+                        No employees found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredEmployees.map((employee, index) => (
+                      <tr
+                        key={employee._id || index}
+                        onClick={() => handleRowClick(employee)}
+                        className="hover:bg-blue-50/50 transition-colors cursor-pointer text-sm"
+                      >
+                        {headers.map((header) => (
+                          <td 
+                            key={header.key} 
+                            className="py-2.5 px-4 whitespace-nowrap text-gray-600"
+                          >
+                            {getCellValue(employee, header.key)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
                   )}
-                  {activeTab === "ID Proofs" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.aadharNo}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.panNo}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.voterId}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.passport}
-                      </TableCell>
-                    </>
-                  )}
-                  {activeTab === "Salary Details" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.totalCtc}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.basic}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.hra}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.allowances}
-                      </TableCell>
-                      <TableCell>{employee.salaryDetails?.pf}</TableCell>
-                    </>
-                  )}
-                  {activeTab === "Bank Details" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.accountHolderName}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.accountNumber}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.bankName}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.ifscCode}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.branchName}
-                      </TableCell>
-                      {/* <TableCell>{employee.upiId}</TableCell> */}
-                    </>
-                  )}
-                </TableRow>
-              ))}
-              </TableBody>
-            </Table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

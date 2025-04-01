@@ -110,14 +110,8 @@ const Overview = () => {
 
     {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
-      label: "Leave Requests",
+      label: "Open Requests",
       count: 5,
-    },
-
-    {
-      icon: <FaClock className="h-6 w-6 text-yellow-500" />,
-      label: "Performance",
-      count: 12,
     },
   ];
 
@@ -125,7 +119,7 @@ const Overview = () => {
 <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
 
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"hr"} />
+      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"manager"} />
 
       {/* Main Content */}
 
@@ -189,7 +183,7 @@ const Overview = () => {
                         <span className="ml-1">+12 from last month</span>
                       </div>
                     </div>
-                  ) : item.label === "Leave Requests" ? (
+                  ) : item.label === "Open Requests" ? (
                     <div
                       key={index}
                       className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
@@ -220,38 +214,6 @@ const Overview = () => {
                         <span className="text-lg">↑</span>
 
                         <span className="ml-1">+3.8% vs target (90%)</span>
-                      </div>
-                    </div>
-                  ) : item.label === "Performance" ? (
-                    <div
-                      key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      style={{ height: "250px", width: "400px" }}
-                    >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
-                            {item.label}
-                        </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaCalendar className="text-[#4876D6] text-2xl" />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">94%</p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Average Team Performance Score
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-blue-600">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-semibold">
-                          5 new
-                        </span>
-
-                        <span className="ml-2 text-gray-500">last 7 days</span>
                       </div>
                     </div>
                   ) : (

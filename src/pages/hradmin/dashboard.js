@@ -119,12 +119,6 @@ const Overview = () => {
     },
 
     {
-      icon: <FaCalendar className="h-6 w-6 text-green-500" />,
-      label: "Present Today",
-      count: 72,
-    },
-
-    {
       icon: <FaClock className="h-6 w-6 text-yellow-500" />,
       label: "Pending Tasks",
       count: 12,
@@ -170,7 +164,7 @@ const Overview = () => {
           {/* Overview Cards */}
 
           <div className="flex justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mb-6">
               {overviewData
 
                 .filter((item) => item.label !== "Payroll Status")
@@ -206,39 +200,6 @@ const Overview = () => {
                         <span className="text-lg">↑</span>
 
                         <span className="ml-1">+12 from last month</span>
-                      </div>
-                    </div>
-                  ) : item.label === "Present Today" ? (
-                    <div
-                      key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      style={{ height: "250px", width: "400px" }}
-                      onClick={handleAttendanceClick} // Updated click handler
-                    >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
-                          Attendance Rate
-                        </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaClock className="text-[#4876D6] text-2xl" />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">
-                          93.8%
-                        </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Average monthly attendance rate
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-green-600">
-                        <span className="text-lg">↑</span>
-
-                        <span className="ml-1">+3.8% vs target (90%)</span>
                       </div>
                     </div>
                   ) : item.label === "Pending Tasks" ? (

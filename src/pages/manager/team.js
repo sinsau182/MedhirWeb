@@ -19,15 +19,9 @@ function Employees() {
   const { employees, loading } = useSelector((state) => state.employees);
 
   useEffect(() => {
+    router.prefetch("/manager/team");
     dispatch(fetchEmployees());
   }, [dispatch]);
-
-  const handleRowClick = (employee) => {
-    router.push({
-      pathname: "/hradmin/addNewEmployee",
-      query: { employee: JSON.stringify(employee), activeMainTab: activeTab },
-    });
-  };
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -96,45 +90,11 @@ function Employees() {
                     </TableHead>
                   </>
                 )}
-                {activeTab === "ID Proofs" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Aadhar no.</TableHead>
-                    <TableHead className="text-center">Pan no.</TableHead>
-                    <TableHead className="text-center">Voter ID</TableHead>
-                    <TableHead className="text-center">Passport no.</TableHead>
-                  </>
-                )}
-                {activeTab === "Salary Details" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Total Ctc</TableHead>
-                    <TableHead className="text-center">Basic</TableHead>
-                    <TableHead className="text-center">HRA</TableHead>
-                    <TableHead className="text-center">Allowance</TableHead>
-                    <TableHead className="text-center">PF</TableHead>
-                  </>
-                )}
-                {activeTab === "Bank Details" && (
-                  <>
-                    <TableHead className="text-left">Name</TableHead>
-                    <TableHead className="text-center">Account no.</TableHead>
-                    <TableHead className="text-center">Bank Name</TableHead>
-                    <TableHead className="text-center">IFSC</TableHead>
-                    <TableHead className="text-center">Branch Name</TableHead>
-                  </>
-                )}
                 </TableRow>
               </TableHeader>
               <TableBody>
               {filteredEmployees.map((employee, index) => (
-                <TableRow
-                  key={employee.id}
-                  onClick={() => handleRowClick(employee)}
-                  className={`cursor-pointer hover:bg-gray-100 transition ${
-                    index % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"
-                  }`}
-                >
+                <TableRow>
                   {activeTab === "Basic" && (
                     <>
                       <TableCell className="text-left">
@@ -158,65 +118,6 @@ function Employees() {
                       <TableCell className="text-center">
                         {employee.reportingManager}
                       </TableCell>
-                    </>
-                  )}
-                  {activeTab === "ID Proofs" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.aadharNo}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.panNo}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.voterId}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.idProofs?.passport}
-                      </TableCell>
-                    </>
-                  )}
-                  {activeTab === "Salary Details" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.totalCtc}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.basic}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.hra}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.salaryDetails?.allowances}
-                      </TableCell>
-                      <TableCell>{employee.salaryDetails?.pf}</TableCell>
-                    </>
-                  )}
-                  {activeTab === "Bank Details" && (
-                    <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.accountNumber}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.bankName}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.ifscCode}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.bankDetails?.branchName}
-                      </TableCell>
-                      {/* <TableCell>{employee.upiId}</TableCell> */}
                     </>
                   )}
                 </TableRow>
