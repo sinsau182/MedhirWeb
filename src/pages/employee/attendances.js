@@ -52,7 +52,8 @@ const EmployeeAttendance = () => {
               <CardDescription>Your attendance statistics for this month</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Present Days */}
                 <div className="bg-green-50 p-4 rounded-lg border border-green-100">
                   <div className="flex items-center mb-2">
                     <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
@@ -62,31 +63,28 @@ const EmployeeAttendance = () => {
                   <p className="text-xs text-muted-foreground">of 22 working days</p>
                 </div>
 
+                {/* Absent Days */}
                 <div className="bg-red-50 p-4 rounded-lg border border-red-100">
                   <div className="flex items-center mb-2">
                     <X className="h-5 w-5 text-red-500 mr-2" />
-                    <h3 className="text-sm font-medium">Absent Days</h3>
+                    <h3 className="text-sm font-medium">Total Absent</h3>
                   </div>
                   <p className="text-2xl font-bold">2</p>
-                  <p className="text-xs text-muted-foreground">of 22 working days</p>
-                </div>
-
-                <div className="bg-amber-50 p-4 rounded-lg border border-amber-100">
-                  <div className="flex items-center mb-2">
-                    <Clock className="h-5 w-5 text-amber-500 mr-2" />
-                    <h3 className="text-sm font-medium">Late Check-ins</h3>
+                  <hr className="my-2 border-gray-300" />
+                  <div className="flex justify-between items-center">
+                    {/* Absent with Leave */}
+                    <div className="flex-1 text-center">
+                      <span className="text-sm font-medium">Absent with Leave</span>
+                      <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
+                    </div>
+                    {/* Vertical Line */}
+                    <div className="h-10 w-px bg-gray-300 mx-4"></div>
+                    {/* Absent with LOP */}
+                    <div className="flex-1 text-center">
+                      <span className="text-sm font-medium">Absent with LOP</span>
+                      <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
+                    </div>
                   </div>
-                  <p className="text-2xl font-bold">2</p>
-                  <p className="text-xs text-muted-foreground">of 22 working days</p>
-                </div>
-
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                  <div className="flex items-center mb-2">
-                    <CalendarIcon className="h-5 w-5 text-blue-500 mr-2" />
-                    <h3 className="text-sm font-medium">Attendance Rate</h3>
-                  </div>
-                  <p className="text-2xl font-bold">91%</p>
-                  <p className="text-xs text-muted-foreground">this month</p>
                 </div>
               </div>
             </CardContent>

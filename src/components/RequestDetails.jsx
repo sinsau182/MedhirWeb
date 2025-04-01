@@ -372,13 +372,156 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
           </div>
         </TabsContent>
         <TabsContent value="profileUpdates">
-          {/* Render profile updates table */}
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Updates</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Reason</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedProfileUpdates.map((update) => (
+                  <tr key={update.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{update.employeeId}</td>
+                    <td className="px-5 py-4 text-sm">{update.name}</td>
+                    <td className="px-5 py-4 text-sm">{update.department}</td>
+                    <td className="px-5 py-4 text-sm text-blue-500 cursor-pointer">
+                      {update.updateType} {update.hasDetails && <span>(View)</span>}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{update.reason}</td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() => handleApprove("profileUpdates", update.id)}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() => handleReject("profileUpdates", update.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
         <TabsContent value="expenseRequests">
-          {/* Render expense requests table */}
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Amount</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Description</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Receipt</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedExpenseRequests.map((request) => (
+                  <tr key={request.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{request.employeeId}</td>
+                    <td className="px-5 py-4 text-sm">{request.name}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{request.amount}</td>
+                    <td className="px-5 py-4 text-sm">{request.description}</td>
+                    <td className="px-5 py-4 text-sm">
+                      {request.hasReceipt && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() => handleApprove("expenseRequests", request.id)}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() => handleReject("expenseRequests", request.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
         <TabsContent value="advanceRequests">
-          {/* Render advance requests table */}
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Amount</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Reason</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Repayment Plan</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedAdvanceRequests.map((request) => (
+                  <tr key={request.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{request.employeeId}</td>
+                    <td className="px-5 py-4 text-sm">{request.name}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{request.amount}</td>
+                    <td className="px-5 py-4 text-sm">{request.reason}</td>
+                    <td className="px-5 py-4 text-sm">{request.repaymentPlan}</td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() => handleApprove("advanceRequests", request.id)}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() => handleReject("advanceRequests", request.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

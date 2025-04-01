@@ -13,6 +13,8 @@ import {
 import { Calendar, Edit } from "lucide-react";
 import Sidebar from "@/components/Sidebar"; // Import Sidebar component
 import HradminNavbar from "@/components/HradminNavbar"; // Import HrAdminNavbar component
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPayrolls } from "@/redux/slices/payrollSlice"; // Import fetchPayrolls action
 
 const payrollData = [
   {

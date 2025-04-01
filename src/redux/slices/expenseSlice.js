@@ -19,27 +19,43 @@ export const fetchExpenses = createAsyncThunk(
   }
 );
 
-// Create employee
 export const createExpense = createAsyncThunk(
-  "expenses/createExpense",
-  async (expenseData, { rejectWithValue }) => {
-    try {
-      const response = await fetch(API_BASE_URL, {
-        method: "POST",
-        body: JSON.stringify(expenseData),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create expense");
+    "expenses/createExpense",
+    async (expenseData, { rejectWithValue }) => {
+      try {
+        let body;
+        let headers = {};
+  
+        if (expenseData.receipt) {
+          // If there's a file, use FormData
+          body = new FormData();
+          Object.entries(expenseData).forEach(([key, value]) => {
+            body.append(key, value);
+          });
+        } else {
+          // Otherwise, send JSON data
+          body = JSON.stringify(expenseData);
+          headers["Content-Type"] = "application/json";
+        }
+  
+        const response = await fetch("http://192.168.0.200:8084/payroll/expenses", {
+          method: "POST",
+          body,
+          headers,
+        });
+  
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to create expense");
+        }
+  
+        return data;
+      } catch (error) {
+        return rejectWithValue(error.message);
       }
-
-      return data;
-    } catch (error) {
-      return rejectWithValue(error.message);
     }
-  }
-);
+  );
+  
 
 // Update employee
 export const updateExpense = createAsyncThunk(
