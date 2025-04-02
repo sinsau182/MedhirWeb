@@ -15,7 +15,15 @@ import {
   FaAngleLeft,
   FaAngleRight,
 } from "react-icons/fa";
-import { Briefcase, Calendar, ChartColumnIncreasing, Clock, CreditCard, ReceiptIcon, Users } from "lucide-react";
+import {
+  Briefcase,
+  Calendar,
+  ChartColumnIncreasing,
+  Clock,
+  CreditCard,
+  ReceiptIcon,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
@@ -29,9 +37,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     setCurrentRole(role);
 
     // Initialize Settings menu as expanded
-    setExpandedMenus(prev => ({
+    setExpandedMenus((prev) => ({
       ...prev,
-      settings: true // Always keep settings expanded
+      settings: true, // Always keep settings expanded
     }));
 
     const handleRouteChangeStart = () => setIsLoading(true);
@@ -49,51 +57,113 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   }, [router.events]);
 
   const toggleMenu = (menuKey) => {
-    setExpandedMenus(prev => ({
+    setExpandedMenus((prev) => ({
       ...prev,
-      [menuKey]: !prev[menuKey]
+      [menuKey]: !prev[menuKey],
     }));
   };
 
   // Define menu items based on the role
   const menuItems = [
-    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/hradmin/dashboard", roles: ["hr"] },
-    { label: "Employees", icon: <Users />, link: "/hradmin/employees", roles: ["hr"] },
-    { label: "Attendance", icon: <Clock />, link: "/hradmin/attendance", roles: ["hr"] },
-    { label: "Payroll", icon: <ReceiptIcon />, link: "/hradmin/payroll", roles: ["hr"] },
-    { 
+    {
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/hradmin/dashboard",
+      roles: ["hr"],
+    },
+    {
+      label: "Employees",
+      icon: <Users />,
+      link: "/hradmin/employees",
+      roles: ["hr"],
+    },
+    {
+      label: "Attendance",
+      icon: <Clock />,
+      link: "/hradmin/attendance",
+      roles: ["hr"],
+    },
+    {
+      label: "Payroll",
+      icon: <ReceiptIcon />,
+      link: "/hradmin/payroll",
+      roles: ["hr"],
+    },
+    {
       label: "Settings",
       icon: <FaCog />,
       roles: ["hr"],
       hasSubmenu: true,
       menuKey: "settings",
       subItems: [
-        { 
-          label: "Organization Settings", 
-          icon: <FaBuilding />, 
-          link: "/hradmin/settings/organization"
+        {
+          label: "Organization Settings",
+          icon: <FaBuilding />,
+          link: "/hradmin/settings/organization",
         },
-        { 
-          label: "Leave Settings", 
-          icon: <FaCalendarAlt />, 
-          link: "/hradmin/settings/leave"
-        }
-      ]
+        {
+          label: "Leave Settings",
+          icon: <FaCalendarAlt />,
+          link: "/hradmin/settings/leave",
+        },
+      ],
     },
 
-    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/manager/dashboard", roles: ["manager"] },
-    { label: "Team", icon: <Briefcase />, link: "/manager/team", roles: ["manager"] },
-    { label: "Attendance", icon: <Clock />, link: "/manager/attendance", roles: ["manager"] },
+    {
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/manager/dashboard",
+      roles: ["manager"],
+    },
+    {
+      label: "Team",
+      icon: <Briefcase />,
+      link: "/manager/team",
+      roles: ["manager"],
+    },
+    {
+      label: "Attendance",
+      icon: <Clock />,
+      link: "/manager/attendance",
+      roles: ["manager"],
+    },
 
-    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/employee/dashboard", roles: ["employee"] },
-    { label: "Leave", icon: <Calendar />, link: "/employee/leaves", roles: ["employee"] },
-    { label: "Reimbursement", icon: <CreditCard />, link: "/employee/reimbursement", roles: ["employee"] },
-    { label: "Attendance", icon: <Clock />, link: "/employee/attendances", roles: ["employee"] },
-    { label: "My Payslips", icon: <ReceiptIcon />, link: "/employee/mypayslip", roles: ["employee"] },
+    {
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/employee/dashboard",
+      roles: ["employee"],
+    },
+    {
+      label: "Leave",
+      icon: <Calendar />,
+      link: "/employee/leaves",
+      roles: ["employee"],
+    },
+    {
+      label: "Reimbursement",
+      icon: <CreditCard />,
+      link: "/employee/reimbursement",
+      roles: ["employee"],
+    },
+    {
+      label: "Attendance",
+      icon: <Clock />,
+      link: "/employee/attendances",
+      roles: ["employee"],
+    },
+    {
+      label: "My Payslips",
+      icon: <ReceiptIcon />,
+      link: "/employee/mypayslip",
+      roles: ["employee"],
+    },
   ];
 
   // Filter menu items based on currentRole
-  const filteredMenu = menuItems.filter((item) => item.roles.includes(currentRole));
+  const filteredMenu = menuItems.filter((item) =>
+    item.roles.includes(currentRole)
+  );
 
   const isActiveLink = (link) => {
     if (!link) return false;
@@ -102,7 +172,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
   const isActiveParent = (item) => {
     if (!item.hasSubmenu) return false;
-    return item.subItems.some(subItem => router.pathname.startsWith(subItem.link));
+    return item.subItems.some((subItem) =>
+      router.pathname.startsWith(subItem.link)
+    );
   };
 
   return (
@@ -123,7 +195,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         >
           {/* Collapse/Expand Button - Moved to top left */}
           <div className="absolute -right-4 top-3 z-50">
-            <button 
+            <button
               onClick={toggleSidebar}
               className={`
                 flex items-center justify-center w-8 h-8 
@@ -147,7 +219,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
               {filteredMenu.map((item, index) => {
                 const isActive = isActiveLink(item.link);
                 const isParentActive = isActiveParent(item);
-                const isExpanded = item.menuKey ? expandedMenus[item.menuKey] : false;
+                const isExpanded = item.menuKey
+                  ? expandedMenus[item.menuKey]
+                  : false;
 
                 return (
                   <li key={index} className="relative">
@@ -158,12 +232,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                           className={`group flex items-center px-4 py-3 cursor-pointer transition-all duration-200 ${
                             isCollapsed ? "justify-center" : "gap-4"
                           } ${
-                            isParentActive 
-                              ? "text-blue-600 bg-blue-50" 
+                            isParentActive
+                              ? "text-blue-600 bg-blue-50"
                               : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                           }`}
                         >
-                          <span className={`text-xl ${isParentActive ? "text-blue-600" : "group-hover:text-blue-600"}`}>
+                          <span
+                            className={`text-xl ${
+                              isParentActive
+                                ? "text-blue-600"
+                                : "group-hover:text-blue-600"
+                            }`}
+                          >
                             {item.icon}
                           </span>
                           {!isCollapsed && (
@@ -181,10 +261,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                             </>
                           )}
                         </div>
-                        
+
                         {/* Submenu items */}
                         {isExpanded && (
-                          <div 
+                          <div
                             className={`
                               ${isCollapsed ? "pl-0" : "pl-4"} 
                               mt-1 
@@ -194,7 +274,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                           >
                             {item.subItems.map((subItem, subIndex) => {
                               const isSubActive = isActiveLink(subItem.link);
-                              
+
                               return (
                                 <Link
                                   key={subIndex}
@@ -204,13 +284,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                                     flex items-center px-4 py-2 
                                     transition-all duration-200 
                                     ${isCollapsed ? "justify-center" : "gap-3"}
-                                    ${isSubActive 
-                                      ? "text-blue-600 bg-blue-50" 
-                                      : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                                    ${
+                                      isSubActive
+                                        ? "text-blue-600 bg-blue-50"
+                                        : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                                     }
                                   `}
                                 >
-                                  <span className={`text-lg ${isSubActive ? "text-blue-600" : ""}`}>
+                                  <span
+                                    className={`text-lg ${
+                                      isSubActive ? "text-blue-600" : ""
+                                    }`}
+                                  >
                                     {subItem.icon}
                                   </span>
                                   {!isCollapsed && (
@@ -232,20 +317,25 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                           group flex items-center px-4 py-3 
                           transition-all duration-200 
                           ${isCollapsed ? "justify-center" : "gap-4"}
-                          ${isActive 
-                            ? "text-blue-600 bg-blue-50" 
-                            : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                          ${
+                            isActive
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                           }
                         `}
                         aria-label={item.label}
                       >
-                        <span className={`text-xl ${isActive ? "text-blue-600" : "group-hover:text-blue-600"}`}>
+                        <span
+                          className={`text-xl ${
+                            isActive
+                              ? "text-blue-600"
+                              : "group-hover:text-blue-600"
+                          }`}
+                        >
                           {item.icon}
                         </span>
                         {!isCollapsed && (
-                          <span className="text-lg">
-                            {item.label}
-                          </span>
+                          <span className="text-lg">{item.label}</span>
                         )}
                       </Link>
                     )}

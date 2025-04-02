@@ -16,15 +16,19 @@ const LeaveSettings = () => {
     canCarryForward: false,
   });
   const [errors, setErrors] = useState({});
-  const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+  const [notification, setNotification] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
 
   // Add new state variables for Leave Policies
   const [showPolicyModal, setShowPolicyModal] = useState(false);
   const [policyForm, setPolicyForm] = useState({
     name: "",
-    leaveAllocation: [{ leaveType: "", annualQuota: "" }]
+    leaveAllocation: [{ leaveType: "", annualQuota: "" }],
   });
-  
+
   // Add new state variables for Public Holidays
   const [showHolidayModal, setShowHolidayModal] = useState(false);
   const [holidayForm, setHolidayForm] = useState({
@@ -40,7 +44,7 @@ const LeaveSettings = () => {
   const handleLeaveTypeSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    
+
     if (!leaveTypeForm.name) {
       newErrors.name = "Leave type name is required";
     }
@@ -93,34 +97,41 @@ const LeaveSettings = () => {
       leaveAllocation: [
         { leaveType: "Annual Leave", annualQuota: 24 },
         { leaveType: "Sick Leave", annualQuota: 12 },
-      ]
+      ],
     },
     // Add more sample policies as needed
   ];
 
   const handleAddLeaveAllocation = () => {
-    setPolicyForm(prev => ({
+    setPolicyForm((prev) => ({
       ...prev,
-      leaveAllocation: [...prev.leaveAllocation, { leaveType: "", annualQuota: "" }]
+      leaveAllocation: [
+        ...prev.leaveAllocation,
+        { leaveType: "", annualQuota: "" },
+      ],
     }));
   };
 
   const handleRemoveLeaveAllocation = (index) => {
-    setPolicyForm(prev => ({
+    setPolicyForm((prev) => ({
       ...prev,
-      leaveAllocation: prev.leaveAllocation.filter((_, i) => i !== index)
+      leaveAllocation: prev.leaveAllocation.filter((_, i) => i !== index),
     }));
   };
 
   const handlePolicySubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    
+
     if (!policyForm.name) {
       newErrors.policyName = "Policy name is required";
     }
 
-    if (policyForm.leaveAllocation.some(item => !item.leaveType || !item.annualQuota)) {
+    if (
+      policyForm.leaveAllocation.some(
+        (item) => !item.leaveType || !item.annualQuota
+      )
+    ) {
       newErrors.leaveAllocation = "All leave types and quotas must be filled";
     }
 
@@ -139,7 +150,7 @@ const LeaveSettings = () => {
       setShowPolicyModal(false);
       setPolicyForm({
         name: "",
-        leaveAllocation: [{ leaveType: "", annualQuota: "" }]
+        leaveAllocation: [{ leaveType: "", annualQuota: "" }],
       });
     } catch (error) {
       setNotification({
@@ -156,13 +167,13 @@ const LeaveSettings = () => {
       id: 1,
       name: "Republic Day",
       date: "2025-01-26",
-      description: "National Holiday"
+      description: "National Holiday",
     },
     {
       id: 2,
       name: "Independence Day",
       date: "2024-08-15",
-      description: "National Holiday"
+      description: "National Holiday",
     },
     // Add more sample holidays as needed
   ];
@@ -170,7 +181,7 @@ const LeaveSettings = () => {
   const handleHolidaySubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    
+
     if (!holidayForm.name) {
       newErrors.holidayName = "Holiday name is required";
     }
@@ -208,10 +219,10 @@ const LeaveSettings = () => {
   // Format date to display in table
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
     });
   };
 
@@ -219,11 +230,17 @@ const LeaveSettings = () => {
     <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
         <HradminNavbar />
 
         <div className="p-6 mt-16">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">Leave Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">
+            Leave Settings
+          </h1>
 
           {/* Tabs */}
           <div className="flex gap-6 mb-6">
@@ -289,9 +306,17 @@ const LeaveSettings = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="flex flex-col gap-1">
-                            <span>Probation: {type.allowedInProbation ? "Yes" : "No"}</span>
-                            <span>Notice: {type.allowedInNotice ? "Yes" : "No"}</span>
-                            <span>Carry Forward: {type.canCarryForward ? "Yes" : "No"}</span>
+                            <span>
+                              Probation:{" "}
+                              {type.allowedInProbation ? "Yes" : "No"}
+                            </span>
+                            <span>
+                              Notice: {type.allowedInNotice ? "Yes" : "No"}
+                            </span>
+                            <span>
+                              Carry Forward:{" "}
+                              {type.canCarryForward ? "Yes" : "No"}
+                            </span>
                           </div>
                         </td>
                       </tr>
@@ -337,8 +362,13 @@ const LeaveSettings = () => {
                         <td className="px-6 py-4 text-sm text-gray-900">
                           <div className="space-y-1">
                             {policy.leaveAllocation.map((allocation, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <span className="font-medium">{allocation.leaveType}:</span>
+                              <div
+                                key={index}
+                                className="flex items-center gap-2"
+                              >
+                                <span className="font-medium">
+                                  {allocation.leaveType}:
+                                </span>
                                 <span>{allocation.annualQuota} days/year</span>
                               </div>
                             ))}
@@ -355,7 +385,9 @@ const LeaveSettings = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold text-gray-800">Add New Leave Policy</h2>
+                      <h2 className="text-xl font-semibold text-gray-800">
+                        Add New Leave Policy
+                      </h2>
                       <button
                         onClick={() => setShowPolicyModal(false)}
                         className="text-gray-500 hover:text-gray-700"
@@ -372,12 +404,19 @@ const LeaveSettings = () => {
                         <input
                           type="text"
                           value={policyForm.name}
-                          onChange={(e) => setPolicyForm({ ...policyForm, name: e.target.value })}
+                          onChange={(e) =>
+                            setPolicyForm({
+                              ...policyForm,
+                              name: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter policy name"
                         />
                         {errors.policyName && (
-                          <p className="text-red-500 text-sm mt-1">{errors.policyName}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.policyName}
+                          </p>
                         )}
                       </div>
 
@@ -394,21 +433,27 @@ const LeaveSettings = () => {
                             + Add Leave Type
                           </button>
                         </div>
-                        
+
                         {policyForm.leaveAllocation.map((allocation, index) => (
                           <div key={index} className="flex gap-4 items-start">
                             <div className="flex-1">
                               <select
                                 value={allocation.leaveType}
                                 onChange={(e) => {
-                                  const newAllocations = [...policyForm.leaveAllocation];
-                                  newAllocations[index].leaveType = e.target.value;
-                                  setPolicyForm({ ...policyForm, leaveAllocation: newAllocations });
+                                  const newAllocations = [
+                                    ...policyForm.leaveAllocation,
+                                  ];
+                                  newAllocations[index].leaveType =
+                                    e.target.value;
+                                  setPolicyForm({
+                                    ...policyForm,
+                                    leaveAllocation: newAllocations,
+                                  });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Select Leave Type</option>
-                                {leaveTypes.map(type => (
+                                {leaveTypes.map((type) => (
                                   <option key={type.id} value={type.name}>
                                     {type.name}
                                   </option>
@@ -420,9 +465,15 @@ const LeaveSettings = () => {
                                 type="number"
                                 value={allocation.annualQuota}
                                 onChange={(e) => {
-                                  const newAllocations = [...policyForm.leaveAllocation];
-                                  newAllocations[index].annualQuota = e.target.value;
-                                  setPolicyForm({ ...policyForm, leaveAllocation: newAllocations });
+                                  const newAllocations = [
+                                    ...policyForm.leaveAllocation,
+                                  ];
+                                  newAllocations[index].annualQuota =
+                                    e.target.value;
+                                  setPolicyForm({
+                                    ...policyForm,
+                                    leaveAllocation: newAllocations,
+                                  });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Days/Year"
@@ -432,7 +483,9 @@ const LeaveSettings = () => {
                             {index > 0 && (
                               <button
                                 type="button"
-                                onClick={() => handleRemoveLeaveAllocation(index)}
+                                onClick={() =>
+                                  handleRemoveLeaveAllocation(index)
+                                }
                                 className="text-red-500 hover:text-red-700"
                               >
                                 <X className="h-5 w-5" />
@@ -441,7 +494,9 @@ const LeaveSettings = () => {
                           </div>
                         ))}
                         {errors.leaveAllocation && (
-                          <p className="text-red-500 text-sm">{errors.leaveAllocation}</p>
+                          <p className="text-red-500 text-sm">
+                            {errors.leaveAllocation}
+                          </p>
                         )}
                       </div>
 
@@ -520,7 +575,9 @@ const LeaveSettings = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-semibold text-gray-800">Add New Public Holiday</h2>
+                      <h2 className="text-xl font-semibold text-gray-800">
+                        Add New Public Holiday
+                      </h2>
                       <button
                         onClick={() => setShowHolidayModal(false)}
                         className="text-gray-500 hover:text-gray-700"
@@ -537,12 +594,19 @@ const LeaveSettings = () => {
                         <input
                           type="text"
                           value={holidayForm.name}
-                          onChange={(e) => setHolidayForm({ ...holidayForm, name: e.target.value })}
+                          onChange={(e) =>
+                            setHolidayForm({
+                              ...holidayForm,
+                              name: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter holiday name"
                         />
                         {errors.holidayName && (
-                          <p className="text-red-500 text-sm mt-1">{errors.holidayName}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.holidayName}
+                          </p>
                         )}
                       </div>
 
@@ -553,12 +617,19 @@ const LeaveSettings = () => {
                         <input
                           type="date"
                           value={holidayForm.date}
-                          onChange={(e) => setHolidayForm({ ...holidayForm, date: e.target.value })}
+                          onChange={(e) =>
+                            setHolidayForm({
+                              ...holidayForm,
+                              date: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          min={new Date().toISOString().split('T')[0]} // Prevents selecting past dates
+                          min={new Date().toISOString().split("T")[0]} // Prevents selecting past dates
                         />
                         {errors.holidayDate && (
-                          <p className="text-red-500 text-sm mt-1">{errors.holidayDate}</p>
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.holidayDate}
+                          </p>
                         )}
                       </div>
 
@@ -568,7 +639,12 @@ const LeaveSettings = () => {
                         </label>
                         <textarea
                           value={holidayForm.description}
-                          onChange={(e) => setHolidayForm({ ...holidayForm, description: e.target.value })}
+                          onChange={(e) =>
+                            setHolidayForm({
+                              ...holidayForm,
+                              description: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           rows="3"
                           placeholder="Enter description (optional)"
@@ -602,7 +678,9 @@ const LeaveSettings = () => {
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white rounded-lg p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Add New Leave Type</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Add New Leave Type
+                  </h2>
                   <button
                     onClick={() => setShowLeaveTypeModal(false)}
                     className="text-gray-500 hover:text-gray-700"
@@ -619,7 +697,12 @@ const LeaveSettings = () => {
                     <input
                       type="text"
                       value={leaveTypeForm.name}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setLeaveTypeForm({
+                          ...leaveTypeForm,
+                          name: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter leave type name"
                     />
@@ -634,7 +717,12 @@ const LeaveSettings = () => {
                     </label>
                     <select
                       value={leaveTypeForm.accrual}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, accrual: e.target.value })}
+                      onChange={(e) =>
+                        setLeaveTypeForm({
+                          ...leaveTypeForm,
+                          accrual: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select accrual period</option>
@@ -644,7 +732,9 @@ const LeaveSettings = () => {
                       <option value="On Request">On Request</option>
                     </select>
                     {errors.accrual && (
-                      <p className="text-red-500 text-sm mt-1">{errors.accrual}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.accrual}
+                      </p>
                     )}
                   </div>
 
@@ -654,7 +744,12 @@ const LeaveSettings = () => {
                     </label>
                     <textarea
                       value={leaveTypeForm.description}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setLeaveTypeForm({
+                          ...leaveTypeForm,
+                          description: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
                       placeholder="Enter description"
@@ -667,10 +762,18 @@ const LeaveSettings = () => {
                         type="checkbox"
                         id="allowedInProbation"
                         checked={leaveTypeForm.allowedInProbation}
-                        onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, allowedInProbation: e.target.checked })}
+                        onChange={(e) =>
+                          setLeaveTypeForm({
+                            ...leaveTypeForm,
+                            allowedInProbation: e.target.checked,
+                          })
+                        }
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <label htmlFor="allowedInProbation" className="ml-2 block text-sm text-gray-700">
+                      <label
+                        htmlFor="allowedInProbation"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
                         Allowed in Probation Period
                       </label>
                     </div>
@@ -680,10 +783,18 @@ const LeaveSettings = () => {
                         type="checkbox"
                         id="allowedInNotice"
                         checked={leaveTypeForm.allowedInNotice}
-                        onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, allowedInNotice: e.target.checked })}
+                        onChange={(e) =>
+                          setLeaveTypeForm({
+                            ...leaveTypeForm,
+                            allowedInNotice: e.target.checked,
+                          })
+                        }
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <label htmlFor="allowedInNotice" className="ml-2 block text-sm text-gray-700">
+                      <label
+                        htmlFor="allowedInNotice"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
                         Allowed in Notice Period
                       </label>
                     </div>
@@ -693,10 +804,18 @@ const LeaveSettings = () => {
                         type="checkbox"
                         id="canCarryForward"
                         checked={leaveTypeForm.canCarryForward}
-                        onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, canCarryForward: e.target.checked })}
+                        onChange={(e) =>
+                          setLeaveTypeForm({
+                            ...leaveTypeForm,
+                            canCarryForward: e.target.checked,
+                          })
+                        }
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
-                      <label htmlFor="canCarryForward" className="ml-2 block text-sm text-gray-700">
+                      <label
+                        htmlFor="canCarryForward"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
                         Can be Carried Forward
                       </label>
                     </div>
@@ -747,4 +866,4 @@ const LeaveSettings = () => {
   );
 };
 
-export default LeaveSettings; 
+export default LeaveSettings;

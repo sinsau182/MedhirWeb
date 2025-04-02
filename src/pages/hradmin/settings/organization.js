@@ -1,9 +1,17 @@
 import React, { useState } from "react";
-import { Plus, X, CheckCircle, AlertCircle, Edit2, Save, XCircle } from "lucide-react";
+import {
+  Plus,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Edit2,
+  Save,
+  XCircle,
+} from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
-import Select from 'react-select';
+import Select from "react-select";
 
 const OrganizationSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -26,7 +34,11 @@ const OrganizationSettings = () => {
     isManager: false,
   });
   const [errors, setErrors] = useState({});
-  const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+  const [notification, setNotification] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -39,7 +51,7 @@ const OrganizationSettings = () => {
       leavePolicy: { value: "standard", label: "Standard Leave Policy" },
       weeklyHolidays: [
         { value: "Saturday", label: "Saturday" },
-        { value: "Sunday", label: "Sunday" }
+        { value: "Sunday", label: "Sunday" },
       ],
     },
   ]);
@@ -65,7 +77,7 @@ const OrganizationSettings = () => {
   // Sample data for dropdowns
   const leavePolicies = [
     { value: "standard", label: "Standard Leave Policy" },
-    { value: "flexible", label: "Flexible Leave Policy" }
+    { value: "flexible", label: "Flexible Leave Policy" },
   ];
 
   const weekDays = [
@@ -75,7 +87,7 @@ const OrganizationSettings = () => {
     { value: "Wednesday", label: "Wednesday" },
     { value: "Thursday", label: "Thursday" },
     { value: "Friday", label: "Friday" },
-    { value: "Saturday", label: "Saturday" }
+    { value: "Saturday", label: "Saturday" },
   ];
 
   const toggleSidebar = () => {
@@ -96,7 +108,7 @@ const OrganizationSettings = () => {
   const handleDepartmentUpdate = async (id) => {
     try {
       // TODO: Add API call to update department
-      const updatedDepartments = departments.map(dept => 
+      const updatedDepartments = departments.map((dept) =>
         dept.id === id ? { ...dept, ...departmentForm } : dept
       );
       setDepartments(updatedDepartments);
@@ -118,7 +130,7 @@ const OrganizationSettings = () => {
   const handleDepartmentSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    
+
     if (!departmentForm.name) {
       newErrors.name = "Department name is required";
     }
@@ -179,7 +191,7 @@ const OrganizationSettings = () => {
   const handleDesignationUpdate = async (id) => {
     try {
       // TODO: Add API call to update designation
-      const updatedDesignations = designations.map(desig => 
+      const updatedDesignations = designations.map((desig) =>
         desig.id === id ? { ...desig, ...designationForm } : desig
       );
       setDesignations(updatedDesignations);
@@ -201,7 +213,7 @@ const OrganizationSettings = () => {
   const handleDesignationSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    
+
     if (!designationForm.name) {
       newErrors.name = "Designation name is required";
     }
@@ -222,7 +234,12 @@ const OrganizationSettings = () => {
         message: "Designation added successfully!",
       });
       setShowDesignationModal(false);
-      setDesignationForm({ name: "", department: "", isManager: false, description: "" });
+      setDesignationForm({
+        name: "",
+        department: "",
+        isManager: false,
+        description: "",
+      });
     } catch (error) {
       setNotification({
         show: true,
@@ -248,11 +265,17 @@ const OrganizationSettings = () => {
     <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
         <HradminNavbar />
 
         <div className="p-6 mt-16">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">Organization Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">
+            Organization Settings
+          </h1>
 
           {/* Tabs */}
           <div className="flex gap-4 mb-6 border-b">
@@ -296,11 +319,21 @@ const OrganizationSettings = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department Head</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leave Policy</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Holidays</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Department Head
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Leave Policy
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Weekly Holidays
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -313,12 +346,22 @@ const OrganizationSettings = () => {
                       }}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{department.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{department.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{department.head}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{department.leavePolicy.label}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.weeklyHolidays.map(day => day.label).join(", ")}
+                        {department.name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {department.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {department.head}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {department.leavePolicy.label}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {department.weeklyHolidays
+                          .map((day) => day.label)
+                          .join(", ")}
                       </td>
                     </tr>
                   ))}
@@ -333,10 +376,18 @@ const OrganizationSettings = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Is Manager</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Department
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Is Manager
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -349,9 +400,15 @@ const OrganizationSettings = () => {
                       }}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{designation.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">{designation.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{designation.department.label}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.name}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {designation.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.department.label}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {designation.isManager ? "Yes" : "No"}
                       </td>
@@ -371,7 +428,7 @@ const OrganizationSettings = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedDepartment ? 'Edit Department' : 'Add Department'}
+                  {selectedDepartment ? "Edit Department" : "Add Department"}
                 </h3>
                 <button
                   onClick={() => setShowDepartmentModal(false)}
@@ -461,11 +518,15 @@ const OrganizationSettings = () => {
               <button
                 onClick={() => {
                   setShowDepartmentModal(false);
-                  toast.success(selectedDepartment ? 'Department updated successfully' : 'Department added successfully');
+                  toast.success(
+                    selectedDepartment
+                      ? "Department updated successfully"
+                      : "Department added successfully"
+                  );
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
-                {selectedDepartment ? 'Update' : 'Add'}
+                {selectedDepartment ? "Update" : "Add"}
               </button>
             </div>
           </div>
@@ -479,7 +540,7 @@ const OrganizationSettings = () => {
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedDesignation ? 'Edit Designation' : 'Add Designation'}
+                  {selectedDesignation ? "Edit Designation" : "Add Designation"}
                 </h3>
                 <button
                   onClick={() => setShowDesignationModal(false)}
@@ -522,7 +583,10 @@ const OrganizationSettings = () => {
                     Department <span className="text-red-500">*</span>
                   </label>
                   <Select
-                    options={departments.map(dept => ({ value: dept.id, label: dept.name }))}
+                    options={departments.map((dept) => ({
+                      value: dept.id,
+                      label: dept.name,
+                    }))}
                     defaultValue={selectedDesignation?.department}
                     className="react-select"
                     classNamePrefix="select"
@@ -537,7 +601,10 @@ const OrganizationSettings = () => {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     defaultChecked={selectedDesignation?.isManager}
                   />
-                  <label htmlFor="isManager" className="ml-2 block text-sm text-gray-700">
+                  <label
+                    htmlFor="isManager"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
                     Is Manager
                   </label>
                 </div>
@@ -554,11 +621,15 @@ const OrganizationSettings = () => {
               <button
                 onClick={() => {
                   setShowDesignationModal(false);
-                  toast.success(selectedDesignation ? 'Designation updated successfully' : 'Designation added successfully');
+                  toast.success(
+                    selectedDesignation
+                      ? "Designation updated successfully"
+                      : "Designation added successfully"
+                  );
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
               >
-                {selectedDesignation ? 'Update' : 'Add'}
+                {selectedDesignation ? "Update" : "Add"}
               </button>
             </div>
           </div>
