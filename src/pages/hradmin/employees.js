@@ -19,6 +19,8 @@ function Employees() {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
+  console.log("Employees:", employees);
+
   const handleRowClick = (employee) => {
     router.push({
       pathname: "/hradmin/addNewEmployee",
