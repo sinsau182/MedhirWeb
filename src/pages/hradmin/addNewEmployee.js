@@ -1819,15 +1819,6 @@ function EmployeeForm() {
                         </h4>
                         <div className="flex items-start space-x-6">
 
-                          {/* OR divider */}
-                          <div className="flex flex-col items-center justify-center">
-                            <div className="h-full flex items-center">
-                              <span className="text-gray-500 text-sm font-medium">
-                                OR
-                              </span>
-                            </div>
-                          </div>
-
                           {/* Passbook Photo Upload */}
                           <div className="flex-1">
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
@@ -1851,7 +1842,7 @@ function EmployeeForm() {
                                   <div className="flex flex-col items-center space-y-2">
                                     <FiUpload className="w-8 h-8 text-gray-400" />
                                     <span className="text-sm font-medium text-gray-600">
-                                      Upload Passbook/Cancelled Cheque Photo
+                                      Upload Passbook/Cancelled Cheque
                                     </span>
                                     <span className="text-xs text-gray-500">
                                       Click to upload or drag and drop

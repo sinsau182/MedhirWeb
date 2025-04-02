@@ -209,10 +209,6 @@ function PayrollManagement() {
           {/* Header with Actions */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex gap-2">
-              <button className="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
-                <Edit className="h-5 w-5" />
-                Edit
-              </button>
               <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
                 <Calendar className="h-5 w-5" />
                 January 2025
