@@ -19,7 +19,6 @@ const CustomDatePicker = ({
   const timeSlotOptions = [
     { value: 'FIRST_HALF', label: 'First Half (Morning)' },
     { value: 'SECOND_HALF', label: 'Second Half (Afternoon)' },
-    { value: 'HALF_DAY', label: 'Half Day' },
     { value: 'FULL_DAY', label: 'Full Day' },
   ];
 

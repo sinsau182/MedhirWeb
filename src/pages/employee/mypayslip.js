@@ -31,12 +31,26 @@ const downloadPDF = () => {
     if (imgHeight > pageHeight - 2 * margin) {
       let position = margin;
       while (position < imgHeight) {
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, position, imgWidth, imgHeight);
+        pdf.addImage(
+          canvas.toDataURL("image/png"),
+          "PNG",
+          margin,
+          position,
+          imgWidth,
+          imgHeight
+        );
         position += pageHeight - 2 * margin; // Move to next page
         if (position < imgHeight) pdf.addPage();
       }
     } else {
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", margin, yPosition, imgWidth, imgHeight);
+      pdf.addImage(
+        canvas.toDataURL("image/png"),
+        "PNG",
+        margin,
+        yPosition,
+        imgWidth,
+        imgHeight
+      );
     }
 
     pdf.save("Payslip_Medhir.pdf");
@@ -56,9 +70,11 @@ const PayrollPage = () => {
   const employeeId = "emp123";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  
+
   const [dateOfJoining, setDateOfJoining] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(monthsList[latestMonthIndex]);
+  const [selectedMonth, setSelectedMonth] = useState(
+    monthsList[latestMonthIndex]
+  );
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
   const [selectedPayslipId, setSelectedPayslipId] = useState(null);
@@ -89,9 +105,12 @@ const PayrollPage = () => {
       groupedPayrolls[joiningYear] = Array.from(
         { length: 12 - joiningMonthIndex },
         (_, i) =>
-          new Date(joiningYear, joiningMonthIndex + i).toLocaleString("default", {
-            month: "long",
-          })
+          new Date(joiningYear, joiningMonthIndex + i).toLocaleString(
+            "default",
+            {
+              month: "long",
+            }
+          )
       );
     }
   }
@@ -127,8 +146,6 @@ const PayrollPage = () => {
     }
   };
 
-
-
   const fetchEmployeeById = async (employeeId) => {
     try {
       const response = await fetch(
@@ -143,14 +160,10 @@ const PayrollPage = () => {
       );
       const data = await response.json();
       setDateOfJoining(data.joiningDate); // Set the date of joining from employee data
-      
     } catch (error) {
       console.error("Error fetching employee data:", error);
     }
   };
-
-
-  
 
   console.log("Payslip Data:", payslipData); // Debugging line to check payslip data
 
@@ -193,47 +206,53 @@ const PayrollPage = () => {
                   {selectedYear}-{selectedMonth}
                 </Badge>
 
-                { isCalendarOpen && (
-      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-        {Object.entries(groupedPayrolls)
-          .sort(([b], [a]) => b - a)
-          .map(([year, months]) => (
-            <div key={year} className="border-b-2">
-              <div className="px-4 py-2 bg-gray-400 font-medium">{year}</div>
-              <ul className="py-2">
-                {months.map((month) => (
-                  <li
-                    key={month}
-                    className={`px-4 py-2 cursor-pointer ${
-                      month === selectedMonth && parseInt(year) === selectedYear
-                        ? "bg-gray-300 font-semibold"
-                        : "hover:bg-gray-200"
-                    }`}
-                    onClick={() => {
-                      setSelectedMonth(month);
-                      setSelectedYear(parseInt(year));
-                      handleMonthSelection(month, parseInt(year));
-                    }}
-                  >
-                    {month}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-  </div>
-)}
+                {isCalendarOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    {Object.entries(groupedPayrolls)
+                      .sort(([b], [a]) => b - a)
+                      .map(([year, months]) => (
+                        <div key={year} className="border-b-2">
+                          <div className="px-4 py-2 bg-gray-400 font-medium">
+                            {year}
+                          </div>
+                          <ul className="py-2">
+                            {months.map((month) => (
+                              <li
+                                key={month}
+                                className={`px-4 py-2 cursor-pointer ${
+                                  month === selectedMonth &&
+                                  parseInt(year) === selectedYear
+                                    ? "bg-gray-300 font-semibold"
+                                    : "hover:bg-gray-200"
+                                }`}
+                                onClick={() => {
+                                  setSelectedMonth(month);
+                                  setSelectedYear(parseInt(year));
+                                  handleMonthSelection(month, parseInt(year));
+                                }}
+                              >
+                                {month}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
-              <Button variant="default" className="flex items-center"
-                onClick={downloadPDF}>
+              <Button
+                variant="default"
+                className="flex items-center"
+                onClick={downloadPDF}
+              >
                 <Download className="w-4 h-4 mr-1" />
                 Download
               </Button>
             </div>
 
-              {payslipData && (
-                <div className="max-w-7xl mx-auto bg-white shadow-lg overflow-y-auto h-[calc(86vh-62px)] custom-scrollbar">
-                  <div id="pdf-content">
+            {payslipData && (
+              <div className="max-w-7xl mx-auto bg-white shadow-lg overflow-y-auto h-[calc(86vh-62px)] custom-scrollbar">
+                <div id="pdf-content">
                   {/* Header */}
                   <div className="bg-gray-600 text-white text-center py-2">
                     <h1 className="text-xl font-bold mb-1">
@@ -261,7 +280,9 @@ const PayrollPage = () => {
                     </div>
                     <div className="grid grid-cols-2">
                       <div className="px-2 border-l-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
-                        <div className="font-semibold py-1">Date of Joining</div>
+                        <div className="font-semibold py-1">
+                          Date of Joining
+                        </div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
                           {formattedDateOfJoining(payslipData?.dateOfJoining)}
@@ -491,7 +512,9 @@ const PayrollPage = () => {
                         <table className="w-full">
                           <thead className="bg-gray-100">
                             <tr className="border-b-2 border-r-2 border-gray-400">
-                              <th className="px-2 p-1 text-center">Deductions</th>
+                              <th className="px-2 p-1 text-center">
+                                Deductions
+                              </th>
                               <th className="px-2 p-1 text-center border-l-2 border-gray-400">
                                 Amount
                               </th>
@@ -551,7 +574,9 @@ const PayrollPage = () => {
                               </td>
                             </tr>
                             <tr>
-                              <td className="px-2 p-1">Salary Advance Balance</td>
+                              <td className="px-2 p-1">
+                                Salary Advance Balance
+                              </td>
                               <td className="px-2 p-1 text-right border-l-2 border-r-2 border-gray-400">
                                 {payslipData?.salaryAdvanceBalance || "0"}
                               </td>
@@ -571,13 +596,13 @@ const PayrollPage = () => {
                       </div>
                     </div>
                   </div>
-                  </div>
                 </div>
-              )}              
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
   );
 };
 

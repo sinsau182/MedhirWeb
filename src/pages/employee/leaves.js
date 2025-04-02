@@ -239,7 +239,6 @@ const Leaves = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Dates</label>
                     <CustomDatePicker
                       selectedDates={leaveForm.dates}
                       onChange={(dates) => {
@@ -303,7 +302,6 @@ const Leaves = () => {
 
                 <form onSubmit={handleCompOffSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
                     <CustomDatePicker
                       selectedDates={compOffForm.dates}
                       onChange={(dates) => {

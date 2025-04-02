@@ -1070,6 +1070,29 @@ function EmployeeForm() {
         const pfContributions = calculatePFContributions(value);
         updatedData.salary.employerPF = pfContributions.employer;
         updatedData.salary.employeePF = pfContributions.employee;
+
+        // Calculate HRA as 40% of basic salary
+        const basic = parseFloat(value) || 0;
+        updatedData.salary.hra = (basic * 0.4).toFixed(2);
+      }
+
+      // Calculate Allowances when Monthly CTC, HRA, Basic, or PF changes
+      if (
+        section === "salary" &&
+        (field === "monthlyCTC" ||
+          field === "hra" ||
+          field === "basic" ||
+          field === "employerPF" ||
+          field === "employeePF")
+      ) {
+        const monthlyCTC = parseFloat(updatedData.salary.monthlyCTC) || 0;
+        const hra = parseFloat(updatedData.salary.hra) || 0;
+        const basic = parseFloat(updatedData.salary.basic) || 0;
+        const employerPF = parseFloat(updatedData.salary.employerPF) || 0;
+        const employeePF = parseFloat(updatedData.salary.employeePF) || 0;
+
+        const allowances = monthlyCTC - (hra + employeePF + employerPF + basic);
+        updatedData.salary.allowances = allowances.toFixed(2);
       }
 
       return updatedData;
@@ -1230,7 +1253,7 @@ function EmployeeForm() {
           >
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-                {employee ? "✏️ Edit Employee" : "✨ New Employee"}
+                {employee ? "✏️ Edit Employee" : "New Employee"}
               </h1>
             </div>
 
@@ -1303,6 +1326,27 @@ function EmployeeForm() {
                               }
                             }}
                             maxLength={6} // Limit to EMP### format
+                          />
+                        </div>
+
+                        <div className={inputGroupClass}>
+                          <label className={floatingLabelClass}>
+                            Employee Name{" "}
+                            <span className="text-red-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            className={inputClass}
+                            value={formData.personal.name || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "personal",
+                                "name",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter employee name"
                           />
                         </div>
 
@@ -1646,6 +1690,8 @@ function EmployeeForm() {
                             </div>
                           </div>
                         </div>
+
+                        
                       </div>
                     </div>
                   )}
@@ -1772,6 +1818,57 @@ function EmployeeForm() {
                           Account Verification Document
                         </h4>
                         <div className="flex items-start space-x-6">
+                          {/* Cancelled Cheque Upload */}
+                          <div className="flex-1">
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <input
+                                  type="file"
+                                  id="cheque-upload"
+                                  className="hidden"
+                                  accept="image/*,.pdf"
+                                  onChange={(e) =>
+                                    handleFileUpload(
+                                      "cancelledCheque",
+                                      e.target.files[0]
+                                    )
+                                  }
+                                />
+                                <label
+                                  htmlFor="cheque-upload"
+                                  className="cursor-pointer text-center"
+                                >
+                                  <div className="flex flex-col items-center space-y-2">
+                                    <FiUpload className="w-8 h-8 text-gray-400" />
+                                    <span className="text-sm font-medium text-gray-600">
+                                      Upload Cancelled Cheque
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      Click to upload or drag and drop
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      PDF or Image file
+                                    </span>
+                                  </div>
+                                </label>
+                              </div>
+                              {formData.bank.cancelledCheque && (
+                                <div className="mt-2 text-sm text-gray-600">
+                                  File: {formData.bank.cancelledCheque.name}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* OR divider */}
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="h-full flex items-center">
+                              <span className="text-gray-500 text-sm font-medium">
+                                OR
+                              </span>
+                            </div>
+                          </div>
+
                           {/* Passbook Photo Upload */}
                           <div className="flex-1">
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
@@ -1795,7 +1892,7 @@ function EmployeeForm() {
                                   <div className="flex flex-col items-center space-y-2">
                                     <FiUpload className="w-8 h-8 text-gray-400" />
                                     <span className="text-sm font-medium text-gray-600">
-                                      Upload Passbook/Cancelled Cheque
+                                      Upload Passbook Photo
                                     </span>
                                     <span className="text-xs text-gray-500">
                                       Click to upload or drag and drop
@@ -1831,10 +1928,6 @@ function EmployeeForm() {
                           { label: "Basic Salary", field: "basic" },
                           { label: "HRA", field: "hra" },
                           { label: "Allowances", field: "allowances" },
-                          {
-                            label: "Fuel Reimbursement",
-                            field: "fuelReimbursement",
-                          },
                         ].map(({ label, field }) => (
                           <div key={field} className={inputGroupClass}>
                             <label className={floatingLabelClass}>
@@ -1847,7 +1940,11 @@ function EmployeeForm() {
                               <input
                                 type="number"
                                 className={`${inputClass} pl-8 ${
-                                  field === "monthlyCTC" ? "bg-gray-50" : ""
+                                  field === "monthlyCTC" ||
+                                  field === "allowances" ||
+                                  field === "hra"
+                                    ? "bg-gray-50"
+                                    : ""
                                 }`}
                                 value={formData.salary[field] || ""}
                                 onChange={(e) =>
@@ -1857,7 +1954,11 @@ function EmployeeForm() {
                                     e.target.value
                                   )
                                 }
-                                readOnly={field === "monthlyCTC"}
+                                readOnly={
+                                  field === "monthlyCTC" ||
+                                  field === "allowances" ||
+                                  field === "hra"
+                                }
                               />
                             </div>
                           </div>
