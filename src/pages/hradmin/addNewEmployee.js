@@ -1244,7 +1244,6 @@ function EmployeeForm() {
         }`}
       >
         <HradminNavbar />
-
         <div className="p-8 pt-24">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
