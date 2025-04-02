@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { CheckCircle2, X, Clock, CalendarIcon } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
@@ -21,11 +27,41 @@ const EmployeeAttendance = () => {
     const month = today.getMonth();
     // Sample data - replace with actual API call
     const sampleData = [
-      { date: new Date(year, month, 1), status: 'Present', isLate: false, checkIn: '08:55 AM', checkOut: '06:00 PM' },
-      { date: new Date(year, month, 2), status: 'Present', isLate: false, checkIn: '08:50 AM', checkOut: '06:05 PM' },
-      { date: new Date(year, month, 3), status: 'Present', isLate: false, checkIn: '09:00 AM', checkOut: '06:00 PM' },
-      { date: new Date(year, month, 4), status: 'Absent', isLate: false, checkIn: null, checkOut: null },
-      { date: new Date(year, month, 5), status: 'Present', isLate: true, checkIn: '09:15 AM', checkOut: '06:05 PM' }
+      {
+        date: new Date(year, month, 1),
+        status: "Present",
+        isLate: false,
+        checkIn: "08:55 AM",
+        checkOut: "06:00 PM",
+      },
+      {
+        date: new Date(year, month, 2),
+        status: "Present",
+        isLate: false,
+        checkIn: "08:50 AM",
+        checkOut: "06:05 PM",
+      },
+      {
+        date: new Date(year, month, 3),
+        status: "Present",
+        isLate: false,
+        checkIn: "09:00 AM",
+        checkOut: "06:00 PM",
+      },
+      {
+        date: new Date(year, month, 4),
+        status: "Absent",
+        isLate: false,
+        checkIn: null,
+        checkOut: null,
+      },
+      {
+        date: new Date(year, month, 5),
+        status: "Present",
+        isLate: true,
+        checkIn: "09:15 AM",
+        checkOut: "06:05 PM",
+      },
       // Add more sample data as needed
     ];
     setAttendanceData(sampleData);
@@ -45,16 +81,18 @@ const EmployeeAttendance = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Check if click is not on a calendar day and not on the reason form or toast
-      if (!event.target.closest('.calendar-day') && 
-          !event.target.closest('.reason-form-modal') && 
-          !event.target.closest('.toast-notification')) {
+      if (
+        !event.target.closest(".calendar-day") &&
+        !event.target.closest(".reason-form-modal") &&
+        !event.target.closest(".toast-notification")
+      ) {
         setDate(null);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -80,13 +118,13 @@ const EmployeeAttendance = () => {
     e.preventDefault();
     console.log("Reason for late check-in:", reason);
     console.log("Date:", date.toLocaleDateString());
-    
+
     // Show toast notification
     setShowToast(true);
-    
+
     // Mark reason as submitted
     setReasonSubmitted(true);
-    
+
     // Close form and reset reason
     setShowReasonForm(false);
     setReason("");
@@ -118,12 +156,16 @@ const EmployeeAttendance = () => {
         <HradminNavbar />
 
         {/* Content */}
-        <div className="p-6 space-y-6 mt-16"> {/* Increased mt-16 for more spacing */}
+        <div className="p-6 space-y-6 mt-16">
+          {" "}
+          {/* Increased mt-16 for more spacing */}
           {/* Monthly Summary */}
           <Card>
             <CardHeader>
               <CardTitle className="text-xl">Monthly Summary</CardTitle>
-              <CardDescription>Your attendance statistics for this month</CardDescription>
+              <CardDescription>
+                Your attendance statistics for this month
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -138,15 +180,21 @@ const EmployeeAttendance = () => {
                   <div className="flex justify-between items-center">
                     {/* Full Day -> Present with Leave */}
                     <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Present with Leave</span>
-                      <p className="text-xl font-bold mt-1">16</p> {/* Example number */}
+                      <span className="text-sm font-medium">
+                        Present with Leave
+                      </span>
+                      <p className="text-xl font-bold mt-1">16</p>{" "}
+                      {/* Example number */}
                     </div>
                     {/* Vertical Line */}
                     <div className="h-10 w-px bg-gray-300 mx-4"></div>
                     {/* Half Day -> Present with late check in */}
                     <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Present with late check in</span>
-                      <p className="text-xl font-bold mt-1">2</p> {/* Example number */}
+                      <span className="text-sm font-medium">
+                        Present with late check in
+                      </span>
+                      <p className="text-xl font-bold mt-1">2</p>{" "}
+                      {/* Example number */}
                     </div>
                   </div>
                 </div>
@@ -160,76 +208,78 @@ const EmployeeAttendance = () => {
                   <p className="text-2xl font-bold">2</p>
                   <hr className="my-2 border-gray-300" />
                   <div className="flex justify-between items-center">
-
-
                     {/* Absent with Leave -> Absent with late check in */}
                     <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Absent with late check in</span>
-                      <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
+                      <span className="text-sm font-medium">
+                        Absent with late check in
+                      </span>
+                      <p className="text-xl font-bold mt-1">1</p>{" "}
+                      {/* Random number */}
                     </div>
                     {/* Vertical Line */}
                     <div className="h-10 w-px bg-gray-300 mx-4"></div>
                     {/* Absent with LOP */}
                     <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Absent with LOP</span>
-                      <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
+                      <span className="text-sm font-medium">
+                        Absent with LOP
+                      </span>
+                      <p className="text-xl font-bold mt-1">1</p>{" "}
+                      {/* Random number */}
                     </div>
-                    
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Attendance Calendar */}
             <Card className="md:col-span-2">
-  <CardHeader>
-    <CardTitle className="text-xl">Attendance Calendar</CardTitle>
-    <CardDescription>View and track your attendance history</CardDescription>
-  </CardHeader>
-  <CardContent>
+              <CardHeader>
+                <CardTitle className="text-xl">Attendance Calendar</CardTitle>
+                <CardDescription>
+                  View and track your attendance history
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Calendar Days */}
+                <div className="flex flex-wrap gap-1 border rounded-md p-2">
+                  {calendarDays.map((day, index) => {
+                    // Find attendance status for the current day
+                    const dayData = attendanceData.find(
+                      (d) => d.date.toDateString() === day.toDateString()
+                    );
+                    const isLate = dayData?.isLate;
+                    const status = dayData?.status;
+                    const dayNumber = day.getDate();
 
-    {/* Calendar Days */}
-    <div className="flex flex-wrap gap-1 border rounded-md p-2">
-      {calendarDays.map((day, index) => {
-        // Find attendance status for the current day
-        const dayData = attendanceData.find(
-          d => d.date.toDateString() === day.toDateString()
-        );
-        const isLate = dayData?.isLate;
-        const status = dayData?.status;
-        const dayNumber = day.getDate();
+                    // Determine background color based on date and status
+                    let bgColorClass = "hover:bg-gray-200"; // Default hover
 
-        // Determine background color based on date and status
-        let bgColorClass = "hover:bg-gray-200"; // Default hover
-        
-        if (date && date.toDateString() === day.toDateString()) {
-          bgColorClass = "bg-blue-500 text-white";
-        } else if (dayData) {
-          if (status === 'Present' && !isLate) {
-            bgColorClass = "bg-green-100 hover:bg-green-200";
-          } else if (status === 'Present' && isLate) {
-            bgColorClass = "bg-yellow-100 hover:bg-yellow-200";
-          } else if (status === 'Absent') {
-            bgColorClass = "bg-red-100 hover:bg-red-200";
-          }
-        }
+                    if (date && date.toDateString() === day.toDateString()) {
+                      bgColorClass = "bg-blue-500 text-white";
+                    } else if (dayData) {
+                      if (status === "Present" && !isLate) {
+                        bgColorClass = "bg-green-100 hover:bg-green-200";
+                      } else if (status === "Present" && isLate) {
+                        bgColorClass = "bg-yellow-100 hover:bg-yellow-200";
+                      } else if (status === "Absent") {
+                        bgColorClass = "bg-red-100 hover:bg-red-200";
+                      }
+                    }
 
-        return (
-          <div
-            key={index}
-            onClick={() => handleDayClick(day)}
-            className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass} calendar-day`}
-          >
-            {dayNumber}
-          </div>
-        );
-      })}
-    </div>
-  </CardContent>
-</Card>
-
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => handleDayClick(day)}
+                        className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass} calendar-day`}
+                      >
+                        {dayNumber}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Attendance Details */}
             <Card>
@@ -250,13 +300,13 @@ const EmployeeAttendance = () => {
                   (() => {
                     // Find attendance details for the selected date
                     const selectedDayData = attendanceData.find(
-                      d => d.date.toDateString() === date.toDateString()
+                      (d) => d.date.toDateString() === date.toDateString()
                     );
 
                     if (!selectedDayData) {
                       return (
                         <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
-                           <p>No attendance data for this date.</p>
+                          <p>No attendance data for this date.</p>
                         </div>
                       );
                     }
@@ -270,35 +320,45 @@ const EmployeeAttendance = () => {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Status:</span>
-                          <span className={`${status === 'Present' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} text-xs font-semibold px-2 py-1 rounded-full`}>
+                          <span
+                            className={`${
+                              status === "Present"
+                                ? "bg-green-100 text-green-600"
+                                : "bg-red-100 text-red-600"
+                            } text-xs font-semibold px-2 py-1 rounded-full`}
+                          >
                             {status}
                           </span>
                         </div>
-                        {status === 'Present' && (
+                        {status === "Present" && (
                           <>
                             <div className="flex justify-between items-center">
                               <span className="text-sm flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-blue-500" /> Check In
+                                <Clock className="h-4 w-4 text-blue-500" />{" "}
+                                Check In
                               </span>
-                              <span>{checkIn || 'N/A'}</span>
+                              <span>{checkIn || "N/A"}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-sm flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-blue-500" /> Check Out
+                                <Clock className="h-4 w-4 text-blue-500" />{" "}
+                                Check Out
                               </span>
-                              <span>{checkOut || 'N/A'}</span>
+                              <span>{checkOut || "N/A"}</span>
                             </div>
                             {isLate && (
                               <button
                                 onClick={() => setShowReasonForm(true)}
                                 disabled={reasonSubmitted}
                                 className={`mt-4 w-full py-2 px-4 rounded-md transition text-sm ${
-                                  reasonSubmitted 
-                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                                  reasonSubmitted
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     : "bg-teal-400 text-white hover:bg-teal-500"
                                 }`}
                               >
-                                {reasonSubmitted ? "Reason sent for approval" : "Send Reason for Late Check-in"}
+                                {reasonSubmitted
+                                  ? "Reason sent for approval"
+                                  : "Send Reason for Late Check-in"}
                               </button>
                             )}
                           </>
@@ -315,8 +375,6 @@ const EmployeeAttendance = () => {
               </CardContent>
             </Card>
           </div>
-
-          
         </div>
       </div>
 
@@ -324,10 +382,15 @@ const EmployeeAttendance = () => {
       {showReasonForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 reason-form-modal">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Submit Reason for Late Check-in</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              Submit Reason for Late Check-in
+            </h3>
             <form onSubmit={handleSubmitReason}>
               <div className="mb-4">
-                <label htmlFor="reason" className="block text-sm font-medium mb-2">
+                <label
+                  htmlFor="reason"
+                  className="block text-sm font-medium mb-2"
+                >
                   Reason for late check-in
                 </label>
                 <textarea
