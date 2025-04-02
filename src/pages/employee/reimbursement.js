@@ -254,7 +254,7 @@ const Expenses = () => {
                 showAllExpenses ? "h-[600px]" : "h-[550px]"
               }`}
             >
-              <h2 className="text-lg font-semibold mb-4">Recent Expenses</h2>
+              <h2 className="text-lg font-semibold mb-4">Recent Reimbursements </h2>
               <div
                 className={`space-y-4 ${
                   showAllExpenses ? "overflow-y-auto" : "overflow-hidden"
