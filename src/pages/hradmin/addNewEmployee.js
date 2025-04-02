@@ -1690,8 +1690,6 @@ function EmployeeForm() {
                             </div>
                           </div>
                         </div>
-
-                        
                       </div>
                     </div>
                   )}
@@ -1818,7 +1816,6 @@ function EmployeeForm() {
                           Account Verification Document
                         </h4>
                         <div className="flex items-start space-x-6">
-
                           {/* Passbook Photo Upload */}
                           <div className="flex-1">
                             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
