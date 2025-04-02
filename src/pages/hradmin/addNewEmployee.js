@@ -1523,24 +1523,18 @@ function EmployeeForm() {
                             {
                               label: "Department",
                               field: "department",
-                              required: true,
                             },
                             {
                               label: "Designation",
                               field: "designation",
-                              required: true,
                             },
                           ].map(({ label, field, required }) => (
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
                                 {label}{" "}
-                                {required && (
-                                  <span className="text-red-400">*</span>
-                                )}
                               </label>
                               <input
                                 type="text"
-                                required={required}
                                 className={inputClass}
                                 value={formData.personal[field] || ""}
                                 onChange={(e) =>
@@ -1561,7 +1555,6 @@ function EmployeeForm() {
                               label: "Date of Joining",
                               field: "dateOfJoining",
                               type: "date",
-                              required: true,
                             },
                             {
                               label: "Reporting Manager",
@@ -1571,13 +1564,9 @@ function EmployeeForm() {
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
                                 {label}{" "}
-                                {required && (
-                                  <span className="text-red-400">*</span>
-                                )}
                               </label>
                               <input
                                 type={type || "text"}
-                                required={required}
                                 className={inputClass}
                                 value={formData.personal[field] || ""}
                                 onChange={(e) =>
@@ -1705,13 +1694,11 @@ function EmployeeForm() {
                           {
                             label: "Aadhar No.",
                             key: "aadharNo",
-                            required: true,
                             docType: "Aadhar Card",
                           },
                           {
                             label: "PAN No.",
                             key: "panNo",
-                            required: true,
                             docType: "PAN Card",
                           },
                           {
@@ -1729,13 +1716,10 @@ function EmployeeForm() {
                             key: "voterId",
                             docType: "Voter ID",
                           },
-                        ].map(({ label, key, required, docType }) => (
+                        ].map(({ label, key, docType }) => (
                           <div key={key} className={inputGroupClass}>
                             <label className={floatingLabelClass}>
                               {label}{" "}
-                              {required && (
-                                <span className="text-red-400">*</span>
-                              )}
                             </label>
                             <div className="relative flex items-center">
                               <input
