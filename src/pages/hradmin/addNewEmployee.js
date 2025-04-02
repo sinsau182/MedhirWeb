@@ -1818,47 +1818,6 @@ function EmployeeForm() {
                           Account Verification Document
                         </h4>
                         <div className="flex items-start space-x-6">
-                          {/* Cancelled Cheque Upload */}
-                          <div className="flex-1">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
-                              <div className="flex flex-col items-center justify-center space-y-2">
-                                <input
-                                  type="file"
-                                  id="cheque-upload"
-                                  className="hidden"
-                                  accept="image/*,.pdf"
-                                  onChange={(e) =>
-                                    handleFileUpload(
-                                      "cancelledCheque",
-                                      e.target.files[0]
-                                    )
-                                  }
-                                />
-                                <label
-                                  htmlFor="cheque-upload"
-                                  className="cursor-pointer text-center"
-                                >
-                                  <div className="flex flex-col items-center space-y-2">
-                                    <FiUpload className="w-8 h-8 text-gray-400" />
-                                    <span className="text-sm font-medium text-gray-600">
-                                      Upload Cancelled Cheque
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      Click to upload or drag and drop
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      PDF or Image file
-                                    </span>
-                                  </div>
-                                </label>
-                              </div>
-                              {formData.bank.cancelledCheque && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  File: {formData.bank.cancelledCheque.name}
-                                </div>
-                              )}
-                            </div>
-                          </div>
 
                           {/* OR divider */}
                           <div className="flex flex-col items-center justify-center">
@@ -1892,7 +1851,7 @@ function EmployeeForm() {
                                   <div className="flex flex-col items-center space-y-2">
                                     <FiUpload className="w-8 h-8 text-gray-400" />
                                     <span className="text-sm font-medium text-gray-600">
-                                      Upload Passbook Photo
+                                      Upload Passbook/Cancelled Cheque Photo
                                     </span>
                                     <span className="text-xs text-gray-500">
                                       Click to upload or drag and drop
