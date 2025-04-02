@@ -193,17 +193,23 @@ function PayrollManagement() {
   };
 
   const headers = getTableHeaders();
-  const data = getTableData().filter(item => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.department && item.department.toLowerCase().includes(searchQuery.toLowerCase()))
+  const data = getTableData().filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.department &&
+        item.department.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
-          <HradminNavbar />
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
+        <HradminNavbar />
 
         <div className="p-6 mt-16">
           {/* Header with Actions */}
@@ -223,25 +229,30 @@ function PayrollManagement() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              </div>
             </div>
+          </div>
 
           {/* Tabs */}
           <div className="flex gap-4 mb-6 border-b">
-            {["Salary Statement", "Advance", "Reimbursement", "Payment History"].map((section) => (
+            {[
+              "Salary Statement",
+              "Advance",
+              "Reimbursement",
+              "Payment History",
+            ].map((section) => (
               <button
-                  key={section}
+                key={section}
                 className={`px-4 py-2 text-sm font-medium ${
-                    selectedSection === section
+                  selectedSection === section
                     ? "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-600 hover:text-blue-600"
-                  }`}
-                  onClick={() => setSelectedSection(section)}
-                >
-                  {section}
+                }`}
+                onClick={() => setSelectedSection(section)}
+              >
+                {section}
               </button>
-              ))}
-            </div>
+            ))}
+          </div>
 
           {/* Table */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
@@ -250,37 +261,83 @@ function PayrollManagement() {
                 <table className="w-full table-fixed">
                   <thead>
                     <tr className="border-b">
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Name</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Paid Days</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Monthly CTC</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">This Month</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Basic</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Deductions</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Taxes</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Pro Tax</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">Reimbursement</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Advance</th>
-                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">Net Pay</th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">
+                        Name
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">
+                        Paid Days
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">
+                        Monthly CTC
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">
+                        This Month
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">
+                        Basic
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">
+                        Deductions
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">
+                        Taxes
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">
+                        Pro Tax
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[10%]">
+                        Reimbursement
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">
+                        Advance
+                      </th>
+                      <th className="py-2 px-2 text-left text-xs font-semibold text-gray-600 w-[8%]">
+                        Net Pay
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {payrollData
                       .filter((item) =>
-                        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        item.name
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase())
                       )
                       .map((item, index) => (
                         <tr key={index} className="hover:bg-gray-50">
-                          <td className="py-2 px-2 text-xs text-gray-600">{item.name}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">{item.paidDays}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.ctc}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.salary}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.basic}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.deductions}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.taxes}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.taxPro}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.reimbursement}</td>
-                          <td className="py-2 px-2 text-xs text-gray-600">₹{item.advance}</td>
-                          <td className="py-2 px-2 text-xs font-semibold text-gray-600">₹{item.netPay}</td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            {item.name}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            {item.paidDays}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.ctc}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.salary}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.basic}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.deductions}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.taxes}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.taxPro}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.reimbursement}
+                          </td>
+                          <td className="py-2 px-2 text-xs text-gray-600">
+                            ₹{item.advance}
+                          </td>
+                          <td className="py-2 px-2 text-xs font-semibold text-gray-600">
+                            ₹{item.netPay}
+                          </td>
                         </tr>
                       ))}
                   </tbody>
@@ -317,7 +374,14 @@ function PayrollManagement() {
                               key={header.key}
                               className="py-2 px-2 text-xs text-gray-600 whitespace-nowrap"
                             >
-                              {header.key.includes('amount') || header.key === 'oldAdvance' || header.key === 'thisMonthAdvance' || header.key === 'deductInThisMonth' || header.key === 'balanceForNextMonth' ? '₹' : ''}{item[header.key]}
+                              {header.key.includes("amount") ||
+                              header.key === "oldAdvance" ||
+                              header.key === "thisMonthAdvance" ||
+                              header.key === "deductInThisMonth" ||
+                              header.key === "balanceForNextMonth"
+                                ? "₹"
+                                : ""}
+                              {item[header.key]}
                             </td>
                           ))}
                         </tr>
