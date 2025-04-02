@@ -23,7 +23,7 @@ const Expenses = () => {
   });
 
   const projectCategories = ["Travel", "Meals", "Fuel"];
-  const nonProjectCategories = ["Equipment", "Cleaning Liquid"];
+  const nonProjectCategories = ["Equipment", "Cleaning Liquid", "Advance Salary"];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
