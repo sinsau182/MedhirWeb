@@ -45,9 +45,9 @@ function Employees() {
           { key: 'employeeId', label: 'Employee ID' },
           { key: 'name', label: 'Name' },
           { key: 'fatherName', label: "Father's Name" },
-          { key: 'phone', label: 'Phone No.' },
+          { key: 'phone1', label: 'Phone No.' },
           { key: 'email', label: 'Email(Off.)' },
-          { key: 'doj', label: 'DOJ' },
+          { key: 'joiningDate', label: 'DOJ' },
           { key: 'designation', label: 'Designation' },
           { key: 'currentAddress', label: 'Current Address' },
         ];

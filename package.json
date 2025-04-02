@@ -30,7 +30,7 @@
     "@reduxjs/toolkit": "^2.6.0",
     "@tanstack/react-query": "^5.69.0",
     "@tanstack/react-table": "^8.20.6",
-    "axios": "^1.8.1",
+    "axios": "^1.8.4",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",

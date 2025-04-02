@@ -103,9 +103,9 @@ function Employees() {
                       <TableCell className="text-left">{employee?.employeeId}</TableCell>
                       <TableCell className="text-left">{employee?.name}</TableCell>
                       <TableCell className="text-left">{employee?.fatherName}</TableCell>
-                      <TableCell className="text-center">{employee?.phoneNo}</TableCell>
+                      <TableCell className="text-center">{employee?.phone1}</TableCell>
                       <TableCell className="text-center">{employee?.email}</TableCell>
-                      <TableCell className="text-center">{employee?.doj}</TableCell>
+                      <TableCell className="text-center">{employee?.joiningDate}</TableCell>
                       <TableCell className="text-center">{employee?.designation}</TableCell>
                       <TableCell className="text-center">{employee?.currentAddress}</TableCell>
                     </>
