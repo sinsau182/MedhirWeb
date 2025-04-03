@@ -8,20 +8,40 @@ import {
   FaCalendarCheck,
   FaMoneyCheckAlt,
   FaCog,
+  FaBuilding,
+  FaCalendarAlt,
+  FaChevronDown,
+  FaChevronRight,
+  FaAngleLeft,
+  FaAngleRight,
 } from "react-icons/fa";
-import { Briefcase, Calendar, ChartColumnIncreasing, Clock, CreditCard, DollarSign, DollarSignIcon, ReceiptIcon, User, Users } from "lucide-react";
+import {
+  Briefcase,
+  Calendar,
+  ChartColumnIncreasing,
+  Clock,
+  CreditCard,
+  ReceiptIcon,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({});
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem("currentRole"); // Fetch role from localStorage
+    const role = localStorage.getItem("currentRole");
     setCurrentRole(role);
 
-    // Listen to route change events
+    // Initialize Settings menu as expanded
+    setExpandedMenus((prev) => ({
+      ...prev,
+      settings: true, // Always keep settings expanded
+    }));
+
     const handleRouteChangeStart = () => setIsLoading(true);
     const handleRouteChangeComplete = () => setIsLoading(false);
 
@@ -29,7 +49,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     router.events.on("routeChangeComplete", handleRouteChangeComplete);
     router.events.on("routeChangeError", handleRouteChangeComplete);
 
-    // Cleanup event listeners on unmount
     return () => {
       router.events.off("routeChangeStart", handleRouteChangeStart);
       router.events.off("routeChangeComplete", handleRouteChangeComplete);
@@ -37,30 +56,125 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     };
   }, [router.events]);
 
+  const toggleMenu = (menuKey) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuKey]: !prev[menuKey],
+    }));
+  };
+
   // Define menu items based on the role
   const menuItems = [
-    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/hradmin/dashboard", roles: ["hr"] },
-    { label: "Employees", icon: <Users />, link: "/hradmin/employees", roles: ["hr"] },
-    { label: "Attendance", icon: <Clock />, link: "/hradmin/attendance", roles: ["hr"] },
-    { label: "Payroll", icon: <ReceiptIcon />, link: "/hradmin/payroll", roles: ["hr"] },
-    { label: "Settings", icon: <FaCog />, link: "/hradmin/settings", roles: ["hr"] },
+    {
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/hradmin/dashboard",
+      roles: ["hr"],
+    },
+    {
+      label: "Employees",
+      icon: <Users />,
+      link: "/hradmin/employees",
+      roles: ["hr"],
+    },
+    {
+      label: "Attendance",
+      icon: <Clock />,
+      link: "/hradmin/attendance",
+      roles: ["hr"],
+    },
+    {
+      label: "Payroll",
+      icon: <ReceiptIcon />,
+      link: "/hradmin/payroll",
+      roles: ["hr"],
+    },
+    {
+      label: "Settings",
+      icon: <FaCog />,
+      roles: ["hr"],
+      hasSubmenu: true,
+      menuKey: "settings",
+      subItems: [
+        {
+          label: "Organization Settings",
+          icon: <FaBuilding />,
+          link: "/hradmin/settings/organization",
+        },
+        {
+          label: "Leave Settings",
+          icon: <FaCalendarAlt />,
+          link: "/hradmin/settings/leave",
+        },
+      ],
+    },
 
-    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/manager/dashboard", roles: ["manager"] },
-    { label: "Team", icon: <Briefcase />, link: "/manager/team", roles: ["manager"] },
-    { label: "Attendance", icon: <Clock />, link: "/manager/attendance", roles: ["manager"] },
+    {
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/manager/dashboard",
+      roles: ["manager"],
+    },
+    {
+      label: "Team",
+      icon: <Briefcase />,
+      link: "/manager/team",
+      roles: ["manager"],
+    },
+    {
+      label: "Attendance",
+      icon: <Clock />,
+      link: "/manager/attendance",
+      roles: ["manager"],
+    },
 
-    { label: "Dashboard", icon: <ChartColumnIncreasing />, link: "/employee/dashboard", roles: ["employee"] },
-    { label: "Leave", icon: <Calendar />, link: "/employee/leaves", roles: ["employee"] },
-    { label: "Reimbursement", icon: <CreditCard />, link: "/employee/reimbursement", roles: ["employee"] },
-    { label: "Attendance", icon: <Clock />, link: "/employee/attendances", roles: ["employee"] },
-    { label: "My Payslips", icon: <ReceiptIcon />, link: "/employee/mypayslip", roles: ["employee"] },
+    {
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/employee/dashboard",
+      roles: ["employee"],
+    },
+    {
+      label: "Leave",
+      icon: <Calendar />,
+      link: "/employee/leaves",
+      roles: ["employee"],
+    },
+    {
+      label: "Reimbursement",
+      icon: <CreditCard />,
+      link: "/employee/reimbursement",
+      roles: ["employee"],
+    },
+    {
+      label: "Attendance",
+      icon: <Clock />,
+      link: "/employee/attendances",
+      roles: ["employee"],
+    },
+    {
+      label: "My Payslips",
+      icon: <ReceiptIcon />,
+      link: "/employee/mypayslip",
+      roles: ["employee"],
+    },
   ];
 
   // Filter menu items based on currentRole
-  const filteredMenu = menuItems.filter((item) => item.roles.includes(currentRole));
+  const filteredMenu = menuItems.filter((item) =>
+    item.roles.includes(currentRole)
+  );
 
   const isActiveLink = (link) => {
-    return router.pathname === link;
+    if (!link) return false;
+    return router.pathname === link || router.pathname.startsWith(link);
+  };
+
+  const isActiveParent = (item) => {
+    if (!item.hasSubmenu) return false;
+    return item.subItems.some((subItem) =>
+      router.pathname.startsWith(subItem.link)
+    );
   };
 
   return (
@@ -79,41 +193,152 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
             isCollapsed ? "w-16" : "w-64"
           }`}
         >
-          <div className="p-4 flex items-center mb-4 mt-2">
-            <div className={`flex w-full ${isCollapsed ? "justify-center" : "justify-end"}`}>
-              <button className="text-gray-600 hover:text-gray-800" onClick={toggleSidebar}>
-                {isCollapsed ? <FaBars /> : <FaAngleDoubleLeft />}
-              </button>
-            </div>
+          {/* Collapse/Expand Button - Moved to top left */}
+          <div className="absolute -right-4 top-3 z-50">
+            <button
+              onClick={toggleSidebar}
+              className={`
+                flex items-center justify-center w-8 h-8 
+                rounded-full bg-white text-gray-600
+                hover:text-blue-600 shadow-md 
+                transition-all duration-300
+                border border-gray-200
+              `}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? (
+                <FaAngleRight className="w-5 h-5" />
+              ) : (
+                <FaAngleLeft className="w-5 h-5" />
+              )}
+            </button>
           </div>
 
-          <nav className="flex-1">
+          <nav className="flex-1 pt-4">
             <ul className="space-y-2">
               {filteredMenu.map((item, index) => {
                 const isActive = isActiveLink(item.link);
+                const isParentActive = isActiveParent(item);
+                const isExpanded = item.menuKey
+                  ? expandedMenus[item.menuKey]
+                  : false;
+
                 return (
-                  <li key={index}>
-                    <Link
-                      href={item.link}
-                      prefetch={true}
-                      className={`group flex items-center px-4 py-3 transition-all duration-200 ${
-                        isCollapsed ? "justify-center" : "gap-4"
-                      } ${
-                        isActive 
-                          ? "text-blue-600" 
-                          : "text-gray-600 hover:text-blue-600"
-                      }`}
-                      aria-label={item.label}
-                    >
-                      <span className={`text-xl ${isActive ? "text-blue-600" : "group-hover:text-blue-600"}`}>
-                        {item.icon}
-                      </span>
-                      {!isCollapsed && (
-                        <span className="text-lg">
-                          {item.label}
+                  <li key={index} className="relative">
+                    {item.hasSubmenu ? (
+                      <div>
+                        <div
+                          onClick={() => toggleMenu(item.menuKey)}
+                          className={`group flex items-center px-4 py-3 cursor-pointer transition-all duration-200 ${
+                            isCollapsed ? "justify-center" : "gap-4"
+                          } ${
+                            isParentActive
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                          }`}
+                        >
+                          <span
+                            className={`text-xl ${
+                              isParentActive
+                                ? "text-blue-600"
+                                : "group-hover:text-blue-600"
+                            }`}
+                          >
+                            {item.icon}
+                          </span>
+                          {!isCollapsed && (
+                            <>
+                              <span className="text-lg flex-1">
+                                {item.label}
+                              </span>
+                              <span className="transform transition-transform duration-200">
+                                {isExpanded ? (
+                                  <FaChevronDown className="w-4 h-4" />
+                                ) : (
+                                  <FaChevronRight className="w-4 h-4" />
+                                )}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Submenu items */}
+                        {isExpanded && (
+                          <div
+                            className={`
+                              ${isCollapsed ? "pl-0" : "pl-4"} 
+                              mt-1 
+                              transition-all duration-200 
+                              overflow-hidden
+                            `}
+                          >
+                            {item.subItems.map((subItem, subIndex) => {
+                              const isSubActive = isActiveLink(subItem.link);
+
+                              return (
+                                <Link
+                                  key={subIndex}
+                                  href={subItem.link}
+                                  prefetch={true}
+                                  className={`
+                                    flex items-center px-4 py-2 
+                                    transition-all duration-200 
+                                    ${isCollapsed ? "justify-center" : "gap-3"}
+                                    ${
+                                      isSubActive
+                                        ? "text-blue-600 bg-blue-50"
+                                        : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                                    }
+                                  `}
+                                >
+                                  <span
+                                    className={`text-lg ${
+                                      isSubActive ? "text-blue-600" : ""
+                                    }`}
+                                  >
+                                    {subItem.icon}
+                                  </span>
+                                  {!isCollapsed && (
+                                    <span className="text-sm">
+                                      {subItem.label}
+                                    </span>
+                                  )}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        href={item.link}
+                        prefetch={true}
+                        className={`
+                          group flex items-center px-4 py-3 
+                          transition-all duration-200 
+                          ${isCollapsed ? "justify-center" : "gap-4"}
+                          ${
+                            isActive
+                              ? "text-blue-600 bg-blue-50"
+                              : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                          }
+                        `}
+                        aria-label={item.label}
+                      >
+                        <span
+                          className={`text-xl ${
+                            isActive
+                              ? "text-blue-600"
+                              : "group-hover:text-blue-600"
+                          }`}
+                        >
+                          {item.icon}
                         </span>
-                      )}
-                    </Link>
+                        {!isCollapsed && (
+                          <span className="text-lg">{item.label}</span>
+                        )}
+                      </Link>
+                    )}
                   </li>
                 );
               })}

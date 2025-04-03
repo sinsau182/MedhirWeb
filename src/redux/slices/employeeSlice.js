@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin/employees";
+const API_BASE_URL = "http://192.168.0.200:8083/hradmin/employees";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -26,28 +27,24 @@ export const fetchEmployees = createAsyncThunk(
 );
 
 // Create employee
+
 export const createEmployee = createAsyncThunk(
-  "employees/createEmployee",
-  async (employeeData, { rejectWithValue }) => {
+  'employee/createEmployee',
+  async (formData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(API_BASE_URL, {
-        method: "POST",
+      // Retrieve token from localStorage
+      const token = localStorage.getItem('token');
+
+      const response = await axios.post('http://192.168.0.200:8083/hradmin/employees', formData, {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,  // Attach token
         },
-        body: JSON.stringify(employeeData),
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create employee");
-      }
-
-      return data;
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response ? error.response.data : error.message);
     }
   }
 );
@@ -58,13 +55,38 @@ export const updateEmployee = createAsyncThunk(
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
+      
+      // Create FormData object for file uploads
+      const formData = new FormData();
+      
+      // Add all text fields to FormData
+      Object.keys(updatedData).forEach(key => {
+        if (typeof updatedData[key] === 'object' && updatedData[key] !== null) {
+          // Handle nested objects
+          Object.keys(updatedData[key]).forEach(nestedKey => {
+            if (updatedData[key][nestedKey] instanceof File) {
+              // Handle file uploads
+              formData.append(`${key}.${nestedKey}`, updatedData[key][nestedKey]);
+            } else {
+              // Handle other nested fields
+              formData.append(`${key}.${nestedKey}`, updatedData[key][nestedKey]);
+            }
+          });
+        } else if (updatedData[key] instanceof File) {
+          // Handle direct file uploads
+          formData.append(key, updatedData[key]);
+        } else {
+          // Handle regular fields
+          formData.append(key, updatedData[key]);
+        }
+      });
+      
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "PUT",
         headers: { 
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-         },
-        body: JSON.stringify(updatedData),
+        },
+        body: formData, // Send as FormData instead of JSON
       });
 
       const data = await response.json();

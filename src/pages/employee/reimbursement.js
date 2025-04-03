@@ -23,7 +23,7 @@ const Expenses = () => {
   });
 
   const projectCategories = ["Travel", "Meals", "Fuel"];
-  const nonProjectCategories = ["Equipment", "Cleaning Liquid"];
+  const nonProjectCategories = ["Equipment", "Cleaning Liquid", "Advance Salary"];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -251,10 +251,10 @@ const Expenses = () => {
             {/* Recent Expenses */}
             <div
               className={`bg-white shadow-md rounded-lg p-6 flex flex-col transition-all duration-300 ${
-                showAllExpenses ? "h-[600px]" : "h-[550px]"
+                showAllExpenses ? "h-[590px]" : "h-[590px]"
               }`}
             >
-              <h2 className="text-lg font-semibold mb-4">Recent Expenses</h2>
+              <h2 className="text-lg font-semibold mb-4">Recent Reimbursements </h2>
               <div
                 className={`space-y-4 ${
                   showAllExpenses ? "overflow-y-auto" : "overflow-hidden"

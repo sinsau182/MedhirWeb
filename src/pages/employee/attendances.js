@@ -9,6 +9,10 @@ const EmployeeAttendance = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [date, setDate] = useState(null); // State to manage selected date
   const [attendanceData, setAttendanceData] = useState([]); // <-- Add state for attendance data
+  const [showReasonForm, setShowReasonForm] = useState(false); // State to control reason form visibility
+  const [reason, setReason] = useState(""); // State to store the reason
+  const [showToast, setShowToast] = useState(false); // State to control toast visibility
+  const [reasonSubmitted, setReasonSubmitted] = useState(false); // State to track if reason was submitted
 
   // Simulate fetching attendance data
   useEffect(() => {
@@ -17,14 +21,25 @@ const EmployeeAttendance = () => {
     const month = today.getMonth();
     // Sample data - replace with actual API call
     const sampleData = [
-      { date: new Date(year, month, 5), status: 'Present', isLate: true, checkIn: '09:15 AM', checkOut: '06:05 PM' },
-      { date: new Date(year, month, 12), status: 'Present', isLate: true, checkIn: '09:30 AM', checkOut: '06:15 PM' },
-      { date: new Date(year, month, 18), status: 'Present', isLate: false, checkIn: '08:55 AM', checkOut: '06:00 PM' },
-      { date: new Date(year, month, 25), status: 'Absent', isLate: false, checkIn: null, checkOut: null },
+      { date: new Date(year, month, 1), status: 'Present', isLate: false, checkIn: '08:55 AM', checkOut: '06:00 PM' },
+      { date: new Date(year, month, 2), status: 'Present', isLate: false, checkIn: '08:50 AM', checkOut: '06:05 PM' },
+      { date: new Date(year, month, 3), status: 'Present', isLate: false, checkIn: '09:00 AM', checkOut: '06:00 PM' },
+      { date: new Date(year, month, 4), status: 'Absent', isLate: false, checkIn: null, checkOut: null },
+      { date: new Date(year, month, 5), status: 'Present', isLate: true, checkIn: '09:15 AM', checkOut: '06:05 PM' }
       // Add more sample data as needed
     ];
     setAttendanceData(sampleData);
   }, []);
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -42,6 +57,22 @@ const EmployeeAttendance = () => {
     }
 
     return daysArray;
+  };
+
+  const handleSubmitReason = (e) => {
+    e.preventDefault();
+    console.log("Reason for late check-in:", reason);
+    console.log("Date:", date.toLocaleDateString());
+    
+    // Show toast notification
+    setShowToast(true);
+    
+    // Mark reason as submitted
+    setReasonSubmitted(true);
+    
+    // Close form and reset reason
+    setShowReasonForm(false);
+    setReason("");
   };
 
   const calendarDays = generateCalendarDays();
@@ -141,20 +172,31 @@ const EmployeeAttendance = () => {
           d => d.date.toDateString() === day.toDateString()
         );
         const isLate = dayData?.isLate;
+        const status = dayData?.status;
+        const dayNumber = day.getDate();
+
+        // Determine background color based on date and status
+        let bgColorClass = "hover:bg-gray-200"; // Default hover
+        
+        if (date && date.toDateString() === day.toDateString()) {
+          bgColorClass = "bg-blue-500 text-white";
+        } else if (dayData) {
+          if (status === 'Present' && !isLate) {
+            bgColorClass = "bg-green-100 hover:bg-green-200";
+          } else if (status === 'Present' && isLate) {
+            bgColorClass = "bg-yellow-100 hover:bg-yellow-200";
+          } else if (status === 'Absent') {
+            bgColorClass = "bg-red-100 hover:bg-red-200";
+          }
+        }
 
         return (
           <div
             key={index}
             onClick={() => setDate(day)}
-            className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${
-              date && date.toDateString() === day.toDateString()
-                ? "bg-blue-500 text-white"
-                : isLate
-                ? "bg-yellow-100 hover:bg-yellow-200" // Yellow for late
-                : "hover:bg-gray-200" // Default hover
-            }`}
+            className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass}`}
           >
-            {day.getDate()}
+            {dayNumber}
           </div>
         );
       })}
@@ -222,10 +264,15 @@ const EmployeeAttendance = () => {
                             </div>
                             {isLate && (
                               <button
-                                onClick={() => alert('Reason sending functionality to be implemented.')} // Placeholder action
-                                className="mt-4 w-full bg-teal-400 text-white py-2 px-4 rounded-md transition text-sm"
+                                onClick={() => setShowReasonForm(true)}
+                                disabled={reasonSubmitted}
+                                className={`mt-4 w-full py-2 px-4 rounded-md transition text-sm ${
+                                  reasonSubmitted 
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                                    : "bg-teal-400 text-white hover:bg-teal-500"
+                                }`}
                               >
-                                Send Reason for Late Check-in
+                                {reasonSubmitted ? "Reason sent for approval" : "Send Reason for Late Check-in"}
                               </button>
                             )}
                           </>
@@ -246,6 +293,54 @@ const EmployeeAttendance = () => {
           
         </div>
       </div>
+
+      {/* Reason Form Modal */}
+      {showReasonForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Submit Reason for Late Check-in</h3>
+            <form onSubmit={handleSubmitReason}>
+              <div className="mb-4">
+                <label htmlFor="reason" className="block text-sm font-medium mb-2">
+                  Reason for late check-in
+                </label>
+                <textarea
+                  id="reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  rows="4"
+                  placeholder="Please provide a reason for your late check-in..."
+                  required
+                ></textarea>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReasonForm(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center">
+          <CheckCircle2 className="h-5 w-5 mr-2" />
+          <span>Reason saved successfully!</span>
+        </div>
+      )}
     </div>
   );
 };

@@ -19,6 +19,8 @@ function Employees() {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
+  console.log("Employees:", employees);
+
   const handleRowClick = (employee) => {
     router.push({
       pathname: "/hradmin/addNewEmployee",
@@ -40,39 +42,49 @@ function Employees() {
     switch (activeTab) {
       case 'Basic':
         return [
+          { key: 'employeeId', label: 'Employee ID' },
           { key: 'name', label: 'Name' },
-          { key: 'email', label: 'Email' },
-          { key: 'phone', label: 'Phone no.' },
-          { key: 'department', label: 'Department' },
-          { key: 'gender', label: 'Gender' },
-          { key: 'title', label: 'Title' },
-          { key: 'reportingManager', label: 'Reporting Manager' },
+          { key: 'fatherName', label: "Father's Name" },
+          { key: 'phone1', label: 'Phone No.' },
+          { key: 'email', label: 'Email(Off.)' },
+          { key: 'joiningDate', label: 'DOJ' },
+          { key: 'designation', label: 'Designation' },
+          { key: 'currentAddress', label: 'Current Address' },
         ];
       case 'ID Proofs':
         return [
+          { key: 'employeeId', label: 'Employee ID' },
           { key: 'name', label: 'Name' },
           { key: 'aadharNo', label: 'Aadhar no.' },
           { key: 'panNo', label: 'PAN no.' },
           { key: 'voterId', label: 'Voter ID' },
           { key: 'passport', label: 'Passport no.' },
+          { key: 'drivingLicense', label: 'Driving License' },
         ];
       case 'Salary Details':
         return [
+          { key: 'employeeId', label: 'Employee ID' },
           { key: 'name', label: 'Name' },
-          { key: 'totalCtc', label: 'Total CTC' },
+          { key: 'annualCtc', label: 'Annual CTC' },
+          { key: 'monthlyCtc', label: 'Monthly CTC' },
           { key: 'basic', label: 'Basic' },
           { key: 'hra', label: 'HRA' },
           { key: 'allowances', label: 'Allowance' },
-          { key: 'pf', label: 'PF' },
+          { key: 'employerPf', label: 'Employer PF' },
+          { key: 'employeePf', label: 'Employee PF' },
         ];
       case 'Bank Details':
         return [
+          { key: 'employeeId', label: 'Employee ID' },
           { key: 'name', label: 'Name' },
           { key: 'accountHolderName', label: 'Account Holder Name' },
           { key: 'accountNumber', label: 'Account no.' },
           { key: 'bankName', label: 'Bank Name' },
           { key: 'ifscCode', label: 'IFSC' },
           { key: 'branchName', label: 'Branch Name' },
+          { key: 'upiId', label: 'UPI ID' },
+          { key: 'upiNumber', label: 'UPI Number' },
+          { key: 'passbookDoc', label: 'Passbook Doc' },
         ];
       default:
         return [];
@@ -86,13 +98,43 @@ function Employees() {
       case 'Basic':
         return employee[key] || '';
       case 'ID Proofs':
-        if (key === 'name') return employee.name || '';
+        if (key === 'name' || key === 'employeeId') return employee[key] || '';
         return employee.idProofs ? employee.idProofs[key] || '' : '';
       case 'Salary Details':
-        if (key === 'name') return employee.name || '';
+        if (key === 'name' || key === 'employeeId') return employee[key] || '';
         return employee.salaryDetails ? employee.salaryDetails[key] || '' : '';
       case 'Bank Details':
-        if (key === 'name') return employee.name || '';
+        if (key === 'name' || key === 'employeeId') return employee[key] || '';
+        if (key === 'passbookDoc') {
+          return (
+            <button
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click when clicking the button
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                  <div class="bg-white p-4 rounded-lg max-w-md">
+                    <div class="flex justify-between items-center mb-4">
+                      <h3 class="text-lg font-semibold">Passbook Document</h3>
+                      <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="text-center py-4">
+                      <p class="text-gray-600">No doc uploaded</p>
+                    </div>
+                  </div>
+                `;
+                document.body.appendChild(modal);
+              }}
+              className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
+            >
+              View Doc
+            </button>
+          );
+        }
         return employee.bankDetails ? employee.bankDetails[key] || '' : '';
       default:
         return '';
@@ -100,6 +142,46 @@ function Employees() {
   };
 
   const headers = getTableHeaders();
+
+  const handlePassbookView = (imageUrl) => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Passbook Document</h3>
+          <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        <img src="${imageUrl}" alt="Passbook" class="max-w-full h-auto" />
+      </div>
+    `;
+    document.body.appendChild(modal);
+  };
+
+  const renderBankDetailsRow = (row) => (
+    <tr key={row.id}>
+      <td className="px-5 py-4 text-sm">{row.name}</td>
+      <td className="px-5 py-4 text-sm">{row.accountHolderName}</td>
+      <td className="px-5 py-4 text-sm">{row.accountNumber}</td>
+      <td className="px-5 py-4 text-sm">{row.bankName}</td>
+      <td className="px-5 py-4 text-sm">{row.ifscCode}</td>
+      <td className="px-5 py-4 text-sm">{row.branchName}</td>
+      <td className="px-5 py-4 text-sm">{row.upiId}</td>
+      <td className="px-5 py-4 text-sm">{row.upiNumber}</td>
+      <td className="px-5 py-4 text-sm">
+        <button
+          onClick={() => handlePassbookView(row.passbookDoc)}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          View Details
+        </button>
+      </td>
+    </tr>
+  );
 
   if (err) {
     return (
@@ -165,14 +247,14 @@ function Employees() {
 
           {/* Employee Table */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-            <div className="w-full overflow-auto">
-              <table className="w-full">
+            <div className="w-full">
+              <table className="w-full table-fixed">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     {headers.map((header) => (
                       <th 
                         key={header.key} 
-                        className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap"
+                        className="text-left py-3 px-4 text-xs font-semibold text-gray-600 uppercase tracking-wider"
                       >
                         {header.label}
                       </th>
@@ -196,16 +278,16 @@ function Employees() {
                       </td>
                     </tr>
                   ) : (
-                    filteredEmployees.map((employee, index) => (
-                      <tr
-                        key={employee._id || index}
+                    filteredEmployees.map((employee) => (
+                      <tr 
+                        key={employee.id} 
+                        className="hover:bg-gray-50 cursor-pointer"
                         onClick={() => handleRowClick(employee)}
-                        className="hover:bg-blue-50/50 transition-colors cursor-pointer text-sm"
                       >
                         {headers.map((header) => (
                           <td 
-                            key={header.key} 
-                            className="py-2.5 px-4 whitespace-nowrap text-gray-600"
+                            key={header.key}
+                            className="py-3 px-4 text-xs text-gray-600 truncate"
                           >
                             {getCellValue(employee, header.key)}
                           </td>

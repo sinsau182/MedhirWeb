@@ -19,7 +19,6 @@ const CustomDatePicker = ({
   const timeSlotOptions = [
     { value: 'FIRST_HALF', label: 'First Half (Morning)' },
     { value: 'SECOND_HALF', label: 'Second Half (Afternoon)' },
-    { value: 'HALF_DAY', label: 'Half Day' },
     { value: 'FULL_DAY', label: 'Full Day' },
   ];
 
@@ -186,11 +185,11 @@ const CustomDatePicker = ({
               );
             })}
           </div>
-          {selectedDateObjects.length > 0 && (
+          {/* {selectedDateObjects.length > 0 && (
             <div className="mt-2 text-sm font-medium text-gray-700">
               Total days: <span className="text-blue-600">{calculateTotalDays()}</span>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Date Picker Trigger */}
@@ -201,7 +200,7 @@ const CustomDatePicker = ({
           <span className="text-gray-700 font-medium">
             {selectedDateObjects.length > 0 
               ? `${selectedDateObjects.length} date${selectedDateObjects.length > 1 ? 's' : ''} selected`
-              : 'Select dates'}
+              : 'Select Day'}
           </span>
           <CalendarIcon className="h-5 w-5 text-blue-500" />
         </div>

@@ -3,7 +3,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { Calendar, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchLeaves } from "@/redux/slices/leaveSlice";
+import { fetchLeaves, createLeave } from "@/redux/slices/leaveSlice";
 import CustomDatePicker from '@/components/CustomDatePicker';
 
 const Leaves = () => {
@@ -26,7 +26,8 @@ const Leaves = () => {
   const { leaves, loading, error } = useSelector((state) => state.leaveReducer);
 
   useEffect(() => {
-    dispatch(fetchLeaves());
+    // Fetch leaves for employee with ID emp123
+    dispatch(fetchLeaves("emp123"));
   }, [dispatch]);
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -60,16 +61,60 @@ const Leaves = () => {
     setCompOffForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Leave Application:", leaveForm);
-    closeModal();
+    try {
+      // Format dates to YYYY-MM-DD format
+      const formatDate = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const leaveData = {
+        employeeId: "emp123",
+        employeeName: "Arun",
+        department: "Engineering",
+        leaveType: "Casual Leave",
+        startDate: formatDate(leaveForm.dates[0].date),
+        endDate: formatDate(leaveForm.dates[leaveForm.dates.length - 1].date),
+        reason: leaveForm.reason,
+        status: "Pending"
+      };
+      
+      await dispatch(createLeave(leaveData)).unwrap();
+      closeModal();
+      // Refresh the page to show updated leave history
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to submit leave request:", error);
+    }
   };
 
-  const handleCompOffSubmit = (e) => {
+  const handleCompOffSubmit = async (e) => {
     e.preventDefault();
-    console.log("Comp-off Application:", compOffForm);
-    closeCompOffModal();
+    try {
+      // Format dates to YYYY-MM-DD format
+      const formatDate = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const leaveData = {
+        employeeId: "emp123",
+        employeeName: "Arun",
+        department: "Sales",
+        leaveType: "Comp Off",
+        startDate: formatDate(compOffForm.dates[0].date),
+        endDate: formatDate(compOffForm.dates[0].date),
+        shiftType: "First Half (Morning)", // Default shift type
+        reason: compOffForm.description
+      };
+      
+      await dispatch(createLeave(leaveData)).unwrap();
+      closeCompOffModal();
+      // Refresh the page to show updated leave history
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to submit comp-off request:", error);
+    }
   };
 
   return (
@@ -141,47 +186,58 @@ const Leaves = () => {
             {/* Leave History */}
             <div className="bg-white shadow-md rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Leave History</h2>
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 max-h-[300px] overflow-y-auto">
+                {loading ? (
+                  <div className="py-4 text-center text-gray-500">Loading leave history...</div>
+                ) : error ? (
+                  <div className="py-4 text-center text-red-500">Error loading leave history: {error}</div>
+                ) : leaves && leaves.length > 0 ? (
+                  leaves.map((leave) => {
+                    const formattedStartDate = new Date(
+                      leave.startDate
+                    ).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    });
+                    const formattedEndDate = leave.endDate
+                      ? new Date(leave.endDate).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "";
 
-                {leaves.map((leave) => {
-                const formattedStartDate = new Date(
-                  leave.startDate
-                ).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                });
-                const formattedEndDate = leave.endDate
-                  ? new Date(leave.endDate).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
+                    return (
+                      <div key={leave.id || leave._id} className="py-4 flex justify-between">
+                        <div>
+                          <p className="text-gray-600 font-medium mb-2">{leave.leaveType}</p>
+                          <p className="text-sm text-gray-500">
+                            {leave.leaveType === "Comp Off"
+                              ? `${formattedStartDate} (${leave.shiftType || 'First Half (Morning)'})`
+                              : `${formattedStartDate} - ${formattedEndDate}`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                            leave.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : leave.status === "Approved"
+                              ? "bg-green-100 text-green-600"
+                              : "bg-red-100 text-red-600"
+                          }`}>
+                            {leave.status}
+                          </span>
+                          <p className="text-sm text-gray-500 mt-2 mr-1">
+                            {leave.leaveType === "Comp Off" ? "1 day" : 
+                              `${Math.ceil((new Date(leave.endDate) - new Date(leave.startDate)) / (1000 * 60 * 60 * 24)) + 1} days`}
+                          </p>
+                        </div>
+                      </div>
+                    );
                   })
-                  : "";
-
-                return (
-                  <div key={leave.id} className="py-4 flex justify-between">
-                  <div>
-                    <p className="text-gray-600 font-medium mb-2">{leave.leaveType}</p>
-                    <p className="text-sm text-gray-500">
-                    {leave.leaveType === "Comp Off"
-                      ? formattedStartDate
-                      : `${formattedStartDate} - ${formattedEndDate}`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                        leave.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-600"
-                        }`}
-                    >
-                    {leave.status}
-                    </span>
-                    <p className="text-sm text-gray-500 mt-2 mr-1">3 days</p>
-                  </div>
-                  </div>
-                )}
+                ) : (
+                  <div className="py-4 text-center text-gray-500">No leave history found</div>
                 )}
               </div>
             </div>
@@ -239,7 +295,6 @@ const Leaves = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Dates</label>
                     <CustomDatePicker
                       selectedDates={leaveForm.dates}
                       onChange={(dates) => {
@@ -263,7 +318,7 @@ const Leaves = () => {
                       onChange={handleLeaveFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide a reason for your leave request..."
+                      placeholder="Please provide a reason for your leave"
                     />
                   </div>
 
@@ -301,9 +356,9 @@ const Leaves = () => {
                   </button>
                 </div>
 
+          
                 <form onSubmit={handleCompOffSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
                     <CustomDatePicker
                       selectedDates={compOffForm.dates}
                       onChange={(dates) => {
@@ -328,7 +383,7 @@ const Leaves = () => {
                       onChange={handleCompOffFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide details about your comp-off request..."
+                      placeholder="Please provide details"
                     />
                   </div>
 

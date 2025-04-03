@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, use } from "react";
 
 import {
   BarChart,
@@ -37,6 +37,9 @@ import RequestDetails from "@/components/RequestDetails";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 
+import { useSelector, useDispatch } from "react-redux";
+import { fetchEmployees } from "@/redux/slices/employeeSlice";
+
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -61,6 +64,15 @@ const Overview = () => {
 
   const [activeTab, setActiveTab] = useState("leaveRequests");
 
+
+  const dispatch = useDispatch();
+  const { employees, loading } = useSelector((state) => state.employees);
+  useEffect(() => {
+    dispatch(fetchEmployees());
+  }, [dispatch]);
+
+  console.log("Employees:", employees.length); // Log the employees data
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -84,6 +96,8 @@ const Overview = () => {
 
     setShowCharts(false); // Ensure Charts are hidden
   };
+
+
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -115,7 +129,7 @@ const Overview = () => {
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Total Employees",
-      count: 88,
+      count: employees.length,
     },
 
     {

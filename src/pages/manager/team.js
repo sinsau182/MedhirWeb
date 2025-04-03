@@ -67,26 +67,29 @@ function Employees() {
                 <TableRow>
                 {activeTab === "Basic" && (
                   <>
+                  <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
+                      EMPLOYEE ID
+                    </TableHead>
                     <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
-                      Name
+                      NAME
+                    </TableHead>
+                    <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
+                      FATHER'S NAME
                     </TableHead>
                     <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Email
+                      PHONE NO.
                     </TableHead>
                     <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Phone no.
+                      EMAIL(OFF.)
                     </TableHead>
                     <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Department
+                      DOJ
                     </TableHead>
                     <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Gender
+                      DESIGNATION
                     </TableHead>
                     <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Title
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      Reporting Manager
+                      CURRENT ADDRESS
                     </TableHead>
                   </>
                 )}
@@ -97,27 +100,14 @@ function Employees() {
                 <TableRow>
                   {activeTab === "Basic" && (
                     <>
-                      <TableCell className="text-left">
-                        {employee.name}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.email}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.phone}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.department}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.gender}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.title}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {employee.reportingManager}
-                      </TableCell>
+                      <TableCell className="text-left">{employee?.employeeId}</TableCell>
+                      <TableCell className="text-left">{employee?.name}</TableCell>
+                      <TableCell className="text-left">{employee?.fatherName}</TableCell>
+                      <TableCell className="text-center">{employee?.phone1}</TableCell>
+                      <TableCell className="text-center">{employee?.email}</TableCell>
+                      <TableCell className="text-center">{employee?.joiningDate}</TableCell>
+                      <TableCell className="text-center">{employee?.designation}</TableCell>
+                      <TableCell className="text-center">{employee?.currentAddress}</TableCell>
                     </>
                   )}
                 </TableRow>
