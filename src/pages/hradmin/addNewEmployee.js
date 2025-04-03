@@ -136,6 +136,24 @@ const generateEmployeeId = (lastEmployeeId) => {
   return `EMP${(currentNumber + 1).toString().padStart(3, "0")}`;
 };
 
+// Add this helper function before the EmployeeForm component
+const removeEmptyValues = (obj) => {
+  const cleanObj = {};
+  Object.entries(obj).forEach(([key, value]) => {
+    if (value !== null && value !== undefined && value !== '') {
+      if (typeof value === 'object' && !(value instanceof File)) {
+        const nestedClean = removeEmptyValues(value);
+        if (Object.keys(nestedClean).length > 0) {
+          cleanObj[key] = nestedClean;
+        }
+      } else {
+        cleanObj[key] = value;
+      }
+    }
+  });
+  return cleanObj;
+};
+
 function EmployeeForm() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -423,8 +441,8 @@ function EmployeeForm() {
       // Create FormData object
       const formDataObj = new FormData();
 
-      // Add employee details as a JSON string
-      const employeeDetails = {
+      // Clean the form data to remove empty values
+      const cleanEmployeeDetails = removeEmptyValues({
         employeeId: formData.employee.employeeId,
         name: formData.employee.name,
         fatherName: formData.employee.fatherName,
@@ -444,12 +462,15 @@ function EmployeeForm() {
         idProofs: formData.documents,
         bankDetails: formData.bank,
         salaryDetails: formData.salary,
-      };
+      });
 
-      formDataObj.append('employee', JSON.stringify(employeeDetails));
+      // Only append if we have non-empty data
+      if (Object.keys(cleanEmployeeDetails).length > 0) {
+        formDataObj.append('employee', JSON.stringify(cleanEmployeeDetails));
+      }
 
       // Add profile image if exists
-      if (formData.employee.profileImage) {
+      if (formData.employee.profileImage instanceof File) {
         formDataObj.append('profileImage', formData.employee.profileImage);
       }
 

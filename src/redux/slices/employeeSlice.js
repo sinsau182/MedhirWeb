@@ -29,27 +29,22 @@ export const fetchEmployees = createAsyncThunk(
 // Create employee
 
 export const createEmployee = createAsyncThunk(
-  "employees/createEmployee",
-  async (employeeData, { rejectWithValue }) => {
+  'employee/createEmployee',
+  async (formData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://192.168.0.200:8083/hradmin/employees", {
-        method: "POST",
+      // Retrieve token from localStorage
+      const token = localStorage.getItem('token');
+
+      const response = await axios.post('http://192.168.0.200:8083/hradmin/employees', formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,  // Attach token
         },
-        body: employeeData,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        return rejectWithValue(data.message || "Failed to create employee");
-      }
-
-      return data;
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to create employee");
+      return rejectWithValue(error.response ? error.response.data : error.message);
     }
   }
 );
@@ -152,18 +147,8 @@ const employeesSlice = createSlice({
         state.loading = false;
         state.err = action.payload;
       })
-      .addCase(createEmployee.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(createEmployee.fulfilled, (state, action) => {
-        state.loading = false;
         state.employees.push(action.payload);
-        state.error = null;
-      })
-      .addCase(createEmployee.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "An error occurred";
       })
       .addCase(updateEmployee.fulfilled, (state, action) => {
         const index = state.employees.findIndex(
