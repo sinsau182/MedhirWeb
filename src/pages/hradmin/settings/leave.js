@@ -7,6 +7,7 @@ const LeaveSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Leave Types");
   const [showLeaveTypeModal, setShowLeaveTypeModal] = useState(false);
+  const [showLeaveTypeEditModal, setShowLeaveTypeEditModal] = useState(false);
   const [leaveTypeForm, setLeaveTypeForm] = useState({
     name: "",
     accrual: "",
@@ -24,6 +25,7 @@ const LeaveSettings = () => {
 
   // Add new state variables for Leave Policies
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [showPolicyEditModal, setShowPolicyEditModal] = useState(false);
   const [policyForm, setPolicyForm] = useState({
     name: "",
     leaveAllocation: [{ leaveType: "", annualQuota: "" }],
@@ -31,6 +33,7 @@ const LeaveSettings = () => {
 
   // Add new state variables for Public Holidays
   const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [showHolidayEditModal, setShowHolidayEditModal] = useState(false);
   const [holidayForm, setHolidayForm] = useState({
     name: "",
     date: "",
@@ -343,7 +346,7 @@ const LeaveSettings = () => {
       allowedInNotice: type.allowedInNotice || false,
       canCarryForward: type.canCarryForward || false,
     });
-    setShowLeaveTypeModal(true);
+    setShowLeaveTypeEditModal(true);
     setIsLeaveTypeFormChanged(false);
   };
 
@@ -353,7 +356,7 @@ const LeaveSettings = () => {
       name: policy.name,
       leaveAllocation: policy.leaveAllocation || [{ leaveType: "", annualQuota: "" }],
     });
-    setShowPolicyModal(true);
+    setShowPolicyEditModal(true);
     setIsPolicyFormChanged(false);
   };
 
@@ -364,7 +367,7 @@ const LeaveSettings = () => {
       date: holiday.date,
       description: holiday.description || "",
     });
-    setShowHolidayModal(true);
+    setShowHolidayEditModal(true);
     setIsHolidayFormChanged(false);
   };
 
@@ -556,7 +559,7 @@ const LeaveSettings = () => {
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-semibold text-gray-800">
-                        {selectedPolicy ? "Edit Leave Policy" : "Add New Leave Policy"}
+                        Add New Leave Policy
                       </h2>
                       <button
                         onClick={() => setShowPolicyModal(false)}
@@ -568,11 +571,7 @@ const LeaveSettings = () => {
 
                     <form onSubmit={(e) => {
                       e.preventDefault();
-                      if (selectedPolicy) {
-                        handlePolicyUpdate(selectedPolicy.id);
-                      } else {
-                        handlePolicySubmit(e);
-                      }
+                      handlePolicySubmit(e);
                     }} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -651,16 +650,13 @@ const LeaveSettings = () => {
                                   });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Days/Year"
-                                min="0"
+                                placeholder="Days/year"
                               />
                             </div>
                             {index > 0 && (
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handleRemoveLeaveAllocation(index)
-                                }
+                                onClick={() => handleRemoveLeaveAllocation(index)}
                                 className="text-red-500 hover:text-red-700"
                               >
                                 <X className="h-5 w-5" />
@@ -669,7 +665,7 @@ const LeaveSettings = () => {
                           </div>
                         ))}
                         {errors.leaveAllocation && (
-                          <p className="text-red-500 text-sm">
+                          <p className="text-red-500 text-sm mt-1">
                             {errors.leaveAllocation}
                           </p>
                         )}
@@ -679,7 +675,145 @@ const LeaveSettings = () => {
                         <button
                           type="button"
                           onClick={() => setShowPolicyModal(false)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                          className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Leave Policy Edit Modal */}
+              {showPolicyEditModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-semibold text-gray-800">
+                        Edit Leave Policy
+                      </h2>
+                      <button
+                        onClick={() => setShowPolicyEditModal(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      handlePolicyUpdate(selectedPolicy.id);
+                    }} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Policy Name
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={policyForm.name}
+                          onChange={handlePolicyFormChange}
+                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter policy name"
+                        />
+                        {errors.policyName && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.policyName}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Leave Allocations
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleAddLeaveAllocation}
+                            className="text-sm text-blue-600 hover:text-blue-700"
+                          >
+                            + Add Leave Type
+                          </button>
+                        </div>
+
+                        {policyForm.leaveAllocation.map((allocation, index) => (
+                          <div key={index} className="flex gap-4 items-start">
+                            <div className="flex-1">
+                              <select
+                                value={allocation.leaveType}
+                                onChange={(e) => {
+                                  setIsPolicyFormChanged(true);
+                                  const newAllocations = [
+                                    ...policyForm.leaveAllocation,
+                                  ];
+                                  newAllocations[index].leaveType =
+                                    e.target.value;
+                                  setPolicyForm({
+                                    ...policyForm,
+                                    leaveAllocation: newAllocations,
+                                  });
+                                }}
+                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Select Leave Type</option>
+                                {leaveTypes.map((type) => (
+                                  <option key={type.id} value={type.name}>
+                                    {type.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="flex-1">
+                              <input
+                                type="number"
+                                value={allocation.annualQuota}
+                                onChange={(e) => {
+                                  setIsPolicyFormChanged(true);
+                                  const newAllocations = [
+                                    ...policyForm.leaveAllocation,
+                                  ];
+                                  newAllocations[index].annualQuota =
+                                    e.target.value;
+                                  setPolicyForm({
+                                    ...policyForm,
+                                    leaveAllocation: newAllocations,
+                                  });
+                                }}
+                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Days/year"
+                              />
+                            </div>
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveLeaveAllocation(index)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-5 w-5" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {errors.leaveAllocation && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {errors.leaveAllocation}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex justify-end gap-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => setShowPolicyEditModal(false)}
+                          className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                         >
                           Delete
                         </button>
@@ -758,14 +892,13 @@ const LeaveSettings = () => {
                 </table>
               </div>
 
-         
-     {/* Public Holiday Modal */}
-     {showHolidayModal && (
+              {/* Public Holiday Modal */}
+              {showHolidayModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-semibold text-gray-800">
-                        {selectedHoliday ? "Edit Public Holiday" : "Add New Public Holiday"}
+                        Add New Public Holiday
                       </h2>
                       <button
                         onClick={() => setShowHolidayModal(false)}
@@ -777,11 +910,7 @@ const LeaveSettings = () => {
 
                     <form onSubmit={(e) => {
                       e.preventDefault();
-                      if (selectedHoliday) {
-                        handleHolidayUpdate(selectedHoliday.id);
-                      } else {
-                        handleHolidaySubmit(e);
-                      }
+                      handleHolidaySubmit(e);
                     }} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -812,7 +941,6 @@ const LeaveSettings = () => {
                           value={holidayForm.date}
                           onChange={handleHolidayFormChange}
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          min={new Date().toISOString().split("T")[0]} // Prevents selecting past dates
                         />
                         {errors.holidayDate && (
                           <p className="text-red-500 text-sm mt-1">
@@ -823,7 +951,7 @@ const LeaveSettings = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Description (Optional)
+                          Description
                         </label>
                         <textarea
                           name="description"
@@ -831,7 +959,7 @@ const LeaveSettings = () => {
                           onChange={handleHolidayFormChange}
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           rows="3"
-                          placeholder="Enter description (optional)"
+                          placeholder="Enter description"
                         />
                       </div>
 
@@ -839,7 +967,88 @@ const LeaveSettings = () => {
                         <button
                           type="button"
                           onClick={() => setShowHolidayModal(false)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                          className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Public Holiday Edit Modal */}
+              {showHolidayEditModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-xl font-semibold text-gray-800">
+                        Edit Public Holiday
+                      </h2>
+                      <button
+                        onClick={() => setShowHolidayEditModal(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      handleHolidayUpdate(selectedHoliday.id);
+                    }} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Holiday Name
+                        </label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={holidayForm.name}
+                          onChange={handleHolidayFormChange}
+                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter holiday name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          name="date"
+                          value={holidayForm.date}
+                          onChange={handleHolidayFormChange}
+                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          name="description"
+                          value={holidayForm.description}
+                          onChange={handleHolidayFormChange}
+                          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows="3"
+                          placeholder="Enter description"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-3 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => setShowHolidayEditModal(false)}
+                          className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                         >
                           Delete
                         </button>
@@ -863,7 +1072,7 @@ const LeaveSettings = () => {
               <div className="bg-white rounded-lg p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    {selectedLeaveType ? "Edit Leave Type" : "Add New Leave Type"}
+                    Add New Leave Type
                   </h2>
                   <button
                     onClick={() => setShowLeaveTypeModal(false)}
@@ -875,11 +1084,7 @@ const LeaveSettings = () => {
 
                 <form onSubmit={(e) => {
                   e.preventDefault();
-                  if (selectedLeaveType) {
-                    handleLeaveTypeUpdate(selectedLeaveType.id);
-                  } else {
-                    handleLeaveTypeSubmit(e);
-                  }
+                  handleLeaveTypeSubmit(e);
                 }} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -992,7 +1197,154 @@ const LeaveSettings = () => {
                     <button
                       type="button"
                       onClick={() => setShowLeaveTypeModal(false)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Type Edit Modal */}
+          {showLeaveTypeEditModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Edit Leave Type
+                  </h2>
+                  <button
+                    onClick={() => setShowLeaveTypeEditModal(false)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleLeaveTypeUpdate(selectedLeaveType.id);
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Leave Type Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={leaveTypeForm.name}
+                      onChange={handleLeaveTypeFormChange}
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter leave type name"
+                    />
+                    {errors.name && (
+                      <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Accrual Period
+                    </label>
+                    <select
+                      name="accrual"
+                      value={leaveTypeForm.accrual}
+                      onChange={handleLeaveTypeFormChange}
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select accrual period</option>
+                      <option value="Monthly">Monthly</option>
+                      <option value="Quarterly">Quarterly</option>
+                      <option value="Annually">Annually</option>
+                      <option value="On Request">On Request</option>
+                    </select>
+                    {errors.accrual && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.accrual}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      name="description"
+                      value={leaveTypeForm.description}
+                      onChange={handleLeaveTypeFormChange}
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows="3"
+                      placeholder="Enter description"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="allowedInProbation"
+                        name="allowedInProbation"
+                        checked={leaveTypeForm.allowedInProbation}
+                        onChange={handleLeaveTypeFormChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="allowedInProbation"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
+                        Allowed in Probation Period
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="allowedInNotice"
+                        name="allowedInNotice"
+                        checked={leaveTypeForm.allowedInNotice}
+                        onChange={handleLeaveTypeFormChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="allowedInNotice"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
+                        Allowed in Notice Period
+                      </label>
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="canCarryForward"
+                        name="canCarryForward"
+                        checked={leaveTypeForm.canCarryForward}
+                        onChange={handleLeaveTypeFormChange}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="canCarryForward"
+                        className="ml-2 block text-sm text-gray-700"
+                      >
+                        Can be Carried Forward
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setShowLeaveTypeEditModal(false)}
+                      className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                     >
                       Delete
                     </button>

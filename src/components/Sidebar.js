@@ -102,6 +102,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           link: "/hradmin/settings/organization",
         },
         {
+          label: "Payroll Settings",
+          icon: <FaMoneyCheckAlt />,
+          link: "/hradmin/settings/payrollsettings",
+        },
+        {
           label: "Leave Settings",
           icon: <FaCalendarAlt />,
           link: "/hradmin/settings/leave",

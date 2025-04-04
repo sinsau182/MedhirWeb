@@ -77,9 +77,9 @@ function Employees() {
         return [
           { key: 'employeeId', label: 'Employee ID' },
           { key: 'name', label: 'Name' },
-          { key: 'fatherName', label: "Father's Name" },
-          { key: 'phone1', label: 'Phone No.' },
-          { key: 'email', label: 'Email(Off.)' },
+          { key: 'fathersName', label: "Father's Name" },
+          { key: 'phone', label: 'Phone No.' },
+          { key: 'emailOfficial', label: 'Email(Off.)' },
           { key: 'joiningDate', label: 'DOJ' },
           { key: 'designation', label: 'Designation' },
           { key: 'currentAddress', label: 'Current Address' },
@@ -100,11 +100,11 @@ function Employees() {
           { key: 'name', label: 'Name' },
           { key: 'annualCtc', label: 'Annual CTC' },
           { key: 'monthlyCtc', label: 'Monthly CTC' },
-          { key: 'basic', label: 'Basic' },
+          { key: 'basicSalary', label: 'Basic' },
           { key: 'hra', label: 'HRA' },
           { key: 'allowances', label: 'Allowance' },
-          { key: 'employerPf', label: 'Employer PF' },
-          { key: 'employeePf', label: 'Employee PF' },
+          { key: 'employerPfContribution', label: 'Employer PF' },
+          { key: 'employeePfContribution', label: 'Employee PF' },
         ];
       case 'Bank Details':
         return [
