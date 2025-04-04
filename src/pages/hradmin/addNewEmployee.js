@@ -62,9 +62,7 @@ const MultiSelect = ({ label, options, value, onChange }) => {
 
   return (
     <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>
-        {label} 
-      </label>
+      <label className={floatingLabelClass}>{label}</label>
       <div className="relative">
         <div
           className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
@@ -140,8 +138,8 @@ const generateEmployeeId = (lastEmployeeId) => {
 const removeEmptyValues = (obj) => {
   const cleanObj = {};
   Object.entries(obj).forEach(([key, value]) => {
-    if (value !== null && value !== undefined && value !== '') {
-      if (typeof value === 'object' && !(value instanceof File)) {
+    if (value !== null && value !== undefined && value !== "") {
+      if (typeof value === "object" && !(value instanceof File)) {
         const nestedClean = removeEmptyValues(value);
         if (Object.keys(nestedClean).length > 0) {
           cleanObj[key] = nestedClean;
@@ -160,7 +158,11 @@ function EmployeeForm() {
   const { employees, err } = useSelector((state) => state.employees);
   console.log(err);
 
-  const { activeMainTab, employee, activeSection: activeSectionParam } = router.query;
+  const {
+    activeMainTab,
+    employee,
+    activeSection: activeSectionParam,
+  } = router.query;
   const [activePage, setActivePage] = useState("Employees");
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
@@ -291,7 +293,8 @@ function EmployeeForm() {
           },
           bankDetails: {
             accountNumber: parsedEmployee.bankDetails?.accountNumber || "",
-            accountHolderName: parsedEmployee.bankDetails?.accountHolderName || "",
+            accountHolderName:
+              parsedEmployee.bankDetails?.accountHolderName || "",
             ifscCode: parsedEmployee.bankDetails?.ifscCode || "",
             bankName: parsedEmployee.bankDetails?.bankName || "",
             branchName: parsedEmployee.bankDetails?.branchName || "",
@@ -305,8 +308,10 @@ function EmployeeForm() {
             basicSalary: parsedEmployee.salaryDetails?.basic || "",
             hra: parsedEmployee.salaryDetails?.hra || "",
             allowances: parsedEmployee.salaryDetails?.allowances || "",
-            employerPfContribution: parsedEmployee.salaryDetails?.employerPF || "",
-            employeePfContribution: parsedEmployee.salaryDetails?.employeePF || "",
+            employerPfContribution:
+              parsedEmployee.salaryDetails?.employerPF || "",
+            employeePfContribution:
+              parsedEmployee.salaryDetails?.employeePF || "",
           },
         }));
         setEmployeeId(parsedEmployee.id);
@@ -371,8 +376,10 @@ function EmployeeForm() {
         prev.statutory.pfEnrolled
       ) {
         const pfContributions = calculatePFContributions(value);
-        updatedData.salaryDetails.employerPfContribution = pfContributions.employer;
-        updatedData.salaryDetails.employeePfContribution = pfContributions.employee;
+        updatedData.salaryDetails.employerPfContribution =
+          pfContributions.employer;
+        updatedData.salaryDetails.employeePfContribution =
+          pfContributions.employee;
 
         // Calculate HRA as 40% of basic salary
         const basic = parseFloat(value) || 0;
@@ -388,11 +395,14 @@ function EmployeeForm() {
           field === "employerPfContribution" ||
           field === "employeePfContribution")
       ) {
-        const monthlyCTC = parseFloat(updatedData.salaryDetails.monthlyCtc) || 0;
+        const monthlyCTC =
+          parseFloat(updatedData.salaryDetails.monthlyCtc) || 0;
         const hra = parseFloat(updatedData.salaryDetails.hra) || 0;
         const basic = parseFloat(updatedData.salaryDetails.basicSalary) || 0;
-        const employerPF = parseFloat(updatedData.salaryDetails.employerPfContribution) || 0;
-        const employeePF = parseFloat(updatedData.salaryDetails.employeePfContribution) || 0;
+        const employerPF =
+          parseFloat(updatedData.salaryDetails.employerPfContribution) || 0;
+        const employeePF =
+          parseFloat(updatedData.salaryDetails.employeePfContribution) || 0;
 
         const allowances = monthlyCTC - (hra + employeePF + employerPF + basic);
         updatedData.salaryDetails.allowances = allowances.toFixed(2);
@@ -443,19 +453,20 @@ function EmployeeForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // If we're not on the last section, navigate to the next section
     if (activeSection !== "salary") {
-      const currentIndex = sections.findIndex(section => section.id === activeSection);
+      const currentIndex = sections.findIndex(
+        (section) => section.id === activeSection
+      );
       if (currentIndex < sections.length - 1) {
         setActiveSection(sections[currentIndex + 1].id);
         return;
       }
     }
-    
+
     // Only proceed with form submission if we're on the last section
     if (!validateForm()) return;
-
 
     setLoading(true);
     try {
@@ -489,17 +500,17 @@ function EmployeeForm() {
 
       // Only append if we have non-empty data
       if (Object.keys(cleanEmployeeDetails).length > 0) {
-        formDataObj.append('employee', JSON.stringify(cleanEmployeeDetails));
+        formDataObj.append("employee", JSON.stringify(cleanEmployeeDetails));
       }
 
       // Add profile image if exists
       if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append('employeeImgUrl', formData.employee.employeeImgUrl);
+        formDataObj.append("employeeImgUrl", formData.employee.employeeImgUrl);
       }
 
       // Add Aadhar image if exists
       if (formData.idProofs.aadharImgUrl instanceof File) {
-        formDataObj.append('aadharImgUrl', formData.idProofs.aadharImgUrl);
+        formDataObj.append("aadharImgUrl", formData.idProofs.aadharImgUrl);
       }
 
       if (employeeId) {
@@ -514,14 +525,14 @@ function EmployeeForm() {
       router.push("/hradmin/employees");
     } catch (err) {
       let errorMessage = "An error occurred";
-      
+
       if (err?.validationErrors) {
         // Handle validation errors
         const validationMessages = Object.entries(err.validationErrors)
           .map(([field, message]) => `${field}: ${message}`)
-          .join('\n');
+          .join("\n");
         errorMessage = validationMessages;
-      } else if (typeof err === 'string') {
+      } else if (typeof err === "string") {
         errorMessage = err;
       } else if (err?.message) {
         errorMessage = err.message;
@@ -538,12 +549,12 @@ function EmployeeForm() {
   // Function to handle direct employee creation from personal details
   const handleAddEmployeeFromPersonal = async () => {
     if (!validateForm()) return;
-    
+
     setLoading(true);
     try {
       // Create FormData object with only personal details
       const formDataObj = new FormData();
-      
+
       // Clean the form data to remove empty values
       const cleanEmployeeDetails = removeEmptyValues({
         employeeId: formData.employee.employeeId,
@@ -563,30 +574,30 @@ function EmployeeForm() {
         overtimeEligibile: formData.employee.overtimeEligibile,
         weeklyOffs: formData.employee.weeklyOffs,
       });
-      
+
       // Only append if we have non-empty data
       if (Object.keys(cleanEmployeeDetails).length > 0) {
-        formDataObj.append('employee', JSON.stringify(cleanEmployeeDetails));
+        formDataObj.append("employee", JSON.stringify(cleanEmployeeDetails));
       }
-      
+
       // Add profile image if exists
       if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append('employeeImgUrl', formData.employee.employeeImgUrl);
+        formDataObj.append("employeeImgUrl", formData.employee.employeeImgUrl);
       }
-      
+
       const result = await dispatch(createEmployee(formDataObj)).unwrap();
       toast.success("Employee created successfully");
       router.push("/hradmin/employees");
     } catch (err) {
       let errorMessage = "An error occurred";
-      
+
       if (err?.validationErrors) {
         // Handle validation errors
         const validationMessages = Object.entries(err.validationErrors)
           .map(([field, message]) => `${field}: ${message}`)
-          .join('\n');
+          .join("\n");
         errorMessage = validationMessages;
-      } else if (typeof err === 'string') {
+      } else if (typeof err === "string") {
         errorMessage = err;
       } else if (err?.message) {
         errorMessage = err.message;
@@ -715,7 +726,7 @@ function EmployeeForm() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {typeof section.icon === 'string' ? (
+                      {typeof section.icon === "string" ? (
                         <span className="text-lg">{section.icon}</span>
                       ) : (
                         <section.icon
@@ -1021,7 +1032,9 @@ function EmployeeForm() {
                               </label>
                               <input
                                 type={type || "text"}
-                                className={`${inputClass} ${type === "date" ? "py-[0.4rem] px-3" : ""}`}
+                                className={`${inputClass} ${
+                                  type === "date" ? "py-[0.4rem] px-3" : ""
+                                }`}
                                 value={formData.employee[field] || ""}
                                 onChange={(e) =>
                                   handleInputChange(
@@ -1042,13 +1055,17 @@ function EmployeeForm() {
                           </h4>
 
                           <MultiSelect
-                          label="Weekly Off"
-                          options={weekDays}
-                          value={formData.employee.weeklyOffs || []}
-                          onChange={(selected) =>
-                            handleInputChange("employee", "weeklyOffs", selected)
-                          }
-                        />
+                            label="Weekly Off"
+                            options={weekDays}
+                            value={formData.employee.weeklyOffs || []}
+                            onChange={(selected) =>
+                              handleInputChange(
+                                "employee",
+                                "weeklyOffs",
+                                selected
+                              )
+                            }
+                          />
 
                           <div className="flex flex-col space-y-4">
                             {/* PF Section */}
@@ -1142,7 +1159,7 @@ function EmployeeForm() {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Overtime Eligible Section */}
                             <div className="space-y-2">
                               <div className="flex items-center mb-3">
@@ -1277,7 +1294,11 @@ function EmployeeForm() {
                               className={inputClass}
                               value={formData.bankDetails[key] || ""}
                               onChange={(e) =>
-                                handleInputChange("bankDetails", key, e.target.value)
+                                handleInputChange(
+                                  "bankDetails",
+                                  key,
+                                  e.target.value
+                                )
                               }
                             />
                           </div>
@@ -1326,7 +1347,8 @@ function EmployeeForm() {
                               </div>
                               {formData.bankDetails.passbookImgUrl && (
                                 <div className="mt-2 text-sm text-gray-600">
-                                  File: {formData.bankDetails.passbookImgUrl.name}
+                                  File:{" "}
+                                  {formData.bankDetails.passbookImgUrl.name}
                                 </div>
                               )}
                             </div>
@@ -1400,7 +1422,8 @@ function EmployeeForm() {
                                   type="text"
                                   className={`${inputClass} pl-8 bg-gray-50`}
                                   value={
-                                    formData.salaryDetails.employerPfContribution ||
+                                    formData.salaryDetails
+                                      .employerPfContribution ||
                                     calculatePFContributions(
                                       formData.salaryDetails.basicSalary
                                     ).employer
@@ -1422,7 +1445,8 @@ function EmployeeForm() {
                                   type="text"
                                   className={`${inputClass} pl-8 bg-gray-50`}
                                   value={
-                                    formData.salaryDetails.employeePfContribution ||
+                                    formData.salaryDetails
+                                      .employeePfContribution ||
                                     calculatePFContributions(
                                       formData.salaryDetails.basicSalary
                                     ).employee
@@ -1450,7 +1474,7 @@ function EmployeeForm() {
                 >
                   Cancel
                 </motion.button>
-                
+
                 {activeSection === "personal" && (
                   <motion.button
                     type="button"
@@ -1462,7 +1486,10 @@ function EmployeeForm() {
                   >
                     {loading ? (
                       <>
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
                           <circle
                             className="opacity-25"
                             cx="12"
@@ -1487,7 +1514,7 @@ function EmployeeForm() {
                     )}
                   </motion.button>
                 )}
-                
+
                 <motion.button
                   type="submit"
                   className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
@@ -1518,8 +1545,10 @@ function EmployeeForm() {
                   ) : (
                     <>
                       <span>
-                        {activeSection === "salary" 
-                          ? (employee ? "Update Employee" : "Add Employee") 
+                        {activeSection === "salary"
+                          ? employee
+                            ? "Update Employee"
+                            : "Add Employee"
                           : "Next"}
                       </span>
                       {activeSection !== "salary" && (
