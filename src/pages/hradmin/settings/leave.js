@@ -37,8 +37,46 @@ const LeaveSettings = () => {
     description: "",
   });
 
+  // Add state for tracking form changes
+  const [isLeaveTypeFormChanged, setIsLeaveTypeFormChanged] = useState(false);
+  const [isPolicyFormChanged, setIsPolicyFormChanged] = useState(false);
+  const [isHolidayFormChanged, setIsHolidayFormChanged] = useState(false);
+
+  // Add state for selected items
+  const [selectedLeaveType, setSelectedLeaveType] = useState(null);
+  const [selectedPolicy, setSelectedPolicy] = useState(null);
+  const [selectedHoliday, setSelectedHoliday] = useState(null);
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  // Add handlers for form changes
+  const handleLeaveTypeFormChange = (e) => {
+    setIsLeaveTypeFormChanged(true);
+    const { name, value, type, checked } = e.target;
+    setLeaveTypeForm({
+      ...leaveTypeForm,
+      [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+
+  const handlePolicyFormChange = (e) => {
+    setIsPolicyFormChanged(true);
+    const { name, value } = e.target;
+    setPolicyForm({
+      ...policyForm,
+      [name]: value,
+    });
+  };
+
+  const handleHolidayFormChange = (e) => {
+    setIsHolidayFormChanged(true);
+    const { name, value } = e.target;
+    setHolidayForm({
+      ...holidayForm,
+      [name]: value,
+    });
   };
 
   const handleLeaveTypeSubmit = async (e) => {
@@ -73,11 +111,33 @@ const LeaveSettings = () => {
         allowedInNotice: false,
         canCarryForward: false,
       });
+      setIsLeaveTypeFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
         type: "error",
         message: "Failed to add leave type. Please try again.",
+      });
+    }
+  };
+
+  // Add handler for leave type update
+  const handleLeaveTypeUpdate = async (id) => {
+    try {
+      // TODO: Add API call to update leave type
+      setNotification({
+        show: true,
+        type: "success",
+        message: "Leave type updated successfully!",
+      });
+      setShowLeaveTypeModal(false);
+      setSelectedLeaveType(null);
+      setIsLeaveTypeFormChanged(false);
+    } catch (error) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to update leave type. Please try again.",
       });
     }
   };
@@ -103,6 +163,7 @@ const LeaveSettings = () => {
   ];
 
   const handleAddLeaveAllocation = () => {
+    setIsPolicyFormChanged(true);
     setPolicyForm((prev) => ({
       ...prev,
       leaveAllocation: [
@@ -113,6 +174,7 @@ const LeaveSettings = () => {
   };
 
   const handleRemoveLeaveAllocation = (index) => {
+    setIsPolicyFormChanged(true);
     setPolicyForm((prev) => ({
       ...prev,
       leaveAllocation: prev.leaveAllocation.filter((_, i) => i !== index),
@@ -152,11 +214,33 @@ const LeaveSettings = () => {
         name: "",
         leaveAllocation: [{ leaveType: "", annualQuota: "" }],
       });
+      setIsPolicyFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
         type: "error",
         message: "Failed to add leave policy. Please try again.",
+      });
+    }
+  };
+
+  // Add handler for policy update
+  const handlePolicyUpdate = async (id) => {
+    try {
+      // TODO: Add API call to update policy
+      setNotification({
+        show: true,
+        type: "success",
+        message: "Leave policy updated successfully!",
+      });
+      setShowPolicyModal(false);
+      setSelectedPolicy(null);
+      setIsPolicyFormChanged(false);
+    } catch (error) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to update leave policy. Please try again.",
       });
     }
   };
@@ -207,11 +291,33 @@ const LeaveSettings = () => {
         date: "",
         description: "",
       });
+      setIsHolidayFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
         type: "error",
         message: "Failed to add public holiday. Please try again.",
+      });
+    }
+  };
+
+  // Add handler for holiday update
+  const handleHolidayUpdate = async (id) => {
+    try {
+      // TODO: Add API call to update holiday
+      setNotification({
+        show: true,
+        type: "success",
+        message: "Public holiday updated successfully!",
+      });
+      setShowHolidayModal(false);
+      setSelectedHoliday(null);
+      setIsHolidayFormChanged(false);
+    } catch (error) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Failed to update public holiday. Please try again.",
       });
     }
   };
@@ -224,6 +330,42 @@ const LeaveSettings = () => {
       month: "short",
       year: "numeric",
     });
+  };
+
+  // Add handlers for row clicks
+  const handleLeaveTypeRowClick = (type) => {
+    setSelectedLeaveType(type);
+    setLeaveTypeForm({
+      name: type.name,
+      accrual: type.accrual || "",
+      description: type.description || "",
+      allowedInProbation: type.allowedInProbation || false,
+      allowedInNotice: type.allowedInNotice || false,
+      canCarryForward: type.canCarryForward || false,
+    });
+    setShowLeaveTypeModal(true);
+    setIsLeaveTypeFormChanged(false);
+  };
+
+  const handlePolicyRowClick = (policy) => {
+    setSelectedPolicy(policy);
+    setPolicyForm({
+      name: policy.name,
+      leaveAllocation: policy.leaveAllocation || [{ leaveType: "", annualQuota: "" }],
+    });
+    setShowPolicyModal(true);
+    setIsPolicyFormChanged(false);
+  };
+
+  const handleHolidayRowClick = (holiday) => {
+    setSelectedHoliday(holiday);
+    setHolidayForm({
+      name: holiday.name,
+      date: holiday.date,
+      description: holiday.description || "",
+    });
+    setShowHolidayModal(true);
+    setIsHolidayFormChanged(false);
   };
 
   return (
@@ -265,7 +407,19 @@ const LeaveSettings = () => {
               {/* Header with Add Button */}
               <div className="flex justify-between items-center mb-6">
                 <button
-                  onClick={() => setShowLeaveTypeModal(true)}
+                  onClick={() => {
+                    setSelectedLeaveType(null);
+                    setLeaveTypeForm({
+                      name: "",
+                      accrual: "",
+                      description: "",
+                      allowedInProbation: false,
+                      allowedInNotice: false,
+                      canCarryForward: false,
+                    });
+                    setShowLeaveTypeModal(true);
+                    setIsLeaveTypeFormChanged(false);
+                  }}
                   className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="h-5 w-5" />
@@ -294,7 +448,11 @@ const LeaveSettings = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {leaveTypes.map((type, index) => (
-                      <tr key={index}>
+                      <tr 
+                        key={index} 
+                        onClick={() => handleLeaveTypeRowClick(type)}
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {type.name}
                         </td>
@@ -332,7 +490,15 @@ const LeaveSettings = () => {
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
               <div className="flex justify-between items-center mb-6">
                 <button
-                  onClick={() => setShowPolicyModal(true)}
+                  onClick={() => {
+                    setSelectedPolicy(null);
+                    setPolicyForm({
+                      name: "",
+                      leaveAllocation: [{ leaveType: "", annualQuota: "" }],
+                    });
+                    setShowPolicyModal(true);
+                    setIsPolicyFormChanged(false);
+                  }}
                   className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="h-5 w-5" />
@@ -355,7 +521,11 @@ const LeaveSettings = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {policies.map((policy) => (
-                      <tr key={policy.id}>
+                      <tr 
+                        key={policy.id}
+                        onClick={() => handlePolicyRowClick(policy)}
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {policy.name}
                         </td>
@@ -386,7 +556,7 @@ const LeaveSettings = () => {
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-semibold text-gray-800">
-                        Add New Leave Policy
+                        {selectedPolicy ? "Edit Leave Policy" : "Add New Leave Policy"}
                       </h2>
                       <button
                         onClick={() => setShowPolicyModal(false)}
@@ -396,20 +566,23 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
-                    <form onSubmit={handlePolicySubmit} className="space-y-4">
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (selectedPolicy) {
+                        handlePolicyUpdate(selectedPolicy.id);
+                      } else {
+                        handlePolicySubmit(e);
+                      }
+                    }} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Policy Name
                         </label>
                         <input
                           type="text"
+                          name="name"
                           value={policyForm.name}
-                          onChange={(e) =>
-                            setPolicyForm({
-                              ...policyForm,
-                              name: e.target.value,
-                            })
-                          }
+                          onChange={handlePolicyFormChange}
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter policy name"
                         />
@@ -440,6 +613,7 @@ const LeaveSettings = () => {
                               <select
                                 value={allocation.leaveType}
                                 onChange={(e) => {
+                                  setIsPolicyFormChanged(true);
                                   const newAllocations = [
                                     ...policyForm.leaveAllocation,
                                   ];
@@ -465,6 +639,7 @@ const LeaveSettings = () => {
                                 type="number"
                                 value={allocation.annualQuota}
                                 onChange={(e) => {
+                                  setIsPolicyFormChanged(true);
                                   const newAllocations = [
                                     ...policyForm.leaveAllocation,
                                   ];
@@ -504,15 +679,15 @@ const LeaveSettings = () => {
                         <button
                           type="button"
                           onClick={() => setShowPolicyModal(false)}
-                          className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                         >
-                          Cancel
+                          Delete
                         </button>
                         <button
                           type="submit"
                           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                         >
-                          Submit
+                          {isPolicyFormChanged ? "Update" : "Save"}
                         </button>
                       </div>
                     </form>
@@ -528,7 +703,16 @@ const LeaveSettings = () => {
               {/* Header with Add Button */}
               <div className="flex justify-between items-center mb-6">
                 <button
-                  onClick={() => setShowHolidayModal(true)}
+                  onClick={() => {
+                    setSelectedHoliday(null);
+                    setHolidayForm({
+                      name: "",
+                      date: "",
+                      description: "",
+                    });
+                    setShowHolidayModal(true);
+                    setIsHolidayFormChanged(false);
+                  }}
                   className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="h-5 w-5" />
@@ -554,7 +738,11 @@ const LeaveSettings = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {publicHolidays.map((holiday) => (
-                      <tr key={holiday.id}>
+                      <tr 
+                        key={holiday.id}
+                        onClick={() => handleHolidayRowClick(holiday)}
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {holiday.name}
                         </td>
@@ -570,13 +758,14 @@ const LeaveSettings = () => {
                 </table>
               </div>
 
-              {/* Public Holiday Modal */}
-              {showHolidayModal && (
+         
+     {/* Public Holiday Modal */}
+     {showHolidayModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                   <div className="bg-white rounded-lg p-6 w-full max-w-md">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-semibold text-gray-800">
-                        Add New Public Holiday
+                        {selectedHoliday ? "Edit Public Holiday" : "Add New Public Holiday"}
                       </h2>
                       <button
                         onClick={() => setShowHolidayModal(false)}
@@ -586,20 +775,23 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
-                    <form onSubmit={handleHolidaySubmit} className="space-y-4">
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (selectedHoliday) {
+                        handleHolidayUpdate(selectedHoliday.id);
+                      } else {
+                        handleHolidaySubmit(e);
+                      }
+                    }} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Holiday Name
                         </label>
                         <input
                           type="text"
+                          name="name"
                           value={holidayForm.name}
-                          onChange={(e) =>
-                            setHolidayForm({
-                              ...holidayForm,
-                              name: e.target.value,
-                            })
-                          }
+                          onChange={handleHolidayFormChange}
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Enter holiday name"
                         />
@@ -616,13 +808,9 @@ const LeaveSettings = () => {
                         </label>
                         <input
                           type="date"
+                          name="date"
                           value={holidayForm.date}
-                          onChange={(e) =>
-                            setHolidayForm({
-                              ...holidayForm,
-                              date: e.target.value,
-                            })
-                          }
+                          onChange={handleHolidayFormChange}
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           min={new Date().toISOString().split("T")[0]} // Prevents selecting past dates
                         />
@@ -638,13 +826,9 @@ const LeaveSettings = () => {
                           Description (Optional)
                         </label>
                         <textarea
+                          name="description"
                           value={holidayForm.description}
-                          onChange={(e) =>
-                            setHolidayForm({
-                              ...holidayForm,
-                              description: e.target.value,
-                            })
-                          }
+                          onChange={handleHolidayFormChange}
                           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           rows="3"
                           placeholder="Enter description (optional)"
@@ -655,15 +839,15 @@ const LeaveSettings = () => {
                         <button
                           type="button"
                           onClick={() => setShowHolidayModal(false)}
-                          className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                         >
-                          Cancel
+                          Delete
                         </button>
                         <button
                           type="submit"
                           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                         >
-                          Submit
+                          {isHolidayFormChanged ? "Update" : "Save"}
                         </button>
                       </div>
                     </form>
@@ -679,7 +863,7 @@ const LeaveSettings = () => {
               <div className="bg-white rounded-lg p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    Add New Leave Type
+                    {selectedLeaveType ? "Edit Leave Type" : "Add New Leave Type"}
                   </h2>
                   <button
                     onClick={() => setShowLeaveTypeModal(false)}
@@ -689,20 +873,23 @@ const LeaveSettings = () => {
                   </button>
                 </div>
 
-                <form onSubmit={handleLeaveTypeSubmit} className="space-y-4">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (selectedLeaveType) {
+                    handleLeaveTypeUpdate(selectedLeaveType.id);
+                  } else {
+                    handleLeaveTypeSubmit(e);
+                  }
+                }} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Leave Type Name
                     </label>
                     <input
                       type="text"
+                      name="name"
                       value={leaveTypeForm.name}
-                      onChange={(e) =>
-                        setLeaveTypeForm({
-                          ...leaveTypeForm,
-                          name: e.target.value,
-                        })
-                      }
+                      onChange={handleLeaveTypeFormChange}
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Enter leave type name"
                     />
@@ -716,13 +903,9 @@ const LeaveSettings = () => {
                       Accrual Period
                     </label>
                     <select
+                      name="accrual"
                       value={leaveTypeForm.accrual}
-                      onChange={(e) =>
-                        setLeaveTypeForm({
-                          ...leaveTypeForm,
-                          accrual: e.target.value,
-                        })
-                      }
+                      onChange={handleLeaveTypeFormChange}
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select accrual period</option>
@@ -743,13 +926,9 @@ const LeaveSettings = () => {
                       Description
                     </label>
                     <textarea
+                      name="description"
                       value={leaveTypeForm.description}
-                      onChange={(e) =>
-                        setLeaveTypeForm({
-                          ...leaveTypeForm,
-                          description: e.target.value,
-                        })
-                      }
+                      onChange={handleLeaveTypeFormChange}
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
                       placeholder="Enter description"
@@ -761,13 +940,9 @@ const LeaveSettings = () => {
                       <input
                         type="checkbox"
                         id="allowedInProbation"
+                        name="allowedInProbation"
                         checked={leaveTypeForm.allowedInProbation}
-                        onChange={(e) =>
-                          setLeaveTypeForm({
-                            ...leaveTypeForm,
-                            allowedInProbation: e.target.checked,
-                          })
-                        }
+                        onChange={handleLeaveTypeFormChange}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <label
@@ -782,13 +957,9 @@ const LeaveSettings = () => {
                       <input
                         type="checkbox"
                         id="allowedInNotice"
+                        name="allowedInNotice"
                         checked={leaveTypeForm.allowedInNotice}
-                        onChange={(e) =>
-                          setLeaveTypeForm({
-                            ...leaveTypeForm,
-                            allowedInNotice: e.target.checked,
-                          })
-                        }
+                        onChange={handleLeaveTypeFormChange}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <label
@@ -803,13 +974,9 @@ const LeaveSettings = () => {
                       <input
                         type="checkbox"
                         id="canCarryForward"
+                        name="canCarryForward"
                         checked={leaveTypeForm.canCarryForward}
-                        onChange={(e) =>
-                          setLeaveTypeForm({
-                            ...leaveTypeForm,
-                            canCarryForward: e.target.checked,
-                          })
-                        }
+                        onChange={handleLeaveTypeFormChange}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <label
@@ -825,15 +992,15 @@ const LeaveSettings = () => {
                     <button
                       type="button"
                       onClick={() => setShowLeaveTypeModal(false)}
-                      className="px-4 py-2 border rounded-md hover:bg-gray-50"
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                     >
-                      Cancel
+                      Delete
                     </button>
                     <button
                       type="submit"
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                     >
-                      Submit
+                      {isLeaveTypeFormChanged ? "Update" : "Save"}
                     </button>
                   </div>
                 </form>

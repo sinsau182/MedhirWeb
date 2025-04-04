@@ -160,7 +160,7 @@ function EmployeeForm() {
   const { employees, err } = useSelector((state) => state.employees);
   console.log(err);
 
-  const { activeMainTab, employee } = router.query;
+  const { activeMainTab, employee, activeSection: activeSectionParam } = router.query;
   const [activePage, setActivePage] = useState("Employees");
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
@@ -417,6 +417,7 @@ function EmployeeForm() {
       toast.error("Employee ID is required");
       return false;
     }
+
     if (!employee.employeeId.match(/^EMP\d{3}$/)) {
       toast.error("Employee ID must be in the format EMP followed by 3 digits");
       return false;
@@ -434,6 +435,17 @@ function EmployeeForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // If we're not on the last section, navigate to the next section
+    if (activeSection !== "salary") {
+      const currentIndex = sections.findIndex(section => section.id === activeSection);
+      if (currentIndex < sections.length - 1) {
+        setActiveSection(sections[currentIndex + 1].id);
+        return;
+      }
+    }
+    
+    // Only proceed with form submission if we're on the last section
     if (!validateForm()) return;
 
     setLoading(true);
@@ -497,6 +509,55 @@ function EmployeeForm() {
     }
   };
 
+  // Function to handle direct employee creation from personal details
+  const handleAddEmployeeFromPersonal = async () => {
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    try {
+      // Create FormData object with only personal details
+      const formDataObj = new FormData();
+      
+      // Clean the form data to remove empty values
+      const cleanEmployeeDetails = removeEmptyValues({
+        employeeId: formData.employee.employeeId,
+        name: formData.employee.name,
+        fatherName: formData.employee.fatherName,
+        gender: formData.employee.gender,
+        phone1: formData.employee.phone1,
+        phone2: formData.employee.phone2,
+        email: formData.employee.email,
+        currentAddress: formData.employee.currentAddress,
+        permanentAddress: formData.employee.permanentAddress,
+        department: formData.employee.department,
+        designation: formData.employee.designation,
+        joiningDate: formData.employee.joiningDate,
+        reportingManager: formData.employee.reportingManager,
+        overtimeEligible: formData.employee.overtimeEligible,
+        weeklyOff: formData.employee.weeklyOff,
+      });
+      
+      // Only append if we have non-empty data
+      if (Object.keys(cleanEmployeeDetails).length > 0) {
+        formDataObj.append('employee', JSON.stringify(cleanEmployeeDetails));
+      }
+      
+      // Add profile image if exists
+      if (formData.employee.profileImage instanceof File) {
+        formDataObj.append('profileImage', formData.employee.profileImage);
+      }
+      
+      const result = await dispatch(createEmployee(formDataObj)).unwrap();
+      toast.success("Employee created successfully");
+      router.push("/hradmin/employees");
+    } catch (err) {
+      const errorMessage = err?.message || err?.error || err?.toString() || "An error occurred";
+      toast.error(typeof errorMessage === 'string' ? errorMessage : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTabClick = (tab) => {
     router.push({
       pathname: "/hradmin/employees",
@@ -525,7 +586,8 @@ function EmployeeForm() {
 
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
-  }, [activeMainTab]);
+    if (activeSectionParam) setActiveSection(activeSectionParam);
+  }, [activeMainTab, activeSectionParam]);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
@@ -551,7 +613,7 @@ function EmployeeForm() {
     { id: "personal", label: "Personal Details", icon: FiUser },
     { id: "idProofs", label: "ID Proofs", icon: FiBook },
     { id: "bank", label: "Bank Details", icon: FiCreditCard },
-    { id: "salary", label: "Salary", icon: FiDollarSign },
+    { id: "salary", label: "Salary", icon: "₹" },
   ];
 
   const weekDays = [
@@ -611,13 +673,17 @@ function EmployeeForm() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <section.icon
-                        className={`w-4 h-4 ${
-                          activeSection === section.id
-                            ? "text-blue-500"
-                            : "text-gray-400"
-                        }`}
-                      />
+                      {typeof section.icon === 'string' ? (
+                        <span className="text-lg">{section.icon}</span>
+                      ) : (
+                        <section.icon
+                          className={`w-4 h-4 ${
+                            activeSection === section.id
+                              ? "text-blue-500"
+                              : "text-gray-400"
+                          }`}
+                        />
+                      )}
                       {section.label}
                     </motion.button>
                   ))}
@@ -809,31 +875,64 @@ function EmployeeForm() {
                         </div>
 
                         {/* Addresses */}
-                        {[
-                          { label: "Current Address", field: "currentAddress" },
-                          {
-                            label: "Permanent Address",
-                            field: "permanentAddress",
-                          },
-                        ].map(({ label, field }) => (
-                          <div key={field} className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              {label}
-                            </label>
-                            <textarea
-                              className={inputClass}
-                              rows="2"
-                              value={formData.employee[field] || ""}
-                              onChange={(e) =>
+                        <div className={inputGroupClass}>
+                          <label className={floatingLabelClass}>
+                            Current Address
+                          </label>
+                          <textarea
+                            className={inputClass}
+                            rows="2"
+                            value={formData.employee.currentAddress || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "employee",
+                                "currentAddress",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            id="sameAsCurrent"
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            onChange={(e) => {
+                              if (e.target.checked) {
                                 handleInputChange(
                                   "employee",
-                                  field,
-                                  e.target.value
-                                )
+                                  "permanentAddress",
+                                  formData.employee.currentAddress
+                                );
                               }
-                            />
-                          </div>
-                        ))}
+                            }}
+                          />
+                          <label
+                            htmlFor="sameAsCurrent"
+                            className="ml-2 text-sm text-gray-700"
+                          >
+                            Same as current address
+                          </label>
+                        </div>
+
+                        <div className={inputGroupClass}>
+                          <label className={floatingLabelClass}>
+                            Permanent Address
+                          </label>
+                          <textarea
+                            className={inputClass}
+                            rows="2"
+                            value={formData.employee.permanentAddress || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "employee",
+                                "permanentAddress",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
                       </div>
 
                       {/* Right Column - Professional Information */}
@@ -900,7 +999,7 @@ function EmployeeForm() {
                               </label>
                               <input
                                 type={type || "text"}
-                                className={inputClass}
+                                className={`${inputClass} ${type === "date" ? "py-[0.4rem] px-3" : ""}`}
                                 value={formData.employee[field] || ""}
                                 onChange={(e) =>
                                   handleInputChange(
@@ -923,7 +1022,7 @@ function EmployeeForm() {
                           <div className="flex flex-col space-y-4">
                             {/* PF Section */}
                             <div className="space-y-2">
-                              <div className="flex items-center">
+                              <div className="flex items-center mb-3">
                                 <input
                                   type="checkbox"
                                   id="pfEnrolled"
@@ -946,7 +1045,7 @@ function EmployeeForm() {
                               </div>
 
                               {formData.statutory.pfEnrolled && (
-                                <div className={inputGroupClass}>
+                                <div className={`${inputGroupClass} mt-2`}>
                                   <label className={floatingLabelClass}>
                                     UAN Number
                                   </label>
@@ -961,6 +1060,7 @@ function EmployeeForm() {
                                         e.target.value
                                       )
                                     }
+                                    placeholder="Enter UAN Number"
                                   />
                                 </div>
                               )}
@@ -968,7 +1068,7 @@ function EmployeeForm() {
 
                             {/* ESIC Section */}
                             <div className="space-y-2">
-                              <div className="flex items-center">
+                              <div className="flex items-center mb-3">
                                 <input
                                   type="checkbox"
                                   id="esicEnrolled"
@@ -991,7 +1091,7 @@ function EmployeeForm() {
                               </div>
 
                               {formData.statutory.esicEnrolled && (
-                                <div className={inputGroupClass}>
+                                <div className={`${inputGroupClass} mt-2`}>
                                   <label className={floatingLabelClass}>
                                     ESIC Number
                                   </label>
@@ -1006,9 +1106,35 @@ function EmployeeForm() {
                                         e.target.value
                                       )
                                     }
+                                    placeholder="Enter ESIC Number"
                                   />
                                 </div>
                               )}
+                            </div>
+                            
+                            {/* Overtime Eligible Section */}
+                            <div className="space-y-2">
+                              <div className="flex items-center mb-3">
+                                <input
+                                  type="checkbox"
+                                  id="overtimeEligible"
+                                  checked={formData.employee.overtimeEligible}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      "employee",
+                                      "overtimeEligible",
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                />
+                                <label
+                                  htmlFor="overtimeEligible"
+                                  className="ml-2 text-sm text-gray-700"
+                                >
+                                  Overtime Eligible
+                                </label>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1293,6 +1419,44 @@ function EmployeeForm() {
                 >
                   Cancel
                 </motion.button>
+                
+                {activeSection === "personal" && (
+                  <motion.button
+                    type="button"
+                    className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2"
+                    onClick={handleAddEmployeeFromPersonal}
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Add Employee</span>
+                      </>
+                    )}
+                  </motion.button>
+                )}
+                
                 <motion.button
                   type="submit"
                   className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
@@ -1323,21 +1487,25 @@ function EmployeeForm() {
                   ) : (
                     <>
                       <span>
-                        {employee ? "Update Employee" : "Add Employee"}
+                        {activeSection === "salary" 
+                          ? (employee ? "Update Employee" : "Add Employee") 
+                          : "Next"}
                       </span>
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
+                      {activeSection !== "salary" && (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      )}
                     </>
                   )}
                 </motion.button>

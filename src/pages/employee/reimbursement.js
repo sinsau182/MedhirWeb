@@ -251,7 +251,7 @@ const Expenses = () => {
             {/* Recent Expenses */}
             <div
               className={`bg-white shadow-md rounded-lg p-6 flex flex-col transition-all duration-300 ${
-                showAllExpenses ? "h-[590px]" : "h-[590px]"
+                showAllExpenses ? "h-[600px]" : "h-[550px]"
               }`}
             >
               <h2 className="text-lg font-semibold mb-4">Recent Reimbursements </h2>
