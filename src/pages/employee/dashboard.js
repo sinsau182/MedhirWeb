@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { FaCalendarAlt, FaUserCheck, FaClock } from "react-icons/fa"; // Importing icons
-import Link from "next/link"; // Importing Link from next/link
+import { FaCalendarAlt, FaUserCheck, FaClock } from "react-icons/fa"; // Removed FaUser since we won't need it
+import Link from "next/link";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 
@@ -36,17 +36,25 @@ const Overview = () => {
 
           {/* Cards Container */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1 */}
-            <Link href="/employee/leaves"> {/* Use href for navigation */}
-              <div className="bg-white shadow-md rounded-lg p-6 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-transform duration-300 cursor-pointer">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">Leave Balance</h2>
-                  <div className="p-2 bg-blue-100 rounded-full">
-                    <FaCalendarAlt className="text-blue-500 text-2xl" />
+            {/* Leave Balance Card */}
+            <Link href="/employee/leaves">
+              <div className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                   style={{ height: "250px", width: "350px" }}>
+                <div className="flex justify-between items-center w-full mb-8">
+                  <h2 className="text-xl font-semibold text-gray-800">Leave Balance</h2>
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+                    <FaCalendarAlt className="text-blue-600 text-2xl" />
                   </div>
                 </div>
-                <p className="text-4xl font-bold mt-2">21</p>
-                <p className="text-gray-500">Days remaining</p>
+                <div className="space-y-2">
+                  <p className="text-5xl font-bold text-gray-900">21</p>
+                  <div className="flex items-center text-gray-600">
+                    <p className="text-sm">Days remaining</p>
+                    <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
+                      <span className="text-xs text-blue-600 font-medium">This Year</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Link>
           </div>

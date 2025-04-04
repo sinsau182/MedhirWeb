@@ -10,11 +10,12 @@ import {
   } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import router from "next/router";
+import { useRouter } from "next/router";
 import RoleToggle from "./ui/roletoggle";
 
 
 const Navbar = () => {
+  const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const handleLogout = () => {
@@ -22,6 +23,9 @@ const Navbar = () => {
     localStorage.removeItem("token");
   };
 
+  const handleProfileClick = () => {
+    router.push("/employee/profile");
+  };
 
 return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -53,7 +57,7 @@ return (
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
             <span>My Profile</span>
           </DropdownMenuItem>
@@ -63,7 +67,7 @@ return (
           <span>Settings</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className="text-destructive">Log out</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">Log out</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
                 </div>
