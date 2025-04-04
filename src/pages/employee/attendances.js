@@ -21,11 +21,14 @@ const EmployeeAttendance = () => {
     const month = today.getMonth();
     // Sample data - replace with actual API call
     const sampleData = [
-      { date: new Date(year, month, 1), status: 'Present', isLate: false, checkIn: '08:55 AM', checkOut: '06:00 PM' },
-      { date: new Date(year, month, 2), status: 'Present', isLate: false, checkIn: '08:50 AM', checkOut: '06:05 PM' },
-      { date: new Date(year, month, 3), status: 'Present', isLate: false, checkIn: '09:00 AM', checkOut: '06:00 PM' },
-      { date: new Date(year, month, 4), status: 'Absent', isLate: false, checkIn: null, checkOut: null },
-      { date: new Date(year, month, 5), status: 'Present', isLate: true, checkIn: '09:15 AM', checkOut: '06:05 PM' }
+      { date: new Date(year, month, 1), status: 'Present', isLate: false, checkIn: '08:55 AM', checkOut: '06:00 PM', leaveType: null },
+      { date: new Date(year, month, 2), status: 'Present', isLate: false, checkIn: '08:50 AM', checkOut: '06:05 PM', leaveType: null },
+      { date: new Date(year, month, 3), status: 'Present', isLate: false, checkIn: null, checkOut: null, leaveType: 'Half Day' },
+      { date: new Date(year, month, 4), status: 'Absent', isLate: false, checkIn: null, checkOut: null, leaveType: null },
+      { date: new Date(year, month, 5), status: 'On Leave', isLate: false, checkIn: null, checkOut: null, leaveType: 'Full Day' },
+      { date: new Date(year, month, 6), status: 'Weekend', isLate: false, checkIn: null, checkOut: null, leaveType: null },
+      { date: new Date(year, month, 7), status: 'Weekend', isLate: false, checkIn: null, checkOut: null, leaveType: null },
+      { date: new Date(year, month, 15), status: 'Holiday', isLate: false, checkIn: null, checkOut: null, leaveType: null }
       // Add more sample data as needed
     ];
     setAttendanceData(sampleData);
@@ -100,55 +103,50 @@ const EmployeeAttendance = () => {
               <CardDescription>Your attendance statistics for this month</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Present Days */}
-                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                  <div className="flex items-center mb-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mr-2" />
-                    <h3 className="text-sm font-medium">Present Days</h3>
-                  </div>
-                  <p className="text-2xl font-bold">18</p>
-                  <hr className="my-2 border-gray-300" />
-                  <div className="flex justify-between items-center">
-                    {/* Full Day -> Present with Leave */}
-                    <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Present with Leave</span>
-                      <p className="text-xl font-bold mt-1">16</p> {/* Example number */}
-                    </div>
-                    {/* Vertical Line */}
-                    <div className="h-10 w-px bg-gray-300 mx-4"></div>
-                    {/* Half Day -> Present with late check in */}
-                    <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Present with late check in</span>
-                      <p className="text-xl font-bold mt-1">2</p> {/* Example number */}
+              <div className="w-full">
+                <div className="flex w-full h-24 rounded-lg overflow-hidden border border-gray-200">
+                  {/* Simple Present - Dark Green */}
+                  <div className="flex-1 bg-green-700 p-4 text-white">
+                    <div className="flex flex-col h-full justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium">Simple Present</h3>
+                        <p className="text-2xl font-bold mt-1">18</p>
+                      </div>
+                      <div className="text-xs opacity-80">Regular attendance days</div>
                     </div>
                   </div>
-                </div>
 
-                {/* Absent Days */}
-                <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-                  <div className="flex items-center mb-2">
-                    <X className="h-5 w-5 text-red-500 mr-2" />
-                    <h3 className="text-sm font-medium">Total Absent</h3>
+                  {/* Present with Approved Leave - Light Green */}
+                  <div className="flex-1 bg-green-400 p-4 text-white border-l border-white">
+                    <div className="flex flex-col h-full justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium">Present with Approved Leave</h3>
+                        <p className="text-2xl font-bold mt-1">3</p>
+                      </div>
+                      <div className="text-xs opacity-80">Half-day or approved leave</div>
+                    </div>
                   </div>
-                  <p className="text-2xl font-bold">2</p>
-                  <hr className="my-2 border-gray-300" />
-                  <div className="flex justify-between items-center">
 
+                  {/* Approved LOP - Yellow */}
+                  <div className="flex-1 bg-yellow-200 p-4 text-gray-800 border-l border-gray-300">
+                    <div className="flex flex-col h-full justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium">Approved LOP</h3>
+                        <p className="text-2xl font-bold mt-1">2</p>
+                      </div>
+                      <div className="text-xs opacity-80">Loss of pay days</div>
+                    </div>
+                  </div>
 
-                    {/* Absent with Leave -> Absent with late check in */}
-                    <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Absent with late check in</span>
-                      <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
+                  {/* Unapproved Absence - Red */}
+                  <div className="flex-1 bg-red-200 p-4 text-gray-800 border-l border-gray-300">
+                    <div className="flex flex-col h-full justify-between">
+                      <div>
+                        <h3 className="text-sm font-medium">Unapproved Absence</h3>
+                        <p className="text-2xl font-bold mt-1">1</p>
+                      </div>
+                      <div className="text-xs opacity-80">Unauthorized absences</div>
                     </div>
-                    {/* Vertical Line */}
-                    <div className="h-10 w-px bg-gray-300 mx-4"></div>
-                    {/* Absent with LOP */}
-                    <div className="flex-1 text-center">
-                      <span className="text-sm font-medium">Absent with LOP</span>
-                      <p className="text-xl font-bold mt-1">1</p> {/* Random number */}
-                    </div>
-                    
                   </div>
                 </div>
               </div>
@@ -178,15 +176,19 @@ const EmployeeAttendance = () => {
         // Determine background color based on date and status
         let bgColorClass = "hover:bg-gray-200"; // Default hover
         
-        if (date && date.toDateString() === day.toDateString()) {
-          bgColorClass = "bg-blue-500 text-white";
-        } else if (dayData) {
-          if (status === 'Present' && !isLate) {
-            bgColorClass = "bg-green-100 hover:bg-green-200";
-          } else if (status === 'Present' && isLate) {
-            bgColorClass = "bg-yellow-100 hover:bg-yellow-200";
+        if (dayData) {
+          if (status === 'Present' && !dayData.leaveType) {
+            bgColorClass = "bg-green-700 hover:bg-green-800 text-white";
+          } else if (status === 'Present' && dayData.leaveType) {
+            bgColorClass = "bg-green-400 hover:bg-green-500 text-white";
+          } else if (status === 'On Leave') {
+            bgColorClass = "bg-yellow-200 hover:bg-yellow-300 text-gray-800";
           } else if (status === 'Absent') {
-            bgColorClass = "bg-red-100 hover:bg-red-200";
+            bgColorClass = "bg-red-200 hover:bg-red-300 text-gray-800";
+          } else if (status === 'Weekend') {
+            bgColorClass = "bg-gray-300 hover:bg-gray-400 text-gray-800";
+          } else if (status === 'Holiday') {
+            bgColorClass = "bg-gray-400 hover:bg-gray-500 text-gray-800";
           }
         }
 
@@ -244,11 +246,16 @@ const EmployeeAttendance = () => {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Status:</span>
-                          <span className={`${status === 'Present' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'} text-xs font-semibold px-2 py-1 rounded-full`}>
-                            {status}
+                          <span className={`${
+                            status === 'Present' && !selectedDayData.leaveType ? 'bg-green-700 text-white' :
+                            status === 'Present' && selectedDayData.leaveType ? 'bg-green-400 text-white' :
+                            status === 'On Leave' ? 'bg-yellow-400 text-white' :
+                            'bg-red-500 text-white'
+                          } text-xs font-semibold px-2 py-1 rounded-full`}>
+                            {status} {selectedDayData.leaveType ? `(${selectedDayData.leaveType})` : ''}
                           </span>
                         </div>
-                        {status === 'Present' && (
+                        {status === 'Present' && !selectedDayData.leaveType && (
                           <>
                             <div className="flex justify-between items-center">
                               <span className="text-sm flex items-center gap-2">
@@ -262,20 +269,30 @@ const EmployeeAttendance = () => {
                               </span>
                               <span>{checkOut || 'N/A'}</span>
                             </div>
-                            {isLate && (
-                              <button
-                                onClick={() => setShowReasonForm(true)}
-                                disabled={reasonSubmitted}
-                                className={`mt-4 w-full py-2 px-4 rounded-md transition text-sm ${
-                                  reasonSubmitted 
-                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                                    : "bg-teal-400 text-white hover:bg-teal-500"
-                                }`}
-                              >
-                                {reasonSubmitted ? "Reason sent for approval" : "Send Reason for Late Check-in"}
-                              </button>
-                            )}
                           </>
+                        )}
+                        {status === 'Present' && selectedDayData.leaveType && (
+                          <div className="text-center py-4">
+                            <p className="text-sm text-gray-600">On {selectedDayData.leaveType} Leave</p>
+                          </div>
+                        )}
+                        {status === 'On Leave' && (
+                          <div className="text-center py-4">
+                            <p className="text-sm text-gray-600">On Full Day Leave</p>
+                          </div>
+                        )}
+                        {status === 'Absent' && (
+                          <button
+                            onClick={() => setShowReasonForm(true)}
+                            disabled={reasonSubmitted}
+                            className={`mt-4 w-full py-2 px-4 rounded-md transition text-sm ${
+                              reasonSubmitted 
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                                : "bg-teal-400 text-white hover:bg-teal-500"
+                            }`}
+                          >
+                            {reasonSubmitted ? "Reason sent for approval" : "Submit Reason for Unapproved Absence"}
+                          </button>
                         )}
                       </div>
                     );
@@ -298,11 +315,11 @@ const EmployeeAttendance = () => {
       {showReasonForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Submit Reason for Late Check-in</h3>
+            <h3 className="text-lg font-semibold mb-4">Submit Reason for Unapproved Absence</h3>
             <form onSubmit={handleSubmitReason}>
               <div className="mb-4">
                 <label htmlFor="reason" className="block text-sm font-medium mb-2">
-                  Reason for late check-in
+                  Reason for unapproved absence
                 </label>
                 <textarea
                   id="reason"
@@ -310,7 +327,7 @@ const EmployeeAttendance = () => {
                   onChange={(e) => setReason(e.target.value)}
                   className="w-full p-2 border rounded-md"
                   rows="4"
-                  placeholder="Please provide a reason for your late check-in..."
+                  placeholder="Please provide a reason for your unapproved absence..."
                   required
                 ></textarea>
               </div>
@@ -324,7 +341,7 @@ const EmployeeAttendance = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600"
+                  className="px-4 py-2 bg-teal-400 text-white rounded-md hover:bg-teal-500"
                 >
                   Submit
                 </button>

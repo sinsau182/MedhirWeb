@@ -3,6 +3,7 @@ import { Search, Calendar, Check, X } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { useRouter } from "next/router";
+import { Badge } from "@/components/ui/badge";
 
 function Attendance() {
   const router = useRouter();
@@ -13,6 +14,8 @@ function Attendance() {
   const [dates, setDates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState("2024");
 
   // Check authentication and role
   useEffect(() => {
@@ -56,54 +59,120 @@ function Attendance() {
       name: "Arun",
       department: "SALES",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => 
-        i < 3 ? null : i % 7 === 0 ? null : Math.random() > 0.2
-      )
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
     },
     {
       id: "MED002",
       name: "Naman",
       department: "Design",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => 
-        i < 3 ? null : i % 7 === 0 ? null : Math.random() > 0.2
-      )
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
     },
     {
       id: "MED003",
       name: "Amit",
       department: "Marketing",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => 
-        i < 3 ? null : i % 7 === 0 ? null : Math.random() > 0.2
-      )
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
     },
     {
       id: "MED004",
       name: "Mahesh",
       department: "SALES",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => 
-        i < 3 ? null : i % 7 === 0 ? null : Math.random() > 0.2
-      )
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
     },
     {
       id: "MED005",
       name: "Rohit",
       department: "HR",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => 
-        i < 3 ? null : i % 7 === 0 ? null : Math.random() > 0.2
-      )
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
     },
     {
       id: "MED006",
       name: "Suresh",
       department: "IT",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => 
-        i < 3 ? null : i % 7 === 0 ? null : Math.random() > 0.2
-      )
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
     }
   ];
 
@@ -116,7 +185,9 @@ function Attendance() {
       noOfPayableDays: "25",
       leavesTaken: "5",
       leavesEarned: "10",
-      carriedForwardLeaves: "2",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "3",
+      compOffCarriedForward: "1",
       netLeaves: "7",
     },
     {
@@ -126,7 +197,9 @@ function Attendance() {
       noOfPayableDays: "25",
       leavesTaken: "3",
       leavesEarned: "10",
-      carriedForwardLeaves: "2",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "2",
+      compOffCarriedForward: "1",
       netLeaves: "9",
     },
     {
@@ -136,7 +209,9 @@ function Attendance() {
       noOfPayableDays: "25",
       leavesTaken: "2",
       leavesEarned: "10",
-      carriedForwardLeaves: "2",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "4",
+      compOffCarriedForward: "1",
       netLeaves: "10",
     },
     {
@@ -146,7 +221,9 @@ function Attendance() {
       noOfPayableDays: "25",
       leavesTaken: "4",
       leavesEarned: "10",
-      carriedForwardLeaves: "2",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "2",
+      compOffCarriedForward: "1",
       netLeaves: "8",
     },
     {
@@ -156,7 +233,9 @@ function Attendance() {
       noOfPayableDays: "25",
       leavesTaken: "6",
       leavesEarned: "10",
-      carriedForwardLeaves: "2",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "3",
+      compOffCarriedForward: "1",
       netLeaves: "6",
     },
     {
@@ -166,13 +245,23 @@ function Attendance() {
       noOfPayableDays: "25",
       leavesTaken: "3",
       leavesEarned: "10",
-      carriedForwardLeaves: "2",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "2",
+      compOffCarriedForward: "1",
       netLeaves: "9",
     }
   ];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
+
+  const handleMonthSelection = (month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setIsCalendarOpen(false);
   };
 
   const filteredEmployees = React.useMemo(() => 
@@ -193,46 +282,79 @@ function Attendance() {
     [searchInput]
   );
 
-  const getAttendanceIcon = React.useCallback((status) => {
-    if (status === null) return "□";
-    if (status === true) return "✓";
-    if (status === false) return "✕";
-    if (status === "half") return "●";
+  const getAttendanceColor = React.useCallback((status) => {
+    if (status === null) return "bg-gray-100"; // Empty
+    if (status === true) return "bg-green-600"; // Present (dark green)
+    if (status === false) return "bg-red-200"; // Absent (light red)
+    if (status === "half") return "bg-yellow-500"; // Half day
+    if (status === "weekend") return "bg-gray-300"; // Weekend
+    if (status === "holiday") return "bg-gray-400"; // Holiday
+    if (status === "approved_leave") return "bg-green-200"; // Light green for approved leave
     return "";
   }, []);
 
-  const getAttendanceColor = React.useCallback((status) => {
-    if (status === null) return "text-gray-400";
-    if (status === true) return "text-green-500";
-    if (status === false) return "text-red-500";
-    if (status === "half") return "text-purple-500";
+  const getAttendanceText = React.useCallback((status) => {
+    if (status === true) return "P";
+    if (status === false) return "Un. App. Leave";
+    if (status === "half") return "Approved LOP";
+    if (status === "approved_leave") return "P(App. Leave)";
     return "";
   }, []);
+
 
   const renderAttendanceTable = () => (
     <div className="bg-white rounded-lg shadow-sm">
+      {/* Legend */}
+      <div className="p-4 border-b flex flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-600 rounded"></div>
+          <span className="text-xs text-gray-600">Present</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-200 rounded"></div>
+          <span className="text-xs text-gray-600">Present (Approved Leave)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+          <span className="text-xs text-gray-600">Approved LOP</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-200 rounded"></div>
+          <span className="text-xs text-gray-600">Unapproved Leave</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-300 rounded"></div>
+          <span className="text-xs text-gray-600">Weekend</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-400 rounded"></div>
+          <span className="text-xs text-gray-600">Holiday</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-100 rounded"></div>
+          <span className="text-xs text-gray-600">No Data</span>
+        </div>
+      </div>
+
       <table className="w-full table-fixed">
         <thead>
           <tr className="border-b">
-            <th className="py-2 px-1 text-left text-[11px] font-semibold text-gray-600 w-[8%]">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r">
               Emp ID
             </th>
-            <th className="py-2 px-1 text-left text-[11px] font-semibold text-gray-600 w-[10%]">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r">
               Name
             </th>
-            <th className="py-2 px-1 text-left text-[11px] font-semibold text-gray-600 w-[8%]">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r">
               Dept
-            </th>
-            <th className="py-2 px-1 text-left text-[11px] font-semibold text-gray-600 w-[6%]">
-              P/TWD
             </th>
             {dates.map((date) => (
               <th 
                 key={date.day}
-                className="py-1 px-0 text-center text-[10px] font-semibold text-gray-600 w-[2%]"
+                className="py-1 px-0 text-center text-xs font-semibold text-gray-700 w-[2%] border-r"
               >
                 <div className="leading-none">{String(date.day).padStart(2, '0')}</div>
-                <div className="text-gray-400 text-[8px] leading-tight">{date.weekday}</div>
+                <div className="text-gray-500 text-[10px] leading-tight">{date.weekday}</div>
               </th>
             ))}
           </tr>
@@ -243,24 +365,20 @@ function Attendance() {
               key={index}
               className="hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              <td className="py-3 px-1 text-[12px] text-gray-800">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r">
                 {employee.id}
               </td>
-              <td className="py-3 px-1 text-[12px] text-gray-800">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r">
                 {employee.name}
               </td>
-              <td className="py-3 px-1 text-[12px] text-gray-800">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r">
                 {employee.department}
-              </td>
-              <td className="py-3 px-1 text-[12px] text-gray-800">
-                {employee.p_twd}
               </td>
               {employee.attendance.map((status, index) => (
                 <td 
                   key={index}
-                  className={`py-3 px-0 text-center text-[11px] ${getAttendanceColor(status)}`}
+                  className={`py-1 px-0 text-center border-r ${getAttendanceColor(status)}`}
                 >
-                  {getAttendanceIcon(status)}
                 </td>
               ))}
             </tr>
@@ -285,7 +403,7 @@ function Attendance() {
               Dept
             </th>
             <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
-              Payable Days
+              Pay Days
             </th>
             <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
               Leaves Taken
@@ -294,42 +412,64 @@ function Attendance() {
               Leaves Earned
             </th>
             <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
-              CF Leaves
+              Leaves CF Prev Year
             </th>
             <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
-              Net Leaves
+              Comp Off
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              CF Comp Off
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Balance
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {filteredLeaveData.map((leave) => (
-            <tr key={leave.id} className="hover:bg-gray-50">
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.id}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.name}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.department}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.noOfPayableDays}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.leavesTaken}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.leavesEarned}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.carriedForwardLeaves}
-              </td>
-              <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
-                {leave.netLeaves}
-              </td>
-            </tr>
-          ))}
+          {filteredLeaveData.map((leave) => {
+            // Calculate leave balance
+            const leaveBalance = 
+              parseInt(leave.leavesEarned) + 
+              parseInt(leave.leavesFromPreviousYear) + 
+              parseInt(leave.compOffEarned) + 
+              parseInt(leave.compOffCarriedForward) - 
+              parseInt(leave.leavesTaken);
+
+            return (
+              <tr key={leave.id} className="hover:bg-gray-50">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.id}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.name}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.department}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.noOfPayableDays}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.leavesTaken}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.leavesEarned}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.leavesFromPreviousYear}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.compOffEarned}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.compOffCarriedForward}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leaveBalance}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -370,17 +510,57 @@ function Attendance() {
         <HradminNavbar />
 
         <div className="p-6 mt-16">
-          {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          {/* Header with Search and Title */}
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-xl font-semibold text-gray-800">
+              Attendance Management
+            </h1>
+            <div className="flex gap-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+                <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              </div>
+              <div className="relative">
+                <Badge
+                  variant="outline"
+                  className="px-6 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                  onClick={toggleCalendar}
+                >
+                  <Calendar className="h-5 w-5" />
+                  <span className="font-medium text-base">{selectedYear}-{selectedMonth.toLocaleString('default', { month: 'long' })}</span>
+                </Badge>
+                {isCalendarOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="p-3 border-b">
+                      <div className="text-sm font-medium text-gray-700">{selectedYear}</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 p-3">
+                      {[
+                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                      ].map((month) => (
+                        <button
+                          key={month}
+                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                            month === selectedMonth.toLocaleString('default', { month: 'long' }).slice(0, 3) 
+                              ? 'bg-blue-50 text-blue-600 font-medium hover:bg-blue-100' 
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                          onClick={() => handleMonthSelection(month, selectedYear)}
+                        >
+                          {month}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -12,6 +12,7 @@ import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
 import Select from "react-select";
+import { useRouter } from "next/router";
 
 const OrganizationSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -40,8 +41,11 @@ const OrganizationSettings = () => {
     message: "",
   });
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
+  const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
+  const [showDesignationEditModal, setShowDesignationEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isFormChanged, setIsFormChanged] = useState(false);
   const [departments, setDepartments] = useState([
     {
       id: 1,
@@ -90,6 +94,8 @@ const OrganizationSettings = () => {
     { value: "Saturday", label: "Saturday" },
   ];
 
+  const router = useRouter();
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -118,6 +124,7 @@ const OrganizationSettings = () => {
         type: "success",
         message: "Department updated successfully!",
       });
+      setIsFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
@@ -161,7 +168,7 @@ const OrganizationSettings = () => {
         type: "success",
         message: "Department added successfully!",
       });
-      setShowAddDepartmentModal(false);
+      setShowDepartmentModal(false);
       setDepartmentForm({
         name: "",
         description: "",
@@ -169,6 +176,7 @@ const OrganizationSettings = () => {
         leavePolicy: "",
         weeklyHolidays: [],
       });
+      setIsFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
@@ -201,6 +209,7 @@ const OrganizationSettings = () => {
         type: "success",
         message: "Designation updated successfully!",
       });
+      setIsFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
@@ -240,6 +249,7 @@ const OrganizationSettings = () => {
         isManager: false,
         description: "",
       });
+      setIsFormChanged(false);
     } catch (error) {
       setNotification({
         show: true,
@@ -249,16 +259,67 @@ const OrganizationSettings = () => {
     }
   };
 
+  const handleDepartmentFormChange = (e) => {
+    setIsFormChanged(true);
+    const { name, value } = e.target;
+    setDepartmentForm({
+      ...departmentForm,
+      [name]: value,
+    });
+  };
+
+  const handleDesignationFormChange = (e) => {
+    setIsFormChanged(true);
+    const { name, value, type, checked } = e.target;
+    setDesignationForm({
+      ...designationForm,
+      [name]: type === 'checkbox' ? checked : value,
+    });
+  };
+
+  const handleSelectChange = (selectedOption, actionMeta) => {
+    setIsFormChanged(true);
+    const { name } = actionMeta;
+    if (name === 'leavePolicy') {
+      setDepartmentForm({
+        ...departmentForm,
+        leavePolicy: selectedOption,
+      });
+    } else if (name === 'weeklyHolidays') {
+      setDepartmentForm({
+        ...departmentForm,
+        weeklyHolidays: selectedOption,
+      });
+    } else if (name === 'department') {
+      setDesignationForm({
+        ...designationForm,
+        department: selectedOption,
+      });
+    }
+  };
+
   const handleRowClick = (item) => {
-    setSelectedItem(item);
+    if (activeTab === "departments") {
+      setSelectedDepartment(item);
+      setShowDepartmentEditModal(true);
+    } else {
+      setSelectedDesignation(item);
+      setShowDesignationEditModal(true);
+    }
     setIsEditing(true);
-    setShowDepartmentModal(true);
+    setIsFormChanged(false);
   };
 
   const handleModalClose = () => {
     setShowDepartmentModal(false);
+    setShowDepartmentEditModal(false);
+    setShowDesignationEditModal(false);
+    setShowDesignationModal(false);
     setSelectedItem(null);
+    setSelectedDepartment(null);
+    setSelectedDesignation(null);
     setIsEditing(false);
+    setIsFormChanged(false);
   };
 
   return (
@@ -342,7 +403,7 @@ const OrganizationSettings = () => {
                       key={department.id}
                       onClick={() => {
                         setSelectedDepartment(department);
-                        setShowDepartmentModal(true);
+                        setShowDepartmentEditModal(true);
                       }}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
@@ -396,7 +457,7 @@ const OrganizationSettings = () => {
                       key={designation.id}
                       onClick={() => {
                         setSelectedDesignation(designation);
-                        setShowDesignationModal(true);
+                        setShowDesignationEditModal(true);
                       }}
                       className="hover:bg-gray-50 cursor-pointer"
                     >
@@ -421,14 +482,14 @@ const OrganizationSettings = () => {
         </div>
       </div>
 
-      {/* Department Modal */}
+      {/* Department Add Modal */}
       {showDepartmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-[600px]">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedDepartment ? "Edit Department" : "Add Department"}
+                  Add Department
                 </h3>
                 <button
                   onClick={() => setShowDepartmentModal(false)}
@@ -440,16 +501,20 @@ const OrganizationSettings = () => {
             </div>
 
             <div className="p-6">
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={(e) => {
+                e.preventDefault();
+                handleDepartmentSubmit(e);
+              }}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
+                    name="name"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter department name"
-                    defaultValue={selectedDepartment?.name}
+                    onChange={handleDepartmentFormChange}
                     required
                   />
                 </div>
@@ -459,10 +524,11 @@ const OrganizationSettings = () => {
                     Description
                   </label>
                   <textarea
+                    name="description"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter department description"
                     rows={3}
-                    defaultValue={selectedDepartment?.description}
+                    onChange={handleDepartmentFormChange}
                   />
                 </div>
 
@@ -472,9 +538,10 @@ const OrganizationSettings = () => {
                   </label>
                   <input
                     type="text"
+                    name="head"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter department head name"
-                    defaultValue={selectedDepartment?.head}
+                    onChange={handleDepartmentFormChange}
                     required
                   />
                 </div>
@@ -484,11 +551,12 @@ const OrganizationSettings = () => {
                     Leave Policy <span className="text-red-500">*</span>
                   </label>
                   <Select
+                    name="leavePolicy"
                     options={leavePolicies}
-                    defaultValue={selectedDepartment?.leavePolicy}
                     className="react-select"
                     classNamePrefix="select"
                     placeholder="Select leave policy"
+                    onChange={handleSelectChange}
                   />
                 </div>
 
@@ -497,50 +565,172 @@ const OrganizationSettings = () => {
                     Weekly Holidays <span className="text-red-500">*</span>
                   </label>
                   <Select
+                    name="weeklyHolidays"
                     isMulti
                     options={weekDays}
-                    defaultValue={selectedDepartment?.weeklyHolidays}
                     className="react-select"
                     classNamePrefix="select"
                     placeholder="Select weekly holidays"
+                    onChange={handleSelectChange}
                   />
                 </div>
               </form>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setShowDepartmentModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setShowDepartmentModal(false);
-                  toast.success(
-                    selectedDepartment
-                      ? "Department updated successfully"
-                      : "Department added successfully"
-                  );
+                type="submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDepartmentSubmit(e);
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                {selectedDepartment ? "Update" : "Add"}
+                Add
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Designation Modal */}
+      {/* Department Edit Modal */}
+      {showDepartmentEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-[600px]">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Edit Department
+                </h3>
+                <button
+                  onClick={() => setShowDepartmentEditModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <form className="space-y-4" onSubmit={(e) => {
+                e.preventDefault();
+                handleDepartmentUpdate(selectedDepartment.id);
+              }}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter department name"
+                    defaultValue={selectedDepartment?.name}
+                    onChange={handleDepartmentFormChange}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter department description"
+                    rows={3}
+                    defaultValue={selectedDepartment?.description}
+                    onChange={handleDepartmentFormChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department Head <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="head"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter department head name"
+                    defaultValue={selectedDepartment?.head}
+                    onChange={handleDepartmentFormChange}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Leave Policy <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    name="leavePolicy"
+                    options={leavePolicies}
+                    defaultValue={selectedDepartment?.leavePolicy}
+                    className="react-select"
+                    classNamePrefix="select"
+                    placeholder="Select leave policy"
+                    onChange={handleSelectChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Weekly Holidays <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    name="weeklyHolidays"
+                    isMulti
+                    options={weekDays}
+                    defaultValue={selectedDepartment?.weeklyHolidays}
+                    className="react-select"
+                    classNamePrefix="select"
+                    placeholder="Select weekly holidays"
+                    onChange={handleSelectChange}
+                  />
+                </div>
+              </form>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDepartmentEditModal(false)}
+                className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+              >
+                Delete
+              </button>
+              <button
+                type="submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDepartmentUpdate(selectedDepartment.id);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {isFormChanged ? "Update" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Designation Add Modal */}
       {showDesignationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-[600px]">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedDesignation ? "Edit Designation" : "Add Designation"}
+                  Add Designation
                 </h3>
                 <button
                   onClick={() => setShowDesignationModal(false)}
@@ -552,16 +742,20 @@ const OrganizationSettings = () => {
             </div>
 
             <div className="p-6">
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={(e) => {
+                e.preventDefault();
+                handleDesignationSubmit(e);
+              }}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
+                    name="name"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter designation name"
-                    defaultValue={selectedDesignation?.name}
+                    onChange={handleDesignationFormChange}
                     required
                   />
                 </div>
@@ -571,10 +765,11 @@ const OrganizationSettings = () => {
                     Description
                   </label>
                   <textarea
+                    name="description"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter designation description"
                     rows={3}
-                    defaultValue={selectedDesignation?.description}
+                    onChange={handleDesignationFormChange}
                   />
                 </div>
 
@@ -583,14 +778,15 @@ const OrganizationSettings = () => {
                     Department <span className="text-red-500">*</span>
                   </label>
                   <Select
+                    name="department"
                     options={departments.map((dept) => ({
                       value: dept.id,
                       label: dept.name,
                     }))}
-                    defaultValue={selectedDesignation?.department}
                     className="react-select"
                     classNamePrefix="select"
                     placeholder="Select department"
+                    onChange={handleSelectChange}
                   />
                 </div>
 
@@ -598,8 +794,9 @@ const OrganizationSettings = () => {
                   <input
                     type="checkbox"
                     id="isManager"
+                    name="isManager"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    defaultChecked={selectedDesignation?.isManager}
+                    onChange={handleDesignationFormChange}
                   />
                   <label
                     htmlFor="isManager"
@@ -611,25 +808,135 @@ const OrganizationSettings = () => {
               </form>
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setShowDesignationModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setShowDesignationModal(false);
-                  toast.success(
-                    selectedDesignation
-                      ? "Designation updated successfully"
-                      : "Designation added successfully"
-                  );
+                type="submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDesignationSubmit(e);
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                {selectedDesignation ? "Update" : "Add"}
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Designation Edit Modal */}
+      {showDesignationEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-[600px]">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Edit Designation
+                </h3>
+                <button
+                  onClick={() => setShowDesignationEditModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <form className="space-y-4" onSubmit={(e) => {
+                e.preventDefault();
+                handleDesignationUpdate(selectedDesignation.id);
+              }}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter designation name"
+                    defaultValue={selectedDesignation?.name}
+                    onChange={handleDesignationFormChange}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter designation description"
+                    rows={3}
+                    defaultValue={selectedDesignation?.description}
+                    onChange={handleDesignationFormChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Department <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    name="department"
+                    options={departments.map((dept) => ({
+                      value: dept.id,
+                      label: dept.name,
+                    }))}
+                    defaultValue={selectedDesignation?.department}
+                    className="react-select"
+                    classNamePrefix="select"
+                    placeholder="Select department"
+                    onChange={handleSelectChange}
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isManager"
+                    name="isManager"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    defaultChecked={selectedDesignation?.isManager}
+                    onChange={handleDesignationFormChange}
+                  />
+                  <label
+                    htmlFor="isManager"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Is Manager
+                  </label>
+                </div>
+              </form>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDesignationEditModal(false)}
+                className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+              >
+                Delete
+              </button>
+              <button
+                type="submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDesignationUpdate(selectedDesignation.id);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {isFormChanged ? "Update" : "Save"}
               </button>
             </div>
           </div>

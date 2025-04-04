@@ -318,7 +318,7 @@ const Leaves = () => {
                       onChange={handleLeaveFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide a reason for your leave"
+                      placeholder="Please provide a reason for your leave request..."
                     />
                   </div>
 
@@ -383,7 +383,7 @@ const Leaves = () => {
                       onChange={handleCompOffFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide details"
+                      placeholder="Please provide details about your comp-off request..."
                     />
                   </div>
 

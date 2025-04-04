@@ -153,67 +153,55 @@ const Overview = () => {
                   item.label === "Team Members" ? (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300"
-                      style={{ height: "250px", width: "400px" }}
-                      onClick={() => window.location.href = '/manager/team'} // Updated click handler
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
+                      onClick={() => window.location.href = '/manager/team'}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
                           {item.label}
                         </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaUsers className="text-[#4876D6] text-2xl" />
+                        <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+                          <FaUsers className="text-blue-600 text-2xl" />
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
                           {item.count}
                         </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          People in your department
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-green-600">
-                        <span className="text-lg">↑</span>
-
-                        <span className="ml-1">+12 from last month</span>
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">People in your department</p>
+                          <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
+                            <span className="text-xs text-blue-600 font-medium">Active</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : item.label === "Open Requests" ? (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      style={{ height: "250px", width: "400px" }}
-                      onClick={handleOpenRequestsClick} // Updated click handler
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
+                      onClick={handleOpenRequestsClick}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
-                            {item.label}
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
+                          {item.label}
                         </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaClock className="text-[#4876D6] text-2xl" />
+                        <div className="p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-full">
+                          <FaCalendar className="text-green-600 text-2xl" />
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">
-                            {item.count}
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
+                          {item.count}
                         </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Pending Approval from your team
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-green-600">
-                        <span className="text-lg">↑</span>
-
-                        <span className="ml-1">+3.8% vs target (90%)</span>
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">Pending requests</p>
+                          <div className="ml-2 px-2 py-1 bg-green-50 rounded-full">
+                            <span className="text-xs text-green-600 font-medium">Last 7 days</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (

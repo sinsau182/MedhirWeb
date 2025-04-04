@@ -187,101 +187,80 @@ const Overview = () => {
                   item.label === "Total Employees" ? (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300"
-                      style={{ height: "250px", width: "400px" }}
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
                           {item.label}
                         </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaUsers className="text-[#4876D6] text-2xl" />
+                        <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+                          <FaUsers className="text-blue-600 text-2xl" />
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
                           {item.count}
                         </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Active employees in the organization
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-green-600">
-                        <span className="text-lg">↑</span>
-
-                        <span className="ml-1">+12 from last month</span>
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">Active employees</p>
+                          <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
+                            <span className="text-xs text-blue-600 font-medium">+12 from last month</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : item.label === "Pending Tasks" ? (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      style={{ height: "250px", width: "400px" }}
-                      onClick={handleOpenRequestsClick} // Updated click handler
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
+                      onClick={handleOpenRequestsClick}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
-                          Open Requests
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
+                          {item.label}
                         </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaCalendar className="text-[#4876D6] text-2xl" />
+                        <div className="p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-full">
+                          <FaClock className="text-yellow-600 text-2xl" />
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">17</p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Leave and expense requests pending
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
+                          {item.count}
                         </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-blue-600">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-semibold">
-                          5 new
-                        </span>
-
-                        <span className="ml-2 text-gray-500">last 7 days</span>
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">Tasks pending</p>
+                          <div className="ml-2 px-2 py-1 bg-yellow-50 rounded-full">
+                            <span className="text-xs text-yellow-600 font-medium">High priority</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-center hover:shadow-xl hover:scale-105 transition-transform duration-300"
-                      style={{ height: "250px", width: "400px" }}
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
                     >
-                      <div className="flex flex-col justify-center items-center">
-                        <p className="text-gray-600 text-lg">{item.label}</p>
-
-                        <p className="text-3xl font-bold text-gray-800">
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
+                          {item.label}
+                        </p>
+                        <div className="p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-full">
+                          <FaCreditCard className="text-purple-600 text-2xl" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
                           {item.count}
                         </p>
-                      </div>
-
-                      <div
-                        className="p-4 rounded-full shadow-lg"
-                        style={{
-                          backgroundColor: item.icon.props.className.includes(
-                            "text-blue-500"
-                          )
-                            ? "#0088FE33"
-                            : item.icon.props.className.includes(
-                                "text-green-500"
-                              )
-                            ? "#00C49F33"
-                            : item.icon.props.className.includes(
-                                "text-yellow-500"
-                              )
-                            ? "#FFBB2833"
-                            : "#A28BFE33",
-                        }}
-                      >
-                        <div className="text-4xl">{item.icon}</div>
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">Current status</p>
+                          <div className="ml-2 px-2 py-1 bg-purple-50 rounded-full">
+                            <span className="text-xs text-purple-600 font-medium">March 2024</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )
