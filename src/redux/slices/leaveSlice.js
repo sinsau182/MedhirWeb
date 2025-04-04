@@ -1,16 +1,24 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8084/leaves/emp123";
+const API_BASE_URL = "http://192.168.0.200:8084/leaves";
 
 // Fetch Leaves
 export const fetchLeaves = createAsyncThunk(
     "leaves/fetchLeaves",
-    async (_, { rejectWithValue }) => {
+    async (employeeId, { rejectWithValue }) => {
         try {
-            const response = await fetch(API_BASE_URL);
+            const token = localStorage.getItem("token");
+            const response = await fetch(`${API_BASE_URL}/${employeeId}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                }
+            });
 
             if (!response.ok) {
-                throw new Error("Failed to fetch leaves");
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to fetch leaves");
             }
             const data = await response.json();
             return data;
@@ -25,20 +33,37 @@ export const createLeave = createAsyncThunk(
     "leaves/createLeave",
     async (leaveData, { rejectWithValue }) => {
         try {
-            const response = await fetch("http://localhost:8080/api/v1/leaves", {
+            const token = localStorage.getItem("token");
+            const response = await fetch(API_BASE_URL, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(leaveData),
             });
 
+            // Read the response body only once
+            const responseText = await response.text();
+            
             if (!response.ok) {
-                throw new Error("Failed to create leave");
+                // Try to parse as JSON if it looks like JSON
+                try {
+                    const errorData = JSON.parse(responseText);
+                    throw new Error(errorData.message || "Failed to create leave");
+                } catch (jsonError) {
+                    // If not JSON, use the text response
+                    throw new Error(responseText || "Failed to create leave");
+                }
             }
-            const data = await response.json();
-            console.log("Created Leave:", data);
-            return data;
+
+            // Try to parse as JSON if it looks like JSON
+            try {
+                return JSON.parse(responseText);
+            } catch (jsonError) {
+                // If not JSON, return the text response
+                return { message: responseText };
+            }
         } catch (error) {
             return rejectWithValue(error.message);
         }
@@ -90,23 +115,30 @@ export const deleteLeave = createAsyncThunk(
     }
 );
 
+const initialState = {
+    leaves: [],
+    loading: false,
+    error: null,
+    submissionStatus: null,
+    submissionError: null,
+};
+
 // Leave Slice
 const leaveSlice = createSlice({
     name: "leaves",
-    initialState: {
-        leaves: [],
-        loading: false,
-        error: null,
-    },
+    initialState,
     reducers: {
-        clearError: (state) => {
-            state.error = null;
+        clearSubmissionStatus: (state) => {
+            state.submissionStatus = null;
+            state.submissionError = null;
         },
     },
     extraReducers: (builder) => {
         builder
+            // Fetch Leaves
             .addCase(fetchLeaves.pending, (state) => {
                 state.loading = true;
+                state.error = null;
             })
             .addCase(fetchLeaves.fulfilled, (state, action) => {
                 state.loading = false;
@@ -116,8 +148,21 @@ const leaveSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+            // Create Leave
+            .addCase(createLeave.pending, (state) => {
+                state.loading = true;
+                state.submissionStatus = null;
+                state.submissionError = null;
+            })
             .addCase(createLeave.fulfilled, (state, action) => {
+                state.loading = false;
+                state.submissionStatus = "success";
                 state.leaves.push(action.payload);
+            })
+            .addCase(createLeave.rejected, (state, action) => {
+                state.loading = false;
+                state.submissionStatus = "error";
+                state.submissionError = action.payload;
             })
             .addCase(updateLeave.fulfilled, (state, action) => {
                 const index = state.leaves.findIndex((leave) => leave.id === action.payload.id);
@@ -131,4 +176,5 @@ const leaveSlice = createSlice({
     },
 });
 
+export const { clearSubmissionStatus } = leaveSlice.actions;
 export default leaveSlice.reducer;
