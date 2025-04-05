@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   X,
@@ -13,6 +13,10 @@ import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
 import Select from "react-select";
 import { useRouter } from "next/router";
+import { useDispatch, useSelector } from 'react-redux';
+import { createDepartment, fetchDepartments, updateDepartment, deleteDepartment } from '@/redux/slices/departmentSlice';
+import { fetchLeavePolicies } from '@/redux/slices/leavePolicySlice';
+import { createDesignation, fetchDepartmentsForDropdown, fetchDesignations, updateDesignation, deleteDesignation } from '@/redux/slices/designationSlice';
 
 const OrganizationSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -78,11 +82,24 @@ const OrganizationSettings = () => {
     },
   ]);
 
+  const dispatch = useDispatch();
+  const { loading, error, success, departments: reduxDepartments } = useSelector((state) => state.department);
+  const { policies } = useSelector((state) => state.leavePolicy);
+  const { designations: fetchedDesignations, loading: designationLoading } = useSelector((state) => state.designation);
+
+  // Fetch departments, leave policies, and designations when component mounts
+  useEffect(() => {
+    dispatch(fetchDepartments());
+    dispatch(fetchLeavePolicies());
+    dispatch(fetchDepartmentsForDropdown());
+    dispatch(fetchDesignations());
+  }, [dispatch]);
+
   // Sample data for dropdowns
-  const leavePolicies = [
-    { value: "standard", label: "Standard Leave Policy" },
-    { value: "flexible", label: "Flexible Leave Policy" },
-  ];
+  const leavePolicyOptions = policies.map(policy => ({
+    value: policy.leavePolicyId,
+    label: policy.name
+  }));
 
   const weekDays = [
     { value: "Sunday", label: "Sunday" },
@@ -113,24 +130,147 @@ const OrganizationSettings = () => {
 
   const handleDepartmentUpdate = async (id) => {
     try {
-      // TODO: Add API call to update department
-      const updatedDepartments = departments.map((dept) =>
-        dept.id === id ? { ...dept, ...departmentForm } : dept
-      );
-      setDepartments(updatedDepartments);
-      setEditingDepartment(null);
+      const newErrors = {};
+
+      if (!departmentForm.name) {
+        newErrors.name = "Department name is required";
+      }
+      if (!departmentForm.leavePolicy) {
+        newErrors.leavePolicy = "Leave policy is required";
+      }
+      if (!departmentForm.head) {
+        newErrors.head = "Department head is required";
+      }
+      if (!departmentForm.weeklyHolidays || departmentForm.weeklyHolidays.length === 0) {
+        newErrors.weeklyHolidays = "Weekly holidays are required";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        
+        setNotification({
+          show: true,
+          type: "error",
+          message: "Please fill in all required fields",
+        });
+
+        setTimeout(() => {
+          setNotification({
+            show: false,
+            type: "",
+            message: "",
+          });
+          setErrors({});
+        }, 2000);
+
+        return;
+      }
+
+      const departmentData = {
+        name: departmentForm.name,
+        description: departmentForm.description || "",
+        departmentHead: departmentForm.head,
+        leavePolicy: departmentForm.leavePolicy.value,
+        weeklyHolidays: departmentForm.weeklyHolidays.map(day => day.value).join(',')
+      };
+
+      console.log('Updating department data:', departmentData); // Debug log
+
+      await dispatch(updateDepartment({ id, departmentData })).unwrap();
+      
       setNotification({
         show: true,
         type: "success",
         message: "Department updated successfully!",
       });
+
+      setShowDepartmentEditModal(false);
+      setSelectedDepartment(null);
+      setDepartmentForm({
+        name: "",
+        description: "",
+        head: "",
+        leavePolicy: "",
+        weeklyHolidays: [],
+      });
       setIsFormChanged(false);
+
+      // Refresh departments list without page reload
+      dispatch(fetchDepartments());
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+
     } catch (error) {
       setNotification({
         show: true,
         type: "error",
-        message: "Failed to update department. Please try again.",
+        message: error || "Failed to update department. Please try again.",
       });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+    }
+  };
+
+  const handleDepartmentDelete = async () => {
+    try {
+      if (!selectedDepartment) return;
+
+      await dispatch(deleteDepartment(selectedDepartment.id)).unwrap();
+      
+      setNotification({
+        show: true,
+        type: "success",
+        message: "Department deleted successfully!",
+      });
+
+      setShowDepartmentEditModal(false);
+      setSelectedDepartment(null);
+      setDepartmentForm({
+        name: "",
+        description: "",
+        head: "",
+        leavePolicy: "",
+        weeklyHolidays: [],
+      });
+      setIsFormChanged(false);
+
+      // Refresh departments list without page reload
+      dispatch(fetchDepartments());
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+
+    } catch (error) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: error || "Failed to delete department. Please try again.",
+      });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
     }
   };
 
@@ -141,33 +281,50 @@ const OrganizationSettings = () => {
     if (!departmentForm.name) {
       newErrors.name = "Department name is required";
     }
-    if (!departmentForm.head) {
-      newErrors.head = "Department head is required";
-    }
     if (!departmentForm.leavePolicy) {
       newErrors.leavePolicy = "Leave policy is required";
-    }
-    if (departmentForm.weeklyHolidays.length === 0) {
-      newErrors.weeklyHolidays = "At least one weekly holiday is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Please fill in all required fields",
+      });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+        setErrors({});
+      }, 2000);
+
       return;
     }
 
     try {
-      // TODO: Add API call to save department
-      const newDepartment = {
-        id: departments.length + 1,
-        ...departmentForm,
+      const departmentData = {
+        name: departmentForm.name,
+        description: departmentForm.description || "",
+        departmentHead: departmentForm.head,
+        leavePolicy: departmentForm.leavePolicy.value,
+        weeklyHolidays: departmentForm.weeklyHolidays.map(day => day.value).join(',')
       };
-      setDepartments([...departments, newDepartment]);
+
+      console.log('Submitting department data:', departmentData); // Debug log
+
+      await dispatch(createDepartment(departmentData)).unwrap();
+      
       setNotification({
         show: true,
         type: "success",
         message: "Department added successfully!",
       });
+
       setShowDepartmentModal(false);
       setDepartmentForm({
         name: "",
@@ -177,12 +334,46 @@ const OrganizationSettings = () => {
         weeklyHolidays: [],
       });
       setIsFormChanged(false);
+
+      // Refresh departments list without page reload
+      dispatch(fetchDepartments());
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to add department. Please try again.",
-      });
+      // Check if the error is due to department already existing
+      if (error.includes('already exists') || error.includes('duplicate')) {
+        setNotification({
+          show: true,
+          type: "error",
+          message: "A department with this name already exists. Please use a different name.",
+        });
+        setErrors({
+          name: "Department name already exists"
+        });
+      } else {
+        setNotification({
+          show: true,
+          type: "error",
+          message: error || "Failed to add department. Please try again.",
+        });
+        setErrors({});
+      }
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+        setErrors({});
+      }, 2000);
     }
   };
 
@@ -196,26 +387,68 @@ const OrganizationSettings = () => {
     });
   };
 
-  const handleDesignationUpdate = async (id) => {
+  const handleDesignationUpdate = async () => {
     try {
-      // TODO: Add API call to update designation
-      const updatedDesignations = designations.map((desig) =>
-        desig.id === id ? { ...desig, ...designationForm } : desig
-      );
-      setDesignations(updatedDesignations);
-      setEditingDesignation(null);
+      const designationData = {
+        name: designationForm.name,
+        department: designationForm.department.value,
+        description: designationForm.description || "",
+        isManager: designationForm.isManager
+      };
+
+      console.log('Updating designation data:', designationData); // Debug log
+
+      await dispatch(updateDesignation({ 
+        id: selectedDesignation.id, 
+        designationData 
+      })).unwrap();
+
       setNotification({
         show: true,
         type: "success",
         message: "Designation updated successfully!",
       });
-      setIsFormChanged(false);
+
+      // Refresh the designations list without page reload
+      dispatch(fetchDesignations());
+
+      // Reset form and close modal
+      setShowDesignationModal(false);
+      setSelectedDesignation(null);
+      setDesignationForm({
+        name: "",
+        department: "",
+        description: "",
+        isManager: false
+      });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+
     } catch (error) {
+      // Extract error message properly
+      const errorMessage = error?.message || 
+                          (typeof error === 'object' ? JSON.stringify(error) : error) || 
+                          "Failed to update designation. Please try again.";
+
       setNotification({
         show: true,
         type: "error",
-        message: "Failed to update designation. Please try again.",
+        message: errorMessage,
       });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
     }
   };
 
@@ -232,30 +465,42 @@ const OrganizationSettings = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      showNotification("error", "Please fill in all required fields");
       return;
     }
 
     try {
-      // TODO: Add API call to save designation
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Designation added successfully!",
-      });
+      const designationData = {
+        name: designationForm.name,
+        description: designationForm.description || "",
+        department: designationForm.department.value,
+        isManager: designationForm.isManager
+      };
+
+      console.log('Submitting designation data:', designationData); // Debug log
+
+      await dispatch(createDesignation(designationData)).unwrap();
+      showNotification("success", "Designation added successfully!");
+
       setShowDesignationModal(false);
       setDesignationForm({
         name: "",
+        description: "",
         department: "",
         isManager: false,
-        description: "",
       });
       setIsFormChanged(false);
+      setErrors({});
+
+      dispatch(fetchDesignations());
+
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to add designation. Please try again.",
-      });
+      showNotification("error", error.message || "Failed to add designation");
+      if (error.message?.includes('already exists')) {
+        setErrors({
+          name: "Designation already exists"
+        });
+      }
     }
   };
 
@@ -266,6 +511,15 @@ const OrganizationSettings = () => {
       ...departmentForm,
       [name]: value,
     });
+
+    // Clear any existing errors for this field
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleDesignationFormChange = (e) => {
@@ -275,6 +529,15 @@ const OrganizationSettings = () => {
       ...designationForm,
       [name]: type === 'checkbox' ? checked : value,
     });
+
+    // Clear any existing errors for this field
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSelectChange = (selectedOption, actionMeta) => {
@@ -299,18 +562,43 @@ const OrganizationSettings = () => {
   };
 
   const handleRowClick = (item) => {
+    // Reset form changed state when opening new item
+    setIsFormChanged(false);
+    
     if (activeTab === "departments") {
       setSelectedDepartment(item);
+      setDepartmentForm({
+        name: item.name,
+        description: item.description || "",
+        head: item.departmentHead || "",
+        leavePolicy: { 
+          value: item.leavePolicy, 
+          label: policies.find(p => p.leavePolicyId === item.leavePolicy)?.name 
+        },
+        weeklyHolidays: item.weeklyHolidays?.split(',').map(day => ({ 
+          value: day, 
+          label: day 
+        })) || []
+      });
       setShowDepartmentEditModal(true);
     } else {
       setSelectedDesignation(item);
-      setShowDesignationEditModal(true);
+      setDesignationForm({
+        name: item.name,
+        department: { 
+          value: item.department,
+          label: item.department 
+        },
+        description: item.description || "",
+        isManager: item.isManager || false
+      });
+      setShowDesignationModal(true);
     }
     setIsEditing(true);
-    setIsFormChanged(false);
   };
 
   const handleModalClose = () => {
+    // Reset all form and state values
     setShowDepartmentModal(false);
     setShowDepartmentEditModal(false);
     setShowDesignationEditModal(false);
@@ -320,6 +608,101 @@ const OrganizationSettings = () => {
     setSelectedDesignation(null);
     setIsEditing(false);
     setIsFormChanged(false);
+    setDepartmentForm({
+      name: "",
+      description: "",
+      head: "",
+      leavePolicy: "",
+      weeklyHolidays: [],
+    });
+    setDesignationForm({
+      name: "",
+      description: "",
+      department: "",
+      isManager: false,
+    });
+    setErrors({});
+  };
+
+  const handleDesignationRowClick = (designation) => {
+    // Reset form changed state when opening new designation
+    setIsFormChanged(false);
+    setSelectedDesignation(designation);
+    setDesignationForm({
+      name: designation.name,
+      department: { 
+        value: designation.department,
+        label: designation.department 
+      },
+      description: designation.description || "",
+      isManager: designation.isManager || false
+    });
+    setShowDesignationModal(true);
+  };
+
+  const handleDesignationDelete = async () => {
+    try {
+      await dispatch(deleteDesignation(selectedDesignation.id)).unwrap();
+      
+      setNotification({
+        show: true,
+        type: "success",
+        message: "Designation deleted successfully!",
+      });
+
+      // Refresh the designations list without page reload
+      dispatch(fetchDesignations());
+
+      // Reset form and close modal
+      setShowDesignationModal(false);
+      setSelectedDesignation(null);
+      setDesignationForm({
+        name: "",
+        department: "",
+        description: "",
+        isManager: false
+      });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+
+    } catch (error) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: error || "Failed to delete designation. Please try again.",
+      });
+
+      // Auto-hide notification after 2 seconds
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+    }
+  };
+
+  const showNotification = (type, message) => {
+    setNotification({
+      show: true,
+      type,
+      message,
+    });
+
+    setTimeout(() => {
+      setNotification({
+        show: false,
+        type: "",
+        message: "",
+      });
+    }, 2000); // Exactly 2 seconds
   };
 
   return (
@@ -398,11 +781,20 @@ const OrganizationSettings = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {departments.map((department) => (
+                  {reduxDepartments.map((department) => (
                     <tr
                       key={department.id}
                       onClick={() => {
+                        // Reset form changed state when opening new item
+                        setIsFormChanged(false);
                         setSelectedDepartment(department);
+                        setDepartmentForm({
+                          name: department.name,
+                          description: department.description || "",
+                          head: department.departmentHead,
+                          leavePolicy: department.leavePolicy,
+                          weeklyHolidays: department.weeklyHolidays,
+                        });
                         setShowDepartmentEditModal(true);
                       }}
                       className="hover:bg-gray-50 cursor-pointer"
@@ -414,15 +806,13 @@ const OrganizationSettings = () => {
                         {department.description}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.head}
+                        {department.departmentHead}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.leavePolicy.label}
+                        {policies.find(policy => policy.leavePolicyId === department.leavePolicy)?.name || department.leavePolicy}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.weeklyHolidays
-                          .map((day) => day.label)
-                          .join(", ")}
+                        {department.weeklyHolidays}
                       </td>
                     </tr>
                   ))}
@@ -441,10 +831,10 @@ const OrganizationSettings = () => {
                       Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
+                      Department
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department
+                      Description
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Is Manager
@@ -452,29 +842,46 @@ const OrganizationSettings = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {designations.map((designation) => (
-                    <tr
-                      key={designation.id}
-                      onClick={() => {
-                        setSelectedDesignation(designation);
-                        setShowDesignationEditModal(true);
-                      }}
-                      className="hover:bg-gray-50 cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {designation.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {designation.description}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {designation.department.label}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {designation.isManager ? "Yes" : "No"}
+                  {designationLoading ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center">
+                        Loading...
                       </td>
                     </tr>
-                  ))}
+                  ) : error ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center text-red-500">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : fetchedDesignations.length === 0 ? (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center">
+                        No designations found
+                      </td>
+                    </tr>
+                  ) : (
+                    fetchedDesignations.map((designation) => (
+                      <tr
+                        key={designation.id}
+                        onClick={() => handleDesignationRowClick(designation)}
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {designation.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {reduxDepartments.find(dept => dept.name === designation.department)?.name || designation.department}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {designation.description || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {designation.isManager ? "Yes" : "No"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -492,7 +899,9 @@ const OrganizationSettings = () => {
                   Add Department
                 </h3>
                 <button
-                  onClick={() => setShowDepartmentModal(false)}
+                  onClick={() => {
+                    handleModalClose();
+                  }}
                   className="text-gray-400 hover:text-gray-500"
                 >
                   <X className="h-6 w-6" />
@@ -552,7 +961,7 @@ const OrganizationSettings = () => {
                   </label>
                   <Select
                     name="leavePolicy"
-                    options={leavePolicies}
+                    options={leavePolicyOptions}
                     className="react-select"
                     classNamePrefix="select"
                     placeholder="Select leave policy"
@@ -610,7 +1019,9 @@ const OrganizationSettings = () => {
                   Edit Department
                 </h3>
                 <button
-                  onClick={() => setShowDepartmentEditModal(false)}
+                  onClick={() => {
+                    handleModalClose();
+                  }}
                   className="text-gray-400 hover:text-gray-500"
                 >
                   <X className="h-6 w-6" />
@@ -632,7 +1043,7 @@ const OrganizationSettings = () => {
                     name="name"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter department name"
-                    defaultValue={selectedDepartment?.name}
+                    value={departmentForm.name}
                     onChange={handleDepartmentFormChange}
                     required
                   />
@@ -647,7 +1058,7 @@ const OrganizationSettings = () => {
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter department description"
                     rows={3}
-                    defaultValue={selectedDepartment?.description}
+                    value={departmentForm.description}
                     onChange={handleDepartmentFormChange}
                   />
                 </div>
@@ -661,7 +1072,7 @@ const OrganizationSettings = () => {
                     name="head"
                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter department head name"
-                    defaultValue={selectedDepartment?.head}
+                    value={departmentForm.head}
                     onChange={handleDepartmentFormChange}
                     required
                   />
@@ -673,8 +1084,8 @@ const OrganizationSettings = () => {
                   </label>
                   <Select
                     name="leavePolicy"
-                    options={leavePolicies}
-                    defaultValue={selectedDepartment?.leavePolicy}
+                    options={leavePolicyOptions}
+                    value={departmentForm.leavePolicy}
                     className="react-select"
                     classNamePrefix="select"
                     placeholder="Select leave policy"
@@ -690,7 +1101,7 @@ const OrganizationSettings = () => {
                     name="weeklyHolidays"
                     isMulti
                     options={weekDays}
-                    defaultValue={selectedDepartment?.weeklyHolidays}
+                    value={departmentForm.weeklyHolidays}
                     className="react-select"
                     classNamePrefix="select"
                     placeholder="Select weekly holidays"
@@ -703,7 +1114,7 @@ const OrganizationSettings = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setShowDepartmentEditModal(false)}
+                onClick={handleDepartmentDelete}
                 className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
               >
                 Delete
@@ -723,222 +1134,124 @@ const OrganizationSettings = () => {
         </div>
       )}
 
-      {/* Designation Add Modal */}
+      {/* Designation Modal */}
       {showDesignationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-[600px]">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Add Designation
-                </h3>
-                <button
-                  onClick={() => setShowDesignationModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {selectedDesignation ? "Edit Designation" : "Add Designation"}
+              </h2>
+              <button
+                onClick={() => {
+                  handleModalClose();
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-6 w-6" />
+              </button>
             </div>
 
-            <div className="p-6">
-              <form className="space-y-4" onSubmit={(e) => {
-                e.preventDefault();
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (selectedDesignation) {
+                handleDesignationUpdate();
+              } else {
                 handleDesignationSubmit(e);
-              }}>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter designation name"
-                    onChange={handleDesignationFormChange}
-                    required
-                  />
-                </div>
+              }
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter designation name"
+                  value={designationForm.name}
+                  onChange={handleDesignationFormChange}
+                  required
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter designation description"
-                    rows={3}
-                    onChange={handleDesignationFormChange}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter designation description"
+                  rows={3}
+                  value={designationForm.description}
+                  onChange={handleDesignationFormChange}
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    name="department"
-                    options={departments.map((dept) => ({
-                      value: dept.id,
-                      label: dept.name,
-                    }))}
-                    className="react-select"
-                    classNamePrefix="select"
-                    placeholder="Select department"
-                    onChange={handleSelectChange}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  name="department"
+                  options={reduxDepartments.map((dept) => ({
+                    value: dept.name,
+                    label: dept.name,
+                  }))}
+                  className="react-select"
+                  classNamePrefix="select"
+                  placeholder="Select department"
+                  value={designationForm.department}
+                  onChange={(selectedOption) => {
+                    setDesignationForm({
+                      ...designationForm,
+                      department: selectedOption,
+                    });
+                  }}
+                />
+              </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isManager"
-                    name="isManager"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    onChange={handleDesignationFormChange}
-                  />
-                  <label
-                    htmlFor="isManager"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Is Manager
-                  </label>
-                </div>
-              </form>
-            </div>
-
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDesignationModal(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDesignationSubmit(e);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Designation Edit Modal */}
-      {showDesignationEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg w-[600px]">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Edit Designation
-                </h3>
-                <button
-                  onClick={() => setShowDesignationEditModal(false)}
-                  className="text-gray-400 hover:text-gray-500"
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="isManager"
+                  name="isManager"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  checked={designationForm.isManager}
+                  onChange={(e) => {
+                    setDesignationForm({
+                      ...designationForm,
+                      isManager: e.target.checked,
+                    });
+                  }}
+                />
+                <label
+                  htmlFor="isManager"
+                  className="ml-2 block text-sm text-gray-700"
                 >
-                  <X className="h-6 w-6" />
+                  Is Manager
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                {selectedDesignation && (
+                  <button
+                    type="button"
+                    onClick={handleDesignationDelete}
+                    className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                  >
+                    Delete
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {selectedDesignation ? (isFormChanged ? "Update" : "Save") : "Add"}
                 </button>
               </div>
-            </div>
-
-            <div className="p-6">
-              <form className="space-y-4" onSubmit={(e) => {
-                e.preventDefault();
-                handleDesignationUpdate(selectedDesignation.id);
-              }}>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter designation name"
-                    defaultValue={selectedDesignation?.name}
-                    onChange={handleDesignationFormChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter designation description"
-                    rows={3}
-                    defaultValue={selectedDesignation?.description}
-                    onChange={handleDesignationFormChange}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    name="department"
-                    options={departments.map((dept) => ({
-                      value: dept.id,
-                      label: dept.name,
-                    }))}
-                    defaultValue={selectedDesignation?.department}
-                    className="react-select"
-                    classNamePrefix="select"
-                    placeholder="Select department"
-                    onChange={handleSelectChange}
-                  />
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isManager"
-                    name="isManager"
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    defaultChecked={selectedDesignation?.isManager}
-                    onChange={handleDesignationFormChange}
-                  />
-                  <label
-                    htmlFor="isManager"
-                    className="ml-2 block text-sm text-gray-700"
-                  >
-                    Is Manager
-                  </label>
-                </div>
-              </form>
-            </div>
-
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowDesignationEditModal(false)}
-                className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
-              >
-                Delete
-              </button>
-              <button
-                type="submit"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDesignationUpdate(selectedDesignation.id);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                {isFormChanged ? "Update" : "Save"}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}

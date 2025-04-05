@@ -3,6 +3,7 @@ import { store } from "../redux/store";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "../styles/globals.css";
+import 'react-toastify/dist/ReactToastify.css';
 
 const queryClient = new QueryClient();
 
