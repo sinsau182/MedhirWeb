@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { Calendar, X } from "lucide-react";
@@ -14,7 +14,8 @@ const Leaves = () => {
   // Simplified form states
   const [leaveForm, setLeaveForm] = useState({
     dates: [],
-    reason: ""
+    reason: "",
+    shiftType: "full"
   });
   
   const [compOffForm, setCompOffForm] = useState({
@@ -24,17 +25,38 @@ const Leaves = () => {
 
   const dispatch = useDispatch();
   const { leaves, loading, error } = useSelector((state) => state.leaveReducer);
+  const calendarRef = useRef(null);
 
   useEffect(() => {
     // Fetch leaves for employee with ID emp123
     dispatch(fetchLeaves("emp123"));
   }, [dispatch]);
 
+  // Add click outside handler for calendar
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const calendar = document.querySelector('.react-calendar');
+      if (calendar && !calendar.contains(event.target) && 
+          !event.target.closest('.custom-date-picker-input')) {
+        // Find and close the calendar by clicking the close button
+        const closeButton = calendar.parentElement.querySelector('button');
+        if (closeButton) {
+          closeButton.click();
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
     setIsModalOpen(false);
-    setLeaveForm({ dates: [], reason: "" });
+    setLeaveForm({ dates: [], reason: "", shiftType: "full" });
   };
   
   const openCompOffModal = () => setIsCompOffModalOpen(true);
@@ -46,6 +68,10 @@ const Leaves = () => {
   const handleLeaveFormChange = (e) => {
     const { name, value } = e.target;
     setLeaveForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleShiftTypeChange = (e) => {
+    setLeaveForm(prev => ({ ...prev, shiftType: e.target.value }));
   };
 
   const handleLeaveDatesChange = (dates) => {
@@ -76,6 +102,7 @@ const Leaves = () => {
         leaveType: "Casual Leave",
         startDate: formatDate(leaveForm.dates[0].date),
         endDate: formatDate(leaveForm.dates[leaveForm.dates.length - 1].date),
+        shiftType: leaveForm.shiftType,
         reason: leaveForm.reason,
         status: "Pending"
       };
@@ -104,7 +131,7 @@ const Leaves = () => {
         leaveType: "Comp Off",
         startDate: formatDate(compOffForm.dates[0].date),
         endDate: formatDate(compOffForm.dates[0].date),
-        shiftType: "First Half (Morning)", // Default shift type
+        shiftType: compOffForm.dates[0].timeSlot,
         reason: compOffForm.description
       };
       
@@ -252,13 +279,10 @@ const Leaves = () => {
               </h3>
               <ul className="list-disc list-inside text-gray-600 text-sm">
                 <li>
-                  All employees are entitled to 15 days of annual leave per year
+                  All employees are entitled to 18 days of annual leave per year
                 </li>
-                <li>Leave must be applied at least 7 days in advance</li>
-                <li>Maximum 5 consecutive days can be taken at once</li>
                 <li>
-                  Unused leave can be carried forward to the next year (max 5
-                  days)
+                  Unused leave can be carried forward to the next year
                 </li>
               </ul>
             </div>
@@ -268,13 +292,14 @@ const Leaves = () => {
               </h3>
               <ul className="list-disc list-inside text-gray-600 text-sm">
                 <li>
-                  All employees are entitled to 7 days of sick leave per year
+                  When applying for leave, it will first be deducted from available comp-off balance
                 </li>
                 <li>
-                  Doctor's certificate required for sick leave of more than 2
-                  consecutive days
+                  If comp-off balance is exhausted, remaining days will be deducted from annual leave
                 </li>
-                <li>Unused sick leave cannot be carried forward</li>
+                <li>
+                  Unused comp-off can be carried forward to the next month
+                </li>
               </ul>
             </div>
           </div>
@@ -307,6 +332,8 @@ const Leaves = () => {
                         }));
                       }}
                       maxDays={5}
+                      shiftType={leaveForm.shiftType}
+                      onShiftTypeChange={handleShiftTypeChange}
                     />
                   </div>
 
@@ -318,7 +345,7 @@ const Leaves = () => {
                       onChange={handleLeaveFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide a reason for your leave request..."
+                      placeholder="Please provide a reason for your leave"
                     />
                   </div>
 
@@ -383,7 +410,7 @@ const Leaves = () => {
                       onChange={handleCompOffFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide details about your comp-off request..."
+                      placeholder="Please provide details"
                     />
                   </div>
 

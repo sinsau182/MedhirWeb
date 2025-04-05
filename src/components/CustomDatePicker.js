@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, isWeekend, isWithinInterval, isSameDay, eachDayOfInterval } from 'date-fns';
 
@@ -9,29 +9,56 @@ const CustomDatePicker = ({
   isCompOff = false,
   maxDays,
   minDate = new Date(),
+  shiftType = 'FULL_DAY',
+  onShiftTypeChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [timeSlot, setTimeSlot] = useState('FULL_DAY');
+  const [timeSlot, setTimeSlot] = useState(shiftType);
   const [selectedDateObjects, setSelectedDateObjects] = useState([]);
   const [hoverDate, setHoverDate] = useState(null);
+  const calendarRef = useRef(null);
+  const inputRef = useRef(null);
+  const calendarPopupRef = useRef(null);
 
   const timeSlotOptions = [
-    { value: 'FIRST_HALF', label: 'First Half (Morning)' },
-    { value: 'SECOND_HALF', label: 'Second Half (Afternoon)' },
-    { value: 'FULL_DAY', label: 'Full Day' },
+    { value: 'First Half (Morning)', label: 'First Half (Morning)' },
+    { value: 'Second Half (Afternoon)', label: 'Second Half (Afternoon)' },
+    { value: 'Full Day', label: 'Full Day' },
   ];
 
   useEffect(() => {
     if (selectedDates.length > 0) {
       setSelectedDateObjects(selectedDates.map(date => ({
         date: new Date(date.date),
-        timeSlot: date.timeSlot || (isCompOff ? timeSlot : 'FULL_DAY')
+        timeSlot: date.timeSlot || timeSlot
       })));
     } else {
       setSelectedDateObjects([]);
     }
-  }, [selectedDates, timeSlot, isCompOff]);
+  }, [selectedDates, timeSlot]);
+
+  // Add click outside handler
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close calendar if click is outside calendar popup and input field
+      if (
+        calendarPopupRef.current && 
+        !calendarPopupRef.current.contains(event.target) &&
+        !inputRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -70,53 +97,103 @@ const CustomDatePicker = ({
   };
 
   const handleDateClick = (date) => {
-    if (isDateDisabled(date)) return;
+    if (isDateDisabled(date) && !isWeekend(date)) return; // Allow weekend selection but keep other disabled date restrictions
 
     let newSelectedDates;
     if (isCompOff) {
       // For comp off, only allow single date selection
       if (selectedDateObjects.some(selected => isSameDay(selected.date, date))) {
-        // If clicking the same date, remove it
         newSelectedDates = [];
       } else {
-        // Replace existing date with new one
         newSelectedDates = [{ 
           date: new Date(date),
           timeSlot 
         }];
       }
     } else {
-      // For leave application, allow multiple date selection
+      // For leave application, allow consecutive date selection including weekends
       const isAlreadySelected = selectedDateObjects.some(selected => 
         isSameDay(selected.date, date)
       );
 
       if (isAlreadySelected) {
-        newSelectedDates = selectedDateObjects.filter(selected => 
-          !isSameDay(selected.date, date)
-        );
+        // If clicking on a date that's already selected, remove it
+        newSelectedDates = selectedDateObjects.filter(selected => !isSameDay(selected.date, date));
       } else {
+        if (selectedDateObjects.length > 0) {
+          // Get all selected dates including the new one
+          const allDates = [...selectedDateObjects.map(d => d.date), date];
+          
+          // Sort dates chronologically
+          const sortedDates = allDates.sort((a, b) => a - b);
+          
+          // Check if dates form a consecutive sequence (including weekends)
+          let isConsecutive = true;
+          for (let i = 1; i < sortedDates.length; i++) {
+            const prevDate = new Date(sortedDates[i - 1]);
+            const currDate = new Date(sortedDates[i]);
+            const diffTime = Math.abs(currDate - prevDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Allow 1 day difference or 2-3 days if spanning a weekend
+            if (diffDays > 3 || (diffDays > 1 && !isWeekend(new Date(prevDate.getTime() + 24 * 60 * 60 * 1000)))) {
+              isConsecutive = false;
+              break;
+            }
+          }
+
+          if (!isConsecutive) {
+            alert("Please select consecutive dates (weekends can be skipped)");
+            return;
+          }
+        }
+        
         if (maxDays && selectedDateObjects.length >= maxDays) {
           alert(`You can only select up to ${maxDays} days`);
           return;
         }
+        
         newSelectedDates = [...selectedDateObjects, { 
           date: new Date(date),
-          timeSlot: 'FULL_DAY' 
+          timeSlot: timeSlot
         }];
       }
     }
 
+    // Sort the dates chronologically before setting
+    newSelectedDates.sort((a, b) => a.date - b.date);
     setSelectedDateObjects(newSelectedDates);
     onChange(newSelectedDates);
   };
 
   const handleTimeSlotChange = (e) => {
-    setTimeSlot(e.target.value);
-    const updatedDates = selectedDateObjects.map(selected => ({
-      ...selected,
-      timeSlot: e.target.value
-    }));
+    const newTimeSlot = e.target.value;
+    setTimeSlot(newTimeSlot);
+    if (onShiftTypeChange) {
+      onShiftTypeChange(e);
+    }
+    // Only update the timeSlot for the most recently selected date
+    if (selectedDateObjects.length > 0) {
+      const updatedDates = [...selectedDateObjects];
+      updatedDates[updatedDates.length - 1] = {
+        ...updatedDates[updatedDates.length - 1],
+        timeSlot: newTimeSlot
+      };
+      setSelectedDateObjects(updatedDates);
+      onChange(updatedDates);
+    }
+  };
+
+  const handleIndividualTimeSlotChange = (date, newTimeSlot) => {
+    const updatedDates = selectedDateObjects.map(selected => {
+      if (isSameDay(selected.date, date)) {
+        return {
+          ...selected,
+          timeSlot: newTimeSlot
+        };
+      }
+      return selected;
+    });
     setSelectedDateObjects(updatedDates);
     onChange(updatedDates);
   };
@@ -157,60 +234,40 @@ const CustomDatePicker = ({
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={calendarRef}>
       <div className="w-full">
-        {/* Selected Dates Display */}
-        <div className="mb-3">
-          <div className="flex flex-wrap gap-2">
-            {selectedDateObjects.map((selected) => {
-              const dateObj = selected.date instanceof Date ? selected.date : new Date(selected.date);
-              
-              return (
-                <div
-                  key={dateObj.toISOString()}
-                  className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <span className="font-medium">{format(dateObj, 'dd MMM yyyy')}</span>
-                  <span className="text-xs text-blue-600">
-                    ({selected.timeSlot.replace('_', ' ').toLowerCase()})
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeDate(dateObj)}
-                    className="ml-1 text-blue-600 hover:text-blue-800 hover:bg-blue-200 rounded-full p-0.5 transition-colors duration-200"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          {/* {selectedDateObjects.length > 0 && (
-            <div className="mt-2 text-sm font-medium text-gray-700">
-              Total days: <span className="text-blue-600">{calculateTotalDays()}</span>
-            </div>
-          )} */}
-        </div>
-
         {/* Date Picker Trigger */}
         <div
+          ref={inputRef}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-lg flex items-center justify-between cursor-pointer hover:border-blue-500 hover:shadow-sm transition-all duration-200 bg-white"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
         >
           <span className="text-gray-700 font-medium">
             {selectedDateObjects.length > 0 
-              ? `${selectedDateObjects.length} date${selectedDateObjects.length > 1 ? 's' : ''} selected`
+              ? selectedDateObjects.map((selected, index) => {
+                  const dateObj = selected.date instanceof Date ? selected.date : new Date(selected.date);
+                  return (
+                    <span key={dateObj.toISOString()}>
+                      {format(dateObj, 'dd MMM yyyy')}
+                      {index < selectedDateObjects.length - 1 ? ', ' : ''}
+                    </span>
+                  );
+                })
               : 'Select Day'}
           </span>
           <CalendarIcon className="h-5 w-5 text-blue-500" />
         </div>
 
-        {/* Time Slot Selector for Comp Off */}
-        {isCompOff && (
+        {/* Time Slot Selector - Only shown when no dates are selected */}
+        {selectedDateObjects.length === 0 && (
           <select
             value={timeSlot}
             onChange={handleTimeSlotChange}
             className="mt-2 w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            onClick={(e) => e.stopPropagation()}
           >
             {timeSlotOptions.map(option => (
               <option key={option.value} value={option.value}>
@@ -220,15 +277,64 @@ const CustomDatePicker = ({
           </select>
         )}
 
+        {/* Selected Dates Display - Only shown when dates are selected */}
+        {selectedDateObjects.length > 0 && (
+          <div className="mt-3">
+            <div className="flex flex-wrap gap-2">
+              {selectedDateObjects.map((selected) => {
+                const dateObj = selected.date instanceof Date ? selected.date : new Date(selected.date);
+                
+                return (
+                  <div
+                    key={dateObj.toISOString()}
+                    className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <span className="font-medium">{format(dateObj, 'dd MMM yyyy')}</span>
+                    <select
+                      value={selected.timeSlot}
+                      onChange={(e) => handleIndividualTimeSlotChange(dateObj, e.target.value)}
+                      className="text-xs text-blue-600 bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {timeSlotOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeDate(dateObj);
+                      }}
+                      className="ml-1 text-blue-600 hover:text-blue-800 hover:bg-blue-200 rounded-full p-0.5 transition-colors duration-200"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Calendar Popup */}
         {isOpen && (
-          <div className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg transform transition-all duration-200 ease-out">
+          <div 
+            ref={calendarPopupRef}
+            className="absolute z-10 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg transform transition-all duration-200 ease-out"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-4">
               {/* Month Navigation */}
               <div className="flex justify-between items-center mb-4">
                 <button
                   type="button"
-                  onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() - 1)));
+                  }}
                   className="p-1.5 hover:bg-gray-100 rounded-full transition-colors duration-200"
                 >
                   <ChevronLeft className="h-5 w-5 text-gray-600" />
@@ -238,7 +344,10 @@ const CustomDatePicker = ({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentMonth(new Date(currentMonth.setMonth(currentMonth.getMonth() + 1)));
+                  }}
                   className="p-1.5 hover:bg-gray-100 rounded-full transition-colors duration-200"
                 >
                   <ChevronRight className="h-5 w-5 text-gray-600" />
@@ -259,12 +368,14 @@ const CustomDatePicker = ({
                       relative p-1.5 text-center cursor-pointer rounded-md transition-all duration-200
                       ${!date ? 'invisible' : ''}
                       ${isDateDisabled(date) ? 'text-gray-300 cursor-not-allowed' : 
-                        isStartOrEndDate(date) ? 'bg-blue-500 text-white hover:bg-blue-600' :
-                        isInRange(date) ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' :
+                        isDateSelected(date) ? 'bg-blue-500 text-white hover:bg-blue-600' :
                         'hover:bg-blue-50 text-gray-700'
                       }
                     `}
-                    onClick={() => date && handleDateClick(date)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      date && handleDateClick(date);
+                    }}
                     onMouseEnter={() => setHoverDate(date)}
                     onMouseLeave={() => setHoverDate(null)}
                   >
@@ -272,11 +383,11 @@ const CustomDatePicker = ({
                       <>
                         <span className={`
                           relative z-10 font-medium
-                          ${isStartOrEndDate(date) ? 'text-white' : ''}
+                          ${isDateSelected(date) ? 'text-white' : ''}
                         `}>
                           {format(date, 'd')}
                         </span>
-                        {isStartOrEndDate(date) && (
+                        {isDateSelected(date) && (
                           <span className="absolute inset-0 rounded-md bg-blue-500 shadow-sm"></span>
                         )}
                       </>

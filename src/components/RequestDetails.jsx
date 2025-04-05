@@ -45,6 +45,12 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     enabled: activeTab === "advanceRequests",
   });
 
+  // Fetch comp off requests
+  const { data: compOffRequests = [], isLoading: isLoadingCompOff } = useQuery({
+    queryKey: ["/api/comp-off-requests"],
+    enabled: activeTab === "compOffRequests",
+  });
+
   // Update leave request status
   const updateLeaveStatus = useMutation({
     mutationFn: async ({ id, status }) => {
@@ -141,6 +147,30 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     },
   });
 
+  // Update comp off request status
+  const updateCompOffStatus = useMutation({
+    mutationFn: async ({ id, status }) => {
+      return apiRequest("PATCH", `/api/comp-off-requests/${id}/status`, {
+        status,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comp-off-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
+      toast({
+        title: "Status updated",
+        description: "The comp off request has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "There was an error updating the comp off request.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleApprove = (type, id) => {
     switch (type) {
       case "leaveRequests":
@@ -154,6 +184,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         break;
       case "advanceRequests":
         updateAdvanceStatus.mutate({ id, status: "approved" });
+        break;
+      case "compOffRequests":
+        updateCompOffStatus.mutate({ id, status: "approved" });
         break;
     }
   };
@@ -172,6 +205,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       case "advanceRequests":
         updateAdvanceStatus.mutate({ id, status: "rejected" });
         break;
+      case "compOffRequests":
+        updateCompOffStatus.mutate({ id, status: "rejected" });
+        break;
     }
   };
 
@@ -183,7 +219,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     (activeTab === "leaveRequests" && isLoadingLeave) ||
     (activeTab === "profileUpdates" && isLoadingProfile) ||
     (activeTab === "expenseRequests" && isLoadingExpense) ||
-    (activeTab === "advanceRequests" && isLoadingAdvance);
+    (activeTab === "advanceRequests" && isLoadingAdvance) ||
+    (activeTab === "compOffRequests" && isLoadingCompOff);
 
   // Hardcoded leave request data
   const hardcodedLeaveRequests = [
@@ -314,19 +351,58 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     },
   ];
 
+  // Hardcoded comp off request data
+  const hardcodedCompOffRequests = [
+    {
+      id: 1,
+      employeeId: "EMP104",
+      name: "Sarah Johnson",
+      department: "Engineering",
+      date: "2024-03-15",
+      shiftType: "First Half",
+      description: "Worked extra hours during project deadline",
+    },
+
+    {
+      id: 2,
+      employeeId: "EMP105",
+      name: "Robert Wilson",
+      department: "Marketing",
+      date: "2024-03-16",
+      shiftType: "Full Day",
+      description: "Weekend work for campaign launch",
+    },
+    {
+      id: 3,
+      employeeId: "EMP106",
+      name: "Emily Brown",
+      department: "Sales",
+      date: "2024-03-17",
+      shiftType: "Second Half",
+      description: "Extended client meeting",
+    },
+  ];
+
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
       <h2 className="text-xl font-semibold text-blue-800 mb-5 pl-2">
         Request Details
       </h2>
       <Tabs value={activeTab} onValueChange={(value) => onTabChange(value)}>
-        <TabsList className="grid grid-cols-4 gap-3 mb-5 bg-transparent p-0">
+        <TabsList className="grid grid-cols-5 gap-3 mb-5 bg-transparent p-0">
           <TabsTrigger
             value="leaveRequests"
             className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
           >
             <Calendar className="h-4 w-4 mr-2" />
             <span>Leave Requests</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="compOffRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            <span>Comp Off</span>
           </TabsTrigger>
           <TabsTrigger
             value="profileUpdates"
@@ -430,6 +506,76 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
             </table>
           </div>
         </TabsContent>
+        <TabsContent value="compOffRequests">
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee ID
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee Name
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Department
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Date
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Shift Type
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Description
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedCompOffRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {request.employeeId}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{request.name}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{formatDate(request.date)}</td>
+                    <td className="px-5 py-4 text-sm">{request.shiftType}</td>
+                    <td className="px-5 py-4 text-sm">{request.description}</td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleApprove("compOffRequests", request.id)
+                        }
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleReject("compOffRequests", request.id)
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
         <TabsContent value="profileUpdates">
           <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
             <table className="w-full">
@@ -479,7 +625,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         onClick={() =>
                           handleApprove("profileUpdates", update.id)
                         }
-                      >
+                        >
                         <Check className="h-4 w-4" />
                       </Button>
                       <Button

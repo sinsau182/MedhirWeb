@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import { useDispatch, useSelector } from 'react-redux';
+import { createLeaveType, resetLeaveTypeState, fetchLeaveTypes, deleteLeaveType, updateLeaveType } from '@/redux/slices/leaveTypeSlice';
+import { createLeavePolicy, resetLeavePolicyState, fetchLeavePolicies, updateLeavePolicy, deleteLeavePolicy } from '@/redux/slices/leavePolicySlice';
+import { fetchPublicHolidays, createPublicHoliday, updatePublicHoliday, deletePublicHoliday } from '@/redux/slices/publicHolidaySlice';
+import { toast } from 'react-toastify';
 
 const LeaveSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -28,7 +33,7 @@ const LeaveSettings = () => {
   const [showPolicyEditModal, setShowPolicyEditModal] = useState(false);
   const [policyForm, setPolicyForm] = useState({
     name: "",
-    leaveAllocation: [{ leaveType: "", annualQuota: "" }],
+    leaveAllocations: [{ leaveTypeId: "", daysPerYear: "" }],
   });
 
   // Add new state variables for Public Holidays
@@ -50,6 +55,44 @@ const LeaveSettings = () => {
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [selectedHoliday, setSelectedHoliday] = useState(null);
 
+  const dispatch = useDispatch();
+  const { loading, error, success, leaveTypes, lastUpdated } = useSelector((state) => state.leaveType);
+  const { 
+    loading: policyLoading, 
+    error: policyError, 
+    success: policySuccess,
+    policies
+  } = useSelector((state) => state.leavePolicy);
+  const {
+    loading: holidayLoading,
+    error: holidayError,
+    holidays
+  } = useSelector((state) => state.publicHoliday);
+
+  // Fetch leave types when component mounts
+  useEffect(() => {
+    dispatch(fetchLeaveTypes());
+  }, [dispatch]);
+
+  // Fetch leave policies when component mounts
+  useEffect(() => {
+    dispatch(fetchLeavePolicies());
+  }, [dispatch]);
+
+  // Reset policy state when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(resetLeavePolicyState());
+    };
+  }, [dispatch]);
+
+  // Add useEffect for fetching public holidays
+  useEffect(() => {
+    if (activeTab === "Public Holidays") {
+      dispatch(fetchPublicHolidays());
+    }
+  }, [dispatch, activeTab]);
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -58,10 +101,19 @@ const LeaveSettings = () => {
   const handleLeaveTypeFormChange = (e) => {
     setIsLeaveTypeFormChanged(true);
     const { name, value, type, checked } = e.target;
-    setLeaveTypeForm({
-      ...leaveTypeForm,
+    setLeaveTypeForm(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value,
-    });
+    }));
+
+    // Clear the specific error when the field is being edited
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handlePolicyFormChange = (e) => {
@@ -95,16 +147,26 @@ const LeaveSettings = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      showNotification("error", "Please fill in all required fields");
+      setTimeout(() => {
+        setErrors({});
+      }, 2000);
       return;
     }
 
     try {
-      // TODO: Add API call to save leave type
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Leave type added successfully!",
-      });
+      const leaveTypeData = {
+        leaveTypeName: leaveTypeForm.name,
+        accrualPeriod: leaveTypeForm.accrual,
+        description: leaveTypeForm.description || "",
+        allowedInProbationPeriod: leaveTypeForm.allowedInProbation || false,
+        allowedInNoticePeriod: leaveTypeForm.allowedInNotice || false,
+        canBeCarriedForward: leaveTypeForm.canCarryForward || false
+      };
+
+      const result = await dispatch(createLeaveType(leaveTypeData)).unwrap();
+      showNotification("success", "Leave type added successfully!");
+
       setShowLeaveTypeModal(false);
       setLeaveTypeForm({
         name: "",
@@ -115,63 +177,119 @@ const LeaveSettings = () => {
         canCarryForward: false,
       });
       setIsLeaveTypeFormChanged(false);
+      setErrors({});
+
+      // Refresh the leave types list
+      dispatch(fetchLeaveTypes());
+
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to add leave type. Please try again.",
-      });
+      console.error('Error in handleLeaveTypeSubmit:', error);
+      if (error.message?.toLowerCase().includes('already exists')) {
+        showNotification("error", "Leave type already exists");
+        setTimeout(() => {
+          setShowLeaveTypeModal(false);
+          dispatch(fetchLeaveTypes()); // Refresh the list
+        }, 2000);
+      } else {
+        showNotification("error", error.message || "Failed to add leave type");
+      }
     }
   };
 
-  // Add handler for leave type update
-  const handleLeaveTypeUpdate = async (id) => {
+  const handleLeaveTypeRowClick = (type) => {
+    console.log('Selected leave type:', type); // Debug log
+    setSelectedLeaveType(type); // Store the entire leave type object
+    setLeaveTypeForm({
+      name: type.leaveTypeName || "",
+      accrual: type.accrualPeriod || "",
+      description: type.description || "",
+      allowedInProbation: type.allowedInProbationPeriod || false,
+      allowedInNotice: type.allowedInNoticePeriod || false,
+      canCarryForward: type.canBeCarriedForward || false
+    });
+    setShowLeaveTypeEditModal(true);
+    setIsLeaveTypeFormChanged(false);
+    setErrors({});
+  };
+
+  const handleLeaveTypeUpdate = async (e) => {
+    e.preventDefault();
     try {
-      // TODO: Add API call to update leave type
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Leave type updated successfully!",
-      });
-      setShowLeaveTypeModal(false);
+      const newErrors = {};
+
+      if (!leaveTypeForm.name) {
+        newErrors.name = "Leave type name is required";
+      }
+      if (!leaveTypeForm.accrual) {
+        newErrors.accrual = "Accrual period is required";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        showNotification("error", "Please fill in all required fields");
+        setTimeout(() => {
+          setErrors({});
+        }, 2000);
+        return;
+      }
+
+      if (!selectedLeaveType?.leaveTypeId) {
+        showNotification("error", "Invalid leave type selected");
+        return;
+      }
+
+      const leaveTypeData = {
+        leaveTypeId: selectedLeaveType.leaveTypeId,
+        leaveTypeName: leaveTypeForm.name,
+        accrualPeriod: leaveTypeForm.accrual,
+        description: leaveTypeForm.description || "",
+        allowedInProbationPeriod: leaveTypeForm.allowedInProbation || false,
+        allowedInNoticePeriod: leaveTypeForm.allowedInNotice || false,
+        canBeCarriedForward: leaveTypeForm.canCarryForward || false
+      };
+
+      await dispatch(updateLeaveType({ 
+        id: selectedLeaveType.leaveTypeId, 
+        leaveTypeData 
+      })).unwrap();
+      
+      showNotification("success", "Leave type updated successfully!");
+
+      setShowLeaveTypeEditModal(false);
       setSelectedLeaveType(null);
-      setIsLeaveTypeFormChanged(false);
-    } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to update leave type. Please try again.",
+      setLeaveTypeForm({
+        name: "",
+        accrual: "",
+        description: "",
+        allowedInProbation: false,
+        allowedInNotice: false,
+        canCarryForward: false,
       });
+      setIsLeaveTypeFormChanged(false);
+      setErrors({});
+
+      // Refresh data instead of page reload
+      dispatch(fetchLeaveTypes());
+
+    } catch (error) {
+      if (error.message?.includes('already exists')) {
+        showNotification("error", "Leave type already exists");
+        setTimeout(() => {
+          setShowLeaveTypeEditModal(false);
+        }, 2000);
+      } else {
+        showNotification("error", error.message || "Failed to update leave type");
+      }
     }
   };
-
-  // Sample leave types data (this would come from your API)
-  const leaveTypes = [
-    { id: 1, name: "Annual Leave" },
-    { id: 2, name: "Sick Leave" },
-    { id: 3, name: "Comp-off" },
-  ];
-
-  // Sample policies data (this would come from your API)
-  const policies = [
-    {
-      id: 1,
-      name: "Standard Policy",
-      leaveAllocation: [
-        { leaveType: "Annual Leave", annualQuota: 24 },
-        { leaveType: "Sick Leave", annualQuota: 12 },
-      ],
-    },
-    // Add more sample policies as needed
-  ];
 
   const handleAddLeaveAllocation = () => {
     setIsPolicyFormChanged(true);
     setPolicyForm((prev) => ({
       ...prev,
-      leaveAllocation: [
-        ...prev.leaveAllocation,
-        { leaveType: "", annualQuota: "" },
+      leaveAllocations: [
+        ...prev.leaveAllocations,
+        { leaveTypeId: "", daysPerYear: "" },
       ],
     }));
   };
@@ -180,7 +298,7 @@ const LeaveSettings = () => {
     setIsPolicyFormChanged(true);
     setPolicyForm((prev) => ({
       ...prev,
-      leaveAllocation: prev.leaveAllocation.filter((_, i) => i !== index),
+      leaveAllocations: prev.leaveAllocations.filter((_, i) => i !== index),
     }));
   };
 
@@ -192,136 +310,131 @@ const LeaveSettings = () => {
       newErrors.policyName = "Policy name is required";
     }
 
-    if (
-      policyForm.leaveAllocation.some(
-        (item) => !item.leaveType || !item.annualQuota
-      )
-    ) {
+    if (policyForm.leaveAllocations.some((item) => !item.leaveTypeId || !item.daysPerYear)) {
       newErrors.leaveAllocation = "All leave types and quotas must be filled";
     }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      showNotification("error", "Please fill in all required fields");
+      setTimeout(() => {
+        setErrors({});
+      }, 2000);
       return;
     }
 
     try {
-      // TODO: Add API call to save policy
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Leave policy added successfully!",
-      });
+      const policyData = {
+        name: policyForm.name,
+        leaveAllocations: policyForm.leaveAllocations.map(item => ({
+          leaveTypeId: item.leaveTypeId,
+          daysPerYear: parseInt(item.daysPerYear)
+        }))
+      };
+
+      await dispatch(createLeavePolicy(policyData)).unwrap();
+      showNotification("success", "Leave policy added successfully!");
+
       setShowPolicyModal(false);
       setPolicyForm({
         name: "",
-        leaveAllocation: [{ leaveType: "", annualQuota: "" }],
+        leaveAllocations: [{ leaveTypeId: "", daysPerYear: "" }],
       });
       setIsPolicyFormChanged(false);
+      setErrors({});
+
+      // Refresh the policies list
+      dispatch(fetchLeavePolicies());
+
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to add leave policy. Please try again.",
-      });
+      showNotification("error", error.message || "Failed to add leave policy");
     }
   };
 
-  // Add handler for policy update
-  const handlePolicyUpdate = async (id) => {
+  const handlePolicyUpdate = async () => {
     try {
-      // TODO: Add API call to update policy
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Leave policy updated successfully!",
-      });
-      setShowPolicyModal(false);
+      const newErrors = {};
+
+      if (!policyForm.name) {
+        newErrors.policyName = "Policy name is required";
+      }
+
+      if (policyForm.leaveAllocations.some((item) => !item.leaveTypeId || !item.daysPerYear)) {
+        newErrors.leaveAllocation = "All leave types and quotas must be filled";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        showNotification("error", "Please fill in all required fields");
+        setTimeout(() => {
+          setErrors({});
+        }, 2000);
+        return;
+      }
+
+      if (!selectedPolicy?.leavePolicyId) {
+        showNotification("error", "Invalid policy selected");
+        return;
+      }
+
+      const policyData = {
+        name: policyForm.name,
+        leaveAllocations: policyForm.leaveAllocations.map(item => ({
+          leaveTypeId: item.leaveTypeId,
+          daysPerYear: parseInt(item.daysPerYear)
+        }))
+      };
+
+      console.log('Updating policy with ID:', selectedPolicy.leavePolicyId); // Debug log
+      await dispatch(updateLeavePolicy({ 
+        id: selectedPolicy.leavePolicyId,
+        policyData 
+      })).unwrap();
+      showNotification("success", "Leave policy updated successfully!");
+
+      setShowPolicyEditModal(false);
       setSelectedPolicy(null);
-      setIsPolicyFormChanged(false);
-    } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to update leave policy. Please try again.",
-      });
-    }
-  };
-
-  // Sample public holidays data (this would come from your API)
-  const publicHolidays = [
-    {
-      id: 1,
-      name: "Republic Day",
-      date: "2025-01-26",
-      description: "National Holiday",
-    },
-    {
-      id: 2,
-      name: "Independence Day",
-      date: "2024-08-15",
-      description: "National Holiday",
-    },
-    // Add more sample holidays as needed
-  ];
-
-  const handleHolidaySubmit = async (e) => {
-    e.preventDefault();
-    const newErrors = {};
-
-    if (!holidayForm.name) {
-      newErrors.holidayName = "Holiday name is required";
-    }
-    if (!holidayForm.date) {
-      newErrors.holidayDate = "Date is required";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    try {
-      // TODO: Add API call to save holiday
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Public holiday added successfully!",
-      });
-      setShowHolidayModal(false);
-      setHolidayForm({
+      setPolicyForm({
         name: "",
-        date: "",
-        description: "",
+        leaveAllocations: [{ leaveTypeId: "", daysPerYear: "" }],
       });
-      setIsHolidayFormChanged(false);
+      setIsPolicyFormChanged(false);
+      setErrors({});
+
+      // Refresh the policies list
+      dispatch(fetchLeavePolicies());
+
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to add public holiday. Please try again.",
-      });
+      console.error('Error updating policy:', error); // Debug log
+      showNotification("error", error.message || "Failed to update leave policy");
     }
   };
 
-  // Add handler for holiday update
-  const handleHolidayUpdate = async (id) => {
+  const handlePolicyDelete = async () => {
     try {
-      // TODO: Add API call to update holiday
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Public holiday updated successfully!",
+      if (!selectedPolicy?.leavePolicyId) {
+        showNotification("error", "Invalid policy selected");
+        return;
+      }
+
+      console.log('Deleting policy with ID:', selectedPolicy.leavePolicyId); // Debug log
+      await dispatch(deleteLeavePolicy(selectedPolicy.leavePolicyId)).unwrap();
+      
+      showNotification("success", "Leave policy deleted successfully!");
+
+      setShowPolicyEditModal(false);
+      setSelectedPolicy(null);
+      setPolicyForm({
+        name: "",
+        leaveAllocations: [{ leaveTypeId: "", daysPerYear: "" }],
       });
-      setShowHolidayModal(false);
-      setSelectedHoliday(null);
-      setIsHolidayFormChanged(false);
+
+      // Refresh the policies list
+      dispatch(fetchLeavePolicies());
+
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: "Failed to update public holiday. Please try again.",
-      });
+      console.error('Error deleting policy:', error); // Debug log
+      showNotification("error", error.message || "Failed to delete leave policy");
     }
   };
 
@@ -336,25 +449,18 @@ const LeaveSettings = () => {
   };
 
   // Add handlers for row clicks
-  const handleLeaveTypeRowClick = (type) => {
-    setSelectedLeaveType(type);
-    setLeaveTypeForm({
-      name: type.name,
-      accrual: type.accrual || "",
-      description: type.description || "",
-      allowedInProbation: type.allowedInProbation || false,
-      allowedInNotice: type.allowedInNotice || false,
-      canCarryForward: type.canCarryForward || false,
-    });
-    setShowLeaveTypeEditModal(true);
-    setIsLeaveTypeFormChanged(false);
-  };
-
   const handlePolicyRowClick = (policy) => {
-    setSelectedPolicy(policy);
+    console.log('Selected policy:', policy); // Debug log
+    setSelectedPolicy({
+      ...policy,
+      leavePolicyId: policy.id || policy.leavePolicyId // Ensure we have the correct ID
+    });
     setPolicyForm({
       name: policy.name,
-      leaveAllocation: policy.leaveAllocation || [{ leaveType: "", annualQuota: "" }],
+      leaveAllocations: policy.leaveAllocations.map(allocation => ({
+        leaveTypeId: allocation.leaveTypeId,
+        daysPerYear: allocation.daysPerYear
+      })) || [{ leaveTypeId: "", daysPerYear: "" }],
     });
     setShowPolicyEditModal(true);
     setIsPolicyFormChanged(false);
@@ -363,12 +469,230 @@ const LeaveSettings = () => {
   const handleHolidayRowClick = (holiday) => {
     setSelectedHoliday(holiday);
     setHolidayForm({
-      name: holiday.name,
+      name: holiday.holidayName,
       date: holiday.date,
       description: holiday.description || "",
     });
     setShowHolidayEditModal(true);
     setIsHolidayFormChanged(false);
+  };
+
+  // Add handler for leave type delete
+  const handleLeaveTypeDelete = async () => {
+    try {
+      await dispatch(deleteLeaveType(selectedLeaveType.leaveTypeId)).unwrap();
+      
+      showNotification("error", "Leave type deleted successfully!");
+
+      setShowLeaveTypeEditModal(false);
+      setSelectedLeaveType(null);
+      setLeaveTypeForm({
+        name: "",
+        accrual: "",
+        description: "",
+        allowedInProbation: false,
+        allowedInNotice: false,
+        canCarryForward: false,
+      });
+
+      // Refresh data instead of page reload
+      dispatch(fetchLeaveTypes());
+
+    } catch (error) {
+      showNotification("error", error.message || "Failed to delete leave type");
+    }
+  };
+
+  const handleHolidaySubmit = async (e) => {
+    e.preventDefault();
+    const newErrors = {};
+
+    if (!holidayForm.name) {
+      newErrors.holidayName = "Holiday name is required";
+    }
+    if (!holidayForm.date) {
+      newErrors.holidayDate = "Date is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Please fill in all required fields",
+      });
+
+      // Auto-hide both error notification and validation errors after 2 seconds
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+        setErrors({});
+      }, 2000);
+
+      return;
+    }
+
+    try {
+      const holidayData = {
+        holidayName: holidayForm.name,
+        date: holidayForm.date,
+        description: holidayForm.description
+      };
+
+      await dispatch(createPublicHoliday(holidayData)).unwrap();
+      
+      setNotification({
+        show: true,
+        type: "success",
+        message: "Public holiday added successfully!",
+      });
+
+      setShowHolidayModal(false);
+      setHolidayForm({
+        name: "",
+        date: "",
+        description: "",
+      });
+      setIsHolidayFormChanged(false);
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+
+    } catch (error) {
+      setNotification({
+        show: true,
+        type: "error",
+        message: error || "Failed to add public holiday. Please try again.",
+      });
+
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+    }
+  };
+
+  const handleHolidayUpdate = async (e) => {
+    e.preventDefault();
+    const newErrors = {};
+
+    if (!holidayForm.name) {
+      newErrors.holidayName = "Holiday name is required";
+    }
+    if (!holidayForm.date) {
+      newErrors.holidayDate = "Date is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      
+      setNotification({
+        show: true,
+        type: "error",
+        message: "Please fill in all required fields",
+      });
+
+      // Auto-hide both error notification and validation errors after 2 seconds
+      setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+        setErrors({});
+      }, 2000);
+
+      return;
+    }
+
+    try {
+      const holidayData = {
+        holidayName: holidayForm.name,
+        date: holidayForm.date,
+        description: holidayForm.description
+      };
+
+      await dispatch(updatePublicHoliday({ 
+        id: selectedHoliday.holidayId,
+        holidayData 
+      })).unwrap();
+      
+      showNotification("success", "Public holiday updated successfully!");
+
+      setShowHolidayEditModal(false);
+      setSelectedHoliday(null);
+      setHolidayForm({
+        name: "",
+        date: "",
+        description: "",
+      });
+      setIsHolidayFormChanged(false);
+
+      // Refresh data instead of page reload
+      dispatch(fetchPublicHolidays());
+
+    } catch (error) {
+      showNotification("error", error.message || "Failed to update public holiday");
+    }
+  };
+
+  const handleHolidayDelete = async () => {
+    try {
+      await dispatch(deletePublicHoliday(selectedHoliday.holidayId)).unwrap();
+      
+      showNotification("error", "Public holiday deleted successfully!");
+
+      setShowHolidayEditModal(false);
+      setSelectedHoliday(null);
+      setHolidayForm({
+        name: "",
+        date: "",
+        description: "",
+      });
+
+      // Refresh data instead of page reload
+      dispatch(fetchPublicHolidays());
+
+    } catch (error) {
+      showNotification("error", error.message || "Failed to delete public holiday");
+    }
+  };
+
+  const showNotification = (type, message) => {
+    const options = {
+      position: "bottom-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      style: {
+        zIndex: 9999,
+      },
+    };
+
+    switch (type) {
+      case 'success':
+        toast.success(message, options);
+        break;
+      case 'error':
+        toast.error(message, options);
+        break;
+      default:
+        toast.info(message, options);
+    }
   };
 
   return (
@@ -382,7 +706,7 @@ const LeaveSettings = () => {
       >
         <HradminNavbar />
 
-        <div className="p-6 mt-16">
+        <div className="p-6 mt-16 relative">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">
             Leave Settings
           </h1>
@@ -406,7 +730,7 @@ const LeaveSettings = () => {
 
           {/* Leave Types Content */}
           {activeTab === "Leave Types" && (
-            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 relative z-0">
               {/* Header with Add Button */}
               <div className="flex justify-between items-center mb-6">
                 <button
@@ -450,38 +774,50 @@ const LeaveSettings = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {leaveTypes.map((type, index) => (
-                      <tr 
-                        key={index} 
-                        onClick={() => handleLeaveTypeRowClick(type)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {type.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {type.accrual}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {type.description}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex flex-col gap-1">
-                            <span>
-                              Probation:{" "}
-                              {type.allowedInProbation ? "Yes" : "No"}
-                            </span>
-                            <span>
-                              Notice: {type.allowedInNotice ? "Yes" : "No"}
-                            </span>
-                            <span>
-                              Carry Forward:{" "}
-                              {type.canCarryForward ? "Yes" : "No"}
-                            </span>
-                          </div>
+                    {loading ? (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-4 text-center">
+                          Loading...
                         </td>
                       </tr>
-                    ))}
+                    ) : leaveTypes.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-4 text-center">
+                          No leave types found
+                        </td>
+                      </tr>
+                    ) : (
+                      leaveTypes.map((type) => (
+                        <tr
+                          key={type.leaveTypeId}
+                          onClick={() => handleLeaveTypeRowClick(type)}
+                          className="hover:bg-gray-50 cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {type.leaveTypeName}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {type.accrualPeriod}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {type.description}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex flex-col gap-1">
+                              <span>
+                                Probation: {type.allowedInProbationPeriod ? "Yes" : "No"}
+                              </span>
+                              <span>
+                                Notice: {type.allowedInNoticePeriod ? "Yes" : "No"}
+                              </span>
+                              <span>
+                                Carry Forward: {type.canBeCarriedForward ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -497,7 +833,7 @@ const LeaveSettings = () => {
                     setSelectedPolicy(null);
                     setPolicyForm({
                       name: "",
-                      leaveAllocation: [{ leaveType: "", annualQuota: "" }],
+                      leaveAllocations: [{ leaveTypeId: "", daysPerYear: "" }],
                     });
                     setShowPolicyModal(true);
                     setIsPolicyFormChanged(false);
@@ -523,32 +859,52 @@ const LeaveSettings = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {policies.map((policy) => (
-                      <tr 
-                        key={policy.id}
-                        onClick={() => handlePolicyRowClick(policy)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {policy.name}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <div className="space-y-1">
-                            {policy.leaveAllocation.map((allocation, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2"
-                              >
-                                <span className="font-medium">
-                                  {allocation.leaveType}:
-                                </span>
-                                <span>{allocation.annualQuota} days/year</span>
-                              </div>
-                            ))}
-                          </div>
+                    {policyLoading ? (
+                      <tr>
+                        <td colSpan="2" className="px-6 py-4 text-center">
+                          Loading...
                         </td>
                       </tr>
-                    ))}
+                    ) : policyError ? (
+                      <tr>
+                        <td colSpan="2" className="px-6 py-4 text-center text-red-500">
+                          {policyError}
+                        </td>
+                      </tr>
+                    ) : policies.length === 0 ? (
+                      <tr>
+                        <td colSpan="2" className="px-6 py-4 text-center">
+                          No leave policies found
+                        </td>
+                      </tr>
+                    ) : (
+                      policies.map((policy) => (
+                        <tr
+                          key={policy.id || policy.leavePolicyId}
+                          onClick={() => handlePolicyRowClick(policy)}
+                          className="hover:bg-gray-50 cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {policy.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="space-y-1">
+                              {policy.leaveAllocations.map((allocation, index) => (
+                                <div
+                                  key={`${policy.id || policy.leavePolicyId}-${allocation.leaveTypeId || index}`}
+                                  className="flex items-center gap-2"
+                                >
+                                  <span className="font-medium">
+                                    {allocation.leaveTypeName}:
+                                  </span>
+                                  <span>{allocation.daysPerYear} days/year</span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -606,29 +962,29 @@ const LeaveSettings = () => {
                           </button>
                         </div>
 
-                        {policyForm.leaveAllocation.map((allocation, index) => (
+                        {policyForm.leaveAllocations.map((allocation, index) => (
                           <div key={index} className="flex gap-4 items-start">
                             <div className="flex-1">
                               <select
-                                value={allocation.leaveType}
+                                value={allocation.leaveTypeId || ''}
                                 onChange={(e) => {
                                   setIsPolicyFormChanged(true);
-                                  const newAllocations = [
-                                    ...policyForm.leaveAllocation,
-                                  ];
-                                  newAllocations[index].leaveType =
-                                    e.target.value;
+                                  const newAllocations = [...policyForm.leaveAllocations];
+                                  newAllocations[index] = {
+                                    ...newAllocations[index],
+                                    leaveTypeId: e.target.value
+                                  };
                                   setPolicyForm({
                                     ...policyForm,
-                                    leaveAllocation: newAllocations,
+                                    leaveAllocations: newAllocations,
                                   });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Select Leave Type</option>
                                 {leaveTypes.map((type) => (
-                                  <option key={type.id} value={type.name}>
-                                    {type.name}
+                                  <option key={type.leaveTypeId} value={type.leaveTypeId}>
+                                    {type.leaveTypeName}
                                   </option>
                                 ))}
                               </select>
@@ -636,17 +992,17 @@ const LeaveSettings = () => {
                             <div className="flex-1">
                               <input
                                 type="number"
-                                value={allocation.annualQuota}
+                                value={allocation.daysPerYear || ''}
                                 onChange={(e) => {
                                   setIsPolicyFormChanged(true);
-                                  const newAllocations = [
-                                    ...policyForm.leaveAllocation,
-                                  ];
-                                  newAllocations[index].annualQuota =
-                                    e.target.value;
+                                  const newAllocations = [...policyForm.leaveAllocations];
+                                  newAllocations[index] = {
+                                    ...newAllocations[index],
+                                    daysPerYear: e.target.value
+                                  };
                                   setPolicyForm({
                                     ...policyForm,
-                                    leaveAllocation: newAllocations,
+                                    leaveAllocations: newAllocations,
                                   });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -709,7 +1065,7 @@ const LeaveSettings = () => {
 
                     <form onSubmit={(e) => {
                       e.preventDefault();
-                      handlePolicyUpdate(selectedPolicy.id);
+                      handlePolicyUpdate();
                     }} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -744,29 +1100,29 @@ const LeaveSettings = () => {
                           </button>
                         </div>
 
-                        {policyForm.leaveAllocation.map((allocation, index) => (
+                        {policyForm.leaveAllocations.map((allocation, index) => (
                           <div key={index} className="flex gap-4 items-start">
                             <div className="flex-1">
                               <select
-                                value={allocation.leaveType}
+                                value={allocation.leaveTypeId || ''}
                                 onChange={(e) => {
                                   setIsPolicyFormChanged(true);
-                                  const newAllocations = [
-                                    ...policyForm.leaveAllocation,
-                                  ];
-                                  newAllocations[index].leaveType =
-                                    e.target.value;
+                                  const newAllocations = [...policyForm.leaveAllocations];
+                                  newAllocations[index] = {
+                                    ...newAllocations[index],
+                                    leaveTypeId: e.target.value
+                                  };
                                   setPolicyForm({
                                     ...policyForm,
-                                    leaveAllocation: newAllocations,
+                                    leaveAllocations: newAllocations,
                                   });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="">Select Leave Type</option>
                                 {leaveTypes.map((type) => (
-                                  <option key={type.id} value={type.name}>
-                                    {type.name}
+                                  <option key={type.leaveTypeId} value={type.leaveTypeId}>
+                                    {type.leaveTypeName}
                                   </option>
                                 ))}
                               </select>
@@ -774,17 +1130,17 @@ const LeaveSettings = () => {
                             <div className="flex-1">
                               <input
                                 type="number"
-                                value={allocation.annualQuota}
+                                value={allocation.daysPerYear || ''}
                                 onChange={(e) => {
                                   setIsPolicyFormChanged(true);
-                                  const newAllocations = [
-                                    ...policyForm.leaveAllocation,
-                                  ];
-                                  newAllocations[index].annualQuota =
-                                    e.target.value;
+                                  const newAllocations = [...policyForm.leaveAllocations];
+                                  newAllocations[index] = {
+                                    ...newAllocations[index],
+                                    daysPerYear: e.target.value
+                                  };
                                   setPolicyForm({
                                     ...policyForm,
-                                    leaveAllocation: newAllocations,
+                                    leaveAllocations: newAllocations,
                                   });
                                 }}
                                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -812,7 +1168,7 @@ const LeaveSettings = () => {
                       <div className="flex justify-end gap-3 mt-6">
                         <button
                           type="button"
-                          onClick={() => setShowPolicyEditModal(false)}
+                          onClick={handlePolicyDelete}
                           className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                         >
                           Delete
@@ -871,14 +1227,33 @@ const LeaveSettings = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {publicHolidays.map((holiday) => (
-                      <tr 
-                        key={holiday.id}
+                    {holidayLoading ? (
+                      <tr>
+                        <td colSpan="3" className="px-6 py-4 text-center">
+                          Loading...
+                        </td>
+                      </tr>
+                    ) : holidayError ? (
+                      <tr>
+                        <td colSpan="3" className="px-6 py-4 text-center text-red-500">
+                          {holidayError}
+                        </td>
+                      </tr>
+                    ) : holidays.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="px-6 py-4 text-center">
+                          No public holidays found
+                        </td>
+                      </tr>
+                    ) : (
+                      holidays.map((holiday) => (
+                        <tr 
+                          key={holiday.holidayId}
                         onClick={() => handleHolidayRowClick(holiday)}
                         className="hover:bg-gray-50 cursor-pointer"
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {holiday.name}
+                            {holiday.holidayName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDate(holiday.date)}
@@ -887,7 +1262,8 @@ const LeaveSettings = () => {
                           {holiday.description || "-"}
                         </td>
                       </tr>
-                    ))}
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -999,10 +1375,7 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      handleHolidayUpdate(selectedHoliday.id);
-                    }} className="space-y-4">
+                    <form onSubmit={handleHolidayUpdate} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Holiday Name
@@ -1047,7 +1420,7 @@ const LeaveSettings = () => {
                       <div className="flex justify-end gap-3 mt-6">
                         <button
                           type="button"
-                          onClick={() => setShowHolidayEditModal(false)}
+                          onClick={handleHolidayDelete}
                           className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                         >
                           Delete
@@ -1229,10 +1602,7 @@ const LeaveSettings = () => {
                   </button>
                 </div>
 
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleLeaveTypeUpdate(selectedLeaveType.id);
-                }} className="space-y-4">
+                <form onSubmit={handleLeaveTypeUpdate} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Leave Type Name
@@ -1343,7 +1713,7 @@ const LeaveSettings = () => {
                   <div className="flex justify-end gap-3 mt-6">
                     <button
                       type="button"
-                      onClick={() => setShowLeaveTypeEditModal(false)}
+                      onClick={handleLeaveTypeDelete}
                       className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
                     >
                       Delete
