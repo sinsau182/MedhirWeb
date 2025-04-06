@@ -110,14 +110,8 @@ const Overview = () => {
 
     {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
-      label: "Leave Requests",
+      label: "Open Requests",
       count: 5,
-    },
-
-    {
-      icon: <FaClock className="h-6 w-6 text-yellow-500" />,
-      label: "Performance",
-      count: 12,
     },
   ];
 
@@ -125,7 +119,7 @@ const Overview = () => {
 <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
 
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"hr"} />
+      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"manager"} />
 
       {/* Main Content */}
 
@@ -159,99 +153,55 @@ const Overview = () => {
                   item.label === "Team Members" ? (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300"
-                      style={{ height: "250px", width: "400px" }}
-                      onClick={() => window.location.href = '/manager/team'} // Updated click handler
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
+                      onClick={() => window.location.href = '/manager/team'}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
                           {item.label}
                         </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaUsers className="text-[#4876D6] text-2xl" />
+                        <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+                          <FaUsers className="text-blue-600 text-2xl" />
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
                           {item.count}
                         </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          People in your department
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-green-600">
-                        <span className="text-lg">↑</span>
-
-                        <span className="ml-1">+12 from last month</span>
-                      </div>
-                    </div>
-                  ) : item.label === "Leave Requests" ? (
-                    <div
-                      key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      style={{ height: "250px", width: "400px" }}
-                      onClick={handleOpenRequestsClick} // Updated click handler
-                    >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
-                            {item.label}
-                        </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaClock className="text-[#4876D6] text-2xl" />
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">People in your department</p>
+                          <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
+                            <span className="text-xs text-blue-600 font-medium">Active</span>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">
-                            {item.count}
-                        </p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Pending Approval from your team
-                        </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-green-600">
-                        <span className="text-lg">↑</span>
-
-                        <span className="ml-1">+3.8% vs target (90%)</span>
-                      </div>
                     </div>
-                  ) : item.label === "Performance" ? (
+                  ) : item.label === "Open Requests" ? (
                     <div
                       key={index}
-                      className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-start hover:shadow-xl hover:scale-105 transition-transform duration-300 cursor-pointer"
-                      style={{ height: "250px", width: "400px" }}
+                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                      style={{ height: "250px", width: "350px" }}
+                      onClick={handleOpenRequestsClick}
                     >
-                      <div className="flex justify-between items-center w-full">
-                        <p className="text-gray-600 text-lg font-semibold">
-                            {item.label}
+                      <div className="flex justify-between items-center w-full mb-8">
+                        <p className="text-xl font-semibold text-gray-800">
+                          {item.label}
                         </p>
-
-                        <div className="p-2 bg-[#E3ECFB] rounded-full">
-                          <FaCalendar className="text-[#4876D6] text-2xl" />
+                        <div className="p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-full">
+                          <FaCalendar className="text-green-600 text-2xl" />
                         </div>
                       </div>
-
-                      <div className="mt-4">
-                        <p className="text-4xl font-bold text-gray-800">94%</p>
-
-                        <p className="text-sm text-gray-500 mt-1">
-                          Average Team Performance Score
+                      <div className="space-y-2">
+                        <p className="text-5xl font-bold text-gray-900">
+                          {item.count}
                         </p>
-                      </div>
-
-                      <div className="flex items-center mt-4 text-sm text-blue-600">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-semibold">
-                          5 new
-                        </span>
-
-                        <span className="ml-2 text-gray-500">last 7 days</span>
+                        <div className="flex items-center text-gray-600">
+                          <p className="text-sm">Pending requests</p>
+                          <div className="ml-2 px-2 py-1 bg-green-50 rounded-full">
+                            <span className="text-xs text-green-600 font-medium">Last 7 days</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ) : (

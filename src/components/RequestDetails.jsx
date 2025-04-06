@@ -1,7 +1,16 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Check, X, Calendar, UserCog, DollarSign, Wallet, Eye } from "lucide-react";
+import {
+  Check,
+  X,
+  Calendar,
+  UserCog,
+  DollarSign,
+  Wallet,
+  Eye,
+} from "lucide-react";
+import { RequestTab } from "@/lib/types";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,10 +45,18 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     enabled: activeTab === "advanceRequests",
   });
 
+  // Fetch comp off requests
+  const { data: compOffRequests = [], isLoading: isLoadingCompOff } = useQuery({
+    queryKey: ["/api/comp-off-requests"],
+    enabled: activeTab === "compOffRequests",
+  });
+
   // Update leave request status
   const updateLeaveStatus = useMutation({
     mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/leave-requests/${id}/status`, { status });
+      return apiRequest("PATCH", `/api/leave-requests/${id}/status`, {
+        status,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
@@ -61,11 +78,13 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   // Update profile update status
   const updateProfileStatus = useMutation({
     mutationFn: async ({ id, status }) => {
-      return apiRequest('PATCH', `/api/profile-updates/${id}/status`, { status });
+      return apiRequest("PATCH", `/api/profile-updates/${id}/status`, {
+        status,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/profile-updates'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/requests/counts'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profile-updates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
       toast({
         title: "Status updated",
         description: "The profile update has been updated successfully.",
@@ -83,11 +102,13 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   // Update expense request status
   const updateExpenseStatus = useMutation({
     mutationFn: async ({ id, status }) => {
-      return apiRequest('PATCH', `/api/expense-requests/${id}/status`, { status });
+      return apiRequest("PATCH", `/api/expense-requests/${id}/status`, {
+        status,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/expense-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/requests/counts'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/expense-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
       toast({
         title: "Status updated",
         description: "The expense request has been updated successfully.",
@@ -105,11 +126,13 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   // Update advance request status
   const updateAdvanceStatus = useMutation({
     mutationFn: async ({ id, status }) => {
-      return apiRequest('PATCH', `/api/advance-requests/${id}/status`, { status });
+      return apiRequest("PATCH", `/api/advance-requests/${id}/status`, {
+        status,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/advance-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/requests/counts'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/advance-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
       toast({
         title: "Status updated",
         description: "The advance request has been updated successfully.",
@@ -119,6 +142,30 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       toast({
         title: "Error",
         description: "There was an error updating the advance request.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update comp off request status
+  const updateCompOffStatus = useMutation({
+    mutationFn: async ({ id, status }) => {
+      return apiRequest("PATCH", `/api/comp-off-requests/${id}/status`, {
+        status,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/comp-off-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
+      toast({
+        title: "Status updated",
+        description: "The comp off request has been updated successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "There was an error updating the comp off request.",
         variant: "destructive",
       });
     },
@@ -138,6 +185,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       case "advanceRequests":
         updateAdvanceStatus.mutate({ id, status: "approved" });
         break;
+      case "compOffRequests":
+        updateCompOffStatus.mutate({ id, status: "approved" });
+        break;
     }
   };
 
@@ -155,6 +205,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       case "advanceRequests":
         updateAdvanceStatus.mutate({ id, status: "rejected" });
         break;
+      case "compOffRequests":
+        updateCompOffStatus.mutate({ id, status: "rejected" });
+        break;
     }
   };
 
@@ -162,11 +215,12 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     return format(new Date(dateString), "MMM dd, yyyy");
   };
 
-  const isLoading = 
+  const isLoading =
     (activeTab === "leaveRequests" && isLoadingLeave) ||
     (activeTab === "profileUpdates" && isLoadingProfile) ||
     (activeTab === "expenseRequests" && isLoadingExpense) ||
-    (activeTab === "advanceRequests" && isLoadingAdvance);
+    (activeTab === "advanceRequests" && isLoadingAdvance) ||
+    (activeTab === "compOffRequests" && isLoadingCompOff);
 
   // Hardcoded leave request data
   const hardcodedLeaveRequests = [
@@ -179,7 +233,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       startDate: "Jun 15, 2023",
       endDate: "Jun 18, 2023",
       leaveBalance: "15 days",
-      reason: "Family vacation"
+      reason: "Family vacation",
     },
     {
       id: 2,
@@ -190,7 +244,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       startDate: "Jun 20, 2023",
       endDate: "Jun 21, 2023",
       leaveBalance: "8 days",
-      reason: "Medical appointment"
+      reason: "Medical appointment",
     },
     {
       id: 3,
@@ -201,8 +255,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       startDate: "Jun 25, 2023",
       endDate: "Jun 30, 2023",
       leaveBalance: "5 days",
-      reason: "Personal emergency"
-    }
+      reason: "Personal emergency",
+    },
   ];
 
   // Hardcoded profile update data
@@ -214,7 +268,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       department: "IT",
       updateType: "Phone Number",
       hasDetails: false,
-      reason: "Personal information update"
+      reason: "Personal information update",
     },
     {
       id: 2,
@@ -227,20 +281,20 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         {
           field: "Address",
           oldValue: "123 Old Street, City",
-          newValue: "456 New Avenue, Town"
+          newValue: "456 New Avenue, Town",
         },
         {
           field: "Emergency Contact",
           oldValue: "Mary Johnson - 9876543210",
-          newValue: "John Johnson - 8765432109"
+          newValue: "John Johnson - 8765432109",
         },
         {
           field: "Phone Number",
           oldValue: "9876543210",
-          newValue: "8765432109"
-        }
+          newValue: "8765432109",
+        },
       ],
-      reason: "Moved to new location and changed contact information"
+      reason: "Moved to new location and changed contact information",
     },
     {
       id: 3,
@@ -249,10 +303,10 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       department: "Finance",
       updateType: "2 fields updated",
       hasDetails: false,
-      reason: "Updated personal details after marriage"
-    }
+      reason: "Updated personal details after marriage",
+    },
   ];
-  
+
   // Hardcoded expense request data
   const hardcodedExpenseRequests = [
     {
@@ -262,7 +316,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       department: "Sales",
       amount: "₹5000",
       description: "Client meeting expenses",
-      hasReceipt: true
+      hasReceipt: true,
     },
     {
       id: 2,
@@ -271,10 +325,10 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       department: "Marketing",
       amount: "₹7500",
       description: "Marketing event costs",
-      hasReceipt: true
-    }
+      hasReceipt: true,
+    },
   ];
-  
+
   // Hardcoded advance request data
   const hardcodedAdvanceRequests = [
     {
@@ -284,7 +338,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       department: "IT",
       amount: "₹15000",
       reason: "Home emergency repairs",
-      repaymentPlan: "6 months EMI"
+      repaymentPlan: "6 months EMI",
     },
     {
       id: 2,
@@ -293,28 +347,81 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       department: "HR",
       amount: "₹10000",
       reason: "Education fees",
-      repaymentPlan: "12 months EMI"
-    }
+      repaymentPlan: "12 months EMI",
+    },
+  ];
+
+  // Hardcoded comp off request data
+  const hardcodedCompOffRequests = [
+    {
+      id: 1,
+      employeeId: "EMP104",
+      name: "Sarah Johnson",
+      department: "Engineering",
+      date: "2024-03-15",
+      shiftType: "First Half",
+      description: "Worked extra hours during project deadline",
+    },
+
+    {
+      id: 2,
+      employeeId: "EMP105",
+      name: "Robert Wilson",
+      department: "Marketing",
+      date: "2024-03-16",
+      shiftType: "Full Day",
+      description: "Weekend work for campaign launch",
+    },
+    {
+      id: 3,
+      employeeId: "EMP106",
+      name: "Emily Brown",
+      department: "Sales",
+      date: "2024-03-17",
+      shiftType: "Second Half",
+      description: "Extended client meeting",
+    },
   ];
 
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
-      <h2 className="text-xl font-semibold text-blue-800 mb-5 pl-2">Request Details</h2>
+      <h2 className="text-xl font-semibold text-blue-800 mb-5 pl-2">
+        Request Details
+      </h2>
       <Tabs value={activeTab} onValueChange={(value) => onTabChange(value)}>
-        <TabsList className="grid grid-cols-4 gap-3 mb-5 bg-transparent p-0">
-          <TabsTrigger value="leaveRequests" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
+        <TabsList className="grid grid-cols-5 gap-3 mb-5 bg-transparent p-0">
+          <TabsTrigger
+            value="leaveRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+          >
             <Calendar className="h-4 w-4 mr-2" />
             <span>Leave Requests</span>
           </TabsTrigger>
-          <TabsTrigger value="profileUpdates" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
+          <TabsTrigger
+            value="compOffRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+          >
+            <Calendar className="h-4 w-4 mr-2" />
+            <span>Comp Off</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="profileUpdates"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+          >
             <UserCog className="h-4 w-4 mr-2" />
             <span>Profile Updates</span>
           </TabsTrigger>
-          <TabsTrigger value="expenseRequests" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
+          <TabsTrigger
+            value="expenseRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+          >
             <DollarSign className="h-4 w-4 mr-2" />
-            <span>Expense Requests</span>
+            <span>Reimbursement Requests</span>
           </TabsTrigger>
-          <TabsTrigger value="advanceRequests" className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors">
+          <TabsTrigger
+            value="advanceRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+          >
             <Wallet className="h-4 w-4 mr-2" />
             <span>Advance Requests</span>
           </TabsTrigger>
@@ -324,42 +431,141 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
                 <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee ID</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Employee Name</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Department</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Type of Leave</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Start Date</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">End Date</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Leave Balance</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Reason</th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">Actions</th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee ID
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee Name
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Department
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Type of Leave
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Start Date
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    End Date
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Leave Balance
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Reason
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {hardcodedLeaveRequests.map(request => (
-                  <tr key={request.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">{request.employeeId}</td>
+                {hardcodedLeaveRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {request.employeeId}
+                    </td>
                     <td className="px-5 py-4 text-sm">{request.name}</td>
                     <td className="px-5 py-4 text-sm">{request.department}</td>
                     <td className="px-5 py-4 text-sm">{request.typeOfLeave}</td>
                     <td className="px-5 py-4 text-sm">{request.startDate}</td>
                     <td className="px-5 py-4 text-sm">{request.endDate}</td>
-                    <td className="px-5 py-4 text-sm">{request.leaveBalance}</td>
+                    <td className="px-5 py-4 text-sm">
+                      {request.leaveBalance}
+                    </td>
                     <td className="px-5 py-4 text-sm">{request.reason}</td>
                     <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleApprove("leaveRequests", request.id)}
+                        onClick={() =>
+                          handleApprove("leaveRequests", request.id)
+                        }
                       >
                         <Check className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() => handleReject("leaveRequests", request.id)}
+                        onClick={() =>
+                          handleReject("leaveRequests", request.id)
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+        <TabsContent value="compOffRequests">
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee ID
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee Name
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Department
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Date
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Shift Type
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Description
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedCompOffRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {request.employeeId}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{request.name}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{formatDate(request.date)}</td>
+                    <td className="px-5 py-4 text-sm">{request.shiftType}</td>
+                    <td className="px-5 py-4 text-sm">{request.description}</td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleApprove("compOffRequests", request.id)
+                        }
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleReject("compOffRequests", request.id)
+                        }
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -371,13 +577,226 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
           </div>
         </TabsContent>
         <TabsContent value="profileUpdates">
-          {/* Render profile updates table */}
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee ID
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee Name
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Department
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Updates
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Reason
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedProfileUpdates.map((update) => (
+                  <tr
+                    key={update.id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {update.employeeId}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{update.name}</td>
+                    <td className="px-5 py-4 text-sm">{update.department}</td>
+                    <td className="px-5 py-4 text-sm text-blue-500 cursor-pointer">
+                      {update.updateType}{" "}
+                      {update.hasDetails && <span>(View)</span>}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{update.reason}</td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleApprove("profileUpdates", update.id)
+                        }
+                        >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleReject("profileUpdates", update.id)
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
         <TabsContent value="expenseRequests">
-          {/* Render expense requests table */}
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee ID
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee Name
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Department
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Amount
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Description
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Receipt
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedExpenseRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {request.employeeId}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{request.name}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{request.amount}</td>
+                    <td className="px-5 py-4 text-sm">{request.description}</td>
+                    <td className="px-5 py-4 text-sm">
+                      {request.hasReceipt && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleApprove("expenseRequests", request.id)
+                        }
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleReject("expenseRequests", request.id)
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
         <TabsContent value="advanceRequests">
-          {/* Render advance requests table */}
+          <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
+            <table className="w-full">
+              <thead className="bg-[#F0F4FB] text-gray-700">
+                <tr>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee ID
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Employee Name
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Department
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Amount
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Reason
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Repayment Plan
+                  </th>
+                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {hardcodedAdvanceRequests.map((request) => (
+                  <tr
+                    key={request.id}
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {request.employeeId}
+                    </td>
+                    <td className="px-5 py-4 text-sm">{request.name}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{request.amount}</td>
+                    <td className="px-5 py-4 text-sm">{request.reason}</td>
+                    <td className="px-5 py-4 text-sm">
+                      {request.repaymentPlan}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleApprove("advanceRequests", request.id)
+                        }
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                        onClick={() =>
+                          handleReject("advanceRequests", request.id)
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

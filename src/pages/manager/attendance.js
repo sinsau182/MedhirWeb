@@ -1,450 +1,494 @@
 import React, { useState, useEffect } from "react";
-
-import {
-  CheckCircle,
-  XCircle,
-  CalendarCheck,
-  Syringe,
-  Sofa,
-} from "lucide-react";
+import { Search, Calendar, Check, X } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
-import { ne } from "drizzle-orm";
+import { useRouter } from "next/router";
+import { Badge } from "@/components/ui/badge";
 
 function Attendance() {
+  const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
-
-  const [selectedMonth, setSelectedMonth] = useState(new Date()); // Default to the current month
-
-  const [dates, setDates] = useState([]);
-
-  const [activeTab, setActiveTab] = useState("Attendance Tracker"); // Default tab
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [dates, setDates] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState("2024");
+
+  // Check authentication and role
+  useEffect(() => {
+    try {
+      const role = localStorage.getItem("currentRole");
+      if (!role || role !== "manager") {
+        router.push("/login");
+        return;
+      }
+      setIsLoading(false);
+    } catch (err) {
+      setError("Authentication error");
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  // Generate dates for January 2024
+  useEffect(() => {
+    try {
+      const generateDates = () => {
+        const dates = [];
+        for (let i = 1; i <= 31; i++) {
+          const date = new Date(2024, 0, i);
+          dates.push({
+            day: i,
+            weekday: date.toLocaleString('default', { weekday: 'short' })
+          });
+        }
+        return dates;
+      };
+      setDates(generateDates());
+    } catch (err) {
+      setError("Error generating dates");
+    }
+  }, []);
+
+  // Sample team member data with attendance records
+  const employees = [
+    {
+      id: "MED001",
+      name: "Arun",
+      department: "SALES",
+      p_twd: "18/20",
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
+    },
+    {
+      id: "MED002",
+      name: "Naman",
+      department: "Design",
+      p_twd: "18/20",
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
+    },
+    {
+      id: "MED003",
+      name: "Amit",
+      department: "Marketing",
+      p_twd: "18/20",
+      attendance: Array(31).fill(null).map((_, i) => {
+        // Weekends (Saturdays and Sundays)
+        if (i % 7 === 5 || i % 7 === 6) return "weekend";
+        // Firm holiday (15th)
+        if (i === 14) return "holiday";
+        // Regular attendance
+        if (i < 3) return null;
+        // Random attendance status
+        const random = Math.random();
+        if (random > 0.8) return false; // Absent
+        if (random > 0.6) return "half"; // Half day
+        if (random > 0.4) return "approved_leave"; // Approved leave
+        return true; // Present
+      })
+    }
+  ];
+
+  // Leave data for team members
+  const leaveData = [
+    {
+      id: "MED001",
+      name: "Arun",
+      department: "SALES",
+      noOfPayableDays: "25",
+      leavesTaken: "5",
+      leavesEarned: "10",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "3",
+      compOffCarriedForward: "1",
+      netLeaves: "7",
+    },
+    {
+      id: "MED002",
+      name: "Naman",
+      department: "Design",
+      noOfPayableDays: "25",
+      leavesTaken: "3",
+      leavesEarned: "10",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "2",
+      compOffCarriedForward: "1",
+      netLeaves: "9",
+    },
+    {
+      id: "MED003",
+      name: "Amit",
+      department: "Marketing",
+      noOfPayableDays: "25",
+      leavesTaken: "2",
+      leavesEarned: "10",
+      leavesFromPreviousYear: "2",
+      compOffEarned: "4",
+      compOffCarriedForward: "1",
+      netLeaves: "10",
+    }
+  ];
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // Hardcoded employee attendance data
-
-  const employees = [
-    {
-      id: "MED001",
-
-      name: "Arun",
-
-      department: "Sales",
-
-      p_twd: "18/20",
-
-      attendance: [
-        "P",
-        "P",
-        "A",
-        "P",
-        "P",
-        "WK",
-        "P",
-        "P",
-        "P",
-        "A",
-        "P",
-        "P",
-        "P",
-        "P",
-      ],
-    },
-
-    {
-      id: "MED002",
-
-      name: "Naman",
-
-      department: "Design",
-
-      p_twd: "18/20",
-
-      attendance: [
-        "P",
-        "A",
-        "P",
-        "P",
-        "P",
-        "WK",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-      ],
-    },
-
-    {
-      id: "MED003",
-
-      name: "Amit",
-
-      department: "Marketing",
-
-      p_twd: "18/20",
-
-      attendance: [
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "WK",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-        "P",
-      ],
-    },
-  ];
-
-  // Hardcoded leave data
-
-  const leaveData = [
-    {
-      id: "MED001",
-
-      name: "Arun",
-
-      department: "Sales",
-
-      noOfPayableDays: "25",
-
-      leavesTaken: "5",
-
-      leavesEarned: "10",
-
-      carriedForwardLeaves: "2",
-
-      netLeaves: "7",
-    },
-
-    {
-      id: "MED002",
-
-      name: "Naman",
-
-      department: "Design",
-
-      noOfPayableDays: "25",
-
-      leavesTaken: "3",
-
-      leavesEarned: "10",
-
-      carriedForwardLeaves: "2",
-
-      netLeaves: "9",
-    },
-
-    {
-      id: "MED003",
-
-      name: "Amit",
-
-      department: "Marketing",
-
-      noOfPayableDays: "25",
-
-      leavesTaken: "2",
-
-      leavesEarned: "10",
-
-      carriedForwardLeaves: "2",
-
-      netLeaves: "10",
-
-    },
-    {
-      id: "MED004",
-
-      name: "Ravi",
-
-      department: "HR",
-
-      noOfPayableDays: "25",
-
-      leavesTaken: "4",
-
-      leavesEarned: "10",
-
-      carriedForwardLeaves: "2",
-
-      netLeaves: "8",
-    },
-
-    {
-      id: "MED005",
-
-      name: "Priya",
-
-      department: "Finance",
-
-      noOfPayableDays: "25",
-
-      leavesTaken: "6",
-
-      leavesEarned: "10",
-
-      carriedForwardLeaves: "2",
-
-      netLeaves: "6",
-    },
-  ];
-
-  // Generate dates for the selected month
-
-  useEffect(() => {
-    const generateDates = () => {
-      const year = selectedMonth.getFullYear();
-
-      const month = selectedMonth.getMonth();
-
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      return Array.from({ length: daysInMonth }, (_, i) => {
-        const date = new Date(year, month, i + 1);
-
-        return {
-          month: date.toLocaleString("default", { month: "short" }),
-
-          day: String(date.getDate()).padStart(2, "0"),
-
-          weekday: date.toLocaleString("default", { weekday: "short" }),
-        };
-      });
-    };
-
-    setDates(generateDates());
-  }, [selectedMonth]);
-
-  // Filter employees based on search input
-
-  const filteredEmployees = employees.filter((employee) =>
-    employee.name.toLowerCase().includes(searchInput.toLowerCase())
-  );
-
-  // Handle month change
-
-  const handleMonthChange = (e) => {
-    const newDate = new Date(e.target.value);
-
-    setSelectedMonth(newDate);
+  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
+
+  const handleMonthSelection = (month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setIsCalendarOpen(false);
   };
 
-  return (
-    <div className="bg-gray-50 text-black min-h-screen p-6">
-      {/* Header */}
+  const filteredEmployees = React.useMemo(() => 
+    employees.filter(employee =>
+      employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+      employee.id.toLowerCase().includes(searchInput.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchInput.toLowerCase())
+    ),
+    [searchInput]
+  );
 
-{/* Sidebar */}
-<Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+  const filteredLeaveData = React.useMemo(() => 
+    leaveData.filter(leave =>
+      leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+      leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
+      leave.department.toLowerCase().includes(searchInput.toLowerCase())
+    ),
+    [searchInput]
+  );
 
-{/* Main content container */}
-<div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-64"}`}>
-  
+  const getAttendanceColor = React.useCallback((status) => {
+    if (status === null) return "bg-gray-100"; // Empty
+    if (status === true) return "bg-green-600"; // Present (dark green)
+    if (status === false) return "bg-red-200"; // Absent (light red)
+    if (status === "half") return "bg-yellow-500"; // Half day
+    if (status === "weekend") return "bg-gray-300"; // Weekend
+    if (status === "holiday") return "bg-gray-400"; // Holiday
+    if (status === "approved_leave") return "bg-green-200"; // Light green for approved leave
+    return "";
+  }, []);
 
-{/* Main Content */}
-<div className="flex-1">
-  {/* Navbar */}
-  <HradminNavbar />
 
-      {/* Sub-navbar */}
+  const getAttendanceText = React.useCallback((status) => {
+    if (status === true) return "P";
+    if (status === false) return "Un. App. Leave";
+    if (status === "half") return "Approved LOP";
+    if (status === "approved_leave") return "P(App. Leave)";
+    return "";
+  }, []);
 
-      <div className="mt-20 p-6">
-        <div className="flex space-x-4 mb-6">
-          {["Attendance Tracker", "Leave Tracker"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-md ${
-                activeTab === tab
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+  const renderAttendanceTable = () => (
+    <div className="bg-white rounded-lg shadow-sm">
+      {/* Legend */}
+      <div className="p-4 border-b flex flex-wrap gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-600 rounded"></div>
+          <span className="text-xs text-gray-600">Present</span>
         </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-green-200 rounded"></div>
+          <span className="text-xs text-gray-600">Present (Approved Leave)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+          <span className="text-xs text-gray-600">Approved LOP</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-200 rounded"></div>
+          <span className="text-xs text-gray-600">Unapproved Leave</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-300 rounded"></div>
+          <span className="text-xs text-gray-600">Weekend</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-400 rounded"></div>
+          <span className="text-xs text-gray-600">Holiday</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-100 rounded"></div>
+          <span className="text-xs text-gray-600">No Data</span>
+        </div>
+      </div>
 
-        {/* Search and Month Selector */}
+      <table className="w-full table-fixed">
+        <thead>
+          <tr className="border-b">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r">
+              Emp ID
+            </th>
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r">
+              Name
+            </th>
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r">
+              Dept
+            </th>
+            {dates.map((date) => (
+              <th 
+                key={date.day}
+                className="py-1 px-0 text-center text-xs font-semibold text-gray-700 w-[2%] border-r"
+              >
+                <div className="leading-none">{String(date.day).padStart(2, '0')}</div>
+                <div className="text-gray-500 text-[10px] leading-tight">{date.weekday}</div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {filteredEmployees.map((employee, index) => (
+            <tr
+              key={index}
+              className="hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <td className="py-1 px-1 text-sm text-gray-800 border-r">
+                {employee.id}
+              </td>
+              <td className="py-1 px-1 text-sm text-gray-800 border-r">
+                {employee.name}
+              </td>
+              <td className="py-1 px-1 text-sm text-gray-800 border-r">
+                {employee.department}
+              </td>
+              {employee.attendance.map((status, index) => (
+                <td 
+                  key={index}
+                  className={`py-1 px-0 text-center border-r ${getAttendanceColor(status)}`}
+                >
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
-        {activeTab === "Attendance Tracker" && (
+  const renderLeaveTable = () => (
+    <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Emp ID
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Name
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Dept
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Pay Days
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Leaves Taken
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Leaves Earned
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Leaves CF Prev Year
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Comp Off
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              CF Comp Off
+            </th>
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+              Balance
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {filteredLeaveData.map((leave) => {
+            // Calculate leave balance
+            const leaveBalance = 
+              parseInt(leave.leavesEarned) + 
+              parseInt(leave.leavesFromPreviousYear) + 
+              parseInt(leave.compOffEarned) + 
+              parseInt(leave.compOffCarriedForward) - 
+              parseInt(leave.leavesTaken);
+
+            return (
+              <tr key={leave.id} className="hover:bg-gray-50">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.id}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.name}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.department}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.noOfPayableDays}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.leavesTaken}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.leavesEarned}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.leavesFromPreviousYear}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.compOffEarned}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leave.compOffCarriedForward}
+                </td>
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                  {leaveBalance}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen text-red-500">
+        {error}
+      </div>
+    );
+  }
+
+  if (!dates.length) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading dates...
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-100">
+      <Sidebar 
+        isCollapsed={isSidebarCollapsed} 
+        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+      />
+
+      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+        <HradminNavbar />
+
+        <div className="p-6 mt-16">
+          {/* Header with Search and Title */}
           <div className="flex justify-between items-center mb-6">
-            {/* Search Bar */}
-
-            <div className="relative w-96">
-              <input
-                type="text"
-                placeholder="Search employee..."
-                className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-            </div>
-
-            {/* Month Selector */}
-
-            <div className="flex items-center">
-              <input
-                type="month"
-                className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={`${selectedMonth.getFullYear()}-${String(
-                  selectedMonth.getMonth() + 1
-                ).padStart(2, "0")}`}
-                onChange={handleMonthChange}
-              />
+            <h1 className="text-xl font-semibold text-gray-800">
+              Attendance Management
+            </h1>
+            <div className="flex gap-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+                <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              </div>
+              <div className="relative">
+                <Badge
+                  variant="outline"
+                  className="px-6 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                  onClick={toggleCalendar}
+                >
+                  <Calendar className="h-5 w-5" />
+                  <span className="font-medium text-base">{selectedYear}-{selectedMonth.toLocaleString('default', { month: 'long' })}</span>
+                </Badge>
+                {isCalendarOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="p-3 border-b">
+                      <div className="text-sm font-medium text-gray-700">{selectedYear}</div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 p-3">
+                      {[
+                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                      ].map((month) => (
+                        <button
+                          key={month}
+                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                            month === selectedMonth.toLocaleString('default', { month: 'long' }).slice(0, 3) 
+                              ? 'bg-blue-50 text-blue-600 font-medium hover:bg-blue-100' 
+                              : 'hover:bg-gray-50 text-gray-700'
+                          }`}
+                          onClick={() => handleMonthSelection(month, selectedYear)}
+                        >
+                          {month}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Attendance Table */}
-
-        {activeTab === "Attendance Tracker" && (
-          <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-            <table className="min-w-full table-fixed border-collapse border border-gray-300">
-            <thead className="bg-gray-100 text-xs">
-  <tr>
-    <th className="px-2 py-3 border border-gray-300 text-left">Emp ID</th>
-    <th className="px-2 py-3 border border-gray-300 text-left">Name</th>
-    <th className="px-2 py-3 border border-gray-300 text-left">Dept</th>
-    <th className="px-2 py-3 border border-gray-300 text-center">P/TWD</th>
-
-    {dates.map((date, index) => (
-      <th key={index} className="px-1 py-3 border border-gray-300 text-center text-[12px] w-[30px]">
-        {date.day} {/* Only date numbers */}
-      </th>
-    ))}
-  </tr>
-</thead>
-
-
-  <tbody className="text-xs">
-    {filteredEmployees.map((employee) => (
-      <tr key={employee.id} className="even:bg-gray-50">
-        <td className="px-2 py-2 border border-gray-300">{employee.id}</td>
-        <td className="px-2 py-2 border border-gray-300">{employee.name}</td>
-        <td className="px-2 py-2 border border-gray-300">{employee.department}</td>
-        <td className="px-2 py-2 border border-gray-300 text-center">{employee.p_twd}</td>
-
-        {dates.map((_, index) => (
-          <td key={index} className="px-1 py-2 border border-gray-300 w-[30px]">
-            <div className="flex justify-center items-center h-full">
-            {employee.attendance[index] === "P" ? (
-              <CheckCircle className="text-green-500" size={16} />
-            ) : employee.attendance[index] === "A" ? (
-              <XCircle className="text-red-500" size={16} />
-            ) : (
-              <CalendarCheck className="text-gray-500" size={16} />
-            )}
-            </div>
-          </td>
-        ))}
-      </tr>
-    ))}
-  </tbody>
-</table>
-
+          {/* Tabs */}
+          <div className="flex gap-6 mb-6">
+            {["Attendance Tracker", "Leave Tracker"].map((tab) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 text-sm font-medium ${
+                  activeTab === tab
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-blue-600"
+                }`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
-        )}
 
-        {/* Leave Tracker Table */}
-
-        {activeTab === "Leave Tracker" && (
-          <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-            <table className="min-w-full table-auto border-collapse border border-gray-300">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Employee ID
-                  </th>
-
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Name
-                  </th>
-
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Department
-                  </th>
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    No. of Payable Days
-                  </th>
-
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Leave Taken
-                  </th>
-
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Leave Earned
-                  </th>
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Carried Forward Leaves
-                  </th>
-
-                  <th className="px-4 py-2 border border-gray-300 text-left text-sm font-medium text-gray-700">
-                    Net Leaves
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {leaveData.map((leave) => (
-                  <tr
-                    key={leave.id}
-                    className="even:bg-gray-50 hover:bg-blue-50 transition-colors"
-                  >
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.id}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.name}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.department}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.noOfPayableDays}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.leavesTaken}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.leavesEarned}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700">
-                      {leave.carriedForwardLeaves}
-                    </td>
-
-                    <td className="px-4 py-2 border border-gray-300 text-sm text-gray-700"> 
-                      {leave.netLeaves}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+          {activeTab === "Attendance Tracker" ? renderAttendanceTable() : renderLeaveTable()}
+        </div>
       </div>
     </div>
-  </div>
-  </div>
   );
 }
 
