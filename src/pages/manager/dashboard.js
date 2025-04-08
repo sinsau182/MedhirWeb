@@ -37,6 +37,9 @@ import RequestDetails from "@/components/RequestDetails";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 
+import { useSelector, useDispatch } from "react-redux";
+import { fetchEmployees } from "@/redux/slices/employeeSlice";
+
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -55,6 +58,9 @@ const Overview = () => {
   const [showRequestDetails, setShowRequestDetails] = useState(false); // New state
   const [activeTab, setActiveTab] = useState("leaveRequests");
 
+  const dispatch = useDispatch();
+  const { employees } = useSelector((state) => state.employees);
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -66,8 +72,6 @@ const Overview = () => {
   const handleLogout = () => {
     console.log("Logout clicked");
   };
-
-  
 
   const handleOpenRequestsClick = () => {
     setShowRequestDetails((prevShowRequestDetails) => !prevShowRequestDetails); // Toggle Request Details
@@ -105,7 +109,7 @@ const Overview = () => {
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Team Members",
-      count: 12,
+      count: employees.length,
     },
 
     {
