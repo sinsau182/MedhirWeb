@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8084/leaves";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/leaves";
 
 // Fetch Leaves
 export const fetchLeaves = createAsyncThunk(

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8083/payslip/generate/emp121";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/payslip/generate/emp121";
 
 // Fetch Payslips for emp123
 export const fetchPayrolls = createAsyncThunk(
@@ -31,7 +31,7 @@ export const fetchPayslipById = createAsyncThunk(
   async (month, year, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        "http://192.168.0.200:8083/payslip/generate/emp121/" +
+        API_BASE_URL +
           month +
           "/" +
           year,

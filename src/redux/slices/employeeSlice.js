@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from 'axios';
 
-const API_BASE_URL = "http://192.168.0.200:8083/hradmin/employees";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin/employees";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -35,7 +35,7 @@ export const createEmployee = createAsyncThunk(
       // Retrieve token from localStorage
       const token = localStorage.getItem('token');
 
-      const response = await axios.post('http://192.168.0.200:8083/hradmin/employees', formData, {
+      const response = await axios.post(`${API_BASE_URL}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,  // Attach token
@@ -59,44 +59,32 @@ export const updateEmployee = createAsyncThunk(
       // Create FormData object for file uploads
       const formData = new FormData();
       
-      // Add all text fields to FormData
-      Object.keys(updatedData).forEach(key => {
-        if (typeof updatedData[key] === 'object' && updatedData[key] !== null) {
-          // Handle nested objects
-          Object.keys(updatedData[key]).forEach(nestedKey => {
-            if (updatedData[key][nestedKey] instanceof File) {
-              // Handle file uploads
-              formData.append(`${key}.${nestedKey}`, updatedData[key][nestedKey]);
-            } else {
-              // Handle other nested fields
-              formData.append(`${key}.${nestedKey}`, updatedData[key][nestedKey]);
-            }
-          });
-        } else if (updatedData[key] instanceof File) {
-          // Handle direct file uploads
-          formData.append(key, updatedData[key]);
-        } else {
-          // Handle regular fields
-          formData.append(key, updatedData[key]);
-        }
-      });
+      // Add the employee data as a JSON string
+      const employeeData = updatedData.get('employee');
+      formData.append('employee', employeeData);
       
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
-        method: "PUT",
-        headers: { 
+      // Add any files that were included
+      if (updatedData.has('employeeImgUrl')) {
+        formData.append('employeeImgUrl', updatedData.get('employeeImgUrl'));
+      }
+      if (updatedData.has('aadharImgUrl')) {
+        formData.append('aadharImgUrl', updatedData.get('aadharImgUrl'));
+      }
+      
+      const response = await axios.put(`${API_BASE_URL}/${id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
-        body: formData, // Send as FormData instead of JSON
       });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update employee");
+      if (!response.data) {
+        throw new Error("Failed to update employee");
       }
 
-      return data;
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );

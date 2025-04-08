@@ -120,12 +120,21 @@ function PayrollManagement() {
 
   const fetchTDS = async () => {
     const token = localStorage.getItem("token");
-    const response = await fetch("http://192.168.0.200:8083/api/tds-settings", {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/api/tds-settings", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+    
+    if (response.status === 404) {
+      // Return default TDS settings when not found
+      return {
+        tdsRate: 0,
+        description: "Default TDS settings"
+      };
+    }
+    
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Failed to fetch TDS");
@@ -135,15 +144,26 @@ function PayrollManagement() {
 
   const fetchPTAX = async () => {
     const token = localStorage.getItem("token");
-    const response = await fetch("http://192.168.0.200:8083/api/professional-tax-settings", {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/api/professional-tax-settings", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+    
+    if (response.status === 404) {
+      // Return default professional tax settings when not found
+      return {
+        monthlySalaryThreshold: 25000,
+        amountAboveThreshold: 200,
+        amountBelowThreshold: 0,
+        description: "Default Professional Tax settings"
+      };
+    }
+    
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch PF");
+      throw new Error(data.error || "Failed to fetch Professional Tax");
     }
     return data;
   };
@@ -178,18 +198,18 @@ function PayrollManagement() {
             {employees
               .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
               .map((employee, index) => {
-                const basic = parseFloat((employee.salaryDetails.basicSalary * (paidDays/monthDays)).toFixed(2));
-                const hra = parseFloat((employee.salaryDetails.hra * (paidDays/monthDays)).toFixed(2));
-                const allowance = parseFloat((employee.salaryDetails.allowances * (paidDays/monthDays)).toFixed(2));
+                const basic = parseFloat((employee.salaryDetails.basicSalary * (paidDays/monthDays)).toFixed(0));
+                const hra = parseFloat((employee.salaryDetails.hra * (paidDays/monthDays)).toFixed(0));
+                const allowance = parseFloat((employee.salaryDetails.allowances * (paidDays/monthDays)).toFixed(0));
                 const overtimePay = parseFloat(employee.overtimePay || 0);
                 const reimbursement = parseFloat(employee.reimbursement || 0);
-                const employeePF = parseFloat((employee.salaryDetails.employeePfContribution * (paidDays/monthDays)).toFixed(2));
-                const employerPF = parseFloat((employee.salaryDetails.employerPfContribution * (paidDays/monthDays)).toFixed(2));
-                const tds = parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2));
+                const employeePF = parseFloat((employee.salaryDetails.employeePfContribution * (paidDays/monthDays)).toFixed(0));
+                const employerPF = parseFloat((employee.salaryDetails.employerPfContribution * (paidDays/monthDays)).toFixed(0));
+                const tds = parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(0));
                 const profTax = employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold ? ptaxData.amountAboveThreshold : 0;
                 const advanceAdjusted = parseFloat(employee.advanceAdjusted || 0);
                 const deductions = parseFloat((tds + advanceAdjusted + profTax).toFixed(2));
-                const netPay = parseFloat((basic + hra + allowance + overtimePay + reimbursement - deductions).toFixed(2));
+                const netPay = parseFloat((basic + hra + allowance + overtimePay + reimbursement - deductions).toFixed(0));
 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
@@ -197,7 +217,7 @@ function PayrollManagement() {
                     <td className="py-2 px-2 text-sm text-gray-800">{employee.name}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">{paidDays}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{employee.salaryDetails.monthlyCtc}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays/monthDays)).toFixed(2))}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays/monthDays)).toFixed(0))}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{basic}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{hra}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{allowance}</td>
@@ -241,11 +261,11 @@ function PayrollManagement() {
                   <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employeePfContribution * (paidDays / monthDays)).toFixed(2))}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employerPfContribution * (paidDays / monthDays)).toFixed(2))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employeePfContribution * (paidDays / monthDays)).toFixed(0))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employerPfContribution * (paidDays / monthDays)).toFixed(0))}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
-                    {parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2))}
+                    {parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(0))}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
@@ -256,7 +276,7 @@ function PayrollManagement() {
                   <td className="py-2 px-2 text-xs text-gray-600">₹{employee.advanceAdjusted}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat(((employee.salaryDetails.employerPfContribution + employee.salaryDetails.employeePfContribution +  (employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)) + (employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold
                       ? ptaxData.amountAboveThreshold
-                      : 0)) * (paidDays/monthDays)).toFixed(2))}</td>
+                      : 0)) * (paidDays/monthDays)).toFixed(0))}</td>
                 </tr>
               ))}
           </tbody>
