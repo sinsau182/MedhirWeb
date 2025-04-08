@@ -15,7 +15,6 @@ export default function Custom404() {
       >
         Go back
       </Button>
-
     </div>
   );
 }
