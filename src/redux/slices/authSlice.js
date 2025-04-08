@@ -10,7 +10,7 @@ const getTokenFromLocalStorage = () => {
 };
 
 // Define the base URL
-const BASE_URL = "http://192.168.0.200:8080/auth";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/auth";
 
 export const registerUser = createAsyncThunk(
   "auth/register",

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8080/superadmin/companies";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/companies";
 
 // Fetch companies
 export const fetchCompanies = createAsyncThunk(

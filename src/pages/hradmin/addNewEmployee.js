@@ -305,8 +305,8 @@ function EmployeeForm() {
             basicSalary: parsedEmployee.salaryDetails?.basic || "",
             hra: parsedEmployee.salaryDetails?.hra || "",
             allowances: parsedEmployee.salaryDetails?.allowances || "",
-            employerPfContribution: parsedEmployee.salaryDetails?.employerPF || "",
-            employeePfContribution: parsedEmployee.salaryDetails?.employeePF || "",
+            employerPfContribution: parsedEmployee.salaryDetails?.employerPfContribution || "",
+            employeePfContribution: parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
         }));
         setEmployeeId(parsedEmployee.id);

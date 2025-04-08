@@ -1,14 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Search, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { Badge } from "@/components/ui/badge";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { set } from "mongoose";
 
 // Sample data
 const payrollData = [
   {
-    employeeId: "EMP001",
-    name: "John Doe",
+    employeeId: "EMP025",
+    name: "random nigga",
     paidDays: "22/22",
     ctc: "50,000",
     salary: "45,000",
@@ -80,12 +83,19 @@ const deductionsData = [
 ];
 
 function PayrollManagement() {
+  const paidDays = 25;
+  const monthDays = 30;
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("March");
   const [selectedYear, setSelectedYear] = useState("2024");
+
+  const dispatch = useDispatch();
+  const { employees, loading, err } = useSelector((state) => state.employees);
+  const [tdsData, setTdsData] = useState([]);
+  const [ptaxData, setPtaxData] = useState([]);
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
@@ -94,6 +104,53 @@ function PayrollManagement() {
     setSelectedYear(year);
     setIsCalendarOpen(false);
   };
+
+  useEffect(() => {
+    dispatch(fetchEmployees());
+    const fetchData = async () => {
+      try {
+        setTdsData(await fetchTDS());
+        setPtaxData(await fetchPTAX());
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+    fetchData();
+  }, [dispatch]);
+
+  const fetchTDS = async () => {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://192.168.0.200:8083/api/tds-settings", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch TDS");
+    }
+    return data;
+  };
+
+  const fetchPTAX = async () => {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://192.168.0.200:8083/api/professional-tax-settings", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch PF");
+    }
+    return data;
+  };
+
+  console.log("tds: ", tdsData);
+  console.log("ptax: ", ptaxData);
+
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
@@ -110,32 +167,49 @@ function PayrollManagement() {
               <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">HRA</th>
               <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">ALLOWANCE</th>
               <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">OVERTIME PAY</th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">REIMB.</th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">EMP. PF</th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">EMPR. PF</th>
               <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">DEDUCTIONS</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">REIMBURSEMENT</th>
               <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">NET PAY</th>
             </tr>
           </thead>
           <tbody>
-            {payrollData
-              .filter((item) =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((item, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-sm text-gray-800">{item.employeeId}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">{item.name}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">{item.paidDays}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.ctc}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.salary}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.basic}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.hra}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.allowance}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.overtimePay}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.deductions}</td>
-                  <td className="py-2 px-2 text-sm text-gray-800">₹{item.reimbursement}</td>
-                  <td className="py-2 px-2 text-sm font-semibold text-gray-900">₹{item.netPay}</td>
-                </tr>
-              ))}
+            {employees
+              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((employee, index) => {
+                const basic = parseFloat((employee.salaryDetails.basicSalary * (paidDays/monthDays)).toFixed(2));
+                const hra = parseFloat((employee.salaryDetails.hra * (paidDays/monthDays)).toFixed(2));
+                const allowance = parseFloat((employee.salaryDetails.allowances * (paidDays/monthDays)).toFixed(2));
+                const overtimePay = parseFloat(employee.overtimePay || 0);
+                const reimbursement = parseFloat(employee.reimbursement || 0);
+                const employeePF = parseFloat((employee.salaryDetails.employeePfContribution * (paidDays/monthDays)).toFixed(2));
+                const employerPF = parseFloat((employee.salaryDetails.employerPfContribution * (paidDays/monthDays)).toFixed(2));
+                const tds = parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2));
+                const profTax = employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold ? ptaxData.amountAboveThreshold : 0;
+                const advanceAdjusted = parseFloat(employee.advanceAdjusted || 0);
+                const deductions = parseFloat((tds + advanceAdjusted + profTax).toFixed(2));
+                const netPay = parseFloat((basic + hra + allowance + overtimePay + reimbursement - deductions).toFixed(2));
+
+                return (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="py-2 px-2 text-sm text-gray-800">{employee.employeeId}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">{employee.name}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">{paidDays}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{employee.salaryDetails.monthlyCtc}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays/monthDays)).toFixed(2))}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{basic}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{hra}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{allowance}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{overtimePay}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{reimbursement}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{employeePF}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{employerPF}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{deductions}</td>
+                    <td className="py-2 px-2 text-sm font-semibold text-gray-900">₹{netPay}</td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
@@ -160,21 +234,29 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {deductionsData
-              .filter((item) =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((item, index) => (
+            {employees
+              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.employeePF}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.employerPF}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.tds}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.profTax}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.advanceAdjusted}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.netDeductions}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employeePfContribution * (paidDays / monthDays)).toFixed(2))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employerPfContribution * (paidDays / monthDays)).toFixed(2))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹
+                    {parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2))}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹
+                    {employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold
+                      ? ptaxData.amountAboveThreshold
+                      : 0}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.advanceAdjusted}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat(((employee.salaryDetails.employerPfContribution + employee.salaryDetails.employeePfContribution +  (employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)) + (employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold
+                      ? ptaxData.amountAboveThreshold
+                      : 0)) * (paidDays/monthDays)).toFixed(2))}</td>
                 </tr>
               ))}
           </tbody>
@@ -199,19 +281,17 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {advanceData
-              .filter((item) =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((item, index) => (
+            {employees
+              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.oldAdvance}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.thisMonthAdvance}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.deductInThisMonth}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.balanceForNextMonth}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.oldAdvance}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.thisMonthAdvance}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.deductInThisMonth}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.balanceForNextMonth}</td>
                 </tr>
               ))}
           </tbody>
@@ -238,20 +318,18 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {reimbursementData
-              .filter((item) =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((item, index) => (
+            {employees
+              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.type}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.category}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.description}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.reimbursementAmount}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.status}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.type}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.category}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.description}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.reimbursementAmount}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.status}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     <button
                       onClick={() => alert("No uploaded receipt")}
@@ -284,19 +362,17 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {paymentHistoryData
-              .filter((item) =>
-                item.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((item, index) => (
+            {employees
+              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.paymentDate}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{item.amount}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.paymentMode}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{item.status}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.paymentDate}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.amount}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.paymentMode}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">{employee.status}</td>
                 </tr>
               ))}
           </tbody>

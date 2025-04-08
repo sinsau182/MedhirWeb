@@ -32,88 +32,124 @@ function Employees() {
   );
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      {/* Main content container */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-64"}`}>
-        
-        {/* Navbar - Stays at the top */}
+      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
         <HradminNavbar />
 
-        {/* Main Content */}
-            <div className="flex-1 overflow-y-auto p-6 pt-24">
-              <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-gray-800">Team Members</h1>
-                {/* Search Box */}
-                <div className="relative w-96">
-                  <div className="flex items-center bg-white border border-gray-400 rounded-md px-3 py-1.5">
-                <Search className="w-4 h-4 text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="w-full pl-3 text-gray-700 bg-transparent focus:outline-none"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-                  </div>
-                </div>
-              </div>
-              {/* Table Section */}
-          <div className="mt-6 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
-            <Table>
-              <TableHeader className="bg-gray-300 text-gray-800 font-bold">
-                <TableRow>
-                {activeTab === "Basic" && (
-                  <>
-                  <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
-                      EMPLOYEE ID
-                    </TableHead>
-                    <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
-                      NAME
-                    </TableHead>
-                    <TableHead className="text-left bg-gray-300 text-gray-800 font-bold">
-                      FATHER'S NAME
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      PHONE NO.
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      EMAIL(OFF.)
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      DOJ
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      DESIGNATION
-                    </TableHead>
-                    <TableHead className="text-center bg-gray-300 text-gray-800 font-bold">
-                      CURRENT ADDRESS
-                    </TableHead>
-                  </>
-                )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-              {filteredEmployees.map((employee, index) => (
-                <TableRow>
-                  {activeTab === "Basic" && (
-                    <>
-                      <TableCell className="text-left">{employee?.employeeId}</TableCell>
-                      <TableCell className="text-left">{employee?.name}</TableCell>
-                      <TableCell className="text-left">{employee?.fatherName}</TableCell>
-                      <TableCell className="text-center">{employee?.phone1}</TableCell>
-                      <TableCell className="text-center">{employee?.email}</TableCell>
-                      <TableCell className="text-center">{employee?.joiningDate}</TableCell>
-                      <TableCell className="text-center">{employee?.designation}</TableCell>
-                      <TableCell className="text-center">{employee?.currentAddress}</TableCell>
-                    </>
+        <div className="p-6 mt-16">
+          {/* Header with Search and Title */}
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-800 mb-4">
+                Team Members
+              </h1>
+            </div>
+            <div className="relative mt-1">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+            </div>
+          </div>
+
+          {/* Employee Table */}
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+            <div className="w-full">
+              <table className="w-full table-fixed">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    {activeTab === "Basic" && (
+                      <>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Employee ID
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Name
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Father's Name
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Phone No.
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Email(Off.)
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          DOJ
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Designation
+                        </th>
+                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                          Current Address
+                        </th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-3 text-sm text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
+                          Loading...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredEmployees.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-3 text-sm text-gray-500">
+                        No team members found
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredEmployees.map((employee) => (
+                      <tr 
+                        key={employee.id} 
+                        className="hover:bg-gray-50 cursor-pointer"
+                      >
+                        {activeTab === "Basic" && (
+                          <>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.employeeId}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.name}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.fathersName}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.phone}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.emailOfficial}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.joiningDate}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.designation}
+                            </td>
+                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                              {employee?.currentAddress}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))
                   )}
-                </TableRow>
-              ))}
-              </TableBody>
-            </Table>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

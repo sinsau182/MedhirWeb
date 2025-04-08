@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = "http://192.168.0.200:8080/superadmin/modules/users";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules/users";
 
 // Fetch users
 export const fetchUsers = createAsyncThunk(
@@ -40,6 +40,8 @@ export const addUser = createAsyncThunk(
       });
 
       const data = await response.json();
+      console.log("Response Data:", data.user.id);
+
       if (!response.ok) {
         throw new Error(data.error || "Failed to add user");
       }

@@ -32,9 +32,15 @@ return (
         <nav className="flex justify-between items-center p-3 shadow-md bg-white w-full">
             {/* Logo and Role Badges */}
             <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold">Medhir</h1>
+                <div className="flex items-center">
+                    <div className="relative w-8 h-8 mr-2">
+                        <div className="absolute w-2 h-6 bg-black transform -skew-x-12 left-0"></div>
+                        <div className="absolute w-2 h-6 bg-black transform skew-x-12 right-0"></div>
+                        <div className="absolute w-2 h-6 bg-black left-1/2 transform -translate-x-1/2"></div>
+                    </div>
+                    <span className="text-2xl font-bold text-black tracking-wide">MEDHIR</span>
+                </div>
                 <RoleToggle currentRole="hr" setRole={(role) => console.log(role)} />
-
             </div>
             
             {/* Right Section: Notification & Profile */}
@@ -57,7 +63,7 @@ return (
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer text-violet-600 hover:text-violet-700">
             <User className="mr-2 h-4 w-4" />
             <span>My Profile</span>
           </DropdownMenuItem>

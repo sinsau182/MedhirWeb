@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 
-const API_BASE_URL = "http://192.168.0.200:8080/superadmin/modules";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules";
 
 // Fetch modules
 export const fetchModules = createAsyncThunk(
@@ -48,7 +48,7 @@ export const addModule = createAsyncThunk(
       if (!response.ok) {
         throw new Error(data.error || "Failed to add module");
       }
-
+      
       return data;
     } catch (error) {
       return rejectWithValue(error.message);
