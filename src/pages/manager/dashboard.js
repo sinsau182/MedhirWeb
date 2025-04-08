@@ -120,10 +120,14 @@ const Overview = () => {
   ];
 
   return (
-<div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
 
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"manager"} />
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        currentRole={"manager"}
+      />
 
       {/* Main Content */}
 
@@ -159,7 +163,7 @@ const Overview = () => {
                       key={index}
                       className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
                       style={{ height: "250px", width: "350px" }}
-                      onClick={() => window.location.href = '/manager/team'}
+                      onClick={() => (window.location.href = "/manager/team")}
                     >
                       <div className="flex justify-between items-center w-full mb-8">
                         <p className="text-xl font-semibold text-gray-800">
@@ -176,7 +180,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">People in your department</p>
                           <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
-                            <span className="text-xs text-blue-600 font-medium">Active</span>
+                            <span className="text-xs text-blue-600 font-medium">
+                              Active
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -203,7 +209,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">Pending requests</p>
                           <div className="ml-2 px-2 py-1 bg-green-50 rounded-full">
-                            <span className="text-xs text-green-600 font-medium">Last 7 days</span>
+                            <span className="text-xs text-green-600 font-medium">
+                              Last 7 days
+                            </span>
                           </div>
                         </div>
                       </div>

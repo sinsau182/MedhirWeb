@@ -97,17 +97,17 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       menuKey: "settings",
       subItems: [
         {
-          label: "Organization Settings",
+          label: "Organization",
           icon: <FaBuilding />,
           link: "/hradmin/settings/organization",
         },
         {
-          label: "Payroll Settings",
+          label: "Payroll",
           icon: <FaMoneyCheckAlt />,
           link: "/hradmin/settings/payrollsettings",
         },
         {
-          label: "Leave Settings",
+          label: "Leaves",
           icon: <FaCalendarAlt />,
           link: "/hradmin/settings/leave",
         },
