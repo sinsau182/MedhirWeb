@@ -150,23 +150,23 @@ function Employees() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const modal = document.createElement('div');
-                modal.innerHTML = `
-                  <div class="bg-white p-4 rounded-lg max-w-md">
-                    <div class="flex justify-between items-center mb-4">
-                      <h3 class="text-lg font-semibold">Passbook Document</h3>
-                      <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="text-center py-4">
-                      <p class="text-gray-600">No doc uploaded</p>
-                    </div>
-                  </div>
-                `;
-                document.body.appendChild(modal);
+                // const modal = document.createElement('div');
+                // modal.innerHTML = `
+                //   <div class="bg-white p-4 rounded-lg max-w-md">
+                //     <div class="flex justify-between items-center mb-4">
+                //       <h3 class="text-lg font-semibold">Passbook Document</h3>
+                //       <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
+                //         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                //           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                //         </svg>
+                //       </button>
+                //     </div>
+                //     <div class="text-center py-4">
+                //       <p class="text-gray-600">No doc uploaded</p>
+                //     </div>
+                //   </div>
+                // `;
+                // document.body.appendChild(modal);
               }}
               className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
             >
