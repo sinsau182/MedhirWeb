@@ -86,7 +86,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   const [isLoadingCompOff, setIsLoadingCompOff] = useState(false);
 
   // --- Base URL for API (adjust as needed) ---
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''; // Ensure this is set
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL; // Ensure this is set
 
   // --- Generic Fetch Function ---
   // const fetchData = async (endpoint, setData, setIsLoading) => {
