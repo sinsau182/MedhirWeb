@@ -485,28 +485,28 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                           ) : (
                             <span className="text-gray-500 italic">No specific changes listed</span>
                           )}
-                        </td>
-                        <td className="px-5 py-4 text-sm font-medium space-x-3">
-                          <Button
-                            size="sm"
-                            variant="outline"
+                    </td>
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
                             className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => handleApproveProfileUpdate(update.employeeId)}
                             disabled={isApproving || !!approvingProfileUpdateId}
                            >
                             {isApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                             className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={() => handleRejectProfileUpdate(update.employeeId)}
                             disabled={isApproving || !!approvingProfileUpdateId}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
                     );
                   })
                 )}

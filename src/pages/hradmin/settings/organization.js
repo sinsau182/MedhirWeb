@@ -36,7 +36,8 @@ const OrganizationSettings = () => {
     name: "",
     description: "",
     department: "",
-    isManager: false,
+    manager: false,
+    overtimeEligible: false,
   });
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({
@@ -71,14 +72,14 @@ const OrganizationSettings = () => {
       name: "Software Engineer",
       description: "Develops software applications",
       department: { value: 1, label: "Engineering" },
-      isManager: false,
+      manager: false,
     },
     {
       id: 2,
       name: "Engineering Manager",
       description: "Manages engineering team",
       department: { value: 1, label: "Engineering" },
-      isManager: true,
+      manager: true,
     },
   ]);
 
@@ -383,7 +384,8 @@ const OrganizationSettings = () => {
       name: designation.name,
       description: designation.description,
       department: designation.department,
-      isManager: designation.isManager,
+      manager: designation.manager,
+      overtimeEligible: designation.overtimeEligible,
     });
   };
 
@@ -393,7 +395,8 @@ const OrganizationSettings = () => {
         name: designationForm.name,
         department: designationForm.department.value,
         description: designationForm.description || "",
-        isManager: designationForm.isManager
+        manager: designationForm.manager,
+        overtimeEligible: designationForm.overtimeEligible
       };
 
       console.log('Updating designation data:', designationData); // Debug log
@@ -419,7 +422,8 @@ const OrganizationSettings = () => {
         name: "",
         department: "",
         description: "",
-        isManager: false
+        manager: false,
+        overtimeEligible: false
       });
 
       setTimeout(() => {
@@ -474,7 +478,8 @@ const OrganizationSettings = () => {
         name: designationForm.name,
         description: designationForm.description || "",
         department: designationForm.department.value,
-        isManager: designationForm.isManager
+        manager: designationForm.manager,
+        overtimeEligible: designationForm.overtimeEligible
       };
 
       console.log('Submitting designation data:', designationData); // Debug log
@@ -487,7 +492,8 @@ const OrganizationSettings = () => {
         name: "",
         description: "",
         department: "",
-        isManager: false,
+        manager: false,
+        overtimeEligible: false
       });
       setIsFormChanged(false);
       setErrors({});
@@ -590,7 +596,8 @@ const OrganizationSettings = () => {
           label: item.department 
         },
         description: item.description || "",
-        isManager: item.isManager || false
+        manager: item.manager || false,
+        overtimeEligible: item.overtimeEligible || false
       });
       setShowDesignationModal(true);
     }
@@ -619,7 +626,8 @@ const OrganizationSettings = () => {
       name: "",
       description: "",
       department: "",
-      isManager: false,
+      manager: false,
+      overtimeEligible: false,
     });
     setErrors({});
   };
@@ -635,7 +643,8 @@ const OrganizationSettings = () => {
         label: designation.department 
       },
       description: designation.description || "",
-      isManager: designation.isManager || false
+      manager: designation.manager || false,
+      overtimeEligible: designation.overtimeEligible || false
     });
     setShowDesignationModal(true);
   };
@@ -660,7 +669,8 @@ const OrganizationSettings = () => {
         name: "",
         department: "",
         description: "",
-        isManager: false
+        manager: false,
+        overtimeEligible: false
       });
 
       setTimeout(() => {
@@ -839,24 +849,27 @@ const OrganizationSettings = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Is Manager
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Overtime Eligible
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {designationLoading ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center">
+                      <td colSpan="5" className="px-6 py-4 text-center">
                         Loading...
                       </td>
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center text-red-500">
+                      <td colSpan="5" className="px-6 py-4 text-center text-red-500">
                         {error}
                       </td>
                     </tr>
                   ) : fetchedDesignations.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center">
+                      <td colSpan="5" className="px-6 py-4 text-center">
                         No designations found
                       </td>
                     </tr>
@@ -877,7 +890,10 @@ const OrganizationSettings = () => {
                           {designation.description || "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.isManager ? "Yes" : "No"}
+                          {designation.manager ? "Yes" : "No"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {designation.overtimeEligible ? "Yes" : "No"}
                         </td>
                       </tr>
                     ))
@@ -1212,26 +1228,52 @@ const OrganizationSettings = () => {
                 />
               </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isManager"
-                  name="isManager"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  checked={designationForm.isManager}
-                  onChange={(e) => {
-                    setDesignationForm({
-                      ...designationForm,
-                      isManager: e.target.checked,
-                    });
-                  }}
-                />
-                <label
-                  htmlFor="isManager"
-                  className="ml-2 block text-sm text-gray-700"
-                >
-                  Is Manager
-                </label>
+              <div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="manager"
+                    name="manager"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={designationForm.manager}
+                    onChange={(e) => {
+                      setDesignationForm({
+                        ...designationForm,
+                        manager: e.target.checked,
+                      });
+                    }}
+                  />
+                  <label
+                    htmlFor="manager"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Is Manager
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="overtimeEligible"
+                    name="overtimeEligible"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={designationForm.overtimeEligible}
+                    onChange={(e) => {
+                      setDesignationForm({
+                        ...designationForm,
+                        overtimeEligible: e.target.checked,
+                      });
+                    }}
+                  />
+                  <label
+                    htmlFor="overtimeEligible"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Overtime Eligible
+                  </label>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

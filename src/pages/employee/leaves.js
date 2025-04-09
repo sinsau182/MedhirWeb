@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import { Calendar, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchLeaves, createLeave } from "@/redux/slices/leaveSlice";
+import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
 import CustomDatePicker from '@/components/CustomDatePicker';
 
 const Leaves = () => {
@@ -25,11 +26,14 @@ const Leaves = () => {
 
   const dispatch = useDispatch();
   const { leaves, loading, error } = useSelector((state) => state.leaveReducer);
+  const { holidays: publicHolidays, loading: holidaysLoading } = useSelector((state) => state.publicHoliday);
   const calendarRef = useRef(null);
 
   useEffect(() => {
     // Fetch leaves for employee with ID emp123
     dispatch(fetchLeaves("emp123"));
+    // Fetch public holidays
+    dispatch(fetchPublicHolidays());
   }, [dispatch]);
 
   // Add click outside handler for calendar
@@ -270,37 +274,76 @@ const Leaves = () => {
             </div>
           </div>
 
-          {/* Leave Policies */}
-          <div className="bg-white shadow-md rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-3">Leave Policies</h2>
-            <div className="mb-4 bg-gray-50 shadow-md rounded-lg p-3">
-              <h3 className="text-md font-semibold text-gray-800">
-                Annual Leave Policy
-              </h3>
-              <ul className="list-disc list-inside text-gray-600 text-sm">
-                <li>
-                  All employees are entitled to 18 days of annual leave per year
-                </li>
-                <li>
-                  Unused leave can be carried forward to the next year
-                </li>
-              </ul>
+          {/* Leave Policies and Public Holidays */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
+            {/* Leave Policies */}
+            <div className="bg-white shadow-md rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-3">Leave Policies</h2>
+              <div className="mb-4 bg-gray-50 shadow-md rounded-lg p-3">
+                <h3 className="text-md font-semibold text-gray-800">
+                  Annual Leave Policy
+                </h3>
+                <ul className="list-disc list-inside text-gray-600 text-sm">
+                  <li>
+                    All employees are entitled to 18 days of annual leave per year
+                  </li>
+                  <li>
+                    Unused leave can be carried forward to the next year
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-gray-50 shadow-md rounded-lg p-3">
+                <h3 className="text-md font-semibold text-gray-800">
+                  Comp-off Leave Policy
+                </h3>
+                <ul className="list-disc list-inside text-gray-600 text-sm">
+                  <li>
+                    When applying for leave, it will first be deducted from available comp-off balance
+                  </li>
+                  <li>
+                    If comp-off balance is exhausted, remaining days will be deducted from annual leave
+                  </li>
+                  <li>
+                    Unused comp-off can be carried forward to the next month
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div className="bg-gray-50 shadow-md rounded-lg p-3">
-              <h3 className="text-md font-semibold text-gray-800">
-                Comp-off Leave Policy
-              </h3>
-              <ul className="list-disc list-inside text-gray-600 text-sm">
-                <li>
-                  When applying for leave, it will first be deducted from available comp-off balance
-                </li>
-                <li>
-                  If comp-off balance is exhausted, remaining days will be deducted from annual leave
-                </li>
-                <li>
-                  Unused comp-off can be carried forward to the next month
-                </li>
-              </ul>
+
+            {/* Public Holidays */}
+            <div className="bg-white shadow-md rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-3">Public Holidays</h2>
+              <div className="bg-gray-50 shadow-md rounded-lg p-3">
+                {holidaysLoading ? (
+                  <div className="text-center py-4">Loading holidays...</div>
+                ) : publicHolidays.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500">No public holidays found</div>
+                ) : (
+                  <div className="space-y-3">
+                    {publicHolidays.map((holiday) => (
+                      <div key={holiday.holidayId} className="border-b border-gray-200 pb-2 last:border-b-0">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-md font-semibold text-gray-800">
+                            {holiday.holidayName}
+                          </h3>
+                          <span className="text-sm text-gray-600">
+                            {new Date(holiday.date).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        {holiday.description && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {holiday.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
