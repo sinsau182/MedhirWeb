@@ -1243,7 +1243,7 @@ function EmployeeForm() {
                             </div>
                             
                             {/* Overtime Eligible Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                               <div className="flex items-center mb-3">
                                 <input
                                   type="checkbox"
@@ -1265,7 +1265,7 @@ function EmployeeForm() {
                                   Overtime Eligible
                                 </label>
                               </div>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>

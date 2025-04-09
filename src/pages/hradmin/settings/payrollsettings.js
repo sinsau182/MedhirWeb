@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import withAuth from "@/components/withAuth";
 
 const PayrollSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -520,4 +521,4 @@ const PayrollSettings = () => {
   );
 };
 
-export default PayrollSettings; 
+export default withAuth(PayrollSettings);

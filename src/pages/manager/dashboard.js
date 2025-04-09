@@ -39,6 +39,7 @@ import HradminNavbar from "@/components/HradminNavbar";
 
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import withAuth from "@/components/withAuth";
 
 const COLORS = [
   "#0088FE",
@@ -466,4 +467,4 @@ color: "#4B5563",
   );
 };
 
-export default Overview;
+export default withAuth(Overview);

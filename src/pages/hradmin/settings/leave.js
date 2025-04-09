@@ -7,6 +7,7 @@ import { createLeaveType, resetLeaveTypeState, fetchLeaveTypes, deleteLeaveType,
 import { createLeavePolicy, resetLeavePolicyState, fetchLeavePolicies, updateLeavePolicy, deleteLeavePolicy } from '@/redux/slices/leavePolicySlice';
 import { fetchPublicHolidays, createPublicHoliday, updatePublicHoliday, deletePublicHoliday } from '@/redux/slices/publicHolidaySlice';
 import { toast } from 'react-toastify';
+import withAuth from "@/components/withAuth";
 
 const LeaveSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -1755,4 +1756,4 @@ const LeaveSettings = () => {
   );
 };
 
-export default LeaveSettings;
+export default withAuth(LeaveSettings);

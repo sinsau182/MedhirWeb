@@ -559,12 +559,12 @@ function EmployeeProfilePage() {
                           <div className="bg-gray-50 p-3 rounded-lg">
                             <label className="text-sm text-gray-600 mb-1.5 block font-medium">Alternate Phone</label>
                             {isPageInEditMode ? (
-                              <input 
-                                type="tel" 
-                                value={formData.employee.phone2 || ""} 
-                                onChange={(e) => handleInputChange('employee', 'phone2', e.target.value)} 
+                              <input
+                                type="tel"
+                                value={formData.employee.phone2 || ""}
+                                onChange={(e) => handleInputChange('employee', 'phone2', e.target.value)}
                                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100" 
-                                pattern="[0-9]{10}" 
+                                pattern="[0-9]{10}"
                                 placeholder="10-digit number" 
                                 disabled={!isEditable} 
                               />
@@ -736,11 +736,11 @@ function EmployeeProfilePage() {
                                   <label htmlFor={`upload-${key}`} className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${isEditable ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
                                     <FiUpload className="w-3 h-3 mr-1"/> Upload
                                   </label>
-                                  <input 
-                                    type="file" 
-                                    id={`upload-${key}`} 
-                                    className="hidden" 
-                                    accept=".pdf,.jpg,.jpeg,.png" 
+                                  <input
+                                    type="file"
+                                    id={`upload-${key}`}
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
                                     disabled={!isEditable} 
                                     onChange={(e) => {
                                       const file = e.target.files[0];
@@ -752,17 +752,17 @@ function EmployeeProfilePage() {
                                   {formData.idProofs[fileKey] instanceof File && (
                                     <div className="mt-2 flex items-center text-sm">
                                       <span className="text-gray-600 mr-2 truncate">{formData.idProofs[fileKey].name}</span>
-                                      <button 
+                          <button
                                         type="button" 
                                         onClick={() => handleInputChange('idProofs', fileKey, null)} 
                                         className="text-red-500 hover:text-red-700" 
                                         disabled={!isEditable}
                                       > 
                                         <X className="w-4 h-4"/> 
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                               ) : (
                                 employeeById?.[imgUrlKey] ? (
                                   <a href={employeeById[imgUrlKey]} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:text-blue-700 flex items-center">
@@ -770,11 +770,11 @@ function EmployeeProfilePage() {
                                   </a>
                                 ) : <p className="text-xs text-gray-500">No document</p>
                               )}
-                            </div>
-                          </div>
-                        ))}
+                        </div>
                       </div>
-                    </div>
+                        ))}
+                        </div>
+                        </div>
 
                     {/* Salary Information Card (Read-only) */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">

@@ -9,6 +9,7 @@ import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { setDate } from "date-fns";
+import withAuth from "@/components/withAuth";
 
 const downloadPDF = () => {
   const content = document.getElementById("pdf-content");
@@ -606,4 +607,4 @@ const PayrollPage = () => {
   );
 };
 
-export default PayrollPage;
+export default withAuth(PayrollPage);

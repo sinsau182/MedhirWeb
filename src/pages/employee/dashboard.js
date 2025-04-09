@@ -3,6 +3,7 @@ import { FaCalendarAlt, FaUserCheck, FaClock } from "react-icons/fa"; // Removed
 import Link from "next/link";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
+import withAuth from "@/components/withAuth";
 
 const Overview = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -64,4 +65,4 @@ const Overview = () => {
   );
 };
 
-export default Overview;
+export default withAuth(Overview);

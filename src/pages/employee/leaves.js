@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchLeaves, createLeave } from "@/redux/slices/leaveSlice";
 import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
 import CustomDatePicker from '@/components/CustomDatePicker';
+import withAuth from "@/components/withAuth";
 
 const Leaves = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -482,4 +483,4 @@ const Leaves = () => {
   );
 };
 
-export default Leaves;
+export default withAuth(Leaves);

@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createDepartment, fetchDepartments, updateDepartment, deleteDepartment } from '@/redux/slices/departmentSlice';
 import { fetchLeavePolicies } from '@/redux/slices/leavePolicySlice';
 import { createDesignation, fetchDepartmentsForDropdown, fetchDesignations, updateDesignation, deleteDesignation } from '@/redux/slices/designationSlice';
+import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -1321,4 +1322,4 @@ const OrganizationSettings = () => {
   );
 };
 
-export default OrganizationSettings;
+export default withAuth(OrganizationSettings);
