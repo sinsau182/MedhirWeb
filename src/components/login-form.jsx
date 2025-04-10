@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { jwtDecode } from "jwt-decode";
+import { updateSessionActivity } from "@/utils/sessionManager";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
@@ -28,30 +29,31 @@ export function LoginForm({ className, ...props }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await dispatch(loginUser(credentials));
-
+  
     if (result.meta.requestStatus === "fulfilled") {
       const token = result.payload.token;
-
+  
       if (typeof window !== "undefined") {
         localStorage.setItem("token", token);
+        updateSessionActivity(); // ✅ Start session tracking immediately
       }
-
+  
       // Decode token to get roles
       const decodedToken = jwtDecode(token);
       const roles = decodedToken.roles || [];
-
+  
       // Redirect based on role
       if (roles.includes("SUPERADMIN")) {
         router.push("/superadmin/companies");
       } else if (roles.includes("HRADMIN")) {
-        router.push("/hradmin/dashboard");
-        localStorage.setItem("currentRole", "hr");
+        router.push("/employee/dashboard");
+        localStorage.setItem("currentRole", "employee");
       } else {
         router.push("/dashboard"); // Default route
       }
     }
   };
-
+  
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>

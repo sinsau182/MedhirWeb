@@ -3,8 +3,11 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { Calendar, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchLeaves, createLeave } from "@/redux/slices/leaveSlice";
+import { fetchLeaves, createLeave, applyLeave, fetchLeaveHistory, clearErrors, applyCompOffLeave } from "@/redux/slices/leaveSlice";
+import axios from 'axios';
+import { toast } from "sonner";
 import CustomDatePicker from '@/components/CustomDatePicker';
+import withAuth from "@/components/withAuth";
 
 const Leaves = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -15,22 +18,125 @@ const Leaves = () => {
   const [leaveForm, setLeaveForm] = useState({
     dates: [],
     reason: "",
-    shiftType: "full"
+    shiftType: "Full Day"
   });
   
   const [compOffForm, setCompOffForm] = useState({
     dates: [],
-    description: ""
+    description: "",
+    shiftType: "Full Day"
   });
 
   const dispatch = useDispatch();
+  
+  // Add debug log to check state structure
+  const state = useSelector((state) => {
+    console.log('Redux State:', state);
+    return state;
+  });
+  
   const { leaves, loading, error } = useSelector((state) => state.leaveReducer);
+  const { leaveHistory, historyLoading, historyError } = useSelector((state) => state.leaveReducer);
+  const { token } = useSelector((state) => state.auth);
   const calendarRef = useRef(null);
+  const [publicHolidays, setPublicHolidays] = useState([]);
+  const [isLoadingHolidays, setIsLoadingHolidays] = useState(true);
+  const [holidayError, setHolidayError] = useState(null);
+  const [leaveBalance, setLeaveBalance] = useState(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [balanceError, setBalanceError] = useState(null);
+  const [showLOPWarning, setShowLOPWarning] = useState(false);
+  const [requestedDays, setRequestedDays] = useState(0);
+
+  // Add fetchPublicHolidays function
+  const fetchPublicHolidays = async () => {
+    setIsLoadingHolidays(true);
+    setHolidayError(null);
+    try {
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      const response = await axios.get('http://localhost:8083/public-holidays', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data) {
+        setPublicHolidays(Array.isArray(response.data) ? response.data : []);
+      } else {
+        setPublicHolidays([]);
+      }
+    } catch (error) {
+      console.error('Error fetching public holidays:', error);
+      const errorMessage = error.response?.status === 401 
+        ? "Session expired. Please log in again."
+        : error.response?.data?.message || error.message || 'Failed to fetch public holidays';
+      
+      setHolidayError(errorMessage);
+      
+      if (error.response?.status === 401) {
+        toast.error("Your session has expired. Please log in again.");
+        // Redirect to login only if token is missing
+        if (!token) {
+          window.location.href = "/login";
+        }
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoadingHolidays(false);
+    }
+  };
+
+  // Add fetchLeaveBalance function
+  const fetchLeaveBalance = async () => {
+    setIsLoadingBalance(true);
+    setBalanceError(null);
+    try {
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      const response = await axios.get('http://localhost:8083/api/leave-balance/current/EMP001', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data) {
+        setLeaveBalance(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching leave balance:', error);
+      setBalanceError(error.response?.data?.message || error.message || 'Failed to fetch leave balance');
+      toast.error("Failed to fetch leave balance");
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
 
   useEffect(() => {
-    // Fetch leaves for employee with ID emp123
-    dispatch(fetchLeaves("emp123"));
-  }, [dispatch]);
+    if (!token) {
+      toast.error("Please log in to view leave history");
+      window.location.href = "/login";
+      return;
+    }
+
+    dispatch(fetchLeaves("EMP001"));
+    dispatch(fetchLeaveHistory());
+    fetchPublicHolidays();
+    fetchLeaveBalance();
+
+    return () => {
+      dispatch(clearErrors());
+    };
+  }, [dispatch, token]);
 
   // Add click outside handler for calendar
   useEffect(() => {
@@ -56,13 +162,17 @@ const Leaves = () => {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
     setIsModalOpen(false);
-    setLeaveForm({ dates: [], reason: "", shiftType: "full" });
+    setLeaveForm({ dates: [], reason: "", shiftType: "Full Day" });
   };
   
   const openCompOffModal = () => setIsCompOffModalOpen(true);
   const closeCompOffModal = () => {
     setIsCompOffModalOpen(false);
-    setCompOffForm({ dates: [], description: "" });
+    setCompOffForm({
+      dates: [],
+      description: "",
+      shiftType: "Full Day"
+    });
   };
 
   const handleLeaveFormChange = (e) => {
@@ -74,7 +184,26 @@ const Leaves = () => {
     setLeaveForm(prev => ({ ...prev, shiftType: e.target.value }));
   };
 
+  const calculateRequestedDays = (dates) => {
+    return dates.reduce((total, date) => {
+      // Check for half day types (both First Half and Second Half count as 0.5)
+      const dayValue = date.shiftType === 'First Half (Morning)' || 
+                      date.shiftType === 'Second Half (Evening)' ? 0.5 : 1;
+      return total + dayValue;
+    }, 0);
+  };
+
   const handleLeaveDatesChange = (dates) => {
+    const totalDays = calculateRequestedDays(dates);
+    setRequestedDays(totalDays);
+    
+    // Check if requested days exceed available balance
+    if (leaveBalance && totalDays > leaveBalance.newLeaveBalance) {
+      setShowLOPWarning(true);
+    } else {
+      setShowLOPWarning(false);
+    }
+
     setLeaveForm(prev => ({ ...prev, dates }));
   };
 
@@ -118,29 +247,73 @@ const Leaves = () => {
 
   const handleCompOffSubmit = async (e) => {
     e.preventDefault();
-    try {
-      // Format dates to YYYY-MM-DD format
-      const formatDate = (date) => {
-        return new Date(date).toISOString().split('T')[0];
-      };
+    
+    if (!compOffForm.dates.length || !compOffForm.description) {
+      toast.error("Please select a date and provide a description");
+      return;
+    }
 
-      const leaveData = {
-        employeeId: "emp123",
-        employeeName: "Arun",
-        department: "Sales",
-        leaveType: "Comp Off",
-        startDate: formatDate(compOffForm.dates[0].date),
-        endDate: formatDate(compOffForm.dates[0].date),
-        shiftType: compOffForm.dates[0].timeSlot,
+    try {
+      const formData = {
+        startDate: compOffForm.dates[0].date.toISOString().split('T')[0],
+        endDate: compOffForm.dates[0].date.toISOString().split('T')[0],
+        shiftType: compOffForm.dates[0]?.timeSlot || compOffForm.dates[0]?.shiftType || 'Full Day',
         reason: compOffForm.description
       };
-      
-      await dispatch(createLeave(leaveData)).unwrap();
-      closeCompOffModal();
-      // Refresh the page to show updated leave history
-      window.location.reload();
+
+      console.log('Submitting comp-off with data:', formData);
+
+      const resultAction = await dispatch(applyCompOffLeave(formData));
+      if (applyCompOffLeave.fulfilled.match(resultAction)) {
+        toast.success("Comp-off application submitted successfully");
+        closeCompOffModal();
+        // Refresh both leave history and balance
+        dispatch(fetchLeaveHistory());
+        await fetchLeaveBalance();
+      } else {
+        throw new Error(resultAction.error.message || "Failed to apply for comp-off");
+      }
     } catch (error) {
-      console.error("Failed to submit comp-off request:", error);
+      toast.error(error.message || "Failed to submit comp-off request");
+    }
+  };
+
+  const handleSubmitLeave = async (e) => {
+    e.preventDefault();
+    
+    const formData = {
+      startDate: leaveForm.dates[0]?.date.toISOString().split('T')[0],
+      endDate: leaveForm.dates[leaveForm.dates.length - 1]?.date.toISOString().split('T')[0],
+      shiftType: leaveForm.dates[0]?.timeSlot || leaveForm.dates[0]?.shiftType || 'Full Day',
+      reason: leaveForm.reason,
+    };
+
+    if (!formData.startDate || !formData.endDate || !formData.reason) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (showLOPWarning) {
+      const confirmLOP = window.confirm(
+        `Warning: You are requesting ${requestedDays} days of leave but only have ${leaveBalance.newLeaveBalance} days available. \n\nExcess days will be marked as Loss of Pay (LOP). \n\nDo you want to continue?`
+      );
+      if (!confirmLOP) {
+        return;
+      }
+    }
+
+    try {
+      const resultAction = await dispatch(applyLeave(formData));
+      if (applyLeave.fulfilled.match(resultAction)) {
+        toast.success("Leave application submitted successfully");
+        closeModal();
+        dispatch(fetchLeaveHistory());
+        await fetchLeaveBalance();
+      } else {
+        throw new Error(resultAction.error.message || "Failed to apply for leave");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to apply for leave");
     }
   };
 
@@ -178,91 +351,112 @@ const Leaves = () => {
             {/* Leave Balance */}
             <div className="bg-white shadow-md rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Leave Balance</h2>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <p className="text-gray-600">Leave carried from previous year</p>
-                  <p className="text-gray-800 font-medium">5</p>
+              {isLoadingBalance ? (
+                <div className="text-center py-4">Loading leave balance...</div>
+              ) : balanceError ? (
+                <div className="text-center py-4 text-red-500">{balanceError}</div>
+              ) : leaveBalance ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <p className="text-gray-600">Leave carried from previous year</p>
+                    <p className="text-gray-800 font-medium">{leaveBalance.annualLeavesCarryForwarded}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <p className="text-gray-600">Leaves earned since January</p>
+                    <p className="text-gray-800 font-medium">{leaveBalance.totalAnnualLeavesEarnedSinceJanuary}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <p className="text-gray-600">Comp-off carried forward</p>
+                    <p className="text-gray-800 font-medium">{leaveBalance.compOffLeavesCarryForwarded}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <p className="text-gray-600">Comp-off earned this month</p>
+                    <p className="text-gray-800 font-medium">{leaveBalance.compOffLeavesEarned}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <p className="text-gray-600">Leaves taken in this year</p>
+                    <p className="text-red-500 font-medium">-{leaveBalance.leavesTakenThisYear}</p>
+                  </div>
+                  <hr className="my-4" />
+                  <div className="flex justify-between">
+                    <p className="text-gray-800 font-semibold">Total Balance</p>
+                    <p className="text-gray-800 font-semibold">{leaveBalance.newLeaveBalance}</p>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    * Total = Previous year leaves + Earned leaves + Comp-off (carried & earned) - Taken leaves
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <p className="text-gray-600">Leaves earned since January</p>
-                  <p className="text-gray-800 font-medium">12</p>
-                </div>
-                <div className="flex justify-between">
-                  <p className="text-gray-600">Comp-off carried forward</p>
-                  <p className="text-gray-800 font-medium">2</p>
-                </div>
-                <div className="flex justify-between">
-                  <p className="text-gray-600">Comp-off earned this month</p>
-                  <p className="text-gray-800 font-medium">1</p>
-                </div>
-                <div className="flex justify-between">
-                  <p className="text-gray-600">Leaves taken in this year</p>
-                  <p className="text-red-500 font-medium">-8</p>
-                </div>
-              </div>
-              <hr className="my-4" />
-              <div className="flex justify-between">
-                <p className="text-gray-800 font-semibold">Total Balance</p>
-                <p className="text-gray-800 font-semibold">12</p>
-              </div>
-              <div className="mt-2 text-xs text-gray-500">
-                * Total = Previous year leaves + Earned leaves + Comp-off (carried & earned) - Taken leaves
-              </div>
+              ) : (
+                <div className="text-center py-4 text-gray-500">No leave balance data available</div>
+              )}
             </div>
 
             {/* Leave History */}
             <div className="bg-white shadow-md rounded-lg p-6">
               <h2 className="text-lg font-semibold mb-4">Leave History</h2>
               <div className="divide-y divide-gray-200 max-h-[300px] overflow-y-auto">
-                {loading ? (
+                {historyLoading ? (
                   <div className="py-4 text-center text-gray-500">Loading leave history...</div>
-                ) : error ? (
-                  <div className="py-4 text-center text-red-500">Error loading leave history: {error}</div>
-                ) : leaves && leaves.length > 0 ? (
-                  leaves.map((leave) => {
-                    const formattedStartDate = new Date(
-                      leave.startDate
-                    ).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    });
-                    const formattedEndDate = leave.endDate
-                      ? new Date(leave.endDate).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "";
-
-                    return (
-                      <div key={leave.id || leave._id} className="py-4 flex justify-between">
-                        <div>
-                          <p className="text-gray-600 font-medium mb-2">{leave.leaveType}</p>
-                          <p className="text-sm text-gray-500">
-                            {leave.leaveType === "Comp Off"
-                              ? `${formattedStartDate} (${leave.shiftType || 'First Half (Morning)'})`
-                              : `${formattedStartDate} - ${formattedEndDate}`}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                            leave.status === "Pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : leave.status === "Approved"
-                              ? "bg-green-100 text-green-600"
-                              : "bg-red-100 text-red-600"
-                          }`}>
-                            {leave.status}
-                          </span>
-                          <p className="text-sm text-gray-500 mt-2 mr-1">
-                            {leave.leaveType === "Comp Off" ? "1 day" : 
-                              `${Math.ceil((new Date(leave.endDate) - new Date(leave.startDate)) / (1000 * 60 * 60 * 24)) + 1} days`}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })
+                ) : historyError ? (
+                  <div className="py-4 text-center text-red-500">
+                    {typeof historyError === 'string' ? historyError : 
+                     historyError.message || 'Error loading leave history'}
+                  </div>
+                ) : leaveHistory && leaveHistory.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Request Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Shift Type
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Reason
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {[...leaveHistory].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).map((leave, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {new Date(leave.startDate).toLocaleDateString()}
+                              {leave.startDate !== leave.endDate && 
+                                ` - ${new Date(leave.endDate).toLocaleDateString()}`}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${leave.leaveName === 'Comp-Off' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {leave.leaveName || 'Leave'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                {leave.shiftType}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${leave.status === 'Approved' ? 'bg-green-100 text-green-800' : 
+                                  leave.status === 'Rejected' ? 'bg-red-100 text-red-800' : 
+                                  'bg-yellow-100 text-yellow-800'}`}>
+                                {leave.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {leave.reason || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
                   <div className="py-4 text-center text-gray-500">No leave history found</div>
                 )}
@@ -270,37 +464,78 @@ const Leaves = () => {
             </div>
           </div>
 
-          {/* Leave Policies */}
-          <div className="bg-white shadow-md rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-3">Leave Policies</h2>
-            <div className="mb-4 bg-gray-50 shadow-md rounded-lg p-3">
-              <h3 className="text-md font-semibold text-gray-800">
-                Annual Leave Policy
-              </h3>
-              <ul className="list-disc list-inside text-gray-600 text-sm">
-                <li>
-                  All employees are entitled to 18 days of annual leave per year
-                </li>
-                <li>
-                  Unused leave can be carried forward to the next year
-                </li>
-              </ul>
+          {/* Leave Policies and Public Holidays */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
+            {/* Leave Policies */}
+            <div className="bg-white shadow-md rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-3">Leave Policies</h2>
+              <div className="mb-4 bg-gray-50 shadow-md rounded-lg p-3">
+                <h3 className="text-md font-semibold text-gray-800">
+                  Annual Leave Policy
+                </h3>
+                <ul className="list-disc list-inside text-gray-600 text-sm">
+                  <li>
+                    All employees are entitled to 18 days of annual leave per year
+                  </li>
+                  <li>
+                    Unused leave can be carried forward to the next year
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-gray-50 shadow-md rounded-lg p-3">
+                <h3 className="text-md font-semibold text-gray-800">
+                  Comp-off Leave Policy
+                </h3>
+                <ul className="list-disc list-inside text-gray-600 text-sm">
+                  <li>
+                    When applying for leave, it will first be deducted from available comp-off balance
+                  </li>
+                  <li>
+                    If comp-off balance is exhausted, remaining days will be deducted from annual leave
+                  </li>
+                  <li>
+                    Unused comp-off can be carried forward to the next month
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div className="bg-gray-50 shadow-md rounded-lg p-3">
-              <h3 className="text-md font-semibold text-gray-800">
-                Comp-off Leave Policy
-              </h3>
-              <ul className="list-disc list-inside text-gray-600 text-sm">
-                <li>
-                  When applying for leave, it will first be deducted from available comp-off balance
-                </li>
-                <li>
-                  If comp-off balance is exhausted, remaining days will be deducted from annual leave
-                </li>
-                <li>
-                  Unused comp-off can be carried forward to the next month
-                </li>
-              </ul>
+
+            {/* Public Holidays */}
+            <div className="bg-white shadow-md rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-3">Public Holidays</h2>
+              <div className="bg-gray-50 shadow-md rounded-lg p-3">
+                {isLoadingHolidays ? (
+                  <div className="text-center py-4">Loading holidays...</div>
+                ) : holidayError ? (
+                  <div className="text-center py-4 text-red-500">{holidayError}</div>
+                ) : publicHolidays.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500">No public holidays found</div>
+                ) : (
+                  <div className="space-y-3">
+                    {publicHolidays.map((holiday) => (
+                      <div key={holiday.holidayId} className="border-b border-gray-200 pb-2 last:border-b-0">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-md font-semibold text-gray-800">
+                            {holiday.holidayName}
+                          </h3>
+                          <span className="text-sm text-gray-600">
+                            {new Date(holiday.date).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        {holiday.description && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {holiday.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -318,23 +553,26 @@ const Leaves = () => {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmitLeave} className="space-y-6">
                   <div>
                     <CustomDatePicker
                       selectedDates={leaveForm.dates}
-                      onChange={(dates) => {
-                        setLeaveForm(prev => ({
-                          ...prev,
-                          dates: dates.map(d => ({
-                            date: d.date instanceof Date ? d.date : new Date(d.date),
-                            timeSlot: d.timeSlot
-                          }))
-                        }));
-                      }}
+                      onChange={handleLeaveDatesChange}
                       maxDays={5}
                       shiftType={leaveForm.shiftType}
                       onShiftTypeChange={handleShiftTypeChange}
                     />
+                    {showLOPWarning && (
+                      <div className="mt-2 text-red-500 text-sm flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        Warning: {requestedDays - leaveBalance.newLeaveBalance} day(s) will be marked as Loss of Pay (LOP)
+                      </div>
+                    )}
+                    {leaveForm.dates.length > 0 && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        Requested: {requestedDays} day(s) | Available Balance: {leaveBalance?.newLeaveBalance || 0} day(s)
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -345,7 +583,7 @@ const Leaves = () => {
                       onChange={handleLeaveFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide a reason for your leave"
+                      placeholder="Please provide a reason for your leave request..."
                     />
                   </div>
 
@@ -383,7 +621,6 @@ const Leaves = () => {
                   </button>
                 </div>
 
-          
                 <form onSubmit={handleCompOffSubmit} className="space-y-6">
                   <div>
                     <CustomDatePicker
@@ -393,12 +630,20 @@ const Leaves = () => {
                           ...prev,
                           dates: dates.map(d => ({
                             date: d.date instanceof Date ? d.date : new Date(d.date),
+                            shiftType: d.shiftType,
                             timeSlot: d.timeSlot
                           }))
                         }));
                       }}
                       isCompOff={true}
                       maxDays={1}
+                      shiftType={compOffForm.shiftType}
+                      onShiftTypeChange={(e) => {
+                        setCompOffForm(prev => ({
+                          ...prev,
+                          shiftType: e.target.value
+                        }));
+                      }}
                     />
                   </div>
 
@@ -410,7 +655,7 @@ const Leaves = () => {
                       onChange={handleCompOffFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide details"
+                      placeholder="Please provide details about your comp-off request..."
                     />
                   </div>
 
@@ -439,4 +684,4 @@ const Leaves = () => {
   );
 };
 
-export default Leaves;
+export default withAuth(Leaves);

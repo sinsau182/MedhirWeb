@@ -9,6 +9,7 @@ import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { setDate } from "date-fns";
+import withAuth from "@/components/withAuth";
 
 const downloadPDF = () => {
   const content = document.getElementById("pdf-content");
@@ -67,7 +68,7 @@ const monthsList = Array.from({ length: latestMonthIndex + 1 }, (_, i) =>
 const groupedPayrolls = { [currentYear]: monthsList };
 
 const PayrollPage = () => {
-  const employeeId = "EMP123";
+  const employeeId = "emp123";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -130,7 +131,7 @@ const PayrollPage = () => {
   const fetchPayslipDetails = async (month, year) => {
     try {
       const response = await fetch(
-        `http://192.168.0.200:8083/payslip/generate/${employeeId}/${month}/${year}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payslip/generate/${employeeId}/${month}/${year}`,
         {
           method: "GET",
           headers: {
@@ -149,7 +150,7 @@ const PayrollPage = () => {
   const fetchEmployeeById = async (employeeId) => {
     try {
       const response = await fetch(
-        `http://192.168.0.200:8083/employee/id/${employeeId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/id/${employeeId}`,
         {
           method: "GET",
           headers: {
@@ -606,4 +607,4 @@ const PayrollPage = () => {
   );
 };
 
-export default PayrollPage;
+export default withAuth(PayrollPage);

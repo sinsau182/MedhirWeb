@@ -1,8 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.0.200:8083';
-
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 // Fetch departments for dropdown
 export const fetchDepartmentsForDropdown = createAsyncThunk(
   'designation/fetchDepartments',
@@ -107,7 +106,8 @@ const designationSlice = createSlice({
     error: null,
     success: false,
     updateSuccess: false,
-    deleteSuccess: false
+    deleteSuccess: false,
+    overtimeEligible: false
   },
   reducers: {
     resetDesignationState: (state) => {

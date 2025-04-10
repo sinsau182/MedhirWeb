@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Search, Calendar } from "lucide-react";
+import { Search, Calendar, Check, X, Pencil } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import { set } from "mongoose";
+import withAuth from "@/components/withAuth";
 
 // Sample data
 const payrollData = [
@@ -96,6 +97,8 @@ function PayrollManagement() {
   const { employees, loading, err } = useSelector((state) => state.employees);
   const [tdsData, setTdsData] = useState([]);
   const [ptaxData, setPtaxData] = useState([]);
+  const [editingOvertime, setEditingOvertime] = useState(null);
+  const [overtimeValue, setOvertimeValue] = useState("");
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
@@ -120,12 +123,21 @@ function PayrollManagement() {
 
   const fetchTDS = async () => {
     const token = localStorage.getItem("token");
-    const response = await fetch("http://192.168.0.200:8083/api/tds-settings", {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/api/tds-settings", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+    
+    if (response.status === 404) {
+      // Return default TDS settings when not found
+      return {
+        tdsRate: 0,
+        description: "Default TDS settings"
+      };
+    }
+    
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Failed to fetch TDS");
@@ -135,15 +147,26 @@ function PayrollManagement() {
 
   const fetchPTAX = async () => {
     const token = localStorage.getItem("token");
-    const response = await fetch("http://192.168.0.200:8083/api/professional-tax-settings", {
+    const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL + "/api/professional-tax-settings", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+    
+    if (response.status === 404) {
+      // Return default professional tax settings when not found
+      return {
+        monthlySalaryThreshold: 25000,
+        amountAboveThreshold: 200,
+        amountBelowThreshold: 0,
+        description: "Default Professional Tax settings"
+      };
+    }
+    
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch PF");
+      throw new Error(data.error || "Failed to fetch Professional Tax");
     }
     return data;
   };
@@ -151,6 +174,49 @@ function PayrollManagement() {
   console.log("tds: ", tdsData);
   console.log("ptax: ", ptaxData);
 
+  const handleOvertimeEdit = (employeeId, currentValue) => {
+    setEditingOvertime(employeeId);
+    setOvertimeValue(currentValue);
+  };
+
+  const handleOvertimeSave = async (employeeId) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://192.168.0.200:8083/api/employees/${employeeId}/overtime`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          overtimePay: parseFloat(overtimeValue) || 0
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update overtime pay");
+      }
+
+      // Refresh the employee data
+      dispatch(fetchEmployees());
+      setEditingOvertime(null);
+      setOvertimeValue("");
+    } catch (error) {
+      console.error("Error updating overtime pay:", error);
+      // You might want to show an error toast here
+    }
+  };
+
+  const handleOvertimeCancel = () => {
+    setEditingOvertime(null);
+    setOvertimeValue("");
+  };
+
+  const handleOvertimeKeyPress = (e, employeeId) => {
+    if (e.key === 'Enter') {
+      handleOvertimeSave(employeeId);
+    }
+  };
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
@@ -178,18 +244,18 @@ function PayrollManagement() {
             {employees
               .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
               .map((employee, index) => {
-                const basic = parseFloat((employee.salaryDetails.basicSalary * (paidDays/monthDays)).toFixed(2));
-                const hra = parseFloat((employee.salaryDetails.hra * (paidDays/monthDays)).toFixed(2));
-                const allowance = parseFloat((employee.salaryDetails.allowances * (paidDays/monthDays)).toFixed(2));
+                const basic = parseFloat((employee.salaryDetails.basicSalary * (paidDays/monthDays)).toFixed(0));
+                const hra = parseFloat((employee.salaryDetails.hra * (paidDays/monthDays)).toFixed(0));
+                const allowance = parseFloat((employee.salaryDetails.allowances * (paidDays/monthDays)).toFixed(0));
                 const overtimePay = parseFloat(employee.overtimePay || 0);
                 const reimbursement = parseFloat(employee.reimbursement || 0);
-                const employeePF = parseFloat((employee.salaryDetails.employeePfContribution * (paidDays/monthDays)).toFixed(2));
-                const employerPF = parseFloat((employee.salaryDetails.employerPfContribution * (paidDays/monthDays)).toFixed(2));
-                const tds = parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2));
+                const employeePF = parseFloat((employee.salaryDetails.employeePfContribution * (paidDays/monthDays)).toFixed(0));
+                const employerPF = parseFloat((employee.salaryDetails.employerPfContribution * (paidDays/monthDays)).toFixed(0));
+                const tds = parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(0));
                 const profTax = employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold ? ptaxData.amountAboveThreshold : 0;
                 const advanceAdjusted = parseFloat(employee.advanceAdjusted || 0);
-                const deductions = parseFloat((tds + advanceAdjusted + profTax).toFixed(2));
-                const netPay = parseFloat((basic + hra + allowance + overtimePay + reimbursement - deductions).toFixed(2));
+                const deductions = parseFloat((tds + advanceAdjusted + profTax).toFixed(0));
+                const netPay = parseFloat((basic + hra + allowance + overtimePay + reimbursement - deductions).toFixed(0));
 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
@@ -197,11 +263,45 @@ function PayrollManagement() {
                     <td className="py-2 px-2 text-sm text-gray-800">{employee.name}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">{paidDays}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{employee.salaryDetails.monthlyCtc}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays/monthDays)).toFixed(2))}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays/monthDays)).toFixed(0))}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{basic}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{hra}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{allowance}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{overtimePay}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      {editingOvertime === employee.employeeId ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={overtimeValue}
+                            onChange={(e) => setOvertimeValue(e.target.value)}
+                            onKeyPress={(e) => handleOvertimeKeyPress(e, employee.employeeId)}
+                            className="w-24 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter amount"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleOvertimeSave(employee.employeeId)}
+                            className="p-1 text-green-600 hover:text-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={handleOvertimeCancel}
+                            className="p-1 text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div 
+                          className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
+                          onClick={() => handleOvertimeEdit(employee.employeeId, overtimePay)}
+                        >
+                          ₹{overtimePay}
+                          <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
+                        </div>
+                      )}
+                    </td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{reimbursement}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{employeePF}</td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{employerPF}</td>
@@ -241,11 +341,11 @@ function PayrollManagement() {
                   <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employeePfContribution * (paidDays / monthDays)).toFixed(2))}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employerPfContribution * (paidDays / monthDays)).toFixed(2))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employeePfContribution * (paidDays / monthDays)).toFixed(0))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employerPfContribution * (paidDays / monthDays)).toFixed(0))}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
-                    {parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2))}
+                    {parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(0))}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
@@ -256,7 +356,7 @@ function PayrollManagement() {
                   <td className="py-2 px-2 text-xs text-gray-600">₹{employee.advanceAdjusted}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat(((employee.salaryDetails.employerPfContribution + employee.salaryDetails.employeePfContribution +  (employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)) + (employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold
                       ? ptaxData.amountAboveThreshold
-                      : 0)) * (paidDays/monthDays)).toFixed(2))}</td>
+                      : 0)) * (paidDays/monthDays)).toFixed(0))}</td>
                 </tr>
               ))}
           </tbody>
@@ -480,4 +580,4 @@ function PayrollManagement() {
   );
 }
 
-export default PayrollManagement;
+export default withAuth(PayrollManagement);

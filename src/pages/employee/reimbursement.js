@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchExpenses, createExpense } from "@/redux/slices/expenseSlice";
 import { toast } from "sonner";
+import withAuth from "@/components/withAuth";
 
 const Expenses = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -323,4 +324,4 @@ const Expenses = () => {
   );
 };
 
-export default Expenses;
+export default withAuth(Expenses);

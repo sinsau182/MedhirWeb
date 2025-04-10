@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { useRouter } from "next/router";
 import { Badge } from "@/components/ui/badge";
+import withAuth from "@/components/withAuth";
 
 function Attendance() {
   const router = useRouter();
@@ -588,4 +589,4 @@ function Attendance() {
   );
 }
 
-export default Attendance;
+export default withAuth(Attendance);

@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createDepartment, fetchDepartments, updateDepartment, deleteDepartment } from '@/redux/slices/departmentSlice';
 import { fetchLeavePolicies } from '@/redux/slices/leavePolicySlice';
 import { createDesignation, fetchDepartmentsForDropdown, fetchDesignations, updateDesignation, deleteDesignation } from '@/redux/slices/designationSlice';
+import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -36,7 +37,8 @@ const OrganizationSettings = () => {
     name: "",
     description: "",
     department: "",
-    isManager: false,
+    manager: false,
+    overtimeEligible: false,
   });
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({
@@ -71,14 +73,14 @@ const OrganizationSettings = () => {
       name: "Software Engineer",
       description: "Develops software applications",
       department: { value: 1, label: "Engineering" },
-      isManager: false,
+      manager: false,
     },
     {
       id: 2,
       name: "Engineering Manager",
       description: "Manages engineering team",
       department: { value: 1, label: "Engineering" },
-      isManager: true,
+      manager: true,
     },
   ]);
 
@@ -383,7 +385,8 @@ const OrganizationSettings = () => {
       name: designation.name,
       description: designation.description,
       department: designation.department,
-      isManager: designation.isManager,
+      manager: designation.manager,
+      overtimeEligible: designation.overtimeEligible,
     });
   };
 
@@ -393,7 +396,8 @@ const OrganizationSettings = () => {
         name: designationForm.name,
         department: designationForm.department.value,
         description: designationForm.description || "",
-        isManager: designationForm.isManager
+        manager: designationForm.manager,
+        overtimeEligible: designationForm.overtimeEligible
       };
 
       console.log('Updating designation data:', designationData); // Debug log
@@ -419,7 +423,8 @@ const OrganizationSettings = () => {
         name: "",
         department: "",
         description: "",
-        isManager: false
+        manager: false,
+        overtimeEligible: false
       });
 
       setTimeout(() => {
@@ -474,7 +479,8 @@ const OrganizationSettings = () => {
         name: designationForm.name,
         description: designationForm.description || "",
         department: designationForm.department.value,
-        isManager: designationForm.isManager
+        manager: designationForm.manager,
+        overtimeEligible: designationForm.overtimeEligible
       };
 
       console.log('Submitting designation data:', designationData); // Debug log
@@ -487,7 +493,8 @@ const OrganizationSettings = () => {
         name: "",
         description: "",
         department: "",
-        isManager: false,
+        manager: false,
+        overtimeEligible: false
       });
       setIsFormChanged(false);
       setErrors({});
@@ -590,7 +597,8 @@ const OrganizationSettings = () => {
           label: item.department 
         },
         description: item.description || "",
-        isManager: item.isManager || false
+        manager: item.manager || false,
+        overtimeEligible: item.overtimeEligible || false
       });
       setShowDesignationModal(true);
     }
@@ -619,7 +627,8 @@ const OrganizationSettings = () => {
       name: "",
       description: "",
       department: "",
-      isManager: false,
+      manager: false,
+      overtimeEligible: false,
     });
     setErrors({});
   };
@@ -628,14 +637,19 @@ const OrganizationSettings = () => {
     // Reset form changed state when opening new designation
     setIsFormChanged(false);
     setSelectedDesignation(designation);
+    
+    // Find the department name using the department ID
+    const departmentName = reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department;
+    
     setDesignationForm({
       name: designation.name,
       department: { 
         value: designation.department,
-        label: designation.department 
+        label: departmentName // Use the department name instead of the ID
       },
       description: designation.description || "",
-      isManager: designation.isManager || false
+      manager: designation.manager || false,
+      overtimeEligible: designation.overtimeEligible || false
     });
     setShowDesignationModal(true);
   };
@@ -660,7 +674,8 @@ const OrganizationSettings = () => {
         name: "",
         department: "",
         description: "",
-        isManager: false
+        manager: false,
+        overtimeEligible: false
       });
 
       setTimeout(() => {
@@ -822,11 +837,11 @@ const OrganizationSettings = () => {
           )}
 
           {/* Designations Table */}
-          {activeTab === "designations" && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+                {activeTab === "designations" && (
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
                     </th>
@@ -839,57 +854,63 @@ const OrganizationSettings = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Is Manager
                     </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {designationLoading ? (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Overtime Eligible
+                    </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {designationLoading ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center">
-                        Loading...
+                      <td colSpan="5" className="px-6 py-4 text-center">
+                      Loading...
                       </td>
                     </tr>
-                  ) : error ? (
+                    ) : error ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center text-red-500">
-                        {error}
+                      <td colSpan="5" className="px-6 py-4 text-center text-red-500">
+                      {error}
                       </td>
                     </tr>
-                  ) : fetchedDesignations.length === 0 ? (
+                    ) : fetchedDesignations.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-4 text-center">
-                        No designations found
+                      <td colSpan="5" className="px-6 py-4 text-center">
+                      No designations found
                       </td>
                     </tr>
-                  ) : (
+                    ) : (
                     fetchedDesignations.map((designation) => (
                       <tr
-                        key={designation.id}
-                        onClick={() => handleDesignationRowClick(designation)}
-                        className="hover:bg-gray-50 cursor-pointer"
+                      key={designation.id}
+                      onClick={() => handleDesignationRowClick(designation)}
+                      className="hover:bg-gray-50 cursor-pointer"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {reduxDepartments.find(dept => dept.name === designation.department)?.name || designation.department}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {designation.description || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.isManager ? "Yes" : "No"}
-                        </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {designation.description || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.manager ? "Yes" : "No"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.overtimeEligible ? "Yes" : "No"}
+                      </td>
                       </tr>
                     ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+                    )}
+                  </tbody>
+                  </table>
+                </div>
+                )}
+              </div>
+              </div>
 
-      {/* Department Add Modal */}
+              {/* Department Add Modal */}
       {showDepartmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-[600px]">
@@ -1196,7 +1217,7 @@ const OrganizationSettings = () => {
                 <Select
                   name="department"
                   options={reduxDepartments.map((dept) => ({
-                    value: dept.name,
+                    value: dept.departmentId,
                     label: dept.name,
                   }))}
                   className="react-select"
@@ -1212,26 +1233,52 @@ const OrganizationSettings = () => {
                 />
               </div>
 
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isManager"
-                  name="isManager"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  checked={designationForm.isManager}
-                  onChange={(e) => {
-                    setDesignationForm({
-                      ...designationForm,
-                      isManager: e.target.checked,
-                    });
-                  }}
-                />
-                <label
-                  htmlFor="isManager"
-                  className="ml-2 block text-sm text-gray-700"
-                >
-                  Is Manager
-                </label>
+              <div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="manager"
+                    name="manager"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={designationForm.manager}
+                    onChange={(e) => {
+                      setDesignationForm({
+                        ...designationForm,
+                        manager: e.target.checked,
+                      });
+                    }}
+                  />
+                  <label
+                    htmlFor="manager"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Is Manager
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="overtimeEligible"
+                    name="overtimeEligible"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={designationForm.overtimeEligible}
+                    onChange={(e) => {
+                      setDesignationForm({
+                        ...designationForm,
+                        overtimeEligible: e.target.checked,
+                      });
+                    }}
+                  />
+                  <label
+                    htmlFor="overtimeEligible"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Overtime Eligible
+                  </label>
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
@@ -1279,4 +1326,4 @@ const OrganizationSettings = () => {
   );
 };
 
-export default OrganizationSettings;
+export default withAuth(OrganizationSettings);

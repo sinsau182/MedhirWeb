@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import withAuth from "@/components/withAuth";
 
 const PayrollSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -58,7 +59,7 @@ const PayrollSettings = () => {
   const fetchTDS = async () => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://192.168.0.200:8083/api/tds-settings", {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL+"/api/tds-settings", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -84,7 +85,7 @@ const PayrollSettings = () => {
   const fetchPTAX = async () => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://192.168.0.200:8083/api/professional-tax-settings", {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL+"/api/professional-tax-settings", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -111,7 +112,7 @@ const PayrollSettings = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const url = "http://192.168.0.200:8083/api/tds-settings";
+      const url = process.env.NEXT_PUBLIC_API_BASE_URL+"/api/tds-settings";
       const method = tdsData ? "PUT" : "POST";
       
       const response = await fetch(url, {
@@ -151,7 +152,7 @@ const PayrollSettings = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const url = "http://192.168.0.200:8083/api/professional-tax-settings";
+      const url = process.env.NEXT_PUBLIC_API_BASE_URL+"/api/professional-tax-settings";
       const method = ptaxData ? "PUT" : "POST";
       
       const response = await fetch(url, {
@@ -520,4 +521,4 @@ const PayrollSettings = () => {
   );
 };
 
-export default PayrollSettings; 
+export default withAuth(PayrollSettings);

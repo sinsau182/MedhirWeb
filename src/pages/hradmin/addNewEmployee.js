@@ -131,9 +131,9 @@ const MultiSelect = ({ label, options, value, onChange }) => {
 
 // Add this function to generate the next employee ID
 const generateEmployeeId = (lastEmployeeId) => {
-  if (!lastEmployeeId) return "EMP001";
+  if (!lastEmployeeId) return "emp001";
   const currentNumber = parseInt(lastEmployeeId.slice(3));
-  return `EMP${(currentNumber + 1).toString().padStart(3, "0")}`;
+  return `emp${(currentNumber + 1).toString().padStart(3, "0")}`;
 };
 
 // Add this helper function before the EmployeeForm component
@@ -206,8 +206,6 @@ function EmployeeForm() {
       overtimeEligibile: false,
       weeklyOffs: [],
       employeeImgUrl: null,
-    },
-    statutory: {
       pfEnrolled: false,
       uanNumber: "",
       esicEnrolled: false,
@@ -250,15 +248,17 @@ function EmployeeForm() {
     if (employee) {
       try {
         const parsedEmployee = JSON.parse(employee);
-        setFormData((prev) => ({
-          ...prev,
+        console.log("Parsed Employee Data:", parsedEmployee); // Debug log
+        
+        // Set complete form data with all fields, using empty strings for null/undefined values
+        setFormData({
           employee: {
             employeeId: parsedEmployee.employeeId || "",
             name: parsedEmployee.name || "",
-            fathersName: parsedEmployee.fatherName || "",
+            fathersName: parsedEmployee.fathersName || "",
             gender: parsedEmployee.gender || "",
-            phone: parsedEmployee.phone1 || "",
-            alternatePhone: parsedEmployee.phone2 || "",
+            phone: parsedEmployee.phone || "",
+            alternatePhone: parsedEmployee.alternatePhone || "",
             emailPersonal: parsedEmployee.emailPersonal || "",
             emailOfficial: parsedEmployee.emailOfficial || "",
             currentAddress: parsedEmployee.currentAddress || "",
@@ -267,27 +267,25 @@ function EmployeeForm() {
             designation: parsedEmployee.designation || "",
             joiningDate: parsedEmployee.joiningDate || "",
             reportingManager: parsedEmployee.reportingManager || "",
-            overtimeEligibile: parsedEmployee.overtimeEligible || false,
-            weeklyOffs: parsedEmployee.weeklyOff || [],
-            employeeImgUrl: null,
-          },
-          statutory: {
-            pfEnrolled: parsedEmployee.statutory?.pfEnrolled || false,
-            uanNumber: parsedEmployee.statutory?.uanNumber || "",
-            esicEnrolled: parsedEmployee.statutory?.esicEnrolled || false,
-            esicNumber: parsedEmployee.statutory?.esicNumber || "",
+            overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
+            weeklyOffs: Array.isArray(parsedEmployee.weeklyOffs) ? parsedEmployee.weeklyOffs : [],
+            employeeImgUrl: parsedEmployee.employeeImgUrl || "",
+            pfEnrolled: Boolean(parsedEmployee.pfEnrolled),
+            uanNumber: parsedEmployee.uanNumber || "",
+            esicEnrolled: Boolean(parsedEmployee.esicEnrolled),
+            esicNumber: parsedEmployee.esicNumber || "",
           },
           idProofs: {
             aadharNo: parsedEmployee.idProofs?.aadharNo || "",
-            aadharImgUrl: null,
+            aadharImgUrl: parsedEmployee.idProofs?.aadharImgUrl || "",
             panNo: parsedEmployee.idProofs?.panNo || "",
-            pancardImgUrl: null,
+            pancardImgUrl: parsedEmployee.idProofs?.pancardImgUrl || "",
             passport: parsedEmployee.idProofs?.passport || "",
-            passportImgUrl: null,
+            passportImgUrl: parsedEmployee.idProofs?.passportImgUrl || "",
             drivingLicense: parsedEmployee.idProofs?.drivingLicense || "",
-            drivingLicenseImgUrl: null,
+            drivingLicenseImgUrl: parsedEmployee.idProofs?.drivingLicenseImgUrl || "",
             voterId: parsedEmployee.idProofs?.voterId || "",
-            voterIdImgUrl: null,
+            voterIdImgUrl: parsedEmployee.idProofs?.voterIdImgUrl || "",
           },
           bankDetails: {
             accountNumber: parsedEmployee.bankDetails?.accountNumber || "",
@@ -296,34 +294,27 @@ function EmployeeForm() {
             bankName: parsedEmployee.bankDetails?.bankName || "",
             branchName: parsedEmployee.bankDetails?.branchName || "",
             upiId: parsedEmployee.bankDetails?.upiId || "",
-            upiPhoneNumber: parsedEmployee.bankDetails?.upiPhone || "",
-            passbookImgUrl: null,
+            upiPhoneNumber: parsedEmployee.bankDetails?.upiPhoneNumber || "",
+            passbookImgUrl: parsedEmployee.bankDetails?.passbookImgUrl || "",
           },
           salaryDetails: {
-            annualCtc: parsedEmployee.salaryDetails?.annualCTC || "",
-            monthlyCtc: parsedEmployee.salaryDetails?.monthlyCTC || "",
-            basicSalary: parsedEmployee.salaryDetails?.basic || "",
+            annualCtc: parsedEmployee.salaryDetails?.annualCtc || "",
+            monthlyCtc: parsedEmployee.salaryDetails?.monthlyCtc || "",
+            basicSalary: parsedEmployee.salaryDetails?.basicSalary || "",
             hra: parsedEmployee.salaryDetails?.hra || "",
             allowances: parsedEmployee.salaryDetails?.allowances || "",
             employerPfContribution: parsedEmployee.salaryDetails?.employerPfContribution || "",
             employeePfContribution: parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
-        }));
-        setEmployeeId(parsedEmployee.id);
+        });
+        
+        setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
         console.error("Error parsing employee data", error);
         toast.error("Error loading employee data");
       }
     }
   }, [employee]);
-
-  // Update your EmployeeForm component
-  useEffect(() => {
-    if (!formData.employee.employeeId) {
-      // Simply set it to EMP001 for new employees
-      handleInputChange("employee", "employeeId", "EMP001");
-    }
-  }, []);
 
   const calculateTotalCTC = (salaryData) => {
     const values = {
@@ -368,7 +359,7 @@ function EmployeeForm() {
       if (
         section === "salaryDetails" &&
         field === "basicSalary" &&
-        prev.statutory.pfEnrolled
+        prev.employee.pfEnrolled
       ) {
         const pfContributions = calculatePFContributions(value);
         updatedData.salaryDetails.employerPfContribution = pfContributions.employer;
@@ -415,36 +406,9 @@ function EmployeeForm() {
     }));
   };
 
-  const validateForm = () => {
-    const { employee } = formData;
-    if (!employee.employeeId) {
-      toast.error("Employee ID is required");
-      return false;
-    }
-
-    if (!employee.employeeId.match(/^EMP\d{3}$/)) {
-      toast.error("Employee ID must be in the format EMP followed by 3 digits");
-      return false;
-    }
-    if (!employee.name || !employee.phone) {
-      toast.error("Name and Phone are required fields");
-      return false;
-    }
-    if (!/^[0-9]{10}$/.test(employee.phone)) {
-      toast.error("Invalid phone number");
-      return false;
-    }
-    if (!employee.joiningDate) {
-      toast.error("Date of joining is required");
-      return false;
-    }
-    return true;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // If we're not on the last section, navigate to the next section
+
     if (activeSection !== "salary") {
       const currentIndex = sections.findIndex(section => section.id === activeSection);
       if (currentIndex < sections.length - 1) {
@@ -456,67 +420,137 @@ function EmployeeForm() {
     // Only proceed with form submission if we're on the last section
     if (!validateForm()) return;
 
-
     setLoading(true);
     try {
-      // Create FormData object
       const formDataObj = new FormData();
+      
+      // Helper function to remove empty fields from an object
+      const removeEmptyFields = (obj) => {
+        const cleanObj = {};
+        Object.entries(obj).forEach(([key, value]) => {
+          if (value !== "" && value !== null && value !== undefined) {
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              const nestedClean = removeEmptyFields(value);
+              if (Object.keys(nestedClean).length > 0) {
+                cleanObj[key] = nestedClean;
+              }
+            } else {
+              cleanObj[key] = value;
+            }
+          }
+        });
+        return cleanObj;
+      };
 
-      // Clean the form data to remove empty values
-      const cleanEmployeeDetails = removeEmptyValues({
-        employeeId: formData.employee.employeeId,
-        name: formData.employee.name,
-        fathersName: formData.employee.fathersName,
-        gender: formData.employee.gender,
-        phone: formData.employee.phone,
-        alternatePhone: formData.employee.alternatePhone,
-        emailPersonal: formData.employee.emailPersonal,
-        emailOfficial: formData.employee.emailOfficial,
-        currentAddress: formData.employee.currentAddress,
-        permanentAddress: formData.employee.permanentAddress,
-        department: formData.employee.department,
-        designation: formData.employee.designation,
+      // Create the base employee data object with statutory fields at the same level
+      const baseEmployeeData = {
+        employeeId: formData.employee.employeeId?.trim(),
+        name: formData.employee.name?.trim(),
+        fathersName: formData.employee.fathersName?.trim(),
+        gender: formData.employee.gender?.trim(),
+        phone: formData.employee.phone?.trim(),
+        alternatePhone: formData.employee.alternatePhone?.trim(),
+        emailPersonal: formData.employee.emailPersonal?.trim(),
+        emailOfficial: formData.employee.emailOfficial?.trim(),
+        currentAddress: formData.employee.currentAddress?.trim(),
+        permanentAddress: formData.employee.permanentAddress?.trim(),
+        department: formData.employee.department?.trim(),
+        designation: formData.employee.designation?.trim(),
         joiningDate: formData.employee.joiningDate,
-        reportingManager: formData.employee.reportingManager,
-        overtimeEligibile: formData.employee.overtimeEligibile,
-        weeklyOffs: formData.employee.weeklyOffs,
-        employeeImgUrl: formData.employee.employeeImgUrl,
-        statutory: formData.statutory,
-        idProofs: formData.idProofs,
-        bankDetails: formData.bankDetails,
-        salaryDetails: formData.salaryDetails,
-      });
+        reportingManager: formData.employee.reportingManager?.trim(),
+        overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
+        weeklyOffs: formData.employee.weeklyOffs?.length ? formData.employee.weeklyOffs : undefined,
+        pfEnrolled: Boolean(formData.employee.pfEnrolled),
+        uanNumber: formData.employee.uanNumber?.trim(),
+        esicEnrolled: Boolean(formData.employee.esicEnrolled),
+        esicNumber: formData.employee.esicNumber?.trim(),
+        idProofs: {
+          aadharNo: formData.idProofs.aadharNo?.trim(),
+          panNo: formData.idProofs.panNo?.trim(),
+          passport: formData.idProofs.passport?.trim(),
+          drivingLicense: formData.idProofs.drivingLicense?.trim(),
+          voterId: formData.idProofs.voterId?.trim(),
+        },
+        bankDetails: {
+          accountNumber: formData.bankDetails.accountNumber?.trim(),
+          accountHolderName: formData.bankDetails.accountHolderName?.trim(),
+          ifscCode: formData.bankDetails.ifscCode?.trim(),
+          bankName: formData.bankDetails.bankName?.trim(),
+          branchName: formData.bankDetails.branchName?.trim(),
+          upiId: formData.bankDetails.upiId?.trim(),
+          upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
+        },
+        salaryDetails: {
+          annualCtc: formData.salaryDetails.annualCtc || undefined,
+          monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
+          basicSalary: formData.salaryDetails.basicSalary || undefined,
+          hra: formData.salaryDetails.hra || undefined,
+          allowances: formData.salaryDetails.allowances || undefined,
+          employerPfContribution: formData.salaryDetails.employerPfContribution || undefined,
+          employeePfContribution: formData.salaryDetails.employeePfContribution || undefined,
+        }
+      };
 
-      // Only append if we have non-empty data
-      if (Object.keys(cleanEmployeeDetails).length > 0) {
-        formDataObj.append('employee', JSON.stringify(cleanEmployeeDetails));
-      }
+      // Remove all empty fields from the employee data
+      const employeeData = removeEmptyFields(baseEmployeeData);
 
-      // Add profile image if exists
+      // Add the cleaned employee data to FormData
+      formDataObj.append('employee', JSON.stringify(employeeData));
+
+      // Only add files if they exist
       if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append('employeeImgUrl', formData.employee.employeeImgUrl);
+        formDataObj.append('profileImage', formData.employee.employeeImgUrl);
       }
 
-      // Add Aadhar image if exists
       if (formData.idProofs.aadharImgUrl instanceof File) {
-        formDataObj.append('aadharImgUrl', formData.idProofs.aadharImgUrl);
+        formDataObj.append('aadharImage', formData.idProofs.aadharImgUrl);
+      }
+
+      if (formData.idProofs.pancardImgUrl instanceof File) {
+        formDataObj.append('pancardImage', formData.idProofs.pancardImgUrl);
+      }
+
+      if (formData.idProofs.passportImgUrl instanceof File) {
+        formDataObj.append('passportImage', formData.idProofs.passportImgUrl);
+      }
+
+      if (formData.idProofs.drivingLicenseImgUrl instanceof File) {
+        formDataObj.append('drivingLicenseImage', formData.idProofs.drivingLicenseImgUrl);
+      }
+
+      if (formData.idProofs.voterIdImgUrl instanceof File) {
+        formDataObj.append('voterIdImage', formData.idProofs.voterIdImgUrl);
+      }
+
+      if (formData.bankDetails.passbookImgUrl instanceof File) {
+        formDataObj.append('passbookImage', formData.bankDetails.passbookImgUrl);
       }
 
       if (employeeId) {
+        // For updates, use the stored employeeId in the URL
         const result = await dispatch(
-          updateEmployee({ id: employeeId, updatedData: formDataObj })
+          updateEmployee({ 
+            id: employeeId,
+            updatedData: formDataObj
+          })
         ).unwrap();
-        toast.success("Employee updated successfully");
+        
+        if (result) {
+          toast.success("Employee updated successfully");
+          router.push("/hradmin/employees");
+        }
       } else {
+        // For new employees
         const result = await dispatch(createEmployee(formDataObj)).unwrap();
-        toast.success("Employee created successfully");
+        if (result) {
+          toast.success("Employee created successfully");
+          router.push("/hradmin/employees");
+        }
       }
-      router.push("/hradmin/employees");
     } catch (err) {
       let errorMessage = "An error occurred";
       
       if (err?.validationErrors) {
-        // Handle validation errors
         const validationMessages = Object.entries(err.validationErrors)
           .map(([field, message]) => `${field}: ${message}`)
           .join('\n');
@@ -535,10 +569,87 @@ function EmployeeForm() {
     }
   };
 
+  const validateForm = () => {
+    const { employee } = formData;
+    const errors = {};
+
+    // Validate required fields
+    if (!employee.employeeId?.trim()) {
+      errors.employeeId = "Employee ID is required";
+    }
+    if (!employee.name?.trim()) {
+      errors.name = "Employee name is required";
+    }
+    if (!employee.phone?.trim()) {
+      errors.phone = "Phone number is required";
+    }
+    if (!employee.joiningDate) {
+      errors.joiningDate = "Date of joining is required";
+    }
+
+    // Only validate format for new employees
+    if (!employeeId && employee.employeeId && !employee.employeeId.match(/^emp\d{3}$/)) {
+      errors.employeeId = "Employee ID must be in the format emp followed by 3 digits";
+    }
+
+    // Validate phone number format if provided
+    if (employee.phone && !/^[0-9]{10}$/.test(employee.phone)) {
+      errors.phone = "Invalid phone number format";
+    }
+
+    // Validate other fields only if they are not empty
+    const { idProofs, bankDetails } = formData;
+
+    // Validate Aadhar number if provided
+    if (idProofs.aadharNo && !/^\d{12}$/.test(idProofs.aadharNo)) {
+      errors["idProofs.aadharNo"] = "Aadhar number must be exactly 12 digits";
+    }
+
+    // Validate PAN number if provided
+    if (idProofs.panNo && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idProofs.panNo)) {
+      errors["idProofs.panNo"] = "Invalid PAN number format";
+    }
+
+    // Validate Passport number if provided
+    if (idProofs.passport && !/^[A-Z]{1}[0-9]{7}$/.test(idProofs.passport)) {
+      errors["idProofs.passport"] = "Invalid Passport number format";
+    }
+
+    // Validate Driving License if provided
+    if (idProofs.drivingLicense && !/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(idProofs.drivingLicense)) {
+      errors["idProofs.drivingLicense"] = "Invalid Driving License format. Format should be: State Code (2 letters) + Year (2 digits) + 11 digits";
+    }
+
+    // Validate Voter ID if provided
+    if (idProofs.voterId && !/^[A-Z]{3}[0-9]{7}$/.test(idProofs.voterId)) {
+      errors["idProofs.voterId"] = "Invalid Voter ID format";
+    }
+
+    // Validate Bank Account number if provided
+    if (bankDetails.accountNumber && !/^\d{9,18}$/.test(bankDetails.accountNumber)) {
+      errors["bankDetails.accountNumber"] = "Account number must be between 9 to 18 digits";
+    }
+
+    // Validate IFSC code if provided
+    if (bankDetails.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode)) {
+      errors["bankDetails.ifscCode"] = "Invalid IFSC Code format";
+    }
+
+    // If there are errors, show them and return false
+    if (Object.keys(errors).length > 0) {
+      Object.entries(errors).forEach(([field, message]) => {
+        toast.error(message);
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   // Function to handle direct employee creation from personal details
   const handleAddEmployeeFromPersonal = async () => {
     if (!validateForm()) return;
-    
+
     setLoading(true);
     try {
       // Create FormData object with only personal details
@@ -718,13 +829,13 @@ function EmployeeForm() {
                       {typeof section.icon === 'string' ? (
                         <span className="text-lg">{section.icon}</span>
                       ) : (
-                        <section.icon
-                          className={`w-4 h-4 ${
-                            activeSection === section.id
-                              ? "text-blue-500"
-                              : "text-gray-400"
-                          }`}
-                        />
+                      <section.icon
+                        className={`w-4 h-4 ${
+                          activeSection === section.id
+                            ? "text-blue-500"
+                            : "text-gray-400"
+                        }`}
+                      />
                       )}
                       {section.label}
                     </motion.button>
@@ -756,15 +867,12 @@ function EmployeeForm() {
                             className={inputClass}
                             value={formData.employee.employeeId || ""}
                             onChange={(e) => {
-                              // Ensure the input follows the EMP### format
-                              const value = e.target.value.toUpperCase();
-                              if (value === "" || value.match(/^EMP\d{0,3}$/)) {
                                 handleInputChange(
-                                  "employee",
+                                "employee",
                                   "employeeId",
-                                  value
+                                e.target.value
                                 );
-                              }
+                              setLastEmployeeId(e.target.value);
                             }}
                             maxLength={6} // Limit to EMP### format
                           />
@@ -890,12 +998,12 @@ function EmployeeForm() {
                                 className={inputClass}
                                 value={formData.employee[field] || ""}
                                 onChange={(e) =>
-                                  handleInputChange(
+                                    handleInputChange(
                                     "employee",
-                                    field,
-                                    e.target.value
+                                      field,
+                                      e.target.value
                                   )
-                                }
+                                  }
                               />
                             </div>
                           ))}
@@ -903,22 +1011,22 @@ function EmployeeForm() {
 
                         {/* Addresses */}
                         <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>
+                            <label className={floatingLabelClass}>
                             Current Address
-                          </label>
-                          <textarea
-                            className={inputClass}
-                            rows="2"
+                            </label>
+                            <textarea
+                              className={inputClass}
+                              rows="2"
                             value={formData.employee.currentAddress || ""}
-                            onChange={(e) =>
-                              handleInputChange(
+                              onChange={(e) =>
+                                handleInputChange(
                                 "employee",
                                 "currentAddress",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
 
                         <div className="flex items-center mb-2">
                           <input
@@ -1057,10 +1165,10 @@ function EmployeeForm() {
                                 <input
                                   type="checkbox"
                                   id="pfEnrolled"
-                                  checked={formData.statutory.pfEnrolled}
+                                  checked={formData.employee.pfEnrolled}
                                   onChange={(e) =>
                                     handleInputChange(
-                                      "statutory",
+                                      "employee",
                                       "pfEnrolled",
                                       e.target.checked
                                     )
@@ -1075,7 +1183,7 @@ function EmployeeForm() {
                                 </label>
                               </div>
 
-                              {formData.statutory.pfEnrolled && (
+                              {formData.employee.pfEnrolled && (
                                 <div className={`${inputGroupClass} mt-2`}>
                                   <label className={floatingLabelClass}>
                                     UAN Number
@@ -1083,10 +1191,10 @@ function EmployeeForm() {
                                   <input
                                     type="text"
                                     className={inputClass}
-                                    value={formData.statutory.uanNumber || ""}
+                                    value={formData.employee.uanNumber || ""}
                                     onChange={(e) =>
                                       handleInputChange(
-                                        "statutory",
+                                        "employee",
                                         "uanNumber",
                                         e.target.value
                                       )
@@ -1103,10 +1211,10 @@ function EmployeeForm() {
                                 <input
                                   type="checkbox"
                                   id="esicEnrolled"
-                                  checked={formData.statutory.esicEnrolled}
+                                  checked={formData.employee.esicEnrolled}
                                   onChange={(e) =>
                                     handleInputChange(
-                                      "statutory",
+                                      "employee",
                                       "esicEnrolled",
                                       e.target.checked
                                     )
@@ -1121,7 +1229,7 @@ function EmployeeForm() {
                                 </label>
                               </div>
 
-                              {formData.statutory.esicEnrolled && (
+                              {formData.employee.esicEnrolled && (
                                 <div className={`${inputGroupClass} mt-2`}>
                                   <label className={floatingLabelClass}>
                                     ESIC Number
@@ -1129,10 +1237,10 @@ function EmployeeForm() {
                                   <input
                                     type="text"
                                     className={inputClass}
-                                    value={formData.statutory.esicNumber || ""}
+                                    value={formData.employee.esicNumber || ""}
                                     onChange={(e) =>
                                       handleInputChange(
-                                        "statutory",
+                                        "employee",
                                         "esicNumber",
                                         e.target.value
                                       )
@@ -1144,7 +1252,7 @@ function EmployeeForm() {
                             </div>
                             
                             {/* Overtime Eligible Section */}
-                            <div className="space-y-2">
+                            {/* <div className="space-y-2">
                               <div className="flex items-center mb-3">
                                 <input
                                   type="checkbox"
@@ -1166,7 +1274,7 @@ function EmployeeForm() {
                                   Overtime Eligible
                                 </label>
                               </div>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -1386,7 +1494,7 @@ function EmployeeForm() {
                         ))}
 
                         {/* PF Contributions - Only shown if PF is enrolled */}
-                        {formData.statutory.pfEnrolled && (
+                        {formData.employee.pfEnrolled && (
                           <>
                             <div className={inputGroupClass}>
                               <label className={floatingLabelClass}>
@@ -1452,41 +1560,43 @@ function EmployeeForm() {
                 </motion.button>
                 
                 {activeSection === "personal" && (
-                  <motion.button
-                    type="button"
-                    className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2"
-                    onClick={handleAddEmployeeFromPersonal}
-                    disabled={loading}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {loading ? (
-                      <>
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            fill="none"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Add Employee</span>
-                      </>
-                    )}
-                  </motion.button>
+                <motion.button
+                  type="submit"
+                  className={`px-8 py-3 rounded-xl ${
+                    employeeId ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white transition-all duration-200 flex items-center gap-2`}
+                  disabled={loading}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{employeeId ? "Update Employee" : "Add Employee"}</span>
+                    </>
+                  )}
+                </motion.button>
                 )}
+
                 
                 <motion.button
                   type="submit"
@@ -1541,6 +1651,7 @@ function EmployeeForm() {
                   )}
                 </motion.button>
               </div>
+
             </form>
           </motion.div>
         </div>

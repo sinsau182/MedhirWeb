@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, isWeekend, isWithinInterval, isSameDay, eachDayOfInterval } from 'date-fns';
+import { toast } from 'sonner';
 
 const CustomDatePicker = ({
   selectedDates = [],
@@ -9,7 +10,7 @@ const CustomDatePicker = ({
   isCompOff = false,
   maxDays,
   minDate = new Date(),
-  shiftType = 'FULL_DAY',
+  shiftType = 'FULL DAY',
   onShiftTypeChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,15 +23,44 @@ const CustomDatePicker = ({
   const calendarPopupRef = useRef(null);
 
   const timeSlotOptions = [
-    { value: 'First Half (Morning)', label: 'First Half (Morning)' },
-    { value: 'Second Half (Afternoon)', label: 'Second Half (Afternoon)' },
     { value: 'Full Day', label: 'Full Day' },
+    { value: 'First Half (Morning)', label: 'First Half (Morning)' },
+    { value: 'Second Half (Evening)', label: 'Second Half (Evening)' }
   ];
+
+  // Handle shift type change
+  const handleShiftTypeChange = (e) => {
+    const newShiftType = e.target.value;
+    setTimeSlot(newShiftType);
+    
+    // Update all selected dates with new shift type
+    const updatedDates = selectedDateObjects.map(date => ({
+      ...date,
+      shiftType: newShiftType,
+      timeSlot: newShiftType
+    }));
+    setSelectedDateObjects(updatedDates);
+    
+    // Notify parent component
+    if (onShiftTypeChange) {
+      onShiftTypeChange({
+        ...e,
+        target: {
+          ...e.target,
+          value: newShiftType
+        }
+      });
+    }
+    if (onChange) {
+      onChange(updatedDates);
+    }
+  };
 
   useEffect(() => {
     if (selectedDates.length > 0) {
       setSelectedDateObjects(selectedDates.map(date => ({
-        date: new Date(date.date),
+        date: date.date instanceof Date ? date.date : new Date(date.date),
+        shiftType: date.shiftType || timeSlot,
         timeSlot: date.timeSlot || timeSlot
       })));
     } else {
@@ -97,105 +127,71 @@ const CustomDatePicker = ({
   };
 
   const handleDateClick = (date) => {
-    if (isDateDisabled(date) && !isWeekend(date)) return; // Allow weekend selection but keep other disabled date restrictions
+    if (isDateDisabled(date) && !isWeekend(date)) return;
 
     let newSelectedDates;
     if (isCompOff) {
-      // For comp off, only allow single date selection
       if (selectedDateObjects.some(selected => isSameDay(selected.date, date))) {
         newSelectedDates = [];
       } else {
         newSelectedDates = [{ 
           date: new Date(date),
-          timeSlot 
+          shiftType: timeSlot,
+          timeSlot: timeSlot
         }];
       }
     } else {
-      // For leave application, allow consecutive date selection including weekends
       const isAlreadySelected = selectedDateObjects.some(selected => 
         isSameDay(selected.date, date)
       );
 
       if (isAlreadySelected) {
-        // If clicking on a date that's already selected, remove it
+        // When removing a date, only allow if it's at the start or end of the range
+        const sortedDates = [...selectedDateObjects].sort((a, b) => a.date - b.date);
+        const isStartOrEnd = isSameDay(sortedDates[0].date, date) || 
+                           isSameDay(sortedDates[sortedDates.length - 1].date, date);
+        
+        if (!isStartOrEnd) {
+          toast.error("You can only remove dates from the start or end of the range");
+          return;
+        }
         newSelectedDates = selectedDateObjects.filter(selected => !isSameDay(selected.date, date));
       } else {
-        if (selectedDateObjects.length > 0) {
-          // Get all selected dates including the new one
-          const allDates = [...selectedDateObjects.map(d => d.date), date];
-          
-          // Sort dates chronologically
-          const sortedDates = allDates.sort((a, b) => a - b);
-          
-          // Check if dates form a consecutive sequence (including weekends)
-          let isConsecutive = true;
-          for (let i = 1; i < sortedDates.length; i++) {
-            const prevDate = new Date(sortedDates[i - 1]);
-            const currDate = new Date(sortedDates[i]);
-            const diffTime = Math.abs(currDate - prevDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            // Allow 1 day difference or 2-3 days if spanning a weekend
-            if (diffDays > 3 || (diffDays > 1 && !isWeekend(new Date(prevDate.getTime() + 24 * 60 * 60 * 1000)))) {
-              isConsecutive = false;
-              break;
-            }
-          }
+        if (maxDays && selectedDateObjects.length >= maxDays) {
+          toast.error(`You can only select up to ${maxDays} days`);
+          return;
+        }
 
-          if (!isConsecutive) {
-            alert("Please select consecutive dates (weekends can be skipped)");
+        // When adding a date, ensure it's continuous with existing dates
+        if (selectedDateObjects.length > 0) {
+          const sortedDates = [...selectedDateObjects].sort((a, b) => a.date - b.date);
+          const firstDate = sortedDates[0].date;
+          const lastDate = sortedDates[sortedDates.length - 1].date;
+          const newDateValue = date.getTime();
+          
+          // Check if the new date is adjacent to the existing range
+          const oneDayInMs = 24 * 60 * 60 * 1000;
+          const isAdjacent = 
+            Math.abs(newDateValue - firstDate.getTime()) <= oneDayInMs ||
+            Math.abs(newDateValue - lastDate.getTime()) <= oneDayInMs;
+          
+          if (!isAdjacent) {
+            toast.error("Please select continuous dates");
             return;
           }
         }
         
-        if (maxDays && selectedDateObjects.length >= maxDays) {
-          alert(`You can only select up to ${maxDays} days`);
-          return;
-        }
-        
         newSelectedDates = [...selectedDateObjects, { 
           date: new Date(date),
+          shiftType: timeSlot,
           timeSlot: timeSlot
         }];
       }
     }
 
-    // Sort the dates chronologically before setting
     newSelectedDates.sort((a, b) => a.date - b.date);
     setSelectedDateObjects(newSelectedDates);
     onChange(newSelectedDates);
-  };
-
-  const handleTimeSlotChange = (e) => {
-    const newTimeSlot = e.target.value;
-    setTimeSlot(newTimeSlot);
-    if (onShiftTypeChange) {
-      onShiftTypeChange(e);
-    }
-    // Only update the timeSlot for the most recently selected date
-    if (selectedDateObjects.length > 0) {
-      const updatedDates = [...selectedDateObjects];
-      updatedDates[updatedDates.length - 1] = {
-        ...updatedDates[updatedDates.length - 1],
-        timeSlot: newTimeSlot
-      };
-      setSelectedDateObjects(updatedDates);
-      onChange(updatedDates);
-    }
-  };
-
-  const handleIndividualTimeSlotChange = (date, newTimeSlot) => {
-    const updatedDates = selectedDateObjects.map(selected => {
-      if (isSameDay(selected.date, date)) {
-        return {
-          ...selected,
-          timeSlot: newTimeSlot
-        };
-      }
-      return selected;
-    });
-    setSelectedDateObjects(updatedDates);
-    onChange(updatedDates);
   };
 
   const removeDate = (dateToRemove) => {
@@ -208,9 +204,8 @@ const CustomDatePicker = ({
 
   const calculateTotalDays = () => {
     return selectedDateObjects.reduce((total, selected) => {
-      if (selected.timeSlot === 'HALF_DAY' || 
-          selected.timeSlot === 'FIRST_HALF' || 
-          selected.timeSlot === 'SECOND_HALF') {
+      if (selected.timeSlot === 'First Half (Morning)' || 
+          selected.timeSlot === 'Second Half (Evening)') {
         return total + 0.5;
       }
       return total + 1;
@@ -264,20 +259,17 @@ const CustomDatePicker = ({
         {/* Time Slot Selector - Only shown when no dates are selected */}
         {selectedDateObjects.length === 0 && (
           <select
-            value={timeSlot}
-            onChange={handleTimeSlotChange}
-            className="mt-2 w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-            onClick={(e) => e.stopPropagation()}
+            value={timeSlot || "Full Day"}
+            onChange={handleShiftTypeChange}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
           >
-            {timeSlotOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            <option value="Full Day">Full Day</option>
+            <option value="First Half (Morning)">First Half (Morning)</option>
+            <option value="Second Half (Evening)">Second Half (Evening)</option>
           </select>
         )}
 
-        {/* Selected Dates Display - Only shown when dates are selected */}
+        {/* Selected Dates Display */}
         {selectedDateObjects.length > 0 && (
           <div className="mt-3">
             <div className="flex flex-wrap gap-2">
@@ -290,18 +282,9 @@ const CustomDatePicker = ({
                     className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <span className="font-medium">{format(dateObj, 'dd MMM yyyy')}</span>
-                    <select
-                      value={selected.timeSlot}
-                      onChange={(e) => handleIndividualTimeSlotChange(dateObj, e.target.value)}
-                      className="text-xs text-blue-600 bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {timeSlotOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <span className="text-xs text-blue-600">
+                      {selected.shiftType}
+                    </span>
                     <button
                       type="button"
                       onClick={(e) => {

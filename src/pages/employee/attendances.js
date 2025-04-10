@@ -4,6 +4,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CheckCircle2, X, Clock, CalendarIcon } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
+import withAuth from "@/components/withAuth";
 
 const EmployeeAttendance = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -78,7 +79,55 @@ const EmployeeAttendance = () => {
     setReason("");
   };
 
+  // Function to fetch attendance data for a specific date
+  const fetchAttendanceData = async (selectedDate) => {
+    try {
+      const employeeId = 'EMP001';
+      const date = new Date(selectedDate.getTime() - selectedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+      
+      const url = `http://localhost:8082/attendance/daily-attendance/${employeeId}/${date}`;
+      console.log('Fetching data for URL:', url);
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Fetched Attendance Data:', data);
+      // Update state with fetched data
+      setAttendanceData((prevData) => {
+        const updatedData = prevData.map((d) =>
+          d.date.toDateString() === selectedDate.toDateString() ? { ...d, ...data } : d
+        );
+        console.log('Updated Attendance Data:', updatedData);
+        return updatedData;
+      });
+    } catch (error) {
+      console.error('Error fetching attendance data:', error);
+    }
+  };
+  
+
+  // Update the onClick handler for each date
+  const handleDateClick = (day) => {
+    setDate(day);
+    fetchAttendanceData(day);
+  };
+
   const calendarDays = generateCalendarDays();
+
+  // Helper function to format time in AM/PM
+  const formatTime = (timeString) => {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
 
   return (
     <div className="flex h-screen">
@@ -195,7 +244,7 @@ const EmployeeAttendance = () => {
         return (
           <div
             key={index}
-            onClick={() => setDate(day)}
+            onClick={() => handleDateClick(day)}
             className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass}`}
           >
             {dayNumber}
@@ -237,63 +286,39 @@ const EmployeeAttendance = () => {
                       );
                     }
 
-                    const isLate = selectedDayData.isLate;
-                    const status = selectedDayData.status;
-                    const checkIn = selectedDayData.checkIn;
-                    const checkOut = selectedDayData.checkOut;
+                    const { status, checkinTimes, checkoutTimes, totalWorkingMinutes } = selectedDayData;
+
+                    // Calculate total working hours
+                    const totalWorkingHours = (totalWorkingMinutes / 60).toFixed(1);
 
                     return (
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Status:</span>
-                          <span className={`${
-                            status === 'Present' && !selectedDayData.leaveType ? 'bg-green-700 text-white' :
-                            status === 'Present' && selectedDayData.leaveType ? 'bg-green-400 text-white' :
+                          <span className={`$ {
+                            status === 'Present' ? 'bg-green-700 text-white' :
                             status === 'On Leave' ? 'bg-yellow-400 text-white' :
                             'bg-red-500 text-white'
                           } text-xs font-semibold px-2 py-1 rounded-full`}>
-                            {status} {selectedDayData.leaveType ? `(${selectedDayData.leaveType})` : ''}
+                            {status}
                           </span>
                         </div>
-                        {status === 'Present' && !selectedDayData.leaveType && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-blue-500" /> Check In
-                              </span>
-                              <span>{checkIn || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-blue-500" /> Check Out
-                              </span>
-                              <span>{checkOut || 'N/A'}</span>
-                            </div>
-                          </>
-                        )}
-                        {status === 'Present' && selectedDayData.leaveType && (
-                          <div className="text-center py-4">
-                            <p className="text-sm text-gray-600">On {selectedDayData.leaveType} Leave</p>
-                          </div>
-                        )}
-                        {status === 'On Leave' && (
-                          <div className="text-center py-4">
-                            <p className="text-sm text-gray-600">On Full Day Leave</p>
-                          </div>
-                        )}
-                        {status === 'Absent' && (
-                          <button
-                            onClick={() => setShowReasonForm(true)}
-                            disabled={reasonSubmitted}
-                            className={`mt-4 w-full py-2 px-4 rounded-md transition text-sm ${
-                              reasonSubmitted 
-                                ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                                : "bg-teal-400 text-white hover:bg-teal-500"
-                            }`}
-                          >
-                            {reasonSubmitted ? "Reason sent for approval" : "Submit Reason for Unapproved Absence"}
-                          </button>
-                        )}
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-blue-500" /> Check In
+                          </span>
+                          <span>{checkinTimes?.[0] ? formatTime(checkinTimes[0]) : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-blue-500" /> Check Out
+                          </span>
+                          <span>{checkoutTimes?.[0] ? formatTime(checkoutTimes[0]) : 'N/A'}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Total Working Hours:</span>
+                          <span>{totalWorkingHours} hours</span>
+                        </div>
                       </div>
                     );
                   })()
@@ -362,4 +387,4 @@ const EmployeeAttendance = () => {
   );
 };
 
-export default EmployeeAttendance;
+export default withAuth(EmployeeAttendance);

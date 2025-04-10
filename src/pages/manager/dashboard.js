@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import {
   BarChart,
@@ -37,6 +37,11 @@ import RequestDetails from "@/components/RequestDetails";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 
+import { useSelector, useDispatch } from "react-redux";
+import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import withAuth from "@/components/withAuth";
+import axios from "axios";
+
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -55,6 +60,16 @@ const Overview = () => {
   const [showRequestDetails, setShowRequestDetails] = useState(false); // New state
   const [activeTab, setActiveTab] = useState("leaveRequests");
 
+  const [profileUpdates, setProfileUpdates] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [pendingCompOffs, setPendingCompOffs] = useState([]);
+
+  const dispatch = useDispatch();
+  const { employees, loading } = useSelector((state) => state.employees);
+  useEffect(() => {
+    dispatch(fetchEmployees());
+  }, [dispatch]);
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -67,13 +82,70 @@ const Overview = () => {
     console.log("Logout clicked");
   };
 
-  
-
   const handleOpenRequestsClick = () => {
     setShowRequestDetails((prevShowRequestDetails) => !prevShowRequestDetails); // Toggle Request Details
 
     setShowCharts(false); // Ensure Charts are hidden
   };
+
+  const fetchProfileUpdates = async () => {
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        };
+        const response = await fetch(`http://localhost:8083/hradmin/update-requests`, { headers });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        setProfileUpdates(data);
+    } catch (error) {
+        console.error(`Error fetching profile updates:`, error);
+        toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
+        setProfileUpdates([]);
+    }
+};
+
+const fetchPendingRequests = async () => {
+try {
+  const token = localStorage.getItem('token');
+  const response = await axios.get('http://localhost:8083/leave/status/Pending', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  console.log('API Response:', response.data);
+
+  if (response.data && Array.isArray(response.data.leaves)) {
+    const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
+    const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
+    
+    setPendingLeaves(regularLeaves);
+    setPendingCompOffs(compOffLeaves);
+  } else {
+    setPendingLeaves([]);
+    setPendingCompOffs([]);
+  }
+} catch (error) {
+  console.error('Error details:', {
+    status: error.response?.status,
+    data: error.response?.data,
+    message: error.message
+  });
+  
+  setPendingLeaves([]);
+  setPendingCompOffs([]);
+}
+};
+
+
+useEffect(() => {
+  fetchPendingRequests();
+  fetchProfileUpdates();
+}, []);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -105,21 +177,25 @@ const Overview = () => {
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Team Members",
-      count: 12,
+      count: employees.length,
     },
 
     {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
       label: "Open Requests",
-      count: 5,
+      count: pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
     },
   ];
 
   return (
-<div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
 
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"manager"} />
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        currentRole={"manager"}
+      />
 
       {/* Main Content */}
 
@@ -155,7 +231,7 @@ const Overview = () => {
                       key={index}
                       className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
                       style={{ height: "250px", width: "350px" }}
-                      onClick={() => window.location.href = '/manager/team'}
+                      onClick={() => (window.location.href = "/manager/team")}
                     >
                       <div className="flex justify-between items-center w-full mb-8">
                         <p className="text-xl font-semibold text-gray-800">
@@ -172,7 +248,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">People in your department</p>
                           <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
-                            <span className="text-xs text-blue-600 font-medium">Active</span>
+                            <span className="text-xs text-blue-600 font-medium">
+                              Active
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -199,7 +277,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">Pending requests</p>
                           <div className="ml-2 px-2 py-1 bg-green-50 rounded-full">
-                            <span className="text-xs text-green-600 font-medium">Last 7 days</span>
+                            <span className="text-xs text-green-600 font-medium">
+                              Last 7 days
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -454,4 +534,4 @@ color: "#4B5563",
   );
 };
 
-export default Overview;
+export default withAuth(Overview);

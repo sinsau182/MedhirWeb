@@ -1,11 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaCalendarAlt, FaUserCheck, FaClock } from "react-icons/fa"; // Removed FaUser since we won't need it
 import Link from "next/link";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
+import axios from 'axios';
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
+import withAuth from "@/components/withAuth";
 
 const Overview = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [leaveBalance, setLeaveBalance] = useState(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [balanceError, setBalanceError] = useState(null);
+  const { token } = useSelector((state) => state.auth);
+  const { leaveHistory } = useSelector((state) => state.leaveReducer);
+
+  const fetchLeaveBalance = async () => {
+    setIsLoadingBalance(true);
+    setBalanceError(null);
+    try {
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      const response = await axios.get('http://localhost:8083/api/leave-balance/current/EMP001', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data) {
+        setLeaveBalance(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching leave balance:', error);
+      setBalanceError(error.response?.data?.message || error.message || 'Failed to fetch leave balance');
+      toast.error("Failed to fetch leave balance");
+    } finally {
+      setIsLoadingBalance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!token) {
+      toast.error("Please log in to view dashboard");
+      window.location.href = "/login";
+      return;
+    }
+    fetchLeaveBalance();
+  }, [token]);
+
+  // Refetch balance when leave history changes
+  useEffect(() => {
+    if (token) {
+      fetchLeaveBalance();
+    }
+  }, [leaveHistory, token]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -40,21 +93,26 @@ const Overview = () => {
             <Link href="/employee/leaves">
               <div className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
                    style={{ height: "250px", width: "350px" }}>
-                <div className="flex justify-between items-center w-full mb-8">
+                <div className="flex justify-between items-center w-full mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">Leave Balance</h2>
                   <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
                     <FaCalendarAlt className="text-blue-600 text-2xl" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-5xl font-bold text-gray-900">21</p>
-                  <div className="flex items-center text-gray-600">
-                    <p className="text-sm">Days remaining</p>
-                    <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
-                      <span className="text-xs text-blue-600 font-medium">This Year</span>
+                {isLoadingBalance ? (
+                  <div className="text-gray-500">Loading leave balance...</div>
+                ) : balanceError ? (
+                  <div className="text-red-500">{balanceError}</div>
+                ) : leaveBalance ? (
+                  <div className="space-y-2">
+                    <p className="text-5xl font-bold text-gray-900">{leaveBalance.newLeaveBalance}</p>
+                    <div className="flex items-center text-gray-600">
+                      <p className="text-sm">Days remaining</p>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="text-gray-500">No leave balance data available</div>
+                )}
               </div>
             </Link>
           </div>
@@ -64,4 +122,4 @@ const Overview = () => {
   );
 };
 
-export default Overview;
+export default withAuth(Overview);
