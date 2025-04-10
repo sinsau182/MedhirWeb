@@ -14,6 +14,10 @@ import {
 import { format } from "date-fns";
 import PropTypes from "prop-types";
 import { useToast } from "@/hooks/use-toast";
+import axios from 'axios';
+import { toast } from 'sonner';
+import { useSelector } from 'react-redux';
+import Leaves from "@/pages/employee/leaves";
 
 // --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
 const ChangesModal = ({ isOpen, onClose, changes }) => {
@@ -85,6 +89,11 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   const [compOffRequests, setCompOffRequests] = useState([]);
   const [isLoadingCompOff, setIsLoadingCompOff] = useState(false);
 
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [pendingCompOffs, setPendingCompOffs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   // --- Base URL for API (adjust as needed) ---
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''; // Ensure this is set
 
@@ -122,6 +131,24 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   //   }
   // }, [activeTab]);
 
+  // useEffect(() => {
+  //   if (activeTab === 'expenseRequests') {
+  //     fetchData('/api/expense-requests', setExpenseRequests, setIsLoadingExpense);
+  //   }
+  // }, [activeTab]);
+
+  // useEffect(() => {
+  //   if (activeTab === 'advanceRequests') {
+  //     fetchData('/api/advance-requests', setAdvanceRequests, setIsLoadingAdvance);
+  //   }
+  // }, [activeTab]);
+
+  // useEffect(() => {
+  //   if (activeTab === 'compOffRequests') {
+  //     fetchData('/api/comp-off-requests', setCompOffRequests, setIsLoadingCompOff);
+  //   }
+  // }, [activeTab]);
+
   const fetchProfileUpdates = async () => {
       setIsLoadingProfile(true);
       console.log(`Fetching profile updates from: http://localhost:8083/hradmin/update-requests`);
@@ -148,29 +175,60 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       }
   };
 
-  useEffect(() => {
-    if (activeTab === 'profileUpdates') {
-      fetchProfileUpdates();
+const fetchPendingRequests = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    setLoading(true);
+
+    const response = await axios.get('http://localhost:8083/leave/status/Pending', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('API Response:', response.data);
+
+    if (response.data && Array.isArray(response.data.leaves)) {
+      const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
+      const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
+      
+      setPendingLeaves(regularLeaves);
+      setPendingCompOffs(compOffLeaves);
+    } else {
+      setPendingLeaves([]);
+      setPendingCompOffs([]);
     }
-  }, [activeTab]);
+  } catch (error) {
+    console.error('Error details:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    setError(error.response?.data?.message || error.message);
+    setPendingLeaves([]);
+    setPendingCompOffs([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
-    if (activeTab === 'expenseRequests') {
-      fetchData('/api/expense-requests', setExpenseRequests, setIsLoadingExpense);
-    }
-  }, [activeTab]);
+    fetchPendingRequests();
+    fetchProfileUpdates();
+  }, []);
 
-  useEffect(() => {
-    if (activeTab === 'advanceRequests') {
-      fetchData('/api/advance-requests', setAdvanceRequests, setIsLoadingAdvance);
-    }
-  }, [activeTab]);
+  if (loading) {
+    return <div className="text-center py-4">Loading pending requests...</div>;
+  }
 
-  useEffect(() => {
-    if (activeTab === 'compOffRequests') {
-      fetchData('/api/comp-off-requests', setCompOffRequests, setIsLoadingCompOff);
-    }
-  }, [activeTab]);
+  if (error) {
+    return <div className="text-center py-4 text-red-500">{error}</div>;
+  }
+
+
 
   // Function to open the modal
   const handleViewDetails = (changes) => {
@@ -185,10 +243,16 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-    return format(new Date(dateString), "MMM dd, yyyy");
+      // Parse the MongoDB date format and convert to local date
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
     } catch (error) {
-        console.error("Error formatting date:", dateString, error);
-        return dateString; // Return original string if formatting fails
+      console.error("Error formatting date:", dateString, error);
+      return 'Invalid Date';
     }
   };
 
@@ -249,6 +313,12 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       console.log(`Rejecting profile update for ${employeeId}`);
       toast({ title: "Action Disabled", description: "Reject functionality not implemented yet.", variant: "destructive" });
       // Similar fetch logic with PUT/PATCH and status: 'Rejected' would go here
+  };
+
+  const handleReject = async (leaveId) => {
+  };
+
+  const handleApprove = async (leaveId) => {
   };
 
   return (
@@ -329,34 +399,47 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {isLoadingLeave ? (
+              {loading ? (
                   <tr><td colSpan="9" className="text-center py-5">Loading...</td></tr>
-                ) : leaveRequests.length === 0 ? (
-                   <tr><td colSpan="9" className="text-center py-5 text-gray-500">No pending leave requests.</td></tr>
+                ) : !pendingLeaves || pendingLeaves.length === 0 ? (
+                  <tr><td colSpan="9" className="text-center py-5 text-gray-500">No pending leave requests.</td></tr>
                 ) : (
-                  leaveRequests.map((request) => (
-                  <tr
-                    key={request.id}
+                  pendingLeaves.map((request, index) => (
+                    <tr 
+                      key={`${request.leaveId}-${request.employeeId}-${index}`} 
                     className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-5 py-4 text-sm font-medium text-gray-900">
                       {request.employeeId}
                     </td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.typeOfLeave}</td>
-                    <td className="px-5 py-4 text-sm">{request.startDate}</td>
-                    <td className="px-5 py-4 text-sm">{request.endDate}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.employeeName}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.department}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.leaveType}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {formatDate(request.startDate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {formatDate(request.endDate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.shiftType}
+                      </td>
                     <td className="px-5 py-4 text-sm">
-                      {request.leaveBalance}
+                        {request.reason}
                     </td>
-                    <td className="px-5 py-4 text-sm">{request.reason}</td>
                     <td className="px-5 py-4 text-sm font-medium space-x-3">
                       <Button
                         size="sm"
                         variant="outline"
                         className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleApprove(request.leaveId)}
+                          title={request.remarks || 'Approve request'}
                       >
                         <Check className="h-4 w-4" />
                       </Button>
@@ -364,7 +447,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         size="sm"
                         variant="outline"
                         className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleReject(request.leaveId)}
+                          title="Reject request"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -405,44 +489,46 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {isLoadingCompOff ? (
+                {loading ? (
                   <tr><td colSpan="7" className="text-center py-5">Loading...</td></tr>
-                ) : compOffRequests.length === 0 ? (
-                   <tr><td colSpan="7" className="text-center py-5 text-gray-500">No pending comp off requests.</td></tr>
+                ) : !pendingCompOffs || pendingCompOffs.length === 0 ? (
+                  <tr><td colSpan="7" className="text-center py-5 text-gray-500">No pending comp-off requests.</td></tr>
                 ) : (
-                   compOffRequests.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                      {request.employeeId}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{formatDate(request.date)}</td>
-                    <td className="px-5 py-4 text-sm">{request.shiftType}</td>
-                    <td className="px-5 py-4 text-sm">{request.description}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                            disabled
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                            disabled
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                   ))
+                  pendingCompOffs.map((request, index) => (
+                    <tr 
+                      key={`${request.leaveId}-${request.employeeId}-${index}`} 
+                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                        {request.employeeId}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.employeeName}</td>
+                      <td className="px-5 py-4 text-sm">{request.department}</td>
+                      <td className="px-5 py-4 text-sm">{formatDate(request.startDate)}</td>
+                      <td className="px-5 py-4 text-sm">{request.shiftType}</td>
+                      <td className="px-5 py-4 text-sm">{request.reason}</td>
+                      <td className="px-5 py-4 text-sm font-medium space-x-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          onClick={() => handleApprove(request.leaveId)}
+                          title={request.remarks || 'Approve request'}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          onClick={() => handleReject(request.leaveId)}
+                          title="Reject request"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
