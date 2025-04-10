@@ -13,7 +13,7 @@ export const fetchLeaves = createAsyncThunk(
                 return rejectWithValue("No authentication token found");
             }
 
-            const response = await axios.get(`http://localhost:8083/leave/employee/EMP001`, {
+            const response = await axios.get(`${API_BASE_URL}/leave/employee/EMP001`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
@@ -160,7 +160,7 @@ export const applyLeave = createAsyncThunk(
       });
 
       const response = await axios.post(
-        "http://localhost:8083/leave/apply",
+        `${API_BASE_URL}/leave/apply`,
         {
           ...leaveData,
           employeeId: "EMP001", // Hardcoded as requested
@@ -199,7 +199,7 @@ export const fetchLeaveHistory = createAsyncThunk(
         return rejectWithValue("No authentication token found");
       }
 
-      const response = await axios.get(`http://localhost:8083/leave/employee/EMP001`, {
+      const response = await axios.get(`${API_BASE_URL}/leave/employee/EMP001`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -248,7 +248,7 @@ export const applyCompOffLeave = createAsyncThunk(
 
       console.log('Applying comp-off with data:', formData); // Debug log
 
-      const response = await axios.post('http://localhost:8083/leave/apply', {
+      const response = await axios.post(`${API_BASE_URL}/leave/apply`, {
         employeeId: "EMP001",
         leaveName: "Comp-Off",
         startDate: formData.startDate,

@@ -57,7 +57,7 @@ const Leaves = () => {
         throw new Error("Authentication token not found");
       }
 
-      const response = await axios.get('http://localhost:8083/public-holidays', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/public-holidays`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
@@ -101,7 +101,7 @@ const Leaves = () => {
         throw new Error("Authentication token not found");
       }
 
-      const response = await axios.get('http://localhost:8083/api/leave-balance/current/EMP001', {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/api/leave-balance/current/EMP001`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',

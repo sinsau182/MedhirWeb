@@ -151,13 +151,12 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
 
   const fetchProfileUpdates = async () => {
       setIsLoadingProfile(true);
-      console.log(`Fetching profile updates from: http://localhost:8083/hradmin/update-requests`);
       try {
           const headers = {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
           };
-          const response = await fetch(`http://localhost:8083/hradmin/update-requests`, { headers });
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hradmin/update-requests`, { headers });
           if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
           }
@@ -180,7 +179,7 @@ const fetchPendingRequests = async () => {
     const token = localStorage.getItem('token');
     setLoading(true);
 
-    const response = await axios.get('http://localhost:8083/leave/status/Pending', {
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/leave/status/Pending`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -280,7 +279,7 @@ const fetchPendingRequests = async () => {
         const formData = new FormData();
         formData.append('status', 'Approved');
 
-        const response = await fetch(`http://localhost:8083/hradmin/update-requests/${employeeId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hradmin/update-requests/${employeeId}`, {
             method: 'PUT',
             headers: headers,
             body: formData
@@ -324,7 +323,7 @@ const fetchPendingRequests = async () => {
       
       console.log('Approving leave request:', { leaveId });
   
-      const response = await axios.put(`http://localhost:8083/leave/update-status`, {
+      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/leave/update-status`, {
         leaveId: leaveId,
         status: "Approved",
         remarks: "approved successfully"
@@ -361,7 +360,7 @@ const fetchPendingRequests = async () => {
       
       console.log('Rejecting leave request:', { leaveId });
 
-      const response = await axios.put(`http://localhost:8083/leave/update-status`, {
+      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/leave/update-status`, {
         leaveId: leaveId,
         status: "Rejected",
         remarks: "Request rejected by HR"

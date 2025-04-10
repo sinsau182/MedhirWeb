@@ -94,7 +94,7 @@ const Overview = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
         };
-        const response = await fetch(`http://localhost:8083/hradmin/update-requests`, { headers });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hradmin/update-requests`, { headers });
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
         }
@@ -110,7 +110,7 @@ const Overview = () => {
 const fetchPendingRequests = async () => {
 try {
   const token = localStorage.getItem('token');
-  const response = await axios.get('http://localhost:8083/leave/status/Pending', {
+  const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/leave/status/Pending`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
