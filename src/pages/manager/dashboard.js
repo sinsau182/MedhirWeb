@@ -90,62 +90,77 @@ const Overview = () => {
 
   const fetchProfileUpdates = async () => {
     try {
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        };
-        const response = await fetch(`http://localhost:8083/hradmin/update-requests`, { headers });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setProfileUpdates(data);
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      };
+      const response = await fetch(
+        `http://localhost:8083/hradmin/update-requests`,
+        { headers }
+      );
+      if (!response.ok) {
+        throw new Error(
+          `HTTP error! status: ${response.status} ${response.statusText}`
+        );
+      }
+      const data = await response.json();
+      setProfileUpdates(data);
     } catch (error) {
-        console.error(`Error fetching profile updates:`, error);
-        toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
-        setProfileUpdates([]);
+      console.error(`Error fetching profile updates:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to fetch profile updates: ${error.message}`,
+        variant: "destructive",
+      });
+      setProfileUpdates([]);
     }
-};
+  };
 
-const fetchPendingRequests = async () => {
-try {
-  const token = localStorage.getItem('token');
-  const response = await axios.get('http://localhost:8083/leave/status/Pending', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const fetchPendingRequests = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        "http://localhost:8083/leave/status/Pending",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("API Response:", response.data);
+
+      if (response.data && Array.isArray(response.data.leaves)) {
+        const regularLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName !== "Comp-Off"
+        );
+        const compOffLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName === "Comp-Off"
+        );
+
+        setPendingLeaves(regularLeaves);
+        setPendingCompOffs(compOffLeaves);
+      } else {
+        setPendingLeaves([]);
+        setPendingCompOffs([]);
+      }
+    } catch (error) {
+      console.error("Error details:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+
+      setPendingLeaves([]);
+      setPendingCompOffs([]);
     }
-  });
+  };
 
-  console.log('API Response:', response.data);
-
-  if (response.data && Array.isArray(response.data.leaves)) {
-    const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
-    const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
-    
-    setPendingLeaves(regularLeaves);
-    setPendingCompOffs(compOffLeaves);
-  } else {
-    setPendingLeaves([]);
-    setPendingCompOffs([]);
-  }
-} catch (error) {
-  console.error('Error details:', {
-    status: error.response?.status,
-    data: error.response?.data,
-    message: error.message
-  });
-  
-  setPendingLeaves([]);
-  setPendingCompOffs([]);
-}
-};
-
-
-useEffect(() => {
-  fetchPendingRequests();
-  fetchProfileUpdates();
-}, []);
+  useEffect(() => {
+    fetchPendingRequests();
+    fetchProfileUpdates();
+  }, []);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -183,7 +198,8 @@ useEffect(() => {
     {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
       label: "Open Requests",
-      count: pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
+      count:
+        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
     },
   ];
 
