@@ -4,8 +4,8 @@ import { fetchUsers, addUser } from "./usersSlice";
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules";
 
 // Fetch modules
 export const fetchModules = createAsyncThunk(
@@ -37,10 +37,10 @@ export const addModule = createAsyncThunk(
       const token = localStorage.getItem("token");
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-         },
+        },
         body: JSON.stringify(moduleData),
       });
 
@@ -48,7 +48,7 @@ export const addModule = createAsyncThunk(
       if (!response.ok) {
         throw new Error(data.error || "Failed to add module");
       }
-      
+
       return data;
     } catch (error) {
       return rejectWithValue(error.message);

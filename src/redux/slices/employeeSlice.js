@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin/employees";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin/employees";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -14,7 +15,6 @@ export const fetchEmployees = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       });
-
 
       if (!response.ok) {
         throw new Error("Failed to fetch employees");
@@ -29,22 +29,24 @@ export const fetchEmployees = createAsyncThunk(
 // Create employee
 
 export const createEmployee = createAsyncThunk(
-  'employee/createEmployee',
+  "employee/createEmployee",
   async (formData, { rejectWithValue }) => {
     try {
       // Retrieve token from localStorage
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
 
       const response = await axios.post(`${API_BASE_URL}`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,  // Attach token
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`, // Attach token
         },
       });
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response ? error.response.data : error.message);
+      return rejectWithValue(
+        error.response ? error.response.data : error.message
+      );
     }
   }
 );
@@ -55,25 +57,25 @@ export const updateEmployee = createAsyncThunk(
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      
+
       // Create FormData object for file uploads
       const formData = new FormData();
-      
+
       // Add the employee data as a JSON string
-      const employeeData = updatedData.get('employee');
-      formData.append('employee', employeeData);
-      
+      const employeeData = updatedData.get("employee");
+      formData.append("employee", employeeData);
+
       // Add any files that were included
-      if (updatedData.has('employeeImgUrl')) {
-        formData.append('employeeImgUrl', updatedData.get('employeeImgUrl'));
+      if (updatedData.has("employeeImgUrl")) {
+        formData.append("employeeImgUrl", updatedData.get("employeeImgUrl"));
       }
-      if (updatedData.has('aadharImgUrl')) {
-        formData.append('aadharImgUrl', updatedData.get('aadharImgUrl'));
+      if (updatedData.has("aadharImgUrl")) {
+        formData.append("aadharImgUrl", updatedData.get("aadharImgUrl"));
       }
-      
+
       const response = await axios.put(`${API_BASE_URL}/${id}`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });

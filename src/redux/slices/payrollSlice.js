@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/payslip/generate/emp121";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL + "/payslip/generate/emp121";
 
 // Fetch Payslips for emp123
 export const fetchPayrolls = createAsyncThunk(
@@ -30,18 +31,12 @@ export const fetchPayslipById = createAsyncThunk(
 
   async (month, year, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        API_BASE_URL +
-          month +
-          "/" +
-          year,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(API_BASE_URL + month + "/" + year, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch payslip by ID");

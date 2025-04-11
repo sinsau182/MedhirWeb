@@ -40,7 +40,6 @@ function SuperadminSettings() {
       <SuperadminHeaders />
       {/* Spacer to prevent content from being hidden behind the fixed header */}
       <div className="h-4" />
-
     </div>
   );
 }
