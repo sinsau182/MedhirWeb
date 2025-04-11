@@ -3,7 +3,7 @@ import { FaCalendarAlt, FaUserCheck, FaClock } from "react-icons/fa"; // Removed
 import Link from "next/link";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
-import axios from 'axios';
+import axios from "axios";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
@@ -24,20 +24,27 @@ const Overview = () => {
         throw new Error("Authentication token not found");
       }
 
-      const response = await axios.get('http://localhost:8083/api/leave-balance/current/EMP001', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+      const response = await axios.get(
+        "http://localhost:8083/api/leave-balance/current/EMP001",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
         }
-      });
-      
+      );
+
       if (response.data) {
         setLeaveBalance(response.data);
       }
     } catch (error) {
-      console.error('Error fetching leave balance:', error);
-      setBalanceError(error.response?.data?.message || error.message || 'Failed to fetch leave balance');
+      console.error("Error fetching leave balance:", error);
+      setBalanceError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch leave balance"
+      );
       toast.error("Failed to fetch leave balance");
     } finally {
       setIsLoadingBalance(false);
@@ -67,7 +74,11 @@ const Overview = () => {
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"employee"} />
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={toggleSidebar}
+        currentRole={"employee"}
+      />
 
       {/* Main Content */}
       <div
@@ -91,10 +102,14 @@ const Overview = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Leave Balance Card */}
             <Link href="/employee/leaves">
-              <div className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                   style={{ height: "250px", width: "350px" }}>
+              <div
+                className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                style={{ height: "250px", width: "350px" }}
+              >
                 <div className="flex justify-between items-center w-full mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Leave Balance</h2>
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Leave Balance
+                  </h2>
                   <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
                     <FaCalendarAlt className="text-blue-600 text-2xl" />
                   </div>
@@ -105,13 +120,17 @@ const Overview = () => {
                   <div className="text-red-500">{balanceError}</div>
                 ) : leaveBalance ? (
                   <div className="space-y-2">
-                    <p className="text-5xl font-bold text-gray-900">{leaveBalance.newLeaveBalance}</p>
+                    <p className="text-5xl font-bold text-gray-900">
+                      {leaveBalance.newLeaveBalance}
+                    </p>
                     <div className="flex items-center text-gray-600">
                       <p className="text-sm">Days remaining</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-gray-500">No leave balance data available</div>
+                  <div className="text-gray-500">
+                    No leave balance data available
+                  </div>
                 )}
               </div>
             </Link>
