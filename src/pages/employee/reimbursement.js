@@ -44,7 +44,6 @@ const Expenses = () => {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    console.log("Selected file:", file); // Debugging
     if (file) {
       setExpenseData((prevData) => ({
         ...prevData,

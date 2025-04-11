@@ -162,21 +162,48 @@ const CustomDatePicker = ({
           return;
         }
 
-        // When adding a date, ensure it's continuous with existing dates
+        // When adding a date, ensure it's continuous with existing dates (skipping weekends)
         if (selectedDateObjects.length > 0) {
           const sortedDates = [...selectedDateObjects].sort((a, b) => a.date - b.date);
           const firstDate = sortedDates[0].date;
           const lastDate = sortedDates[sortedDates.length - 1].date;
           const newDateValue = date.getTime();
           
-          // Check if the new date is adjacent to the existing range
-          const oneDayInMs = 24 * 60 * 60 * 1000;
-          const isAdjacent = 
-            Math.abs(newDateValue - firstDate.getTime()) <= oneDayInMs ||
-            Math.abs(newDateValue - lastDate.getTime()) <= oneDayInMs;
+          // Check if the new date is adjacent to the existing range (considering weekends)
+          const isAdjacent = (() => {
+            // Function to get next working day
+            const getNextWorkingDay = (date) => {
+              let nextDay = new Date(date);
+              nextDay.setDate(nextDay.getDate() + 1);
+              while (isWeekend(nextDay)) {
+                nextDay.setDate(nextDay.getDate() + 1);
+              }
+              return nextDay;
+            };
+
+            // Function to get previous working day
+            const getPrevWorkingDay = (date) => {
+              let prevDay = new Date(date);
+              prevDay.setDate(prevDay.getDate() - 1);
+              while (isWeekend(prevDay)) {
+                prevDay.setDate(prevDay.getDate() - 1);
+              }
+              return prevDay;
+            };
+
+            // Check if the new date is the next working day after the last date
+            const nextWorkingDay = getNextWorkingDay(lastDate);
+            if (isSameDay(date, nextWorkingDay)) return true;
+
+            // Check if the new date is the previous working day before the first date
+            const prevWorkingDay = getPrevWorkingDay(firstDate);
+            if (isSameDay(date, prevWorkingDay)) return true;
+
+            return false;
+          })();
           
           if (!isAdjacent) {
-            toast.error("Please select continuous dates");
+            toast.error("Please select continuous working days (weekends will be skipped)");
             return;
           }
         }
@@ -230,7 +257,20 @@ const CustomDatePicker = ({
 
   return (
     <div className="relative" ref={calendarRef}>
-      <div className="w-full">
+      <div className="w-full space-y-2">
+        {/* Time Slot Selector - Always visible */}
+        <select
+          value={timeSlot || "Full Day"}
+          onChange={handleShiftTypeChange}
+          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+        >
+          {timeSlotOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
         {/* Date Picker Trigger */}
         <div
           ref={inputRef}
@@ -241,33 +281,10 @@ const CustomDatePicker = ({
           }}
         >
           <span className="text-gray-700 font-medium">
-            {selectedDateObjects.length > 0 
-              ? selectedDateObjects.map((selected, index) => {
-                  const dateObj = selected.date instanceof Date ? selected.date : new Date(selected.date);
-                  return (
-                    <span key={dateObj.toISOString()}>
-                      {format(dateObj, 'dd MMM yyyy')}
-                      {index < selectedDateObjects.length - 1 ? ', ' : ''}
-                    </span>
-                  );
-                })
-              : 'Select Day'}
+            {selectedDateObjects.length > 0 ? 'Selected Days' : 'Select Day'}
           </span>
           <CalendarIcon className="h-5 w-5 text-blue-500" />
         </div>
-
-        {/* Time Slot Selector - Only shown when no dates are selected */}
-        {selectedDateObjects.length === 0 && (
-          <select
-            value={timeSlot || "Full Day"}
-            onChange={handleShiftTypeChange}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-          >
-            <option value="Full Day">Full Day</option>
-            <option value="First Half (Morning)">First Half (Morning)</option>
-            <option value="Second Half (Evening)">Second Half (Evening)</option>
-          </select>
-        )}
 
         {/* Selected Dates Display */}
         {selectedDateObjects.length > 0 && (
@@ -282,7 +299,7 @@ const CustomDatePicker = ({
                     className="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm shadow-sm hover:shadow-md transition-all duration-200"
                   >
                     <span className="font-medium">{format(dateObj, 'dd MMM yyyy')}</span>
-                    <span className="text-xs text-blue-600">
+                    <span className="text-xs text-blue-600 ml-1">
                       {selected.shiftType}
                     </span>
                     <button

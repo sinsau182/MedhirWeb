@@ -202,7 +202,6 @@ const LeaveSettings = () => {
       // Refresh the leave types list
       dispatch(fetchLeaveTypes());
     } catch (error) {
-      console.error("Error in handleLeaveTypeSubmit:", error);
       if (error.message?.toLowerCase().includes("already exists")) {
         showNotification("error", "Leave type already exists");
         setTimeout(() => {
@@ -216,7 +215,6 @@ const LeaveSettings = () => {
   };
 
   const handleLeaveTypeRowClick = (type) => {
-    console.log("Selected leave type:", type); // Debug log
     setSelectedLeaveType(type); // Store the entire leave type object
     setLeaveTypeForm({
       name: type.leaveTypeName || "",
@@ -415,7 +413,6 @@ const LeaveSettings = () => {
         })),
       };
 
-      console.log("Updating policy with ID:", selectedPolicy.leavePolicyId); // Debug log
       await dispatch(
         updateLeavePolicy({
           id: selectedPolicy.leavePolicyId,
@@ -436,7 +433,6 @@ const LeaveSettings = () => {
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
     } catch (error) {
-      console.error("Error updating policy:", error); // Debug log
       showNotification(
         "error",
         error.message || "Failed to update leave policy"
@@ -451,7 +447,6 @@ const LeaveSettings = () => {
         return;
       }
 
-      console.log("Deleting policy with ID:", selectedPolicy.leavePolicyId); // Debug log
       await dispatch(deleteLeavePolicy(selectedPolicy.leavePolicyId)).unwrap();
 
       showNotification("success", "Leave policy deleted successfully!");
@@ -466,7 +461,6 @@ const LeaveSettings = () => {
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
     } catch (error) {
-      console.error("Error deleting policy:", error); // Debug log
       showNotification(
         "error",
         error.message || "Failed to delete leave policy"
@@ -486,7 +480,6 @@ const LeaveSettings = () => {
 
   // Add handlers for row clicks
   const handlePolicyRowClick = (policy) => {
-    console.log("Selected policy:", policy); // Debug log
     setSelectedPolicy({
       ...policy,
       leavePolicyId: policy.id || policy.leavePolicyId, // Ensure we have the correct ID

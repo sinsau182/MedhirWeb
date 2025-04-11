@@ -11,6 +11,7 @@ import { CheckCircle2, X, Clock, CalendarIcon } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
 
 const EmployeeAttendance = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -127,8 +128,6 @@ const EmployeeAttendance = () => {
 
   const handleSubmitReason = (e) => {
     e.preventDefault();
-    console.log("Reason for late check-in:", reason);
-    console.log("Date:", date.toLocaleDateString());
 
     // Show toast notification
     setShowToast(true);
@@ -152,7 +151,6 @@ const EmployeeAttendance = () => {
         .split("T")[0];
 
       const url = `http://localhost:8082/attendance/daily-attendance/${employeeId}/${date}`;
-      console.log("Fetching data for URL:", url);
 
       const response = await fetch(url, {
         method: "GET",
@@ -166,19 +164,30 @@ const EmployeeAttendance = () => {
       }
 
       const data = await response.json();
-      console.log("Fetched Attendance Data:", data);
-      // Update state with fetched data
+      
+      // Update state with fetched data while preserving status and color information
       setAttendanceData((prevData) => {
-        const updatedData = prevData.map((d) =>
-          d.date.toDateString() === selectedDate.toDateString()
-            ? { ...d, ...data }
-            : d
-        );
-        console.log("Updated Attendance Data:", updatedData);
+        const updatedData = prevData.map((d) => {
+          if (d.date.toDateString() === selectedDate.toDateString()) {
+            return {
+              ...d,
+              checkinTimes: data.checkinTimes || d.checkinTimes,
+              checkoutTimes: data.checkoutTimes || d.checkoutTimes,
+              totalWorkingMinutes: data.totalWorkingMinutes || d.totalWorkingMinutes,
+              // Preserve the status and other display properties
+              status: d.status,
+              isLate: d.isLate,
+              leaveType: d.leaveType
+            };
+          }
+          return d;
+        });
         return updatedData;
       });
     } catch (error) {
-      console.error("Error fetching attendance data:", error);
+      toast.error(
+        `Failed to fetch attendance data: ${error.message}`
+      );
     }
   };
 
@@ -409,7 +418,7 @@ const EmployeeAttendance = () => {
                           <span>
                             {checkinTimes?.[0]
                               ? formatTime(checkinTimes[0])
-                              : "N/A"}
+                              : "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -420,7 +429,7 @@ const EmployeeAttendance = () => {
                           <span>
                             {checkoutTimes?.[0]
                               ? formatTime(checkoutTimes[0])
-                              : "N/A"}
+                              : "-"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">

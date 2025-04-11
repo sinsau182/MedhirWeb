@@ -199,8 +199,6 @@ const OrganizationSettings = () => {
           .join(","),
       };
 
-      console.log("Updating department data:", departmentData); // Debug log
-
       await dispatch(updateDepartment({ id, departmentData })).unwrap();
 
       setNotification({
@@ -340,8 +338,6 @@ const OrganizationSettings = () => {
           .join(","),
       };
 
-      console.log("Submitting department data:", departmentData); // Debug log
-
       await dispatch(createDepartment(departmentData)).unwrap();
 
       setNotification({
@@ -422,8 +418,6 @@ const OrganizationSettings = () => {
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
       };
-
-      console.log("Updating designation data:", designationData); // Debug log
 
       await dispatch(
         updateDesignation({
@@ -508,8 +502,6 @@ const OrganizationSettings = () => {
         overtimeEligible: designationForm.overtimeEligible,
       };
 
-      console.log("Submitting designation data:", designationData); // Debug log
-
       await dispatch(createDesignation(designationData)).unwrap();
       showNotification("success", "Designation added successfully!");
 
@@ -592,26 +584,32 @@ const OrganizationSettings = () => {
     }
   };
 
+
   const handleRowClick = (item) => {
     // Reset form changed state when opening new item
     setIsFormChanged(false);
 
     if (activeTab === "departments") {
       setSelectedDepartment(item);
+      
+      // Find the leave policy object from the policies array
+      const selectedPolicy = policies.find(p => p.leavePolicyId === item.leavePolicy);
+      
+      // Format weekly holidays into array of objects
+      const weeklyHolidaysArray = item.weeklyHolidays?.split(",").map(day => ({
+        value: day.trim(),
+        label: day.trim()
+      })) || [];
+
       setDepartmentForm({
         name: item.name,
         description: item.description || "",
         head: item.departmentHead || "",
         leavePolicy: {
           value: item.leavePolicy,
-          label: policies.find((p) => p.leavePolicyId === item.leavePolicy)
-            ?.name,
+          label: selectedPolicy?.name || item.leavePolicy
         },
-        weeklyHolidays:
-          item.weeklyHolidays?.split(",").map((day) => ({
-            value: day,
-            label: day,
-          })) || [],
+        weeklyHolidays: weeklyHolidaysArray
       });
       setShowDepartmentEditModal(true);
     } else {
@@ -831,12 +829,25 @@ const OrganizationSettings = () => {
                         // Reset form changed state when opening new item
                         setIsFormChanged(false);
                         setSelectedDepartment(department);
+                        
+                        // Find the leave policy object from the policies array
+                        const selectedPolicy = policies.find(p => p.leavePolicyId === department.leavePolicy);
+                        
+                        // Format weekly holidays into array of objects
+                        const weeklyHolidaysArray = department.weeklyHolidays?.split(",").map(day => ({
+                          value: day.trim(),
+                          label: day.trim()
+                        })) || [];
+
                         setDepartmentForm({
                           name: department.name,
                           description: department.description || "",
                           head: department.departmentHead,
-                          leavePolicy: department.leavePolicy,
-                          weeklyHolidays: department.weeklyHolidays,
+                          leavePolicy: {
+                            value: department.leavePolicy,
+                            label: selectedPolicy?.name || department.leavePolicy
+                          },
+                          weeklyHolidays: weeklyHolidaysArray
                         });
                         setShowDepartmentEditModal(true);
                       }}

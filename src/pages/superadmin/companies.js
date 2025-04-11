@@ -149,7 +149,7 @@ function SuperadminCompanies() {
       setIsCompanyModalOpen(false);
       setSelectedCompany(null);
     } catch (error) {
-      console.log("Error saving company:", error);
+      toast.error("Failed to save company data.");
     }
   };
 
@@ -170,7 +170,7 @@ function SuperadminCompanies() {
       setIsDeleteConfirmationOpen(false);
       setSelectedCompany(null);
     } catch (error) {
-      console.error("Error deleting company:", error);
+      toast.error("Failed to delete company.");
     }
   };
 

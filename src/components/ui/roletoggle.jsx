@@ -46,7 +46,6 @@ const RoleToggle = () => {
     }
   };
 
-  console.log("Current Role:", currentRole); // For debugging purposes
   return (
     <div className="flex items-center gap-2">
       {roles.map((role) => (

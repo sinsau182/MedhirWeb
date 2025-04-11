@@ -40,7 +40,6 @@ export const addUser = createAsyncThunk(
       });
 
       const data = await response.json();
-      console.log("Response Data:", data.user.id);
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to add user");

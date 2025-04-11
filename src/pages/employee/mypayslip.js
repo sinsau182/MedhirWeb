@@ -10,6 +10,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { setDate } from "date-fns";
 import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
 
 const downloadPDF = () => {
   const content = document.getElementById("pdf-content");
@@ -116,8 +117,6 @@ const PayrollPage = () => {
     }
   }
 
-  console.log("employee Date of Joining:", dateOfJoining); // Debugging line to check date of joining
-
   useEffect(() => {
     const latestMonth = monthsList[latestMonthIndex];
     setSelectedMonth(latestMonth);
@@ -143,7 +142,7 @@ const PayrollPage = () => {
       const data = await response.json();
       setPayslipData(data);
     } catch (error) {
-      console.error("Error fetching payslip:", error);
+      toast.error("Failed to fetch payslip details");
     }
   };
 
@@ -162,11 +161,9 @@ const PayrollPage = () => {
       const data = await response.json();
       setDateOfJoining(data.joiningDate); // Set the date of joining from employee data
     } catch (error) {
-      console.error("Error fetching employee data:", error);
+      toast.error("Failed to fetch employee details");
     }
   };
-
-  console.log("Payslip Data:", payslipData); // Debugging line to check payslip data
 
   const handleMonthSelection = (month, year) => {
     setSelectedMonth(month);

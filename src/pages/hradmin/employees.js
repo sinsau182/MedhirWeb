@@ -7,6 +7,7 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "react-hot-toast";
 
 function Employees() {
   const [activeTab, setActiveTab] = useState("Basic");
@@ -23,34 +24,39 @@ function Employees() {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
-  console.log("Employees:", employees);
-
   const handleRowClick = (employee) => {
-    // Map the active tab to the corresponding section in the Add New Employee form
-    let activeSection = "personal"; // Default to personal section
+    try {
+      // Map the active tab to the corresponding section in the Add New Employee form
+      let activeSection = "personal"; // Default to personal section
 
-    switch (activeTab) {
-      case "ID Proofs":
-        activeSection = "idProofs";
-        break;
-      case "Salary Details":
-        activeSection = "salary";
-        break;
-      case "Bank Details":
-        activeSection = "bank";
-        break;
-      default:
-        activeSection = "personal";
+      switch (activeTab) {
+        case "ID Proofs":
+          activeSection = "idProofs";
+          break;
+        case "Salary Details":
+          activeSection = "salary";
+          break;
+        case "Bank Details":
+          activeSection = "bank";
+          break;
+        default:
+          activeSection = "personal";
+      }
+
+      // Make a clean copy of the employee object to prevent object reference issues
+      const cleanEmployee = JSON.parse(JSON.stringify(employee));
+
+      router.push({
+        pathname: "/hradmin/addNewEmployee",
+        query: {
+          employee: JSON.stringify(cleanEmployee),
+          activeMainTab: activeTab,
+          activeSection: activeSection,
+        },
+      });
+    } catch (error) {
+      toast.error("Failed to open employee details. Please try again.");
     }
-
-    router.push({
-      pathname: "/hradmin/addNewEmployee",
-      query: {
-        employee: JSON.stringify(employee),
-        activeMainTab: activeTab,
-        activeSection: activeSection,
-      },
-    });
   };
 
   const toggleSidebar = () => {
@@ -142,37 +148,45 @@ function Employees() {
 
     switch (activeTab) {
       case "Basic":
-        return employee[key] || "";
+        // Convert any potential objects to strings
+        return typeof employee[key] === 'object' ? 
+          (employee[key] ? JSON.stringify(employee[key]) : "") : 
+          (employee[key] || "");
+          
       case "ID Proofs":
-        if (key === "name" || key === "employeeId") return employee[key] || "";
-        return employee.idProofs ? employee.idProofs[key] || "" : "";
+        if (key === "name" || key === "employeeId") 
+          return typeof employee[key] === 'object' ? 
+            (employee[key] ? JSON.stringify(employee[key]) : "") : 
+            (employee[key] || "");
+            
+        return employee.idProofs ? 
+          (typeof employee.idProofs[key] === 'object' ? 
+            (employee.idProofs[key] ? JSON.stringify(employee.idProofs[key]) : "") : 
+            (employee.idProofs[key] || "")) : "";
+            
       case "Salary Details":
-        if (key === "name" || key === "employeeId") return employee[key] || "";
-        return employee.salaryDetails ? employee.salaryDetails[key] || "" : "";
+        if (key === "name" || key === "employeeId") 
+          return typeof employee[key] === 'object' ? 
+            (employee[key] ? JSON.stringify(employee[key]) : "") : 
+            (employee[key] || "");
+            
+        return employee.salaryDetails ? 
+          (typeof employee.salaryDetails[key] === 'object' ? 
+            (employee.salaryDetails[key] ? JSON.stringify(employee.salaryDetails[key]) : "") : 
+            (employee.salaryDetails[key] || "")) : "";
+            
       case "Bank Details":
-        if (key === "name" || key === "employeeId") return employee[key] || "";
+        if (key === "name" || key === "employeeId") 
+          return typeof employee[key] === 'object' ? 
+            (employee[key] ? JSON.stringify(employee[key]) : "") : 
+            (employee[key] || "");
+            
         if (key === "passbookDoc") {
           return (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                // const modal = document.createElement('div');
-                // modal.innerHTML = `
-                //   <div class="bg-white p-4 rounded-lg max-w-md">
-                //     <div class="flex justify-between items-center mb-4">
-                //       <h3 class="text-lg font-semibold">Passbook Document</h3>
-                //       <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
-                //         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                //           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                //         </svg>
-                //       </button>
-                //     </div>
-                //     <div class="text-center py-4">
-                //       <p class="text-gray-600">No doc uploaded</p>
-                //     </div>
-                //   </div>
-                // `;
-                // document.body.appendChild(modal);
+                // Document view logic
               }}
               className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
             >
@@ -180,19 +194,33 @@ function Employees() {
             </button>
           );
         }
-        return employee.bankDetails ? employee.bankDetails[key] || "" : "";
+        
+        return employee.bankDetails ? 
+          (typeof employee.bankDetails[key] === 'object' ? 
+            (employee.bankDetails[key] ? JSON.stringify(employee.bankDetails[key]) : "") : 
+            (employee.bankDetails[key] || "")) : "";
+            
       case "Leaves Policy":
         if (key === "name" || key === "employeeId" || key === "department")
-          return employee[key] || "";
+          return typeof employee[key] === 'object' ? 
+            (employee[key] ? JSON.stringify(employee[key]) : "") : 
+            (employee[key] || "");
+            
         if (key === "leavePolicy")
           return employee.leaveDetails
-            ? employee.leaveDetails[key] || "-"
+            ? (typeof employee.leaveDetails[key] === 'object' ?
+                (employee.leaveDetails[key] ? JSON.stringify(employee.leaveDetails[key]) : "-") :
+                (employee.leaveDetails[key] || "-"))
             : "-";
+            
         if (key === "leaveType") {
           const leaveTypes = employee.leaveDetails?.leaveTypes || [];
-          return leaveTypes.join(", ") || "-";
+          // Ensure leaveTypes is an array and join it properly
+          return Array.isArray(leaveTypes) ? leaveTypes.join(", ") : 
+            (typeof leaveTypes === 'object' ? JSON.stringify(leaveTypes) : leaveTypes || "-");
         }
         return "";
+        
       default:
         return "";
     }

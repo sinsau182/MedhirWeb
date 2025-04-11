@@ -115,7 +115,7 @@ function PayrollManagement() {
         setTdsData(await fetchTDS());
         setPtaxData(await fetchPTAX());
       } catch (error) {
-        console.error("Error fetching data:", error);
+        toast.error("Failed to fetch data");
       }
     };
     fetchData();
@@ -177,9 +177,6 @@ function PayrollManagement() {
     return data;
   };
 
-  console.log("tds: ", tdsData);
-  console.log("ptax: ", ptaxData);
-
   const handleOvertimeEdit = (employeeId, currentValue) => {
     setEditingOvertime(employeeId);
     setOvertimeValue(currentValue);
@@ -211,8 +208,7 @@ function PayrollManagement() {
       setEditingOvertime(null);
       setOvertimeValue("");
     } catch (error) {
-      console.error("Error updating overtime pay:", error);
-      // You might want to show an error toast here
+      toast.error("Failed to update overtime pay");
     }
   };
 

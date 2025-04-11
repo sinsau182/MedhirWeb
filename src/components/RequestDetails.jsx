@@ -68,7 +68,7 @@ ChangesModal.propTypes = {
 // --- End Modal Component ---
 
 const RequestDetails = ({ activeTab, onTabChange }) => {
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
 
@@ -97,67 +97,14 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   // --- Base URL for API (adjust as needed) ---
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''; // Ensure this is set
 
-  // --- Generic Fetch Function ---
-  // const fetchData = async (endpoint, setData, setIsLoading) => {
-  //   setIsLoading(true);
-  //   console.log(`Fetching data from: ${API_BASE_URL}${endpoint}`);
-  //   try {
-  //     // Add headers for authentication if needed, e.g., Authorization: Bearer token
-  //     const headers = {
-  //         'Content-Type': 'application/json',
-  //         // Add other headers like Authorization if required by your API
-  //         'Authorization': `Bearer ${localStorage.getItem('token')}`
-  //     };
-  //     const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
-  //     if (!response.ok) {
-  //       throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
-  //     }
-  //     const data = await response.json();
-  //     console.log(`Data received for ${endpoint}:`, data);
-  //     setData(data || []); // Set empty array if data is null/undefined
-  //   } catch (error) {
-  //     console.error(`Error fetching ${endpoint}:`, error);
-  //     // toast({ title: "Error", description: `Failed to fetch ${endpoint}.`, variant: "destructive" }); // Re-enable if useToast is kept
-  //     setData([]); // Clear data on error
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
-  // --- useEffect hooks for fetching data based on activeTab ---
-  // useEffect(() => {
-  //   if (activeTab === 'leaveRequests') {
-  //     fetchData('/api/leave-requests', setLeaveRequests, setIsLoadingLeave);
-  //   }
-  // }, [activeTab]);
-
-  // useEffect(() => {
-  //   if (activeTab === 'expenseRequests') {
-  //     fetchData('/api/expense-requests', setExpenseRequests, setIsLoadingExpense);
-  //   }
-  // }, [activeTab]);
-
-  // useEffect(() => {
-  //   if (activeTab === 'advanceRequests') {
-  //     fetchData('/api/advance-requests', setAdvanceRequests, setIsLoadingAdvance);
-  //   }
-  // }, [activeTab]);
-
-  // useEffect(() => {
-  //   if (activeTab === 'compOffRequests') {
-  //     fetchData('/api/comp-off-requests', setCompOffRequests, setIsLoadingCompOff);
-  //   }
-  // }, [activeTab]);
-
   const fetchProfileUpdates = async () => {
       setIsLoadingProfile(true);
-      console.log(`Fetching profile updates from: http://localhost:8083/hradmin/update-requests`);
       try {
           const headers = {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${localStorage.getItem('token')}`
           };
-          const response = await fetch(`http://localhost:8083/hradmin/update-requests`, { headers });
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`, { headers });
           if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
           }
@@ -167,7 +114,6 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
               : [];
           setProfileUpdates(updatesWithChanges);
       } catch (error) {
-          console.error(`Error fetching profile updates:`, error);
           toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
           setProfileUpdates([]);
       } finally {
@@ -180,14 +126,12 @@ const fetchPendingRequests = async () => {
     const token = localStorage.getItem('token');
     setLoading(true);
 
-    const response = await axios.get('http://localhost:8083/leave/status/Pending', {
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/Pending`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
-
-    console.log('API Response:', response.data);
 
     if (response.data && Array.isArray(response.data.leaves)) {
       const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
@@ -200,11 +144,6 @@ const fetchPendingRequests = async () => {
       setPendingCompOffs([]);
     }
   } catch (error) {
-    console.error('Error details:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
     
     setError(error.response?.data?.message || error.message);
     setPendingLeaves([]);
@@ -213,10 +152,6 @@ const fetchPendingRequests = async () => {
     setLoading(false);
   }
 };
-
-
-
-
 
   useEffect(() => {
     fetchPendingRequests();
@@ -230,8 +165,6 @@ const fetchPendingRequests = async () => {
   if (error) {
     return <div className="text-center py-4 text-red-500">{error}</div>;
   }
-
-
 
   // Function to open the modal
   const handleViewDetails = (changes) => {
@@ -254,7 +187,6 @@ const fetchPendingRequests = async () => {
         year: 'numeric'
       });
     } catch (error) {
-      console.error("Error formatting date:", dateString, error);
       return 'Invalid Date';
     }
   };
@@ -265,11 +197,10 @@ const fetchPendingRequests = async () => {
   // --- Approve/Reject Logic for Profile Updates ---
   const handleApproveProfileUpdate = async (employeeId) => {
     if (!employeeId) {
-        toast({ title: "Error", description: "Employee ID missing.", variant: "destructive" });
+        toast.error("Employee ID missing.");
         return;
     }
     setApprovingProfileUpdateId(employeeId); // Set loading state for this specific ID
-    console.log(`Approving profile update for employee: ${employeeId}`);
     try {
         const headers = {
             // Content-Type is set automatically by browser for FormData
@@ -280,14 +211,13 @@ const fetchPendingRequests = async () => {
         const formData = new FormData();
         formData.append('status', 'Approved');
 
-        const response = await fetch(`http://localhost:8083/hradmin/update-requests/${employeeId}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests/${employeeId}`, {
             method: 'PUT',
             headers: headers,
             body: formData
         });
 
         let resultText = await response.text(); // Read response as text first
-        console.log(`Approval response for ${employeeId}:`, response.status, resultText);
 
         if (!response.ok) {
              // Try to parse error message if JSON, otherwise use text
@@ -299,13 +229,12 @@ const fetchPendingRequests = async () => {
             throw new Error(errorMessage || `HTTP error! status: ${response.status}`);
         }
 
-        toast({ title: "Success", description: `Profile update for ${employeeId} approved.` });
+        toast.success(`Profile update for ${employeeId} approved.`);
         // Re-fetch the list to remove the approved item
         fetchProfileUpdates();
 
     } catch (error) {
-        console.error(`Error approving profile update for ${employeeId}:`, error);
-        toast({ title: "Approval Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
+        toast.error("An unknown error occurred.");
     } finally {
         setApprovingProfileUpdateId(null); // Clear loading state
     }
@@ -313,18 +242,51 @@ const fetchPendingRequests = async () => {
 
   // Placeholder for reject functionality if needed later
   const handleRejectProfileUpdate = async (employeeId) => {
-      console.log(`Rejecting profile update for ${employeeId}`);
-      toast({ title: "Action Disabled", description: "Reject functionality not implemented yet.", variant: "destructive" });
-      // Similar fetch logic with PUT/PATCH and status: 'Rejected' would go here
+    if (!employeeId) {
+        toast.error("Employee ID missing.");
+        return;
+    }
+    setApprovingProfileUpdateId(employeeId); // Set loading state for this specific ID
+    try {
+        const headers = {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        };
+
+              // Create FormData as per the screenshot
+      const formData = new FormData();
+      formData.append('status', 'Rejected');
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests/${employeeId}`, {
+        method: 'PUT',
+        headers: headers,
+        body: formData
+    });
+
+        if (!response.ok) {
+            let errorMessage = await response.text();
+            try {
+                const errorJson = JSON.parse(errorMessage);
+                errorMessage = errorJson.message || errorMessage;
+            } catch (e) { /* Ignore if not JSON */ }
+            throw new Error(errorMessage || `HTTP error! status: ${response.status}`);
+        }
+
+        toast.success(`Profile update for ${employeeId} rejected.`);
+        // Re-fetch the list to remove the rejected item
+        fetchProfileUpdates();
+
+    } catch (error) {
+        toast.error("An unknown error occurred.");
+    } finally {
+        setApprovingProfileUpdateId(null); // Clear loading state
+    }
   };
 
   const handleApprove = async (leaveId) => {
     try {
       const token = localStorage.getItem('token');
-      
-      console.log('Approving leave request:', { leaveId });
   
-      const response = await axios.put(`http://localhost:8083/leave/update-status`, {
+      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/update-status`, {
         leaveId: leaveId,
         status: "Approved",
         remarks: "approved successfully"
@@ -335,8 +297,6 @@ const fetchPendingRequests = async () => {
         }
       });
   
-      console.log('Approve response:', response.data);
-  
       toast({
         title: "Success",
         description: "Request approved successfully"
@@ -345,7 +305,6 @@ const fetchPendingRequests = async () => {
       // Refresh the list after successful approval
       await fetchPendingRequests();
     } catch (error) {
-      console.error('Error approving request:', error.response?.data || error.message);
       
       toast({
         title: "Error",
@@ -358,10 +317,8 @@ const fetchPendingRequests = async () => {
   const handleReject = async (leaveId) => {
     try {
       const token = localStorage.getItem('token');
-      
-      console.log('Rejecting leave request:', { leaveId });
 
-      const response = await axios.put(`http://localhost:8083/leave/update-status`, {
+      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/update-status`, {
         leaveId: leaveId,
         status: "Rejected",
         remarks: "Request rejected by HR"
@@ -372,8 +329,6 @@ const fetchPendingRequests = async () => {
         }
       });
 
-      console.log('Reject response:', response.data);
-
       toast({
         title: "Success",
         description: "Request rejected successfully"
@@ -382,8 +337,7 @@ const fetchPendingRequests = async () => {
       // Refresh the list after successful rejection
       await fetchPendingRequests();
     } catch (error) {
-      console.error('Error rejecting request:', error.response?.data || error.message);
-      
+
       toast({
         title: "Error",
         description: error.response?.data?.message || 'Failed to reject request',

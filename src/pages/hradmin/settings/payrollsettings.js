@@ -3,6 +3,7 @@ import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
 
 const PayrollSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -47,7 +48,6 @@ const PayrollSettings = () => {
         setTdsData(tdsResult);
         setPtaxData(ptaxResult);
       } catch (error) {
-        console.error("Error fetching data:", error);
         setNotification({
           show: true,
           type: "error",
@@ -82,8 +82,7 @@ const PayrollSettings = () => {
 
       return data;
     } catch (error) {
-      console.error("Error in fetchTDS:", error);
-      throw error;
+      toast.error("Error in fetchTDS:", error);
     }
   };
 
@@ -113,8 +112,7 @@ const PayrollSettings = () => {
 
       return data;
     } catch (error) {
-      console.error("Error in fetchPTAX:", error);
-      throw error;
+      toast.error("Error in fetchPTAX:", error);
     }
   };
 

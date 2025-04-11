@@ -9,10 +9,6 @@ export const fetchLeaveTypes = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      console.log(
-        "Fetching leave types with token:",
-        token ? "Token exists" : "No token"
-      );
 
       if (!token) {
         return rejectWithValue("No authentication token found");
@@ -29,13 +25,8 @@ export const fetchLeaveTypes = createAsyncThunk(
         throw new Error("No data received from server");
       }
 
-      console.log("Leave types response:", response.data);
       return response.data;
     } catch (error) {
-      console.error("Error fetching leave types:", error);
-      if (error.response?.status === 500) {
-        return rejectWithValue("Server error. Please try again later.");
-      }
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
@@ -51,7 +42,6 @@ export const createLeaveType = createAsyncThunk(
   async (leaveTypeData, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      console.log("Creating leave type with data:", leaveTypeData);
 
       const response = await axios.post(
         `${API_URL}/leave-types`,
@@ -63,13 +53,8 @@ export const createLeaveType = createAsyncThunk(
           },
         }
       );
-      console.log("Create response:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
-        "Error creating leave type:",
-        error.response?.data || error.message
-      );
       return rejectWithValue(
         error.response?.data?.message || "Failed to create leave type"
       );
@@ -83,7 +68,6 @@ export const updateLeaveType = createAsyncThunk(
   async ({ id, leaveTypeData }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      console.log("Updating leave type with data:", { id, leaveTypeData });
 
       const response = await axios.put(
         `${API_URL}/leave-types/${id}`,
@@ -95,13 +79,8 @@ export const updateLeaveType = createAsyncThunk(
           },
         }
       );
-      console.log("Update response:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
-        "Error updating leave type:",
-        error.response?.data || error.message
-      );
       return rejectWithValue(
         error.response?.data?.message || "Failed to update leave type"
       );
@@ -115,7 +94,6 @@ export const deleteLeaveType = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      console.log("Deleting leave type:", id);
 
       const response = await axios.delete(`${API_URL}/leave-types/${id}`, {
         headers: {
@@ -123,13 +101,8 @@ export const deleteLeaveType = createAsyncThunk(
           "Content-Type": "application/json",
         },
       });
-      console.log("Delete response:", response.data);
       return response.data;
     } catch (error) {
-      console.error(
-        "Error deleting leave type:",
-        error.response?.data || error.message
-      );
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete leave type"
       );

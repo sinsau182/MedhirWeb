@@ -15,10 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { jwtDecode } from "jwt-decode";
 import { updateSessionActivity } from "@/utils/sessionManager";
+import { Loader2 } from "lucide-react";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
   const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
 
@@ -28,29 +30,37 @@ export function LoginForm({ className, ...props }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await dispatch(loginUser(credentials));
-  
-    if (result.meta.requestStatus === "fulfilled") {
-      const token = result.payload.token;
-  
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", token);
-        updateSessionActivity(); // ✅ Start session tracking immediately
+    setIsLoading(true);
+    
+    try {
+      const result = await dispatch(loginUser(credentials));
+    
+      if (result.meta.requestStatus === "fulfilled") {
+        const token = result.payload.token;
+    
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", token);
+          updateSessionActivity(); // ✅ Start session tracking immediately
+        }
+    
+        // Decode token to get roles
+        const decodedToken = jwtDecode(token);
+        const roles = decodedToken.roles || [];
+    
+        // Redirect based on role
+        if (roles.includes("SUPERADMIN")) {
+          router.push("/superadmin/companies");
+        } else if (roles.includes("HRADMIN")) {
+          router.push("/employee/dashboard");
+          localStorage.setItem("currentRole", "employee");
+        } else {
+          router.push("/dashboard"); // Default route
+        }
       }
-  
-      // Decode token to get roles
-      const decodedToken = jwtDecode(token);
-      const roles = decodedToken.roles || [];
-  
-      // Redirect based on role
-      if (roles.includes("SUPERADMIN")) {
-        router.push("/superadmin/companies");
-      } else if (roles.includes("HRADMIN")) {
-        router.push("/employee/dashboard");
-        localStorage.setItem("currentRole", "employee");
-      } else {
-        router.push("/dashboard"); // Default route
-      }
+    } catch (err) {
+      console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -76,6 +86,7 @@ export function LoginForm({ className, ...props }) {
                     value={credentials.email}
                     onChange={handleChange}
                     required
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -96,11 +107,19 @@ export function LoginForm({ className, ...props }) {
                     required
                     value={credentials.password}
                     onChange={handleChange}
+                    disabled={isLoading}
                   />
                 </div>
                 {error && <p className="text-red-600">{error}</p>}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Logging in..." : "Login"}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Logging in...</span>
+                    </div>
+                  ) : (
+                    "Login"
+                  )}
                 </Button>
               </div>
               <div className="text-center text-sm">

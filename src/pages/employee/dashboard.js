@@ -25,7 +25,7 @@ const Overview = () => {
       }
 
       const response = await axios.get(
-        "http://localhost:8083/api/leave-balance/current/EMP001",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/leave-balance/current/EMP001`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -39,7 +39,6 @@ const Overview = () => {
         setLeaveBalance(response.data);
       }
     } catch (error) {
-      console.error("Error fetching leave balance:", error);
       setBalanceError(
         error.response?.data?.message ||
           error.message ||
