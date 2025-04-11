@@ -637,11 +637,15 @@ const OrganizationSettings = () => {
     // Reset form changed state when opening new designation
     setIsFormChanged(false);
     setSelectedDesignation(designation);
+    
+    // Find the department name using the department ID
+    const departmentName = reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department;
+    
     setDesignationForm({
       name: designation.name,
       department: { 
         value: designation.department,
-        label: designation.department 
+        label: departmentName // Use the department name instead of the ID
       },
       description: designation.description || "",
       manager: designation.manager || false,
@@ -833,11 +837,11 @@ const OrganizationSettings = () => {
           )}
 
           {/* Designations Table */}
-          {activeTab === "designations" && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+                {activeTab === "designations" && (
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
                     </th>
@@ -853,60 +857,60 @@ const OrganizationSettings = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Overtime Eligible
                     </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {designationLoading ? (
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {designationLoading ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center">
-                        Loading...
+                      Loading...
                       </td>
                     </tr>
-                  ) : error ? (
+                    ) : error ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center text-red-500">
-                        {error}
+                      {error}
                       </td>
                     </tr>
-                  ) : fetchedDesignations.length === 0 ? (
+                    ) : fetchedDesignations.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center">
-                        No designations found
+                      No designations found
                       </td>
                     </tr>
-                  ) : (
+                    ) : (
                     fetchedDesignations.map((designation) => (
                       <tr
-                        key={designation.id}
-                        onClick={() => handleDesignationRowClick(designation)}
-                        className="hover:bg-gray-50 cursor-pointer"
+                      key={designation.id}
+                      onClick={() => handleDesignationRowClick(designation)}
+                      className="hover:bg-gray-50 cursor-pointer"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {reduxDepartments.find(dept => dept.name === designation.department)?.name || designation.department}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {designation.description || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.manager ? "Yes" : "No"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.overtimeEligible ? "Yes" : "No"}
-                        </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {designation.description || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.manager ? "Yes" : "No"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {designation.overtimeEligible ? "Yes" : "No"}
+                      </td>
                       </tr>
                     ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+                    )}
+                  </tbody>
+                  </table>
+                </div>
+                )}
+              </div>
+              </div>
 
-      {/* Department Add Modal */}
+              {/* Department Add Modal */}
       {showDepartmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-[600px]">
@@ -1213,7 +1217,7 @@ const OrganizationSettings = () => {
                 <Select
                   name="department"
                   options={reduxDepartments.map((dept) => ({
-                    value: dept.name,
+                    value: dept.departmentId,
                     label: dept.name,
                   }))}
                   className="react-select"

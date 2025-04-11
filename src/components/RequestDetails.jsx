@@ -215,6 +215,9 @@ const fetchPendingRequests = async () => {
 };
 
 
+
+
+
   useEffect(() => {
     fetchPendingRequests();
     fetchProfileUpdates();
@@ -315,11 +318,80 @@ const fetchPendingRequests = async () => {
       // Similar fetch logic with PUT/PATCH and status: 'Rejected' would go here
   };
 
-  const handleReject = async (leaveId) => {
+  const handleApprove = async (leaveId) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      console.log('Approving leave request:', { leaveId });
+  
+      const response = await axios.put(`http://localhost:8083/leave/update-status`, {
+        leaveId: leaveId,
+        status: "Approved",
+        remarks: "approved successfully"
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      console.log('Approve response:', response.data);
+  
+      toast({
+        title: "Success",
+        description: "Request approved successfully"
+      });
+      
+      // Refresh the list after successful approval
+      await fetchPendingRequests();
+    } catch (error) {
+      console.error('Error approving request:', error.response?.data || error.message);
+      
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || 'Failed to approve request',
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleApprove = async (leaveId) => {
+  const handleReject = async (leaveId) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      console.log('Rejecting leave request:', { leaveId });
+
+      const response = await axios.put(`http://localhost:8083/leave/update-status`, {
+        leaveId: leaveId,
+        status: "Rejected",
+        remarks: "Request rejected by HR"
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Reject response:', response.data);
+
+      toast({
+        title: "Success",
+        description: "Request rejected successfully"
+      });
+      
+      // Refresh the list after successful rejection
+      await fetchPendingRequests();
+    } catch (error) {
+      console.error('Error rejecting request:', error.response?.data || error.message);
+      
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || 'Failed to reject request',
+        variant: "destructive"
+      });
+    }
   };
+
 
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
@@ -497,37 +569,37 @@ const fetchPendingRequests = async () => {
                   pendingCompOffs.map((request, index) => (
                     <tr 
                       key={`${request.leaveId}-${request.employeeId}-${index}`} 
-                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                        {request.employeeId}
-                      </td>
+                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      {request.employeeId}
+                    </td>
                       <td className="px-5 py-4 text-sm">{request.employeeName}</td>
-                      <td className="px-5 py-4 text-sm">{request.department}</td>
+                    <td className="px-5 py-4 text-sm">{request.department}</td>
                       <td className="px-5 py-4 text-sm">{formatDate(request.startDate)}</td>
-                      <td className="px-5 py-4 text-sm">{request.shiftType}</td>
+                    <td className="px-5 py-4 text-sm">{request.shiftType}</td>
                       <td className="px-5 py-4 text-sm">{request.reason}</td>
-                      <td className="px-5 py-4 text-sm font-medium space-x-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                    <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
                           onClick={() => handleApprove(request.leaveId)}
                           title={request.remarks || 'Approve request'}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
                           onClick={() => handleReject(request.leaveId)}
                           title="Reject request"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </td>
-                    </tr>
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
                   ))
                 )}
               </tbody>

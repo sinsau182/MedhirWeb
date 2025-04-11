@@ -7,6 +7,7 @@ import { fetchLeaves, createLeave, applyLeave, fetchLeaveHistory, clearErrors, a
 import axios from 'axios';
 import { toast } from "sonner";
 import CustomDatePicker from '@/components/CustomDatePicker';
+import withAuth from "@/components/withAuth";
 
 const Leaves = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -17,7 +18,7 @@ const Leaves = () => {
   const [leaveForm, setLeaveForm] = useState({
     dates: [],
     reason: "",
-    shiftType: "full"
+    shiftType: "Full Day"
   });
   
   const [compOffForm, setCompOffForm] = useState({
@@ -44,6 +45,8 @@ const Leaves = () => {
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [balanceError, setBalanceError] = useState(null);
+  const [showLOPWarning, setShowLOPWarning] = useState(false);
+  const [requestedDays, setRequestedDays] = useState(0);
 
   // Add fetchPublicHolidays function
   const fetchPublicHolidays = async () => {
@@ -159,7 +162,7 @@ const Leaves = () => {
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => {
     setIsModalOpen(false);
-    setLeaveForm({ dates: [], reason: "", shiftType: "full" });
+    setLeaveForm({ dates: [], reason: "", shiftType: "Full Day" });
   };
   
   const openCompOffModal = () => setIsCompOffModalOpen(true);
@@ -181,7 +184,26 @@ const Leaves = () => {
     setLeaveForm(prev => ({ ...prev, shiftType: e.target.value }));
   };
 
+  const calculateRequestedDays = (dates) => {
+    return dates.reduce((total, date) => {
+      // Check for half day types (both First Half and Second Half count as 0.5)
+      const dayValue = date.shiftType === 'First Half (Morning)' || 
+                      date.shiftType === 'Second Half (Evening)' ? 0.5 : 1;
+      return total + dayValue;
+    }, 0);
+  };
+
   const handleLeaveDatesChange = (dates) => {
+    const totalDays = calculateRequestedDays(dates);
+    setRequestedDays(totalDays);
+    
+    // Check if requested days exceed available balance
+    if (leaveBalance && totalDays > leaveBalance.newLeaveBalance) {
+      setShowLOPWarning(true);
+    } else {
+      setShowLOPWarning(false);
+    }
+
     setLeaveForm(prev => ({ ...prev, dates }));
   };
 
@@ -235,15 +257,19 @@ const Leaves = () => {
       const formData = {
         startDate: compOffForm.dates[0].date.toISOString().split('T')[0],
         endDate: compOffForm.dates[0].date.toISOString().split('T')[0],
-        shiftType: "Full Day",
+        shiftType: compOffForm.dates[0]?.timeSlot || compOffForm.dates[0]?.shiftType || 'Full Day',
         reason: compOffForm.description
       };
+
+      console.log('Submitting comp-off with data:', formData);
 
       const resultAction = await dispatch(applyCompOffLeave(formData));
       if (applyCompOffLeave.fulfilled.match(resultAction)) {
         toast.success("Comp-off application submitted successfully");
         closeCompOffModal();
+        // Refresh both leave history and balance
         dispatch(fetchLeaveHistory());
+        await fetchLeaveBalance();
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for comp-off");
       }
@@ -255,11 +281,10 @@ const Leaves = () => {
   const handleSubmitLeave = async (e) => {
     e.preventDefault();
     
-    // Get form data
     const formData = {
       startDate: leaveForm.dates[0]?.date.toISOString().split('T')[0],
       endDate: leaveForm.dates[leaveForm.dates.length - 1]?.date.toISOString().split('T')[0],
-      shiftType: leaveForm.shiftType === "half" ? "First Half (Morning)" : "Full Day",
+      shiftType: leaveForm.dates[0]?.timeSlot || leaveForm.dates[0]?.shiftType || 'Full Day',
       reason: leaveForm.reason,
     };
 
@@ -268,11 +293,22 @@ const Leaves = () => {
       return;
     }
 
+    if (showLOPWarning) {
+      const confirmLOP = window.confirm(
+        `Warning: You are requesting ${requestedDays} days of leave but only have ${leaveBalance.newLeaveBalance} days available. \n\nExcess days will be marked as Loss of Pay (LOP). \n\nDo you want to continue?`
+      );
+      if (!confirmLOP) {
+        return;
+      }
+    }
+
     try {
       const resultAction = await dispatch(applyLeave(formData));
       if (applyLeave.fulfilled.match(resultAction)) {
         toast.success("Leave application submitted successfully");
-        closeModal(); // Close the modal after successful submission
+        closeModal();
+        dispatch(fetchLeaveHistory());
+        await fetchLeaveBalance();
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for leave");
       }
@@ -339,7 +375,7 @@ const Leaves = () => {
                   </div>
                   <div className="flex justify-between">
                     <p className="text-gray-600">Leaves taken in this year</p>
-                    <p className="text-red-500 font-medium">-{leaveBalance.leavesTaken}</p>
+                    <p className="text-red-500 font-medium">-{leaveBalance.leavesTakenThisYear}</p>
                   </div>
                   <hr className="my-4" />
                   <div className="flex justify-between">
@@ -389,7 +425,7 @@ const Leaves = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {leaveHistory.map((leave, index) => (
+                        {[...leaveHistory].sort((a, b) => new Date(b.startDate) - new Date(a.startDate)).map((leave, index) => (
                           <tr key={index}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               {new Date(leave.startDate).toLocaleDateString()}
@@ -403,7 +439,7 @@ const Leaves = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {leave.shiftType || 'Full Day'}
+                                {leave.shiftType}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -521,19 +557,22 @@ const Leaves = () => {
                   <div>
                     <CustomDatePicker
                       selectedDates={leaveForm.dates}
-                      onChange={(dates) => {
-                        setLeaveForm(prev => ({
-                          ...prev,
-                          dates: dates.map(d => ({
-                            date: d.date instanceof Date ? d.date : new Date(d.date),
-                            timeSlot: d.timeSlot
-                          }))
-                        }));
-                      }}
+                      onChange={handleLeaveDatesChange}
                       maxDays={5}
                       shiftType={leaveForm.shiftType}
                       onShiftTypeChange={handleShiftTypeChange}
                     />
+                    {showLOPWarning && (
+                      <div className="mt-2 text-red-500 text-sm flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        Warning: {requestedDays - leaveBalance.newLeaveBalance} day(s) will be marked as Loss of Pay (LOP)
+                      </div>
+                    )}
+                    {leaveForm.dates.length > 0 && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        Requested: {requestedDays} day(s) | Available Balance: {leaveBalance?.newLeaveBalance || 0} day(s)
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -591,15 +630,20 @@ const Leaves = () => {
                           ...prev,
                           dates: dates.map(d => ({
                             date: d.date instanceof Date ? d.date : new Date(d.date),
+                            shiftType: d.shiftType,
                             timeSlot: d.timeSlot
-                          })),
-                          shiftType: "Full Day"
+                          }))
                         }));
                       }}
                       isCompOff={true}
                       maxDays={1}
-                      defaultShiftType="Full Day"
-                      forceFullDay={true}
+                      shiftType={compOffForm.shiftType}
+                      onShiftTypeChange={(e) => {
+                        setCompOffForm(prev => ({
+                          ...prev,
+                          shiftType: e.target.value
+                        }));
+                      }}
                     />
                   </div>
 
@@ -640,4 +684,4 @@ const Leaves = () => {
   );
 };
 
-export default Leaves;
+export default withAuth(Leaves);

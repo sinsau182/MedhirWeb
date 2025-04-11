@@ -68,7 +68,7 @@ const monthsList = Array.from({ length: latestMonthIndex + 1 }, (_, i) =>
 const groupedPayrolls = { [currentYear]: monthsList };
 
 const PayrollPage = () => {
-  const employeeId = "EMP123";
+  const employeeId = "emp123";
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 

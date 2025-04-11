@@ -246,12 +246,14 @@ export const applyCompOffLeave = createAsyncThunk(
         throw new Error('No authentication token found');
       }
 
+      console.log('Applying comp-off with data:', formData); // Debug log
+
       const response = await axios.post('http://localhost:8083/leave/apply', {
-        employeeId: "EMP001", // Updated from emp123 to EMP001
+        employeeId: "EMP001",
         leaveName: "Comp-Off",
         startDate: formData.startDate,
         endDate: formData.endDate,
-        shiftType: formData.shiftType || "Full Day",
+        shiftType: formData.shiftType,
         reason: formData.reason
       }, {
         headers: {
@@ -260,12 +262,15 @@ export const applyCompOffLeave = createAsyncThunk(
         }
       });
 
+      console.log('Comp-off application response:', response.data); // Debug log
+
       // Fetch updated leave data after successful submission
       await dispatch(fetchLeaves());
       await dispatch(fetchLeaveHistory());
 
       return response.data;
     } catch (error) {
+      console.error('Comp-off application error:', error); // Debug log
       throw error.response?.data?.message || error.message || 'Failed to apply for comp-off';
     }
   }

@@ -39,7 +39,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
       ...prev,
-      settings: true, // Always keep settings expanded
+      settings: true,
     }));
 
     const handleRouteChangeStart = () => setIsLoading(true);
@@ -258,9 +258,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                               </span>
                               <span className="transform transition-transform duration-200">
                                 {isExpanded ? (
-                                  <FaChevronDown className="w-4 h-4" />
+                                  <FaAngleLeft className="w-4 h-4" />
                                 ) : (
-                                  <FaChevronRight className="w-4 h-4" />
+                                  <FaAngleRight className="w-4 h-4" />
                                 )}
                               </span>
                             </>
