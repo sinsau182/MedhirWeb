@@ -1,4 +1,12 @@
-import { pgTable, text, serial, integer, date, numeric, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  date,
+  numeric,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -47,7 +55,9 @@ export const profileUpdates = pgTable("profile_updates", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertProfileUpdateSchema = createInsertSchema(profileUpdates).omit({
+export const insertProfileUpdateSchema = createInsertSchema(
+  profileUpdates
+).omit({
   id: true,
   status: true,
   createdAt: true,
@@ -65,7 +75,9 @@ export const expenseRequests = pgTable("expense_requests", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertExpenseRequestSchema = createInsertSchema(expenseRequests).omit({
+export const insertExpenseRequestSchema = createInsertSchema(
+  expenseRequests
+).omit({
   id: true,
   status: true,
   createdAt: true,
@@ -83,7 +95,9 @@ export const advanceRequests = pgTable("advance_requests", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertAdvanceRequestSchema = createInsertSchema(advanceRequests).omit({
+export const insertAdvanceRequestSchema = createInsertSchema(
+  advanceRequests
+).omit({
   id: true,
   status: true,
   createdAt: true,
