@@ -5,7 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Search, UserPlus } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
-import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
+import {
+  Table,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -35,7 +42,11 @@ function Employees() {
     <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
         <HradminNavbar />
 
         <div className="p-6 mt-16">
@@ -97,7 +108,10 @@ function Employees() {
                 <tbody className="divide-y divide-gray-100">
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-3 text-sm text-gray-500">
+                      <td
+                        colSpan={8}
+                        className="text-center py-3 text-sm text-gray-500"
+                      >
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
                           Loading...
@@ -106,14 +120,17 @@ function Employees() {
                     </tr>
                   ) : filteredEmployees.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-3 text-sm text-gray-500">
+                      <td
+                        colSpan={8}
+                        className="text-center py-3 text-sm text-gray-500"
+                      >
                         No team members found
                       </td>
                     </tr>
                   ) : (
                     filteredEmployees.map((employee) => (
-                      <tr 
-                        key={employee.id} 
+                      <tr
+                        key={employee.id}
                         className="hover:bg-gray-50 cursor-pointer"
                       >
                         {activeTab === "Basic" && (

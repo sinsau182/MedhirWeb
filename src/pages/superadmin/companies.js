@@ -190,54 +190,56 @@ function SuperadminCompanies() {
           MEDHIR
         </h1>
         <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-          {["Overview", "My Task", "Companies", "Settings"].map((item, index) => (
-            <Link
-              key={index}
-              href={`/superadmin/${item.toLowerCase().replace(" ", "")}`}
-              passHref
-            >
-              <button
-                onClick={() => setActiveTab(item)}
-                className={`hover:text-[#4876D6] ${
-                  activeTab === item
-                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                    : "text-[#6c757d]"
-                }`}
-                style={{
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
+          {["Overview", "My Task", "Companies", "Settings"].map(
+            (item, index) => (
+              <Link
+                key={index}
+                href={`/superadmin/${item.toLowerCase().replace(" ", "")}`}
+                passHref
               >
-                {item === "Overview" && (
-                  <FaBuilding
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "myTask" && (
-                  <FaUserCircle
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Companies" && (
-                  <FaBuilding
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Settings" && (
-                  <FaCog
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item}
-              </button>
-            </Link>
-          ))}
+                <button
+                  onClick={() => setActiveTab(item)}
+                  className={`hover:text-[#4876D6] ${
+                    activeTab === item
+                      ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
+                      : "text-[#6c757d]"
+                  }`}
+                  style={{
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  {item === "Overview" && (
+                    <FaBuilding
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "myTask" && (
+                    <FaUserCircle
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "Companies" && (
+                    <FaBuilding
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item === "Settings" && (
+                    <FaCog
+                      className="inline-block text-black opacity-80"
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />
+                  )}
+                  {item}
+                </button>
+              </Link>
+            )
+          )}
         </nav>
         <div className="relative">
           <button
@@ -264,7 +266,7 @@ function SuperadminCompanies() {
         <div className="mt-6 p-4 rounded-lg bg-white">
           <div className="mt-4 p-4 rounded-lg flex justify-between items-center">
             <div className="relative w-96">
-            <input
+              <input
                 type="text"
                 placeholder="Search..."
                 className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg bg-white"
@@ -411,7 +413,6 @@ function SuperadminCompanies() {
               </svg>
             </button>
           </div>
-
           <Input
             name="name"
             value={companyData.name}
@@ -497,4 +498,3 @@ function SuperadminCompanies() {
 }
 
 export default withAuth(SuperadminCompanies);
-
