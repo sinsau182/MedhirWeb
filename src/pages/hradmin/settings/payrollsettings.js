@@ -7,7 +7,8 @@ import withAuth from "@/components/withAuth";
 const PayrollSettings = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showTdsModal, setShowTdsModal] = useState(false);
-  const [showProfessionalTaxModal, setShowProfessionalTaxModal] = useState(false);
+  const [showProfessionalTaxModal, setShowProfessionalTaxModal] =
+    useState(false);
 
   const [tdsData, setTdsData] = useState(null);
   const [ptaxData, setPtaxData] = useState(null);
@@ -16,18 +17,19 @@ const PayrollSettings = () => {
 
   const [tdsForm, setTdsForm] = useState({
     tdsRate: "",
-    description: ""
+    description: "",
   });
 
   const [ptaxForm, setPtaxForm] = useState({
     monthlySalaryThreshold: "",
     amountAboveThreshold: "",
     amountBelowThreshold: "",
-    description: ""
+    description: "",
   });
 
   const [isTdsFormChanged, setIsTdsFormChanged] = useState(false);
-  const [isProfessionalTaxFormChanged, setIsProfessionalTaxFormChanged] = useState(false);
+  const [isProfessionalTaxFormChanged, setIsProfessionalTaxFormChanged] =
+    useState(false);
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({
     show: false,
@@ -40,7 +42,7 @@ const PayrollSettings = () => {
       try {
         const [tdsResult, ptaxResult] = await Promise.all([
           fetchTDS(),
-          fetchPTAX()
+          fetchPTAX(),
         ]);
         setTdsData(tdsResult);
         setPtaxData(ptaxResult);
@@ -59,22 +61,25 @@ const PayrollSettings = () => {
   const fetchTDS = async () => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL+"/api/tds-settings", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_API_BASE_URL + "/api/tds-settings",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (response.status === 404) {
         return null;
       }
-      
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || "Failed to fetch TDS settings");
       }
-      
+
       return data;
     } catch (error) {
       console.error("Error in fetchTDS:", error);
@@ -85,22 +90,27 @@ const PayrollSettings = () => {
   const fetchPTAX = async () => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL+"/api/professional-tax-settings", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_API_BASE_URL + "/api/professional-tax-settings",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       if (response.status === 404) {
         return null;
       }
-      
+
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch Professional Tax settings");
+        throw new Error(
+          data.message || "Failed to fetch Professional Tax settings"
+        );
       }
-      
+
       return data;
     } catch (error) {
       console.error("Error in fetchPTAX:", error);
@@ -112,9 +122,9 @@ const PayrollSettings = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const url = process.env.NEXT_PUBLIC_API_BASE_URL+"/api/tds-settings";
+      const url = process.env.NEXT_PUBLIC_API_BASE_URL + "/api/tds-settings";
       const method = tdsData ? "PUT" : "POST";
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -123,7 +133,7 @@ const PayrollSettings = () => {
         },
         body: JSON.stringify({
           tdsRate: parseFloat(tdsForm.tdsRate),
-          description: tdsForm.description
+          description: tdsForm.description,
         }),
       });
 
@@ -137,7 +147,9 @@ const PayrollSettings = () => {
       setNotification({
         show: true,
         type: "success",
-        message: `TDS settings ${tdsData ? "updated" : "created"} successfully!`,
+        message: `TDS settings ${
+          tdsData ? "updated" : "created"
+        } successfully!`,
       });
     } catch (error) {
       setNotification({
@@ -152,9 +164,10 @@ const PayrollSettings = () => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const url = process.env.NEXT_PUBLIC_API_BASE_URL+"/api/professional-tax-settings";
+      const url =
+        process.env.NEXT_PUBLIC_API_BASE_URL + "/api/professional-tax-settings";
       const method = ptaxData ? "PUT" : "POST";
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -165,13 +178,15 @@ const PayrollSettings = () => {
           monthlySalaryThreshold: parseFloat(ptaxForm.monthlySalaryThreshold),
           amountAboveThreshold: parseFloat(ptaxForm.amountAboveThreshold),
           amountBelowThreshold: parseFloat(ptaxForm.amountBelowThreshold),
-          description: ptaxForm.description
+          description: ptaxForm.description,
         }),
       });
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Failed to save Professional Tax settings");
+        throw new Error(
+          data.message || "Failed to save Professional Tax settings"
+        );
       }
 
       setPtaxData(data);
@@ -179,7 +194,9 @@ const PayrollSettings = () => {
       setNotification({
         show: true,
         type: "success",
-        message: `Professional Tax settings ${ptaxData ? "updated" : "created"} successfully!`,
+        message: `Professional Tax settings ${
+          ptaxData ? "updated" : "created"
+        } successfully!`,
       });
     } catch (error) {
       setNotification({
@@ -194,7 +211,7 @@ const PayrollSettings = () => {
     if (tdsData) {
       setTdsForm({
         tdsRate: tdsData.tdsRate,
-        description: tdsData.description
+        description: tdsData.description,
       });
     }
     setIsEditingTDS(true);
@@ -207,7 +224,7 @@ const PayrollSettings = () => {
         monthlySalaryThreshold: ptaxData.monthlySalaryThreshold,
         amountAboveThreshold: ptaxData.amountAboveThreshold,
         amountBelowThreshold: ptaxData.amountBelowThreshold,
-        description: ptaxData.description
+        description: ptaxData.description,
       });
     }
     setIsEditingPTax(true);
@@ -252,12 +269,17 @@ const PayrollSettings = () => {
       </div>
       {ptaxData ? (
         <div className="space-y-2">
-          <p className="text-gray-600">Monthly Salary Threshold: ₹{ptaxData.monthlySalaryThreshold}</p>
-          <p className="text-gray-600">Amount Above Threshold: ₹{ptaxData.amountAboveThreshold}</p>
+          <p className="text-gray-600">
+            Monthly Salary Threshold: ₹{ptaxData.monthlySalaryThreshold}
+          </p>
+          <p className="text-gray-600">
+            Amount Above Threshold: ₹{ptaxData.amountAboveThreshold}
+          </p>
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No Professional Tax settings configured. Click "Configure" to set up Professional Tax settings.
+          No Professional Tax settings configured. Click "Configure" to set up
+          Professional Tax settings.
         </p>
       )}
     </div>
@@ -321,7 +343,7 @@ const PayrollSettings = () => {
                       setIsEditingTDS(false);
                       setTdsForm({
                         tdsRate: "",
-                        description: ""
+                        description: "",
                       });
                     }}
                     className="text-gray-500 hover:text-gray-700"
@@ -338,7 +360,9 @@ const PayrollSettings = () => {
                       type="number"
                       name="tdsRate"
                       value={tdsForm.tdsRate}
-                      onChange={(e) => setTdsForm({ ...tdsForm, tdsRate: e.target.value })}
+                      onChange={(e) =>
+                        setTdsForm({ ...tdsForm, tdsRate: e.target.value })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       min="0"
@@ -353,7 +377,9 @@ const PayrollSettings = () => {
                     <textarea
                       name="description"
                       value={tdsForm.description}
-                      onChange={(e) => setTdsForm({ ...tdsForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setTdsForm({ ...tdsForm, description: e.target.value })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
                     />
@@ -366,7 +392,7 @@ const PayrollSettings = () => {
                         setIsEditingTDS(false);
                         setTdsForm({
                           tdsRate: "",
-                          description: ""
+                          description: "",
                         });
                       }}
                       className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
@@ -391,7 +417,9 @@ const PayrollSettings = () => {
               <div className="bg-white rounded-lg p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    {ptaxData ? "Edit Professional Tax Settings" : "Configure Professional Tax Settings"}
+                    {ptaxData
+                      ? "Edit Professional Tax Settings"
+                      : "Configure Professional Tax Settings"}
                   </h2>
                   <button
                     onClick={() => {
@@ -401,7 +429,7 @@ const PayrollSettings = () => {
                         monthlySalaryThreshold: "",
                         amountAboveThreshold: "",
                         amountBelowThreshold: "",
-                        description: ""
+                        description: "",
                       });
                     }}
                     className="text-gray-500 hover:text-gray-700"
@@ -418,7 +446,12 @@ const PayrollSettings = () => {
                       type="number"
                       name="monthlySalaryThreshold"
                       value={ptaxForm.monthlySalaryThreshold}
-                      onChange={(e) => setPtaxForm({ ...ptaxForm, monthlySalaryThreshold: e.target.value })}
+                      onChange={(e) =>
+                        setPtaxForm({
+                          ...ptaxForm,
+                          monthlySalaryThreshold: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       min="0"
@@ -433,7 +466,12 @@ const PayrollSettings = () => {
                       type="number"
                       name="amountAboveThreshold"
                       value={ptaxForm.amountAboveThreshold}
-                      onChange={(e) => setPtaxForm({ ...ptaxForm, amountAboveThreshold: e.target.value })}
+                      onChange={(e) =>
+                        setPtaxForm({
+                          ...ptaxForm,
+                          amountAboveThreshold: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       min="0"
@@ -448,7 +486,12 @@ const PayrollSettings = () => {
                       type="number"
                       name="amountBelowThreshold"
                       value={ptaxForm.amountBelowThreshold}
-                      onChange={(e) => setPtaxForm({ ...ptaxForm, amountBelowThreshold: e.target.value })}
+                      onChange={(e) =>
+                        setPtaxForm({
+                          ...ptaxForm,
+                          amountBelowThreshold: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                       min="0"
@@ -462,7 +505,12 @@ const PayrollSettings = () => {
                     <textarea
                       name="description"
                       value={ptaxForm.description}
-                      onChange={(e) => setPtaxForm({ ...ptaxForm, description: e.target.value })}
+                      onChange={(e) =>
+                        setPtaxForm({
+                          ...ptaxForm,
+                          description: e.target.value,
+                        })
+                      }
                       className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
                     />
@@ -477,7 +525,7 @@ const PayrollSettings = () => {
                           monthlySalaryThreshold: "",
                           amountAboveThreshold: "",
                           amountBelowThreshold: "",
-                          description: ""
+                          description: "",
                         });
                       }}
                       className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
