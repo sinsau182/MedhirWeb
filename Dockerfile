@@ -1,24 +1,38 @@
-# Use Node.js as base image
-FROM node:18-alpine
+# Base
+FROM node:alpine AS base
 
-# Set working directory
+# Deps
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
+COPY package*.json ./
+RUN npm install
 
-# Copy package.json and install dependencies
-COPY package.json package-lock.json ./
-RUN npm install --production
+# Builder
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build --omit=dev
 
-# Copy Next.js project files
-COPY . /app
+# Runner
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY --from=builder /app/public ./public
+# COPY --from=builder /app/.env ./.env
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Ensure scripts have execution permissions
-RUN chmod +x node_modules/.bin/next
+ARG APPLICATION_USER=nodejs
+RUN adduser --no-create-home -u 1001 -D $APPLICATION_USER
+RUN chown -R $APPLICATION_USER /app
+USER $APPLICATION_USER
 
-# Build the app
-RUN npm run build
-
-# Expose port
 EXPOSE 3000
 
-# Start the Next.js app
-CMD ["npm", "run", "start"]
+ENV PORT 3000
+
+CMD ["node", "server.js"]

@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "server": "json-server --watch ./src/db.json --port 3001",
     "build": "next build",
     "start": "next start",
+    "build:test": "NODE_ENV=test next build",
+    "start:test": "NODE_ENV=test next start",
     "lint": "next lint"
   },
   "dependencies": {
