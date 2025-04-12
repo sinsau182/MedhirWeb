@@ -7,6 +7,8 @@ import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
+import { fetchDepartments } from "@/redux/slices/departmentSlice";
+import { fetchDesignations } from "@/redux/slices/designationSlice";
 import withAuth from "@/components/withAuth";
 import {
   FaUserCircle,
@@ -152,10 +154,58 @@ const removeEmptyValues = (obj) => {
   return cleanObj;
 };
 
+// Add custom styles for the department Select component
+const customSelectStyles = {
+  control: (provided) => ({
+    ...provided,
+    width: '100%',
+    minHeight: '42px',
+    padding: '0',
+    backgroundColor: 'transparent',
+    border: 'none',
+    boxShadow: 'none',
+    '&:hover': {
+      border: 'none'
+    }
+  }),
+  valueContainer: (provided) => ({
+    ...provided,
+    padding: '0 12px',
+  }),
+  input: (provided) => ({
+    ...provided,
+    margin: '0px',
+  }),
+  indicatorSeparator: () => ({
+    display: 'none'
+  }),
+  dropdownIndicator: (provided) => ({
+    ...provided,
+    padding: '0 8px'
+  }),
+  menu: (provided) => ({
+    ...provided,
+    marginTop: '4px',
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    backgroundColor: state.isSelected ? '#EBF5FF' : state.isFocused ? '#F3F4F6' : 'white',
+    color: state.isSelected ? '#2563EB' : '#374151',
+    cursor: 'pointer',
+    '&:active': {
+      backgroundColor: '#EBF5FF'
+    }
+  })
+};
+
 function EmployeeForm() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, err } = useSelector((state) => state.employees);
+  const { departments } = useSelector((state) => state.department);
+  const { designations } = useSelector((state) => state.designation);
 
   const {
     activeMainTab,
@@ -320,6 +370,12 @@ function EmployeeForm() {
       }
     }
   }, [employee]);
+
+  useEffect(() => {
+    // Fetch departments and designations when component mounts
+    dispatch(fetchDepartments());
+    dispatch(fetchDesignations());
+  }, [dispatch]);
 
   const calculateTotalCTC = (salaryData) => {
     const values = {
@@ -1114,28 +1170,78 @@ function EmployeeForm() {
                             {
                               label: "Department",
                               field: "department",
+                              isDropdown: true
                             },
                             {
                               label: "Designation",
                               field: "designation",
+                              isDropdown: true
                             },
-                          ].map(({ label, field, required }) => (
+                          ].map(({ label, field, isDropdown }) => (
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
                                 {label}{" "}
                               </label>
-                              <input
-                                type="text"
-                                className={inputClass}
-                                value={formData.employee[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "employee",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
-                              />
+                              {isDropdown ? (
+                                <Select
+                                  name={field}
+                                  styles={customSelectStyles}
+                                  className={`${inputClass} p-0`}
+                                  classNamePrefix="select"
+                                  placeholder={`Select ${field.toLowerCase()}`}
+                                  options={field === "department" 
+                                    ? departments.map((dept) => ({
+                                        value: dept.departmentId,
+                                        label: dept.name
+                                      }))
+                                    : designations
+                                        .filter(desig => desig.department === formData.employee.department)
+                                        .map((desig) => ({
+                                          value: desig.designationId,
+                                          label: desig.name
+                                        }))
+                                  }
+                                  value={field === "department"
+                                    ? (departments.find(dept => dept.departmentId === formData.employee[field])
+                                        ? {
+                                            value: formData.employee[field],
+                                            label: departments.find(dept => dept.departmentId === formData.employee[field]).name
+                                          }
+                                        : null)
+                                    : (designations.find(desig => desig.designationId === formData.employee[field])
+                                        ? {
+                                            value: formData.employee[field],
+                                            label: designations.find(desig => desig.designationId === formData.employee[field]).name
+                                          }
+                                        : null)
+                                  }
+                                  onChange={(selectedOption) => {
+                                    handleInputChange(
+                                      "employee",
+                                      field,
+                                      selectedOption ? selectedOption.value : ""
+                                    );
+                                    // Clear designation when department changes
+                                    if (field === "department") {
+                                      handleInputChange("employee", "designation", "");
+                                    }
+                                  }}
+                                  isDisabled={field === "designation" && !formData.employee.department}
+                                />
+                              ) : (
+                                <input
+                                  type="text"
+                                  className={inputClass}
+                                  value={formData.employee[field] || ""}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      "employee",
+                                      field,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                              )}
                             </div>
                           ))}
                         </div>

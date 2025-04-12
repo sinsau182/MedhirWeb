@@ -1,55 +1,19 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules/users";
-
-// Fetch users
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
-  async (_, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      return await response.json();
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  async () => {
+    const response = await axios.get("http://localhost:8083/superadmin/modules/users");
+    return response.data;
   }
 );
 
-// Add user
 export const addUser = createAsyncThunk(
   "users/addUser",
-  async (userData, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add user");
-      }
-
-      return data;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  async (userData) => {
+    const response = await axios.post("http://localhost:8083/superadmin/modules/users", userData);
+    return response.data;
   }
 );
 
@@ -65,7 +29,6 @@ const usersSlice = createSlice({
     builder
       .addCase(fetchUsers.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false;
@@ -73,18 +36,19 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.error.message;
+      })
+      .addCase(addUser.pending, (state) => {
+        state.loading = true;
       })
       .addCase(addUser.fulfilled, (state, action) => {
+        state.loading = false;
         state.users.push(action.payload);
       })
-      .addMatcher(
-        (action) => action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.loading = false;
-          state.error = action.payload || "Something went wrong";
-        }
-      );
+      .addCase(addUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
   },
 });
 

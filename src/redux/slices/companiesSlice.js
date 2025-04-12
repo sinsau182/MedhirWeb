@@ -1,104 +1,107 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import axios from "axios";
+import { getItemFromSessionStorage } from "./sessionStorageSlice";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/companies";
+const getAuthHeaders = () => {
+  const token = getItemFromSessionStorage("token");
+  if (!token) {
+    throw new Error("Authentication required. Please login.");
+  }
+  
+  // Remove any "Bearer " prefix if it exists
+  const cleanToken = token.replace("Bearer ", "");
+  
+  return {
+    headers: {
+      Authorization: `Bearer ${cleanToken}`,
+      "Content-Type": "application/json",
+    },
+  };
+};
 
-// Fetch companies
+// Thunks
 export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
   async (_, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch companies");
-      }
-      return await response.json();
+      const headers = getAuthHeaders();
+      const response = await axios.get(
+        "http://localhost:8083/superadmin/companies",
+        headers
+      );
+      console.log("API Response:", response.data);
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.error("API Error:", error.response || error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return rejectWithValue("Authentication required to access this resource");
+      }
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch companies");
     }
   }
 );
 
-// Create company
 export const createCompany = createAsyncThunk(
   "companies/createCompany",
   async (companyData, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(companyData),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create company");
-      }
-
-      return data;
+      const headers = getAuthHeaders();
+      const payload = {
+        ...companyData,
+        _class: "com.medhir.rest.model.CompanyModel"
+      };
+      
+      const response = await axios.post(
+        "http://localhost:8083/superadmin/companies",
+        payload,
+        headers
+      );
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.error("API Error:", error.response || error);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        return rejectWithValue("Authentication required to access this resource");
+      }
+      return rejectWithValue(error.response?.data?.message || "Failed to create company");
     }
   }
 );
 
-// Update company
 export const updateCompany = createAsyncThunk(
   "companies/updateCompany",
-  async ({ id, updatedData }, { rejectWithValue }) => {
+  async ({ id, updatedData }) => {
     try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updatedData),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update company");
-      }
-
-      return data;
+      const mongoId = id || updatedData._id;
+      const payload = {
+        ...updatedData,
+        _class: "com.medhir.rest.model.CompanyModel"
+      };
+      
+      const response = await axios.put(
+        `http://localhost:8083/superadmin/companies/${mongoId}`,
+        payload,
+        getAuthHeaders()
+      );
+      return response.data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.error("API Error:", error.response || error);
+      throw error.response?.data?.message || "Failed to update company";
     }
   }
 );
 
-// Delete company
 export const deleteCompany = createAsyncThunk(
   "companies/deleteCompany",
-  async (id, { rejectWithValue }) => {
+  async (id) => {
     try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete company");
-      }
-
-      return id; // Return deleted company's ID
+      await axios.delete(
+        `http://localhost:8083/superadmin/companies/${id}`,
+        getAuthHeaders()
+      );
+      return id;
     } catch (error) {
-      return rejectWithValue(error.message);
+      console.error("API Error:", error.response || error);
+      throw error.response?.data?.message || "Failed to delete company";
     }
   }
 );
@@ -113,41 +116,71 @@ const companiesSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch Companies
       .addCase(fetchCompanies.pending, (state) => {
         state.loading = true;
         state.err = null;
       })
       .addCase(fetchCompanies.fulfilled, (state, action) => {
         state.loading = false;
-        state.companies = action.payload;
+        state.companies = Array.isArray(action.payload) ? action.payload : [];
+        console.log("Updated companies state:", state.companies);
       })
       .addCase(fetchCompanies.rejected, (state, action) => {
         state.loading = false;
-        state.err = action.payload; // Use `action.payload` for custom error messages
+        state.err = action.error.message;
+        console.error("Fetch companies error:", action.error);
+      })
+      // Create Company
+      .addCase(createCompany.pending, (state) => {
+        state.loading = true;
+        state.err = null;
       })
       .addCase(createCompany.fulfilled, (state, action) => {
-        state.companies.push(action.payload);
+        state.loading = false;
+        if (action.payload) {
+          state.companies.push(action.payload);
+        }
+      })
+      .addCase(createCompany.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.error.message;
+      })
+      // Update Company
+      .addCase(updateCompany.pending, (state) => {
+        state.loading = true;
+        state.err = null;
       })
       .addCase(updateCompany.fulfilled, (state, action) => {
-        const index = state.companies.findIndex(
-          (c) => c._id === action.payload._id
-        );
-        if (index !== -1) {
-          state.companies[index] = action.payload;
+        state.loading = false;
+        if (action.payload) {
+          const index = state.companies.findIndex(
+            (company) => company._id === action.payload._id
+          );
+          if (index !== -1) {
+            state.companies[index] = action.payload;
+          }
         }
+      })
+      .addCase(updateCompany.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.error.message;
+      })
+      // Delete Company
+      .addCase(deleteCompany.pending, (state) => {
+        state.loading = true;
+        state.err = null;
       })
       .addCase(deleteCompany.fulfilled, (state, action) => {
+        state.loading = false;
         state.companies = state.companies.filter(
-          (c) => c._id !== action.payload
+          (company) => company._id !== action.payload
         );
       })
-      .addMatcher(
-        (action) => action.type.endsWith("/rejected"),
-        (state, action) => {
-          state.loading = false;
-          state.err = action.payload || "Something went wrong";
-        }
-      );
+      .addCase(deleteCompany.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.error.message;
+      });
   },
 });
 
