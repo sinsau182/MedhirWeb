@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -8,7 +9,7 @@ export const fetchLeaves = createAsyncThunk(
     "leaves/fetchLeaves",
     async (_, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("token");
+          const token = getItemFromSessionStorage("token", null);
             if (!token) {
                 return rejectWithValue("No authentication token found");
             }
@@ -50,7 +51,7 @@ export const createLeave = createAsyncThunk(
     "leaves/createLeave",
     async (leaveData, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("token");
+          const token = getItemFromSessionStorage("token", null);
             const response = await fetch(API_BASE_URL, {
                 method: "POST",
                 headers: {
@@ -92,7 +93,7 @@ export const updateLeave = createAsyncThunk(
     "leaves/updateLeave",
     async ({ id, leaveData }, { rejectWithValue }) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/leaves/${id}`, {
+            const response = await fetch(`http://sessionhost:8080/api/v1/leaves/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -116,7 +117,7 @@ export const deleteLeave = createAsyncThunk(
     "leaves/deleteLeave",
     async (id, { rejectWithValue }) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/leaves/${id}`, {
+            const response = await fetch(`http://sessionhost:8080/api/v1/leaves/${id}`, {
                 method: "DELETE",
             });
 
@@ -135,7 +136,7 @@ export const applyLeave = createAsyncThunk(
   "leave/applyLeave",
   async (leaveData, { dispatch, rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -177,7 +178,7 @@ export const fetchLeaveHistory = createAsyncThunk(
   "leaves/fetchLeaveHistory",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
@@ -218,7 +219,7 @@ export const applyCompOffLeave = createAsyncThunk(
   'leave/applyCompOff',
   async (formData, { dispatch, getState }) => {
     try {
-      const { token } = getState().auth;
+      const token = getItemFromSessionStorage("token", null);
       if (!token) {
         throw new Error('No authentication token found');
       }

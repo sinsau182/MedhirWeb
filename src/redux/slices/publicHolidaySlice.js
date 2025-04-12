@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -7,7 +8,7 @@ export const fetchPublicHolidays = createAsyncThunk(
   "publicHoliday/fetchPublicHolidays",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/public-holidays`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -29,7 +30,7 @@ export const createPublicHoliday = createAsyncThunk(
   "publicHoliday/createPublicHoliday",
   async (holidayData, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.post(
         `${API_URL}/public-holidays`,
         holidayData,
@@ -59,7 +60,7 @@ export const updatePublicHoliday = createAsyncThunk(
   "publicHoliday/updatePublicHoliday",
   async ({ id, holidayData }, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
         `${API_URL}/public-holidays/${id}`,
         holidayData,
@@ -89,7 +90,7 @@ export const deletePublicHoliday = createAsyncThunk(
   "publicHoliday/deletePublicHoliday",
   async (id, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       await axios.delete(`${API_URL}/public-holidays/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,

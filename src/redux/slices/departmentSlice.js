@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -8,7 +9,7 @@ export const fetchDepartments = createAsyncThunk(
   "department/fetchDepartments",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/departments`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -31,7 +32,7 @@ export const createDepartment = createAsyncThunk(
   "department/createDepartment",
   async (departmentData, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.post(
         `${API_URL}/departments`,
         departmentData,
@@ -63,7 +64,7 @@ export const updateDepartment = createAsyncThunk(
   "department/updateDepartment",
   async ({ id, departmentData }, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
         `${API_URL}/departments/${id}`,
         departmentData,
@@ -111,7 +112,7 @@ export const deleteDepartment = createAsyncThunk(
   "department/deleteDepartment",
   async (id, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       await axios.delete(`${API_URL}/departments/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,

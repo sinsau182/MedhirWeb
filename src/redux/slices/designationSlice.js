@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -7,7 +8,7 @@ export const fetchDepartmentsForDropdown = createAsyncThunk(
   "designation/fetchDepartments",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/departments`, {
         headers: {
           "Content-Type": "application/json",
@@ -28,7 +29,7 @@ export const fetchDesignations = createAsyncThunk(
   "designation/fetchDesignations",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/api/designations`, {
         headers: {
           "Content-Type": "application/json",
@@ -49,7 +50,7 @@ export const createDesignation = createAsyncThunk(
   "designation/create",
   async (designationData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.post(
         `${API_URL}/api/designations`,
         designationData,
@@ -74,7 +75,7 @@ export const updateDesignation = createAsyncThunk(
   "designation/update",
   async ({ id, designationData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
         `${API_URL}/api/designations/${id}`,
         designationData,
@@ -99,7 +100,7 @@ export const deleteDesignation = createAsyncThunk(
   "designation/delete",
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.delete(`${API_URL}/api/designations/${id}`, {
         headers: {
           "Content-Type": "application/json",

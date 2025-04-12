@@ -4,15 +4,41 @@ import Sidebar from "../../components/Sidebar";
 import { Calendar, X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchLeaves, createLeave, applyLeave, fetchLeaveHistory, clearErrors, applyCompOffLeave } from "@/redux/slices/leaveSlice";
+import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveBalanceSlice";
+import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
 import axios from 'axios';
 import { toast } from "sonner";
 import CustomDatePicker from '@/components/CustomDatePicker';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import withAuth from "@/components/withAuth";
 
 const Leaves = () => {
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    const storedToken = getItemFromSessionStorage('token');
+    setToken(storedToken);
+    
+    if (!storedToken) {
+      console.log('Token not found. Redirecting or handling auth...');
+      // Optional: redirect to login
+    }
+  }, []);
+
+  const dispatch = useDispatch();
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCompOffModalOpen, setIsCompOffModalOpen] = useState(false);
+
+  const { leaves, loading, error } = useSelector((state) => state.leave);
+  const { leaveHistory, historyLoading, historyError } = useSelector((state) => state.leave);
+  const { balance: leaveBalance, loading: isLoadingBalance, error: balanceError } = useSelector((state) => state.leaveBalance);
+  const { holidays, loading: holidayLoading, error: holidayError } = useSelector((state) => state.publicHoliday);
+  const calendarRef = useRef(null);
+  const [showLOPWarning, setShowLOPWarning] = useState(false);
+  const [requestedDays, setRequestedDays] = useState(0);
+
   
   // Simplified form states
   const [leaveForm, setLeaveForm] = useState({
@@ -26,114 +52,24 @@ const Leaves = () => {
     description: "",
     shiftType: "Full Day"
   });
-
-  const dispatch = useDispatch();
   
   // Add debug log to check state structure
   const state = useSelector((state) => {
     return state;
   });
   
-  const { leaves, loading, error } = useSelector((state) => state.leaveReducer);
-  const { leaveHistory, historyLoading, historyError } = useSelector((state) => state.leaveReducer);
-  const { token } = useSelector((state) => state.auth);
-  const calendarRef = useRef(null);
-  const [publicHolidays, setPublicHolidays] = useState([]);
-  const [isLoadingHolidays, setIsLoadingHolidays] = useState(true);
-  const [holidayError, setHolidayError] = useState(null);
-  const [leaveBalance, setLeaveBalance] = useState(null);
-  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
-  const [balanceError, setBalanceError] = useState(null);
-  const [showLOPWarning, setShowLOPWarning] = useState(false);
-  const [requestedDays, setRequestedDays] = useState(0);
-
-  // Add fetchPublicHolidays function
-  const fetchPublicHolidays = async () => {
-    setIsLoadingHolidays(true);
-    setHolidayError(null);
-    try {
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/public-holidays`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.data) {
-        setPublicHolidays(Array.isArray(response.data) ? response.data : []);
-      } else {
-        setPublicHolidays([]);
-      }
-    } catch (error) {
-      const errorMessage = error.response?.status === 401 
-        ? "Session expired. Please log in again."
-        : error.response?.data?.message || error.message || 'Failed to fetch public holidays';
-      
-      setHolidayError(errorMessage);
-      
-      if (error.response?.status === 401) {
-        toast.error("Your session has expired. Please log in again.");
-        // Redirect to login only if token is missing
-        if (!token) {
-          window.location.href = "/login";
-        }
-      } else {
-        toast.error(errorMessage);
-      }
-    } finally {
-      setIsLoadingHolidays(false);
-    }
-  };
-
-  // Add fetchLeaveBalance function
-  const fetchLeaveBalance = async () => {
-    setIsLoadingBalance(true);
-    setBalanceError(null);
-    try {
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
-
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/leave-balance/current/EMP001`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.data) {
-        setLeaveBalance(response.data);
-      }
-    } catch (error) {
-      setBalanceError(error.response?.data?.message || error.message || 'Failed to fetch leave balance');
-      toast.error("Failed to fetch leave balance");
-    } finally {
-      setIsLoadingBalance(false);
-    }
-  };
 
   useEffect(() => {
-    if (!token) {
-      toast.error("Please log in to view leave history");
-      window.location.href = "/login";
-      return;
-    }
-
     dispatch(fetchLeaves("EMP001"));
     dispatch(fetchLeaveHistory());
-    fetchPublicHolidays();
-    fetchLeaveBalance();
+    dispatch(fetchLeaveBalance("EMP001"));
+    dispatch(fetchPublicHolidays());
 
     return () => {
       dispatch(clearErrors());
+      dispatch(resetLeaveBalanceState());
     };
-  }, [dispatch, token]);
+  }, [dispatch]);
 
   // Add click outside handler for calendar
   useEffect(() => {
@@ -264,7 +200,7 @@ const Leaves = () => {
         closeCompOffModal();
         // Refresh both leave history and balance
         dispatch(fetchLeaveHistory());
-        await fetchLeaveBalance();
+        dispatch(fetchLeaveBalance("EMP001"));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for comp-off");
       }
@@ -303,7 +239,7 @@ const Leaves = () => {
         toast.success("Leave application submitted successfully");
         closeModal();
         dispatch(fetchLeaveHistory());
-        await fetchLeaveBalance();
+        dispatch(fetchLeaveBalance("EMP001"));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for leave");
       }
@@ -499,15 +435,15 @@ const Leaves = () => {
             <div className="bg-white shadow-md rounded-lg p-4">
               <h2 className="text-lg font-semibold mb-3">Public Holidays</h2>
               <div className="bg-gray-50 shadow-md rounded-lg p-3">
-                {isLoadingHolidays ? (
+                {holidayLoading ? (
                   <div className="text-center py-4">Loading holidays...</div>
                 ) : holidayError ? (
                   <div className="text-center py-4 text-red-500">{holidayError}</div>
-                ) : publicHolidays.length === 0 ? (
+                ) : holidays.length === 0 ? (
                   <div className="text-center py-4 text-gray-500">No public holidays found</div>
                 ) : (
                   <div className="space-y-3">
-                    {publicHolidays.map((holiday) => (
+                    {holidays.map((holiday) => (
                       <div key={holiday.holidayId} className="border-b border-gray-200 pb-2 last:border-b-0">
                         <div className="flex justify-between items-center">
                           <h3 className="text-md font-semibold text-gray-800">

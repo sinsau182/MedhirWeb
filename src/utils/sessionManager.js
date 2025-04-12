@@ -1,10 +1,10 @@
 export const updateSessionActivity = () => {
   const now = new Date().getTime();
-  localStorage.setItem("lastActivity", now.toString());
+  sessionStorage.setItem("lastActivity", now.toString());
 };
 
 export const isSessionExpiredDueToInactivity = () => {
-  const lastActivity = localStorage.getItem("lastActivity");
+  const lastActivity = sessionStorage.getItem("lastActivity");
   if (!lastActivity) return true;
 
   const now = new Date().getTime();
@@ -13,5 +13,5 @@ export const isSessionExpiredDueToInactivity = () => {
 };
 
 export const clearSession = () => {
-  localStorage.removeItem("lastActivity");
+  sessionStorage.removeItem("lastActivity");
 };

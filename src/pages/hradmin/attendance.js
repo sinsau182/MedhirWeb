@@ -21,7 +21,7 @@ function Attendance() {
   // Check authentication and role
   useEffect(() => {
     try {
-      const role = localStorage.getItem("currentRole");
+      const role = sessionStorage.getItem("currentRole");
       if (!role || role !== "hr") {
         router.push("/login");
         return;

@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/companies";
@@ -8,7 +9,7 @@ export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -29,7 +30,7 @@ export const createCompany = createAsyncThunk(
   "companies/createCompany",
   async (companyData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         method: "POST",
         headers: {
@@ -56,7 +57,7 @@ export const updateCompany = createAsyncThunk(
   "companies/updateCompany",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "PUT",
         headers: {
@@ -83,7 +84,7 @@ export const deleteCompany = createAsyncThunk(
   "companies/deleteCompany",
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "DELETE",
         headers: {

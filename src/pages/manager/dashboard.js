@@ -41,6 +41,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const COLORS = [
   "#0088FE",
@@ -86,9 +87,10 @@ const Overview = () => {
 
   const fetchProfileUpdates = async () => {
     try {
+      const token = getItemFromSessionStorage("token", null);
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${token}`
         };
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`, { headers });
         if (!response.ok) {
@@ -104,7 +106,7 @@ const Overview = () => {
 
 const fetchPendingRequests = async () => {
 try {
-  const token = localStorage.getItem('token');
+  const token = getItemFromSessionStorage("token", null);
   const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/Pending`, {
     headers: {
       'Authorization': `Bearer ${token}`,

@@ -360,7 +360,7 @@ function EmployeeProfilePage() {
 
   // --- Logout ---
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Assuming token is stored in localStorage
+    sessionStorage.removeItem("token"); // Assuming token is stored in sessionStorage
     router.push("/login");
     toast.success("Logged out successfully");
   };

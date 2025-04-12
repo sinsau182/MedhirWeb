@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { useSelector, useDispatch } from "react-redux";
+import { getItem, removeItem } from "@/redux/slices/sessionStorageSlice";
 
 const withAuth = (WrappedComponent) => {
   return (props) => {
@@ -8,7 +10,7 @@ const withAuth = (WrappedComponent) => {
 
     useEffect(() => {
       if (typeof window !== "undefined") {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         if (!token) {
           router.replace("/login"); // Redirect immediately
         } else {

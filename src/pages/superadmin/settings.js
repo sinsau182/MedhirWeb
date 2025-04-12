@@ -30,7 +30,7 @@ function SuperadminSettings() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     router.push("/login");
   };
 

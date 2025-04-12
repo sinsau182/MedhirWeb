@@ -12,6 +12,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const EmployeeAttendance = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -151,11 +152,12 @@ const EmployeeAttendance = () => {
         .split("T")[0];
 
       const url = `http://localhost:8082/attendance/daily-attendance/${employeeId}/${date}`;
+      const token = getItemFromSessionStorage("token", null);
 
       const response = await fetch(url, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 

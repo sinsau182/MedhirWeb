@@ -14,8 +14,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { jwtDecode } from "jwt-decode";
-import { updateSessionActivity } from "@/utils/sessionManager";
 import { Loader2 } from "lucide-react";
+import { setItem } from "@/redux/slices/sessionStorageSlice"; // Import setItem action
+import { updateSessionActivity } from "@/utils/sessionManager";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
@@ -39,8 +40,10 @@ export function LoginForm({ className, ...props }) {
         const token = result.payload.token;
     
         if (typeof window !== "undefined") {
-          localStorage.setItem("token", token);
-          updateSessionActivity(); // ✅ Start session tracking immediately
+          dispatch(setItem({ key: 'token', value: token, encrypt: true })); // Store token in sessionStorage
+
+          // Start session tracking immediately
+          updateSessionActivity(); 
         }
     
         // Decode token to get roles
@@ -52,7 +55,7 @@ export function LoginForm({ className, ...props }) {
           router.push("/superadmin/companies");
         } else if (roles.includes("HRADMIN")) {
           router.push("/employee/dashboard");
-          localStorage.setItem("currentRole", "employee");
+          sessionStorage.setItem("currentRole", "employee");
         } else {
           router.push("/dashboard"); // Default route
         }

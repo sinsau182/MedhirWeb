@@ -34,7 +34,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem("currentRole");
+    const role = sessionStorage.getItem("currentRole");
     setCurrentRole(role);
 
     // Initialize Settings menu as expanded

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin/employees";
@@ -9,7 +10,7 @@ export const fetchEmployees = createAsyncThunk(
   "employees/fetchEmployees",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -32,8 +33,8 @@ export const createEmployee = createAsyncThunk(
   "employee/createEmployee",
   async (formData, { rejectWithValue }) => {
     try {
-      // Retrieve token from localStorage
-      const token = localStorage.getItem("token");
+      // Retrieve token from sessionStorage
+      const token = getItemFromSessionStorage("token", null);
 
       const response = await axios.post(`${API_BASE_URL}`, formData, {
         headers: {
@@ -56,7 +57,7 @@ export const updateEmployee = createAsyncThunk(
   "employees/updateEmployee",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
 
       // Create FormData object for file uploads
       const formData = new FormData();
@@ -96,7 +97,7 @@ export const deleteEmployee = createAsyncThunk(
   "employees/deleteEmployee",
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "DELETE",
         headers: {

@@ -5,83 +5,8 @@ import HradminNavbar from "@/components/HradminNavbar";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
-import { set } from "mongoose";
 import withAuth from "@/components/withAuth";
-
-// Sample data
-const payrollData = [
-  {
-    employeeId: "EMP025",
-    name: "random nigga",
-    paidDays: "22/22",
-    ctc: "50,000",
-    salary: "45,000",
-    basic: "25,000",
-    hra: "10,000",
-    allowance: "5,000",
-    overtimePay: "2,000",
-    deductions: "3,000",
-    reimbursement: "1,000",
-    netPay: "45,000",
-  },
-  // ... other payroll data
-];
-
-const advanceData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    oldAdvance: "10,000",
-    thisMonthAdvance: "5,000",
-    deductInThisMonth: "2,000",
-    balanceForNextMonth: "13,000",
-  },
-  // ... other advance data
-];
-
-const reimbursementData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    reimbursementAmount: "2,000",
-    status: "Approved",
-    type: "Travel",
-    category: "Local Transport",
-    description: "Client meeting travel",
-    receipt: "receipt.pdf",
-  },
-  // ... other reimbursement data
-];
-
-const paymentHistoryData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    paymentDate: "2024-03-01",
-    amount: "45,000",
-    paymentMode: "Bank Transfer",
-    status: "Paid",
-  },
-  // ... other payment history data
-];
-
-const deductionsData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    employeePF: "2,750",
-    employerPF: "2,750",
-    tds: "2,000",
-    profTax: "200",
-    advanceAdjusted: "2,000",
-    netDeductions: "5,000",
-  },
-  // ... other deductions data
-];
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 function PayrollManagement() {
   const paidDays = 25;
@@ -122,7 +47,7 @@ function PayrollManagement() {
   }, [dispatch]);
 
   const fetchTDS = async () => {
-    const token = localStorage.getItem("token");
+    const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
       process.env.NEXT_PUBLIC_API_BASE_URL + "/api/tds-settings",
       {
@@ -149,7 +74,7 @@ function PayrollManagement() {
   };
 
   const fetchPTAX = async () => {
-    const token = localStorage.getItem("token");
+    const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
       process.env.NEXT_PUBLIC_API_BASE_URL + "/api/professional-tax-settings",
       {
@@ -184,7 +109,7 @@ function PayrollManagement() {
 
   const handleOvertimeSave = async (employeeId) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(
         `http://192.168.0.200:8083/api/employees/${employeeId}/overtime`,
         {

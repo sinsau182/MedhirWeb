@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { fetchUsers, addUser } from "./usersSlice";
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules";
@@ -12,7 +13,7 @@ export const fetchModules = createAsyncThunk(
   "modules/fetchModules",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -34,7 +35,7 @@ export const addModule = createAsyncThunk(
   "modules/addModule",
   async (moduleData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         method: "POST",
         headers: {

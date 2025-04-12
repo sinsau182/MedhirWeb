@@ -179,7 +179,7 @@ function SuperadminCompanies() {
   );
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     router.push("/login");
   };
 

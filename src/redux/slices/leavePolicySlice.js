@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -7,7 +8,7 @@ export const fetchLeavePolicies = createAsyncThunk(
   "leavePolicy/fetchLeavePolicies",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/leave-policies`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -29,7 +30,7 @@ export const createLeavePolicy = createAsyncThunk(
   "leavePolicy/createLeavePolicy",
   async (policyData, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.post(
         `${API_URL}/leave-policies`,
         policyData,
@@ -60,7 +61,7 @@ export const updateLeavePolicy = createAsyncThunk(
   "leavePolicy/updateLeavePolicy",
   async ({ id, policyData }, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
         `${API_URL}/leave-policies/${id}`,
         policyData,
@@ -105,7 +106,7 @@ export const deleteLeavePolicy = createAsyncThunk(
   "leavePolicy/deleteLeavePolicy",
   async (id, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       await axios.delete(`${API_URL}/leave-policies/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,

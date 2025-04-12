@@ -22,7 +22,7 @@ const RoleToggle = () => {
   const [currentRole, setCurrentRole] = useState(null);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("currentRole");
+    const storedRole = sessionStorage.getItem("currentRole");
     if (storedRole && roles.includes(storedRole)) {
       setCurrentRole(storedRole);
     } else {
@@ -35,7 +35,7 @@ const RoleToggle = () => {
   
     if (role !== currentRole) {
       setCurrentRole(role);
-      localStorage.setItem("currentRole", role);
+      sessionStorage.setItem("currentRole", role);
       if (role === "hr") {
         router.push("/hradmin/dashboard"); // Redirect to HR dashboard
       } else if (role === "manager") {

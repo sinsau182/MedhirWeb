@@ -756,11 +756,6 @@ function EmployeeForm() {
     });
   };
 
-  const handleLogout = () => {
-    router.push("/login");
-    localStorage.removeItem("token");
-  };
-
   const mainTabs = [
     "Basic",
     "ID Proofs",

@@ -14,10 +14,16 @@ import {
 import { format } from "date-fns";
 import PropTypes from "prop-types";
 import { useToast } from "@/hooks/use-toast";
-import axios from 'axios';
 import { toast } from 'sonner';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Leaves from "@/pages/employee/leaves";
+import { 
+  fetchPendingLeaveRequests, 
+  fetchProfileUpdates, 
+  updateLeaveStatus, 
+  updateProfileRequestStatus,
+  clearErrors
+} from '@/redux/slices/requestDetailsSlice';
 
 // --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
 const ChangesModal = ({ isOpen, onClose, changes }) => {
@@ -68,103 +74,29 @@ ChangesModal.propTypes = {
 // --- End Modal Component ---
 
 const RequestDetails = ({ activeTab, onTabChange }) => {
-  // const { toast } = useToast();
+  const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
 
-  // --- State for fetched data and loading status ---
-  const [leaveRequests, setLeaveRequests] = useState([]);
-  const [isLoadingLeave, setIsLoadingLeave] = useState(false);
+  // Get state from Redux
+  const { 
+    pendingLeaves, 
+    pendingCompOffs, 
+    profileUpdates, 
+    loading, 
+    error,
+    profileLoading,
+    profileError,
+    approvingProfileUpdateId,
+    approvingLeaveId,
+    rejectingLeaveId
+  } = useSelector((state) => state.requestDetails);
 
-  const [profileUpdates, setProfileUpdates] = useState([]);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-  const [approvingProfileUpdateId, setApprovingProfileUpdateId] = useState(null);
-
+  // Placeholder for expense and advance requests (not implemented in the slice)
   const [expenseRequests, setExpenseRequests] = useState([]);
   const [isLoadingExpense, setIsLoadingExpense] = useState(false);
-
   const [advanceRequests, setAdvanceRequests] = useState([]);
   const [isLoadingAdvance, setIsLoadingAdvance] = useState(false);
-
-  const [compOffRequests, setCompOffRequests] = useState([]);
-  const [isLoadingCompOff, setIsLoadingCompOff] = useState(false);
-
-  const [pendingLeaves, setPendingLeaves] = useState([]);
-  const [pendingCompOffs, setPendingCompOffs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // --- Base URL for API (adjust as needed) ---
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''; // Ensure this is set
-
-  const fetchProfileUpdates = async () => {
-      setIsLoadingProfile(true);
-      try {
-          const headers = {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-          };
-          const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`, { headers });
-          if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
-          }
-          const data = await response.json();
-          const updatesWithChanges = Array.isArray(data)
-              ? data.filter(update => update.changes && update.changes.length > 0)
-              : [];
-          setProfileUpdates(updatesWithChanges);
-      } catch (error) {
-          toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
-          setProfileUpdates([]);
-      } finally {
-          setIsLoadingProfile(false);
-      }
-  };
-
-const fetchPendingRequests = async () => {
-  try {
-    const token = localStorage.getItem('token');
-    setLoading(true);
-
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/Pending`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.data && Array.isArray(response.data.leaves)) {
-      const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
-      const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
-      
-      setPendingLeaves(regularLeaves);
-      setPendingCompOffs(compOffLeaves);
-    } else {
-      setPendingLeaves([]);
-      setPendingCompOffs([]);
-    }
-  } catch (error) {
-    
-    setError(error.response?.data?.message || error.message);
-    setPendingLeaves([]);
-    setPendingCompOffs([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  useEffect(() => {
-    fetchPendingRequests();
-    fetchProfileUpdates();
-  }, []);
-
-  if (loading) {
-    return <div className="text-center py-4">Loading pending requests...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-4 text-red-500">{error}</div>;
-  }
 
   // Function to open the modal
   const handleViewDetails = (changes) => {
@@ -172,8 +104,8 @@ const fetchPendingRequests = async () => {
           setSelectedUpdateChanges(changes);
           setIsModalOpen(true);
       } else {
-          toast({ title: "No details", description: "No specific field changes available for this request." });
-    }
+          toast.info("No specific field changes available for this request.");
+      }
   };
 
   const formatDate = (dateString) => {
@@ -191,8 +123,16 @@ const fetchPendingRequests = async () => {
     }
   };
 
-  // Updated combined loading state
-  const isLoading = isLoadingLeave || isLoadingProfile || isLoadingExpense || isLoadingAdvance || isLoadingCompOff;
+  // Fetch data on component mount
+  useEffect(() => {
+    dispatch(fetchPendingLeaveRequests());
+    dispatch(fetchProfileUpdates());
+
+    // Cleanup function
+    return () => {
+      dispatch(clearErrors());
+    };
+  }, [dispatch]);
 
   // --- Approve/Reject Logic for Profile Updates ---
   const handleApproveProfileUpdate = async (employeeId) => {
@@ -200,152 +140,91 @@ const fetchPendingRequests = async () => {
         toast.error("Employee ID missing.");
         return;
     }
-    setApprovingProfileUpdateId(employeeId); // Set loading state for this specific ID
+    
     try {
-        const headers = {
-            // Content-Type is set automatically by browser for FormData
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        };
-
-        // Create FormData as per the screenshot
-        const formData = new FormData();
-        formData.append('status', 'Approved');
-
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests/${employeeId}`, {
-            method: 'PUT',
-            headers: headers,
-            body: formData
-        });
-
-        let resultText = await response.text(); // Read response as text first
-
-        if (!response.ok) {
-             // Try to parse error message if JSON, otherwise use text
-             let errorMessage = resultText;
-             try {
-                 const errorJson = JSON.parse(resultText);
-                 errorMessage = errorJson.message || resultText;
-             } catch (e) { /* Ignore if not JSON */ }
-            throw new Error(errorMessage || `HTTP error! status: ${response.status}`);
-        }
-
+      const resultAction = await dispatch(updateProfileRequestStatus({ 
+        employeeId, 
+        status: 'Approved' 
+      }));
+      
+      if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
         toast.success(`Profile update for ${employeeId} approved.`);
         // Re-fetch the list to remove the approved item
-        fetchProfileUpdates();
-
+        dispatch(fetchProfileUpdates());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to approve profile update");
+      }
     } catch (error) {
-        toast.error("An unknown error occurred.");
-    } finally {
-        setApprovingProfileUpdateId(null); // Clear loading state
+      toast.error(error.message || "An unknown error occurred.");
     }
   };
 
-  // Placeholder for reject functionality if needed later
   const handleRejectProfileUpdate = async (employeeId) => {
     if (!employeeId) {
         toast.error("Employee ID missing.");
         return;
     }
-    setApprovingProfileUpdateId(employeeId); // Set loading state for this specific ID
+    
     try {
-        const headers = {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        };
-
-              // Create FormData as per the screenshot
-      const formData = new FormData();
-      formData.append('status', 'Rejected');
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests/${employeeId}`, {
-        method: 'PUT',
-        headers: headers,
-        body: formData
-    });
-
-        if (!response.ok) {
-            let errorMessage = await response.text();
-            try {
-                const errorJson = JSON.parse(errorMessage);
-                errorMessage = errorJson.message || errorMessage;
-            } catch (e) { /* Ignore if not JSON */ }
-            throw new Error(errorMessage || `HTTP error! status: ${response.status}`);
-        }
-
+      const resultAction = await dispatch(updateProfileRequestStatus({ 
+        employeeId, 
+        status: 'Rejected' 
+      }));
+      
+      if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
         toast.success(`Profile update for ${employeeId} rejected.`);
         // Re-fetch the list to remove the rejected item
-        fetchProfileUpdates();
-
+        dispatch(fetchProfileUpdates());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to reject profile update");
+      }
     } catch (error) {
-        toast.error("An unknown error occurred.");
-    } finally {
-        setApprovingProfileUpdateId(null); // Clear loading state
+      toast.error(error.message || "An unknown error occurred.");
     }
   };
 
   const handleApprove = async (leaveId) => {
     try {
-      const token = localStorage.getItem('token');
-  
-      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/update-status`, {
-        leaveId: leaveId,
+      const resultAction = await dispatch(updateLeaveStatus({
+        leaveId,
         status: "Approved",
         remarks: "approved successfully"
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-  
-      toast({
-        title: "Success",
-        description: "Request approved successfully"
-      });
+      }));
       
-      // Refresh the list after successful approval
-      await fetchPendingRequests();
+      if (updateLeaveStatus.fulfilled.match(resultAction)) {
+        toast.success("Request approved successfully");
+        // Refresh the list after successful approval
+        dispatch(fetchPendingLeaveRequests());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to approve request");
+      }
     } catch (error) {
-      
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || 'Failed to approve request',
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to approve request");
     }
   };
 
   const handleReject = async (leaveId) => {
     try {
-      const token = localStorage.getItem('token');
-
-      const response = await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/update-status`, {
-        leaveId: leaveId,
+      const resultAction = await dispatch(updateLeaveStatus({
+        leaveId,
         status: "Rejected",
         remarks: "Request rejected by HR"
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      toast({
-        title: "Success",
-        description: "Request rejected successfully"
-      });
+      }));
       
-      // Refresh the list after successful rejection
-      await fetchPendingRequests();
+      if (updateLeaveStatus.fulfilled.match(resultAction)) {
+        toast.success("Request rejected successfully");
+        // Refresh the list after successful rejection
+        dispatch(fetchPendingLeaveRequests());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to reject request");
+      }
     } catch (error) {
-
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || 'Failed to reject request',
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to reject request");
     }
   };
 
+  // Updated combined loading state
+  const isLoading = loading || profileLoading || isLoadingExpense || isLoadingAdvance;
 
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
@@ -427,6 +306,8 @@ const fetchPendingRequests = async () => {
               <tbody>
               {loading ? (
                   <tr><td colSpan="9" className="text-center py-5">Loading...</td></tr>
+                ) : error ? (
+                  <tr><td colSpan="9" className="text-center py-5 text-red-500">{error}</td></tr>
                 ) : !pendingLeaves || pendingLeaves.length === 0 ? (
                   <tr><td colSpan="9" className="text-center py-5 text-gray-500">No pending leave requests.</td></tr>
                 ) : (
@@ -465,18 +346,28 @@ const fetchPendingRequests = async () => {
                         variant="outline"
                         className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
                           onClick={() => handleApprove(request.leaveId)}
+                          disabled={approvingLeaveId === request.leaveId}
                           title={request.remarks || 'Approve request'}
                       >
+                        {approvingLeaveId === request.leaveId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
                         <Check className="h-4 w-4" />
+                        )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
                           onClick={() => handleReject(request.leaveId)}
+                          disabled={rejectingLeaveId === request.leaveId}
                           title="Reject request"
                       >
+                        {rejectingLeaveId === request.leaveId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
                         <X className="h-4 w-4" />
+                        )}
                       </Button>
                     </td>
                   </tr>
@@ -517,6 +408,8 @@ const fetchPendingRequests = async () => {
               <tbody>
                 {loading ? (
                   <tr><td colSpan="7" className="text-center py-5">Loading...</td></tr>
+                ) : error ? (
+                  <tr><td colSpan="7" className="text-center py-5 text-red-500">{error}</td></tr>
                 ) : !pendingCompOffs || pendingCompOffs.length === 0 ? (
                   <tr><td colSpan="7" className="text-center py-5 text-gray-500">No pending comp-off requests.</td></tr>
                 ) : (
@@ -539,18 +432,28 @@ const fetchPendingRequests = async () => {
                         variant="outline"
                         className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
                           onClick={() => handleApprove(request.leaveId)}
+                          disabled={approvingLeaveId === request.leaveId}
                           title={request.remarks || 'Approve request'}
                       >
+                        {approvingLeaveId === request.leaveId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
                         <Check className="h-4 w-4" />
+                        )}
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
                           onClick={() => handleReject(request.leaveId)}
+                          disabled={rejectingLeaveId === request.leaveId}
                           title="Reject request"
                       >
+                        {rejectingLeaveId === request.leaveId ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
                         <X className="h-4 w-4" />
+                        )}
                       </Button>
                     </td>
                   </tr>
@@ -572,8 +475,10 @@ const fetchPendingRequests = async () => {
                 </tr>
               </thead>
               <tbody>
-                {isLoadingProfile ? (
+                {profileLoading ? (
                   <tr><td colSpan="4" className="text-center py-5">Loading...</td></tr>
+                ) : profileError ? (
+                  <tr><td colSpan="4" className="text-center py-5 text-red-500">{profileError}</td></tr>
                 ) : profileUpdates.length === 0 ? (
                   <tr><td colSpan="4" className="text-center py-5 text-gray-500">No pending profile update requests.</td></tr>
                 ) : (

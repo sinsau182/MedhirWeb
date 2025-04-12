@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -8,7 +9,7 @@ export const fetchLeaveTypes = createAsyncThunk(
   "leaveType/fetchLeaveTypes",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
 
       if (!token) {
         return rejectWithValue("No authentication token found");
@@ -41,7 +42,7 @@ export const createLeaveType = createAsyncThunk(
   "leaveType/createLeaveType",
   async (leaveTypeData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
 
       const response = await axios.post(
         `${API_URL}/leave-types`,
@@ -67,7 +68,7 @@ export const updateLeaveType = createAsyncThunk(
   "leaveType/updateLeaveType",
   async ({ id, leaveTypeData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
 
       const response = await axios.put(
         `${API_URL}/leave-types/${id}`,
@@ -93,7 +94,7 @@ export const deleteLeaveType = createAsyncThunk(
   "leaveType/deleteLeaveType",
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
 
       const response = await axios.delete(`${API_URL}/leave-types/${id}`, {
         headers: {
