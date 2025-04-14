@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchModules, addModule, updateModule, deleteModule } from "@/redux/slices/modulesSlice";
+
+import {
+  fetchModules,
+  addModule,
+  updateModule,
+  deleteModule,
+} from "@/redux/slices/modulesSlice";
 import { fetchCompanies } from "@/redux/slices/companiesSlice";
+import { fetchUsers, addUser } from "@/redux/slices/usersSlice";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,38 +29,89 @@ import {
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
 import { Search, UserPlus, Edit, Trash } from "lucide-react";
-import { fetchUsers, addUser } from "@/redux/slices/usersSlice";
+
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import withAuth from "@/components/withAuth";
-import axios from 'axios';
+import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { useRouter } from "next/router";
 
 function SuperadminModules() {
+  const router = useRouter();
   const dispatch = useDispatch();
+
+
   const [searchInput, setSearchInput] = useState("");
-  const { modules = [], loading, err } = useSelector((state) => state.modules);
-  const { users } = useSelector((state) => state.users);
-  const { companies } = useSelector((state) => state.companies);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+
+
   const [selectedModule, setSelectedModule] = useState(null);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+
+
+  // const [selectedUser, setSelectedUser] = useState(null);
+
+
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userPhone, setUserPhone] = useState("");
+
+
   const [moduleName, setModuleName] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
+
+
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedAdmins, setSelectedAdmins] = useState([]);
-  const [companyUsers, setCompanyUsers] = useState([]);
+
+
+  // const [companyUsers, setCompanyUsers] = useState([]);
+
+  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
+  // Helper function to get auth headers
+  // const getAuthHeaders = () => {
+  //   const token = getItemFromSessionStorage("token");
+  //   return {
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //     },
+  //   };
+  // };
+
+  const {
+    modules,
+    loading: modulesLoading,
+    error: modulesError,
+  } = useSelector((state) => state.modules);
+  const {
+    companies,
+    loading: companiesLoading,
+    error: companiesError,
+  } = useSelector((state) => state.companies);
+  const {
+    users,
+    loading: usersLoading,
+    error: usersError,
+  } = useSelector((state) => state.users);
+
+  // console.log(selectedCompany);
+console.log(selectedCompanyId);
+
   useEffect(() => {
-    dispatch(fetchModules());
-    dispatch(fetchUsers());
-    dispatch(fetchCompanies());
+    dispatch(fetchModules()); // Use Redux slice method to fetch modules
+    dispatch(fetchCompanies()); // Use Redux slice method to fetch companies
+    dispatch(fetchUsers()); // Use Redux slice method to fetch users
   }, [dispatch]);
+
+
 
   const handleOpenAddModule = () => {
     setIsEditMode(false);
@@ -69,40 +128,61 @@ function SuperadminModules() {
     setIsEditMode(true);
     setModuleName(selectedModule.moduleName);
     setModuleDescription(selectedModule.description);
-    setSelectedCompany(selectedModule.company);
-    setSelectedAdmins(selectedModule.admins || []);
+    setSelectedCompany(selectedModule.companyName);
+    setSelectedAdmins(
+      selectedModule.userNames?.map((name) => ({ name })) || []
+    );
     setIsAddModuleOpen(true);
   };
 
   const handleDeleteModule = async () => {
-    if (!selectedModule || !window.confirm("Are you sure you want to delete this module?")) return;
-    const result = await dispatch(deleteModule(selectedModule._id));
-    if (result.payload) {
-      setSelectedModule(null);
-    }
-  };
-
-  const fetchUsersByCompany = async (companyId) => {
+    if (
+      !selectedModule ||
+      !window.confirm("Are you sure you want to delete this module?")
+    )
+      return;
     try {
-      const response = await axios.get(`http://localhost:8083/superadmin/companies/${companyId}/users`);
-      setCompanyUsers(response.data || []);
-    } catch (error) {
-      console.error('Error fetching company users:', error);
-      setCompanyUsers([]);
+      await dispatch(deleteModule(selectedModule.moduleId)).unwrap(); // Use Redux slice method to delete module
+      setSelectedModule(null);
+    } catch (err) {
+      console.error("Error deleting module:", err);
+      if (err.response?.status === 401) {
+        router.push("/login?error=Session expired. Please login again");
+      } else {
+        alert("Failed to delete module");
+      }
     }
   };
 
-  const handleCompanyChange = async (value) => {
-    const selected = companies.find((company) => company.id === value);
-    setSelectedCompany(selected || null);
-    setSelectedAdmins([]);
-    if (selected) {
-      await fetchUsersByCompany(selected.id);
-    }
+  // const fetchUsersByCompany = async (companyId) => {
+  //   try {
+  //     const response = await axios.get(
+  //       `http://localhost:8083/superadmin/companies/${companyId}/users`,
+  //       getAuthHeaders()
+  //     );
+  //     setCompanyUsers(response.data || []);
+  //   } catch (error) {
+  //     console.error('Error fetching company users:', error);
+  //     if (error.response?.status === 401) {
+  //       router.push("/login?error=Session expired. Please login again");
+  //     }
+  //     setCompanyUsers([]);
+  //   }
+  // };
+
+  // Update handleCompanyChange
+  const handleCompanyChange = (companyId) => {
+    setSelectedCompany(companyId);
   };
 
+  // Update handleAddOrUpdateModule
   const handleAddOrUpdateModule = async () => {
-    if (!moduleName || !moduleDescription || !selectedCompany || selectedAdmins.length === 0) {
+    if (
+      !moduleName ||
+      !moduleDescription ||
+      !selectedCompany ||
+      selectedAdmins.length === 0
+    ) {
       alert("Please fill in all fields and select at least one admin.");
       return;
     }
@@ -110,48 +190,71 @@ function SuperadminModules() {
     const moduleData = {
       moduleName,
       description: moduleDescription,
-      companyId: selectedCompany.id,
-      userIds: selectedAdmins.map(admin => admin.id)
+      companyId: selectedCompany.companyId, // Use companyId
+      userIds: selectedAdmins.map((admin) => admin.userId),
     };
 
-    let result;
-    if (isEditMode) {
-      result = await dispatch(updateModule({ id: selectedModule._id, ...moduleData }));
-    } else {
-      result = await dispatch(addModule(moduleData));
-    }
+    try {
+      if (isEditMode) {
+        await dispatch(
+          updateModule({ moduleId: selectedModule.moduleId, moduleData })
+        ).unwrap(); // Use Redux slice method to update module
+      } else {
+        await dispatch(addModule(moduleData)).unwrap(); // Use Redux slice method to add module
+      }
 
-    if (result.payload) {
       setModuleName("");
       setModuleDescription("");
       setSelectedCompany(null);
       setSelectedAdmins([]);
-      setCompanyUsers([]);
+      // setCompanyUsers([]);
       setSelectedModule(null);
       setIsEditMode(false);
       setIsAddModuleOpen(false);
+    } catch (err) {
+      console.error("Error saving module:", err);
+      if (err.response?.status === 401) {
+        router.push("/login?error=Session expired. Please login again");
+      } else {
+        alert("Failed to save module");
+      }
     }
   };
 
-  const filteredModules = modules?.filter((module) =>
-    module?.moduleName?.toLowerCase().includes(searchInput?.toLowerCase() || '')
-  ) || [];
+  const filteredModules = modules.filter((module) =>
+    module?.moduleName?.toLowerCase().includes(searchInput?.toLowerCase() || "")
+  );
 
-  // Helper function to get company name
-  const getCompanyName = (companyId) => {
-    const company = companies.find(c => c.id === companyId);
-    return company ? company.name : companyId;
-  };
+  const handleAddUser = async () => {
+    if (!userName || !userEmail || !userPhone) {
+      alert("Please fill in all fields.");
+      return;
+    }
 
-  // Helper function to get admin names
-  const getAdminNames = (userIds) => {
-    if (!userIds || !Array.isArray(userIds)) return '';
-    return userIds.map(userId => {
-      const user = users.find(u => u.id === userId);
-      return user ? user.name : userId;
-    }).join(', ');
-  };
+    const userData = {
+      name: userName,
+      email: userEmail,
+      phone: userPhone,
+    };
 
+
+    try {
+      await dispatch(addUser(userData)).unwrap(); // Use Redux slice method to add user
+      setUserName("");
+      setUserEmail("");
+      setUserPhone("");
+      setIsAddUserOpen(false);
+    } catch (err) {
+      console.error("Error adding user:", err);
+      if (err.response?.status === 401) {
+        router.push("/login?error=Session expired. Please login again");
+      } else {
+        alert("Failed to add user");
+      }
+    }
+  }
+
+  
   return (
     <div className="bg-white text-[#4a4a4a] max-h-screen">
       <SuperadminHeaders />
@@ -183,25 +286,25 @@ function SuperadminModules() {
                 />
                 <span className="text-xs text-[#4a4a4a]">Add</span>
               </div>
-              <div 
+              <div
                 className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
-                  !selectedModule ? 'opacity-20 pointer-events-none' : ''
+                  !selectedModule ? "opacity-20 pointer-events-none" : ""
                 }`}
               >
-                <Edit 
-                  size={32} 
+                <Edit
+                  size={32}
                   className="text-[#4a4a4a] p-1 rounded-md"
                   onClick={handleEditModule}
                 />
                 <span className="text-xs text-[#4a4a4a]">Edit</span>
               </div>
-              <div 
+              <div
                 className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
-                  !selectedModule ? 'opacity-20 pointer-events-none' : ''
+                  !selectedModule ? "opacity-20 pointer-events-none" : ""
                 }`}
               >
-                <Trash 
-                  size={32} 
+                <Trash
+                  size={32}
                   className="text-[#4a4a4a] p-1 rounded-md"
                   onClick={handleDeleteModule}
                 />
@@ -213,17 +316,25 @@ function SuperadminModules() {
           <div className="mt-4 p-2 rounded-lg">
             {loading ? (
               <div className="text-center py-4">Loading...</div>
-            ) : err ? (
-              <div className="text-center text-red-500 py-4">{err}</div>
+            ) : error ? (
+              <div className="text-center text-red-500 py-4">{error}</div>
             ) : (
               <div className="overflow-x-auto">
                 <ClientOnlyTable>
                   <TableHeader className="shadow-md">
                     <TableRow className="bg-[#E2E8F0]">
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">Name</TableHead>
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">Description</TableHead>
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">Company</TableHead>
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">Admins</TableHead>
+                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        Name
+                      </TableHead>
+                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        Description
+                      </TableHead>
+                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        Company
+                      </TableHead>
+                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        Admins
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -236,16 +347,26 @@ function SuperadminModules() {
                     ) : (
                       filteredModules.map((module) => (
                         <TableRow
-                          key={module._id}
+                          key={module.moduleId}
                           className={`cursor-pointer ${
-                            selectedModule?._id === module._id ? 'bg-gray-100' : ''
+                            selectedModule?.moduleId === module.moduleId
+                              ? "bg-gray-100"
+                              : ""
                           }`}
                           onClick={() => setSelectedModule(module)}
                         >
-                          <TableCell className="px-6 py-4">{module.moduleName}</TableCell>
-                          <TableCell className="px-6 py-4">{module.description}</TableCell>
-                          <TableCell className="px-6 py-4">{getCompanyName(module.companyId)}</TableCell>
-                          <TableCell className="px-6 py-4">{getAdminNames(module.userIds)}</TableCell>
+                          <TableCell className="px-6 py-4">
+                            {module.moduleName}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            {module.description}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            {module.companyName}
+                          </TableCell>
+                          <TableCell className="px-6 py-4">
+                            {module.userNames.join(", ")}
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -272,7 +393,9 @@ function SuperadminModules() {
       >
         <div className="p-6 bg-gray-200 text-black rounded-lg">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">{isEditMode ? 'Edit Module' : 'Add Module'}</h2>
+            <h2 className="text-2xl font-bold">
+              {isEditMode ? "Edit Module" : "Add Module"}
+            </h2>
             {isEditMode && (
               <button
                 onClick={handleDeleteModule}
@@ -284,54 +407,56 @@ function SuperadminModules() {
           </div>
 
           {/* Company Select */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company <span className="text-red-500">*</span>
-              </label>
-              <Select
-                onValueChange={handleCompanyChange}
-                value={selectedCompany?.id}
+          <Select onValueChange={handleCompanyChange} value={selectedCompany}>
+            <SelectTrigger className="bg-white text-gray-900 border border-gray-300 hover:border-blue-500 cursor-pointer">
+              <span
+                className={`${
+                  !selectedCompany ? "text-gray-500" : "text-gray-900"
+                }`}
               >
-                <SelectTrigger className="bg-white text-gray-900 border border-gray-300">
-                  {selectedCompany ? selectedCompany.name : "Select Company"}
-                </SelectTrigger>
-                <SelectContent>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {selectedCompany ? selectedCompany : "Select Company"}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {companies.map((company) => (
+                <SelectItem
+                  key={company.companyId}
+                  value={company.name}
+                  className="cursor-pointer hover:bg-blue-50 transition-colors duration-150 py-2"
+                >
+                  {company.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Module Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="Enter module name"
-                className="bg-white text-gray-900 border border-gray-300"
-                value={moduleName}
-                onChange={(e) => setModuleName(e.target.value)}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Module Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="Enter module name"
+              className="bg-white text-gray-900 border border-gray-300"
+              value={moduleName}
+              onChange={(e) => setModuleName(e.target.value)}
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="Enter module description"
-                className="bg-white text-gray-900 border border-gray-300"
-                value={moduleDescription}
-                onChange={(e) => setModuleDescription(e.target.value)}
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description <span className="text-red-500">*</span>
+            </label>
+            <Input
+              placeholder="Enter module description"
+              className="bg-white text-gray-900 border border-gray-300"
+              value={moduleDescription}
+              onChange={(e) => setModuleDescription(e.target.value)}
+            />
+          </div>
 
-            {/* Admin Select */}
-            <div>
+
+
+          <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Select Admins <span className="text-red-500">*</span>
               </label>
@@ -341,13 +466,15 @@ function SuperadminModules() {
                     if (value === "addUser") {
                       setIsAddUserOpen(true);
                     } else {
-                      const selected = companyUsers.find((user) => user.id === value);
-                      if (selected && !selectedAdmins.find(admin => admin.id === selected.id)) {
-                        setSelectedAdmins([...selectedAdmins, selected]);
+                      const selectedUser = users.find((user) => user.id === value);
+                      if (selectedUser && !selectedAdmins.some(admin => admin.id === selectedUser.id)) {
+                        setSelectedAdmins((prevAdmins) => [...prevAdmins, selectedUser]);
+                      } else {
+                        alert("Admin already selected");
                       }
                     }
                   }}
-                  disabled={!selectedCompany}
+                  value=""
                 >
                   <SelectTrigger className="bg-white text-gray-900 border border-gray-300">
                     {!selectedCompany 
@@ -357,7 +484,7 @@ function SuperadminModules() {
                         : "Select Admins"}
                   </SelectTrigger>
                   <SelectContent>
-                    {companyUsers.map((user) => (
+                    {users.map((user) => (
                       <SelectItem 
                         key={user.id} 
                         value={user.id}
@@ -398,76 +525,73 @@ function SuperadminModules() {
             </div>
           </div>
 
-          {/* Add User Form */}
-          {isAddUserOpen && (
-            <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-              <h3 className="text-lg font-semibold mb-4">Add New Admin</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    placeholder="Enter admin name"
-                    className="bg-white text-gray-900 border border-gray-300"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                  />
-                </div>
+        {/* Add User Form */}
+        {isAddUserOpen && (
+          <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
+            <h3 className="text-lg font-semibold mb-4">Add New Admin</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="Enter admin name"
+                  className="bg-white text-gray-900 border border-gray-300"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    placeholder="Enter admin email"
-                    className="bg-white text-gray-900 border border-gray-300"
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="Enter admin email"
+                  className="bg-white text-gray-900 border border-gray-300"
+                  value={userEmail}
+                  onChange={(e) => setUserEmail(e.target.value)}
+                />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    placeholder="Enter admin phone"
-                    className="bg-white text-gray-900 border border-gray-300"
-                    value={userPhone}
-                    onChange={(e) => setUserPhone(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="Enter admin phone"
+                  className="bg-white text-gray-900 border border-gray-300"
+                  value={userPhone}
+                  onChange={(e) => setUserPhone(e.target.value)}
+                />
+              </div>
 
-                <div className="flex justify-end space-x-2 mt-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsAddUserOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddUser}>
-                    Add Admin
-                  </Button>
-                </div>
+              <div className="flex justify-end space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsAddUserOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAddUser}>Add Admin</Button>
               </div>
             </div>
-          )}
-
-          <div className="mt-6 flex justify-end space-x-2 pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsAddModuleOpen(false);
-                setIsEditMode(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleAddOrUpdateModule}>
-              {isEditMode ? 'Update' : 'Add'} Module
-            </Button>
           </div>
+        )}
+
+        <div className="mt-6 flex justify-end space-x-2 pt-4 border-t">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsAddModuleOpen(false);
+              setIsEditMode(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button onClick={handleAddOrUpdateModule}>
+            {isEditMode ? "Update" : "Add"} Module
+          </Button>
         </div>
       </Modal>
     </div>

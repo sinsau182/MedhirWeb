@@ -149,10 +149,10 @@ const PayrollSettings = () => {
       </div>
       {isTdsConfigured && tdsData ? (
         <div className="space-y-2">
-          <p className="text-gray-600 text-xl">Rate: {tdsData.tdsRate}%</p>
-          {tdsData.description && (
+          <p className="text-gray-600 text-2xl">Rate: {tdsData.tdsRate}%</p>
+          {/* {tdsData.description && (
             <p className="text-gray-600 text-sm">{tdsData.description}</p>
-          )}
+          )} */}
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
@@ -182,9 +182,9 @@ const PayrollSettings = () => {
           <p className="text-gray-600">
             Amount Above Threshold: ₹{ptaxData.amountAboveThreshold}
           </p>
-          {ptaxData.description && (
+          {/* {ptaxData.description && (
             <p className="text-gray-600 text-sm">{ptaxData.description}</p>
-          )}
+          )} */}
         </div>
       ) : (
         <p className="text-gray-600 text-sm">

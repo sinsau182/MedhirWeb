@@ -9,7 +9,7 @@ export const fetchCompanies = createAsyncThunk(
   "companies/fetchCompanies",
   async (_, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage("token", null);
+      const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdXBlcmFkbWluQGdtYWlsLmNvbSIsInJvbGVzIjpbIlNVUEVSQURNSU4iXSwiaWF0IjoxNzQ0NjEwNjE2LCJleHAiOjE3NDQ2OTcwMTZ9.vbtIC5ktA2GjWDVjG7AN37KD0kD-Pehny8DTl0lLYFE"
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,

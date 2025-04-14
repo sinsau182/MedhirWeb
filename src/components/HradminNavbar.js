@@ -1,5 +1,6 @@
 import { User, Settings } from "lucide-react";
 import { useState, useEffect } from "react";
+import axios from "axios"; // Import axios for API requests
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,6 +70,60 @@ const Navbar = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const token = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdXBlcmFkbWluQGdtYWlsLmNvbSIsInJvbGVzIjpbIlNVUEVSQURNSU4iXSwiaWF0IjoxNzQ0NjEwNjE2LCJleHAiOjE3NDQ2OTcwMTZ9.vbtIC5ktA2GjWDVjG7AN37KD0kD-Pehny8DTl0lLYFE';
+        const response = await axios.get("http://localhost:8083/superadmin/modules/users/UID1/companies", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.data && Array.isArray(response.data)) {
+          setCompanies(response.data); // Store the full company objects
+          if (!response.data.some((company) => company.companyName === selectedCompany)) {
+            setSelectedCompany(response.data[0].companyName); // Set default company if current selection is not in the list
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching companies:", error);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === "selectedCompany" && event.newValue) {
+        setSelectedCompany(event.newValue);
+
+        // Update navbar color based on the new selected company
+        const selectedCompanyData = companies.find((company) => company.companyName === event.newValue);
+        if (selectedCompanyData) {
+          let backgroundColor;
+          switch (selectedCompanyData.companyId) {
+            case "CID1":
+              backgroundColor = "bg-[#A8D5BA]";
+              break;
+            case "CID2":
+              backgroundColor = "bg-[#FFF3B0]";
+              break;
+            default:
+              backgroundColor = "bg-[#B3D8F7]";
+          }
+          setNavbarColor(backgroundColor);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [companies]);
+
   const handleLogout = () => {
     dispatch(removeItem({ key: 'token' }));
     // dispatch(removeItem({ key: 'user' }));
@@ -80,28 +135,33 @@ const Navbar = () => {
     router.push("/employee/profile");
   };
 
-  const handleCompanyChange = (company) => {
-    if (company !== selectedCompany) { // Change color only if a different company is selected
-      setSelectedCompany(company);
-      localStorage.setItem("selectedCompany", company); // Store selected company in localStorage
+  const handleCompanyChange = (companyName) => {
+    const currentSelectedCompany = localStorage.getItem("selectedCompany"); // Get the current selected company from localStorage
 
-      // Set navbar color based on the selected company
-      let backgroundColor;
-      switch (company) {
-        case "Company A":
-          backgroundColor = "bg-[#A8D5BA]";
-          break;
-        case "Company B":
-          backgroundColor = "bg-[#FFF3B0]";
-          break;
-        case "Company C":
-          backgroundColor = "bg-[#B3D8F7]";
-          break;
-        default:
-          backgroundColor = "bg-white";
+    if (companyName !== currentSelectedCompany) { // Change color only if a different company is selected
+      setSelectedCompany(companyName);
+      localStorage.setItem("selectedCompany", companyName); // Store selected company in localStorage
+
+      // Find the selected company object
+      const selectedCompanyData = companies.find((company) => company.companyName === companyName);
+      if (selectedCompanyData) {
+        console.log("Selected Company ID:", selectedCompanyData.companyId);
+
+        // Set navbar color based on the selected company ID or name
+        let backgroundColor;
+        switch (selectedCompanyData.companyId) {
+          case "CID1":
+            backgroundColor = "bg-[#A8D5BA]";
+            break;
+          case "CID2":
+            backgroundColor = "bg-[#FFF3B0]";
+            break;
+          default:
+            backgroundColor = "bg-[#B3D8F7]";
+        }
+
+        setNavbarColor(backgroundColor); // Update the navbar color
       }
-
-      setNavbarColor(backgroundColor); // Update the navbar color
     }
   };
 
@@ -143,13 +203,13 @@ const Navbar = () => {
             <DropdownMenuContent className="w-56" align="start" forceMount>
               {companies.map((company) => (
                 <DropdownMenuItem
-                  key={company}
-                  onClick={() => handleCompanyChange(company)}
+                  key={company.companyId}
+                  onClick={() => handleCompanyChange(company.companyName)}
                   className={`cursor-pointer ${
-                    company === selectedCompany ? "font-semibold text-violet-600" : ""
+                    company.companyName === selectedCompany ? "font-semibold text-violet-600" : ""
                   }`}
                 >
-                  {company}
+                  {company.companyName}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

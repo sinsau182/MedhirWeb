@@ -112,6 +112,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           icon: <FaCalendarAlt />,
           link: "/hradmin/settings/leave",
         },
+        {
+          label: "Admin Access",
+          icon: <FaUsers />,
+          link: "/hradmin/settings/admin-access",
+        }
       ],
     },
 
