@@ -21,6 +21,9 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const [userInfo, setUserInfo] = useState({ name: '', email: '' });
   const { items } = useSelector((state) => state.sessionStorage);
+  const [companies, setCompanies] = useState(["Company A", "Company B", "Company C"]); // Example companies
+  const [selectedCompany, setSelectedCompany] = useState(companies[0]);
+  const [navbarColor, setNavbarColor] = useState("bg-[#A8D5BA]"); // Default navbar color
 
   useEffect(() => {
     const getUserInfo = () => {
@@ -41,6 +44,31 @@ const Navbar = () => {
     getUserInfo();
   }, [items]);
 
+  useEffect(() => {
+    const storedCompany = localStorage.getItem("selectedCompany");
+    if (storedCompany) {
+      setSelectedCompany(storedCompany);
+
+      // Set navbar color based on the stored company
+      let backgroundColor;
+      switch (storedCompany) {
+        case "Company A":
+          backgroundColor = "bg-[#A8D5BA]";
+          break;
+        case "Company B":
+          backgroundColor = "bg-[#FFF3B0]";
+          break;
+        case "Company C":
+          backgroundColor = "bg-[#B3D8F7]";
+          break;
+        default:
+          backgroundColor = "bg-[#A8D5BA]";
+      }
+
+      setNavbarColor(backgroundColor);
+    }
+  }, []);
+
   const handleLogout = () => {
     dispatch(removeItem({ key: 'token' }));
     // dispatch(removeItem({ key: 'user' }));
@@ -52,9 +80,34 @@ const Navbar = () => {
     router.push("/employee/profile");
   };
 
+  const handleCompanyChange = (company) => {
+    if (company !== selectedCompany) { // Change color only if a different company is selected
+      setSelectedCompany(company);
+      localStorage.setItem("selectedCompany", company); // Store selected company in localStorage
+
+      // Set navbar color based on the selected company
+      let backgroundColor;
+      switch (company) {
+        case "Company A":
+          backgroundColor = "bg-[#A8D5BA]";
+          break;
+        case "Company B":
+          backgroundColor = "bg-[#FFF3B0]";
+          break;
+        case "Company C":
+          backgroundColor = "bg-[#B3D8F7]";
+          break;
+        default:
+          backgroundColor = "bg-white";
+      }
+
+      setNavbarColor(backgroundColor); // Update the navbar color
+    }
+  };
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
-      <nav className="flex justify-between items-center p-3 shadow-md bg-white w-full">
+    <header className={`fixed top-0 left-0 right-0 z-50 ${navbarColor}`}>
+      <nav className="flex justify-between items-center p-3 shadow-md w-full">
         {/* Logo and Role Badges */}
         <div className="flex items-center gap-4">
           <div className="flex items-center">
@@ -70,6 +123,39 @@ const Navbar = () => {
 
         {/* Right Section: Profile */}
         <div className="flex items-center gap-6 relative">
+          {/* Company Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-10 px-4 flex items-center justify-between">
+                {selectedCompany}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="ml-2 h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start" forceMount>
+              {companies.map((company) => (
+                <DropdownMenuItem
+                  key={company}
+                  onClick={() => handleCompanyChange(company)}
+                  className={`cursor-pointer ${
+                    company === selectedCompany ? "font-semibold text-violet-600" : ""
+                  }`}
+                >
+                  {company}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Profile Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">

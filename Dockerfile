@@ -14,12 +14,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN mv .env.production .env.production.bak
 RUN npm run build --omit=dev
+RUN mv .env.production.bak .env.production
 
 # Runner
 FROM base AS runner
 WORKDIR /app
-ENV NODE_ENV=production
+# ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder /app/public ./public
 # COPY --from=builder /app/.env ./.env
