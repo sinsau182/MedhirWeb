@@ -5,15 +5,31 @@ import HradminNavbar from "@/components/HradminNavbar";
 import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchTDS, fetchPTAX, saveTDS, savePTAX, clearErrors, resetTdsForm, resetPtaxForm } from "@/redux/slices/payrollSettingsSlice";
+import {
+  fetchTDS,
+  fetchPTAX,
+  saveTDS,
+  savePTAX,
+  clearErrors,
+  resetTdsForm,
+  resetPtaxForm,
+} from "@/redux/slices/payrollSettingsSlice";
 
 const PayrollSettings = () => {
   const dispatch = useDispatch();
-  const { tdsData, ptaxData, loading, error, isTdsConfigured, isPtaxConfigured } = useSelector((state) => state.payrollSettings);
+  const {
+    tdsData,
+    ptaxData,
+    loading,
+    error,
+    isTdsConfigured,
+    isPtaxConfigured,
+  } = useSelector((state) => state.payrollSettings);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showTdsModal, setShowTdsModal] = useState(false);
-  const [showProfessionalTaxModal, setShowProfessionalTaxModal] = useState(false);
+  const [showProfessionalTaxModal, setShowProfessionalTaxModal] =
+    useState(false);
   const [isEditingTDS, setIsEditingTDS] = useState(false);
   const [isEditingPTax, setIsEditingPTax] = useState(false);
 
@@ -30,7 +46,8 @@ const PayrollSettings = () => {
   });
 
   const [isTdsFormChanged, setIsTdsFormChanged] = useState(false);
-  const [isProfessionalTaxFormChanged, setIsProfessionalTaxFormChanged] = useState(false);
+  const [isProfessionalTaxFormChanged, setIsProfessionalTaxFormChanged] =
+    useState(false);
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({
     show: false,
@@ -52,7 +69,9 @@ const PayrollSettings = () => {
         setNotification({
           show: true,
           type: "success",
-          message: `TDS settings ${isTdsConfigured ? "updated" : "created"} successfully!`,
+          message: `TDS settings ${
+            isTdsConfigured ? "updated" : "created"
+          } successfully!`,
         });
       } else {
         throw new Error(resultAction.error.message);
@@ -75,7 +94,9 @@ const PayrollSettings = () => {
         setNotification({
           show: true,
           type: "success",
-          message: `Professional Tax settings ${isPtaxConfigured ? "updated" : "created"} successfully!`,
+          message: `Professional Tax settings ${
+            isPtaxConfigured ? "updated" : "created"
+          } successfully!`,
         });
       } else {
         throw new Error(resultAction.error.message);
@@ -245,7 +266,9 @@ const PayrollSettings = () => {
               <div className="bg-white rounded-lg p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    {isTdsConfigured ? "Edit TDS Settings" : "Configure TDS Settings"}
+                    {isTdsConfigured
+                      ? "Edit TDS Settings"
+                      : "Configure TDS Settings"}
                   </h2>
                   <button
                     onClick={handleCloseTdsModal}
