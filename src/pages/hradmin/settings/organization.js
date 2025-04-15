@@ -31,6 +31,8 @@ import {
 import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("departments");
   const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false);
@@ -338,7 +340,7 @@ const OrganizationSettings = () => {
           .join(","),
       };
 
-      await dispatch(createDepartment(departmentData)).unwrap();
+      await dispatch(createDepartment({ ...departmentData, companyId: selectedCompanyId })).unwrap();
 
       setNotification({
         show: true,

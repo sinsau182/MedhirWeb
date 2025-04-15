@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
+import company, { CompanyServiceClient } from "@/generated/company_grpc_web_pb";
 
 // Async thunk for fetching TDS settings
 export const fetchTDS = createAsyncThunk(
@@ -74,6 +75,7 @@ export const saveTDS = createAsyncThunk(
         data: {
           tdsRate: parseFloat(tdsData.tdsRate),
           description: tdsData.description,
+          companyId: localStorage.getItem("selectedCompanyId"),
         },
       });
       return response.data;
@@ -129,6 +131,7 @@ export const savePTAX = createAsyncThunk(
           amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
           amountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
           description: ptaxData.description,
+          companyId: localStorage.getItem("selectedCompanyId"),
         },
       });
       return response.data;

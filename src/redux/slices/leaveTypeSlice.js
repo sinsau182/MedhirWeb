@@ -10,12 +10,13 @@ export const fetchLeaveTypes = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
 
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
 
-      const response = await axios.get(`${API_URL}/leave-types`, {
+      const response = await axios.get(`${API_URL}/leave-types/company/${company}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

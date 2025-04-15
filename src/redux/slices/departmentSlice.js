@@ -10,7 +10,8 @@ export const fetchDepartments = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await axios.get(`${API_URL}/departments`, {
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(`${API_URL}/departments/company/${company}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

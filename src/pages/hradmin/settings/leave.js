@@ -25,8 +25,11 @@ import {
 } from "@/redux/slices/publicHolidaySlice";
 import { toast } from "react-toastify";
 import withAuth from "@/components/withAuth";
+import company from "@/generated/company_grpc_web_pb";
 
 const LeaveSettings = () => {
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Leave Types");
   const [showLeaveTypeModal, setShowLeaveTypeModal] = useState(false);
@@ -184,7 +187,7 @@ const LeaveSettings = () => {
         canBeCarriedForward: leaveTypeForm.canCarryForward || false,
       };
 
-      const result = await dispatch(createLeaveType(leaveTypeData)).unwrap();
+      const result = await dispatch(createLeaveType({ ...leaveTypeData, companyId: selectedCompanyId })).unwrap();
       showNotification("success", "Leave type added successfully!");
 
       setShowLeaveTypeModal(false);
@@ -256,19 +259,21 @@ const LeaveSettings = () => {
       }
 
       const leaveTypeData = {
-        leaveTypeId: selectedLeaveType.leaveTypeId,
+        // leaveTypeId: selectedLeaveType.leaveTypeId,
         leaveTypeName: leaveTypeForm.name,
         accrualPeriod: leaveTypeForm.accrual,
         description: leaveTypeForm.description || "",
         allowedInProbationPeriod: leaveTypeForm.allowedInProbation || false,
         allowedInNoticePeriod: leaveTypeForm.allowedInNotice || false,
         canBeCarriedForward: leaveTypeForm.canCarryForward || false,
+        companyId: selectedCompanyId,
       };
 
       await dispatch(
         updateLeaveType({
           id: selectedLeaveType.leaveTypeId,
           leaveTypeData,
+          companyId: selectedCompanyId,
         })
       ).unwrap();
 
@@ -357,7 +362,7 @@ const LeaveSettings = () => {
         })),
       };
 
-      await dispatch(createLeavePolicy(policyData)).unwrap();
+      await dispatch(createLeavePolicy({ ...policyData, companyId: selectedCompanyId })).unwrap();
       showNotification("success", "Leave policy added successfully!");
 
       setShowPolicyModal(false);
@@ -411,12 +416,14 @@ const LeaveSettings = () => {
           leaveTypeId: item.leaveTypeId,
           daysPerYear: parseInt(item.daysPerYear),
         })),
+        companyId: selectedCompanyId,
       };
 
       await dispatch(
         updateLeavePolicy({
           id: selectedPolicy.leavePolicyId,
           policyData,
+          companyId: selectedCompanyId,
         })
       ).unwrap();
       showNotification("success", "Leave policy updated successfully!");
@@ -571,7 +578,7 @@ const LeaveSettings = () => {
         description: holidayForm.description,
       };
 
-      await dispatch(createPublicHoliday(holidayData)).unwrap();
+        await dispatch(createPublicHoliday({ ...holidayData, companyId: selectedCompanyId })).unwrap();
 
       setNotification({
         show: true,
@@ -649,12 +656,14 @@ const LeaveSettings = () => {
         holidayName: holidayForm.name,
         date: holidayForm.date,
         description: holidayForm.description,
+        companyId: selectedCompanyId,
       };
 
       await dispatch(
         updatePublicHoliday({
           id: selectedHoliday.holidayId,
           holidayData,
+          companyId: selectedCompanyId,
         })
       ).unwrap();
 

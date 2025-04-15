@@ -9,7 +9,8 @@ export const fetchPublicHolidays = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await axios.get(`${API_URL}/public-holidays`, {
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(`${API_URL}/public-holidays/company/${company}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
