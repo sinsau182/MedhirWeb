@@ -187,7 +187,9 @@ const LeaveSettings = () => {
         canBeCarriedForward: leaveTypeForm.canCarryForward || false,
       };
 
-      const result = await dispatch(createLeaveType({ ...leaveTypeData, companyId: selectedCompanyId })).unwrap();
+      const result = await dispatch(
+        createLeaveType({ ...leaveTypeData, companyId: selectedCompanyId })
+      ).unwrap();
       showNotification("success", "Leave type added successfully!");
 
       setShowLeaveTypeModal(false);
@@ -362,7 +364,9 @@ const LeaveSettings = () => {
         })),
       };
 
-      await dispatch(createLeavePolicy({ ...policyData, companyId: selectedCompanyId })).unwrap();
+      await dispatch(
+        createLeavePolicy({ ...policyData, companyId: selectedCompanyId })
+      ).unwrap();
       showNotification("success", "Leave policy added successfully!");
 
       setShowPolicyModal(false);
@@ -578,7 +582,9 @@ const LeaveSettings = () => {
         description: holidayForm.description,
       };
 
-        await dispatch(createPublicHoliday({ ...holidayData, companyId: selectedCompanyId })).unwrap();
+      await dispatch(
+        createPublicHoliday({ ...holidayData, companyId: selectedCompanyId })
+      ).unwrap();
 
       setNotification({
         show: true,
