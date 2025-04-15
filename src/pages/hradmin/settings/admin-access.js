@@ -285,34 +285,6 @@ function AdminAccess() {
                 </Select>
               </div>
 
-              {/* Access Type Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Access Type
-                </label>
-                <Select 
-                  value={selectedAccessType}
-                  onValueChange={(value) => setSelectedAccessType(value)}
-                >
-                  <SelectTrigger className="w-full">
-                    {selectedAccessType 
-                      ? ACCESS_TYPES.find(type => type.id === selectedAccessType)?.label 
-                      : "Select access type"}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACCESS_TYPES.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {/* Add validation message if needed */}
-                {!selectedAccessType && (
-                   <p className="text-xs text-red-500 mt-1">Please select an access type.</p>
-                )}
-              </div>
-
               {/* User Search and Selection List */}
               {selectedCompany && (
                 <div className="space-y-4">

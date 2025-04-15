@@ -3,7 +3,7 @@ import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin/employees";
+  process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -11,7 +11,8 @@ export const fetchEmployees = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL, {
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await fetch(`${API_BASE_URL}/companies/${company}/employees`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -27,6 +28,27 @@ export const fetchEmployees = createAsyncThunk(
   }
 );
 
+// // Fetch all employees
+// export const fetchAllEmployees = createAsyncThunk(
+//   "employees/fetchAllEmployees",
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const token = getItemFromSessionStorage("token", null);
+//       const response = await fetch(`${API_BASE_URL}/employees`, {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//         },
+//       });
+//       if (!response.ok) {
+//         throw new Error("Failed to fetch employees");
+//       }
+//       return await response.json();
+//     } catch (error) {
+//       return rejectWithValue(error.message);
+//     }
+//   }
+// );
+
 // Create employee
 
 export const createEmployee = createAsyncThunk(
@@ -36,7 +58,7 @@ export const createEmployee = createAsyncThunk(
       // Retrieve token from sessionStorage
       const token = getItemFromSessionStorage("token", null);
 
-      const response = await axios.post(`${API_BASE_URL}`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/employees`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`, // Attach token
@@ -74,7 +96,7 @@ export const updateEmployee = createAsyncThunk(
         formData.append("aadharImgUrl", updatedData.get("aadharImgUrl"));
       }
 
-      const response = await axios.put(`${API_BASE_URL}/${id}`, formData, {
+      const response = await axios.put(`${API_BASE_URL}/employees/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
@@ -98,7 +120,7 @@ export const deleteEmployee = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

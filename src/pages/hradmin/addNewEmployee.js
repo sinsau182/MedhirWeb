@@ -28,6 +28,8 @@ import {
   FiUpload,
 } from "react-icons/fi";
 import Select from "react-select";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import axios from "axios";
 
 // Add this CSS class to your global styles or component
 const inputGroupClass =
@@ -212,6 +214,7 @@ function EmployeeForm() {
       esicEnrolled: false,
       esicNumber: "",
     },
+    companyId: localStorage.getItem("selectedCompanyId") || "",
     idProofs: {
       aadharNo: "",
       aadharImgUrl: null,
@@ -320,6 +323,39 @@ function EmployeeForm() {
       }
     }
   }, [employee]);
+
+  useEffect(() => {
+    const fetchEmployeeId = async () => {
+      try {
+        const token = getItemFromSessionStorage("token", null);
+        const response = await axios.get(
+          "http://localhost:8083/hradmin/generate-employee-id/CID101",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.status === 200) {
+          const data = await response.data;
+          setFormData((prev) => ({
+            ...prev,
+            employee: {
+              ...prev.employee,
+              employeeId: data, // Set employeeId from API response
+            },
+          }));
+        } else {
+          toast.error("Failed to generate Employee ID");
+        }
+      } catch (error) {
+        console.error("Error fetching Employee ID:", error);
+        toast.error("Error generating Employee ID");
+      }
+    };
+
+    fetchEmployeeId();
+  }, []);
 
   const calculateTotalCTC = (salaryData) => {
     const values = {
@@ -478,6 +514,7 @@ function EmployeeForm() {
         uanNumber: formData.employee.uanNumber?.trim(),
         esicEnrolled: Boolean(formData.employee.esicEnrolled),
         esicNumber: formData.employee.esicNumber?.trim(),
+        companyId: formData.companyId, // Include companyId in the request
         idProofs: {
           aadharNo: formData.idProofs.aadharNo?.trim(),
           panNo: formData.idProofs.panNo?.trim(),
@@ -609,15 +646,15 @@ function EmployeeForm() {
       errors.joiningDate = "Date of joining is required";
     }
 
-    // Only validate format for new employees
-    if (
-      !employeeId &&
-      employee.employeeId &&
-      !employee.employeeId.match(/^emp\d{3}$/)
-    ) {
-      errors.employeeId =
-        "Employee ID must be in the format emp followed by 3 digits";
-    }
+    // // Only validate format for new employees
+    // if (
+    //   !employeeId &&
+    //   employee.employeeId &&
+    //   !employee.employeeId.match(/^emp\d{3}$/)
+    // ) {
+    //   errors.employeeId =
+    //     "Employee ID must be in the format emp followed by 3 digits";
+    // }
 
     // Validate phone number format if provided
     if (employee.phone && !/^[0-9]{10}$/.test(employee.phone)) {
@@ -896,18 +933,9 @@ function EmployeeForm() {
                           </label>
                           <input
                             type="text"
-                            required
-                            className={inputClass}
+                            className={`${inputClass} bg-gray-100 cursor-not-allowed`}
                             value={formData.employee.employeeId || ""}
-                            onChange={(e) => {
-                                handleInputChange(
-                                "employee",
-                                  "employeeId",
-                                e.target.value
-                                );
-                              setLastEmployeeId(e.target.value);
-                            }}
-                            maxLength={6} // Limit to EMP### format
+                            readOnly // Make the field non-editable
                           />
                         </div>
 

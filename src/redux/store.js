@@ -16,6 +16,7 @@ import leaveBalanceReducer from "./slices/leaveBalanceSlice";
 import requestDetailsReducer from './slices/requestDetailsSlice';
 import payrollSettingsReducer from "./slices/payrollSettingsSlice";
 import payslipReducer from "./slices/payslipSlice";
+import allEmployeesSlice from "./slices/allEmployeesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +37,7 @@ export const store = configureStore({
     requestDetails: requestDetailsReducer,
     payrollSettings: payrollSettingsReducer,
     payslip: payslipReducer,
+    allEmployees: allEmployeesSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

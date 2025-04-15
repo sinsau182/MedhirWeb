@@ -8,8 +8,9 @@ export const fetchTDS = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tds-settings`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -32,8 +33,9 @@ export const fetchPTAX = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/professional-tax-settings`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -57,7 +59,7 @@ export const saveTDS = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const { isTdsConfigured } = getState().payrollSettings;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tds-settings`;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`;
       
       // If TDS is already configured, use PUT to update, otherwise use POST to create
       const method = isTdsConfigured ? "put" : "post";
@@ -81,7 +83,7 @@ export const saveTDS = createAsyncThunk(
         try {
           const token = getItemFromSessionStorage("token", null);
           const response = await axios.put(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/tds-settings`,
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`,
             {
               tdsRate: parseFloat(tdsData.tdsRate),
               description: tdsData.description,
@@ -110,7 +112,7 @@ export const savePTAX = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const { isPtaxConfigured } = getState().payrollSettings;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/professional-tax-settings`;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`;
       
       // If Professional Tax is already configured, use PUT to update, otherwise use POST to create
       const method = isPtaxConfigured ? "put" : "post";
@@ -136,7 +138,7 @@ export const savePTAX = createAsyncThunk(
         try {
           const token = getItemFromSessionStorage("token", null);
           const response = await axios.put(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/professional-tax-settings`,
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`,
             {
               monthlySalaryThreshold: parseFloat(ptaxData.monthlySalaryThreshold),
               amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),

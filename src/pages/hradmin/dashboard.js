@@ -40,6 +40,7 @@ import HradminNavbar from "@/components/HradminNavbar";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
@@ -112,7 +113,7 @@ const Overview = () => {
         const data = await response.json();
         setProfileUpdates(data);
     } catch (error) {
-        toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
+        toast.error(`Failed to fetch profile updates: ${error.message}`);
         setProfileUpdates([]);
     }
 };

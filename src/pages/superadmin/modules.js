@@ -6,7 +6,9 @@ import {
   addModule,
   updateModule,
   deleteModule,
+  fetchEmployees,
 } from "@/redux/slices/modulesSlice";
+// import { fetchAllEmployees } from "@/redux/slices/allEmployeesSlice";
 import { fetchCompanies } from "@/redux/slices/companiesSlice";
 import { fetchUsers, addUser } from "@/redux/slices/usersSlice";
 
@@ -35,6 +37,7 @@ import withAuth from "@/components/withAuth";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 
 function SuperadminModules() {
   const router = useRouter();
@@ -42,7 +45,7 @@ function SuperadminModules() {
 
 
   const [searchInput, setSearchInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
 
@@ -67,7 +70,9 @@ function SuperadminModules() {
 
 
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [selectedAdmins, setSelectedAdmins] = useState([]);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
+  const [employeeError, setEmployeeError] = useState(null);
 
 
   // const [companyUsers, setCompanyUsers] = useState([]);
@@ -88,6 +93,7 @@ function SuperadminModules() {
 
   const {
     modules,
+    employees,
     loading: modulesLoading,
     error: modulesError,
   } = useSelector((state) => state.modules);
@@ -96,28 +102,62 @@ function SuperadminModules() {
     loading: companiesLoading,
     error: companiesError,
   } = useSelector((state) => state.companies);
-  const {
-    users,
-    loading: usersLoading,
-    error: usersError,
-  } = useSelector((state) => state.users);
+  // const { allEmployees, loading: employeesLoading, error: employeesError } = useSelector(
+  //   (state) => state.allEmployees
+  // );
 
-  // console.log(selectedCompany);
-console.log(selectedCompanyId);
+  // Add console logging
+  useEffect(() => {
+    console.log("Current employees:", employees);
+  }, [employees]);
 
   useEffect(() => {
-    dispatch(fetchModules()); // Use Redux slice method to fetch modules
-    dispatch(fetchCompanies()); // Use Redux slice method to fetch companies
-    dispatch(fetchUsers()); // Use Redux slice method to fetch users
+    if (modulesError) {
+      setEmployeeError(modulesError);
+    }
+  }, [modulesError]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await Promise.all([
+          dispatch(fetchModules()),
+          dispatch(fetchCompanies()),
+          dispatch(fetchEmployees()),
+        ]);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setEmployeeError(error.message);
+      }
+    };
+    fetchData();
   }, [dispatch]);
 
+  // Add a new state for table refresh
+  const [isTableRefreshing, setIsTableRefreshing] = useState(false);
 
+  // Create a function to refresh data
+  const refreshData = async () => {
+    setIsTableRefreshing(true);
+    try {
+      await Promise.all([
+        dispatch(fetchModules()),
+        dispatch(fetchCompanies()),
+        dispatch(fetchEmployees()),
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      setError(error.message);
+    } finally {
+      setIsTableRefreshing(false);
+    }
+  };
 
   const handleOpenAddModule = () => {
     setIsEditMode(false);
     setSelectedModule(null);
     setSelectedCompany(null);
-    setSelectedAdmins([]);
+    setSelectedEmployees([]);
     setModuleName("");
     setModuleDescription("");
     setIsAddModuleOpen(true);
@@ -128,29 +168,42 @@ console.log(selectedCompanyId);
     setIsEditMode(true);
     setModuleName(selectedModule.moduleName);
     setModuleDescription(selectedModule.description);
-    setSelectedCompany(selectedModule.companyName);
-    setSelectedAdmins(
-      selectedModule.userNames?.map((name) => ({ name })) || []
-    );
+    setSelectedCompany(selectedModule.company.companyId);
+    setSelectedEmployees(selectedModule.employees.map(emp => ({
+      name: emp.name,
+      employeeId: emp.employeeId
+    })));
     setIsAddModuleOpen(true);
   };
 
   const handleDeleteModule = async () => {
-    if (
-      !selectedModule ||
-      !window.confirm("Are you sure you want to delete this module?")
-    )
+    if (!selectedModule || !window.confirm("Are you sure you want to delete this module?")) {
       return;
+    }
+
+    setIsLoading(true);
     try {
-      await dispatch(deleteModule(selectedModule.moduleId)).unwrap(); // Use Redux slice method to delete module
-      setSelectedModule(null);
-    } catch (err) {
-      console.error("Error deleting module:", err);
-      if (err.response?.status === 401) {
-        router.push("/login?error=Session expired. Please login again");
-      } else {
-        alert("Failed to delete module");
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`http://localhost:8083/superadmin/modules/${selectedModule.moduleId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete module");
       }
+
+      // Reset selection and refresh data
+      setSelectedModule(null);
+      setIsAddModuleOpen(false);
+      await refreshData();
+    } catch (error) {
+      console.error("Error deleting module:", error);
+      alert(error.message || "Failed to delete module");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -177,47 +230,61 @@ console.log(selectedCompanyId);
 
   // Update handleAddOrUpdateModule
   const handleAddOrUpdateModule = async () => {
-    if (
-      !moduleName ||
-      !moduleDescription ||
-      !selectedCompany ||
-      selectedAdmins.length === 0
-    ) {
-      alert("Please fill in all fields and select at least one admin.");
+    if (!moduleName || !moduleDescription || !selectedCompany || selectedEmployees.length === 0) {
+      alert("Please fill in all fields and select at least one admin");
       return;
     }
 
-    const moduleData = {
-      moduleName,
-      description: moduleDescription,
-      companyId: selectedCompany.companyId, // Use companyId
-      userIds: selectedAdmins.map((admin) => admin.userId),
-    };
-
+    setIsLoading(true);
     try {
+      const token = getItemFromSessionStorage("token", null);
+      const moduleData = {
+        moduleName: moduleName.trim(),
+        description: moduleDescription.trim(),
+        companyId: selectedCompany,
+        employeeIds: selectedEmployees.map(employee => employee.employeeId)
+      };
+
+      let response;
       if (isEditMode) {
-        await dispatch(
-          updateModule({ moduleId: selectedModule.moduleId, moduleData })
-        ).unwrap(); // Use Redux slice method to update module
+        // Update existing module
+        response = await fetch(`http://localhost:8083/superadmin/modules/${selectedModule.moduleId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(moduleData),
+        });
       } else {
-        await dispatch(addModule(moduleData)).unwrap(); // Use Redux slice method to add module
+        // Create new module
+        response = await fetch("http://localhost:8083/superadmin/modules", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(moduleData),
+        });
       }
 
+      if (!response.ok) {
+        throw new Error(isEditMode ? "Failed to update module" : "Failed to create module");
+      }      // Reset form and close modal
       setModuleName("");
       setModuleDescription("");
       setSelectedCompany(null);
-      setSelectedAdmins([]);
-      // setCompanyUsers([]);
-      setSelectedModule(null);
-      setIsEditMode(false);
+      setSelectedEmployees([]);
       setIsAddModuleOpen(false);
-    } catch (err) {
-      console.error("Error saving module:", err);
-      if (err.response?.status === 401) {
-        router.push("/login?error=Session expired. Please login again");
-      } else {
-        alert("Failed to save module");
-      }
+      setIsEditMode(false);
+      
+      // Refresh all data
+      await refreshData();
+    } catch (error) {
+      console.error("Error saving module:", error);
+      alert(error.message || "Failed to save module. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -236,8 +303,6 @@ console.log(selectedCompanyId);
       email: userEmail,
       phone: userPhone,
     };
-
-
     try {
       await dispatch(addUser(userData)).unwrap(); // Use Redux slice method to add user
       setUserName("");
@@ -254,344 +319,607 @@ console.log(selectedCompanyId);
     }
   }
 
-  
-  return (
-    <div className="bg-white text-[#4a4a4a] max-h-screen">
-      <SuperadminHeaders />
-      <div className="p-5">
-        <div className="mt-6 p-4 rounded-lg bg-white">
-          <div className="mt-4 p-4 rounded-lg flex justify-between items-center">
-            <div className="relative w-96">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg bg-white"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              />
+  // Add new state for Add Admin modal
+  const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
+  const [newAdminData, setNewAdminData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    companyId: ""
+  });
+
+  // Add handleAddAdmin function
+  const handleAddAdmin = async () => {
+    if (!newAdminData.name || !newAdminData.email || !newAdminData.phone || !newAdminData.companyId) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newAdminData.email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    // Validate phone number format (basic validation)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(newAdminData.phone.replace(/\D/g, ''))) {
+      alert("Please enter a valid 10-digit phone number");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Format the data according to the API requirements
+      const formattedData = {
+        name: newAdminData.name.trim(),
+        email: newAdminData.email.trim(),
+        phone: newAdminData.phone.replace(/\D/g, ''),
+        companyId: newAdminData.companyId,
+        role: "ADMIN"
+      };
+
+      const response = await dispatch(addUser(formattedData)).unwrap();
+      
+      // Extract only the required fields from the response
+      const newAdmin = {
+        name: response.user.name,
+        employeeId: response.user.employeeId
+      };
+      
+      // Add the new admin to the selected employees list
+      setSelectedEmployees(prev => [...prev, newAdmin]);
+            // Refresh the employees list
+            await dispatch(fetchEmployees());
+      
+            // Reset form and close modal
+            setNewAdminData({
+              name: "",
+              email: "",
+              phone: "",
+              companyId: ""
+            });
+            setIsAddAdminModalOpen(false);
+          } catch (error) {
+            console.error("Error adding admin:", error);
+            alert(error.message || "Failed to add admin. Please check the data and try again.");
+          } finally {
+            setIsLoading(false);
+          }
+        };
+      
+        return (
+          <div className="bg-white text-[#4a4a4a] max-h-screen">
+            <SuperadminHeaders />
+            <div className="p-5">
+              <div className="mt-6 p-4 rounded-lg bg-white">
+                <div className="mt-4 p-4 rounded-lg flex justify-between items-center">
+                  <div className="relative w-96">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg bg-white"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                    />
+                    <Search
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    />
+                  </div>
+                  <div className="flex space-x-10 mr-16">
+                    <div className="flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105">
+                      <UserPlus
+                        size={32}
+                        className="text-[#4a4a4a] p-1 rounded-md"
+                        onClick={handleOpenAddModule}
+                      />
+                      <span className="text-xs text-[#4a4a4a]">Add</span>
+                    </div>
+                    <div
+                      className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
+                        !selectedModule ? "opacity-20 pointer-events-none" : ""
+                      }`}
+                    >
+                      <Edit
+                        size={32}
+                        className="text-[#4a4a4a] p-1 rounded-md"
+                        onClick={handleEditModule}
+                      />
+                      <span className="text-xs text-[#4a4a4a]">Edit</span>
+                    </div>
+                    <div
+                      className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
+                        !selectedModule ? "opacity-20 pointer-events-none" : ""
+                      }`}
+                    >
+                      <Trash
+                        size={32}
+                        className="text-[#4a4a4a] p-1 rounded-md"
+                        onClick={handleDeleteModule}
+                      />
+                      <span className="text-xs text-[#4a4a4a]">Delete</span>
+                    </div>
+                  </div>
+                </div>
+      
+                <div className="mt-4 p-2 rounded-lg">
+                  {isLoading || isTableRefreshing ? (
+                    <div className="text-center py-4">
+                      <div className="flex items-center justify-center space-x-2">
+                        <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{isTableRefreshing ? "Refreshing data..." : "Loading..."}</span>
+                      </div>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center text-red-500 py-4">{error}</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <ClientOnlyTable>
+                        <TableHeader className="shadow-md">
+                          <TableRow className="bg-[#E2E8F0]">
+                            <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                              Name
+                            </TableHead>
+                            <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                              Description
+                            </TableHead>
+                            <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                              Company
+                            </TableHead>
+                            <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                              Admins
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredModules.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="text-center">
+                                No modules found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredModules.map((module) => (
+                              <TableRow
+                                key={module.moduleId}
+                                className={`cursor-pointer ${
+                                  selectedModule?.moduleId === module.moduleId
+                                    ? "bg-gray-100"
+                                    : ""
+                                }`}
+                                onClick={() => setSelectedModule(module)}
+                              >
+                                <TableCell className="px-6 py-4">
+                                  {module.moduleName}
+                                </TableCell>
+                                <TableCell className="px-6 py-4">
+                                  {module.description}
+                                </TableCell>
+                                <TableCell className="px-6 py-4">
+                                  {module.company.name}
+                                </TableCell>
+                                <TableCell className="px-6 py-4">
+                                  {Array.isArray(module.employees) && module.employees.length > 0
+                                    ? module.employees.map((employee) => employee.name).join(", ")
+                                    : "No admins assigned"}
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </ClientOnlyTable>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex space-x-10 mr-16">
-              <div className="flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105">
-                <UserPlus
-                  size={32}
-                  className="text-[#4a4a4a] p-1 rounded-md"
-                  onClick={handleOpenAddModule}
-                />
-                <span className="text-xs text-[#4a4a4a]">Add</span>
-              </div>
-              <div
-                className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
-                  !selectedModule ? "opacity-20 pointer-events-none" : ""
-                }`}
-              >
-                <Edit
-                  size={32}
-                  className="text-[#4a4a4a] p-1 rounded-md"
-                  onClick={handleEditModule}
-                />
-                <span className="text-xs text-[#4a4a4a]">Edit</span>
-              </div>
-              <div
-                className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
-                  !selectedModule ? "opacity-20 pointer-events-none" : ""
-                }`}
-              >
-                <Trash
-                  size={32}
-                  className="text-[#4a4a4a] p-1 rounded-md"
-                  onClick={handleDeleteModule}
-                />
-                <span className="text-xs text-[#4a4a4a]">Delete</span>
-              </div>
+            {/* Add/Edit Module Modal */}
+            <Modal
+              isOpen={isAddModuleOpen}
+              onClose={() => {
+                setIsAddModuleOpen(false);
+                setIsEditMode(false);
+                setModuleName("");
+                setModuleDescription("");
+                setSelectedCompany(null);
+                setSelectedEmployees([]);
+              }}
+            >
+              <div className="p-6 bg-gray-100 text-black rounded-lg">
+                {/* Modal Header */}
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {isEditMode ? "Edit Module" : "Add Module"}
+                  </h2>
+                  {isEditMode && (
+                    <button
+                      onClick={handleDeleteModule}
+                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+      
+                {/* Company Name Dropdown */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company Name <span className="text-red-500">*</span>
+                  </label>
+                  <Select 
+                    onValueChange={(value) => {
+                      const company = companies.find(c => c.name === value);
+                      setSelectedCompany(company?.companyId || null);
+                    }} 
+                    value={companies.find(c => c.companyId === selectedCompany)?.name || ""}
+                  >
+                    <SelectTrigger className="bg-white text-gray-900 border border-gray-300 hover:border-blue-500 cursor-pointer rounded-md px-3 py-2">
+                      <span className={`${!selectedCompany ? "text-gray-500" : "text-gray-900"}`}>
+                        {companies.find(c => c.companyId === selectedCompany)?.name || "Select Company"}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem
+                          key={company.companyId}
+                          value={company.name}
+                          className="cursor-pointer hover:bg-blue-50 transition-colors duration-150 py-2 px-3"
+                        >
+                          {company.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+      
+                {/* Module Name Input */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Module Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="Enter module name"
+                    className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
+                    value={moduleName}
+                    onChange={(e) => setModuleName(e.target.value)}
+                  />
+                </div>
+      
+                {/* Module Description Input */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    placeholder="Enter module description"
+                    className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
+                    value={moduleDescription}
+                    onChange={(e) => setModuleDescription(e.target.value)}
+                  />
+                </div>
+      
+                {/* Admin Selection */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Admins <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-left text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center"
+                      onClick={() => setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)}
+                    >
+                      <span>
+                        {selectedEmployees.length > 0
+                          ? `${selectedEmployees.length} admin(s) selected`
+                          : "Select Admins"}
+                      </span>
+                      <svg
+                        className={`w-5 h-5 transition-transform ${
+                          isEmployeeDropdownOpen ? "transform rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                    {isEmployeeDropdownOpen && (
+                      <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-[300px] overflow-hidden flex flex-col" style={{ bottom: 'auto' }}>
+                        {/* Search Input */}
+                        <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search employees..."
+                              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              value={searchInput}
+                              onChange={(e) => setSearchInput(e.target.value)}
+                            />
+                            <Search
+                              className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                            />
+                          </div>
+                        </div>
+      
+                        {/* Employee List */}
+                        <div className="overflow-y-auto" style={{ maxHeight: '250px' }}>
+                          {/* Add Admin Button */}
+                          <div className="sticky top-0 bg-white border-b border-gray-200">
+                            <button
+                              key="add-admin-button"
+                              onClick={() => setIsAddAdminModalOpen(true)}
+                              className="w-full px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                            >
+                              <UserPlus size={16} />
+                              Add New Admin
+                            </button>
+                          </div>
+                    {modulesLoading ? (
+                      <div key="loading" className="px-3 py-2 text-gray-500">Loading employees...</div>
+                    ) : employeeError ? (
+                      <div key="error" className="px-3 py-2 text-red-500">{employeeError}</div>
+                    ) : employees && employees.length > 0 ? (
+                      employees
+                        .filter(employee => 
+                          employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+                          employee.employeeId.toLowerCase().includes(searchInput.toLowerCase())
+                        )
+                        .map((employee) => (
+                          <div
+                            key={`employee-${employee.employeeId}`}
+                            className="flex items-center px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              id={`employee-${employee.employeeId}`}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              checked={selectedEmployees.some(
+                                (e) => e.employeeId === employee.employeeId
+                              )}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedEmployees((prev) => [...prev, employee]);
+                                } else {
+                                  setSelectedEmployees((prev) =>
+                                    prev.filter((e) => e.employeeId !== employee.employeeId)
+                                  );
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor={`employee-${employee.employeeId}`}
+                              className="ml-2 text-sm text-gray-700 flex-grow cursor-pointer"
+                            >
+                              {employee.name}
+                            </label>
+                            <span className="text-xs text-gray-500">{employee.employeeId}</span>
+                          </div>
+                        ))
+                    ) : (
+                      <div key="no-employees" className="px-3 py-2 text-gray-500">No employees found</div>
+                    )}
+                  </div>
+
+                  {/* Results count */}
+                  <div className="sticky bottom-0 bg-white px-3 py-2 border-t border-gray-200 text-xs text-gray-500">
+                    {employees && 
+                      `Showing ${employees.filter(employee => 
+                        employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+                        employee.employeeId.toLowerCase().includes(searchInput.toLowerCase())
+                      ).length} of ${employees.length} employees`
+                    }
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Selected Employees Tags */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedEmployees.map((employee) => (
+                <div
+                  key={employee.employeeId}
+                  className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm"
+                >
+                  <span>{employee.name}</span>
+                  <button
+                    onClick={() =>
+                      setSelectedEmployees((prev) =>
+                        prev.filter((e) => e.employeeId !== employee.employeeId)
+                      )
+                    }
+                    className="ml-1 text-blue-500 hover:text-blue-700"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            {employeeError && (
+              <p className="mt-2 text-sm text-red-500">
+                Error: {employeeError}
+              </p>
+            )}
           </div>
 
-          <div className="mt-4 p-2 rounded-lg">
-            {loading ? (
-              <div className="text-center py-4">Loading...</div>
-            ) : error ? (
-              <div className="text-center text-red-500 py-4">{error}</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <ClientOnlyTable>
-                  <TableHeader className="shadow-md">
-                    <TableRow className="bg-[#E2E8F0]">
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                        Name
-                      </TableHead>
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                        Description
-                      </TableHead>
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                        Company
-                      </TableHead>
-                      <TableHead className="w-1/4 px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                        Admins
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredModules.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center">
-                          No modules found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredModules.map((module) => (
-                        <TableRow
-                          key={module.moduleId}
-                          className={`cursor-pointer ${
-                            selectedModule?.moduleId === module.moduleId
-                              ? "bg-gray-100"
-                              : ""
-                          }`}
-                          onClick={() => setSelectedModule(module)}
-                        >
-                          <TableCell className="px-6 py-4">
-                            {module.moduleName}
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            {module.description}
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            {module.companyName}
-                          </TableCell>
-                          <TableCell className="px-6 py-4">
-                            {module.userNames.join(", ")}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </ClientOnlyTable>
-              </div>
-            )}
+          {/* Modal Footer */}
+          <div className="mt-6 flex justify-end space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddModuleOpen(false);
+                setIsEditMode(false);
+              }}
+              className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-200"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddOrUpdateModule}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isEditMode ? "Updating..." : "Adding..."}
+                </span>
+              ) : (
+                <>{isEditMode ? "Update" : "Add"} Module</>
+              )}
+            </Button>
           </div>
         </div>
-      </div>
+      </Modal>
 
-      {/* Add/Edit Module Modal */}
+      {/* Add Admin Modal */}
       <Modal
-        isOpen={isAddModuleOpen}
+        isOpen={isAddAdminModalOpen}
         onClose={() => {
-          setIsAddModuleOpen(false);
-          setIsAddUserOpen(false);
-          setIsEditMode(false);
-          setModuleName("");
-          setModuleDescription("");
-          setSelectedCompany(null);
-          setSelectedAdmins([]);
+          setIsAddAdminModalOpen(false);
+          setNewAdminData({
+            name: "",
+            email: "",
+            phone: "",
+            companyId: ""
+          });
         }}
       >
-        <div className="p-6 bg-gray-200 text-black rounded-lg">
+        <div className="p-6 bg-gray-100 text-black rounded-lg">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">
-              {isEditMode ? "Edit Module" : "Add Module"}
-            </h2>
-            {isEditMode && (
-              <button
-                onClick={handleDeleteModule}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-              >
-                Delete
-              </button>
-            )}
+            <h2 className="text-2xl font-bold text-gray-800">Add New Admin</h2>
           </div>
 
-          {/* Company Select */}
-          <Select onValueChange={handleCompanyChange} value={selectedCompany}>
-            <SelectTrigger className="bg-white text-gray-900 border border-gray-300 hover:border-blue-500 cursor-pointer">
-              <span
-                className={`${
-                  !selectedCompany ? "text-gray-500" : "text-gray-900"
-                }`}
-              >
-                {selectedCompany ? selectedCompany : "Select Company"}
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              {companies.map((company) => (
-                <SelectItem
-                  key={company.companyId}
-                  value={company.name}
-                  className="cursor-pointer hover:bg-blue-50 transition-colors duration-150 py-2"
-                >
-                  {company.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div>
+          {/* Company Selection */}
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Module Name <span className="text-red-500">*</span>
+              Company <span className="text-red-500">*</span>
+            </label>
+            <Select
+              onValueChange={(value) => {
+                const company = companies.find(c => c.name === value);
+                setNewAdminData(prev => ({
+                  ...prev,
+                  companyId: company?.companyId || ""
+                }));
+              }}
+              value={companies.find(c => c.companyId === newAdminData.companyId)?.name || ""}
+            >
+              <SelectTrigger className="bg-white text-gray-900 border border-gray-300 hover:border-blue-500 cursor-pointer rounded-md px-3 py-2">
+                <span className={!newAdminData.companyId ? "text-gray-500" : "text-gray-900"}>
+                  {companies.find(c => c.companyId === newAdminData.companyId)?.name || "Select Company"}
+                </span>
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((company) => (
+                  <SelectItem
+                    key={company.companyId}
+                    value={company.name}
+                    className="cursor-pointer hover:bg-blue-50 transition-colors duration-150 py-2 px-3"
+                  >
+                    {company.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Admin Name */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Name <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="Enter module name"
-              className="bg-white text-gray-900 border border-gray-300"
-              value={moduleName}
-              onChange={(e) => setModuleName(e.target.value)}
+              placeholder="Enter admin name"
+              value={newAdminData.name}
+              onChange={(e) => setNewAdminData(prev => ({ ...prev, name: e.target.value }))}
+              className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
 
-          <div>
+          {/* Admin Email */}
+          <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description <span className="text-red-500">*</span>
+              Email <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="Enter module description"
-              className="bg-white text-gray-900 border border-gray-300"
-              value={moduleDescription}
-              onChange={(e) => setModuleDescription(e.target.value)}
+              type="email"
+              placeholder="Enter admin email"
+              value={newAdminData.email}
+              onChange={(e) => setNewAdminData(prev => ({ ...prev, email: e.target.value }))}
+              className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
 
-
-
-          <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Admins <span className="text-red-500">*</span>
-              </label>
-              <div className="space-y-2">
-                <Select
-                  onValueChange={(value) => {
-                    if (value === "addUser") {
-                      setIsAddUserOpen(true);
-                    } else {
-                      const selectedUser = users.find((user) => user.id === value);
-                      if (selectedUser && !selectedAdmins.some(admin => admin.id === selectedUser.id)) {
-                        setSelectedAdmins((prevAdmins) => [...prevAdmins, selectedUser]);
-                      } else {
-                        alert("Admin already selected");
-                      }
-                    }
-                  }}
-                  value=""
-                >
-                  <SelectTrigger className="bg-white text-gray-900 border border-gray-300">
-                    {!selectedCompany 
-                      ? "Select a company first" 
-                      : selectedAdmins.length > 0 
-                        ? `${selectedAdmins.length} admin(s) selected` 
-                        : "Select Admins"}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem 
-                        key={user.id} 
-                        value={user.id}
-                        disabled={selectedAdmins.some(admin => admin.id === user.id)}
-                      >
-                        {user.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="addUser" className="text-blue-600 font-semibold border-t">
-                      + Add New Admin
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Selected Admins Tags */}
-                {selectedAdmins.length > 0 && (
-                  <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md">
-                    {selectedAdmins.map((admin) => (
-                      <div
-                        key={admin.id}
-                        className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm"
-                      >
-                        <span>{admin.name}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAdmins(selectedAdmins.filter(a => a.id !== admin.id));
-                          }}
-                          className="ml-1 text-blue-500 hover:text-blue-700"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Admin Phone */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone <span className="text-red-500">*</span>
+            </label>
+            <Input
+              type="tel"
+              placeholder="Enter admin phone"
+              value={newAdminData.phone}
+              onChange={(e) => setNewAdminData(prev => ({ ...prev, phone: e.target.value }))}
+              className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
+            />
           </div>
 
-        {/* Add User Form */}
-        {isAddUserOpen && (
-          <div className="mt-6 p-4 bg-white rounded-lg border border-gray-200">
-            <h3 className="text-lg font-semibold mb-4">Add New Admin</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  placeholder="Enter admin name"
-                  className="bg-white text-gray-900 border border-gray-300"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  placeholder="Enter admin email"
-                  className="bg-white text-gray-900 border border-gray-300"
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  placeholder="Enter admin phone"
-                  className="bg-white text-gray-900 border border-gray-300"
-                  value={userPhone}
-                  onChange={(e) => setUserPhone(e.target.value)}
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsAddUserOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleAddUser}>Add Admin</Button>
-              </div>
-            </div>
+          {/* Modal Footer */}
+          <div className="mt-6 flex justify-end space-x-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddAdminModalOpen(false);
+                setNewAdminData({
+                  name: "",
+                  email: "",
+                  phone: "",
+                  companyId: ""
+                });
+              }}
+              className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-200"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddAdmin}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Adding Admin...
+                </span>
+              ) : (
+                "Add Admin"
+              )}
+            </Button>
           </div>
-        )}
-
-        <div className="mt-6 flex justify-end space-x-2 pt-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsAddModuleOpen(false);
-              setIsEditMode(false);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleAddOrUpdateModule}>
-            {isEditMode ? "Update" : "Add"} Module
-          </Button>
         </div>
       </Modal>
     </div>

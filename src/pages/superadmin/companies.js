@@ -102,7 +102,20 @@ function SuperadminCompanies() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCompanyData((prevData) => ({ ...prevData, [name]: value }));
+    setCompanyData((prevData) => {
+      const updatedData = { ...prevData, [name]: value };
+
+      // Auto-generate prefix if the company name is being updated
+      if (name === "name" && value.length >= 3) {
+        updatedData.prefixForEmpID = value.substring(0, 3).toUpperCase();
+      }
+      // Ensure prefix is always uppercase
+      if (name === "prefixForEmpID") {
+        updatedData.prefixForEmpID = value.toUpperCase();
+      }
+
+      return updatedData;
+    });
   };
 
   // Email validation function
@@ -212,84 +225,16 @@ function SuperadminCompanies() {
     router.push("/login");
   };
 
+  const predefinedColors = [
+    "#B0E0E6", "#FFE4E1", "#F0E68C", "#E6E6FA", "#D1D5DB"
+  ];
+
+  const handleColorChange = (color) => {
+    setCompanyData((prevData) => ({ ...prevData, colorCode: color }));
+  };
+
   return (
-    <div className="bg-white text-black min-h-screen">
-      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
-          MEDHIR
-        </h1>
-        <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-          {["Overview", "My Task", "Companies", "Settings"].map(
-            (item, index) => (
-              <Link
-                key={index}
-                href={`/superadmin/${item.toLowerCase().replace(" ", "")}`}
-                passHref
-              >
-                <button
-                  onClick={() => setActiveTab(item)}
-                  className={`hover:text-[#4876D6] ${
-                    activeTab === item
-                      ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                      : "text-[#6c757d]"
-                  }`}
-                  style={{
-                    fontSize: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  {item === "Overview" && (
-                    <FaBuilding
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "myTask" && (
-                    <FaUserCircle
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Companies" && (
-                    <FaBuilding
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item === "Settings" && (
-                    <FaCog
-                      className="inline-block text-black opacity-80"
-                      style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
-                  )}
-                  {item}
-                </button>
-              </Link>
-            )
-          )}
-        </nav>
-        <div className="relative">
-          <button
-            className="flex items-center gap-2 text-black font-medium"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          >
-            <FaUserCircle className="text-2xl" />
-            Super Admin
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
-              <button
-                className="block w-full text-left px-4 py-2 text-black hover:bg-gray-100"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="bg-white text-[#4a4a4a] max-h-screen">
       <SuperadminHeaders />
       <div className="p-5">
         <div className="mt-6 p-4 rounded-lg bg-white">
@@ -368,6 +313,9 @@ function SuperadminCompanies() {
                       <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
                         Register Add.
                       </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Company Prefix
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -393,6 +341,9 @@ function SuperadminCompanies() {
                         </td>
                         <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
                           {company.regAdd}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.prefixForEmpID}
                         </td>
                       </tr>
                     ))}
@@ -459,6 +410,38 @@ function SuperadminCompanies() {
                 placeholder="Enter company name"
                 className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
               />
+            </div>
+            
+            <div>
+              <label htmlFor="prefixForEmpID" className="block text-sm font-medium text-gray-700 mb-1">
+                Company Prefix <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="preprefixForEmpIDfix"
+                name="prefixForEmpID"
+                value={companyData.prefixForEmpID || ""}
+                onChange={handleInputChange}
+                placeholder="Enter company prefix"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Choose Company Color <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {predefinedColors.map((color) => (
+                  <div
+                    key={color}
+                    className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+                      companyData.colorCode === color ? "border-black" : "border-gray-300"
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleColorChange(color)}
+                  ></div>
+                ))}
+              </div>
             </div>
             
             <div>

@@ -8,6 +8,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchTDS, fetchPTAX, saveTDS, savePTAX, clearErrors, resetTdsForm, resetPtaxForm } from "@/redux/slices/payrollSettingsSlice";
 
 const PayrollSettings = () => {
+
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const dispatch = useDispatch();
   const { tdsData, ptaxData, loading, error, isTdsConfigured, isPtaxConfigured } = useSelector((state) => state.payrollSettings);
 
@@ -27,6 +30,7 @@ const PayrollSettings = () => {
     amountAboveThreshold: "",
     amountBelowThreshold: "",
     description: "",
+    companyId: selectedCompanyId,
   });
 
   const [isTdsFormChanged, setIsTdsFormChanged] = useState(false);
@@ -46,7 +50,7 @@ const PayrollSettings = () => {
   const handleTdsSubmit = async (e) => {
     e.preventDefault();
     try {
-      const resultAction = await dispatch(saveTDS(tdsForm));
+      const resultAction = await dispatch(saveTDS({ ...tdsForm, companyId: selectedCompanyId })); // Include companyId in the request body
       if (saveTDS.fulfilled.match(resultAction)) {
         setShowTdsModal(false);
         setNotification({
@@ -94,6 +98,7 @@ const PayrollSettings = () => {
       setTdsForm({
         tdsRate: tdsData.tdsRate,
         description: tdsData.description,
+        companyId: selectedCompanyId,
       });
     }
     setIsEditingTDS(true);
@@ -107,6 +112,7 @@ const PayrollSettings = () => {
         amountAboveThreshold: ptaxData.amountAboveThreshold,
         amountBelowThreshold: ptaxData.amountBelowThreshold,
         description: ptaxData.description,
+        companyId: selectedCompanyId,
       });
     }
     setIsEditingPTax(true);
