@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import axios from 'axios';
+import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import {
   Select,
@@ -19,20 +19,20 @@ import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 
 // API Base URL
-const API_BASE_URL = 'http://localhost:8083/superadmin';
+const API_BASE_URL = "http://localhost:8083/superadmin";
 
 // Hardcoded companies for testing
 const TEST_COMPANIES = [
   {
     companyId: 1,
     name: "Tech Solutions Inc",
-    description: "Technology and Software Solutions"
+    description: "Technology and Software Solutions",
   },
   {
     companyId: 2,
     name: "Global Services Ltd",
-    description: "Business Process Outsourcing"
-  }
+    description: "Business Process Outsourcing",
+  },
 ];
 
 // Hardcoded users for testing
@@ -41,32 +41,32 @@ const TEST_USERS = [
     userId: 101,
     name: "Alice Johnson",
     email: "alice.j@techsolutions.com",
-    isAdmin: true // Let's make Alice an admin initially for testing
+    isAdmin: true, // Let's make Alice an admin initially for testing
   },
   {
     userId: 102,
     name: "Bob Williams",
     email: "bob.w@techsolutions.com",
-    isAdmin: false
+    isAdmin: false,
   },
   {
     userId: 103,
     name: "Charlie Brown",
     email: "charlie.b@techsolutions.com",
-    isAdmin: false
+    isAdmin: false,
   },
   {
     userId: 201,
     name: "Diana Miller",
     email: "diana.m@globalservices.com",
-    isAdmin: false
+    isAdmin: false,
   },
   {
     userId: 202,
     name: "Ethan Davis",
     email: "ethan.d@globalservices.com",
-    isAdmin: true // Let's make Ethan an admin initially for testing
-  }
+    isAdmin: true, // Let's make Ethan an admin initially for testing
+  },
 ];
 
 function AdminAccess() {
@@ -83,12 +83,13 @@ function AdminAccess() {
   const [selectedAccessType, setSelectedAccessType] = useState(null);
   const [userToUnassign, setUserToUnassign] = useState(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [isAssignConfirmModalOpen, setIsAssignConfirmModalOpen] = useState(false);
+  const [isAssignConfirmModalOpen, setIsAssignConfirmModalOpen] =
+    useState(false);
   const [usersToAssignInfo, setUsersToAssignInfo] = useState([]);
 
   // Define available access types
   const ACCESS_TYPES = [
-    { id: 'hr_admin', label: 'HR Admin Access' }
+    { id: "hr_admin", label: "HR Admin Access" },
     // Add other access types here if needed in the future
   ];
 
@@ -101,12 +102,12 @@ function AdminAccess() {
     }
     return {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     };
   };
 
-  const handleApiError = (error, customMessage = 'Operation failed') => {
+  const handleApiError = (error, customMessage = "Operation failed") => {
     console.error(customMessage, error);
     if (error.response?.status === 401) {
       router.push("/login?error=Session expired. Please login again");
@@ -123,12 +124,12 @@ function AdminAccess() {
 
       // For now, using hardcoded data
       setCompanies(TEST_COMPANIES);
-      
+
       // Uncomment this when the API is ready
       // const response = await axios.get(`${API_BASE_URL}/companies`, headers);
       // setCompanies(response.data || []);
     } catch (error) {
-      handleApiError(error, 'Failed to fetch companies');
+      handleApiError(error, "Failed to fetch companies");
     }
   };
 
@@ -138,16 +139,17 @@ function AdminAccess() {
       const headers = getAuthHeaders();
       if (!headers) return;
       setLoading(true);
-      
+
       // Use hardcoded data (already updated with isAdmin)
-      const filteredTestUsers = TEST_USERS.filter(user => 
-        (companyId === 1 && user.email.includes("techsolutions.com")) ||
-        (companyId === 2 && user.email.includes("globalservices.com"))
+      const filteredTestUsers = TEST_USERS.filter(
+        (user) =>
+          (companyId === 1 && user.email.includes("techsolutions.com")) ||
+          (companyId === 2 && user.email.includes("globalservices.com"))
       );
       setUsers(filteredTestUsers);
       setError("");
     } catch (error) {
-      handleApiError(error, 'Failed to fetch users');
+      handleApiError(error, "Failed to fetch users");
     } finally {
       setLoading(false);
     }
@@ -155,7 +157,9 @@ function AdminAccess() {
 
   // Handle company selection
   const handleCompanyChange = (companyId) => {
-    const selected = companies.find(company => company.companyId === companyId);
+    const selected = companies.find(
+      (company) => company.companyId === companyId
+    );
     if (selected) {
       setSelectedCompany(selected);
       setSelectedUsers([]);
@@ -166,10 +170,10 @@ function AdminAccess() {
   // Handle user selection (for ASSIGNING)
   const handleUserSelectForAssign = (user) => {
     // Only allow selecting non-admins for assignment
-    if (user.isAdmin) return; 
-    setSelectedUsers(prev => {
+    if (user.isAdmin) return;
+    setSelectedUsers((prev) => {
       if (prev.includes(user.userId)) {
-        return prev.filter(id => id !== user.userId);
+        return prev.filter((id) => id !== user.userId);
       } else {
         return [...prev, user.userId];
       }
@@ -193,9 +197,9 @@ function AdminAccess() {
 
     // Get full user info for the modal
     const usersInfo = selectedUsers
-      .map(userId => users.find(u => u.userId === userId))
-      .filter(user => user !== undefined); // Filter out potential undefined results
-    
+      .map((userId) => users.find((u) => u.userId === userId))
+      .filter((user) => user !== undefined); // Filter out potential undefined results
+
     setUsersToAssignInfo(usersInfo);
     setIsAssignConfirmModalOpen(true);
   };
@@ -204,13 +208,22 @@ function AdminAccess() {
   const confirmAssignAdmin = async () => {
     if (usersToAssignInfo.length === 0 || !selectedAccessType) return;
 
-    const userIdsToAssign = usersToAssignInfo.map(u => u.userId);
+    const userIdsToAssign = usersToAssignInfo.map((u) => u.userId);
 
-    console.log("Assigning admin access for users:", userIdsToAssign, "with access:", selectedAccessType, "in company:", selectedCompany.companyId);
+    console.log(
+      "Assigning admin access for users:",
+      userIdsToAssign,
+      "with access:",
+      selectedAccessType,
+      "in company:",
+      selectedCompany.companyId
+    );
     // Update local state to reflect assignment (for UI)
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        userIdsToAssign.includes(user.userId) ? { ...user, isAdmin: true } : user
+    setUsers((prevUsers) =>
+      prevUsers.map((user) =>
+        userIdsToAssign.includes(user.userId)
+          ? { ...user, isAdmin: true }
+          : user
       )
     );
     setSuccessMessage("Admin access granted successfully! (Simulated)");
@@ -226,12 +239,17 @@ function AdminAccess() {
   const handleUnassignAdmin = async () => {
     if (!userToUnassign) return;
 
-    console.log("Simulating unassigning admin access for user:", userToUnassign.userId);
-    
+    console.log(
+      "Simulating unassigning admin access for user:",
+      userToUnassign.userId
+    );
+
     // Update local state to reflect unassignment (for UI)
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user.userId === userToUnassign.userId ? { ...user, isAdmin: false } : user
+    setUsers((prevUsers) =>
+      prevUsers.map((user) =>
+        user.userId === userToUnassign.userId
+          ? { ...user, isAdmin: false }
+          : user
       )
     );
 
@@ -243,9 +261,10 @@ function AdminAccess() {
   };
 
   // Filter users based on search input
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchInput.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchInput.toLowerCase())
   );
 
   useEffect(() => {
@@ -259,13 +278,19 @@ function AdminAccess() {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-64"}`}>
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        }`}
+      >
         <HradminNavbar />
         <main className="flex-1 px-6 pt-24 pb-6 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-6">Grant Admin Access</h1>
-              
+              <h1 className="text-2xl font-bold text-gray-800 mb-6">
+                Grant Admin Access
+              </h1>
+
               {/* Company Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -273,11 +298,16 @@ function AdminAccess() {
                 </label>
                 <Select onValueChange={handleCompanyChange}>
                   <SelectTrigger className="w-full">
-                    {selectedCompany ? selectedCompany.name : "Select a company"}
+                    {selectedCompany
+                      ? selectedCompany.name
+                      : "Select a company"}
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
-                      <SelectItem key={company.companyId} value={company.companyId}>
+                      <SelectItem
+                        key={company.companyId}
+                        value={company.companyId}
+                      >
                         {company.name}
                       </SelectItem>
                     ))}
@@ -301,23 +331,38 @@ function AdminAccess() {
 
                   <div className="max-h-96 overflow-y-auto border rounded-lg">
                     {loading ? (
-                      <div className="p-4 text-center text-gray-500">Loading users...</div>
+                      <div className="p-4 text-center text-gray-500">
+                        Loading users...
+                      </div>
                     ) : filteredUsers.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500">No users found</div>
+                      <div className="p-4 text-center text-gray-500">
+                        No users found
+                      </div>
                     ) : (
                       <div className="divide-y">
                         {filteredUsers.map((user) => (
                           <div
                             key={user.userId}
                             className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                              selectedUsers.includes(user.userId) && !user.isAdmin ? 'bg-blue-50' : ''
+                              selectedUsers.includes(user.userId) &&
+                              !user.isAdmin
+                                ? "bg-blue-50"
+                                : ""
                             }`}
-                            onClick={() => user.isAdmin ? handleUserClickForUnassign(user) : handleUserSelectForAssign(user)}
+                            onClick={() =>
+                              user.isAdmin
+                                ? handleUserClickForUnassign(user)
+                                : handleUserSelectForAssign(user)
+                            }
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="font-medium text-gray-900">{user.name}</p>
-                                <p className="text-sm text-gray-500">{user.email}</p>
+                                <p className="font-medium text-gray-900">
+                                  {user.name}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                  {user.email}
+                                </p>
                               </div>
                               {user.isAdmin ? (
                                 <Badge variant="destructive">HR Admin</Badge>
@@ -359,7 +404,9 @@ function AdminAccess() {
                     <div className="text-red-500 text-sm mt-2">{error}</div>
                   )}
                   {successMessage && (
-                    <div className="text-green-500 text-sm mt-2">{successMessage}</div>
+                    <div className="text-green-500 text-sm mt-2">
+                      {successMessage}
+                    </div>
                   )}
                 </div>
               )}
@@ -369,17 +416,26 @@ function AdminAccess() {
       </div>
 
       {/* Confirmation Modal for Unassign */}
-      <Modal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)}>
+      <Modal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+      >
         <div className="p-6 bg-white text-black rounded-lg shadow-xl">
           <div className="flex items-center justify-center mb-4">
-             <UserMinus className="w-12 h-12 text-red-500" />
+            <UserMinus className="w-12 h-12 text-red-500" />
           </div>
-          <h2 className="text-xl font-semibold text-center mb-4">Confirm Unassign</h2>
+          <h2 className="text-xl font-semibold text-center mb-4">
+            Confirm Unassign
+          </h2>
           <p className="text-center text-gray-600 mb-6">
-            Are you sure you want to revoke HR Admin access for {userToUnassign?.name}?
+            Are you sure you want to revoke HR Admin access for{" "}
+            {userToUnassign?.name}?
           </p>
           <div className="flex justify-center space-x-4">
-            <Button variant="outline" onClick={() => setIsConfirmModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsConfirmModalOpen(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleUnassignAdmin}>
@@ -390,27 +446,38 @@ function AdminAccess() {
       </Modal>
 
       {/* Confirmation Modal for Assign */}
-      <Modal isOpen={isAssignConfirmModalOpen} onClose={() => setIsAssignConfirmModalOpen(false)}>
+      <Modal
+        isOpen={isAssignConfirmModalOpen}
+        onClose={() => setIsAssignConfirmModalOpen(false)}
+      >
         <div className="p-6 bg-white text-black rounded-lg shadow-xl">
           <div className="flex items-center justify-center mb-4">
-             <UserPlus className="w-12 h-12 text-blue-500" />
+            <UserPlus className="w-12 h-12 text-blue-500" />
           </div>
-          <h2 className="text-xl font-semibold text-center mb-4">Confirm Assignment</h2>
+          <h2 className="text-xl font-semibold text-center mb-4">
+            Confirm Assignment
+          </h2>
           <p className="text-center text-gray-600 mb-2">
-            Are you sure you want to grant <span className="font-medium">{ACCESS_TYPES.find(t => t.id === selectedAccessType)?.label || 'Admin'}</span> access to the following user(s)?
+            Are you sure you want to grant{" "}
+            <span className="font-medium">
+              {ACCESS_TYPES.find((t) => t.id === selectedAccessType)?.label ||
+                "Admin"}
+            </span>{" "}
+            access to the following user(s)?
           </p>
           <ul className="list-disc list-inside text-center text-gray-700 mb-6 max-h-40 overflow-y-auto">
-            {usersToAssignInfo.map(user => (
+            {usersToAssignInfo.map((user) => (
               <li key={user.userId}>{user.name}</li>
             ))}
           </ul>
           <div className="flex justify-center space-x-4">
-            <Button variant="outline" onClick={() => setIsAssignConfirmModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsAssignConfirmModalOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={confirmAssignAdmin}>
-              Yes, Assign
-            </Button>
+            <Button onClick={confirmAssignAdmin}>Yes, Assign</Button>
           </div>
         </div>
       </Modal>
@@ -418,4 +485,4 @@ function AdminAccess() {
   );
 }
 
-export default withAuth(AdminAccess); 
+export default withAuth(AdminAccess);

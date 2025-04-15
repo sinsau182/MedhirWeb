@@ -595,14 +595,14 @@ function EmployeeForm() {
         ).unwrap();
 
         if (result) {
-        toast.success("Employee updated successfully");
+          toast.success("Employee updated successfully");
           router.push("/hradmin/employees");
         }
       } else {
         // For new employees
         const result = await dispatch(createEmployee(formDataObj)).unwrap();
         if (result) {
-        toast.success("Employee created successfully");
+          toast.success("Employee created successfully");
           router.push("/hradmin/employees");
         }
       }
@@ -899,13 +899,13 @@ function EmployeeForm() {
                       {typeof section.icon === "string" ? (
                         <span className="text-lg">{section.icon}</span>
                       ) : (
-                      <section.icon
-                        className={`w-4 h-4 ${
-                          activeSection === section.id
-                            ? "text-blue-500"
-                            : "text-gray-400"
-                        }`}
-                      />
+                        <section.icon
+                          className={`w-4 h-4 ${
+                            activeSection === section.id
+                              ? "text-blue-500"
+                              : "text-gray-400"
+                          }`}
+                        />
                       )}
                       {section.label}
                     </motion.button>
@@ -1059,12 +1059,12 @@ function EmployeeForm() {
                                 className={inputClass}
                                 value={formData.employee[field] || ""}
                                 onChange={(e) =>
-                                    handleInputChange(
+                                  handleInputChange(
                                     "employee",
-                                      field,
-                                      e.target.value
+                                    field,
+                                    e.target.value
                                   )
-                                  }
+                                }
                               />
                             </div>
                           ))}
@@ -1072,22 +1072,22 @@ function EmployeeForm() {
 
                         {/* Addresses */}
                         <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
+                          <label className={floatingLabelClass}>
                             Current Address
-                            </label>
-                            <textarea
-                              className={inputClass}
-                              rows="2"
+                          </label>
+                          <textarea
+                            className={inputClass}
+                            rows="2"
                             value={formData.employee.currentAddress || ""}
-                              onChange={(e) =>
-                                handleInputChange(
+                            onChange={(e) =>
+                              handleInputChange(
                                 "employee",
                                 "currentAddress",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
                         <div className="flex items-center mb-2">
                           <input
@@ -1715,19 +1715,19 @@ function EmployeeForm() {
                           : "Next"}
                       </span>
                       {activeSection !== "salary" && (
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M13 7l5 5m0 0l-5 5m5-5H6"
-                        />
-                      </svg>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
                       )}
                     </>
                   )}

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
-import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 function PayrollManagement() {
   const paidDays = 25;

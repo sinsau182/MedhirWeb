@@ -149,38 +149,52 @@ function Employees() {
     switch (activeTab) {
       case "Basic":
         // Convert any potential objects to strings
-        return typeof employee[key] === 'object' ? 
-          (employee[key] ? JSON.stringify(employee[key]) : "") : 
-          (employee[key] || "");
-          
+        return typeof employee[key] === "object"
+          ? employee[key]
+            ? JSON.stringify(employee[key])
+            : ""
+          : employee[key] || "";
+
       case "ID Proofs":
-        if (key === "name" || key === "employeeId") 
-          return typeof employee[key] === 'object' ? 
-            (employee[key] ? JSON.stringify(employee[key]) : "") : 
-            (employee[key] || "");
-            
-        return employee.idProofs ? 
-          (typeof employee.idProofs[key] === 'object' ? 
-            (employee.idProofs[key] ? JSON.stringify(employee.idProofs[key]) : "") : 
-            (employee.idProofs[key] || "")) : "";
-            
+        if (key === "name" || key === "employeeId")
+          return typeof employee[key] === "object"
+            ? employee[key]
+              ? JSON.stringify(employee[key])
+              : ""
+            : employee[key] || "";
+
+        return employee.idProofs
+          ? typeof employee.idProofs[key] === "object"
+            ? employee.idProofs[key]
+              ? JSON.stringify(employee.idProofs[key])
+              : ""
+            : employee.idProofs[key] || ""
+          : "";
+
       case "Salary Details":
-        if (key === "name" || key === "employeeId") 
-          return typeof employee[key] === 'object' ? 
-            (employee[key] ? JSON.stringify(employee[key]) : "") : 
-            (employee[key] || "");
-            
-        return employee.salaryDetails ? 
-          (typeof employee.salaryDetails[key] === 'object' ? 
-            (employee.salaryDetails[key] ? JSON.stringify(employee.salaryDetails[key]) : "") : 
-            (employee.salaryDetails[key] || "")) : "";
-            
+        if (key === "name" || key === "employeeId")
+          return typeof employee[key] === "object"
+            ? employee[key]
+              ? JSON.stringify(employee[key])
+              : ""
+            : employee[key] || "";
+
+        return employee.salaryDetails
+          ? typeof employee.salaryDetails[key] === "object"
+            ? employee.salaryDetails[key]
+              ? JSON.stringify(employee.salaryDetails[key])
+              : ""
+            : employee.salaryDetails[key] || ""
+          : "";
+
       case "Bank Details":
-        if (key === "name" || key === "employeeId") 
-          return typeof employee[key] === 'object' ? 
-            (employee[key] ? JSON.stringify(employee[key]) : "") : 
-            (employee[key] || "");
-            
+        if (key === "name" || key === "employeeId")
+          return typeof employee[key] === "object"
+            ? employee[key]
+              ? JSON.stringify(employee[key])
+              : ""
+            : employee[key] || "";
+
         if (key === "passbookDoc") {
           return (
             <button
@@ -194,33 +208,43 @@ function Employees() {
             </button>
           );
         }
-        
-        return employee.bankDetails ? 
-          (typeof employee.bankDetails[key] === 'object' ? 
-            (employee.bankDetails[key] ? JSON.stringify(employee.bankDetails[key]) : "") : 
-            (employee.bankDetails[key] || "")) : "";
-            
+
+        return employee.bankDetails
+          ? typeof employee.bankDetails[key] === "object"
+            ? employee.bankDetails[key]
+              ? JSON.stringify(employee.bankDetails[key])
+              : ""
+            : employee.bankDetails[key] || ""
+          : "";
+
       case "Leaves Policy":
         if (key === "name" || key === "employeeId" || key === "department")
-          return typeof employee[key] === 'object' ? 
-            (employee[key] ? JSON.stringify(employee[key]) : "") : 
-            (employee[key] || "");
-            
+          return typeof employee[key] === "object"
+            ? employee[key]
+              ? JSON.stringify(employee[key])
+              : ""
+            : employee[key] || "";
+
         if (key === "leavePolicy")
           return employee.leaveDetails
-            ? (typeof employee.leaveDetails[key] === 'object' ?
-                (employee.leaveDetails[key] ? JSON.stringify(employee.leaveDetails[key]) : "-") :
-                (employee.leaveDetails[key] || "-"))
+            ? typeof employee.leaveDetails[key] === "object"
+              ? employee.leaveDetails[key]
+                ? JSON.stringify(employee.leaveDetails[key])
+                : "-"
+              : employee.leaveDetails[key] || "-"
             : "-";
-            
+
         if (key === "leaveType") {
           const leaveTypes = employee.leaveDetails?.leaveTypes || [];
           // Ensure leaveTypes is an array and join it properly
-          return Array.isArray(leaveTypes) ? leaveTypes.join(", ") : 
-            (typeof leaveTypes === 'object' ? JSON.stringify(leaveTypes) : leaveTypes || "-");
+          return Array.isArray(leaveTypes)
+            ? leaveTypes.join(", ")
+            : typeof leaveTypes === "object"
+            ? JSON.stringify(leaveTypes)
+            : leaveTypes || "-";
         }
         return "";
-        
+
       default:
         return "";
     }
