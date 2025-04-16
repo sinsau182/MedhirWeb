@@ -37,36 +37,13 @@ const inputClass =
 const floatingLabelClass =
   "absolute -top-2.5 left-2 bg-white px-1 text-sm font-medium text-gray-700 transition-all duration-200";
 
-const MultiSelect = ({ label, options, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const toggleOption = (optionValue) => {
-    const newValue = value.includes(optionValue)
-      ? value.filter((v) => v !== optionValue)
-      : [...value, optionValue];
-    onChange(newValue);
-  };
-
+const MultiSelect = ({ label, options, value }) => {
   return (
-    <div className={inputGroupClass} ref={dropdownRef}>
+    <div className={inputGroupClass}>
       <label className={floatingLabelClass}>{label}</label>
       <div className="relative">
         <div
-          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
-          onClick={() => setIsOpen(!isOpen)}
+          className={`${inputClass} flex items-center justify-between cursor-not-allowed min-h-[42px] bg-gray-100`}
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value.length > 0 ? (
@@ -79,49 +56,10 @@ const MultiSelect = ({ label, options, value, onChange }) => {
                 </span>
               ))
             ) : (
-              <span className="text-gray-500">Select days</span>
+              <span className="text-gray-500">No weekly offs</span>
             )}
           </div>
-          <svg
-            className={`w-4 h-4 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
         </div>
-
-        {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
-            {options.map((option) => (
-              <div
-                key={option}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value.includes(option) ? "bg-blue-50" : ""
-                }`}
-                onClick={() => toggleOption(option)}
-              >
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={value.includes(option)}
-                    onChange={() => {}}
-                    className="w-4 h-4 mr-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">{option}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1499,8 +1437,15 @@ function EmployeeForm() {
                             onChange={(selectedDepartment) => {
                               handleInputChange("employee", "department", {
                                 departmentId: selectedDepartment.departmentId,
-                                name: selectedDepartment.name
+                                name: selectedDepartment.name,
                               });
+
+                              // Set weekly holidays as read-only weekly offs
+                              const weeklyHolidays = selectedDepartment.weeklyHolidays
+                                ? selectedDepartment.weeklyHolidays.split(",")
+                                : [];
+                              handleInputChange("employee", "weeklyOffs", weeklyHolidays);
+
                               // Clear designation and manager when department changes
                               handleInputChange("employee", "designation", null);
                               handleInputChange("employee", "reportingManager", null);

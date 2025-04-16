@@ -230,7 +230,8 @@ export const applyCompOffLeave = createAsyncThunk(
         startDate: formData.startDate,
         endDate: formData.endDate,
         shiftType: formData.shiftType,
-        reason: formData.reason
+        reason: formData.reason,
+        companyId: formData.companyId,
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
