@@ -48,6 +48,15 @@ const Navbar = () => {
         case "#B0E0E6":
           backgroundColor = "bg-[#B0E0E6]";
           break;
+        case "#F0E68C":
+          backgroundColor = "bg-[#F0E68C]";
+          break;
+        case "#E6E6FA":
+          backgroundColor = "bg-[#E6E6FA]";
+          break;
+        case "#D1D5DB":
+          backgroundColor = "bg-[#D1D5DB]";
+          break;
         default:
           backgroundColor = "bg-[#D1D5DB]";
       }

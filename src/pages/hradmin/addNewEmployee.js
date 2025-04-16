@@ -129,12 +129,154 @@ const MultiSelect = ({ label, options, value, onChange }) => {
   );
 };
 
-// Add this function to generate the next employee ID
-const generateEmployeeId = (lastEmployeeId) => {
-  if (!lastEmployeeId) return "emp001";
-  const currentNumber = parseInt(lastEmployeeId.slice(3));
-  return `emp${(currentNumber + 1).toString().padStart(3, "0")}`;
+const DepartmentSelect = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className={inputGroupClass} ref={dropdownRef}>
+      <label className={floatingLabelClass}>{label}</label>
+      <div className="relative">
+        <div
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex flex-wrap gap-1 py-1">
+            {value ? (
+              <span className="text-gray-700">{value.name || value}</span>
+            ) : (
+              <span className="text-gray-500">Select department</span>
+            )}
+          </div>
+          <svg
+            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+            {options.map((department) => (
+              <div
+                key={department.departmentId}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
+                  value?.departmentId === department.departmentId ? "bg-blue-50" : ""
+                }`}
+                onClick={() => {
+                  onChange(department);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="text-gray-700">{department.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
+
+// Add DesignationSelect component after DepartmentSelect
+const DesignationSelect = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className={inputGroupClass} ref={dropdownRef}>
+      <label className={floatingLabelClass}>{label}</label>
+      <div className="relative">
+        <div
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex flex-wrap gap-1 py-1">
+            {value ? (
+              <span className="text-gray-700">{value.name || value}</span>
+            ) : (
+              <span className="text-gray-500">Select designation</span>
+            )}
+          </div>
+          <svg
+            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+            {options.map((designation) => (
+              <div
+                key={designation.designationId}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
+                  value?.designationId === designation.designationId ? "bg-blue-50" : ""
+                }`}
+                onClick={() => {
+                  onChange({
+                    designationId: designation.designationId,
+                    name: designation.name,
+                    manager: designation.manager,
+                    overtimeEligible: designation.overtimeEligible
+                  });
+                  setIsOpen(false);
+                }}
+              >
+                <span className="text-gray-700">{designation.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Add this function to generate the next employee ID
+// const generateEmployeeId = (lastEmployeeId) => {
+//   if (!lastEmployeeId) return "emp001";
+//   const currentNumber = parseInt(lastEmployeeId.slice(3));
+//   return `emp${(currentNumber + 1).toString().padStart(3, "0")}`;
+// };
 
 // Add this helper function before the EmployeeForm component
 const removeEmptyValues = (obj) => {
@@ -154,7 +296,77 @@ const removeEmptyValues = (obj) => {
   return cleanObj;
 };
 
+const ReportingManagerSelect = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className={inputGroupClass} ref={dropdownRef}>
+      <label className={floatingLabelClass}>{label}</label>
+      <div className="relative">
+        <div
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex flex-wrap gap-1 py-1">
+            {value ? (
+              <span className="text-gray-700">{value.name || value}</span>
+            ) : (
+              <span className="text-gray-500">Select manager</span>
+            )}
+          </div>
+          <svg
+            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+            {options.map((manager) => (
+              <div
+                key={manager.employeeId}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
+                  value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
+                }`}
+                onClick={() => {
+                  onChange(manager);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="text-gray-700">{manager.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function EmployeeForm() {
+  const company = localStorage.getItem("selectedCompanyId");
+
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, err } = useSelector((state) => state.employees);
@@ -177,6 +389,55 @@ function EmployeeForm() {
   const [activeSection, setActiveSection] = useState("personal");
   const [lastEmployeeId, setLastEmployeeId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
+  const [designations, setDesignations] = useState([]);
+  const [managers, setManagers] = useState([]);
+
+  // Add department fetch on component mount
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const token = getItemFromSessionStorage("token", null);
+        const companyId = localStorage.getItem("selectedCompanyId") || "CID101";
+
+        if (!companyId) {
+          console.error("No company ID found");
+          toast.error("Company ID not found");
+          return;
+        }
+
+        console.log("Fetching departments for company:", companyId);
+        
+        const response = await axios.get(
+          `http://localhost:8083/departments/company/${companyId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Departments API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          setDepartments(response.data);
+          if (response.data.length === 0) {
+            toast.warning("No departments found for this company");
+          }
+        } else {
+          console.error("Invalid departments data format:", response.data);
+          toast.error("Invalid departments data received");
+        }
+      } catch (error) {
+        console.error("Error fetching departments:", error.response || error);
+        toast.error(error.response?.data?.message || "Failed to fetch departments");
+      }
+    };
+
+    fetchDepartments();
+  }, []);
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
@@ -214,7 +475,7 @@ function EmployeeForm() {
       esicEnrolled: false,
       esicNumber: "",
     },
-    companyId: localStorage.getItem("selectedCompanyId") || "",
+    companyId: company,
     idProofs: {
       aadharNo: "",
       aadharImgUrl: null,
@@ -280,6 +541,7 @@ function EmployeeForm() {
             esicEnrolled: Boolean(parsedEmployee.esicEnrolled),
             esicNumber: parsedEmployee.esicNumber || "",
           },
+          companyId: parsedEmployee.companyId || company, // Ensure companyId is set
           idProofs: {
             aadharNo: parsedEmployee.idProofs?.aadharNo || "",
             aadharImgUrl: parsedEmployee.idProofs?.aadharImgUrl || "",
@@ -316,7 +578,7 @@ function EmployeeForm() {
               parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
         });
-
+        console.log(company);
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
         toast.error("Error loading employee data");
@@ -329,7 +591,7 @@ function EmployeeForm() {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          "http://localhost:8083/hradmin/generate-employee-id/CID101",
+          `http://localhost:8083/hradmin/generate-employee-id/${company}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -357,20 +619,22 @@ function EmployeeForm() {
     fetchEmployeeId();
   }, []);
 
-  const calculateTotalCTC = (salaryData) => {
-    const values = {
-      basic: parseFloat(salaryData.basic) || 0,
-      hra: parseFloat(salaryData.hra) || 0,
-      allowances: parseFloat(salaryData.allowances) || 0,
-      pf: parseFloat(salaryData.pf) || 0,
-    };
-    return values.basic + values.hra + values.allowances + values.pf;
-  };
+  
 
-  const calculateMonthlyCTC = (annualCTC) => {
-    const annual = parseFloat(annualCTC) || 0;
-    return (annual / 12).toFixed(2);
-  };
+  // const calculateTotalCTC = (salaryData) => {
+  //   const values = {
+  //     basic: parseFloat(salaryData.basic) || 0,
+  //     hra: parseFloat(salaryData.hra) || 0,
+  //     allowances: parseFloat(salaryData.allowances) || 0,
+  //     pf: parseFloat(salaryData.pf) || 0,
+  //   };
+  //   return values.basic + values.hra + values.allowances + values.pf;
+  // };
+
+  // const calculateMonthlyCTC = (annualCTC) => {
+  //   const annual = parseFloat(annualCTC) || 0;
+  //   return (annual / 12).toFixed(2);
+  // };
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -470,7 +734,7 @@ function EmployeeForm() {
 
     setLoading(true);
     try {
-      const formDataObj = new FormData();
+      const submitFormData = new FormData();
 
       // Helper function to remove empty fields from an object
       const removeEmptyFields = (obj) => {
@@ -502,10 +766,10 @@ function EmployeeForm() {
         emailOfficial: formData.employee.emailOfficial?.trim(),
         currentAddress: formData.employee.currentAddress?.trim(),
         permanentAddress: formData.employee.permanentAddress?.trim(),
-        department: formData.employee.department?.trim(),
-        designation: formData.employee.designation?.trim(),
+        department: formData.employee.department?.departmentId || "",
+        designation: formData.employee.designation?.designationId || "",
         joiningDate: formData.employee.joiningDate,
-        reportingManager: formData.employee.reportingManager?.trim(),
+        reportingManager: formData.employee.reportingManager?.employeeId?.trim() || "", // Access employeeId and trim
         overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
         weeklyOffs: formData.employee.weeklyOffs?.length
           ? formData.employee.weeklyOffs
@@ -548,38 +812,38 @@ function EmployeeForm() {
       const employeeData = removeEmptyFields(baseEmployeeData);
 
       // Add the cleaned employee data to FormData
-      formDataObj.append("employee", JSON.stringify(employeeData));
+      submitFormData.append("employee", JSON.stringify(employeeData));
 
       // Only add files if they exist
       if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append("profileImage", formData.employee.employeeImgUrl);
+        submitFormData.append("profileImage", formData.employee.employeeImgUrl);
       }
 
       if (formData.idProofs.aadharImgUrl instanceof File) {
-        formDataObj.append("aadharImage", formData.idProofs.aadharImgUrl);
+        submitFormData.append("aadharImage", formData.idProofs.aadharImgUrl);
       }
 
       if (formData.idProofs.pancardImgUrl instanceof File) {
-        formDataObj.append("pancardImage", formData.idProofs.pancardImgUrl);
+        submitFormData.append("pancardImage", formData.idProofs.pancardImgUrl);
       }
 
       if (formData.idProofs.passportImgUrl instanceof File) {
-        formDataObj.append("passportImage", formData.idProofs.passportImgUrl);
+        submitFormData.append("passportImage", formData.idProofs.passportImgUrl);
       }
 
       if (formData.idProofs.drivingLicenseImgUrl instanceof File) {
-        formDataObj.append(
+        submitFormData.append(
           "drivingLicenseImage",
           formData.idProofs.drivingLicenseImgUrl
         );
       }
 
       if (formData.idProofs.voterIdImgUrl instanceof File) {
-        formDataObj.append("voterIdImage", formData.idProofs.voterIdImgUrl);
+        submitFormData.append("voterIdImage", formData.idProofs.voterIdImgUrl);
       }
 
       if (formData.bankDetails.passbookImgUrl instanceof File) {
-        formDataObj.append(
+        submitFormData.append(
           "passbookImage",
           formData.bankDetails.passbookImgUrl
         );
@@ -590,7 +854,7 @@ function EmployeeForm() {
         const result = await dispatch(
           updateEmployee({
             id: employeeId,
-            updatedData: formDataObj,
+            updatedData: submitFormData,
           })
         ).unwrap();
 
@@ -600,7 +864,7 @@ function EmployeeForm() {
         }
       } else {
         // For new employees
-        const result = await dispatch(createEmployee(formDataObj)).unwrap();
+        const result = await dispatch(createEmployee(submitFormData)).unwrap();
         if (result) {
           toast.success("Employee created successfully");
           router.push("/hradmin/employees");
@@ -727,8 +991,7 @@ function EmployeeForm() {
 
     setLoading(true);
     try {
-      // Create FormData object with only personal details
-      const formDataObj = new FormData();
+      const personalFormData = new FormData();
 
       // Clean the form data to remove empty values
       const cleanEmployeeDetails = removeEmptyValues({
@@ -752,15 +1015,15 @@ function EmployeeForm() {
 
       // Only append if we have non-empty data
       if (Object.keys(cleanEmployeeDetails).length > 0) {
-        formDataObj.append("employee", JSON.stringify(cleanEmployeeDetails));
+        personalFormData.append("employee", JSON.stringify(cleanEmployeeDetails));
       }
 
       // Add profile image if exists
       if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append("employeeImgUrl", formData.employee.employeeImgUrl);
+        personalFormData.append("employeeImgUrl", formData.employee.employeeImgUrl);
       }
 
-      const result = await dispatch(createEmployee(formDataObj)).unwrap();
+      const result = await dispatch(createEmployee(personalFormData)).unwrap();
       toast.success("Employee created successfully");
       router.push("/hradmin/employees");
     } catch (err) {
@@ -848,6 +1111,94 @@ function EmployeeForm() {
     "Friday",
     "Saturday",
   ];
+
+  // Add useEffect for fetching designations when department changes
+  useEffect(() => {
+    const fetchDesignations = async () => {
+      try {
+        // Only fetch if a department is selected and has a departmentId
+        if (!formData.employee.department?.departmentId) {
+          setDesignations([]);
+          return;
+        }
+
+        const token = getItemFromSessionStorage("token", null);
+        const departmentId = formData.employee.department.departmentId;
+
+        console.log("Fetching designations for department:", departmentId);
+        
+        const response = await axios.get(
+          `http://localhost:8083/api/designations/department/${departmentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Designations API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          setDesignations(response.data);
+          if (response.data.length === 0) {
+            toast.warning("No designations found for this department");
+          }
+        } else {
+          console.error("Invalid designations data format:", response.data);
+          toast.error("Invalid designations data received");
+        }
+      } catch (error) {
+        console.error("Error fetching designations:", error.response || error);
+        toast.error(error.response?.data?.message || "Failed to fetch designations");
+      }
+    };
+
+    fetchDesignations();
+  }, [formData.employee.department?.departmentId]);
+
+  // Fetch managers when department changes
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const departmentId = formData.employee.department?.departmentId;
+        if (!departmentId) {
+          setManagers([]);
+          return;
+        }
+
+        const token = getItemFromSessionStorage("token", null);
+        console.log("Fetching managers for department:", departmentId);
+
+        const response = await axios.get(
+          `http://localhost:8083/departments/${departmentId}/managers`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Managers API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          setManagers(response.data);
+          if (response.data.length === 0) {
+            toast.warning("No managers found for this department");
+          }
+        } else {
+          console.error("Invalid managers data format:", response.data);
+          toast.error("Invalid managers data received");
+        }
+      } catch (error) {
+        console.error("Error fetching managers:", error.response || error);
+        toast.error(error.response?.data?.message || "Failed to fetch managers");
+      }
+    };
+
+    fetchManagers();
+  }, [formData.employee.department?.departmentId]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1094,6 +1445,7 @@ function EmployeeForm() {
                             type="checkbox"
                             id="sameAsCurrent"
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            checked={formData.employee.permanentAddress === formData.employee.currentAddress} // Sync checkbox state
                             onChange={(e) => {
                               if (e.target.checked) {
                                 handleInputChange(
@@ -1101,6 +1453,8 @@ function EmployeeForm() {
                                   "permanentAddress",
                                   formData.employee.currentAddress
                                 );
+                              } else {
+                                handleInputChange("employee", "permanentAddress", ""); // Clear permanent address
                               }
                             }}
                           />
@@ -1138,35 +1492,36 @@ function EmployeeForm() {
                         </h3>
 
                         <div className="grid grid-cols-2 gap-4">
-                          {[
-                            {
-                              label: "Department",
-                              field: "department",
-                            },
-                            {
-                              label: "Designation",
-                              field: "designation",
-                            },
-                          ].map(({ label, field, required }) => (
-                            <div key={field} className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
-                                {label}{" "}
-                              </label>
-                              <input
-                                type="text"
-                                className={inputClass}
-                                value={formData.employee[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "employee",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                          ))}
+                          <DepartmentSelect
+                            label="Department"
+                            options={departments}
+                            value={formData.employee.department}
+                            onChange={(selectedDepartment) => {
+                              handleInputChange("employee", "department", {
+                                departmentId: selectedDepartment.departmentId,
+                                name: selectedDepartment.name
+                              });
+                              // Clear designation and manager when department changes
+                              handleInputChange("employee", "designation", null);
+                              handleInputChange("employee", "reportingManager", null);
+                            }}
+                          />
+                          <DesignationSelect
+                            label="Designation"
+                            options={designations}
+                            value={formData.employee.designation}
+                            onChange={(selectedDesignation) =>
+                              handleInputChange("employee", "designation", {
+                                designationId: selectedDesignation.designationId,
+                                name: selectedDesignation.name,
+                                manager: selectedDesignation.manager,
+                                overtimeEligible: selectedDesignation.overtimeEligible
+                              })
+                            }
+                          />
                         </div>
+
+                        
 
                         <div className="grid grid-cols-2 gap-4">
                           {[
@@ -1176,10 +1531,10 @@ function EmployeeForm() {
                               required: true,
                               type: "date",
                             },
-                            {
-                              label: "Reporting Manager",
-                              field: "reportingManager",
-                            },
+                            // {
+                            //   label: "Reporting Manager",
+                            //   field: "reportingManager",
+                            // },
                           ].map(({ label, field, type, required }) => (
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
@@ -1204,7 +1559,22 @@ function EmployeeForm() {
                               />
                             </div>
                           ))}
+                          <div className="grid grid-cols-1 gap-4">
+                          <ReportingManagerSelect
+                            label="Reporting Manager"
+                            options={managers}
+                            value={formData.employee.reportingManager}
+                            onChange={(selectedManager) =>
+                              handleInputChange("employee", "reportingManager", {
+                                employeeId: selectedManager.employeeId,
+                                name: selectedManager.name,
+                              })
+                            }
+                          />
                         </div>
+                        </div>
+
+                        
 
                         {/* Statutory Details */}
                         <div className="space-y-4 border-t pt-4 mt-4">

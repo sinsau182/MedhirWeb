@@ -18,56 +18,39 @@ import { Badge } from "@/components/ui/badge";
 import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 
-// API Base URL
-const API_BASE_URL = "http://localhost:8083/superadmin";
-
-// Hardcoded companies for testing
-const TEST_COMPANIES = [
-  {
-    companyId: 1,
-    name: "Tech Solutions Inc",
-    description: "Technology and Software Solutions",
-  },
-  {
-    companyId: 2,
-    name: "Global Services Ltd",
-    description: "Business Process Outsourcing",
-  },
-];
-
-// Hardcoded users for testing
-const TEST_USERS = [
-  {
-    userId: 101,
-    name: "Alice Johnson",
-    email: "alice.j@techsolutions.com",
-    isAdmin: true, // Let's make Alice an admin initially for testing
-  },
-  {
-    userId: 102,
-    name: "Bob Williams",
-    email: "bob.w@techsolutions.com",
-    isAdmin: false,
-  },
-  {
-    userId: 103,
-    name: "Charlie Brown",
-    email: "charlie.b@techsolutions.com",
-    isAdmin: false,
-  },
-  {
-    userId: 201,
-    name: "Diana Miller",
-    email: "diana.m@globalservices.com",
-    isAdmin: false,
-  },
-  {
-    userId: 202,
-    name: "Ethan Davis",
-    email: "ethan.d@globalservices.com",
-    isAdmin: true, // Let's make Ethan an admin initially for testing
-  },
-];
+// // Hardcoded users for testing
+// const TEST_USERS = [
+//   {
+//     userId: 101,
+//     name: "Alice Johnson",
+//     email: "alice.j@techsolutions.com",
+//     isAdmin: true, // Let's make Alice an admin initially for testing
+//   },
+//   {
+//     userId: 102,
+//     name: "Bob Williams",
+//     email: "bob.w@techsolutions.com",
+//     isAdmin: false,
+//   },
+//   {
+//     userId: 103,
+//     name: "Charlie Brown",
+//     email: "charlie.b@techsolutions.com",
+//     isAdmin: false,
+//   },
+//   {
+//     userId: 201,
+//     name: "Diana Miller",
+//     email: "diana.m@globalservices.com",
+//     isAdmin: false,
+//   },
+//   {
+//     userId: 202,
+//     name: "Ethan Davis",
+//     email: "ethan.d@globalservices.com",
+//     isAdmin: true, // Let's make Ethan an admin initially for testing
+//   },
+// ];
 
 function AdminAccess() {
   const router = useRouter();
@@ -94,62 +77,82 @@ function AdminAccess() {
   ];
 
   // API Utilities
-  const getAuthHeaders = () => {
-    const token = getItemFromSessionStorage("token");
-    if (!token) {
-      router.push("/login?error=Please login to continue");
-      return null;
-    }
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  };
+  // const getAuthHeaders = () => {
+  //   const token = getItemFromSessionStorage("token");
+  //   if (!token) {
+  //     router.push("/login?error=Please login to continue");
+  //     return null;
+  //   }
+  //   return {
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //     },
+  //   };
+  // };
 
-  const handleApiError = (error, customMessage = "Operation failed") => {
-    console.error(customMessage, error);
-    if (error.response?.status === 401) {
-      router.push("/login?error=Session expired. Please login again");
-    } else {
-      setError(error.response?.data?.message || customMessage);
-    }
-  };
+  // const handleApiError = (error, customMessage = "Operation failed") => {
+  //   console.error(customMessage, error);
+  //   if (error.response?.status === 401) {
+  //     router.push("/login?error=Session expired. Please login again");
+  //   } else {
+  //     setError(error.response?.data?.message || customMessage);
+  //   }
+  // };
 
   // Fetch companies
-  const fetchCompanies = async () => {
-    try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const token = getItemFromSessionStorage("token", null);
+        const response = await axios.get(
+          "http://localhost:8083/hradmin/companies/MED102",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.data && Array.isArray(response.data)) {
+          setCompanies(response.data); // Store the full company objects
+          if (
+            !response.data.some(
+              (company) => company.companyName === selectedCompany
+            )
+          ) {
+            setSelectedCompany(response.data[0].companyName); // Set default company if current selection is not in the list
+          }
+        }
+      } catch (error) {
+        toast.error("Error fetching companies:", error);
+      }
+    };
 
-      // For now, using hardcoded data
-      setCompanies(TEST_COMPANIES);
-
-      // Uncomment this when the API is ready
-      // const response = await axios.get(`${API_BASE_URL}/companies`, headers);
-      // setCompanies(response.data || []);
-    } catch (error) {
-      handleApiError(error, "Failed to fetch companies");
-    }
-  };
+    fetchCompanies();
+  }, []);
 
   // Fetch users for selected company
   const fetchUsers = async (companyId) => {
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
       setLoading(true);
-
-      // Use hardcoded data (already updated with isAdmin)
-      const filteredTestUsers = TEST_USERS.filter(
-        (user) =>
-          (companyId === 1 && user.email.includes("techsolutions.com")) ||
-          (companyId === 2 && user.email.includes("globalservices.com"))
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.get(
+        `http://localhost:8083/hradmin/companies/${companyId}/employees`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      setUsers(filteredTestUsers);
-      setError("");
+
+      if (response.data && Array.isArray(response.data)) {
+        setUsers(response.data); // Store the full user objects
+        setError("");
+      } else {
+        throw new Error("Unexpected response format");
+      }
     } catch (error) {
-      handleApiError(error, "Failed to fetch users");
+      console.error("Error fetching users:", error);
+      setError("Failed to fetch users. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -267,9 +270,6 @@ function AdminAccess() {
       user.email.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -299,7 +299,7 @@ function AdminAccess() {
                 <Select onValueChange={handleCompanyChange}>
                   <SelectTrigger className="w-full">
                     {selectedCompany
-                      ? selectedCompany.name
+                      ? selectedCompany.companyName
                       : "Select a company"}
                   </SelectTrigger>
                   <SelectContent>
@@ -308,7 +308,7 @@ function AdminAccess() {
                         key={company.companyId}
                         value={company.companyId}
                       >
-                        {company.name}
+                        {company.companyName}
                       </SelectItem>
                     ))}
                   </SelectContent>

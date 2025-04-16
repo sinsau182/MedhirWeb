@@ -80,6 +80,7 @@ export const updateEmployee = createAsyncThunk(
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
 
       // Create FormData object for file uploads
       const formData = new FormData();
