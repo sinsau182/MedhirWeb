@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { toast } from "sonner";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin";
@@ -23,7 +24,8 @@ export const fetchEmployees = createAsyncThunk(
       }
       return await response.json();
     } catch (error) {
-      return rejectWithValue(error.message);
+      toast.error("Error fetching employees:", error);
+      // return rejectWithValue(error.message);
     }
   }
 );
@@ -67,9 +69,10 @@ export const createEmployee = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(
-        error.response ? error.response.data : error.message
-      );
+      toast.error("Error creating employee:", error);
+      // return rejectWithValue(
+      //   error.response ? error.response.data : error.message
+      // );
     }
   }
 );
@@ -110,7 +113,8 @@ export const updateEmployee = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      toast.error("Error updating employee:", error);
+      // return rejectWithValue(error.response?.data || error.message);
     }
   }
 );

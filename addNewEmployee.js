@@ -1,31 +1,33 @@
 import { useState, useEffect, useRef } from "react";
-// import { Card } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { UserPlus, X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
-// import Link from "next/link";
+import Link from "next/link";
 import { toast } from "sonner";
 import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
-// import {
-//   FaUserCircle,
-//   FaUsers,
-//   FaCalendarCheck,
-//   FaMoneyCheckAlt,
-//   FaCog,
-//   FaArrowAltCircleUp,
-// } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaUsers,
+  FaCalendarCheck,
+  FaMoneyCheckAlt,
+  FaCog,
+  FaArrowAltCircleUp,
+} from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { motion } from "framer-motion";
 import {
   FiUser,
   FiBook,
+  FiDollarSign,
   FiCreditCard,
+  FiShield,
   FiUpload,
 } from "react-icons/fi";
-// import Select from "react-select";
+import Select from "react-select";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
 
@@ -277,8 +279,6 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
 // };
 
 // Add this helper function before the EmployeeForm component
-
-
 const removeEmptyValues = (obj) => {
   const cleanObj = {};
   Object.entries(obj).forEach(([key, value]) => {
@@ -376,21 +376,21 @@ function EmployeeForm() {
     employee,
     activeSection: activeSectionParam,
   } = router.query;
-  // const [activePage, setActivePage] = useState("Employees");
+  const [activePage, setActivePage] = useState("Employees");
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
-  // const [selectedTab, setSelectedTab] = useState(null);
+  const [selectedTab, setSelectedTab] = useState(null);
   const [loading, setLoading] = useState(false);
-  // const [error, setError] = useState(null);
-  // const [success, setSuccess] = useState(null);
-  // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previewModal, setPreviewModal] = useState({ show: false });
   const [activeSection, setActiveSection] = useState("personal");
-  // const [lastEmployeeId, setLastEmployeeId] = useState("");
-  // const [isLoading, setIsLoading] = useState(false);
+  const [lastEmployeeId, setLastEmployeeId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
-  // const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
+  const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
 
@@ -527,8 +527,8 @@ function EmployeeForm() {
             emailOfficial: parsedEmployee.emailOfficial || "",
             currentAddress: parsedEmployee.currentAddress || "",
             permanentAddress: parsedEmployee.permanentAddress || "",
-            department: parsedEmployee.departmentName || "",
-            designation: parsedEmployee.designationName || "",
+            department: parsedEmployee.department || "",
+            designation: parsedEmployee.designation || "",
             joiningDate: parsedEmployee.joiningDate || "",
             reportingManager: parsedEmployee.reportingManager || "",
             overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
@@ -1499,8 +1499,15 @@ function EmployeeForm() {
                             onChange={(selectedDepartment) => {
                               handleInputChange("employee", "department", {
                                 departmentId: selectedDepartment.departmentId,
-                                name: selectedDepartment.name
+                                name: selectedDepartment.name,
                               });
+
+                              // Set weekly holidays as read-only weekly offs
+                              const weeklyHolidays = selectedDepartment.weeklyHolidays
+                                ? selectedDepartment.weeklyHolidays.split(",")
+                                : [];
+                              handleInputChange("employee", "weeklyOffs", weeklyHolidays);
+
                               // Clear designation and manager when department changes
                               handleInputChange("employee", "designation", null);
                               handleInputChange("employee", "reportingManager", null);
@@ -1559,7 +1566,6 @@ function EmployeeForm() {
                               />
                             </div>
                           ))}
-                          
                           <div className="grid grid-cols-1 gap-4">
                           <ReportingManagerSelect
                             label="Reporting Manager"

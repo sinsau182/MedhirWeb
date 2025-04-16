@@ -86,7 +86,10 @@ function SuperadminCompanies() {
     setSelectedCompany(company);
     if (company) {
       setIsEditing(true); // Set the state to editing if a company is selected for update
-      setCompanyData({ ...company });
+      setCompanyData({
+        ...company,
+        colorCode: company.colorCode || "", // Ensure colorCode is included
+      });
     } else {
       setIsEditing(false); // Reset to adding mode
       setCompanyData({
@@ -95,6 +98,7 @@ function SuperadminCompanies() {
         phone: "",
         gst: "",
         regAdd: "",
+        colorCode: "", // Initialize colorCode for new companies
       });
     }
     setIsCompanyModalOpen(true);
@@ -171,7 +175,7 @@ function SuperadminCompanies() {
         // Dispatch update action with Redux
         await dispatch(
           updateCompany({ 
-            id: selectedCompany.id || selectedCompany._id, // Handle both id formats
+            id: selectedCompany.companyId, // Handle both id formats
             updatedData: companyData 
           })
         );
@@ -195,13 +199,13 @@ function SuperadminCompanies() {
     }
   };
 
-  const handleSelectCompany = (company) => {
-    if (selectedCompany && selectedCompany.id === company.id) {
-      setSelectedCompany(null);
-    } else {
-      setSelectedCompany(company);
-    }
-  };
+  // const handleSelectCompany = (company) => {
+  //   if (selectedCompany && selectedCompany.id === company.id) {
+  //     setSelectedCompany(null);
+  //   } else {
+  //     setSelectedCompany(company);
+  //   }
+  // };
 
   const handleDeleteCompany = async () => {
     if (!selectedCompany) return;
@@ -220,10 +224,10 @@ function SuperadminCompanies() {
     company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("token");
-    router.push("/login");
-  };
+  // const handleLogout = () => {
+  //   sessionStorage.removeItem("token");
+  //   router.push("/login");
+  // };
 
   const predefinedColors = [
     "#B0E0E6", "#FFE4E1", "#F0E68C", "#E6E6FA", "#D1D5DB"

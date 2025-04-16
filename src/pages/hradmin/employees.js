@@ -93,7 +93,7 @@ function Employees() {
           { key: "phone", label: "Phone No." },
           { key: "emailOfficial", label: "Email(Off.)" },
           { key: "joiningDate", label: "DOJ" },
-          { key: "designation", label: "Designation" },
+          { key: "designationName", label: "Designation" },
           { key: "currentAddress", label: "Current Address" },
         ];
       case "ID Proofs":
@@ -134,7 +134,7 @@ function Employees() {
         return [
           { key: "employeeId", label: "Employee ID" },
           { key: "name", label: "Name" },
-          { key: "department", label: "Department" },
+          { key: "departmentName", label: "Department" },
           { key: "leavePolicy", label: "Leave Policy" },
           { key: "leaveType", label: "Leave Types" },
         ];
@@ -218,7 +218,7 @@ function Employees() {
           : "";
 
       case "Leaves Policy":
-        if (key === "name" || key === "employeeId" || key === "department")
+        if (key === "name" || key === "employeeId" || key === "departmentName")
           return typeof employee[key] === "object"
             ? employee[key]
               ? JSON.stringify(employee[key])

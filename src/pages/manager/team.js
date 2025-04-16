@@ -154,7 +154,7 @@ function Employees() {
                               {employee?.joiningDate}
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.designation}
+                              {employee?.designationName}
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-800 truncate">
                               {employee?.currentAddress}
