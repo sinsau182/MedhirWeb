@@ -19,12 +19,7 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { motion } from "framer-motion";
-import {
-  FiUser,
-  FiBook,
-  FiCreditCard,
-  FiUpload,
-} from "react-icons/fi";
+import { FiUser, FiBook, FiCreditCard, FiUpload } from "react-icons/fi";
 // import Select from "react-select";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
@@ -96,7 +91,9 @@ const DepartmentSelect = ({ label, options, value, onChange }) => {
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -116,7 +113,9 @@ const DepartmentSelect = ({ label, options, value, onChange }) => {
               <div
                 key={department.departmentId}
                 className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.departmentId === department.departmentId ? "bg-blue-50" : ""
+                  value?.departmentId === department.departmentId
+                    ? "bg-blue-50"
+                    : ""
                 }`}
                 onClick={() => {
                   onChange(department);
@@ -165,7 +164,9 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -185,14 +186,16 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
               <div
                 key={designation.designationId}
                 className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.designationId === designation.designationId ? "bg-blue-50" : ""
+                  value?.designationId === designation.designationId
+                    ? "bg-blue-50"
+                    : ""
                 }`}
                 onClick={() => {
                   onChange({
                     designationId: designation.designationId,
                     name: designation.name,
                     manager: designation.manager,
-                    overtimeEligible: designation.overtimeEligible
+                    overtimeEligible: designation.overtimeEligible,
                   });
                   setIsOpen(false);
                 }}
@@ -215,7 +218,6 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
 // };
 
 // Add this helper function before the EmployeeForm component
-
 
 const removeEmptyValues = (obj) => {
   const cleanObj = {};
@@ -265,7 +267,9 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -346,7 +350,7 @@ function EmployeeForm() {
         }
 
         console.log("Fetching departments for company:", companyId);
-        
+
         const response = await axios.get(
           `http://localhost:8083/departments/company/${companyId}`,
           {
@@ -370,7 +374,9 @@ function EmployeeForm() {
         }
       } catch (error) {
         console.error("Error fetching departments:", error.response || error);
-        toast.error(error.response?.data?.message || "Failed to fetch departments");
+        toast.error(
+          error.response?.data?.message || "Failed to fetch departments"
+        );
       }
     };
 
@@ -557,8 +563,6 @@ function EmployeeForm() {
     fetchEmployeeId();
   }, []);
 
-  
-
   // const calculateTotalCTC = (salaryData) => {
   //   const values = {
   //     basic: parseFloat(salaryData.basic) || 0,
@@ -707,7 +711,8 @@ function EmployeeForm() {
         department: formData.employee.department?.departmentId || "",
         designation: formData.employee.designation?.designationId || "",
         joiningDate: formData.employee.joiningDate,
-        reportingManager: formData.employee.reportingManager?.employeeId?.trim() || "", // Access employeeId and trim
+        reportingManager:
+          formData.employee.reportingManager?.employeeId?.trim() || "", // Access employeeId and trim
         overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
         weeklyOffs: formData.employee.weeklyOffs?.length
           ? formData.employee.weeklyOffs
@@ -766,7 +771,10 @@ function EmployeeForm() {
       }
 
       if (formData.idProofs.passportImgUrl instanceof File) {
-        submitFormData.append("passportImage", formData.idProofs.passportImgUrl);
+        submitFormData.append(
+          "passportImage",
+          formData.idProofs.passportImgUrl
+        );
       }
 
       if (formData.idProofs.drivingLicenseImgUrl instanceof File) {
@@ -953,12 +961,18 @@ function EmployeeForm() {
 
       // Only append if we have non-empty data
       if (Object.keys(cleanEmployeeDetails).length > 0) {
-        personalFormData.append("employee", JSON.stringify(cleanEmployeeDetails));
+        personalFormData.append(
+          "employee",
+          JSON.stringify(cleanEmployeeDetails)
+        );
       }
 
       // Add profile image if exists
       if (formData.employee.employeeImgUrl instanceof File) {
-        personalFormData.append("employeeImgUrl", formData.employee.employeeImgUrl);
+        personalFormData.append(
+          "employeeImgUrl",
+          formData.employee.employeeImgUrl
+        );
       }
 
       const result = await dispatch(createEmployee(personalFormData)).unwrap();
@@ -1064,7 +1078,7 @@ function EmployeeForm() {
         const departmentId = formData.employee.department.departmentId;
 
         console.log("Fetching designations for department:", departmentId);
-        
+
         const response = await axios.get(
           `http://localhost:8083/api/designations/department/${departmentId}`,
           {
@@ -1088,7 +1102,9 @@ function EmployeeForm() {
         }
       } catch (error) {
         console.error("Error fetching designations:", error.response || error);
-        toast.error(error.response?.data?.message || "Failed to fetch designations");
+        toast.error(
+          error.response?.data?.message || "Failed to fetch designations"
+        );
       }
     };
 
@@ -1131,7 +1147,9 @@ function EmployeeForm() {
         }
       } catch (error) {
         console.error("Error fetching managers:", error.response || error);
-        toast.error(error.response?.data?.message || "Failed to fetch managers");
+        toast.error(
+          error.response?.data?.message || "Failed to fetch managers"
+        );
       }
     };
 
@@ -1383,7 +1401,10 @@ function EmployeeForm() {
                             type="checkbox"
                             id="sameAsCurrent"
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                            checked={formData.employee.permanentAddress === formData.employee.currentAddress} // Sync checkbox state
+                            checked={
+                              formData.employee.permanentAddress ===
+                              formData.employee.currentAddress
+                            } // Sync checkbox state
                             onChange={(e) => {
                               if (e.target.checked) {
                                 handleInputChange(
@@ -1392,7 +1413,11 @@ function EmployeeForm() {
                                   formData.employee.currentAddress
                                 );
                               } else {
-                                handleInputChange("employee", "permanentAddress", ""); // Clear permanent address
+                                handleInputChange(
+                                  "employee",
+                                  "permanentAddress",
+                                  ""
+                                ); // Clear permanent address
                               }
                             }}
                           />
@@ -1441,14 +1466,27 @@ function EmployeeForm() {
                               });
 
                               // Set weekly holidays as read-only weekly offs
-                              const weeklyHolidays = selectedDepartment.weeklyHolidays
-                                ? selectedDepartment.weeklyHolidays.split(",")
-                                : [];
-                              handleInputChange("employee", "weeklyOffs", weeklyHolidays);
+                              const weeklyHolidays =
+                                selectedDepartment.weeklyHolidays
+                                  ? selectedDepartment.weeklyHolidays.split(",")
+                                  : [];
+                              handleInputChange(
+                                "employee",
+                                "weeklyOffs",
+                                weeklyHolidays
+                              );
 
                               // Clear designation and manager when department changes
-                              handleInputChange("employee", "designation", null);
-                              handleInputChange("employee", "reportingManager", null);
+                              handleInputChange(
+                                "employee",
+                                "designation",
+                                null
+                              );
+                              handleInputChange(
+                                "employee",
+                                "reportingManager",
+                                null
+                              );
                             }}
                           />
                           <DesignationSelect
@@ -1457,16 +1495,16 @@ function EmployeeForm() {
                             value={formData.employee.designation}
                             onChange={(selectedDesignation) =>
                               handleInputChange("employee", "designation", {
-                                designationId: selectedDesignation.designationId,
+                                designationId:
+                                  selectedDesignation.designationId,
                                 name: selectedDesignation.name,
                                 manager: selectedDesignation.manager,
-                                overtimeEligible: selectedDesignation.overtimeEligible
+                                overtimeEligible:
+                                  selectedDesignation.overtimeEligible,
                               })
                             }
                           />
                         </div>
-
-                        
 
                         <div className="grid grid-cols-2 gap-4">
                           {[
@@ -1504,23 +1542,25 @@ function EmployeeForm() {
                               />
                             </div>
                           ))}
-                          
-                          <div className="grid grid-cols-1 gap-4">
-                          <ReportingManagerSelect
-                            label="Reporting Manager"
-                            options={managers}
-                            value={formData.employee.reportingManager}
-                            onChange={(selectedManager) =>
-                              handleInputChange("employee", "reportingManager", {
-                                employeeId: selectedManager.employeeId,
-                                name: selectedManager.name,
-                              })
-                            }
-                          />
-                        </div>
-                        </div>
 
-                        
+                          <div className="grid grid-cols-1 gap-4">
+                            <ReportingManagerSelect
+                              label="Reporting Manager"
+                              options={managers}
+                              value={formData.employee.reportingManager}
+                              onChange={(selectedManager) =>
+                                handleInputChange(
+                                  "employee",
+                                  "reportingManager",
+                                  {
+                                    employeeId: selectedManager.employeeId,
+                                    name: selectedManager.name,
+                                  }
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
 
                         {/* Statutory Details */}
                         <div className="space-y-4 border-t pt-4 mt-4">
