@@ -340,7 +340,9 @@ const OrganizationSettings = () => {
           .join(","),
       };
 
-      await dispatch(createDepartment({ ...departmentData, companyId: selectedCompanyId })).unwrap();
+      await dispatch(
+        createDepartment({ ...departmentData, companyId: selectedCompanyId })
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -586,22 +588,24 @@ const OrganizationSettings = () => {
     }
   };
 
-
   const handleRowClick = (item) => {
     // Reset form changed state when opening new item
     setIsFormChanged(false);
 
     if (activeTab === "departments") {
       setSelectedDepartment(item);
-      
+
       // Find the leave policy object from the policies array
-      const selectedPolicy = policies.find(p => p.leavePolicyId === item.leavePolicy);
-      
+      const selectedPolicy = policies.find(
+        (p) => p.leavePolicyId === item.leavePolicy
+      );
+
       // Format weekly holidays into array of objects
-      const weeklyHolidaysArray = item.weeklyHolidays?.split(",").map(day => ({
-        value: day.trim(),
-        label: day.trim()
-      })) || [];
+      const weeklyHolidaysArray =
+        item.weeklyHolidays?.split(",").map((day) => ({
+          value: day.trim(),
+          label: day.trim(),
+        })) || [];
 
       setDepartmentForm({
         name: item.name,
@@ -609,9 +613,9 @@ const OrganizationSettings = () => {
         head: item.departmentHead || "",
         leavePolicy: {
           value: item.leavePolicy,
-          label: selectedPolicy?.name || item.leavePolicy
+          label: selectedPolicy?.name || item.leavePolicy,
         },
-        weeklyHolidays: weeklyHolidaysArray
+        weeklyHolidays: weeklyHolidaysArray,
       });
       setShowDepartmentEditModal(true);
     } else {
@@ -831,15 +835,18 @@ const OrganizationSettings = () => {
                         // Reset form changed state when opening new item
                         setIsFormChanged(false);
                         setSelectedDepartment(department);
-                        
+
                         // Find the leave policy object from the policies array
-                        const selectedPolicy = policies.find(p => p.leavePolicyId === department.leavePolicy);
-                        
+                        const selectedPolicy = policies.find(
+                          (p) => p.leavePolicyId === department.leavePolicy
+                        );
+
                         // Format weekly holidays into array of objects
-                        const weeklyHolidaysArray = department.weeklyHolidays?.split(",").map(day => ({
-                          value: day.trim(),
-                          label: day.trim()
-                        })) || [];
+                        const weeklyHolidaysArray =
+                          department.weeklyHolidays?.split(",").map((day) => ({
+                            value: day.trim(),
+                            label: day.trim(),
+                          })) || [];
 
                         setDepartmentForm({
                           name: department.name,
@@ -847,9 +854,10 @@ const OrganizationSettings = () => {
                           head: department.departmentHead,
                           leavePolicy: {
                             value: department.leavePolicy,
-                            label: selectedPolicy?.name || department.leavePolicy
+                            label:
+                              selectedPolicy?.name || department.leavePolicy,
                           },
-                          weeklyHolidays: weeklyHolidaysArray
+                          weeklyHolidays: weeklyHolidaysArray,
                         });
                         setShowDepartmentEditModal(true);
                       }}
