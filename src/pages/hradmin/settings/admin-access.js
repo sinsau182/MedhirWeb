@@ -112,18 +112,28 @@ function AdminAccess() {
             },
           }
         );
+
         if (response.data && Array.isArray(response.data)) {
           setCompanies(response.data); // Store the full company objects
-          if (
-            !response.data.some(
-              (company) => company.companyName === selectedCompany
-            )
-          ) {
-            setSelectedCompany(response.data[0].companyName); // Set default company if current selection is not in the list
+
+          // Get the company from localStorage
+          const storedCompanyId = localStorage.getItem("selectedCompanyId");
+
+          // Set the prefilled company if it exists in the response
+          const prefilledCompany = response.data.find(
+            (company) => company.companyId === storedCompanyId
+          );
+
+          if (prefilledCompany) {
+            setSelectedCompany(prefilledCompany);
+            fetchUsers(prefilledCompany.companyId); // Fetch users for the prefilled company
+          } else {
+            setSelectedCompany(response.data[0]); // Default to the first company
+            fetchUsers(response.data[0].companyId);
           }
         }
       } catch (error) {
-        toast.error("Error fetching companies:", error);
+        console.error("Error fetching companies:", error);
       }
     };
 
@@ -165,6 +175,7 @@ function AdminAccess() {
     );
     if (selected) {
       setSelectedCompany(selected);
+      localStorage.setItem("selectedCompanyId", companyId); // Save the selected company to localStorage
       setSelectedUsers([]);
       fetchUsers(companyId);
     }
@@ -172,22 +183,55 @@ function AdminAccess() {
 
   // Handle user selection (for ASSIGNING)
   const handleUserSelectForAssign = (user) => {
-    // Only allow selecting non-admins for assignment
-    if (user.isAdmin) return;
-    setSelectedUsers((prev) => {
-      if (prev.includes(user.userId)) {
-        return prev.filter((id) => id !== user.userId);
-      } else {
-        return [...prev, user.userId];
-      }
-    });
+    if (user.roles.includes("HRADMIN")) return; // Prevent assigning role to an already admin user
+
+    setUsersToAssignInfo([user]); // Set the user to assign
+    setIsAssignConfirmModalOpen(true); // Open the confirmation modal
   };
 
   // Handle clicking an existing admin (for UNASSIGNING)
   const handleUserClickForUnassign = (user) => {
-    if (user.isAdmin) {
-      setUserToUnassign(user);
-      setIsConfirmModalOpen(true);
+    if (!user.roles.includes("HRADMIN")) return; // Prevent removing role from a non-admin user
+
+    setUserToUnassign(user); // Set the user to unassign
+    setIsConfirmModalOpen(true); // Open the confirmation modal
+  };
+
+  const confirmUnassignAdmin = async () => {
+    if (!userToUnassign) return;
+
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        `http://localhost:8083/hradmin/employees/${userToUnassign.employeeId}/roles`,
+        {
+          roles: ["HRADMIN"],
+          operation: "Remove",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        // Update local state to reflect the role removal
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            u.employeeId === userToUnassign.employeeId
+              ? { ...u, roles: u.roles.filter((role) => role !== "HRADMIN") }
+              : u
+          )
+        );
+        setSuccessMessage("HR Admin role removed successfully!");
+      }
+    } catch (error) {
+      console.error("Error removing HR Admin role:", error);
+      setError("Failed to remove HR Admin role. Please try again.");
+    } finally {
+      setIsConfirmModalOpen(false); // Close the modal
+      setUserToUnassign(null); // Clear the user to unassign
     }
   };
 
@@ -209,33 +253,41 @@ function AdminAccess() {
 
   // New function to handle the actual assignment after confirmation
   const confirmAssignAdmin = async () => {
-    if (usersToAssignInfo.length === 0 || !selectedAccessType) return;
+    if (usersToAssignInfo.length === 0) return;
 
-    const userIdsToAssign = usersToAssignInfo.map((u) => u.userId);
+    const user = usersToAssignInfo[0]; // Get the user to assign
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        `http://localhost:8083/hradmin/employees/${user.employeeId}/roles`,
+        {
+          roles: ["HRADMIN"],
+          operation: "Add",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    console.log(
-      "Assigning admin access for users:",
-      userIdsToAssign,
-      "with access:",
-      selectedAccessType,
-      "in company:",
-      selectedCompany.companyId
-    );
-    // Update local state to reflect assignment (for UI)
-    setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        userIdsToAssign.includes(user.userId)
-          ? { ...user, isAdmin: true }
-          : user
-      )
-    );
-    setSuccessMessage("Admin access granted successfully! (Simulated)");
-    setSelectedUsers([]);
-    setSelectedAccessType(null); // Reset access type selection
-    setError("");
-    setIsAssignConfirmModalOpen(false); // Close the modal
-    setUsersToAssignInfo([]); // Clear temp state
-    setTimeout(() => setSuccessMessage(""), 3000);
+      if (response.status === 200) {
+        // Update local state to reflect the role assignment
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            u.employeeId === user.employeeId
+              ? { ...u, roles: [...u.roles, "HRADMIN"] }
+              : u
+          )
+        );
+        setSuccessMessage("HR Admin role assigned successfully!");
+      }
+    } catch (error) {
+      console.error("Error assigning HR Admin role:", error);
+      setError("Failed to assign HR Admin role. Please try again.");
+    } finally {
+      setIsAssignConfirmModalOpen(false); // Close the modal
+    }
   };
 
   // Handle admin unassignment (Simulated)
@@ -270,6 +322,10 @@ function AdminAccess() {
       user.email.toLowerCase().includes(searchInput.toLowerCase())
   );
 
+  const usersWithAdminFlag = users.map((user) => ({
+    ...user,
+    isAdmin: user.roles.includes("HRADMIN"), // Dynamically determine if the user is an admin
+  }));
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -342,15 +398,15 @@ function AdminAccess() {
                       <div className="divide-y">
                         {filteredUsers.map((user) => (
                           <div
-                            key={user.userId}
+                            key={user.employeeId}
                             className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                              selectedUsers.includes(user.userId) &&
-                              !user.isAdmin
+                              selectedUsers.includes(user.employeeId) &&
+                              !user.roles.includes("HRADMIN")
                                 ? "bg-blue-50"
                                 : ""
                             }`}
                             onClick={() =>
-                              user.isAdmin
+                              user.roles.includes("HRADMIN")
                                 ? handleUserClickForUnassign(user)
                                 : handleUserSelectForAssign(user)
                             }
@@ -361,12 +417,12 @@ function AdminAccess() {
                                   {user.name}
                                 </p>
                                 <p className="text-sm text-gray-500">
-                                  {user.email}
+                                  {user.emailPersonal}
                                 </p>
                               </div>
-                              {user.isAdmin ? (
+                              {user.roles.includes("HRADMIN") ? (
                                 <Badge variant="destructive">HR Admin</Badge>
-                              ) : selectedUsers.includes(user.userId) ? (
+                              ) : selectedUsers.includes(user.employeeId) ? (
                                 <div className="w-4 h-4 bg-blue-500 rounded-full" />
                               ) : null}
                             </div>
@@ -438,7 +494,7 @@ function AdminAccess() {
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleUnassignAdmin}>
+            <Button variant="destructive" onClick={confirmUnassignAdmin}>
               Yes, Unassign
             </Button>
           </div>
@@ -458,16 +514,11 @@ function AdminAccess() {
             Confirm Assignment
           </h2>
           <p className="text-center text-gray-600 mb-2">
-            Are you sure you want to grant{" "}
-            <span className="font-medium">
-              {ACCESS_TYPES.find((t) => t.id === selectedAccessType)?.label ||
-                "Admin"}
-            </span>{" "}
-            access to the following user(s)?
+            Are you sure you want to grant HR Admin access to the following user(s)?
           </p>
           <ul className="list-disc list-inside text-center text-gray-700 mb-6 max-h-40 overflow-y-auto">
             {usersToAssignInfo.map((user) => (
-              <li key={user.userId}>{user.name}</li>
+              <li key={user.employeeId}>{user.name}</li>
             ))}
           </ul>
           <div className="flex justify-center space-x-4">

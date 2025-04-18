@@ -164,11 +164,45 @@ useEffect(() => {
     { name: "Product", value: 15 },
   ];
 
+  useEffect(() => {
+    const fetchEmployeeCount = async () => {
+      try {
+        const token = getItemFromSessionStorage("token", null); // Retrieve the token from sessionStorage
+        if (!token) {
+          throw new Error("Authentication token is missing");
+        }
+    
+        const response = await axios.get(
+          "http://localhost:8083/employees/manager/EMP002", // Replace with your actual API endpoint
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+              "Content-Type": "application/json",
+            },
+          }
+        );
+    
+        if (response.data && Array.isArray(response.data)) {
+          setEmployeeCount(response.data.length); // Set the total number of employees
+        } else {
+          setEmployeeCount(0);
+        }
+      } catch (error) {
+        console.error("Error fetching employee count:", error);
+        setEmployeeCount(0);
+      }
+    };
+    
+    fetchEmployeeCount();
+  }, []);
+
+  const [employeeCount, setEmployeeCount] = useState(0);
+
   const overviewData = [
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Team Members",
-      count: employees.length,
+      count: employeeCount,
     },
 
     {
