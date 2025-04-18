@@ -435,7 +435,18 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       <td className="px-5 py-4 text-sm">{request.employeeName}</td>
                     <td className="px-5 py-4 text-sm">{request.department}</td>
                       <td className="px-5 py-4 text-sm">{formatDate(request.startDate)}</td>
-                    <td className="px-5 py-4 text-sm">{request.shiftType}</td>
+                    <td className="px-5 py-4 text-sm">{(() => {
+                                switch (request.shiftType) {
+                                  case 'FULL_DAY':
+                                    return 'Full Day';
+                                  case 'FIRST_HALF':
+                                    return 'First Half (Morning)';
+                                  case 'SECOND_HALF':
+                                    return 'Second Half (Evening)';
+                                  default:
+                                    return request.shiftType || '-';
+                                }
+                              })()}</td>
                       <td className="px-5 py-4 text-sm">{request.reason}</td>
                     <td className="px-5 py-4 text-sm font-medium space-x-3">
                       <Button

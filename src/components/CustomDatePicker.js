@@ -293,6 +293,7 @@ const CustomDatePicker = ({
               {selectedDateObjects.map((selected) => {
                 const dateObj = selected.date instanceof Date ? selected.date : new Date(selected.date);
                 
+                const shiftTypeLabel = timeSlotOptions.find(option => option.value === selected.shiftType)?.label || selected.shiftType;
                 return (
                   <div
                     key={dateObj.toISOString()}
@@ -300,7 +301,7 @@ const CustomDatePicker = ({
                   >
                     <span className="font-medium">{format(dateObj, 'dd MMM yyyy')}</span>
                     <span className="text-xs text-blue-600 ml-1">
-                      {selected.shiftType}
+                      {shiftTypeLabel}
                     </span>
                     <button
                       type="button"
