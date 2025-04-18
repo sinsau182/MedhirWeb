@@ -125,8 +125,9 @@ const Overview = () => {
   const fetchPendingRequests = async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/Pending`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

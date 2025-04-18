@@ -8,11 +8,12 @@ export const fetchPendingLeaveRequests = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token');
+      const company = localStorage.getItem('selectedCompanyId');
       if (!token) {
         return rejectWithValue('Authentication token not found');
       }
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/Pending`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
