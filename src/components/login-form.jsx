@@ -32,24 +32,24 @@ export function LoginForm({ className, ...props }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       const result = await dispatch(loginUser(credentials));
-    
+
       if (result.meta.requestStatus === "fulfilled") {
         const token = result.payload.token;
-    
+
         if (typeof window !== "undefined") {
-          dispatch(setItem({ key: 'token', value: token, encrypt: true })); // Store token in sessionStorage
+          dispatch(setItem({ key: "token", value: token, encrypt: true })); // Store token in sessionStorage
 
           // Start session tracking immediately
-          updateSessionActivity(); 
+          updateSessionActivity();
         }
-    
+
         // Decode token to get roles
         const decodedToken = jwtDecode(token);
         const roles = decodedToken.roles || [];
-    
+
         // Redirect based on role
         if (roles.includes("SUPERADMIN")) {
           router.push("/superadmin/companies");
@@ -66,7 +66,7 @@ export function LoginForm({ className, ...props }) {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
