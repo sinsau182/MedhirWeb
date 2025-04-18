@@ -88,55 +88,69 @@ const Overview = () => {
   const fetchProfileUpdates = async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`, { headers });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setProfileUpdates(data);
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`,
+        { headers }
+      );
+      if (!response.ok) {
+        throw new Error(
+          `HTTP error! status: ${response.status} ${response.statusText}`
+        );
+      }
+      const data = await response.json();
+      setProfileUpdates(data);
     } catch (error) {
-        toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
-        setProfileUpdates([]);
+      toast({
+        title: "Error",
+        description: `Failed to fetch profile updates: ${error.message}`,
+        variant: "destructive",
+      });
+      setProfileUpdates([]);
     }
-};
+  };
 
-const fetchPendingRequests = async () => {
-try {
-  const token = getItemFromSessionStorage("token", null);
-  const company = localStorage.getItem("selectedCompanyId");
-  const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const fetchPendingRequests = async () => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && Array.isArray(response.data.leaves)) {
+        const regularLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName !== "Comp-Off"
+        );
+        const compOffLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName === "Comp-Off"
+        );
+
+        setPendingLeaves(regularLeaves);
+        setPendingCompOffs(compOffLeaves);
+      } else {
+        setPendingLeaves([]);
+        setPendingCompOffs([]);
+      }
+    } catch (error) {
+      setPendingLeaves([]);
+      setPendingCompOffs([]);
     }
-  });
+  };
 
-  if (response.data && Array.isArray(response.data.leaves)) {
-    const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
-    const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
-    
-    setPendingLeaves(regularLeaves);
-    setPendingCompOffs(compOffLeaves);
-  } else {
-    setPendingLeaves([]);
-    setPendingCompOffs([]);
-  }
-} catch (error) {
-  
-  setPendingLeaves([]);
-  setPendingCompOffs([]);
-}
-};
-
-
-useEffect(() => {
-  fetchPendingRequests();
-  fetchProfileUpdates();
-}, []);
+  useEffect(() => {
+    fetchPendingRequests();
+    fetchProfileUpdates();
+  }, []);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -171,7 +185,7 @@ useEffect(() => {
         if (!token) {
           throw new Error("Authentication token is missing");
         }
-    
+
         const response = await axios.get(
           "http://localhost:8083/employees/manager/EMP002", // Replace with your actual API endpoint
           {
@@ -181,7 +195,7 @@ useEffect(() => {
             },
           }
         );
-    
+
         if (response.data && Array.isArray(response.data)) {
           setEmployeeCount(response.data.length); // Set the total number of employees
         } else {
@@ -192,7 +206,7 @@ useEffect(() => {
         setEmployeeCount(0);
       }
     };
-    
+
     fetchEmployeeCount();
   }, []);
 
@@ -208,7 +222,8 @@ useEffect(() => {
     {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
       label: "Open Requests",
-      count: pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
+      count:
+        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
     },
   ];
 
