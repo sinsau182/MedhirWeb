@@ -374,7 +374,18 @@ const Leaves = () => {
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                {leave.shiftType}
+                            {(() => {
+                                switch (leave.shiftType) {
+                                  case 'FULL_DAY':
+                                    return 'Full Day';
+                                  case 'FIRST_HALF':
+                                    return 'First Half (Morning)';
+                                  case 'SECOND_HALF':
+                                    return 'Second Half (Evening)';
+                                  default:
+                                    return leave.shiftType || '-';
+                                }
+                              })()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

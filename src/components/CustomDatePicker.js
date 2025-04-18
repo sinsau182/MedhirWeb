@@ -10,7 +10,7 @@ const CustomDatePicker = ({
   isCompOff = false,
   maxDays,
   minDate = new Date(),
-  shiftType = 'FULL DAY',
+  shiftType = 'FULL_DAY',
   onShiftTypeChange,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
