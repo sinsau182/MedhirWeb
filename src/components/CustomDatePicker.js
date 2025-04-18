@@ -23,9 +23,9 @@ const CustomDatePicker = ({
   const calendarPopupRef = useRef(null);
 
   const timeSlotOptions = [
-    { value: 'Full Day', label: 'Full Day' },
-    { value: 'First Half (Morning)', label: 'First Half (Morning)' },
-    { value: 'Second Half (Evening)', label: 'Second Half (Evening)' }
+    { value: 'FULL_DAY', label: 'Full Day' },
+    { value: 'FIRST_HALF', label: 'First Half (Morning)' },
+    { value: 'SECOND_HALF', label: 'Second Half (Evening)' }
   ];
 
   // Handle shift type change
@@ -229,31 +229,31 @@ const CustomDatePicker = ({
     onChange(newDates);
   };
 
-  const calculateTotalDays = () => {
-    return selectedDateObjects.reduce((total, selected) => {
-      if (selected.timeSlot === 'First Half (Morning)' || 
-          selected.timeSlot === 'Second Half (Evening)') {
-        return total + 0.5;
-      }
-      return total + 1;
-    }, 0);
-  };
+  // const calculateTotalDays = () => {
+  //   return selectedDateObjects.reduce((total, selected) => {
+  //     if (selected.timeSlot === 'First Half (Morning)' || 
+  //         selected.timeSlot === 'Second Half (Evening)') {
+  //       return total + 0.5;
+  //     }
+  //     return total + 1;
+  //   }, 0);
+  // };
 
-  const isInRange = (date) => {
-    if (selectedDateObjects.length < 2 || !date) return false;
-    const sortedDates = selectedDateObjects
-      .map(d => d.date)
-      .sort((a, b) => a - b);
-    return isWithinInterval(date, { start: sortedDates[0], end: sortedDates[sortedDates.length - 1] });
-  };
+  // const isInRange = (date) => {
+  //   if (selectedDateObjects.length < 2 || !date) return false;
+  //   const sortedDates = selectedDateObjects
+  //     .map(d => d.date)
+  //     .sort((a, b) => a - b);
+  //   return isWithinInterval(date, { start: sortedDates[0], end: sortedDates[sortedDates.length - 1] });
+  // };
 
-  const isStartOrEndDate = (date) => {
-    if (!date || selectedDateObjects.length === 0) return false;
-    const sortedDates = selectedDateObjects
-      .map(d => d.date)
-      .sort((a, b) => a - b);
-    return isSameDay(date, sortedDates[0]) || isSameDay(date, sortedDates[sortedDates.length - 1]);
-  };
+  // const isStartOrEndDate = (date) => {
+  //   if (!date || selectedDateObjects.length === 0) return false;
+  //   const sortedDates = selectedDateObjects
+  //     .map(d => d.date)
+  //     .sort((a, b) => a - b);
+  //   return isSameDay(date, sortedDates[0]) || isSameDay(date, sortedDates[sortedDates.length - 1]);
+  // };
 
   return (
     <div className="relative" ref={calendarRef}>

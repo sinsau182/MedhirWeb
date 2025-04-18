@@ -30,6 +30,7 @@ const Navbar = () => {
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(""); // Default selected company
   const [navbarColor, setNavbarColor] = useState("bg-[#A8D5BA]"); // Default color
+  const [currentRole, setCurrentRole] = useState("");
 
   useEffect(() => {
     const storedCompany = localStorage.getItem("selectedCompany");
@@ -64,6 +65,11 @@ const Navbar = () => {
       setNavbarColor(backgroundColor);
     }
   }, [navbarColor, companies]);
+
+  useEffect(() => {
+    const role = sessionStorage.getItem("currentRole");
+    setCurrentRole(role);
+  }, []);
 
   const handleLogout = () => {
     dispatch(removeItem({ key: "token" }));
@@ -174,47 +180,49 @@ const Navbar = () => {
         {/* Right Section: Profile */}
         <div className="flex items-center gap-6 relative">
           {/* Company Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-10 px-6 flex items-center justify-between rounded-full border border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 bg-white hover:bg-gray-100"
-              >
-                <span className="text-sm font-semibold text-gray-700">
-                  {selectedCompany}
-                </span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="ml-2 h-4 w-4 text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+          {currentRole === "hr" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-10 px-6 flex items-center justify-between rounded-full border border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 bg-white hover:bg-gray-100"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="start" forceMount>
-              {companies.map((company) => (
-                <DropdownMenuItem
-                  key={company.companyId}
-                  onClick={() => handleCompanyChange(company.companyName)}
-                  className={`cursor-pointer ${
-                    company.companyName === selectedCompany
-                      ? "font-semibold text-violet-600"
-                      : ""
-                  }`}
-                >
-                  {company.companyName}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {selectedCompany}
+                  </span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="ml-2 h-4 w-4 text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="start" forceMount>
+                {companies.map((company) => (
+                  <DropdownMenuItem
+                    key={company.companyId}
+                    onClick={() => handleCompanyChange(company.companyName)}
+                    className={`cursor-pointer ${
+                      company.companyName === selectedCompany
+                        ? "font-semibold text-violet-600"
+                        : ""
+                    }`}
+                  >
+                    {company.companyName}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Profile Avatar */}
           <DropdownMenu>

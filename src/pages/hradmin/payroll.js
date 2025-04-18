@@ -6,9 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
+
 function PayrollManagement() {
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const paidDays = 25;
   const monthDays = 30;
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
@@ -49,7 +53,7 @@ function PayrollManagement() {
   const fetchTDS = async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      process.env.NEXT_PUBLIC_API_BASE_URL + "/api/tds-settings",
+      process.env.NEXT_PUBLIC_API_BASE_URL + "/tds-settings/company/" + selectedCompanyId,
       {
         method: "GET",
         headers: {
@@ -76,7 +80,7 @@ function PayrollManagement() {
   const fetchPTAX = async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      process.env.NEXT_PUBLIC_API_BASE_URL + "/api/professional-tax-settings",
+      process.env.NEXT_PUBLIC_API_BASE_URL + "/professional-tax-settings/company/" + selectedCompanyId,
       {
         method: "GET",
         headers: {
