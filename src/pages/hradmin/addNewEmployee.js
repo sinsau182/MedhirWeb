@@ -341,7 +341,7 @@ function EmployeeForm() {
     const fetchDepartments = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
-        const companyId = localStorage.getItem("selectedCompanyId") || "CID101";
+        const companyId = localStorage.getItem("selectedCompanyId");
 
         if (!companyId) {
           console.error("No company ID found");
@@ -383,7 +383,7 @@ function EmployeeForm() {
     fetchDepartments();
   }, []);
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  // const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
   const weekDayOptions = [
     { value: "SUNDAY", label: "Sunday" },
@@ -397,7 +397,7 @@ function EmployeeForm() {
 
   const [formData, setFormData] = useState({
     employee: {
-      employeeId: "",
+      // employeeId: "",
       name: "",
       fathersName: "",
       gender: "",
@@ -530,38 +530,38 @@ function EmployeeForm() {
     }
   }, [employee]);
 
-  useEffect(() => {
-    const fetchEmployeeId = async () => {
-      try {
-        const token = getItemFromSessionStorage("token", null);
-        const response = await axios.get(
-          `http://localhost:8083/hradmin/generate-employee-id/${company}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.status === 200) {
-          const data = await response.data;
-          setFormData((prev) => ({
-            ...prev,
-            employee: {
-              ...prev.employee,
-              employeeId: data, // Set employeeId from API response
-            },
-          }));
-        } else {
-          toast.error("Failed to generate Employee ID");
-        }
-      } catch (error) {
-        console.error("Error fetching Employee ID:", error);
-        toast.error("Error generating Employee ID");
-      }
-    };
+  // useEffect(() => {
+  //   const fetchEmployeeId = async () => {
+  //     try {
+  //       const token = getItemFromSessionStorage("token", null);
+  //       const response = await axios.get(
+  //         `http://localhost:8083/hradmin/generate-employee-id/${company}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+  //       if (response.status === 200) {
+  //         const data = await response.data;
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           employee: {
+  //             ...prev.employee,
+  //             employeeId: data, // Set employeeId from API response
+  //           },
+  //         }));
+  //       } else {
+  //         toast.error("Failed to generate Employee ID");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching Employee ID:", error);
+  //       toast.error("Error generating Employee ID");
+  //     }
+  //   };
 
-    fetchEmployeeId();
-  }, []);
+  //   fetchEmployeeId();
+  // }, []);
 
   // const calculateTotalCTC = (salaryData) => {
   //   const values = {
@@ -645,18 +645,18 @@ function EmployeeForm() {
     });
   };
 
-  const handleNestedInputChange = (section, parentField, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [parentField]: {
-          ...prev[section][parentField],
-          [field]: value,
-        },
-      },
-    }));
-  };
+  // const handleNestedInputChange = (section, parentField, field, value) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [section]: {
+  //       ...prev[section],
+  //       [parentField]: {
+  //         ...prev[section][parentField],
+  //         [field]: value,
+  //       },
+  //     },
+  //   }));
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -676,6 +676,7 @@ function EmployeeForm() {
 
     setLoading(true);
     try {
+      // Proceed with form submission after the employeeId is updated
       const submitFormData = new FormData();
 
       // Helper function to remove empty fields from an object
@@ -696,9 +697,9 @@ function EmployeeForm() {
         return cleanObj;
       };
 
-      // Create the base employee data object with statutory fields at the same level
+      // Create the base employee data object
       const baseEmployeeData = {
-        employeeId: formData.employee.employeeId?.trim(),
+        // employeeId: formData.employee.employeeId?.trim(),
         name: formData.employee.name?.trim(),
         fathersName: formData.employee.fathersName?.trim(),
         gender: formData.employee.gender?.trim(),
@@ -712,7 +713,7 @@ function EmployeeForm() {
         designation: formData.employee.designation?.designationId || "",
         joiningDate: formData.employee.joiningDate,
         reportingManager:
-          formData.employee.reportingManager?.employeeId?.trim() || "", // Access employeeId and trim
+          formData.employee.reportingManager?.employeeId?.trim() || "",
         overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
         weeklyOffs: formData.employee.weeklyOffs?.length
           ? formData.employee.weeklyOffs
@@ -721,7 +722,7 @@ function EmployeeForm() {
         uanNumber: formData.employee.uanNumber?.trim(),
         esicEnrolled: Boolean(formData.employee.esicEnrolled),
         esicNumber: formData.employee.esicNumber?.trim(),
-        companyId: formData.companyId, // Include companyId in the request
+        companyId: formData.companyId,
         idProofs: {
           aadharNo: formData.idProofs.aadharNo?.trim(),
           panNo: formData.idProofs.panNo?.trim(),
@@ -757,46 +758,14 @@ function EmployeeForm() {
       // Add the cleaned employee data to FormData
       submitFormData.append("employee", JSON.stringify(employeeData));
 
-      // Only add files if they exist
+      // Add files if they exist
       if (formData.employee.employeeImgUrl instanceof File) {
         submitFormData.append("profileImage", formData.employee.employeeImgUrl);
       }
 
-      if (formData.idProofs.aadharImgUrl instanceof File) {
-        submitFormData.append("aadharImage", formData.idProofs.aadharImgUrl);
-      }
-
-      if (formData.idProofs.pancardImgUrl instanceof File) {
-        submitFormData.append("pancardImage", formData.idProofs.pancardImgUrl);
-      }
-
-      if (formData.idProofs.passportImgUrl instanceof File) {
-        submitFormData.append(
-          "passportImage",
-          formData.idProofs.passportImgUrl
-        );
-      }
-
-      if (formData.idProofs.drivingLicenseImgUrl instanceof File) {
-        submitFormData.append(
-          "drivingLicenseImage",
-          formData.idProofs.drivingLicenseImgUrl
-        );
-      }
-
-      if (formData.idProofs.voterIdImgUrl instanceof File) {
-        submitFormData.append("voterIdImage", formData.idProofs.voterIdImgUrl);
-      }
-
-      if (formData.bankDetails.passbookImgUrl instanceof File) {
-        submitFormData.append(
-          "passbookImage",
-          formData.bankDetails.passbookImgUrl
-        );
-      }
-
+      // Submit the form
       if (employeeId) {
-        // For updates, use the stored employeeId in the URL
+        // For updates
         const result = await dispatch(
           updateEmployee({
             id: employeeId,
@@ -843,9 +812,10 @@ function EmployeeForm() {
     const errors = {};
 
     // Validate required fields
-    if (!employee.employeeId?.trim()) {
-      errors.employeeId = "Employee ID is required";
-    }
+    // if (!employee.employeeId?.trim()) {
+    //   errors.employeeId = "Employee ID is required";
+    // }
+
     if (!employee.name?.trim()) {
       errors.name = "Employee name is required";
     }
@@ -932,95 +902,81 @@ function EmployeeForm() {
   };
 
   // Function to handle direct employee creation from personal details
-  const handleAddEmployeeFromPersonal = async () => {
-    if (!validateForm()) return;
+  // const handleAddEmployeeFromPersonal = async () => {
+  //   if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      const personalFormData = new FormData();
+  //   setLoading(true);
+  //   try {
+  //     const personalFormData = new FormData();
 
-      // Clean the form data to remove empty values
-      const cleanEmployeeDetails = removeEmptyValues({
-        employeeId: formData.employee.employeeId,
-        name: formData.employee.name,
-        fathersName: formData.employee.fathersName,
-        gender: formData.employee.gender,
-        phone: formData.employee.phone,
-        alternatePhone: formData.employee.alternatePhone,
-        emailPersonal: formData.employee.emailPersonal,
-        emailOfficial: formData.employee.emailOfficial,
-        currentAddress: formData.employee.currentAddress,
-        permanentAddress: formData.employee.permanentAddress,
-        department: formData.employee.department,
-        designation: formData.employee.designation,
-        joiningDate: formData.employee.joiningDate,
-        reportingManager: formData.employee.reportingManager,
-        overtimeEligibile: formData.employee.overtimeEligibile,
-        weeklyOffs: formData.employee.weeklyOffs,
-      });
+  //     // Clean the form data to remove empty values
+  //     const cleanEmployeeDetails = removeEmptyValues({
+  //       employeeId: formData.employee.employeeId,
+  //       name: formData.employee.name,
+  //       fathersName: formData.employee.fathersName,
+  //       gender: formData.employee.gender,
+  //       phone: formData.employee.phone,
+  //       alternatePhone: formData.employee.alternatePhone,
+  //       emailPersonal: formData.employee.emailPersonal,
+  //       emailOfficial: formData.employee.emailOfficial,
+  //       currentAddress: formData.employee.currentAddress,
+  //       permanentAddress: formData.employee.permanentAddress,
+  //       department: formData.employee.department,
+  //       designation: formData.employee.designation,
+  //       joiningDate: formData.employee.joiningDate,
+  //       reportingManager: formData.employee.reportingManager,
+  //       overtimeEligibile: formData.employee.overtimeEligibile,
+  //       weeklyOffs: formData.employee.weeklyOffs,
+  //     });
 
-      // Only append if we have non-empty data
-      if (Object.keys(cleanEmployeeDetails).length > 0) {
-        personalFormData.append(
-          "employee",
-          JSON.stringify(cleanEmployeeDetails)
-        );
-      }
+  //     // Only append if we have non-empty data
+  //     if (Object.keys(cleanEmployeeDetails).length > 0) {
+  //       personalFormData.append(
+  //         "employee",
+  //         JSON.stringify(cleanEmployeeDetails)
+  //       );
+  //     }
 
-      // Add profile image if exists
-      if (formData.employee.employeeImgUrl instanceof File) {
-        personalFormData.append(
-          "employeeImgUrl",
-          formData.employee.employeeImgUrl
-        );
-      }
+  //     // Add profile image if exists
+  //     if (formData.employee.employeeImgUrl instanceof File) {
+  //       personalFormData.append(
+  //         "employeeImgUrl",
+  //         formData.employee.employeeImgUrl
+  //       );
+  //     }
 
-      const result = await dispatch(createEmployee(personalFormData)).unwrap();
-      toast.success("Employee created successfully");
-      router.push("/hradmin/employees");
-    } catch (err) {
-      let errorMessage = "An error occurred";
+  //     const result = await dispatch(createEmployee(personalFormData)).unwrap();
+  //     toast.success("Employee created successfully");
+  //     router.push("/hradmin/employees");
+  //   } catch (err) {
+  //     let errorMessage = "An error occurred";
 
-      if (err?.validationErrors) {
-        // Handle validation errors
-        const validationMessages = Object.entries(err.validationErrors)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join("\n");
-        errorMessage = validationMessages;
-      } else if (typeof err === "string") {
-        errorMessage = err;
-      } else if (err?.message) {
-        errorMessage = err.message;
-      } else if (err?.error) {
-        errorMessage = err.error;
-      }
+  //     if (err?.validationErrors) {
+  //       // Handle validation errors
+  //       const validationMessages = Object.entries(err.validationErrors)
+  //         .map(([field, message]) => `${field}: ${message}`)
+  //         .join("\n");
+  //       errorMessage = validationMessages;
+  //     } else if (typeof err === "string") {
+  //       errorMessage = err;
+  //     } else if (err?.message) {
+  //       errorMessage = err.message;
+  //     } else if (err?.error) {
+  //       errorMessage = err.error;
+  //     }
 
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     toast.error(errorMessage);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  const handleTabClick = (tab) => {
-    router.push({
-      pathname: "/hradmin/employees",
-      query: { tab },
-    });
-  };
-
-  const mainTabs = [
-    "Basic",
-    "ID Proofs",
-    "Salary Details",
-    "Bank Details",
-    "Leaves Policy",
-  ];
-  const subTabs = [
-    "ID Proofs",
-    "Salary Details",
-    "Bank Details",
-    "Leaves & Policies",
-  ];
+  // const handleTabClick = (tab) => {
+  //   router.push({
+  //     pathname: "/hradmin/employees",
+  //     query: { tab },
+  //   });
+  // };
 
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
@@ -1234,17 +1190,6 @@ function EmployeeForm() {
                         <h3 className="text-lg font-semibold text-gray-800 mb-3">
                           Personal Information
                         </h3>
-                        <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>
-                            Employee ID <span className="text-red-400">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            className={`${inputClass} bg-gray-100 cursor-not-allowed`}
-                            value={formData.employee.employeeId || ""}
-                            readOnly // Make the field non-editable
-                          />
-                        </div>
 
                         <div className={inputGroupClass}>
                           <label className={floatingLabelClass}>
@@ -2027,7 +1972,7 @@ function EmployeeForm() {
                     ) : (
                       <>
                         <span>
-                          {employeeId ? "Update Employee" : "Add Employee"}
+                          {employeeId ? "Update Employee" : "Save and Exit"}
                         </span>
                       </>
                     )}
@@ -2067,8 +2012,8 @@ function EmployeeForm() {
                         {activeSection === "salary"
                           ? employee
                             ? "Update Employee"
-                            : "Add Employee"
-                          : "Next"}
+                            : "Save and Exit"
+                          : "Save and Continue"}
                       </span>
                       {activeSection !== "salary" && (
                         <svg

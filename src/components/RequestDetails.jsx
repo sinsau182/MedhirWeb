@@ -323,7 +323,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                     End Date
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Leave Balance
+                    Shift Type
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Reason
