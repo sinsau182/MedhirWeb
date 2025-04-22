@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules`;
-
 const HR_EMPLOYEES_ENDPOINT = `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/minimal`;
 
 // Fetch modules
