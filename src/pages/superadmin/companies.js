@@ -18,10 +18,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
-import { Search, UserPlus, Trash, Edit, Grid2x2 } from "lucide-react";
+import { Search, UserPlus, Trash, Edit } from "lucide-react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa"; // Import the icons
 import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
@@ -196,14 +194,6 @@ function SuperadminCompanies() {
     }
   };
 
-  // const handleSelectCompany = (company) => {
-  //   if (selectedCompany && selectedCompany.id === company.id) {
-  //     setSelectedCompany(null);
-  //   } else {
-  //     setSelectedCompany(company);
-  //   }
-  // };
-
   const handleDeleteCompany = async () => {
     if (!selectedCompany) return;
 
@@ -221,10 +211,6 @@ function SuperadminCompanies() {
     company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  // const handleLogout = () => {
-  //   sessionStorage.removeItem("token");
-  //   router.push("/login");
-  // };
 
   const predefinedColors = [
     "#B0E0E6", "#FFE4E1", "#F0E68C", "#E6E6FA", "#D1D5DB"

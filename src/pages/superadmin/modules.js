@@ -92,9 +92,6 @@ function SuperadminModules() {
     loading: companiesLoading,
     error: companiesError,
   } = useSelector((state) => state.companies);
-  // const { allEmployees, loading: employeesLoading, error: employeesError } = useSelector(
-  //   (state) => state.allEmployees
-  // );
 
   // Add console logging
   useEffect(() => {
