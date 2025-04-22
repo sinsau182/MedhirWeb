@@ -33,7 +33,6 @@ export const fetchEmployees = createAsyncThunk(
     try {
       // Get the HR admin token instead of superadmin token
       const token = getItemFromSessionStorage("token");
-      console.log("Fetching employees from:", HR_EMPLOYEES_ENDPOINT);
       
       const response = await fetch(HR_EMPLOYEES_ENDPOINT, {
         method: 'GET',
@@ -43,8 +42,6 @@ export const fetchEmployees = createAsyncThunk(
           'Authorization': `Bearer ${token}`,
         },
       });
-
-      console.log("Response status:", response.status);
       
       if (!response.ok) {
         if (response.status === 403) {
@@ -75,7 +72,6 @@ export const fetchEmployees = createAsyncThunk(
       }
 
       const data = await response.json();
-      console.log("Employees data:", data);
       
       // Handle both array and single object responses
       const employees = Array.isArray(data) ? data : [data];
@@ -94,7 +90,6 @@ export const addModule = createAsyncThunk(
   async (moduleData, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      console.log("Creating module with data:", moduleData);
       
       const response = await fetch(API_BASE_URL, {
         method: "POST",
@@ -117,7 +112,6 @@ export const addModule = createAsyncThunk(
       }
 
       const data = await response.json();
-      console.log("Module created successfully:", data);
       return data;
     } catch (error) {
       console.error("Error creating module:", error);

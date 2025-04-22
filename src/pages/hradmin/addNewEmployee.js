@@ -344,12 +344,9 @@ function EmployeeForm() {
         const companyId = localStorage.getItem("selectedCompanyId");
 
         if (!companyId) {
-          console.error("No company ID found");
           toast.error("Company ID not found");
           return;
         }
-
-        console.log("Fetching departments for company:", companyId);
 
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/company/${companyId}`,
@@ -361,19 +358,15 @@ function EmployeeForm() {
           }
         );
 
-        console.log("Departments API response:", response.data);
-
         if (response.data && Array.isArray(response.data)) {
           setDepartments(response.data);
           if (response.data.length === 0) {
             toast.warning("No departments found for this company");
           }
         } else {
-          console.error("Invalid departments data format:", response.data);
           toast.error("Invalid departments data received");
         }
       } catch (error) {
-        console.error("Error fetching departments:", error.response || error);
         toast.error(
           error.response?.data?.message || "Failed to fetch departments"
         );
@@ -522,7 +515,6 @@ function EmployeeForm() {
               parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
         });
-        console.log(company);
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
         toast.error("Error loading employee data");
@@ -930,14 +922,6 @@ const handleSubmit = async (e) => {
     if (activeSectionParam) setActiveSection(activeSectionParam);
   }, [activeMainTab, activeSectionParam]);
 
-  // const handlePhotoUpload = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     // Handle the file upload logic here
-  //     console.log("Uploaded file:", file);
-  //   }
-  // };
-
   const handleFileUpload = (documentType, file) => {
     if (file) {
       setFormData((prev) => ({
@@ -980,8 +964,6 @@ const handleSubmit = async (e) => {
         const token = getItemFromSessionStorage("token", null);
         const departmentId = formData.employee.department.departmentId;
 
-        console.log("Fetching designations for department:", departmentId);
-
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/designations/department/${departmentId}`,
           {
@@ -992,19 +974,15 @@ const handleSubmit = async (e) => {
           }
         );
 
-        console.log("Designations API response:", response.data);
-
         if (response.data && Array.isArray(response.data)) {
           setDesignations(response.data);
           if (response.data.length === 0) {
             toast.warning("No designations found for this department");
           }
         } else {
-          console.error("Invalid designations data format:", response.data);
           toast.error("Invalid designations data received");
         }
       } catch (error) {
-        console.error("Error fetching designations:", error.response || error);
         toast.error(
           error.response?.data?.message || "Failed to fetch designations"
         );
@@ -1025,7 +1003,6 @@ const handleSubmit = async (e) => {
         }
 
         const token = getItemFromSessionStorage("token", null);
-        console.log("Fetching managers for department:", departmentId);
 
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/${departmentId}/managers`,
@@ -1037,19 +1014,15 @@ const handleSubmit = async (e) => {
           }
         );
 
-        console.log("Managers API response:", response.data);
-
         if (response.data && Array.isArray(response.data)) {
           setManagers(response.data);
           if (response.data.length === 0) {
             toast.warning("No managers found for this department");
           }
         } else {
-          console.error("Invalid managers data format:", response.data);
           toast.error("Invalid managers data received");
         }
       } catch (error) {
-        console.error("Error fetching managers:", error.response || error);
         toast.error(
           error.response?.data?.message || "Failed to fetch managers"
         );

@@ -42,6 +42,7 @@ import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { toast } from "sonner";
 
 const COLORS = [
   "#0088FE",
@@ -202,7 +203,7 @@ const Overview = () => {
           setEmployeeCount(0);
         }
       } catch (error) {
-        console.error("Error fetching employee count:", error);
+        toast.error("Error fetching employee count:", error);
         setEmployeeCount(0);
       }
     };

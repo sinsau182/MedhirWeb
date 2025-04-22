@@ -17,40 +17,7 @@ import Sidebar from "@/components/Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
-
-// // Hardcoded users for testing
-// const TEST_USERS = [
-//   {
-//     userId: 101,
-//     name: "Alice Johnson",
-//     email: "alice.j@techsolutions.com",
-//     isAdmin: true, // Let's make Alice an admin initially for testing
-//   },
-//   {
-//     userId: 102,
-//     name: "Bob Williams",
-//     email: "bob.w@techsolutions.com",
-//     isAdmin: false,
-//   },
-//   {
-//     userId: 103,
-//     name: "Charlie Brown",
-//     email: "charlie.b@techsolutions.com",
-//     isAdmin: false,
-//   },
-//   {
-//     userId: 201,
-//     name: "Diana Miller",
-//     email: "diana.m@globalservices.com",
-//     isAdmin: false,
-//   },
-//   {
-//     userId: 202,
-//     name: "Ethan Davis",
-//     email: "ethan.d@globalservices.com",
-//     isAdmin: true, // Let's make Ethan an admin initially for testing
-//   },
-// ];
+import { toast } from "sonner";
 
 function AdminAccess() {
   const router = useRouter();
@@ -69,35 +36,6 @@ function AdminAccess() {
   const [isAssignConfirmModalOpen, setIsAssignConfirmModalOpen] =
     useState(false);
   const [usersToAssignInfo, setUsersToAssignInfo] = useState([]);
-
-  // Define available access types
-  const ACCESS_TYPES = [
-    { id: "hr_admin", label: "HR Admin Access" },
-    // Add other access types here if needed in the future
-  ];
-
-  // API Utilities
-  // const getAuthHeaders = () => {
-  //   const token = getItemFromSessionStorage("token");
-  //   if (!token) {
-  //     router.push("/login?error=Please login to continue");
-  //     return null;
-  //   }
-  //   return {
-  //     headers: {
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //   };
-  // };
-
-  // const handleApiError = (error, customMessage = "Operation failed") => {
-  //   console.error(customMessage, error);
-  //   if (error.response?.status === 401) {
-  //     router.push("/login?error=Session expired. Please login again");
-  //   } else {
-  //     setError(error.response?.data?.message || customMessage);
-  //   }
-  // };
 
   // Fetch companies
   useEffect(() => {
@@ -133,7 +71,7 @@ function AdminAccess() {
           }
         }
       } catch (error) {
-        console.error("Error fetching companies:", error);
+        toast.error("Error fetching companies:", error);
       }
     };
 
@@ -161,7 +99,7 @@ function AdminAccess() {
         throw new Error("Unexpected response format");
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      toast.error("Error fetching users:", error);
       setError("Failed to fetch users. Please try again.");
     } finally {
       setLoading(false);
@@ -227,7 +165,7 @@ function AdminAccess() {
         setSuccessMessage("HR Admin role removed successfully!");
       }
     } catch (error) {
-      console.error("Error removing HR Admin role:", error);
+      toast.error("Error removing HR Admin role:", error);
       setError("Failed to remove HR Admin role. Please try again.");
     } finally {
       setIsConfirmModalOpen(false); // Close the modal
@@ -283,7 +221,7 @@ function AdminAccess() {
         setSuccessMessage("HR Admin role assigned successfully!");
       }
     } catch (error) {
-      console.error("Error assigning HR Admin role:", error);
+      toast.error("Error assigning HR Admin role:", error);
       setError("Failed to assign HR Admin role. Please try again.");
     } finally {
       setIsAssignConfirmModalOpen(false); // Close the modal
@@ -293,11 +231,6 @@ function AdminAccess() {
   // Handle admin unassignment (Simulated)
   const handleUnassignAdmin = async () => {
     if (!userToUnassign) return;
-
-    console.log(
-      "Simulating unassigning admin access for user:",
-      userToUnassign.userId
-    );
 
     // Update local state to reflect unassignment (for UI)
     setUsers((prevUsers) =>

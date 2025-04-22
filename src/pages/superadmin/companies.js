@@ -27,6 +27,7 @@ import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
+
 function SuperadminCompanies() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Companies");
@@ -56,14 +57,13 @@ function SuperadminCompanies() {
       return;
     }
 
-    console.log("Fetching companies with token:", token);
     dispatch(fetchCompanies())
       .unwrap()
       .then((response) => {
         console.log("Companies fetched:", response);
       })
       .catch((error) => {
-        console.error("Error fetching companies:", error);
+        toast.error("Error fetching companies:", error);
         if (error.includes("Authentication")) {
           toast.error("Session expired. Please login again");
           router.push("/login");
@@ -73,9 +73,6 @@ function SuperadminCompanies() {
       });
   }, [dispatch, router]);
 
-  console.log("Current companies state:", companies);
-  console.log("Loading state:", loading);
-  console.log("Error state:", err);
 
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchInput, setSearchInput] = useState("");

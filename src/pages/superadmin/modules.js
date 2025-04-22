@@ -81,16 +81,6 @@ function SuperadminModules() {
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
-  // Helper function to get auth headers
-  // const getAuthHeaders = () => {
-  //   const token = getItemFromSessionStorage("token");
-  //   return {
-  //     headers: {
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //   };
-  // };
-
   const {
     modules,
     employees,
@@ -126,7 +116,7 @@ function SuperadminModules() {
           dispatch(fetchEmployees()),
         ]);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        toast.error("Error fetching data: " + error.message);
         setEmployeeError(error.message);
       }
     };
@@ -146,7 +136,7 @@ function SuperadminModules() {
         dispatch(fetchEmployees()),
       ]);
     } catch (error) {
-      console.error('Error refreshing data:', error);
+      toast.error('Error refreshing data:', error);
       setError(error.message);
     } finally {
       setIsTableRefreshing(false);
@@ -200,7 +190,7 @@ function SuperadminModules() {
       setIsAddModuleOpen(false);
       await refreshData();
     } catch (error) {
-      console.error("Error deleting module:", error);
+      toast.error("Error deleting module:", error);
       alert(error.message || "Failed to delete module");
     } finally {
       setIsLoading(false);
@@ -265,7 +255,7 @@ function SuperadminModules() {
       // Refresh all data
       await refreshData();
     } catch (error) {
-      console.error("Error saving module:", error);
+      toast.error("Error saving module:", error);
       alert(error.message || "Failed to save module. Please try again.");
     } finally {
       setIsLoading(false);
@@ -294,7 +284,7 @@ function SuperadminModules() {
       setUserPhone("");
       setIsAddUserOpen(false);
     } catch (err) {
-      console.error("Error adding user:", err);
+      toast.error("Error adding user:", err);
       if (err.response?.status === 401) {
         router.push("/login?error=Session expired. Please login again");
       } else {
@@ -366,7 +356,7 @@ function SuperadminModules() {
             });
             setIsAddAdminModalOpen(false);
           } catch (error) {
-            console.error("Error adding admin:", error);
+            toast.error("Error adding admin:", error);
             alert(error.message || "Failed to add admin. Please check the data and try again.");
           } finally {
             setIsLoading(false);

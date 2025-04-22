@@ -14,6 +14,7 @@ import {
   selectTheme,
   selectLastVisitedPage
 } from '@/redux/slices/sessionStorageSlice';
+import { toast } from 'sonner';
 
 /**
  * Custom hook for using the sessionStorage slice
@@ -40,7 +41,7 @@ const useSessionStorage = () => {
       sessionStorage.setItem(key, serializedValue);
       dispatch(setItem({ key, value, encrypt }));
     } catch (error) {
-      console.error('Error setting session storage item:', error);
+      toast.error('Error setting session storage item:', error);
     }
   }, [dispatch]);
   
@@ -54,7 +55,7 @@ const useSessionStorage = () => {
       const item = sessionStorage.getItem(key);
       return item ? JSON.parse(item) : defaultValue;
     } catch (error) {
-      console.error('Error getting session storage item:', error);
+      toast.error('Error getting session storage item:', error);
       return defaultValue;
     }
   }, []);
@@ -68,7 +69,7 @@ const useSessionStorage = () => {
       sessionStorage.removeItem(key);
       dispatch(removeItem({ key }));
     } catch (error) {
-      console.error('Error removing session storage item:', error);
+      toast.error('Error removing session storage item:', error);
     }
   }, [dispatch]);
   
@@ -80,7 +81,7 @@ const useSessionStorage = () => {
       sessionStorage.clear();
       dispatch(clearAll());
     } catch (error) {
-      console.error('Error clearing session storage:', error);
+      toast.error('Error clearing session storage:', error);
     }
   }, [dispatch]);
   
