@@ -1,33 +1,28 @@
 import { useState, useEffect, useRef } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { UserPlus, X } from "lucide-react";
+// import { Card } from "@/components/ui/card";
+// import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
-import Link from "next/link";
+// import Link from "next/link";
 import { toast } from "sonner";
 import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
-import {
-  FaUserCircle,
-  FaUsers,
-  FaCalendarCheck,
-  FaMoneyCheckAlt,
-  FaCog,
-  FaArrowAltCircleUp,
-} from "react-icons/fa";
+// import {
+//   FaUserCircle,
+//   FaUsers,
+//   FaCalendarCheck,
+//   FaMoneyCheckAlt,
+//   FaCog,
+//   FaArrowAltCircleUp,
+// } from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { motion } from "framer-motion";
-import {
-  FiUser,
-  FiBook,
-  FiDollarSign,
-  FiCreditCard,
-  FiShield,
-  FiUpload,
-} from "react-icons/fi";
-import Select from "react-select";
+import { FiUser, FiBook, FiCreditCard, FiUpload } from "react-icons/fi";
+// import Select from "react-select";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import axios from "axios";
 
 // Add this CSS class to your global styles or component
 const inputGroupClass =
@@ -37,38 +32,13 @@ const inputClass =
 const floatingLabelClass =
   "absolute -top-2.5 left-2 bg-white px-1 text-sm font-medium text-gray-700 transition-all duration-200";
 
-const MultiSelect = ({ label, options, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const toggleOption = (optionValue) => {
-    const newValue = value.includes(optionValue)
-      ? value.filter((v) => v !== optionValue)
-      : [...value, optionValue];
-    onChange(newValue);
-  };
-
+const MultiSelect = ({ label, options, value }) => {
   return (
-    <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>
-        {label} 
-      </label>
+    <div className={inputGroupClass}>
+      <label className={floatingLabelClass}>{label}</label>
       <div className="relative">
         <div
-          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
-          onClick={() => setIsOpen(!isOpen)}
+          className={`${inputClass} flex items-center justify-between cursor-not-allowed min-h-[42px] bg-gray-100`}
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value.length > 0 ? (
@@ -81,7 +51,43 @@ const MultiSelect = ({ label, options, value, onChange }) => {
                 </span>
               ))
             ) : (
-              <span className="text-gray-500">Select days</span>
+              <span className="text-gray-500">No weekly offs</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DepartmentSelect = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className={inputGroupClass} ref={dropdownRef}>
+      <label className={floatingLabelClass}>{label}</label>
+      <div className="relative">
+        <div
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex flex-wrap gap-1 py-1">
+            {value ? (
+              <span className="text-gray-700">{value.name || value}</span>
+            ) : (
+              <span className="text-gray-500">Select department</span>
             )}
           </div>
           <svg
@@ -103,23 +109,98 @@ const MultiSelect = ({ label, options, value, onChange }) => {
 
         {isOpen && (
           <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
-            {options.map((option) => (
+            {options.map((department) => (
               <div
-                key={option}
+                key={department.departmentId}
                 className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value.includes(option) ? "bg-blue-50" : ""
+                  value?.departmentId === department.departmentId
+                    ? "bg-blue-50"
+                    : ""
                 }`}
-                onClick={() => toggleOption(option)}
+                onClick={() => {
+                  onChange(department);
+                  setIsOpen(false);
+                }}
               >
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={value.includes(option)}
-                    onChange={() => {}}
-                    className="w-4 h-4 mr-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-gray-700">{option}</span>
-                </div>
+                <span className="text-gray-700">{department.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Add DesignationSelect component after DepartmentSelect
+const DesignationSelect = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className={inputGroupClass} ref={dropdownRef}>
+      <label className={floatingLabelClass}>{label}</label>
+      <div className="relative">
+        <div
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex flex-wrap gap-1 py-1">
+            {value ? (
+              <span className="text-gray-700">{value.name || value}</span>
+            ) : (
+              <span className="text-gray-500">Select designation</span>
+            )}
+          </div>
+          <svg
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+            {options.map((designation) => (
+              <div
+                key={designation.designationId}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
+                  value?.designationId === designation.designationId
+                    ? "bg-blue-50"
+                    : ""
+                }`}
+                onClick={() => {
+                  onChange({
+                    designationId: designation.designationId,
+                    name: designation.name,
+                    manager: designation.manager,
+                    overtimeEligible: designation.overtimeEligible,
+                  });
+                  setIsOpen(false);
+                }}
+              >
+                <span className="text-gray-700">{designation.name}</span>
               </div>
             ))}
           </div>
@@ -130,18 +211,19 @@ const MultiSelect = ({ label, options, value, onChange }) => {
 };
 
 // Add this function to generate the next employee ID
-const generateEmployeeId = (lastEmployeeId) => {
-  if (!lastEmployeeId) return "emp001";
-  const currentNumber = parseInt(lastEmployeeId.slice(3));
-  return `emp${(currentNumber + 1).toString().padStart(3, "0")}`;
-};
+// const generateEmployeeId = (lastEmployeeId) => {
+//   if (!lastEmployeeId) return "emp001";
+//   const currentNumber = parseInt(lastEmployeeId.slice(3));
+//   return `emp${(currentNumber + 1).toString().padStart(3, "0")}`;
+// };
 
 // Add this helper function before the EmployeeForm component
+
 const removeEmptyValues = (obj) => {
   const cleanObj = {};
   Object.entries(obj).forEach(([key, value]) => {
-    if (value !== null && value !== undefined && value !== '') {
-      if (typeof value === 'object' && !(value instanceof File)) {
+    if (value !== null && value !== undefined && value !== "") {
+      if (typeof value === "object" && !(value instanceof File)) {
         const nestedClean = removeEmptyValues(value);
         if (Object.keys(nestedClean).length > 0) {
           cleanObj[key] = nestedClean;
@@ -154,28 +236,154 @@ const removeEmptyValues = (obj) => {
   return cleanObj;
 };
 
+const ReportingManagerSelect = ({ label, options, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className={inputGroupClass} ref={dropdownRef}>
+      <label className={floatingLabelClass}>{label}</label>
+      <div className="relative">
+        <div
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex flex-wrap gap-1 py-1">
+            {value ? (
+              <span className="text-gray-700">{value.name || value}</span>
+            ) : (
+              <span className="text-gray-500">Select manager</span>
+            )}
+          </div>
+          <svg
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </div>
+
+        {isOpen && (
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+            {options.map((manager) => (
+              <div
+                key={manager.employeeId}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
+                  value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
+                }`}
+                onClick={() => {
+                  onChange(manager);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="text-gray-700">{manager.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function EmployeeForm() {
+  const company = localStorage.getItem("selectedCompanyId");
+
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, err } = useSelector((state) => state.employees);
-  console.log(err);
 
-  const { activeMainTab, employee, activeSection: activeSectionParam } = router.query;
-  const [activePage, setActivePage] = useState("Employees");
+  const {
+    activeMainTab,
+    employee,
+    activeSection: activeSectionParam,
+  } = router.query;
+  // const [activePage, setActivePage] = useState("Employees");
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
-  const [selectedTab, setSelectedTab] = useState(null);
+  // const [selectedTab, setSelectedTab] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // const [error, setError] = useState(null);
+  // const [success, setSuccess] = useState(null);
+  // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previewModal, setPreviewModal] = useState({ show: false });
   const [activeSection, setActiveSection] = useState("personal");
-  const [lastEmployeeId, setLastEmployeeId] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  // const [lastEmployeeId, setLastEmployeeId] = useState("");
+  // const [isLoading, setIsLoading] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  // const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
+  const [designations, setDesignations] = useState([]);
+  const [managers, setManagers] = useState([]);
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  // Add department fetch on component mount
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const token = getItemFromSessionStorage("token", null);
+        const companyId = localStorage.getItem("selectedCompanyId");
+
+        if (!companyId) {
+          console.error("No company ID found");
+          toast.error("Company ID not found");
+          return;
+        }
+
+        console.log("Fetching departments for company:", companyId);
+
+        const response = await axios.get(
+          `http://localhost:8083/departments/company/${companyId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Departments API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          setDepartments(response.data);
+          if (response.data.length === 0) {
+            toast.warning("No departments found for this company");
+          }
+        } else {
+          console.error("Invalid departments data format:", response.data);
+          toast.error("Invalid departments data received");
+        }
+      } catch (error) {
+        console.error("Error fetching departments:", error.response || error);
+        toast.error(
+          error.response?.data?.message || "Failed to fetch departments"
+        );
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
+  // const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
   const weekDayOptions = [
     { value: "SUNDAY", label: "Sunday" },
@@ -189,7 +397,7 @@ function EmployeeForm() {
 
   const [formData, setFormData] = useState({
     employee: {
-      employeeId: "",
+      // employeeId: "",
       name: "",
       fathersName: "",
       gender: "",
@@ -211,6 +419,7 @@ function EmployeeForm() {
       esicEnrolled: false,
       esicNumber: "",
     },
+    companyId: company,
     idProofs: {
       aadharNo: "",
       aadharImgUrl: null,
@@ -248,8 +457,7 @@ function EmployeeForm() {
     if (employee) {
       try {
         const parsedEmployee = JSON.parse(employee);
-        console.log("Parsed Employee Data:", parsedEmployee); // Debug log
-        
+
         // Set complete form data with all fields, using empty strings for null/undefined values
         setFormData({
           employee: {
@@ -263,18 +471,21 @@ function EmployeeForm() {
             emailOfficial: parsedEmployee.emailOfficial || "",
             currentAddress: parsedEmployee.currentAddress || "",
             permanentAddress: parsedEmployee.permanentAddress || "",
-            department: parsedEmployee.department || "",
-            designation: parsedEmployee.designation || "",
+            department: parsedEmployee.departmentName || "",
+            designation: parsedEmployee.designationName || "",
             joiningDate: parsedEmployee.joiningDate || "",
             reportingManager: parsedEmployee.reportingManager || "",
             overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
-            weeklyOffs: Array.isArray(parsedEmployee.weeklyOffs) ? parsedEmployee.weeklyOffs : [],
+            weeklyOffs: Array.isArray(parsedEmployee.weeklyOffs)
+              ? parsedEmployee.weeklyOffs
+              : [],
             employeeImgUrl: parsedEmployee.employeeImgUrl || "",
             pfEnrolled: Boolean(parsedEmployee.pfEnrolled),
             uanNumber: parsedEmployee.uanNumber || "",
             esicEnrolled: Boolean(parsedEmployee.esicEnrolled),
             esicNumber: parsedEmployee.esicNumber || "",
           },
+          companyId: parsedEmployee.companyId || company, // Ensure companyId is set
           idProofs: {
             aadharNo: parsedEmployee.idProofs?.aadharNo || "",
             aadharImgUrl: parsedEmployee.idProofs?.aadharImgUrl || "",
@@ -283,13 +494,15 @@ function EmployeeForm() {
             passport: parsedEmployee.idProofs?.passport || "",
             passportImgUrl: parsedEmployee.idProofs?.passportImgUrl || "",
             drivingLicense: parsedEmployee.idProofs?.drivingLicense || "",
-            drivingLicenseImgUrl: parsedEmployee.idProofs?.drivingLicenseImgUrl || "",
+            drivingLicenseImgUrl:
+              parsedEmployee.idProofs?.drivingLicenseImgUrl || "",
             voterId: parsedEmployee.idProofs?.voterId || "",
             voterIdImgUrl: parsedEmployee.idProofs?.voterIdImgUrl || "",
           },
           bankDetails: {
             accountNumber: parsedEmployee.bankDetails?.accountNumber || "",
-            accountHolderName: parsedEmployee.bankDetails?.accountHolderName || "",
+            accountHolderName:
+              parsedEmployee.bankDetails?.accountHolderName || "",
             ifscCode: parsedEmployee.bankDetails?.ifscCode || "",
             bankName: parsedEmployee.bankDetails?.bankName || "",
             branchName: parsedEmployee.bankDetails?.branchName || "",
@@ -303,33 +516,67 @@ function EmployeeForm() {
             basicSalary: parsedEmployee.salaryDetails?.basicSalary || "",
             hra: parsedEmployee.salaryDetails?.hra || "",
             allowances: parsedEmployee.salaryDetails?.allowances || "",
-            employerPfContribution: parsedEmployee.salaryDetails?.employerPfContribution || "",
-            employeePfContribution: parsedEmployee.salaryDetails?.employeePfContribution || "",
+            employerPfContribution:
+              parsedEmployee.salaryDetails?.employerPfContribution || "",
+            employeePfContribution:
+              parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
         });
-        
+        console.log(company);
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
-        console.error("Error parsing employee data", error);
         toast.error("Error loading employee data");
       }
     }
   }, [employee]);
 
-  const calculateTotalCTC = (salaryData) => {
-    const values = {
-      basic: parseFloat(salaryData.basic) || 0,
-      hra: parseFloat(salaryData.hra) || 0,
-      allowances: parseFloat(salaryData.allowances) || 0,
-      pf: parseFloat(salaryData.pf) || 0,
-    };
-    return values.basic + values.hra + values.allowances + values.pf;
-  };
+  // useEffect(() => {
+  //   const fetchEmployeeId = async () => {
+  //     try {
+  //       const token = getItemFromSessionStorage("token", null);
+  //       const response = await axios.get(
+  //         `http://localhost:8083/hradmin/generate-employee-id/${company}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+  //       if (response.status === 200) {
+  //         const data = await response.data;
+  //         setFormData((prev) => ({
+  //           ...prev,
+  //           employee: {
+  //             ...prev.employee,
+  //             employeeId: data, // Set employeeId from API response
+  //           },
+  //         }));
+  //       } else {
+  //         toast.error("Failed to generate Employee ID");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching Employee ID:", error);
+  //       toast.error("Error generating Employee ID");
+  //     }
+  //   };
 
-  const calculateMonthlyCTC = (annualCTC) => {
-    const annual = parseFloat(annualCTC) || 0;
-    return (annual / 12).toFixed(2);
-  };
+  //   fetchEmployeeId();
+  // }, []);
+
+  // const calculateTotalCTC = (salaryData) => {
+  //   const values = {
+  //     basic: parseFloat(salaryData.basic) || 0,
+  //     hra: parseFloat(salaryData.hra) || 0,
+  //     allowances: parseFloat(salaryData.allowances) || 0,
+  //     pf: parseFloat(salaryData.pf) || 0,
+  //   };
+  //   return values.basic + values.hra + values.allowances + values.pf;
+  // };
+
+  // const calculateMonthlyCTC = (annualCTC) => {
+  //   const annual = parseFloat(annualCTC) || 0;
+  //   return (annual / 12).toFixed(2);
+  // };
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -362,8 +609,10 @@ function EmployeeForm() {
         prev.employee.pfEnrolled
       ) {
         const pfContributions = calculatePFContributions(value);
-        updatedData.salaryDetails.employerPfContribution = pfContributions.employer;
-        updatedData.salaryDetails.employeePfContribution = pfContributions.employee;
+        updatedData.salaryDetails.employerPfContribution =
+          pfContributions.employer;
+        updatedData.salaryDetails.employeePfContribution =
+          pfContributions.employee;
 
         // Calculate HRA as 40% of basic salary
         const basic = parseFloat(value) || 0;
@@ -379,11 +628,14 @@ function EmployeeForm() {
           field === "employerPfContribution" ||
           field === "employeePfContribution")
       ) {
-        const monthlyCTC = parseFloat(updatedData.salaryDetails.monthlyCtc) || 0;
+        const monthlyCTC =
+          parseFloat(updatedData.salaryDetails.monthlyCtc) || 0;
         const hra = parseFloat(updatedData.salaryDetails.hra) || 0;
         const basic = parseFloat(updatedData.salaryDetails.basicSalary) || 0;
-        const employerPF = parseFloat(updatedData.salaryDetails.employerPfContribution) || 0;
-        const employeePF = parseFloat(updatedData.salaryDetails.employeePfContribution) || 0;
+        const employerPF =
+          parseFloat(updatedData.salaryDetails.employerPfContribution) || 0;
+        const employeePF =
+          parseFloat(updatedData.salaryDetails.employeePfContribution) || 0;
 
         const allowances = monthlyCTC - (hra + employeePF + employerPF + basic);
         updatedData.salaryDetails.allowances = allowances.toFixed(2);
@@ -393,190 +645,172 @@ function EmployeeForm() {
     });
   };
 
-  const handleNestedInputChange = (section, parentField, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [parentField]: {
-          ...prev[section][parentField],
-          [field]: value,
-        },
-      },
-    }));
-  };
+  // const handleNestedInputChange = (section, parentField, field, value) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     [section]: {
+  //       ...prev,
+  //       [parentField]: {
+  //         ...prev[section][parentField],
+  //         [field]: value,
+  //       },
+  //     },
+  //   }));
+  // };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (activeSection !== "salary") {
-      const currentIndex = sections.findIndex(section => section.id === activeSection);
-      if (currentIndex < sections.length - 1) {
-        setActiveSection(sections[currentIndex + 1].id);
-        return;
-      }
+  if (activeSection !== "salary") {
+    const currentIndex = sections.findIndex(
+      (section) => section.id === activeSection
+    );
+    if (currentIndex < sections.length - 1) {
+      setActiveSection(sections[currentIndex + 1].id);
+      return;
     }
-    
-    // Only proceed with form submission if we're on the last section
-    if (!validateForm()) return;
+  }
 
-    setLoading(true);
-    try {
-      const formDataObj = new FormData();
-      
-      // Helper function to remove empty fields from an object
-      const removeEmptyFields = (obj) => {
-        const cleanObj = {};
-        Object.entries(obj).forEach(([key, value]) => {
-          if (value !== "" && value !== null && value !== undefined) {
-            if (typeof value === 'object' && !Array.isArray(value)) {
-              const nestedClean = removeEmptyFields(value);
-              if (Object.keys(nestedClean).length > 0) {
-                cleanObj[key] = nestedClean;
-              }
-            } else {
-              cleanObj[key] = value;
+  if (!validateForm()) return;
+
+  setLoading(true);
+  try {
+    const submitFormData = new FormData();
+
+    // Helper function to remove empty fields
+    const removeEmptyFields = (obj) => {
+      const cleanObj = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        if (value !== "" && value !== null && value !== undefined) {
+          if (typeof value === "object" && !Array.isArray(value)) {
+            const nestedClean = removeEmptyFields(value);
+            if (Object.keys(nestedClean).length > 0) {
+              cleanObj[key] = nestedClean;
             }
+          } else {
+            cleanObj[key] = value;
           }
-        });
-        return cleanObj;
-      };
-
-      // Create the base employee data object with statutory fields at the same level
-      const baseEmployeeData = {
-        employeeId: formData.employee.employeeId?.trim(),
-        name: formData.employee.name?.trim(),
-        fathersName: formData.employee.fathersName?.trim(),
-        gender: formData.employee.gender?.trim(),
-        phone: formData.employee.phone?.trim(),
-        alternatePhone: formData.employee.alternatePhone?.trim(),
-        emailPersonal: formData.employee.emailPersonal?.trim(),
-        emailOfficial: formData.employee.emailOfficial?.trim(),
-        currentAddress: formData.employee.currentAddress?.trim(),
-        permanentAddress: formData.employee.permanentAddress?.trim(),
-        department: formData.employee.department?.trim(),
-        designation: formData.employee.designation?.trim(),
-        joiningDate: formData.employee.joiningDate,
-        reportingManager: formData.employee.reportingManager?.trim(),
-        overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
-        weeklyOffs: formData.employee.weeklyOffs?.length ? formData.employee.weeklyOffs : undefined,
-        pfEnrolled: Boolean(formData.employee.pfEnrolled),
-        uanNumber: formData.employee.uanNumber?.trim(),
-        esicEnrolled: Boolean(formData.employee.esicEnrolled),
-        esicNumber: formData.employee.esicNumber?.trim(),
-        idProofs: {
-          aadharNo: formData.idProofs.aadharNo?.trim(),
-          panNo: formData.idProofs.panNo?.trim(),
-          passport: formData.idProofs.passport?.trim(),
-          drivingLicense: formData.idProofs.drivingLicense?.trim(),
-          voterId: formData.idProofs.voterId?.trim(),
-        },
-        bankDetails: {
-          accountNumber: formData.bankDetails.accountNumber?.trim(),
-          accountHolderName: formData.bankDetails.accountHolderName?.trim(),
-          ifscCode: formData.bankDetails.ifscCode?.trim(),
-          bankName: formData.bankDetails.bankName?.trim(),
-          branchName: formData.bankDetails.branchName?.trim(),
-          upiId: formData.bankDetails.upiId?.trim(),
-          upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
-        },
-        salaryDetails: {
-          annualCtc: formData.salaryDetails.annualCtc || undefined,
-          monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
-          basicSalary: formData.salaryDetails.basicSalary || undefined,
-          hra: formData.salaryDetails.hra || undefined,
-          allowances: formData.salaryDetails.allowances || undefined,
-          employerPfContribution: formData.salaryDetails.employerPfContribution || undefined,
-          employeePfContribution: formData.salaryDetails.employeePfContribution || undefined,
         }
-      };
+      });
+      return cleanObj;
+    };
 
-      // Remove all empty fields from the employee data
-      const employeeData = removeEmptyFields(baseEmployeeData);
+    const baseEmployeeData = {
+      name: formData.employee.name?.trim(),
+      fathersName: formData.employee.fathersName?.trim(),
+      gender: formData.employee.gender?.trim(),
+      phone: formData.employee.phone?.trim(),
+      alternatePhone: formData.employee.alternatePhone?.trim(),
+      emailPersonal: formData.employee.emailPersonal?.trim(),
+      emailOfficial: formData.employee.emailOfficial?.trim(),
+      currentAddress: formData.employee.currentAddress?.trim(),
+      permanentAddress: formData.employee.permanentAddress?.trim(),
+      department: formData.employee.department?.departmentId || "",
+      designation: formData.employee.designation?.designationId || "",
+      joiningDate: formData.employee.joiningDate,
+      reportingManager:
+        formData.employee.reportingManager?.employeeId?.trim() || "",
+      overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
+      weeklyOffs: formData.employee.weeklyOffs?.length
+        ? formData.employee.weeklyOffs
+        : undefined,
+      pfEnrolled: Boolean(formData.employee.pfEnrolled),
+      uanNumber: formData.employee.uanNumber?.trim(),
+      esicEnrolled: Boolean(formData.employee.esicEnrolled),
+      esicNumber: formData.employee.esicNumber?.trim(),
+      companyId: formData.companyId,
+      idProofs: {
+        aadharNo: formData.idProofs.aadharNo?.trim(),
+        panNo: formData.idProofs.panNo?.trim(),
+        passport: formData.idProofs.passport?.trim(),
+        drivingLicense: formData.idProofs.drivingLicense?.trim(),
+        voterId: formData.idProofs.voterId?.trim(),
+      },
+      bankDetails: {
+        accountNumber: formData.bankDetails.accountNumber?.trim(),
+        accountHolderName: formData.bankDetails.accountHolderName?.trim(),
+        ifscCode: formData.bankDetails.ifscCode?.trim(),
+        bankName: formData.bankDetails.bankName?.trim(),
+        branchName: formData.bankDetails.branchName?.trim(),
+        upiId: formData.bankDetails.upiId?.trim(),
+        upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
+      },
+      salaryDetails: {
+        annualCtc: formData.salaryDetails.annualCtc || undefined,
+        monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
+        basicSalary: formData.salaryDetails.basicSalary || undefined,
+        hra: formData.salaryDetails.hra || undefined,
+        allowances: formData.salaryDetails.allowances || undefined,
+        employerPfContribution:
+          formData.salaryDetails.employerPfContribution || undefined,
+        employeePfContribution:
+          formData.salaryDetails.employeePfContribution || undefined,
+      },
+    };
 
-      // Add the cleaned employee data to FormData
-      formDataObj.append('employee', JSON.stringify(employeeData));
+    const employeeData = removeEmptyFields(baseEmployeeData);
+    submitFormData.append("employee", JSON.stringify(employeeData));
 
-      // Only add files if they exist
-      if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append('profileImage', formData.employee.employeeImgUrl);
-      }
-
-      if (formData.idProofs.aadharImgUrl instanceof File) {
-        formDataObj.append('aadharImage', formData.idProofs.aadharImgUrl);
-      }
-
-      if (formData.idProofs.pancardImgUrl instanceof File) {
-        formDataObj.append('pancardImage', formData.idProofs.pancardImgUrl);
-      }
-
-      if (formData.idProofs.passportImgUrl instanceof File) {
-        formDataObj.append('passportImage', formData.idProofs.passportImgUrl);
-      }
-
-      if (formData.idProofs.drivingLicenseImgUrl instanceof File) {
-        formDataObj.append('drivingLicenseImage', formData.idProofs.drivingLicenseImgUrl);
-      }
-
-      if (formData.idProofs.voterIdImgUrl instanceof File) {
-        formDataObj.append('voterIdImage', formData.idProofs.voterIdImgUrl);
-      }
-
-      if (formData.bankDetails.passbookImgUrl instanceof File) {
-        formDataObj.append('passbookImage', formData.bankDetails.passbookImgUrl);
-      }
-
-      if (employeeId) {
-        // For updates, use the stored employeeId in the URL
-        const result = await dispatch(
-          updateEmployee({ 
-            id: employeeId,
-            updatedData: formDataObj
-          })
-        ).unwrap();
-        
-        if (result) {
-          toast.success("Employee updated successfully");
-          router.push("/hradmin/employees");
-        }
-      } else {
-        // For new employees
-        const result = await dispatch(createEmployee(formDataObj)).unwrap();
-        if (result) {
-          toast.success("Employee created successfully");
-          router.push("/hradmin/employees");
-        }
-      }
-    } catch (err) {
-      let errorMessage = "An error occurred";
-      
-      if (err?.validationErrors) {
-        const validationMessages = Object.entries(err.validationErrors)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join('\n');
-        errorMessage = validationMessages;
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      } else if (err?.message) {
-        errorMessage = err.message;
-      } else if (err?.error) {
-        errorMessage = err.error;
-      }
-
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
+    // Add the profile image to FormData if it exists
+    if (formData.employee.employeeImgUrl instanceof File) {
+      submitFormData.append("profileImage", formData.employee.employeeImgUrl);
     }
-  };
+
+    // Add the passbook image to FormData as 'passbookImage' if it exists
+    if (formData.bank.passbookDoc instanceof File) {
+      formDataPayload.append("passbookImage", formData.bank.passbookDoc);
+    }
+
+    if (employeeId) {
+      const result = await dispatch(
+        updateEmployee({
+          id: employeeId,
+          updatedData: submitFormData,
+        })
+      ).unwrap();
+
+      if (result) {
+        toast.success("Employee updated successfully");
+        router.push("/hradmin/employees");
+      }
+    } else {
+      const result = await dispatch(createEmployee(submitFormData)).unwrap();
+      if (result) {
+        toast.success("Employee created successfully");
+        router.push("/hradmin/employees");
+      }
+    }
+  } catch (err) {
+    let errorMessage = "An error occurred";
+
+    if (err?.validationErrors) {
+      const validationMessages = Object.entries(err.validationErrors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join("\n");
+      errorMessage = validationMessages;
+    } else if (typeof err === "string") {
+      errorMessage = err;
+    } else if (err?.message) {
+      errorMessage = err.message;
+    } else if (err?.error) {
+      errorMessage = err.error;
+    }
+
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const validateForm = () => {
     const { employee } = formData;
     const errors = {};
 
     // Validate required fields
-    if (!employee.employeeId?.trim()) {
-      errors.employeeId = "Employee ID is required";
-    }
+    // if (!employee.employeeId?.trim()) {
+    //   errors.employeeId = "Employee ID is required";
+    // }
+
     if (!employee.name?.trim()) {
       errors.name = "Employee name is required";
     }
@@ -587,10 +821,15 @@ function EmployeeForm() {
       errors.joiningDate = "Date of joining is required";
     }
 
-    // Only validate format for new employees
-    if (!employeeId && employee.employeeId && !employee.employeeId.match(/^emp\d{3}$/)) {
-      errors.employeeId = "Employee ID must be in the format emp followed by 3 digits";
-    }
+    // // Only validate format for new employees
+    // if (
+    //   !employeeId &&
+    //   employee.employeeId &&
+    //   !employee.employeeId.match(/^emp\d{3}$/)
+    // ) {
+    //   errors.employeeId =
+    //     "Employee ID must be in the format emp followed by 3 digits";
+    // }
 
     // Validate phone number format if provided
     if (employee.phone && !/^[0-9]{10}$/.test(employee.phone)) {
@@ -616,8 +855,12 @@ function EmployeeForm() {
     }
 
     // Validate Driving License if provided
-    if (idProofs.drivingLicense && !/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(idProofs.drivingLicense)) {
-      errors["idProofs.drivingLicense"] = "Invalid Driving License format. Format should be: State Code (2 letters) + Year (2 digits) + 11 digits";
+    if (
+      idProofs.drivingLicense &&
+      !/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(idProofs.drivingLicense)
+    ) {
+      errors["idProofs.drivingLicense"] =
+        "Invalid Driving License format. Format should be: State Code (2 letters) + Year (2 digits) + 11 digits";
     }
 
     // Validate Voter ID if provided
@@ -626,12 +869,19 @@ function EmployeeForm() {
     }
 
     // Validate Bank Account number if provided
-    if (bankDetails.accountNumber && !/^\d{9,18}$/.test(bankDetails.accountNumber)) {
-      errors["bankDetails.accountNumber"] = "Account number must be between 9 to 18 digits";
+    if (
+      bankDetails.accountNumber &&
+      !/^\d{9,18}$/.test(bankDetails.accountNumber)
+    ) {
+      errors["bankDetails.accountNumber"] =
+        "Account number must be between 9 to 18 digits";
     }
 
     // Validate IFSC code if provided
-    if (bankDetails.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode)) {
+    if (
+      bankDetails.ifscCode &&
+      !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode)
+    ) {
       errors["bankDetails.ifscCode"] = "Invalid IFSC Code format";
     }
 
@@ -647,108 +897,94 @@ function EmployeeForm() {
   };
 
   // Function to handle direct employee creation from personal details
-  const handleAddEmployeeFromPersonal = async () => {
-    if (!validateForm()) return;
+  // const handleAddEmployeeFromPersonal = async () => {
+  //   if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      // Create FormData object with only personal details
-      const formDataObj = new FormData();
-      
-      // Clean the form data to remove empty values
-      const cleanEmployeeDetails = removeEmptyValues({
-        employeeId: formData.employee.employeeId,
-        name: formData.employee.name,
-        fathersName: formData.employee.fathersName,
-        gender: formData.employee.gender,
-        phone: formData.employee.phone,
-        alternatePhone: formData.employee.alternatePhone,
-        emailPersonal: formData.employee.emailPersonal,
-        emailOfficial: formData.employee.emailOfficial,
-        currentAddress: formData.employee.currentAddress,
-        permanentAddress: formData.employee.permanentAddress,
-        department: formData.employee.department,
-        designation: formData.employee.designation,
-        joiningDate: formData.employee.joiningDate,
-        reportingManager: formData.employee.reportingManager,
-        overtimeEligibile: formData.employee.overtimeEligibile,
-        weeklyOffs: formData.employee.weeklyOffs,
-      });
-      
-      // Only append if we have non-empty data
-      if (Object.keys(cleanEmployeeDetails).length > 0) {
-        formDataObj.append('employee', JSON.stringify(cleanEmployeeDetails));
-      }
-      
-      // Add profile image if exists
-      if (formData.employee.employeeImgUrl instanceof File) {
-        formDataObj.append('employeeImgUrl', formData.employee.employeeImgUrl);
-      }
-      
-      const result = await dispatch(createEmployee(formDataObj)).unwrap();
-      toast.success("Employee created successfully");
-      router.push("/hradmin/employees");
-    } catch (err) {
-      let errorMessage = "An error occurred";
-      
-      if (err?.validationErrors) {
-        // Handle validation errors
-        const validationMessages = Object.entries(err.validationErrors)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join('\n');
-        errorMessage = validationMessages;
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      } else if (err?.message) {
-        errorMessage = err.message;
-      } else if (err?.error) {
-        errorMessage = err.error;
-      }
+  //   setLoading(true);
+  //   try {
+  //     const personalFormData = new FormData();
 
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     // Clean the form data to remove empty values
+  //     const cleanEmployeeDetails = removeEmptyValues({
+  //       employeeId: formData.employee.employeeId,
+  //       name: formData.employee.name,
+  //       fathersName: formData.employee.fathersName,
+  //       gender: formData.employee.gender,
+  //       phone: formData.employee.phone,
+  //       alternatePhone: formData.employee.alternatePhone,
+  //       emailPersonal: formData.employee.emailPersonal,
+  //       emailOfficial: formData.employee.emailOfficial,
+  //       currentAddress: formData.employee.currentAddress,
+  //       permanentAddress: formData.employee.permanentAddress,
+  //       department: formData.employee.department,
+  //       designation: formData.employee.designation,
+  //       joiningDate: formData.employee.joiningDate,
+  //       reportingManager: formData.employee.reportingManager,
+  //       overtimeEligibile: formData.employee.overtimeEligibile,
+  //       weeklyOffs: formData.employee.weeklyOffs,
+  //     });
 
-  const handleTabClick = (tab) => {
-    router.push({
-      pathname: "/hradmin/employees",
-      query: { tab },
-    });
-  };
+  //     // Only append if we have non-empty data
+  //     if (Object.keys(cleanEmployeeDetails).length > 0) {
+  //       personalFormData.append(
+  //         "employee",
+  //         JSON.stringify(cleanEmployeeDetails)
+  //       );
+  //     }
 
-  const handleLogout = () => {
-    router.push("/login");
-    localStorage.removeItem("token");
-  };
+  //     // Add profile image if exists
+  //     if (formData.employee.employeeImgUrl instanceof File) {
+  //       personalFormData.append(
+  //         "employeeImgUrl",
+  //         formData.employee.employeeImgUrl
+  //       );
+  //     }
 
-  const mainTabs = [
-    "Basic",
-    "ID Proofs",
-    "Salary Details",
-    "Bank Details",
-    "Leaves Policy",
-  ];
-  const subTabs = [
-    "ID Proofs",
-    "Salary Details",
-    "Bank Details",
-    "Leaves & Policies",
-  ];
+  //     const result = await dispatch(createEmployee(personalFormData)).unwrap();
+  //     toast.success("Employee created successfully");
+  //     router.push("/hradmin/employees");
+  //   } catch (err) {
+  //     let errorMessage = "An error occurred";
+
+  //     if (err?.validationErrors) {
+  //       // Handle validation errors
+  //       const validationMessages = Object.entries(err.validationErrors)
+  //         .map(([field, message]) => `${field}: ${message}`)
+  //         .join("\n");
+  //       errorMessage = validationMessages;
+  //     } else if (typeof err === "string") {
+  //       errorMessage = err;
+  //     } else if (err?.message) {
+  //       errorMessage = err.message;
+  //     } else if (err?.error) {
+  //       errorMessage = err.error;
+  //     }
+
+  //     toast.error(errorMessage);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // const handleTabClick = (tab) => {
+  //   router.push({
+  //     pathname: "/hradmin/employees",
+  //     query: { tab },
+  //   });
+  // };
 
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
     if (activeSectionParam) setActiveSection(activeSectionParam);
   }, [activeMainTab, activeSectionParam]);
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Handle the file upload logic here
-      console.log("Uploaded file:", file);
-    }
-  };
+  // const handlePhotoUpload = (e) => {
+  //   const file = e.target.files[0];
+  //   if (file) {
+  //     // Handle the file upload logic here
+  //     console.log("Uploaded file:", file);
+  //   }
+  // };
 
   const handleFileUpload = (documentType, file) => {
     if (file) {
@@ -778,6 +1014,98 @@ function EmployeeForm() {
     "Friday",
     "Saturday",
   ];
+
+  // Add useEffect for fetching designations when department changes
+  useEffect(() => {
+    const fetchDesignations = async () => {
+      try {
+        // Only fetch if a department is selected and has a departmentId
+        if (!formData.employee.department?.departmentId) {
+          setDesignations([]);
+          return;
+        }
+
+        const token = getItemFromSessionStorage("token", null);
+        const departmentId = formData.employee.department.departmentId;
+
+        console.log("Fetching designations for department:", departmentId);
+
+        const response = await axios.get(
+          `http://localhost:8083/api/designations/department/${departmentId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Designations API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          setDesignations(response.data);
+          if (response.data.length === 0) {
+            toast.warning("No designations found for this department");
+          }
+        } else {
+          console.error("Invalid designations data format:", response.data);
+          toast.error("Invalid designations data received");
+        }
+      } catch (error) {
+        console.error("Error fetching designations:", error.response || error);
+        toast.error(
+          error.response?.data?.message || "Failed to fetch designations"
+        );
+      }
+    };
+
+    fetchDesignations();
+  }, [formData.employee.department?.departmentId]);
+
+  // Fetch managers when department changes
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const departmentId = formData.employee.department?.departmentId;
+        if (!departmentId) {
+          setManagers([]);
+          return;
+        }
+
+        const token = getItemFromSessionStorage("token", null);
+        console.log("Fetching managers for department:", departmentId);
+
+        const response = await axios.get(
+          `http://localhost:8083/departments/${departmentId}/managers`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        console.log("Managers API response:", response.data);
+
+        if (response.data && Array.isArray(response.data)) {
+          setManagers(response.data);
+          if (response.data.length === 0) {
+            toast.warning("No managers found for this department");
+          }
+        } else {
+          console.error("Invalid managers data format:", response.data);
+          toast.error("Invalid managers data received");
+        }
+      } catch (error) {
+        console.error("Error fetching managers:", error.response || error);
+        toast.error(
+          error.response?.data?.message || "Failed to fetch managers"
+        );
+      }
+    };
+
+    fetchManagers();
+  }, [formData.employee.department?.departmentId]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -826,16 +1154,16 @@ function EmployeeForm() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {typeof section.icon === 'string' ? (
+                      {typeof section.icon === "string" ? (
                         <span className="text-lg">{section.icon}</span>
                       ) : (
-                      <section.icon
-                        className={`w-4 h-4 ${
-                          activeSection === section.id
-                            ? "text-blue-500"
-                            : "text-gray-400"
-                        }`}
-                      />
+                        <section.icon
+                          className={`w-4 h-4 ${
+                            activeSection === section.id
+                              ? "text-blue-500"
+                              : "text-gray-400"
+                          }`}
+                        />
                       )}
                       {section.label}
                     </motion.button>
@@ -857,26 +1185,6 @@ function EmployeeForm() {
                         <h3 className="text-lg font-semibold text-gray-800 mb-3">
                           Personal Information
                         </h3>
-                        <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>
-                            Employee ID <span className="text-red-400">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            className={inputClass}
-                            value={formData.employee.employeeId || ""}
-                            onChange={(e) => {
-                                handleInputChange(
-                                "employee",
-                                  "employeeId",
-                                e.target.value
-                                );
-                              setLastEmployeeId(e.target.value);
-                            }}
-                            maxLength={6} // Limit to EMP### format
-                          />
-                        </div>
 
                         <div className={inputGroupClass}>
                           <label className={floatingLabelClass}>
@@ -998,12 +1306,12 @@ function EmployeeForm() {
                                 className={inputClass}
                                 value={formData.employee[field] || ""}
                                 onChange={(e) =>
-                                    handleInputChange(
+                                  handleInputChange(
                                     "employee",
-                                      field,
-                                      e.target.value
+                                    field,
+                                    e.target.value
                                   )
-                                  }
+                                }
                               />
                             </div>
                           ))}
@@ -1011,28 +1319,32 @@ function EmployeeForm() {
 
                         {/* Addresses */}
                         <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
+                          <label className={floatingLabelClass}>
                             Current Address
-                            </label>
-                            <textarea
-                              className={inputClass}
-                              rows="2"
+                          </label>
+                          <textarea
+                            className={inputClass}
+                            rows="2"
                             value={formData.employee.currentAddress || ""}
-                              onChange={(e) =>
-                                handleInputChange(
+                            onChange={(e) =>
+                              handleInputChange(
                                 "employee",
                                 "currentAddress",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
 
                         <div className="flex items-center mb-2">
                           <input
                             type="checkbox"
                             id="sameAsCurrent"
                             className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            checked={
+                              formData.employee.permanentAddress ===
+                              formData.employee.currentAddress
+                            } // Sync checkbox state
                             onChange={(e) => {
                               if (e.target.checked) {
                                 handleInputChange(
@@ -1040,6 +1352,12 @@ function EmployeeForm() {
                                   "permanentAddress",
                                   formData.employee.currentAddress
                                 );
+                              } else {
+                                handleInputChange(
+                                  "employee",
+                                  "permanentAddress",
+                                  ""
+                                ); // Clear permanent address
                               }
                             }}
                           />
@@ -1068,6 +1386,24 @@ function EmployeeForm() {
                             }
                           />
                         </div>
+
+                        {/* <div className={inputGroupClass}>
+                          <label className={floatingLabelClass}>
+                            Profile Image
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className={inputClass}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "employee",
+                                "employeeImgUrl",
+                                e.target.files[0]
+                              )
+                            }
+                          />
+                        </div> */}
                       </div>
 
                       {/* Right Column - Professional Information */}
@@ -1077,34 +1413,55 @@ function EmployeeForm() {
                         </h3>
 
                         <div className="grid grid-cols-2 gap-4">
-                          {[
-                            {
-                              label: "Department",
-                              field: "department",
-                            },
-                            {
-                              label: "Designation",
-                              field: "designation",
-                            },
-                          ].map(({ label, field, required }) => (
-                            <div key={field} className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
-                                {label}{" "}
-                              </label>
-                              <input
-                                type="text"
-                                className={inputClass}
-                                value={formData.employee[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "employee",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                          ))}
+                          <DepartmentSelect
+                            label="Department"
+                            options={departments}
+                            value={formData.employee.department}
+                            onChange={(selectedDepartment) => {
+                              handleInputChange("employee", "department", {
+                                departmentId: selectedDepartment.departmentId,
+                                name: selectedDepartment.name,
+                              });
+
+                              // Set weekly holidays as read-only weekly offs
+                              const weeklyHolidays =
+                                selectedDepartment.weeklyHolidays
+                                  ? selectedDepartment.weeklyHolidays.split(",")
+                                  : [];
+                              handleInputChange(
+                                "employee",
+                                "weeklyOffs",
+                                weeklyHolidays
+                              );
+
+                              // Clear designation and manager when department changes
+                              handleInputChange(
+                                "employee",
+                                "designation",
+                                null
+                              );
+                              handleInputChange(
+                                "employee",
+                                "reportingManager",
+                                null
+                              );
+                            }}
+                          />
+                          <DesignationSelect
+                            label="Designation"
+                            options={designations}
+                            value={formData.employee.designation}
+                            onChange={(selectedDesignation) =>
+                              handleInputChange("employee", "designation", {
+                                designationId:
+                                  selectedDesignation.designationId,
+                                name: selectedDesignation.name,
+                                manager: selectedDesignation.manager,
+                                overtimeEligible:
+                                  selectedDesignation.overtimeEligible,
+                              })
+                            }
+                          />
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -1115,10 +1472,10 @@ function EmployeeForm() {
                               required: true,
                               type: "date",
                             },
-                            {
-                              label: "Reporting Manager",
-                              field: "reportingManager",
-                            },
+                            // {
+                            //   label: "Reporting Manager",
+                            //   field: "reportingManager",
+                            // },
                           ].map(({ label, field, type, required }) => (
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
@@ -1129,7 +1486,9 @@ function EmployeeForm() {
                               </label>
                               <input
                                 type={type || "text"}
-                                className={`${inputClass} ${type === "date" ? "py-[0.4rem] px-3" : ""}`}
+                                className={`${inputClass} ${
+                                  type === "date" ? "py-[0.4rem] px-3" : ""
+                                }`}
                                 value={formData.employee[field] || ""}
                                 onChange={(e) =>
                                   handleInputChange(
@@ -1141,6 +1500,24 @@ function EmployeeForm() {
                               />
                             </div>
                           ))}
+
+                          <div className="grid grid-cols-1 gap-4">
+                            <ReportingManagerSelect
+                              label="Reporting Manager"
+                              options={managers}
+                              value={formData.employee.reportingManager}
+                              onChange={(selectedManager) =>
+                                handleInputChange(
+                                  "employee",
+                                  "reportingManager",
+                                  {
+                                    employeeId: selectedManager.employeeId,
+                                    name: selectedManager.name,
+                                  }
+                                )
+                              }
+                            />
+                          </div>
                         </div>
 
                         {/* Statutory Details */}
@@ -1150,13 +1527,17 @@ function EmployeeForm() {
                           </h4>
 
                           <MultiSelect
-                          label="Weekly Off"
-                          options={weekDays}
-                          value={formData.employee.weeklyOffs || []}
-                          onChange={(selected) =>
-                            handleInputChange("employee", "weeklyOffs", selected)
-                          }
-                        />
+                            label="Weekly Off"
+                            options={weekDays}
+                            value={formData.employee.weeklyOffs || []}
+                            onChange={(selected) =>
+                              handleInputChange(
+                                "employee",
+                                "weeklyOffs",
+                                selected
+                              )
+                            }
+                          />
 
                           <div className="flex flex-col space-y-4">
                             {/* PF Section */}
@@ -1250,7 +1631,7 @@ function EmployeeForm() {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* Overtime Eligible Section */}
                             {/* <div className="space-y-2">
                               <div className="flex items-center mb-3">
@@ -1385,7 +1766,11 @@ function EmployeeForm() {
                               className={inputClass}
                               value={formData.bankDetails[key] || ""}
                               onChange={(e) =>
-                                handleInputChange("bankDetails", key, e.target.value)
+                                handleInputChange(
+                                  "bankDetails",
+                                  key,
+                                  e.target.value
+                                )
                               }
                             />
                           </div>
@@ -1434,7 +1819,8 @@ function EmployeeForm() {
                               </div>
                               {formData.bankDetails.passbookImgUrl && (
                                 <div className="mt-2 text-sm text-gray-600">
-                                  File: {formData.bankDetails.passbookImgUrl.name}
+                                  File:{" "}
+                                  {formData.bankDetails.passbookImgUrl.name}
                                 </div>
                               )}
                             </div>
@@ -1508,7 +1894,8 @@ function EmployeeForm() {
                                   type="text"
                                   className={`${inputClass} pl-8 bg-gray-50`}
                                   value={
-                                    formData.salaryDetails.employerPfContribution ||
+                                    formData.salaryDetails
+                                      .employerPfContribution ||
                                     calculatePFContributions(
                                       formData.salaryDetails.basicSalary
                                     ).employer
@@ -1530,7 +1917,8 @@ function EmployeeForm() {
                                   type="text"
                                   className={`${inputClass} pl-8 bg-gray-50`}
                                   value={
-                                    formData.salaryDetails.employeePfContribution ||
+                                    formData.salaryDetails
+                                      .employeePfContribution ||
                                     calculatePFContributions(
                                       formData.salaryDetails.basicSalary
                                     ).employee
@@ -1558,46 +1946,52 @@ function EmployeeForm() {
                 >
                   Cancel
                 </motion.button>
-                
+
                 {activeSection === "personal" && (
-                <motion.button
-                  type="submit"
-                  className={`px-8 py-3 rounded-xl ${
-                    employeeId ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-                  } text-white transition-all duration-200 flex items-center gap-2`}
-                  disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{employeeId ? "Update Employee" : "Add Employee"}</span>
-                    </>
-                  )}
-                </motion.button>
+                  <motion.button
+                    type="submit"
+                    className={`px-8 py-3 rounded-xl ${
+                      employeeId
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white transition-all duration-200 flex items-center gap-2`}
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {loading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>
+                          {employeeId ? "Update Employee" : "Save and Exit"}
+                        </span>
+                      </>
+                    )}
+                  </motion.button>
                 )}
 
-                
                 <motion.button
                   type="submit"
                   className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
@@ -1628,9 +2022,11 @@ function EmployeeForm() {
                   ) : (
                     <>
                       <span>
-                        {activeSection === "salary" 
-                          ? (employee ? "Update Employee" : "Add Employee") 
-                          : "Next"}
+                        {activeSection === "salary"
+                          ? employee
+                            ? "Update Employee"
+                            : "Save and Exit"
+                          : "Save and Continue"}
                       </span>
                       {activeSection !== "salary" && (
                         <svg
@@ -1651,7 +2047,6 @@ function EmployeeForm() {
                   )}
                 </motion.button>
               </div>
-
             </form>
           </motion.div>
         </div>

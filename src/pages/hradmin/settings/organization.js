@@ -13,13 +13,26 @@ import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
 import Select from "react-select";
 import { useRouter } from "next/router";
-import { useDispatch, useSelector } from 'react-redux';
-import { createDepartment, fetchDepartments, updateDepartment, deleteDepartment } from '@/redux/slices/departmentSlice';
-import { fetchLeavePolicies } from '@/redux/slices/leavePolicySlice';
-import { createDesignation, fetchDepartmentsForDropdown, fetchDesignations, updateDesignation, deleteDesignation } from '@/redux/slices/designationSlice';
+import { useDispatch, useSelector } from "react-redux";
+import {
+  createDepartment,
+  fetchDepartments,
+  updateDepartment,
+  deleteDepartment,
+} from "@/redux/slices/departmentSlice";
+import { fetchLeavePolicies } from "@/redux/slices/leavePolicySlice";
+import {
+  createDesignation,
+  fetchDepartmentsForDropdown,
+  fetchDesignations,
+  updateDesignation,
+  deleteDesignation,
+} from "@/redux/slices/designationSlice";
 import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("departments");
   const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false);
@@ -48,7 +61,8 @@ const OrganizationSettings = () => {
   });
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
-  const [showDesignationEditModal, setShowDesignationEditModal] = useState(false);
+  const [showDesignationEditModal, setShowDesignationEditModal] =
+    useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -85,9 +99,15 @@ const OrganizationSettings = () => {
   ]);
 
   const dispatch = useDispatch();
-  const { loading, error, success, departments: reduxDepartments } = useSelector((state) => state.department);
+  const {
+    loading,
+    error,
+    success,
+    departments: reduxDepartments,
+  } = useSelector((state) => state.department);
   const { policies } = useSelector((state) => state.leavePolicy);
-  const { designations: fetchedDesignations, loading: designationLoading } = useSelector((state) => state.designation);
+  const { designations: fetchedDesignations, loading: designationLoading } =
+    useSelector((state) => state.designation);
 
   // Fetch departments, leave policies, and designations when component mounts
   useEffect(() => {
@@ -98,9 +118,9 @@ const OrganizationSettings = () => {
   }, [dispatch]);
 
   // Sample data for dropdowns
-  const leavePolicyOptions = policies.map(policy => ({
+  const leavePolicyOptions = policies.map((policy) => ({
     value: policy.leavePolicyId,
-    label: policy.name
+    label: policy.name,
   }));
 
   const weekDays = [
@@ -143,13 +163,16 @@ const OrganizationSettings = () => {
       if (!departmentForm.head) {
         newErrors.head = "Department head is required";
       }
-      if (!departmentForm.weeklyHolidays || departmentForm.weeklyHolidays.length === 0) {
+      if (
+        !departmentForm.weeklyHolidays ||
+        departmentForm.weeklyHolidays.length === 0
+      ) {
         newErrors.weeklyHolidays = "Weekly holidays are required";
       }
 
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
-        
+
         setNotification({
           show: true,
           type: "error",
@@ -173,13 +196,13 @@ const OrganizationSettings = () => {
         description: departmentForm.description || "",
         departmentHead: departmentForm.head,
         leavePolicy: departmentForm.leavePolicy.value,
-        weeklyHolidays: departmentForm.weeklyHolidays.map(day => day.value).join(',')
+        weeklyHolidays: departmentForm.weeklyHolidays
+          .map((day) => day.value)
+          .join(","),
       };
 
-      console.log('Updating department data:', departmentData); // Debug log
-
       await dispatch(updateDepartment({ id, departmentData })).unwrap();
-      
+
       setNotification({
         show: true,
         type: "success",
@@ -207,7 +230,6 @@ const OrganizationSettings = () => {
           message: "",
         });
       }, 2000);
-
     } catch (error) {
       setNotification({
         show: true,
@@ -230,7 +252,7 @@ const OrganizationSettings = () => {
       if (!selectedDepartment) return;
 
       await dispatch(deleteDepartment(selectedDepartment.id)).unwrap();
-      
+
       setNotification({
         show: true,
         type: "success",
@@ -258,7 +280,6 @@ const OrganizationSettings = () => {
           message: "",
         });
       }, 2000);
-
     } catch (error) {
       setNotification({
         show: true,
@@ -289,7 +310,7 @@ const OrganizationSettings = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      
+
       setNotification({
         show: true,
         type: "error",
@@ -314,13 +335,15 @@ const OrganizationSettings = () => {
         description: departmentForm.description || "",
         departmentHead: departmentForm.head,
         leavePolicy: departmentForm.leavePolicy.value,
-        weeklyHolidays: departmentForm.weeklyHolidays.map(day => day.value).join(',')
+        weeklyHolidays: departmentForm.weeklyHolidays
+          .map((day) => day.value)
+          .join(","),
       };
 
-      console.log('Submitting department data:', departmentData); // Debug log
+      await dispatch(
+        createDepartment({ ...departmentData, companyId: selectedCompanyId })
+      ).unwrap();
 
-      await dispatch(createDepartment(departmentData)).unwrap();
-      
       setNotification({
         show: true,
         type: "success",
@@ -347,17 +370,17 @@ const OrganizationSettings = () => {
           message: "",
         });
       }, 2000);
-
     } catch (error) {
       // Check if the error is due to department already existing
-      if (error.includes('already exists') || error.includes('duplicate')) {
+      if (error.includes("already exists") || error.includes("duplicate")) {
         setNotification({
           show: true,
           type: "error",
-          message: "A department with this name already exists. Please use a different name.",
+          message:
+            "A department with this name already exists. Please use a different name.",
         });
         setErrors({
-          name: "Department name already exists"
+          name: "Department name already exists",
         });
       } else {
         setNotification({
@@ -397,15 +420,15 @@ const OrganizationSettings = () => {
         department: designationForm.department.value,
         description: designationForm.description || "",
         manager: designationForm.manager,
-        overtimeEligible: designationForm.overtimeEligible
+        overtimeEligible: designationForm.overtimeEligible,
       };
 
-      console.log('Updating designation data:', designationData); // Debug log
-
-      await dispatch(updateDesignation({ 
-        id: selectedDesignation.id, 
-        designationData 
-      })).unwrap();
+      await dispatch(
+        updateDesignation({
+          id: selectedDesignation.id,
+          designationData,
+        })
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -424,7 +447,7 @@ const OrganizationSettings = () => {
         department: "",
         description: "",
         manager: false,
-        overtimeEligible: false
+        overtimeEligible: false,
       });
 
       setTimeout(() => {
@@ -434,12 +457,12 @@ const OrganizationSettings = () => {
           message: "",
         });
       }, 2000);
-
     } catch (error) {
       // Extract error message properly
-      const errorMessage = error?.message || 
-                          (typeof error === 'object' ? JSON.stringify(error) : error) || 
-                          "Failed to update designation. Please try again.";
+      const errorMessage =
+        error?.message ||
+        (typeof error === "object" ? JSON.stringify(error) : error) ||
+        "Failed to update designation. Please try again.";
 
       setNotification({
         show: true,
@@ -480,10 +503,8 @@ const OrganizationSettings = () => {
         description: designationForm.description || "",
         department: designationForm.department.value,
         manager: designationForm.manager,
-        overtimeEligible: designationForm.overtimeEligible
+        overtimeEligible: designationForm.overtimeEligible,
       };
-
-      console.log('Submitting designation data:', designationData); // Debug log
 
       await dispatch(createDesignation(designationData)).unwrap();
       showNotification("success", "Designation added successfully!");
@@ -494,18 +515,17 @@ const OrganizationSettings = () => {
         description: "",
         department: "",
         manager: false,
-        overtimeEligible: false
+        overtimeEligible: false,
       });
       setIsFormChanged(false);
       setErrors({});
 
       dispatch(fetchDesignations());
-
     } catch (error) {
       showNotification("error", error.message || "Failed to add designation");
-      if (error.message?.includes('already exists')) {
+      if (error.message?.includes("already exists")) {
         setErrors({
-          name: "Designation already exists"
+          name: "Designation already exists",
         });
       }
     }
@@ -521,7 +541,7 @@ const OrganizationSettings = () => {
 
     // Clear any existing errors for this field
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -534,12 +554,12 @@ const OrganizationSettings = () => {
     const { name, value, type, checked } = e.target;
     setDesignationForm({
       ...designationForm,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     });
 
     // Clear any existing errors for this field
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -550,17 +570,17 @@ const OrganizationSettings = () => {
   const handleSelectChange = (selectedOption, actionMeta) => {
     setIsFormChanged(true);
     const { name } = actionMeta;
-    if (name === 'leavePolicy') {
+    if (name === "leavePolicy") {
       setDepartmentForm({
         ...departmentForm,
         leavePolicy: selectedOption,
       });
-    } else if (name === 'weeklyHolidays') {
+    } else if (name === "weeklyHolidays") {
       setDepartmentForm({
         ...departmentForm,
         weeklyHolidays: selectedOption,
       });
-    } else if (name === 'department') {
+    } else if (name === "department") {
       setDesignationForm({
         ...designationForm,
         department: selectedOption,
@@ -571,34 +591,44 @@ const OrganizationSettings = () => {
   const handleRowClick = (item) => {
     // Reset form changed state when opening new item
     setIsFormChanged(false);
-    
+
     if (activeTab === "departments") {
       setSelectedDepartment(item);
+
+      // Find the leave policy object from the policies array
+      const selectedPolicy = policies.find(
+        (p) => p.leavePolicyId === item.leavePolicy
+      );
+
+      // Format weekly holidays into array of objects
+      const weeklyHolidaysArray =
+        item.weeklyHolidays?.split(",").map((day) => ({
+          value: day.trim(),
+          label: day.trim(),
+        })) || [];
+
       setDepartmentForm({
         name: item.name,
         description: item.description || "",
         head: item.departmentHead || "",
-        leavePolicy: { 
-          value: item.leavePolicy, 
-          label: policies.find(p => p.leavePolicyId === item.leavePolicy)?.name 
+        leavePolicy: {
+          value: item.leavePolicy,
+          label: selectedPolicy?.name || item.leavePolicy,
         },
-        weeklyHolidays: item.weeklyHolidays?.split(',').map(day => ({ 
-          value: day, 
-          label: day 
-        })) || []
+        weeklyHolidays: weeklyHolidaysArray,
       });
       setShowDepartmentEditModal(true);
     } else {
       setSelectedDesignation(item);
       setDesignationForm({
         name: item.name,
-        department: { 
+        department: {
           value: item.department,
-          label: item.department 
+          label: item.department,
         },
         description: item.description || "",
         manager: item.manager || false,
-        overtimeEligible: item.overtimeEligible || false
+        overtimeEligible: item.overtimeEligible || false,
       });
       setShowDesignationModal(true);
     }
@@ -637,19 +667,22 @@ const OrganizationSettings = () => {
     // Reset form changed state when opening new designation
     setIsFormChanged(false);
     setSelectedDesignation(designation);
-    
+
     // Find the department name using the department ID
-    const departmentName = reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department;
-    
+    const departmentName =
+      reduxDepartments.find(
+        (dept) => dept.departmentId === designation.department
+      )?.name || designation.department;
+
     setDesignationForm({
       name: designation.name,
-      department: { 
+      department: {
         value: designation.department,
-        label: departmentName // Use the department name instead of the ID
+        label: departmentName, // Use the department name instead of the ID
       },
       description: designation.description || "",
       manager: designation.manager || false,
-      overtimeEligible: designation.overtimeEligible || false
+      overtimeEligible: designation.overtimeEligible || false,
     });
     setShowDesignationModal(true);
   };
@@ -657,7 +690,7 @@ const OrganizationSettings = () => {
   const handleDesignationDelete = async () => {
     try {
       await dispatch(deleteDesignation(selectedDesignation.id)).unwrap();
-      
+
       setNotification({
         show: true,
         type: "success",
@@ -675,7 +708,7 @@ const OrganizationSettings = () => {
         department: "",
         description: "",
         manager: false,
-        overtimeEligible: false
+        overtimeEligible: false,
       });
 
       setTimeout(() => {
@@ -685,7 +718,6 @@ const OrganizationSettings = () => {
           message: "",
         });
       }, 2000);
-
     } catch (error) {
       setNotification({
         show: true,
@@ -803,12 +835,29 @@ const OrganizationSettings = () => {
                         // Reset form changed state when opening new item
                         setIsFormChanged(false);
                         setSelectedDepartment(department);
+
+                        // Find the leave policy object from the policies array
+                        const selectedPolicy = policies.find(
+                          (p) => p.leavePolicyId === department.leavePolicy
+                        );
+
+                        // Format weekly holidays into array of objects
+                        const weeklyHolidaysArray =
+                          department.weeklyHolidays?.split(",").map((day) => ({
+                            value: day.trim(),
+                            label: day.trim(),
+                          })) || [];
+
                         setDepartmentForm({
                           name: department.name,
                           description: department.description || "",
                           head: department.departmentHead,
-                          leavePolicy: department.leavePolicy,
-                          weeklyHolidays: department.weeklyHolidays,
+                          leavePolicy: {
+                            value: department.leavePolicy,
+                            label:
+                              selectedPolicy?.name || department.leavePolicy,
+                          },
+                          weeklyHolidays: weeklyHolidaysArray,
                         });
                         setShowDepartmentEditModal(true);
                       }}
@@ -824,7 +873,10 @@ const OrganizationSettings = () => {
                         {department.departmentHead}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {policies.find(policy => policy.leavePolicyId === department.leavePolicy)?.name || department.leavePolicy}
+                        {policies.find(
+                          (policy) =>
+                            policy.leavePolicyId === department.leavePolicy
+                        )?.name || department.leavePolicy}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {department.weeklyHolidays}
@@ -837,11 +889,11 @@ const OrganizationSettings = () => {
           )}
 
           {/* Designations Table */}
-                {activeTab === "designations" && (
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                  <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
+          {activeTab === "designations" && (
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
                     </th>
@@ -857,60 +909,66 @@ const OrganizationSettings = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Overtime Eligible
                     </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {designationLoading ? (
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {designationLoading ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center">
-                      Loading...
+                        Loading...
                       </td>
                     </tr>
-                    ) : error ? (
+                  ) : error ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center text-red-500">
-                      {error}
+                      <td
+                        colSpan="5"
+                        className="px-6 py-4 text-center text-red-500"
+                      >
+                        {error}
                       </td>
                     </tr>
-                    ) : fetchedDesignations.length === 0 ? (
+                  ) : fetchedDesignations.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-4 text-center">
-                      No designations found
+                        No designations found
                       </td>
                     </tr>
-                    ) : (
+                  ) : (
                     fetchedDesignations.map((designation) => (
                       <tr
-                      key={designation.id}
-                      onClick={() => handleDesignationRowClick(designation)}
-                      className="hover:bg-gray-50 cursor-pointer"
+                        key={designation.id}
+                        onClick={() => handleDesignationRowClick(designation)}
+                        className="hover:bg-gray-50 cursor-pointer"
                       >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {designation.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {designation.description || "-"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {designation.manager ? "Yes" : "No"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {designation.overtimeEligible ? "Yes" : "No"}
-                      </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {designation.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {reduxDepartments.find(
+                            (dept) =>
+                              dept.departmentId === designation.department
+                          )?.name || designation.department}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {designation.description || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {designation.manager ? "Yes" : "No"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {designation.overtimeEligible ? "Yes" : "No"}
+                        </td>
                       </tr>
                     ))
-                    )}
-                  </tbody>
-                  </table>
-                </div>
-                )}
-              </div>
-              </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
-              {/* Department Add Modal */}
+      {/* Department Add Modal */}
       {showDepartmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-[600px]">
@@ -931,10 +989,13 @@ const OrganizationSettings = () => {
             </div>
 
             <div className="p-6">
-              <form className="space-y-4" onSubmit={(e) => {
-                e.preventDefault();
-                handleDepartmentSubmit(e);
-              }}>
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleDepartmentSubmit(e);
+                }}
+              >
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
@@ -1051,10 +1112,13 @@ const OrganizationSettings = () => {
             </div>
 
             <div className="p-6">
-              <form className="space-y-4" onSubmit={(e) => {
-                e.preventDefault();
-                handleDepartmentUpdate(selectedDepartment.id);
-              }}>
+              <form
+                className="space-y-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleDepartmentUpdate(selectedDepartment.id);
+                }}
+              >
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
@@ -1173,14 +1237,17 @@ const OrganizationSettings = () => {
               </button>
             </div>
 
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (selectedDesignation) {
-                handleDesignationUpdate();
-              } else {
-                handleDesignationSubmit(e);
-              }
-            }} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (selectedDesignation) {
+                  handleDesignationUpdate();
+                } else {
+                  handleDesignationSubmit(e);
+                }
+              }}
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Name <span className="text-red-500">*</span>
@@ -1295,7 +1362,11 @@ const OrganizationSettings = () => {
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  {selectedDesignation ? (isFormChanged ? "Update" : "Save") : "Add"}
+                  {selectedDesignation
+                    ? isFormChanged
+                      ? "Update"
+                      : "Save"
+                    : "Add"}
                 </button>
               </div>
             </form>

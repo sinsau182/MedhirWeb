@@ -1,101 +1,119 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const fetchPublicHolidays = createAsyncThunk(
-  'publicHoliday/fetchPublicHolidays',
+  "publicHoliday/fetchPublicHolidays",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/public-holidays`, {
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(`${API_URL}/public-holidays/company/${company}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
     } catch (error) {
       if (error.response) {
-        return rejectWithValue(error.response.data.message || 'Failed to fetch public holidays');
+        return rejectWithValue(
+          error.response.data.message || "Failed to fetch public holidays"
+        );
       }
-      return rejectWithValue('Network error: Unable to fetch public holidays');
+      return rejectWithValue("Network error: Unable to fetch public holidays");
     }
   }
 );
 
 export const createPublicHoliday = createAsyncThunk(
-  'publicHoliday/createPublicHoliday',
+  "publicHoliday/createPublicHoliday",
   async (holidayData, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/public-holidays`, holidayData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.post(
+        `${API_URL}/public-holidays`,
+        holidayData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-      
+      );
+
       // Refresh the holidays list after successful creation
       dispatch(fetchPublicHolidays());
       return response.data;
     } catch (error) {
       if (error.response) {
-        return rejectWithValue(error.response.data.message || 'Failed to create public holiday');
+        return rejectWithValue(
+          error.response.data.message || "Failed to create public holiday"
+        );
       }
-      return rejectWithValue('Network error: Unable to create public holiday');
+      return rejectWithValue("Network error: Unable to create public holiday");
     }
   }
 );
 
 export const updatePublicHoliday = createAsyncThunk(
-  'publicHoliday/updatePublicHoliday',
+  "publicHoliday/updatePublicHoliday",
   async ({ id, holidayData }, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_URL}/public-holidays/${id}`, holidayData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        `${API_URL}/public-holidays/${id}`,
+        holidayData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-      
+      );
+
       // Refresh the holidays list after successful update
       dispatch(fetchPublicHolidays());
       return response.data;
     } catch (error) {
       if (error.response) {
-        return rejectWithValue(error.response.data.message || 'Failed to update public holiday');
+        return rejectWithValue(
+          error.response.data.message || "Failed to update public holiday"
+        );
       }
-      return rejectWithValue('Network error: Unable to update public holiday');
+      return rejectWithValue("Network error: Unable to update public holiday");
     }
   }
 );
 
 export const deletePublicHoliday = createAsyncThunk(
-  'publicHoliday/deletePublicHoliday',
+  "publicHoliday/deletePublicHoliday",
   async (id, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getItemFromSessionStorage("token", null);
       await axios.delete(`${API_URL}/public-holidays/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       // Refresh the holidays list after successful deletion
       dispatch(fetchPublicHolidays());
       return id;
     } catch (error) {
       if (error.response) {
-        return rejectWithValue(error.response.data.message || 'Failed to delete public holiday');
+        return rejectWithValue(
+          error.response.data.message || "Failed to delete public holiday"
+        );
       }
-      return rejectWithValue('Network error: Unable to delete public holiday');
+      return rejectWithValue("Network error: Unable to delete public holiday");
     }
   }
 );
 
 const publicHolidaySlice = createSlice({
-  name: 'publicHoliday',
+  name: "publicHoliday",
   initialState: {
     loading: false,
     error: null,
@@ -103,7 +121,7 @@ const publicHolidaySlice = createSlice({
     lastUpdated: null,
     createSuccess: false,
     updateSuccess: false,
-    deleteSuccess: false
+    deleteSuccess: false,
   },
   reducers: {
     resetPublicHolidayState: (state) => {
@@ -179,4 +197,4 @@ const publicHolidaySlice = createSlice({
 });
 
 export const { resetPublicHolidayState } = publicHolidaySlice.actions;
-export default publicHolidaySlice.reducer; 
+export default publicHolidaySlice.reducer;

@@ -21,7 +21,7 @@ function Attendance() {
   // Check authentication and role
   useEffect(() => {
     try {
-      const role = localStorage.getItem("currentRole");
+      const role = sessionStorage.getItem("currentRole");
       if (!role || role !== "manager") {
         router.push("/login");
         return;
@@ -42,7 +42,7 @@ function Attendance() {
           const date = new Date(2024, 0, i);
           dates.push({
             day: i,
-            weekday: date.toLocaleString('default', { weekday: 'short' })
+            weekday: date.toLocaleString("default", { weekday: "short" }),
           });
         }
         return dates;
@@ -60,61 +60,67 @@ function Attendance() {
       name: "Arun",
       department: "SALES",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => {
-        // Weekends (Saturdays and Sundays)
-        if (i % 7 === 5 || i % 7 === 6) return "weekend";
-        // Firm holiday (15th)
-        if (i === 14) return "holiday";
-        // Regular attendance
-        if (i < 3) return null;
-        // Random attendance status
-        const random = Math.random();
-        if (random > 0.8) return false; // Absent
-        if (random > 0.6) return "half"; // Half day
-        if (random > 0.4) return "approved_leave"; // Approved leave
-        return true; // Present
-      })
+      attendance: Array(31)
+        .fill(null)
+        .map((_, i) => {
+          // Weekends (Saturdays and Sundays)
+          if (i % 7 === 5 || i % 7 === 6) return "weekend";
+          // Firm holiday (15th)
+          if (i === 14) return "holiday";
+          // Regular attendance
+          if (i < 3) return null;
+          // Random attendance status
+          const random = Math.random();
+          if (random > 0.8) return false; // Absent
+          if (random > 0.6) return "half"; // Half day
+          if (random > 0.4) return "approved_leave"; // Approved leave
+          return true; // Present
+        }),
     },
     {
       id: "MED002",
       name: "Naman",
       department: "Design",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => {
-        // Weekends (Saturdays and Sundays)
-        if (i % 7 === 5 || i % 7 === 6) return "weekend";
-        // Firm holiday (15th)
-        if (i === 14) return "holiday";
-        // Regular attendance
-        if (i < 3) return null;
-        // Random attendance status
-        const random = Math.random();
-        if (random > 0.8) return false; // Absent
-        if (random > 0.6) return "half"; // Half day
-        if (random > 0.4) return "approved_leave"; // Approved leave
-        return true; // Present
-      })
+      attendance: Array(31)
+        .fill(null)
+        .map((_, i) => {
+          // Weekends (Saturdays and Sundays)
+          if (i % 7 === 5 || i % 7 === 6) return "weekend";
+          // Firm holiday (15th)
+          if (i === 14) return "holiday";
+          // Regular attendance
+          if (i < 3) return null;
+          // Random attendance status
+          const random = Math.random();
+          if (random > 0.8) return false; // Absent
+          if (random > 0.6) return "half"; // Half day
+          if (random > 0.4) return "approved_leave"; // Approved leave
+          return true; // Present
+        }),
     },
     {
       id: "MED003",
       name: "Amit",
       department: "Marketing",
       p_twd: "18/20",
-      attendance: Array(31).fill(null).map((_, i) => {
-        // Weekends (Saturdays and Sundays)
-        if (i % 7 === 5 || i % 7 === 6) return "weekend";
-        // Firm holiday (15th)
-        if (i === 14) return "holiday";
-        // Regular attendance
-        if (i < 3) return null;
-        // Random attendance status
-        const random = Math.random();
-        if (random > 0.8) return false; // Absent
-        if (random > 0.6) return "half"; // Half day
-        if (random > 0.4) return "approved_leave"; // Approved leave
-        return true; // Present
-      })
-    }
+      attendance: Array(31)
+        .fill(null)
+        .map((_, i) => {
+          // Weekends (Saturdays and Sundays)
+          if (i % 7 === 5 || i % 7 === 6) return "weekend";
+          // Firm holiday (15th)
+          if (i === 14) return "holiday";
+          // Regular attendance
+          if (i < 3) return null;
+          // Random attendance status
+          const random = Math.random();
+          if (random > 0.8) return false; // Absent
+          if (random > 0.6) return "half"; // Half day
+          if (random > 0.4) return "approved_leave"; // Approved leave
+          return true; // Present
+        }),
+    },
   ];
 
   // Leave data for team members
@@ -154,7 +160,7 @@ function Attendance() {
       compOffEarned: "4",
       compOffCarriedForward: "1",
       netLeaves: "10",
-    }
+    },
   ];
 
   const toggleSidebar = () => {
@@ -169,21 +175,25 @@ function Attendance() {
     setIsCalendarOpen(false);
   };
 
-  const filteredEmployees = React.useMemo(() => 
-    employees.filter(employee =>
-      employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-      employee.id.toLowerCase().includes(searchInput.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchInput.toLowerCase())
-    ),
+  const filteredEmployees = React.useMemo(
+    () =>
+      employees.filter(
+        (employee) =>
+          employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+          employee.id.toLowerCase().includes(searchInput.toLowerCase()) ||
+          employee.department.toLowerCase().includes(searchInput.toLowerCase())
+      ),
     [searchInput]
   );
 
-  const filteredLeaveData = React.useMemo(() => 
-    leaveData.filter(leave =>
-      leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-      leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
-      leave.department.toLowerCase().includes(searchInput.toLowerCase())
-    ),
+  const filteredLeaveData = React.useMemo(
+    () =>
+      leaveData.filter(
+        (leave) =>
+          leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+          leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
+          leave.department.toLowerCase().includes(searchInput.toLowerCase())
+      ),
     [searchInput]
   );
 
@@ -197,7 +207,6 @@ function Attendance() {
     if (status === "approved_leave") return "bg-green-200"; // Light green for approved leave
     return "";
   }, []);
-
 
   const getAttendanceText = React.useCallback((status) => {
     if (status === true) return "P";
@@ -217,7 +226,9 @@ function Attendance() {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-green-200 rounded"></div>
-          <span className="text-xs text-gray-600">Present (Approved Leave)</span>
+          <span className="text-xs text-gray-600">
+            Present (Approved Leave)
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-yellow-500 rounded"></div>
@@ -254,12 +265,16 @@ function Attendance() {
               Dept
             </th>
             {dates.map((date) => (
-              <th 
+              <th
                 key={date.day}
                 className="py-1 px-0 text-center text-xs font-semibold text-gray-700 w-[2%] border-r"
               >
-                <div className="leading-none">{String(date.day).padStart(2, '0')}</div>
-                <div className="text-gray-500 text-[10px] leading-tight">{date.weekday}</div>
+                <div className="leading-none">
+                  {String(date.day).padStart(2, "0")}
+                </div>
+                <div className="text-gray-500 text-[10px] leading-tight">
+                  {date.weekday}
+                </div>
               </th>
             ))}
           </tr>
@@ -280,11 +295,12 @@ function Attendance() {
                 {employee.department}
               </td>
               {employee.attendance.map((status, index) => (
-                <td 
+                <td
                   key={index}
-                  className={`py-1 px-0 text-center border-r ${getAttendanceColor(status)}`}
-                >
-                </td>
+                  className={`py-1 px-0 text-center border-r ${getAttendanceColor(
+                    status
+                  )}`}
+                ></td>
               ))}
             </tr>
           ))}
@@ -333,11 +349,11 @@ function Attendance() {
         <tbody className="divide-y divide-gray-100">
           {filteredLeaveData.map((leave) => {
             // Calculate leave balance
-            const leaveBalance = 
-              parseInt(leave.leavesEarned) + 
-              parseInt(leave.leavesFromPreviousYear) + 
-              parseInt(leave.compOffEarned) + 
-              parseInt(leave.compOffCarriedForward) - 
+            const leaveBalance =
+              parseInt(leave.leavesEarned) +
+              parseInt(leave.leavesFromPreviousYear) +
+              parseInt(leave.compOffEarned) +
+              parseInt(leave.compOffCarriedForward) -
               parseInt(leave.leavesTaken);
 
             return (
@@ -406,12 +422,16 @@ function Attendance() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar 
-        isCollapsed={isSidebarCollapsed} 
-        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
         <HradminNavbar />
 
         <div className="p-6 mt-16">
@@ -438,26 +458,46 @@ function Attendance() {
                   onClick={toggleCalendar}
                 >
                   <Calendar className="h-5 w-5" />
-                  <span className="font-medium text-base">{selectedYear}-{selectedMonth.toLocaleString('default', { month: 'long' })}</span>
+                  <span className="font-medium text-base">
+                    {selectedYear}-
+                    {selectedMonth.toLocaleString("default", { month: "long" })}
+                  </span>
                 </Badge>
                 {isCalendarOpen && (
                   <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                     <div className="p-3 border-b">
-                      <div className="text-sm font-medium text-gray-700">{selectedYear}</div>
+                      <div className="text-sm font-medium text-gray-700">
+                        {selectedYear}
+                      </div>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 p-3">
                       {[
-                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                        "Jan",
+                        "Feb",
+                        "Mar",
+                        "Apr",
+                        "May",
+                        "Jun",
+                        "Jul",
+                        "Aug",
+                        "Sep",
+                        "Oct",
+                        "Nov",
+                        "Dec",
                       ].map((month) => (
                         <button
                           key={month}
                           className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                            month === selectedMonth.toLocaleString('default', { month: 'long' }).slice(0, 3) 
-                              ? 'bg-blue-50 text-blue-600 font-medium hover:bg-blue-100' 
-                              : 'hover:bg-gray-50 text-gray-700'
+                            month ===
+                            selectedMonth
+                              .toLocaleString("default", { month: "long" })
+                              .slice(0, 3)
+                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                              : "hover:bg-gray-50 text-gray-700"
                           }`}
-                          onClick={() => handleMonthSelection(month, selectedYear)}
+                          onClick={() =>
+                            handleMonthSelection(month, selectedYear)
+                          }
                         >
                           {month}
                         </button>
@@ -486,7 +526,9 @@ function Attendance() {
             ))}
           </div>
 
-          {activeTab === "Attendance Tracker" ? renderAttendanceTable() : renderLeaveTable()}
+          {activeTab === "Attendance Tracker"
+            ? renderAttendanceTable()
+            : renderLeaveTable()}
         </div>
       </div>
     </div>

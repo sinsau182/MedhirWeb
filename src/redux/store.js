@@ -5,13 +5,19 @@ import modulesReducer from "./slices/modulesSlice"; // Import module slice
 import usersReducer from "./slices/usersSlice"; // Import user slice
 import authReducer from "./slices/authSlice"; // Import auth slice
 import expensesReducer from "./slices/expenseSlice"; // Import expense slice
-import payrollReducer from "./slices/payrollSlice"; // Import payroll slice
-import leaveReducer from "./slices/leaveSlice"; // Import leave slice
+import leaveReducer from "./slices/leaveSlice"; // Manages leave-related state
 import leaveTypeReducer from "./slices/leaveTypeSlice";
 import leavePolicyReducer from "./slices/leavePolicySlice";
 import publicHolidayReducer from "./slices/publicHolidaySlice";
 import departmentReducer from "./slices/departmentSlice";
 import designationReducer from "./slices/designationSlice";
+import sessionStorageReducer from './slices/sessionStorageSlice';
+import leaveBalanceReducer from "./slices/leaveBalanceSlice";
+import requestDetailsReducer from './slices/requestDetailsSlice';
+import payrollSettingsReducer from "./slices/payrollSettingsSlice";
+import payslipReducer from "./slices/payslipSlice";
+import allEmployeesSlice from "./slices/allEmployeesSlice";
+import managerEmployeeSlice from "./slices/managerEmployeeSlice";
 
 export const store = configureStore({
   reducer: {
@@ -21,13 +27,19 @@ export const store = configureStore({
     users: usersReducer, // Manages user-related state
     auth: authReducer, // Manages authentication state
     expenses: expensesReducer, // Manages expense-related state
-    payroll: payrollReducer, // Manages payroll-related state
-    leaveReducer: leaveReducer, // Manages leave-related state
+    leave: leaveReducer, // Manages leave-related state
     leaveType: leaveTypeReducer,
     leavePolicy: leavePolicyReducer,
     publicHoliday: publicHolidayReducer,
     department: departmentReducer,
     designation: designationReducer,
+    sessionStorage: sessionStorageReducer,
+    leaveBalance: leaveBalanceReducer,
+    requestDetails: requestDetailsReducer,
+    payrollSettings: payrollSettingsReducer,
+    payslip: payslipReducer,
+    allEmployees: allEmployeesSlice,
+    managerEmployee: managerEmployeeSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

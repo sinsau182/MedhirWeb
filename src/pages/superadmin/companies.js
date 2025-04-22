@@ -25,6 +25,7 @@ import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa"; // Import the 
 import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 function SuperadminCompanies() {
   const router = useRouter();
@@ -48,12 +49,33 @@ function SuperadminCompanies() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    dispatch(fetchCompanies());
-
-    if (err) {
-      toast.error("Operation Failed: " + err);
+    const token = getItemFromSessionStorage("token");
+    if (!token) {
+      toast.error("Please login to continue");
+      router.push("/login");
+      return;
     }
-  }, [dispatch, err]);
+
+    console.log("Fetching companies with token:", token);
+    dispatch(fetchCompanies())
+      .unwrap()
+      .then((response) => {
+        console.log("Companies fetched:", response);
+      })
+      .catch((error) => {
+        console.error("Error fetching companies:", error);
+        if (error.includes("Authentication")) {
+          toast.error("Session expired. Please login again");
+          router.push("/login");
+        } else {
+          toast.error(error || "Failed to fetch companies");
+        }
+      });
+  }, [dispatch, router]);
+
+  console.log("Current companies state:", companies);
+  console.log("Loading state:", loading);
+  console.log("Error state:", err);
 
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchInput, setSearchInput] = useState("");
@@ -64,7 +86,10 @@ function SuperadminCompanies() {
     setSelectedCompany(company);
     if (company) {
       setIsEditing(true); // Set the state to editing if a company is selected for update
-      setCompanyData({ ...company });
+      setCompanyData({
+        ...company,
+        colorCode: company.colorCode || "", // Ensure colorCode is included
+      });
     } else {
       setIsEditing(false); // Reset to adding mode
       setCompanyData({
@@ -73,6 +98,7 @@ function SuperadminCompanies() {
         phone: "",
         gst: "",
         regAdd: "",
+        colorCode: "", // Initialize colorCode for new companies
       });
     }
     setIsCompanyModalOpen(true);
@@ -80,7 +106,20 @@ function SuperadminCompanies() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCompanyData((prevData) => ({ ...prevData, [name]: value }));
+    setCompanyData((prevData) => {
+      const updatedData = { ...prevData, [name]: value };
+
+      // Auto-generate prefix if the company name is being updated
+      if (name === "name" && value.length >= 3) {
+        updatedData.prefixForEmpID = value.substring(0, 3).toUpperCase();
+      }
+      // Ensure prefix is always uppercase
+      if (name === "prefixForEmpID") {
+        updatedData.prefixForEmpID = value.toUpperCase();
+      }
+
+      return updatedData;
+    });
   };
 
   // Email validation function
@@ -135,11 +174,18 @@ function SuperadminCompanies() {
       if (isEditing) {
         // Dispatch update action with Redux
         await dispatch(
-          updateCompany({ id: selectedCompany.id, updatedData: companyData })
+          updateCompany({ 
+            id: selectedCompany.companyId, // Handle both id formats
+            updatedData: companyData 
+          })
         );
+        toast.success("Company updated successfully!");
       } else {
         // Dispatch create action with Redux
-        await dispatch(createCompany(companyData));
+        const result = await dispatch(createCompany(companyData));
+        if (result.payload) {
+          toast.success("Company created successfully!");
+        }
       }
 
       // Refetch updated list
@@ -149,17 +195,17 @@ function SuperadminCompanies() {
       setIsCompanyModalOpen(false);
       setSelectedCompany(null);
     } catch (error) {
-      console.log("Error saving company:", error);
+      toast.error("Failed to save company data.");
     }
   };
 
-  const handleSelectCompany = (company) => {
-    if (selectedCompany && selectedCompany.id === company.id) {
-      setSelectedCompany(null);
-    } else {
-      setSelectedCompany(company);
-    }
-  };
+  // const handleSelectCompany = (company) => {
+  //   if (selectedCompany && selectedCompany.id === company.id) {
+  //     setSelectedCompany(null);
+  //   } else {
+  //     setSelectedCompany(company);
+  //   }
+  // };
 
   const handleDeleteCompany = async () => {
     if (!selectedCompany) return;
@@ -170,7 +216,7 @@ function SuperadminCompanies() {
       setIsDeleteConfirmationOpen(false);
       setSelectedCompany(null);
     } catch (error) {
-      console.error("Error deleting company:", error);
+      toast.error("Failed to delete company.");
     }
   };
 
@@ -178,93 +224,27 @@ function SuperadminCompanies() {
     company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/login");
+  // const handleLogout = () => {
+  //   sessionStorage.removeItem("token");
+  //   router.push("/login");
+  // };
+
+  const predefinedColors = [
+    "#B0E0E6", "#FFE4E1", "#F0E68C", "#E6E6FA", "#D1D5DB"
+  ];
+
+  const handleColorChange = (color) => {
+    setCompanyData((prevData) => ({ ...prevData, colorCode: color }));
   };
 
   return (
-    <div className="bg-white text-black min-h-screen">
-      <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
-        <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
-          MEDHIR
-        </h1>
-        <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-          {["Overview", "My Task", "Companies", "Settings"].map((item, index) => (
-            <Link
-              key={index}
-              href={`/superadmin/${item.toLowerCase().replace(" ", "")}`}
-              passHref
-            >
-              <button
-                onClick={() => setActiveTab(item)}
-                className={`hover:text-[#4876D6] ${
-                  activeTab === item
-                    ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                    : "text-[#6c757d]"
-                }`}
-                style={{
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {item === "Overview" && (
-                  <FaBuilding
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "myTask" && (
-                  <FaUserCircle
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Companies" && (
-                  <FaBuilding
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Settings" && (
-                  <FaCog
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item}
-              </button>
-            </Link>
-          ))}
-        </nav>
-        <div className="relative">
-          <button
-            className="flex items-center gap-2 text-black font-medium"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          >
-            <FaUserCircle className="text-2xl" />
-            Super Admin
-          </button>
-          {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
-              <button
-                className="block w-full text-left px-4 py-2 text-black hover:bg-gray-100"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="bg-white text-[#4a4a4a] max-h-screen">
       <SuperadminHeaders />
       <div className="p-5">
         <div className="mt-6 p-4 rounded-lg bg-white">
           <div className="mt-4 p-4 rounded-lg flex justify-between items-center">
             <div className="relative w-96">
-            <input
+              <input
                 type="text"
                 placeholder="Search..."
                 className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg bg-white"
@@ -273,10 +253,6 @@ function SuperadminCompanies() {
               />
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
               />
             </div>
             <div className="flex space-x-10 mr-16">
@@ -317,61 +293,75 @@ function SuperadminCompanies() {
             </div>
           </div>
           <div className="mt-4 p-2 rounded-lg">
-            <ClientOnlyTable>
-              <Table className="w-full border border-gray-300 rounded-lg shadow-md">
-                <TableHead className="bg-gray-300 text-gray-800 font-bold">
-                  <TableHeader className="text-gray-700 font-medium">
-                    Name
-                  </TableHeader>
-                </TableHead>
-
-                <TableHead className="bg-gray-300 text-gray-800 font-bold">
-                  <TableHeader className="text-gray-700 font-medium">
-                    Email
-                  </TableHeader>
-                </TableHead>
-
-                <TableHead className="bg-gray-300 text-gray-800 font-bold">
-                  <TableHeader className="text-gray-700 font-medium">
-                    Phone
-                  </TableHeader>
-                </TableHead>
-
-                <TableHead className="bg-gray-300 text-gray-800 font-bold">
-                  <TableHeader className="text-gray-700 font-medium">
-                    GST
-                  </TableHeader>
-                </TableHead>
-
-                <TableHead className="bg-gray-300 text-gray-800 font-bold">
-                  <TableHeader className="text-gray-700 font-medium">
-                    Register Add.
-                  </TableHeader>
-                </TableHead>
-
-                <TableBody>
-                  {filteredCompanies.map((company, index) => (
-                    <TableRow
-                      key={company.id}
-                      onClick={() => handleSelectCompany(company)}
-                      className={`cursor-pointer hover:bg-gray-100 transition ${
-                        index % 2 === 0 ? "bg-white" : "bg-[#F9FAFB]"
-                      } ${
-                        selectedCompany && selectedCompany.id === company.id
-                          ? "bg-gray-200"
-                          : ""
-                      }`}
-                    >
-                      <TableCell>{company.name}</TableCell>
-                      <TableCell>{company.email}</TableCell>
-                      <TableCell>{company.phone}</TableCell>
-                      <TableCell>{company.gst}</TableCell>
-                      <TableCell>{company.regAdd}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </ClientOnlyTable>
+            {loading ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : err ? (
+              <div className="text-center text-red-500 py-4">{err}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-[#E2E8F0]">
+                    <tr>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Name
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Email
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Phone
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        GST
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Register Add.
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Company Prefix
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredCompanies.map((company) => (
+                      <tr 
+                        key={company._id}
+                        className={`hover:bg-gray-50 cursor-pointer ${
+                          selectedCompany?._id === company._id ? 'bg-gray-100' : ''
+                        }`}
+                        onClick={() => setSelectedCompany(company)}
+                      >
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.gst}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.regAdd}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.prefixForEmpID}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredCompanies.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No companies found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -411,45 +401,112 @@ function SuperadminCompanies() {
               </svg>
             </button>
           </div>
-
-          <Input
-            name="name"
-            value={companyData.name}
-            onChange={handleInputChange}
-            placeholder="Name"
-            className="mt-4 bg-gray-100 text-[#4a4a4a] border border-gray-300"
-          />
-          <Input
-            name="email"
-            value={companyData.email}
-            onChange={handleInputChange}
-            placeholder="Email"
-            className="mt-4 bg-gray-100 text-[#4a4a4a] border border-gray-300"
-          />
-          {/* Show email error message */}
-          <Input
-            name="phone"
-            value={companyData.phone}
-            onChange={handleInputChange}
-            placeholder="Phone"
-            className="mt-4 bg-gray-100 text-[#4a4a4a] border border-gray-300"
-          />
-          <Input
-            name="gst"
-            value={companyData.gst}
-            onChange={handleInputChange}
-            placeholder="GST"
-            className="mt-4 bg-gray-100 text-[#4a4a4a] border border-gray-300"
-          />
-          <Input
-            name="regAdd"
-            value={companyData.regAdd}
-            onChange={handleInputChange}
-            placeholder="Register Address"
-            className="mt-4 bg-gray-100 text-[#4a4a4a] border border-gray-300"
-          />
-          {error && <p className="text-red-600 mt-2">{error}</p>}{" "}
-          {/* Show general error message */}
+          <div className="w-full space-y-4 mt-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="name"
+                name="name"
+                value={companyData.name}
+                onChange={handleInputChange}
+                placeholder="Enter company name"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="prefixForEmpID" className="block text-sm font-medium text-gray-700 mb-1">
+                Company Prefix <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="preprefixForEmpIDfix"
+                name="prefixForEmpID"
+                value={companyData.prefixForEmpID || ""}
+                onChange={handleInputChange}
+                placeholder="Enter company prefix"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Choose Company Color <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {predefinedColors.map((color) => (
+                  <div
+                    key={color}
+                    className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+                      companyData.colorCode === color ? "border-black" : "border-gray-300"
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleColorChange(color)}
+                  ></div>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="email"
+                name="email"
+                value={companyData.email}
+                onChange={handleInputChange}
+                placeholder="Enter email address"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone Number <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                value={companyData.phone}
+                onChange={handleInputChange}
+                placeholder="Enter phone number"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
+                GST Number <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="gst"
+                name="gst"
+                value={companyData.gst}
+                onChange={handleInputChange}
+                placeholder="Enter GST number"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="regAdd" className="block text-sm font-medium text-gray-700 mb-1">
+                Registered Address <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="regAdd"
+                name="regAdd"
+                value={companyData.regAdd}
+                onChange={handleInputChange}
+                placeholder="Enter registered address"
+                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+              />
+            </div>
+          </div>
+          
+          {error && <p className="text-red-600 mt-2">{error}</p>}
+          
           <Button
             onClick={() => {
               handleSaveCompany();
@@ -497,4 +554,3 @@ function SuperadminCompanies() {
 }
 
 export default withAuth(SuperadminCompanies);
-

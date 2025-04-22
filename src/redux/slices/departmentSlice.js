@@ -1,41 +1,49 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Fetch departments
 export const fetchDepartments = createAsyncThunk(
-  'department/fetchDepartments',
+  "department/fetchDepartments",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/departments`, {
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(`${API_URL}/departments/company/${company}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
     } catch (error) {
       if (error.response) {
-        return rejectWithValue(error.response.data.message || 'Failed to fetch departments');
+        return rejectWithValue(
+          error.response.data.message || "Failed to fetch departments"
+        );
       }
-      return rejectWithValue('Network error: Unable to fetch departments');
+      return rejectWithValue("Network error: Unable to fetch departments");
     }
   }
 );
 
 // Create department
 export const createDepartment = createAsyncThunk(
-  'department/createDepartment',
+  "department/createDepartment",
   async (departmentData, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/departments`, departmentData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.post(
+        `${API_URL}/departments`,
+        departmentData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       // Fetch updated departments after successful creation
       await dispatch(fetchDepartments());
       return response.data;
@@ -43,27 +51,31 @@ export const createDepartment = createAsyncThunk(
       if (error.response) {
         const message = error.response.data.message;
         if (error.response.status === 409) {
-          return rejectWithValue('Department already exists');
+          return rejectWithValue("Department already exists");
         }
-        return rejectWithValue(message || 'Failed to create department');
+        return rejectWithValue(message || "Failed to create department");
       }
-      return rejectWithValue('Network error: Unable to create department');
+      return rejectWithValue("Network error: Unable to create department");
     }
   }
 );
 
 // Update department
 export const updateDepartment = createAsyncThunk(
-  'department/updateDepartment',
+  "department/updateDepartment",
   async ({ id, departmentData }, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_URL}/departments/${id}`, departmentData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        `${API_URL}/departments/${id}`,
+        departmentData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       // After successfully updating, fetch updated list
       await dispatch(fetchDepartments());
       return response.data;
@@ -72,34 +84,40 @@ export const updateDepartment = createAsyncThunk(
         const errorData = error.response.data;
         switch (error.response.status) {
           case 400:
-            return rejectWithValue('Invalid department data. Please check all fields.');
+            return rejectWithValue(
+              "Invalid department data. Please check all fields."
+            );
           case 401:
-            return rejectWithValue('Session expired. Please login again.');
+            return rejectWithValue("Session expired. Please login again.");
           case 404:
-            return rejectWithValue('Department not found.');
+            return rejectWithValue("Department not found.");
           case 409:
-            return rejectWithValue('Department with this name already exists.');
+            return rejectWithValue("Department with this name already exists.");
           case 500:
-            return rejectWithValue('Server error. Please try again later.');
+            return rejectWithValue("Server error. Please try again later.");
           default:
-            return rejectWithValue(errorData.message || errorData.error || 'Failed to update department');
+            return rejectWithValue(
+              errorData.message ||
+                errorData.error ||
+                "Failed to update department"
+            );
         }
       }
-      return rejectWithValue('Network error: Unable to update department');
+      return rejectWithValue("Network error: Unable to update department");
     }
   }
 );
 
 // Delete department
 export const deleteDepartment = createAsyncThunk(
-  'department/deleteDepartment',
+  "department/deleteDepartment",
   async (id, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getItemFromSessionStorage("token", null);
       await axios.delete(`${API_URL}/departments/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       // After successfully deleting, fetch updated list
       await dispatch(fetchDepartments());
@@ -109,22 +127,26 @@ export const deleteDepartment = createAsyncThunk(
         const errorData = error.response.data;
         switch (error.response.status) {
           case 401:
-            return rejectWithValue('Session expired. Please login again.');
+            return rejectWithValue("Session expired. Please login again.");
           case 404:
-            return rejectWithValue('Department not found.');
+            return rejectWithValue("Department not found.");
           case 500:
-            return rejectWithValue('Server error. Please try again later.');
+            return rejectWithValue("Server error. Please try again later.");
           default:
-            return rejectWithValue(errorData.message || errorData.error || 'Failed to delete department');
+            return rejectWithValue(
+              errorData.message ||
+                errorData.error ||
+                "Failed to delete department"
+            );
         }
       }
-      return rejectWithValue('Network error: Unable to delete department');
+      return rejectWithValue("Network error: Unable to delete department");
     }
   }
 );
 
 const departmentSlice = createSlice({
-  name: 'department',
+  name: "department",
   initialState: {
     loading: false,
     error: null,
@@ -132,7 +154,7 @@ const departmentSlice = createSlice({
     departments: [],
     lastUpdated: null,
     deleteSuccess: false,
-    updateSuccess: false
+    updateSuccess: false,
   },
   reducers: {
     resetDepartmentState: (state) => {
@@ -206,8 +228,8 @@ const departmentSlice = createSlice({
         state.error = action.payload;
         state.deleteSuccess = false;
       });
-  }
+  },
 });
 
 export const { resetDepartmentState } = departmentSlice.actions;
-export default departmentSlice.reducer; 
+export default departmentSlice.reducer;

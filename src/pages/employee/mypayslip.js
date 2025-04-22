@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
-// import { fetchPayrolls } from "@/redux/slices/payrollSlice"; // Redux action to fetch payrolls
 import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { setDate } from "date-fns";
 import withAuth from "@/components/withAuth";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { toast } from "sonner";
+import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
 
 const downloadPDF = () => {
   const content = document.getElementById("pdf-content");
@@ -68,32 +70,78 @@ const monthsList = Array.from({ length: latestMonthIndex + 1 }, (_, i) =>
 const groupedPayrolls = { [currentYear]: monthsList };
 
 const PayrollPage = () => {
-  const employeeId = "emp123";
+  const dispatch = useDispatch();
+  const { payslipData, employeeData, loading, error } = useSelector((state) => state.payslip);
+  
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-
-  const [dateOfJoining, setDateOfJoining] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(
-    monthsList[latestMonthIndex]
-  );
+  const [selectedMonth, setSelectedMonth] = useState(monthsList[latestMonthIndex]);
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [dateOfJoining, setDateOfJoining] = useState(null);
 
-  const [selectedPayslipId, setSelectedPayslipId] = useState(null);
-  const [payslipData, setPayslipData] = useState(null);
-
-  const dispatch = useDispatch();
-  const { payrolls, loading, error } = useSelector((state) => state.payroll); // Payrolls from Redux store
-
-  // useEffect(() => {
-  //   dispatch(fetchPayrolls());
-  // }, [dispatch]);
+  const employeeId = "emp123"; // This should be dynamically set based on the logged-in user
 
   useEffect(() => {
-    // Automatically select the latest month and year when component mounts
-    fetchEmployeeById(employeeId); // Fetch employee data to get date of joining
-    handleMonthSelection(selectedMonth, selectedYear);
-  }, []);
+    // Fetch employee details to get date of joining
+    dispatch(fetchEmployeeDetails(employeeId));
+    
+    // Fetch payslip details for the latest month
+    dispatch(fetchPayslipDetails({ 
+      employeeId, 
+      month: selectedMonth, 
+      year: selectedYear 
+    }));
+    
+    // Cleanup function to reset state when component unmounts
+    return () => {
+      dispatch(resetPayslipState());
+    };
+  }, [dispatch, employeeId]);
 
+  // Update date of joining when employee data is fetched
+  useEffect(() => {
+    if (employeeData) {
+      setDateOfJoining(employeeData.joiningDate);
+    }
+  }, [employeeData]);
+
+  // Update payslip data when month or year changes
+  useEffect(() => {
+    dispatch(fetchPayslipDetails({ 
+      employeeId, 
+      month: selectedMonth, 
+      year: selectedYear 
+    }));
+  }, [dispatch, employeeId, selectedMonth, selectedYear]);
+
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
+
+  const handleMonthSelection = (month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setIsCalendarOpen(false);
+  };
+
+  const formattedDateOfJoining = (date) => {
+    if (!date) return "N/A";
+    
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0"); // Ensures two-digit day
+    const month = d.toLocaleString("en-GB", { month: "short" }); // Short month name
+    const year = d.getFullYear().toString().slice(-2); // Last two digits of year
+
+    return `${day}-${month}-${year}`;
+  };
+
+  // Update groupedPayrolls based on date of joining
   if (dateOfJoining) {
     const joiningDate = new Date(dateOfJoining);
     const joiningYear = joiningDate.getFullYear();
@@ -115,74 +163,6 @@ const PayrollPage = () => {
       );
     }
   }
-
-  console.log("employee Date of Joining:", dateOfJoining); // Debugging line to check date of joining
-
-  useEffect(() => {
-    const latestMonth = monthsList[latestMonthIndex];
-    setSelectedMonth(latestMonth);
-    setSelectedYear(currentYear);
-    fetchPayslipDetails(latestMonth, currentYear); // Fetch payslip details for the latest month
-  }, []);
-
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
-  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
-
-  const fetchPayslipDetails = async (month, year) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payslip/generate/${employeeId}/${month}/${year}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Use token from local storage
-          },
-        }
-      );
-      const data = await response.json();
-      setPayslipData(data);
-    } catch (error) {
-      console.error("Error fetching payslip:", error);
-    }
-  };
-
-  const fetchEmployeeById = async (employeeId) => {
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/id/${employeeId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Use token from local storage
-          },
-        }
-      );
-      const data = await response.json();
-      setDateOfJoining(data.joiningDate); // Set the date of joining from employee data
-    } catch (error) {
-      console.error("Error fetching employee data:", error);
-    }
-  };
-
-  console.log("Payslip Data:", payslipData); // Debugging line to check payslip data
-
-  const handleMonthSelection = (month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    setIsCalendarOpen(false);
-    fetchPayslipDetails(month, year);
-  };
-
-  const formattedDateOfJoining = (date) => {
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0"); // Ensures two-digit day
-    const month = d.toLocaleString("en-GB", { month: "short" }); // Short month name
-    const year = d.getFullYear().toString().slice(-2); // Last two digits of year
-
-    return `${day}-${month}-${year}`;
-  };
 
   return (
     <div className="flex h-screen">
@@ -227,8 +207,6 @@ const PayrollPage = () => {
                                     : "hover:bg-gray-200"
                                 }`}
                                 onClick={() => {
-                                  setSelectedMonth(month);
-                                  setSelectedYear(parseInt(year));
                                   handleMonthSelection(month, parseInt(year));
                                 }}
                               >
@@ -245,13 +223,23 @@ const PayrollPage = () => {
                 variant="default"
                 className="flex items-center"
                 onClick={downloadPDF}
+                disabled={!payslipData}
               >
                 <Download className="w-4 h-4 mr-1" />
                 Download
               </Button>
             </div>
 
-            {payslipData && (
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong className="font-bold">Error!</strong>
+                <span className="block sm:inline"> {error}</span>
+              </div>
+            ) : payslipData ? (
               <div className="max-w-7xl mx-auto bg-white shadow-lg overflow-y-auto h-[calc(86vh-62px)] custom-scrollbar">
                 <div id="pdf-content">
                   {/* Header */}
@@ -598,6 +586,11 @@ const PayrollPage = () => {
                     </div>
                   </div>
                 </div>
+              </div>
+            ) : (
+              <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+                <strong className="font-bold">No Data!</strong>
+                <span className="block sm:inline"> No payslip data available for the selected month.</span>
               </div>
             )}
           </div>

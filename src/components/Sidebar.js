@@ -25,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { FiLoader } from "react-icons/fi";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
@@ -33,7 +34,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem("currentRole");
+    const role = sessionStorage.getItem("currentRole");
     setCurrentRole(role);
 
     // Initialize Settings menu as expanded
@@ -111,6 +112,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           icon: <FaCalendarAlt />,
           link: "/hradmin/settings/leave",
         },
+        {
+          label: "Admin Access",
+          icon: <FaUsers />,
+          link: "/hradmin/settings/admin-access",
+        }
       ],
     },
 
@@ -187,7 +193,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       {/* Spinner and Overlay */}
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+
+          <FiLoader className="w-10 h-10 animate-spin text-blue-600" />
+
         </div>
       )}
 

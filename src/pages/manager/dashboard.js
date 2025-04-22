@@ -41,6 +41,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const COLORS = [
   "#0088FE",
@@ -78,10 +79,6 @@ const Overview = () => {
     setActiveTab(tab);
   };
 
-  const handleLogout = () => {
-    console.log("Logout clicked");
-  };
-
   const handleOpenRequestsClick = () => {
     setShowRequestDetails((prevShowRequestDetails) => !prevShowRequestDetails); // Toggle Request Details
 
@@ -90,62 +87,70 @@ const Overview = () => {
 
   const fetchProfileUpdates = async () => {
     try {
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-        };
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/hradmin/update-requests`, { headers });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setProfileUpdates(data);
+      const token = getItemFromSessionStorage("token", null);
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`,
+        { headers }
+      );
+      if (!response.ok) {
+        throw new Error(
+          `HTTP error! status: ${response.status} ${response.statusText}`
+        );
+      }
+      const data = await response.json();
+      setProfileUpdates(data);
     } catch (error) {
-        console.error(`Error fetching profile updates:`, error);
-        toast({ title: "Error", description: `Failed to fetch profile updates: ${error.message}`, variant: "destructive" });
-        setProfileUpdates([]);
+      toast({
+        title: "Error",
+        description: `Failed to fetch profile updates: ${error.message}`,
+        variant: "destructive",
+      });
+      setProfileUpdates([]);
     }
-};
+  };
 
-const fetchPendingRequests = async () => {
-try {
-  const token = localStorage.getItem('token');
-  const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/leave/status/Pending`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+  const fetchPendingRequests = async () => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && Array.isArray(response.data.leaves)) {
+        const regularLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName !== "Comp-Off"
+        );
+        const compOffLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName === "Comp-Off"
+        );
+
+        setPendingLeaves(regularLeaves);
+        setPendingCompOffs(compOffLeaves);
+      } else {
+        setPendingLeaves([]);
+        setPendingCompOffs([]);
+      }
+    } catch (error) {
+      setPendingLeaves([]);
+      setPendingCompOffs([]);
     }
-  });
+  };
 
-  console.log('API Response:', response.data);
-
-  if (response.data && Array.isArray(response.data.leaves)) {
-    const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
-    const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
-    
-    setPendingLeaves(regularLeaves);
-    setPendingCompOffs(compOffLeaves);
-  } else {
-    setPendingLeaves([]);
-    setPendingCompOffs([]);
-  }
-} catch (error) {
-  console.error('Error details:', {
-    status: error.response?.status,
-    data: error.response?.data,
-    message: error.message
-  });
-  
-  setPendingLeaves([]);
-  setPendingCompOffs([]);
-}
-};
-
-
-useEffect(() => {
-  fetchPendingRequests();
-  fetchProfileUpdates();
-}, []);
+  useEffect(() => {
+    fetchPendingRequests();
+    fetchProfileUpdates();
+  }, []);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -173,17 +178,52 @@ useEffect(() => {
     { name: "Product", value: 15 },
   ];
 
+  useEffect(() => {
+    const fetchEmployeeCount = async () => {
+      try {
+        const token = getItemFromSessionStorage("token", null); // Retrieve the token from sessionStorage
+        if (!token) {
+          throw new Error("Authentication token is missing");
+        }
+
+        const response = await axios.get(
+          "http://localhost:8083/employees/manager/EMP002", // Replace with your actual API endpoint
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.data && Array.isArray(response.data)) {
+          setEmployeeCount(response.data.length); // Set the total number of employees
+        } else {
+          setEmployeeCount(0);
+        }
+      } catch (error) {
+        console.error("Error fetching employee count:", error);
+        setEmployeeCount(0);
+      }
+    };
+
+    fetchEmployeeCount();
+  }, []);
+
+  const [employeeCount, setEmployeeCount] = useState(0);
+
   const overviewData = [
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Team Members",
-      count: employees.length,
+      count: employeeCount,
     },
 
     {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
       label: "Open Requests",
-      count: pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
+      count:
+        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
     },
   ];
 

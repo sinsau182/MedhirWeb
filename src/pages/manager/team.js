@@ -1,41 +1,48 @@
-import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search, UserPlus } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchEmployees } from "@/redux/slices/employeeSlice";
-import { Table, TableHead, TableRow, TableHeader, TableBody, TableCell } from "@/components/ui/table";
-import withAuth from "@/components/withAuth";
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
+import { Search } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import withAuth from "@/components/withAuth";
 
-function Employees() {
-  const [activeTab, setActiveTab] = useState("Basic");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [searchInput, setSearchInput] = useState("");
-  const router = useRouter();
+const ManagerEmployees = () => {
   const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees);
+  const { employees, loading, error } = useSelector(
+    (state) => state.managerEmployee
+  );
+  const [searchInput, setSearchInput] = useState("");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
-    router.prefetch("/manager/team");
-    dispatch(fetchEmployees());
+    dispatch(fetchManagerEmployees());
   }, [dispatch]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const filteredEmployees = (employees || []).filter((employee) =>
-    employee?.name?.toLowerCase().includes(searchInput.toLowerCase())
+  const filteredEmployees = employees.filter((employee) =>
+    employee.name.toLowerCase().includes(searchInput.toLowerCase())
   );
+
+  if (loading) {
+    return <div>Loading employees...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
         <HradminNavbar />
 
         <div className="p-6 mt-16">
@@ -64,86 +71,72 @@ function Employees() {
               <table className="w-full table-fixed">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    {activeTab === "Basic" && (
-                      <>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Employee ID
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Name
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Father's Name
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Phone No.
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Email(Off.)
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          DOJ
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Designation
-                        </th>
-                        <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                          Current Address
-                        </th>
-                      </>
-                    )}
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Employee ID
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Father's Name
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Phone No.
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Email(Off.)
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      DOJ
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Designation
+                    </th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Current Address
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {loading ? (
+                  {filteredEmployees.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-3 text-sm text-gray-500">
-                        <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
-                          Loading...
-                        </div>
-                      </td>
-                    </tr>
-                  ) : filteredEmployees.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center py-3 text-sm text-gray-500">
+                      <td
+                        colSpan={8}
+                        className="text-center py-3 text-sm text-gray-500"
+                      >
                         No team members found
                       </td>
                     </tr>
                   ) : (
                     filteredEmployees.map((employee) => (
-                      <tr 
-                        key={employee.id} 
+                      <tr
+                        key={employee.employeeId}
                         className="hover:bg-gray-50 cursor-pointer"
                       >
-                        {activeTab === "Basic" && (
-                          <>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.employeeId}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.name}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.fathersName}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.phone}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.emailOfficial}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.joiningDate}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.designation}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                              {employee?.currentAddress}
-                            </td>
-                          </>
-                        )}
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.employeeId}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.name}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.fathersName}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.phone}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.emailOfficial}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.joiningDate}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.designationName}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                          {employee?.currentAddress}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -156,5 +149,4 @@ function Employees() {
     </div>
   );
 }
-
-export default withAuth(Employees);
+export default withAuth(ManagerEmployees);

@@ -30,7 +30,7 @@ function SuperadminSettings() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     router.push("/login");
   };
 
@@ -40,7 +40,6 @@ function SuperadminSettings() {
       <SuperadminHeaders />
       {/* Spacer to prevent content from being hidden behind the fixed header */}
       <div className="h-4" />
-
     </div>
   );
 }

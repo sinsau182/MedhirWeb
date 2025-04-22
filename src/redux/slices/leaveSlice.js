@@ -1,14 +1,15 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/leaves";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Fetch Leaves
 export const fetchLeaves = createAsyncThunk(
     "leaves/fetchLeaves",
     async (_, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("token");
+          const token = getItemFromSessionStorage("token", null);
             if (!token) {
                 return rejectWithValue("No authentication token found");
             }
@@ -20,14 +21,8 @@ export const fetchLeaves = createAsyncThunk(
                 }
             });
 
-            console.log("Leave response:", response.data);
             return response.data;
         } catch (error) {
-            console.log("Error details:", {
-                status: error.response?.status,
-                data: error.response?.data,
-                message: error.message
-            });
 
             if (error.response?.status === 400) {
                 return rejectWithValue({
@@ -56,7 +51,7 @@ export const createLeave = createAsyncThunk(
     "leaves/createLeave",
     async (leaveData, { rejectWithValue }) => {
         try {
-            const token = localStorage.getItem("token");
+          const token = getItemFromSessionStorage("token", null);
             const response = await fetch(API_BASE_URL, {
                 method: "POST",
                 headers: {
@@ -98,7 +93,7 @@ export const updateLeave = createAsyncThunk(
     "leaves/updateLeave",
     async ({ id, leaveData }, { rejectWithValue }) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/leaves/${id}`, {
+            const response = await fetch(`http://sessionhost:8080/api/v1/leaves/${id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -110,7 +105,6 @@ export const updateLeave = createAsyncThunk(
                 throw new Error("Failed to update leave");
             }
             const data = await response.json();
-            console.log("Updated Leave:", data);
             return data;
         } catch (error) {
             return rejectWithValue(error.message);
@@ -123,14 +117,13 @@ export const deleteLeave = createAsyncThunk(
     "leaves/deleteLeave",
     async (id, { rejectWithValue }) => {
         try {
-            const response = await fetch(`http://localhost:8080/api/v1/leaves/${id}`, {
+            const response = await fetch(`http://sessionhost:8080/api/v1/leaves/${id}`, {
                 method: "DELETE",
             });
 
             if (!response.ok) {
                 throw new Error("Failed to delete leave");
             }
-            console.log("Deleted Leave ID:", id);
             return id;
         } catch (error) {
             return rejectWithValue(error.message);
@@ -143,7 +136,7 @@ export const applyLeave = createAsyncThunk(
   "leave/applyLeave",
   async (leaveData, { dispatch, rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -152,12 +145,6 @@ export const applyLeave = createAsyncThunk(
       if (!leaveData.startDate || !leaveData.endDate || !leaveData.shiftType || !leaveData.reason) {
         throw new Error("Missing required fields");
       }
-
-      console.log("Applying leave with data:", {
-        ...leaveData,
-        employeeId: "EMP001",
-        leaveName: "Leave"
-      });
 
       const response = await axios.post(
         `${API_BASE_URL}/leave/apply`,
@@ -174,8 +161,6 @@ export const applyLeave = createAsyncThunk(
           },
         }
       );
-
-      console.log("Leave application response:", response.data);
       
       // Fetch updated leave data after successful submission
       await dispatch(fetchLeaves());
@@ -183,7 +168,6 @@ export const applyLeave = createAsyncThunk(
       
       return response.data;
     } catch (error) {
-      console.error("Leave application error:", error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -194,7 +178,7 @@ export const fetchLeaveHistory = createAsyncThunk(
   "leaves/fetchLeaveHistory",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
@@ -206,14 +190,8 @@ export const fetchLeaveHistory = createAsyncThunk(
         }
       });
 
-      console.log("Leave history response:", response.data);
       return response.data;
     } catch (error) {
-      console.log("Error details:", {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
 
       if (error.response?.status === 400) {
         return rejectWithValue({
@@ -241,12 +219,10 @@ export const applyCompOffLeave = createAsyncThunk(
   'leave/applyCompOff',
   async (formData, { dispatch, getState }) => {
     try {
-      const { token } = getState().auth;
+      const token = getItemFromSessionStorage("token", null);
       if (!token) {
         throw new Error('No authentication token found');
       }
-
-      console.log('Applying comp-off with data:', formData); // Debug log
 
       const response = await axios.post(`${API_BASE_URL}/leave/apply`, {
         employeeId: "EMP001",
@@ -254,7 +230,8 @@ export const applyCompOffLeave = createAsyncThunk(
         startDate: formData.startDate,
         endDate: formData.endDate,
         shiftType: formData.shiftType,
-        reason: formData.reason
+        reason: formData.reason,
+        companyId: formData.companyId,
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -262,15 +239,12 @@ export const applyCompOffLeave = createAsyncThunk(
         }
       });
 
-      console.log('Comp-off application response:', response.data); // Debug log
-
       // Fetch updated leave data after successful submission
       await dispatch(fetchLeaves());
       await dispatch(fetchLeaveHistory());
 
       return response.data;
     } catch (error) {
-      console.error('Comp-off application error:', error); // Debug log
       throw error.response?.data?.message || error.message || 'Failed to apply for comp-off';
     }
   }

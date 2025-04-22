@@ -1,127 +1,132 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Fetch all leave types
 export const fetchLeaveTypes = createAsyncThunk(
-  'leaveType/fetchLeaveTypes',
+  "leaveType/fetchLeaveTypes",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Fetching leave types with token:', token ? 'Token exists' : 'No token');
-      
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+
       if (!token) {
-        return rejectWithValue('No authentication token found');
+        return rejectWithValue("No authentication token found");
       }
 
-      const response = await axios.get(`${API_URL}/leave-types`, {
+      const response = await axios.get(`${API_URL}/leave-types/company/${company}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.data) {
-        throw new Error('No data received from server');
+        throw new Error("No data received from server");
       }
 
-      console.log('Leave types response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching leave types:', error);
-      if (error.response?.status === 500) {
-        return rejectWithValue('Server error. Please try again later.');
-      }
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch leave types');
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch leave types"
+      );
     }
   }
 );
 
 // Create leave type
 export const createLeaveType = createAsyncThunk(
-  'leaveType/createLeaveType',
+  "leaveType/createLeaveType",
   async (leaveTypeData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Creating leave type with data:', leaveTypeData);
-      
-      const response = await axios.post(`${API_URL}/leave-types`, leaveTypeData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const token = getItemFromSessionStorage("token", null);
+
+      const response = await axios.post(
+        `${API_URL}/leave-types`,
+        leaveTypeData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-      console.log('Create response:', response.data);
+      );
       return response.data;
     } catch (error) {
-      console.error('Error creating leave type:', error.response?.data || error.message);
-      return rejectWithValue(error.response?.data?.message || 'Failed to create leave type');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create leave type"
+      );
     }
   }
 );
 
 // Update leave type
 export const updateLeaveType = createAsyncThunk(
-  'leaveType/updateLeaveType',
+  "leaveType/updateLeaveType",
   async ({ id, leaveTypeData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Updating leave type with data:', { id, leaveTypeData });
-      
-      const response = await axios.put(`${API_URL}/leave-types/${id}`, leaveTypeData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const token = getItemFromSessionStorage("token", null);
+
+      const response = await axios.put(
+        `${API_URL}/leave-types/${id}`,
+        leaveTypeData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
-      console.log('Update response:', response.data);
+      );
       return response.data;
     } catch (error) {
-      console.error('Error updating leave type:', error.response?.data || error.message);
-      return rejectWithValue(error.response?.data?.message || 'Failed to update leave type');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update leave type"
+      );
     }
   }
 );
 
 // Delete leave type
 export const deleteLeaveType = createAsyncThunk(
-  'leaveType/deleteLeaveType',
+  "leaveType/deleteLeaveType",
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Deleting leave type:', id);
-      
+      const token = getItemFromSessionStorage("token", null);
+
       const response = await axios.delete(`${API_URL}/leave-types/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-      console.log('Delete response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error deleting leave type:', error.response?.data || error.message);
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete leave type');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete leave type"
+      );
     }
   }
 );
 
 const leaveTypeSlice = createSlice({
-  name: 'leaveType',
+  name: "leaveType",
   initialState: {
     leaveTypes: [],
     loading: false,
     error: null,
     success: false,
-    lastUpdated: null
+    lastUpdated: null,
   },
   reducers: {
     resetLeaveTypeState: (state) => {
       state.loading = false;
       state.error = null;
       state.success = false;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -161,7 +166,9 @@ const leaveTypeSlice = createSlice({
       })
       .addCase(updateLeaveType.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.leaveTypes.findIndex(type => type.id === action.payload.id);
+        const index = state.leaveTypes.findIndex(
+          (type) => type.id === action.payload.id
+        );
         if (index !== -1) {
           state.leaveTypes[index] = action.payload;
         }
@@ -179,7 +186,9 @@ const leaveTypeSlice = createSlice({
       })
       .addCase(deleteLeaveType.fulfilled, (state, action) => {
         state.loading = false;
-        state.leaveTypes = state.leaveTypes.filter(type => type.id !== action.payload);
+        state.leaveTypes = state.leaveTypes.filter(
+          (type) => type.id !== action.payload
+        );
         state.success = true;
         state.lastUpdated = new Date().toISOString();
       })
@@ -187,8 +196,8 @@ const leaveTypeSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  }
+  },
 });
 
 export const { resetLeaveTypeState } = leaveTypeSlice.actions;
-export default leaveTypeSlice.reducer; 
+export default leaveTypeSlice.reducer;

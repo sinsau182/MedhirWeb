@@ -2,14 +2,34 @@ import React, { useState, useEffect } from "react";
 import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
-import { useDispatch, useSelector } from 'react-redux';
-import { createLeaveType, resetLeaveTypeState, fetchLeaveTypes, deleteLeaveType, updateLeaveType } from '@/redux/slices/leaveTypeSlice';
-import { createLeavePolicy, resetLeavePolicyState, fetchLeavePolicies, updateLeavePolicy, deleteLeavePolicy } from '@/redux/slices/leavePolicySlice';
-import { fetchPublicHolidays, createPublicHoliday, updatePublicHoliday, deletePublicHoliday } from '@/redux/slices/publicHolidaySlice';
-import { toast } from 'react-toastify';
+import { useDispatch, useSelector } from "react-redux";
+import {
+  createLeaveType,
+  resetLeaveTypeState,
+  fetchLeaveTypes,
+  deleteLeaveType,
+  updateLeaveType,
+} from "@/redux/slices/leaveTypeSlice";
+import {
+  createLeavePolicy,
+  resetLeavePolicyState,
+  fetchLeavePolicies,
+  updateLeavePolicy,
+  deleteLeavePolicy,
+} from "@/redux/slices/leavePolicySlice";
+import {
+  fetchPublicHolidays,
+  createPublicHoliday,
+  updatePublicHoliday,
+  deletePublicHoliday,
+} from "@/redux/slices/publicHolidaySlice";
+import { toast } from "react-toastify";
 import withAuth from "@/components/withAuth";
+import company from "@/generated/company_grpc_web_pb";
 
 const LeaveSettings = () => {
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Leave Types");
   const [showLeaveTypeModal, setShowLeaveTypeModal] = useState(false);
@@ -57,17 +77,19 @@ const LeaveSettings = () => {
   const [selectedHoliday, setSelectedHoliday] = useState(null);
 
   const dispatch = useDispatch();
-  const { loading, error, success, leaveTypes, lastUpdated } = useSelector((state) => state.leaveType);
-  const { 
-    loading: policyLoading, 
-    error: policyError, 
+  const { loading, error, success, leaveTypes, lastUpdated } = useSelector(
+    (state) => state.leaveType
+  );
+  const {
+    loading: policyLoading,
+    error: policyError,
     success: policySuccess,
-    policies
+    policies,
   } = useSelector((state) => state.leavePolicy);
   const {
     loading: holidayLoading,
     error: holidayError,
-    holidays
+    holidays,
   } = useSelector((state) => state.publicHoliday);
 
   // Fetch leave types when component mounts
@@ -102,14 +124,14 @@ const LeaveSettings = () => {
   const handleLeaveTypeFormChange = (e) => {
     setIsLeaveTypeFormChanged(true);
     const { name, value, type, checked } = e.target;
-    setLeaveTypeForm(prev => ({
+    setLeaveTypeForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
 
     // Clear the specific error when the field is being edited
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -162,10 +184,12 @@ const LeaveSettings = () => {
         description: leaveTypeForm.description || "",
         allowedInProbationPeriod: leaveTypeForm.allowedInProbation || false,
         allowedInNoticePeriod: leaveTypeForm.allowedInNotice || false,
-        canBeCarriedForward: leaveTypeForm.canCarryForward || false
+        canBeCarriedForward: leaveTypeForm.canCarryForward || false,
       };
 
-      const result = await dispatch(createLeaveType(leaveTypeData)).unwrap();
+      const result = await dispatch(
+        createLeaveType({ ...leaveTypeData, companyId: selectedCompanyId })
+      ).unwrap();
       showNotification("success", "Leave type added successfully!");
 
       setShowLeaveTypeModal(false);
@@ -182,10 +206,8 @@ const LeaveSettings = () => {
 
       // Refresh the leave types list
       dispatch(fetchLeaveTypes());
-
     } catch (error) {
-      console.error('Error in handleLeaveTypeSubmit:', error);
-      if (error.message?.toLowerCase().includes('already exists')) {
+      if (error.message?.toLowerCase().includes("already exists")) {
         showNotification("error", "Leave type already exists");
         setTimeout(() => {
           setShowLeaveTypeModal(false);
@@ -198,7 +220,6 @@ const LeaveSettings = () => {
   };
 
   const handleLeaveTypeRowClick = (type) => {
-    console.log('Selected leave type:', type); // Debug log
     setSelectedLeaveType(type); // Store the entire leave type object
     setLeaveTypeForm({
       name: type.leaveTypeName || "",
@@ -206,7 +227,7 @@ const LeaveSettings = () => {
       description: type.description || "",
       allowedInProbation: type.allowedInProbationPeriod || false,
       allowedInNotice: type.allowedInNoticePeriod || false,
-      canCarryForward: type.canBeCarriedForward || false
+      canCarryForward: type.canBeCarriedForward || false,
     });
     setShowLeaveTypeEditModal(true);
     setIsLeaveTypeFormChanged(false);
@@ -240,20 +261,24 @@ const LeaveSettings = () => {
       }
 
       const leaveTypeData = {
-        leaveTypeId: selectedLeaveType.leaveTypeId,
+        // leaveTypeId: selectedLeaveType.leaveTypeId,
         leaveTypeName: leaveTypeForm.name,
         accrualPeriod: leaveTypeForm.accrual,
         description: leaveTypeForm.description || "",
         allowedInProbationPeriod: leaveTypeForm.allowedInProbation || false,
         allowedInNoticePeriod: leaveTypeForm.allowedInNotice || false,
-        canBeCarriedForward: leaveTypeForm.canCarryForward || false
+        canBeCarriedForward: leaveTypeForm.canCarryForward || false,
+        companyId: selectedCompanyId,
       };
 
-      await dispatch(updateLeaveType({ 
-        id: selectedLeaveType.leaveTypeId, 
-        leaveTypeData 
-      })).unwrap();
-      
+      await dispatch(
+        updateLeaveType({
+          id: selectedLeaveType.leaveTypeId,
+          leaveTypeData,
+          companyId: selectedCompanyId,
+        })
+      ).unwrap();
+
       showNotification("success", "Leave type updated successfully!");
 
       setShowLeaveTypeEditModal(false);
@@ -271,15 +296,17 @@ const LeaveSettings = () => {
 
       // Refresh data instead of page reload
       dispatch(fetchLeaveTypes());
-
     } catch (error) {
-      if (error.message?.includes('already exists')) {
+      if (error.message?.includes("already exists")) {
         showNotification("error", "Leave type already exists");
         setTimeout(() => {
           setShowLeaveTypeEditModal(false);
         }, 2000);
       } else {
-        showNotification("error", error.message || "Failed to update leave type");
+        showNotification(
+          "error",
+          error.message || "Failed to update leave type"
+        );
       }
     }
   };
@@ -311,7 +338,11 @@ const LeaveSettings = () => {
       newErrors.policyName = "Policy name is required";
     }
 
-    if (policyForm.leaveAllocations.some((item) => !item.leaveTypeId || !item.daysPerYear)) {
+    if (
+      policyForm.leaveAllocations.some(
+        (item) => !item.leaveTypeId || !item.daysPerYear
+      )
+    ) {
       newErrors.leaveAllocation = "All leave types and quotas must be filled";
     }
 
@@ -327,13 +358,15 @@ const LeaveSettings = () => {
     try {
       const policyData = {
         name: policyForm.name,
-        leaveAllocations: policyForm.leaveAllocations.map(item => ({
+        leaveAllocations: policyForm.leaveAllocations.map((item) => ({
           leaveTypeId: item.leaveTypeId,
-          daysPerYear: parseInt(item.daysPerYear)
-        }))
+          daysPerYear: parseInt(item.daysPerYear),
+        })),
       };
 
-      await dispatch(createLeavePolicy(policyData)).unwrap();
+      await dispatch(
+        createLeavePolicy({ ...policyData, companyId: selectedCompanyId })
+      ).unwrap();
       showNotification("success", "Leave policy added successfully!");
 
       setShowPolicyModal(false);
@@ -346,7 +379,6 @@ const LeaveSettings = () => {
 
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
-
     } catch (error) {
       showNotification("error", error.message || "Failed to add leave policy");
     }
@@ -360,7 +392,11 @@ const LeaveSettings = () => {
         newErrors.policyName = "Policy name is required";
       }
 
-      if (policyForm.leaveAllocations.some((item) => !item.leaveTypeId || !item.daysPerYear)) {
+      if (
+        policyForm.leaveAllocations.some(
+          (item) => !item.leaveTypeId || !item.daysPerYear
+        )
+      ) {
         newErrors.leaveAllocation = "All leave types and quotas must be filled";
       }
 
@@ -380,17 +416,20 @@ const LeaveSettings = () => {
 
       const policyData = {
         name: policyForm.name,
-        leaveAllocations: policyForm.leaveAllocations.map(item => ({
+        leaveAllocations: policyForm.leaveAllocations.map((item) => ({
           leaveTypeId: item.leaveTypeId,
-          daysPerYear: parseInt(item.daysPerYear)
-        }))
+          daysPerYear: parseInt(item.daysPerYear),
+        })),
+        companyId: selectedCompanyId,
       };
 
-      console.log('Updating policy with ID:', selectedPolicy.leavePolicyId); // Debug log
-      await dispatch(updateLeavePolicy({ 
-        id: selectedPolicy.leavePolicyId,
-        policyData 
-      })).unwrap();
+      await dispatch(
+        updateLeavePolicy({
+          id: selectedPolicy.leavePolicyId,
+          policyData,
+          companyId: selectedCompanyId,
+        })
+      ).unwrap();
       showNotification("success", "Leave policy updated successfully!");
 
       setShowPolicyEditModal(false);
@@ -404,10 +443,11 @@ const LeaveSettings = () => {
 
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
-
     } catch (error) {
-      console.error('Error updating policy:', error); // Debug log
-      showNotification("error", error.message || "Failed to update leave policy");
+      showNotification(
+        "error",
+        error.message || "Failed to update leave policy"
+      );
     }
   };
 
@@ -418,9 +458,8 @@ const LeaveSettings = () => {
         return;
       }
 
-      console.log('Deleting policy with ID:', selectedPolicy.leavePolicyId); // Debug log
       await dispatch(deleteLeavePolicy(selectedPolicy.leavePolicyId)).unwrap();
-      
+
       showNotification("success", "Leave policy deleted successfully!");
 
       setShowPolicyEditModal(false);
@@ -432,10 +471,11 @@ const LeaveSettings = () => {
 
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
-
     } catch (error) {
-      console.error('Error deleting policy:', error); // Debug log
-      showNotification("error", error.message || "Failed to delete leave policy");
+      showNotification(
+        "error",
+        error.message || "Failed to delete leave policy"
+      );
     }
   };
 
@@ -451,16 +491,15 @@ const LeaveSettings = () => {
 
   // Add handlers for row clicks
   const handlePolicyRowClick = (policy) => {
-    console.log('Selected policy:', policy); // Debug log
     setSelectedPolicy({
       ...policy,
-      leavePolicyId: policy.id || policy.leavePolicyId // Ensure we have the correct ID
+      leavePolicyId: policy.id || policy.leavePolicyId, // Ensure we have the correct ID
     });
     setPolicyForm({
       name: policy.name,
-      leaveAllocations: policy.leaveAllocations.map(allocation => ({
+      leaveAllocations: policy.leaveAllocations.map((allocation) => ({
         leaveTypeId: allocation.leaveTypeId,
-        daysPerYear: allocation.daysPerYear
+        daysPerYear: allocation.daysPerYear,
       })) || [{ leaveTypeId: "", daysPerYear: "" }],
     });
     setShowPolicyEditModal(true);
@@ -482,7 +521,7 @@ const LeaveSettings = () => {
   const handleLeaveTypeDelete = async () => {
     try {
       await dispatch(deleteLeaveType(selectedLeaveType.leaveTypeId)).unwrap();
-      
+
       showNotification("error", "Leave type deleted successfully!");
 
       setShowLeaveTypeEditModal(false);
@@ -498,7 +537,6 @@ const LeaveSettings = () => {
 
       // Refresh data instead of page reload
       dispatch(fetchLeaveTypes());
-
     } catch (error) {
       showNotification("error", error.message || "Failed to delete leave type");
     }
@@ -517,7 +555,7 @@ const LeaveSettings = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      
+
       setNotification({
         show: true,
         type: "error",
@@ -541,11 +579,13 @@ const LeaveSettings = () => {
       const holidayData = {
         holidayName: holidayForm.name,
         date: holidayForm.date,
-        description: holidayForm.description
+        description: holidayForm.description,
       };
 
-      await dispatch(createPublicHoliday(holidayData)).unwrap();
-      
+      await dispatch(
+        createPublicHoliday({ ...holidayData, companyId: selectedCompanyId })
+      ).unwrap();
+
       setNotification({
         show: true,
         type: "success",
@@ -567,7 +607,6 @@ const LeaveSettings = () => {
           message: "",
         });
       }, 2000);
-
     } catch (error) {
       setNotification({
         show: true,
@@ -598,7 +637,7 @@ const LeaveSettings = () => {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      
+
       setNotification({
         show: true,
         type: "error",
@@ -622,14 +661,18 @@ const LeaveSettings = () => {
       const holidayData = {
         holidayName: holidayForm.name,
         date: holidayForm.date,
-        description: holidayForm.description
+        description: holidayForm.description,
+        companyId: selectedCompanyId,
       };
 
-      await dispatch(updatePublicHoliday({ 
-        id: selectedHoliday.holidayId,
-        holidayData 
-      })).unwrap();
-      
+      await dispatch(
+        updatePublicHoliday({
+          id: selectedHoliday.holidayId,
+          holidayData,
+          companyId: selectedCompanyId,
+        })
+      ).unwrap();
+
       showNotification("success", "Public holiday updated successfully!");
 
       setShowHolidayEditModal(false);
@@ -643,16 +686,18 @@ const LeaveSettings = () => {
 
       // Refresh data instead of page reload
       dispatch(fetchPublicHolidays());
-
     } catch (error) {
-      showNotification("error", error.message || "Failed to update public holiday");
+      showNotification(
+        "error",
+        error.message || "Failed to update public holiday"
+      );
     }
   };
 
   const handleHolidayDelete = async () => {
     try {
       await dispatch(deletePublicHoliday(selectedHoliday.holidayId)).unwrap();
-      
+
       showNotification("error", "Public holiday deleted successfully!");
 
       setShowHolidayEditModal(false);
@@ -665,9 +710,11 @@ const LeaveSettings = () => {
 
       // Refresh data instead of page reload
       dispatch(fetchPublicHolidays());
-
     } catch (error) {
-      showNotification("error", error.message || "Failed to delete public holiday");
+      showNotification(
+        "error",
+        error.message || "Failed to delete public holiday"
+      );
     }
   };
 
@@ -685,10 +732,10 @@ const LeaveSettings = () => {
     };
 
     switch (type) {
-      case 'success':
+      case "success":
         toast.success(message, options);
         break;
-      case 'error':
+      case "error":
         toast.error(message, options);
         break;
       default:
@@ -806,13 +853,16 @@ const LeaveSettings = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div className="flex flex-col gap-1">
                               <span>
-                                Probation: {type.allowedInProbationPeriod ? "Yes" : "No"}
+                                Probation:{" "}
+                                {type.allowedInProbationPeriod ? "Yes" : "No"}
                               </span>
                               <span>
-                                Notice: {type.allowedInNoticePeriod ? "Yes" : "No"}
+                                Notice:{" "}
+                                {type.allowedInNoticePeriod ? "Yes" : "No"}
                               </span>
                               <span>
-                                Carry Forward: {type.canBeCarriedForward ? "Yes" : "No"}
+                                Carry Forward:{" "}
+                                {type.canBeCarriedForward ? "Yes" : "No"}
                               </span>
                             </div>
                           </td>
@@ -868,7 +918,10 @@ const LeaveSettings = () => {
                       </tr>
                     ) : policyError ? (
                       <tr>
-                        <td colSpan="2" className="px-6 py-4 text-center text-red-500">
+                        <td
+                          colSpan="2"
+                          className="px-6 py-4 text-center text-red-500"
+                        >
                           {policyError}
                         </td>
                       </tr>
@@ -890,17 +943,23 @@ const LeaveSettings = () => {
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-900">
                             <div className="space-y-1">
-                              {policy.leaveAllocations.map((allocation, index) => (
-                                <div
-                                  key={`${policy.id || policy.leavePolicyId}-${allocation.leaveTypeId || index}`}
-                                  className="flex items-center gap-2"
-                                >
-                                  <span className="font-medium">
-                                    {allocation.leaveTypeName}:
-                                  </span>
-                                  <span>{allocation.daysPerYear} days/year</span>
-                                </div>
-                              ))}
+                              {policy.leaveAllocations.map(
+                                (allocation, index) => (
+                                  <div
+                                    key={`${
+                                      policy.id || policy.leavePolicyId
+                                    }-${allocation.leaveTypeId || index}`}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <span className="font-medium">
+                                      {allocation.leaveTypeName}:
+                                    </span>
+                                    <span>
+                                      {allocation.daysPerYear} days/year
+                                    </span>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -926,10 +985,13 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      handlePolicySubmit(e);
-                    }} className="space-y-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handlePolicySubmit(e);
+                      }}
+                      className="space-y-4"
+                    >
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Policy Name
@@ -963,64 +1025,75 @@ const LeaveSettings = () => {
                           </button>
                         </div>
 
-                        {policyForm.leaveAllocations.map((allocation, index) => (
-                          <div key={index} className="flex gap-4 items-start">
-                            <div className="flex-1">
-                              <select
-                                value={allocation.leaveTypeId || ''}
-                                onChange={(e) => {
-                                  setIsPolicyFormChanged(true);
-                                  const newAllocations = [...policyForm.leaveAllocations];
-                                  newAllocations[index] = {
-                                    ...newAllocations[index],
-                                    leaveTypeId: e.target.value
-                                  };
-                                  setPolicyForm({
-                                    ...policyForm,
-                                    leaveAllocations: newAllocations,
-                                  });
-                                }}
-                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                <option value="">Select Leave Type</option>
-                                {leaveTypes.map((type) => (
-                                  <option key={type.leaveTypeId} value={type.leaveTypeId}>
-                                    {type.leaveTypeName}
-                                  </option>
-                                ))}
-                              </select>
+                        {policyForm.leaveAllocations.map(
+                          (allocation, index) => (
+                            <div key={index} className="flex gap-4 items-start">
+                              <div className="flex-1">
+                                <select
+                                  value={allocation.leaveTypeId || ""}
+                                  onChange={(e) => {
+                                    setIsPolicyFormChanged(true);
+                                    const newAllocations = [
+                                      ...policyForm.leaveAllocations,
+                                    ];
+                                    newAllocations[index] = {
+                                      ...newAllocations[index],
+                                      leaveTypeId: e.target.value,
+                                    };
+                                    setPolicyForm({
+                                      ...policyForm,
+                                      leaveAllocations: newAllocations,
+                                    });
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="">Select Leave Type</option>
+                                  {leaveTypes.map((type) => (
+                                    <option
+                                      key={type.leaveTypeId}
+                                      value={type.leaveTypeId}
+                                    >
+                                      {type.leaveTypeName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex-1">
+                                <input
+                                  type="number"
+                                  value={allocation.daysPerYear || ""}
+                                  onChange={(e) => {
+                                    setIsPolicyFormChanged(true);
+                                    const newAllocations = [
+                                      ...policyForm.leaveAllocations,
+                                    ];
+                                    newAllocations[index] = {
+                                      ...newAllocations[index],
+                                      daysPerYear: e.target.value,
+                                    };
+                                    setPolicyForm({
+                                      ...policyForm,
+                                      leaveAllocations: newAllocations,
+                                    });
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Days/year"
+                                />
+                              </div>
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemoveLeaveAllocation(index)
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              )}
                             </div>
-                            <div className="flex-1">
-                              <input
-                                type="number"
-                                value={allocation.daysPerYear || ''}
-                                onChange={(e) => {
-                                  setIsPolicyFormChanged(true);
-                                  const newAllocations = [...policyForm.leaveAllocations];
-                                  newAllocations[index] = {
-                                    ...newAllocations[index],
-                                    daysPerYear: e.target.value
-                                  };
-                                  setPolicyForm({
-                                    ...policyForm,
-                                    leaveAllocations: newAllocations,
-                                  });
-                                }}
-                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Days/year"
-                              />
-                            </div>
-                            {index > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLeaveAllocation(index)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <X className="h-5 w-5" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                          )
+                        )}
                         {errors.leaveAllocation && (
                           <p className="text-red-500 text-sm mt-1">
                             {errors.leaveAllocation}
@@ -1064,10 +1137,13 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      handlePolicyUpdate();
-                    }} className="space-y-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handlePolicyUpdate();
+                      }}
+                      className="space-y-4"
+                    >
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Policy Name
@@ -1101,64 +1177,75 @@ const LeaveSettings = () => {
                           </button>
                         </div>
 
-                        {policyForm.leaveAllocations.map((allocation, index) => (
-                          <div key={index} className="flex gap-4 items-start">
-                            <div className="flex-1">
-                              <select
-                                value={allocation.leaveTypeId || ''}
-                                onChange={(e) => {
-                                  setIsPolicyFormChanged(true);
-                                  const newAllocations = [...policyForm.leaveAllocations];
-                                  newAllocations[index] = {
-                                    ...newAllocations[index],
-                                    leaveTypeId: e.target.value
-                                  };
-                                  setPolicyForm({
-                                    ...policyForm,
-                                    leaveAllocations: newAllocations,
-                                  });
-                                }}
-                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              >
-                                <option value="">Select Leave Type</option>
-                                {leaveTypes.map((type) => (
-                                  <option key={type.leaveTypeId} value={type.leaveTypeId}>
-                                    {type.leaveTypeName}
-                                  </option>
-                                ))}
-                              </select>
+                        {policyForm.leaveAllocations.map(
+                          (allocation, index) => (
+                            <div key={index} className="flex gap-4 items-start">
+                              <div className="flex-1">
+                                <select
+                                  value={allocation.leaveTypeId || ""}
+                                  onChange={(e) => {
+                                    setIsPolicyFormChanged(true);
+                                    const newAllocations = [
+                                      ...policyForm.leaveAllocations,
+                                    ];
+                                    newAllocations[index] = {
+                                      ...newAllocations[index],
+                                      leaveTypeId: e.target.value,
+                                    };
+                                    setPolicyForm({
+                                      ...policyForm,
+                                      leaveAllocations: newAllocations,
+                                    });
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="">Select Leave Type</option>
+                                  {leaveTypes.map((type) => (
+                                    <option
+                                      key={type.leaveTypeId}
+                                      value={type.leaveTypeId}
+                                    >
+                                      {type.leaveTypeName}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex-1">
+                                <input
+                                  type="number"
+                                  value={allocation.daysPerYear || ""}
+                                  onChange={(e) => {
+                                    setIsPolicyFormChanged(true);
+                                    const newAllocations = [
+                                      ...policyForm.leaveAllocations,
+                                    ];
+                                    newAllocations[index] = {
+                                      ...newAllocations[index],
+                                      daysPerYear: e.target.value,
+                                    };
+                                    setPolicyForm({
+                                      ...policyForm,
+                                      leaveAllocations: newAllocations,
+                                    });
+                                  }}
+                                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  placeholder="Days/year"
+                                />
+                              </div>
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleRemoveLeaveAllocation(index)
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X className="h-5 w-5" />
+                                </button>
+                              )}
                             </div>
-                            <div className="flex-1">
-                              <input
-                                type="number"
-                                value={allocation.daysPerYear || ''}
-                                onChange={(e) => {
-                                  setIsPolicyFormChanged(true);
-                                  const newAllocations = [...policyForm.leaveAllocations];
-                                  newAllocations[index] = {
-                                    ...newAllocations[index],
-                                    daysPerYear: e.target.value
-                                  };
-                                  setPolicyForm({
-                                    ...policyForm,
-                                    leaveAllocations: newAllocations,
-                                  });
-                                }}
-                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Days/year"
-                              />
-                            </div>
-                            {index > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveLeaveAllocation(index)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <X className="h-5 w-5" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                          )
+                        )}
                         {errors.leaveAllocation && (
                           <p className="text-red-500 text-sm mt-1">
                             {errors.leaveAllocation}
@@ -1236,7 +1323,10 @@ const LeaveSettings = () => {
                       </tr>
                     ) : holidayError ? (
                       <tr>
-                        <td colSpan="3" className="px-6 py-4 text-center text-red-500">
+                        <td
+                          colSpan="3"
+                          className="px-6 py-4 text-center text-red-500"
+                        >
                           {holidayError}
                         </td>
                       </tr>
@@ -1248,21 +1338,21 @@ const LeaveSettings = () => {
                       </tr>
                     ) : (
                       holidays.map((holiday) => (
-                        <tr 
+                        <tr
                           key={holiday.holidayId}
-                        onClick={() => handleHolidayRowClick(holiday)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          onClick={() => handleHolidayRowClick(holiday)}
+                          className="hover:bg-gray-50 cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {holiday.holidayName}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(holiday.date)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {holiday.description || "-"}
-                        </td>
-                      </tr>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(holiday.date)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {holiday.description || "-"}
+                          </td>
+                        </tr>
                       ))
                     )}
                   </tbody>
@@ -1285,10 +1375,13 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
-                    <form onSubmit={(e) => {
-                      e.preventDefault();
-                      handleHolidaySubmit(e);
-                    }} className="space-y-4">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleHolidaySubmit(e);
+                      }}
+                      className="space-y-4"
+                    >
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Holiday Name
@@ -1456,10 +1549,13 @@ const LeaveSettings = () => {
                   </button>
                 </div>
 
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleLeaveTypeSubmit(e);
-                }} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleLeaveTypeSubmit(e);
+                  }}
+                  className="space-y-4"
+                >
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Leave Type Name
