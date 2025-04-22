@@ -184,7 +184,7 @@ function SuperadminModules() {
     setIsLoading(true);
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`http://localhost:8083/superadmin/modules/${selectedModule.moduleId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules/${selectedModule.moduleId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -206,22 +206,6 @@ function SuperadminModules() {
       setIsLoading(false);
     }
   };
-
-  // const fetchUsersByCompany = async (companyId) => {
-  //   try {
-  //     const response = await axios.get(
-  //       `http://localhost:8083/superadmin/companies/${companyId}/users`,
-  //       getAuthHeaders()
-  //     );
-  //     setCompanyUsers(response.data || []);
-  //   } catch (error) {
-  //     console.error('Error fetching company users:', error);
-  //     if (error.response?.status === 401) {
-  //       router.push("/login?error=Session expired. Please login again");
-  //     }
-  //     setCompanyUsers([]);
-  //   }
-  // };
 
   // Update handleCompanyChange
   const handleCompanyChange = (companyId) => {
@@ -248,7 +232,7 @@ function SuperadminModules() {
       let response;
       if (isEditMode) {
         // Update existing module
-        response = await fetch(`http://localhost:8083/superadmin/modules/${selectedModule.moduleId}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules/${selectedModule.moduleId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -258,7 +242,7 @@ function SuperadminModules() {
         });
       } else {
         // Create new module
-        response = await fetch("http://localhost:8083/superadmin/modules", {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

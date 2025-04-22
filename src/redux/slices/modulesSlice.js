@@ -5,11 +5,10 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
-const API_BASE_URL = "http://localhost:8083/superadmin/modules";
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules`;
 
 // Update HR API URL to use the correct protocol
-const HR_API_BASE_URL = "http://localhost:8083";
-const HR_EMPLOYEES_ENDPOINT = `${HR_API_BASE_URL}/employees/minimal`;
+const HR_EMPLOYEES_ENDPOINT = `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/minimal`;
 
 // Fetch modules
 export const fetchModules = createAsyncThunk(

@@ -87,7 +87,7 @@ const Navbar = () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          "http://localhost:8083/hradmin/companies/MED102",
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/MED102`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

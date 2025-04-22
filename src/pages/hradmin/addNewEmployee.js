@@ -352,7 +352,7 @@ function EmployeeForm() {
         console.log("Fetching departments for company:", companyId);
 
         const response = await axios.get(
-          `http://localhost:8083/departments/company/${companyId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/company/${companyId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -529,54 +529,6 @@ function EmployeeForm() {
       }
     }
   }, [employee]);
-
-  // useEffect(() => {
-  //   const fetchEmployeeId = async () => {
-  //     try {
-  //       const token = getItemFromSessionStorage("token", null);
-  //       const response = await axios.get(
-  //         `http://localhost:8083/hradmin/generate-employee-id/${company}`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //           },
-  //         }
-  //       );
-  //       if (response.status === 200) {
-  //         const data = await response.data;
-  //         setFormData((prev) => ({
-  //           ...prev,
-  //           employee: {
-  //             ...prev.employee,
-  //             employeeId: data, // Set employeeId from API response
-  //           },
-  //         }));
-  //       } else {
-  //         toast.error("Failed to generate Employee ID");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching Employee ID:", error);
-  //       toast.error("Error generating Employee ID");
-  //     }
-  //   };
-
-  //   fetchEmployeeId();
-  // }, []);
-
-  // const calculateTotalCTC = (salaryData) => {
-  //   const values = {
-  //     basic: parseFloat(salaryData.basic) || 0,
-  //     hra: parseFloat(salaryData.hra) || 0,
-  //     allowances: parseFloat(salaryData.allowances) || 0,
-  //     pf: parseFloat(salaryData.pf) || 0,
-  //   };
-  //   return values.basic + values.hra + values.allowances + values.pf;
-  // };
-
-  // const calculateMonthlyCTC = (annualCTC) => {
-  //   const annual = parseFloat(annualCTC) || 0;
-  //   return (annual / 12).toFixed(2);
-  // };
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -1031,7 +983,7 @@ const handleSubmit = async (e) => {
         console.log("Fetching designations for department:", departmentId);
 
         const response = await axios.get(
-          `http://localhost:8083/api/designations/department/${departmentId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/designations/department/${departmentId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1076,7 +1028,7 @@ const handleSubmit = async (e) => {
         console.log("Fetching managers for department:", departmentId);
 
         const response = await axios.get(
-          `http://localhost:8083/departments/${departmentId}/managers`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/${departmentId}/managers`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

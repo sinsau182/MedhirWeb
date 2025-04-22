@@ -105,7 +105,7 @@ function AdminAccess() {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          "http://localhost:8083/hradmin/companies/MED102",
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/MED102`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -146,7 +146,7 @@ function AdminAccess() {
       setLoading(true);
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(
-        `http://localhost:8083/hradmin/companies/${companyId}/employees`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/${companyId}/employees`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -203,7 +203,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
-        `http://localhost:8083/hradmin/employees/${userToUnassign.employeeId}/roles`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/employees/${userToUnassign.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Remove",
@@ -259,7 +259,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
-        `http://localhost:8083/hradmin/employees/${user.employeeId}/roles`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/employees/${user.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Add",
