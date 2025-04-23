@@ -70,7 +70,7 @@ function EmployeeProfilePage() {
 
   // --- Data Fetching ---
   const fetchByEmployeeId = async () => {
-    const employeeIdToFetch = "emp123"; // Use ID from URL or default
+    const employeeIdToFetch = "MED131"; // Use ID from URL or default
     setLoading(true);
     try {
       const response = await fetch(
@@ -479,9 +479,9 @@ function EmployeeProfilePage() {
                               alt="Profile Preview"
                               className="w-full h-full object-cover"
                             />
-                          ) : employeeById?.profileImgUrl ? (
+                          ) : employeeById?.employeeImgUrl ? (
                             <img
-                              src={employeeById.profileImgUrl}
+                              src={employeeById.employeeImgUrl}
                               alt="Profile"
                               className="w-full h-full object-cover"
                             />

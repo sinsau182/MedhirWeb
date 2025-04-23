@@ -649,7 +649,7 @@ function EmployeeForm() {
   //   setFormData((prev) => ({
   //     ...prev,
   //     [section]: {
-  //       ...prev[section],
+  //       ...prev,
   //       [parentField]: {
   //         ...prev[section][parentField],
   //         [field]: value,
@@ -658,154 +658,149 @@ function EmployeeForm() {
   //   }));
   // };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (activeSection !== "salary") {
-      const currentIndex = sections.findIndex(
-        (section) => section.id === activeSection
-      );
-      if (currentIndex < sections.length - 1) {
-        setActiveSection(sections[currentIndex + 1].id);
-        return;
-      }
+  if (activeSection !== "salary") {
+    const currentIndex = sections.findIndex(
+      (section) => section.id === activeSection
+    );
+    if (currentIndex < sections.length - 1) {
+      setActiveSection(sections[currentIndex + 1].id);
+      return;
     }
+  }
 
-    // Only proceed with form submission if we're on the last section
-    if (!validateForm()) return;
+  if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      // Proceed with form submission after the employeeId is updated
-      const submitFormData = new FormData();
+  setLoading(true);
+  try {
+    const submitFormData = new FormData();
 
-      // Helper function to remove empty fields from an object
-      const removeEmptyFields = (obj) => {
-        const cleanObj = {};
-        Object.entries(obj).forEach(([key, value]) => {
-          if (value !== "" && value !== null && value !== undefined) {
-            if (typeof value === "object" && !Array.isArray(value)) {
-              const nestedClean = removeEmptyFields(value);
-              if (Object.keys(nestedClean).length > 0) {
-                cleanObj[key] = nestedClean;
-              }
-            } else {
-              cleanObj[key] = value;
+    // Helper function to remove empty fields
+    const removeEmptyFields = (obj) => {
+      const cleanObj = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        if (value !== "" && value !== null && value !== undefined) {
+          if (typeof value === "object" && !Array.isArray(value)) {
+            const nestedClean = removeEmptyFields(value);
+            if (Object.keys(nestedClean).length > 0) {
+              cleanObj[key] = nestedClean;
             }
+          } else {
+            cleanObj[key] = value;
           }
-        });
-        return cleanObj;
-      };
-
-      // Create the base employee data object
-      const baseEmployeeData = {
-        // employeeId: formData.employee.employeeId?.trim(),
-        name: formData.employee.name?.trim(),
-        fathersName: formData.employee.fathersName?.trim(),
-        gender: formData.employee.gender?.trim(),
-        phone: formData.employee.phone?.trim(),
-        alternatePhone: formData.employee.alternatePhone?.trim(),
-        emailPersonal: formData.employee.emailPersonal?.trim(),
-        emailOfficial: formData.employee.emailOfficial?.trim(),
-        currentAddress: formData.employee.currentAddress?.trim(),
-        permanentAddress: formData.employee.permanentAddress?.trim(),
-        department: formData.employee.department?.departmentId || "",
-        designation: formData.employee.designation?.designationId || "",
-        joiningDate: formData.employee.joiningDate,
-        reportingManager:
-          formData.employee.reportingManager?.employeeId?.trim() || "",
-        overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
-        weeklyOffs: formData.employee.weeklyOffs?.length
-          ? formData.employee.weeklyOffs
-          : undefined,
-        pfEnrolled: Boolean(formData.employee.pfEnrolled),
-        uanNumber: formData.employee.uanNumber?.trim(),
-        esicEnrolled: Boolean(formData.employee.esicEnrolled),
-        esicNumber: formData.employee.esicNumber?.trim(),
-        companyId: formData.companyId,
-        idProofs: {
-          aadharNo: formData.idProofs.aadharNo?.trim(),
-          panNo: formData.idProofs.panNo?.trim(),
-          passport: formData.idProofs.passport?.trim(),
-          drivingLicense: formData.idProofs.drivingLicense?.trim(),
-          voterId: formData.idProofs.voterId?.trim(),
-        },
-        bankDetails: {
-          accountNumber: formData.bankDetails.accountNumber?.trim(),
-          accountHolderName: formData.bankDetails.accountHolderName?.trim(),
-          ifscCode: formData.bankDetails.ifscCode?.trim(),
-          bankName: formData.bankDetails.bankName?.trim(),
-          branchName: formData.bankDetails.branchName?.trim(),
-          upiId: formData.bankDetails.upiId?.trim(),
-          upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
-        },
-        salaryDetails: {
-          annualCtc: formData.salaryDetails.annualCtc || undefined,
-          monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
-          basicSalary: formData.salaryDetails.basicSalary || undefined,
-          hra: formData.salaryDetails.hra || undefined,
-          allowances: formData.salaryDetails.allowances || undefined,
-          employerPfContribution:
-            formData.salaryDetails.employerPfContribution || undefined,
-          employeePfContribution:
-            formData.salaryDetails.employeePfContribution || undefined,
-        },
-      };
-
-      // Remove all empty fields from the employee data
-      const employeeData = removeEmptyFields(baseEmployeeData);
-
-      // Add the cleaned employee data to FormData
-      submitFormData.append("employee", JSON.stringify(employeeData));
-
-      // Add files if they exist
-      if (formData.employee.employeeImgUrl instanceof File) {
-        submitFormData.append("profileImage", formData.employee.employeeImgUrl);
-      }
-
-      // Submit the form
-      if (employeeId) {
-        // For updates
-        const result = await dispatch(
-          updateEmployee({
-            id: employeeId,
-            updatedData: submitFormData,
-          })
-        ).unwrap();
-
-        if (result) {
-          toast.success("Employee updated successfully");
-          router.push("/hradmin/employees");
         }
-      } else {
-        // For new employees
-        const result = await dispatch(createEmployee(submitFormData)).unwrap();
-        if (result) {
-          toast.success("Employee created successfully");
-          router.push("/hradmin/employees");
-        }
-      }
-    } catch (err) {
-      let errorMessage = "An error occurred";
+      });
+      return cleanObj;
+    };
 
-      if (err?.validationErrors) {
-        const validationMessages = Object.entries(err.validationErrors)
-          .map(([field, message]) => `${field}: ${message}`)
-          .join("\n");
-        errorMessage = validationMessages;
-      } else if (typeof err === "string") {
-        errorMessage = err;
-      } else if (err?.message) {
-        errorMessage = err.message;
-      } else if (err?.error) {
-        errorMessage = err.error;
-      }
+    const baseEmployeeData = {
+      name: formData.employee.name?.trim(),
+      fathersName: formData.employee.fathersName?.trim(),
+      gender: formData.employee.gender?.trim(),
+      phone: formData.employee.phone?.trim(),
+      alternatePhone: formData.employee.alternatePhone?.trim(),
+      emailPersonal: formData.employee.emailPersonal?.trim(),
+      emailOfficial: formData.employee.emailOfficial?.trim(),
+      currentAddress: formData.employee.currentAddress?.trim(),
+      permanentAddress: formData.employee.permanentAddress?.trim(),
+      department: formData.employee.department?.departmentId || "",
+      designation: formData.employee.designation?.designationId || "",
+      joiningDate: formData.employee.joiningDate,
+      reportingManager:
+        formData.employee.reportingManager?.employeeId?.trim() || "",
+      overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
+      weeklyOffs: formData.employee.weeklyOffs?.length
+        ? formData.employee.weeklyOffs
+        : undefined,
+      pfEnrolled: Boolean(formData.employee.pfEnrolled),
+      uanNumber: formData.employee.uanNumber?.trim(),
+      esicEnrolled: Boolean(formData.employee.esicEnrolled),
+      esicNumber: formData.employee.esicNumber?.trim(),
+      companyId: formData.companyId,
+      idProofs: {
+        aadharNo: formData.idProofs.aadharNo?.trim(),
+        panNo: formData.idProofs.panNo?.trim(),
+        passport: formData.idProofs.passport?.trim(),
+        drivingLicense: formData.idProofs.drivingLicense?.trim(),
+        voterId: formData.idProofs.voterId?.trim(),
+      },
+      bankDetails: {
+        accountNumber: formData.bankDetails.accountNumber?.trim(),
+        accountHolderName: formData.bankDetails.accountHolderName?.trim(),
+        ifscCode: formData.bankDetails.ifscCode?.trim(),
+        bankName: formData.bankDetails.bankName?.trim(),
+        branchName: formData.bankDetails.branchName?.trim(),
+        upiId: formData.bankDetails.upiId?.trim(),
+        upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
+      },
+      salaryDetails: {
+        annualCtc: formData.salaryDetails.annualCtc || undefined,
+        monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
+        basicSalary: formData.salaryDetails.basicSalary || undefined,
+        hra: formData.salaryDetails.hra || undefined,
+        allowances: formData.salaryDetails.allowances || undefined,
+        employerPfContribution:
+          formData.salaryDetails.employerPfContribution || undefined,
+        employeePfContribution:
+          formData.salaryDetails.employeePfContribution || undefined,
+      },
+    };
 
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
+    const employeeData = removeEmptyFields(baseEmployeeData);
+    submitFormData.append("employee", JSON.stringify(employeeData));
+
+    // Add the profile image to FormData if it exists
+    if (formData.employee.employeeImgUrl instanceof File) {
+      submitFormData.append("profileImage", formData.employee.employeeImgUrl);
     }
-  };
+
+    // Add the passbook image to FormData as 'passbookImage' if it exists
+    if (formData.bank.passbookDoc instanceof File) {
+      formDataPayload.append("passbookImage", formData.bank.passbookDoc);
+    }
+
+    if (employeeId) {
+      const result = await dispatch(
+        updateEmployee({
+          id: employeeId,
+          updatedData: submitFormData,
+        })
+      ).unwrap();
+
+      if (result) {
+        toast.success("Employee updated successfully");
+        router.push("/hradmin/employees");
+      }
+    } else {
+      const result = await dispatch(createEmployee(submitFormData)).unwrap();
+      if (result) {
+        toast.success("Employee created successfully");
+        router.push("/hradmin/employees");
+      }
+    }
+  } catch (err) {
+    let errorMessage = "An error occurred";
+
+    if (err?.validationErrors) {
+      const validationMessages = Object.entries(err.validationErrors)
+        .map(([field, message]) => `${field}: ${message}`)
+        .join("\n");
+      errorMessage = validationMessages;
+    } else if (typeof err === "string") {
+      errorMessage = err;
+    } else if (err?.message) {
+      errorMessage = err.message;
+    } else if (err?.error) {
+      errorMessage = err.error;
+    }
+
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const validateForm = () => {
     const { employee } = formData;
@@ -1391,6 +1386,24 @@ function EmployeeForm() {
                             }
                           />
                         </div>
+
+                        {/* <div className={inputGroupClass}>
+                          <label className={floatingLabelClass}>
+                            Profile Image
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className={inputClass}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "employee",
+                                "employeeImgUrl",
+                                e.target.files[0]
+                              )
+                            }
+                          />
+                        </div> */}
                       </div>
 
                       {/* Right Column - Professional Information */}
