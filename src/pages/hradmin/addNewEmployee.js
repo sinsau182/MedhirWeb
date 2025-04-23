@@ -757,8 +757,8 @@ const handleSubmit = async (e) => {
     }
 
     // Add the passbook image to FormData as 'passbookImage' if it exists
-    if (formData.bank.passbookDoc instanceof File) {
-      formDataPayload.append("passbookImage", formData.bank.passbookDoc);
+    if (formData.bankDetails.passbookImgUrl instanceof File) {
+      submitFormData.append("passbookImage", formData.bankDetails.passbookImgUrl);
     }
 
     if (employeeId) {
@@ -986,13 +986,13 @@ const handleSubmit = async (e) => {
   //   }
   // };
 
-  const handleFileUpload = (documentType, file) => {
+  const handleFileUpload = (section, field, file) => {
     if (file) {
       setFormData((prev) => ({
         ...prev,
-        bank: {
-          ...prev.bank,
-          [documentType]: file,
+        [section]: {
+          ...prev[section],
+          [field]: file,
         },
       }));
     }
@@ -1501,7 +1501,7 @@ const handleSubmit = async (e) => {
                             </div>
                           ))}
 
-                          <div className="grid grid-cols-1 gap-4">
+                          <div className="grid grid-1 gap-4">
                             <ReportingManagerSelect
                               label="Reporting Manager"
                               options={managers}
@@ -1728,7 +1728,11 @@ const handleSubmit = async (e) => {
                                   className="hidden"
                                   accept=".pdf,.jpg,.jpeg,.png"
                                   onChange={(e) =>
-                                    handleFileUpload(key, e.target.files[0])
+                                    handleFileUpload(
+                                      "idProofs",
+                                      key,
+                                      e.target.files[0]
+                                    )
                                   }
                                 />
                               </div>
@@ -1794,6 +1798,7 @@ const handleSubmit = async (e) => {
                                   accept="image/*,.pdf"
                                   onChange={(e) =>
                                     handleFileUpload(
+                                      "bankDetails",
                                       "passbookImgUrl",
                                       e.target.files[0]
                                     )
