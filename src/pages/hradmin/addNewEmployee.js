@@ -535,7 +535,6 @@ function EmployeeForm() {
       }
     }
   }, [employee]);
-  
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
