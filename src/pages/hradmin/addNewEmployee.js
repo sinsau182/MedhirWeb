@@ -19,7 +19,14 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { motion } from "framer-motion";
-import { FiUser, FiBook, FiCreditCard, FiUpload, FiCheck, FiX } from "react-icons/fi";
+import {
+  FiUser,
+  FiBook,
+  FiCreditCard,
+  FiUpload,
+  FiCheck,
+  FiX,
+} from "react-icons/fi";
 // import Select from "react-select";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
@@ -352,7 +359,7 @@ function EmployeeForm() {
         console.log("Fetching departments for company:", companyId);
 
         const response = await axios.get(
-          `http://localhost:8083/departments/company/${companyId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/company/${companyId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -493,7 +500,8 @@ function EmployeeForm() {
             passport: parsedEmployee.idProofs?.passport || "",
             passportImgUrl: parsedEmployee.idProofs?.passportImgUrl || null,
             drivingLicense: parsedEmployee.idProofs?.drivingLicense || "",
-            drivingLicenseImgUrl: parsedEmployee.idProofs?.drivingLicenseImgUrl || null,
+            drivingLicenseImgUrl:
+              parsedEmployee.idProofs?.drivingLicenseImgUrl || null,
             voterId: parsedEmployee.idProofs?.voterId || "",
             voterIdImgUrl: parsedEmployee.idProofs?.voterIdImgUrl || null,
           },
@@ -520,61 +528,14 @@ function EmployeeForm() {
               parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
         }));
-        
+
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
         toast.error("Error loading employee data");
       }
     }
   }, [employee]);
-
-  // useEffect(() => {
-  //   const fetchEmployeeId = async () => {
-  //     try {
-  //       const token = getItemFromSessionStorage("token", null);
-  //       const response = await axios.get(
-  //         `http://localhost:8083/hradmin/generate-employee-id/${company}`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //           },
-  //         }
-  //       );
-  //       if (response.status === 200) {
-  //         const data = await response.data;
-  //         setFormData((prev) => ({
-  //           ...prev,
-  //           employee: {
-  //             ...prev.employee,
-  //             employeeId: data, // Set employeeId from API response
-  //           },
-  //         }));
-  //       } else {
-  //         toast.error("Failed to generate Employee ID");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching Employee ID:", error);
-  //       toast.error("Error generating Employee ID");
-  //     }
-  //   };
-
-  //   fetchEmployeeId();
-  // }, []);
-
-  // const calculateTotalCTC = (salaryData) => {
-  //   const values = {
-  //     basic: parseFloat(salaryData.basic) || 0,
-  //     hra: parseFloat(salaryData.hra) || 0,
-  //     allowances: parseFloat(salaryData.allowances) || 0,
-  //     pf: parseFloat(salaryData.pf) || 0,
-  //   };
-  //   return values.basic + values.hra + values.allowances + values.pf;
-  // };
-
-  // const calculateMonthlyCTC = (annualCTC) => {
-  //   const annual = parseFloat(annualCTC) || 0;
-  //   return (annual / 12).toFixed(2);
-  // };
+  
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -587,18 +548,18 @@ function EmployeeForm() {
   const calculateSalaryDetails = (annualCtc, basicSalary) => {
     const annual = parseFloat(annualCtc) || 0;
     const basic = parseFloat(basicSalary) || 0;
-    
+
     // Calculate monthly CTC
     const monthlyCtc = (annual / 12).toFixed(2);
-    
+
     // Calculate HRA (40% of basic)
     const hra = (basic * 0.4).toFixed(2);
-    
+
     // Calculate PF contributions if enrolled
     const pfContributions = formData.employee.pfEnrolled
       ? calculatePFContributions(basic)
       : { employer: 0, employee: 0 };
-    
+
     // Calculate allowances
     const allowances = (
       parseFloat(monthlyCtc) -
@@ -606,7 +567,7 @@ function EmployeeForm() {
       parseFloat(hra) -
       parseFloat(pfContributions.employee)
     ).toFixed(2);
-    
+
     return {
       monthlyCtc,
       hra,
@@ -631,9 +592,11 @@ function EmployeeForm() {
         if (field === "annualCtc" || field === "basicSalary") {
           const salaryDetails = calculateSalaryDetails(
             field === "annualCtc" ? value : updatedData.salaryDetails.annualCtc,
-            field === "basicSalary" ? value : updatedData.salaryDetails.basicSalary
+            field === "basicSalary"
+              ? value
+              : updatedData.salaryDetails.basicSalary
           );
-          
+
           updatedData.salaryDetails = {
             ...updatedData.salaryDetails,
             ...salaryDetails,
@@ -658,173 +621,186 @@ function EmployeeForm() {
   //   }));
   // };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (activeSection !== "salary") {
-    const currentIndex = sections.findIndex(
-      (section) => section.id === activeSection
-    );
-    if (currentIndex < sections.length - 1) {
-      setActiveSection(sections[currentIndex + 1].id);
-      return;
+    if (activeSection !== "salary") {
+      const currentIndex = sections.findIndex(
+        (section) => section.id === activeSection
+      );
+      if (currentIndex < sections.length - 1) {
+        setActiveSection(sections[currentIndex + 1].id);
+        return;
+      }
     }
-  }
 
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  setLoading(true);
-  try {
-    const submitFormData = new FormData();
+    setLoading(true);
+    try {
+      const submitFormData = new FormData();
 
-    // Helper function to remove empty fields
-    const removeEmptyFields = (obj) => {
-      const cleanObj = {};
-      Object.entries(obj).forEach(([key, value]) => {
-        if (value !== "" && value !== null && value !== undefined) {
-          if (typeof value === "object" && !Array.isArray(value) && !(value instanceof File)) {
-            const nestedClean = removeEmptyFields(value);
-            if (Object.keys(nestedClean).length > 0) {
-              cleanObj[key] = nestedClean;
+      // Helper function to remove empty fields
+      const removeEmptyFields = (obj) => {
+        const cleanObj = {};
+        Object.entries(obj).forEach(([key, value]) => {
+          if (value !== "" && value !== null && value !== undefined) {
+            if (
+              typeof value === "object" &&
+              !Array.isArray(value) &&
+              !(value instanceof File)
+            ) {
+              const nestedClean = removeEmptyFields(value);
+              if (Object.keys(nestedClean).length > 0) {
+                cleanObj[key] = nestedClean;
+              }
+            } else {
+              cleanObj[key] = value;
             }
-          } else {
-            cleanObj[key] = value;
           }
+        });
+        return cleanObj;
+      };
+
+      const baseEmployeeData = {
+        name: formData.employee.name?.trim(),
+        fathersName: formData.employee.fathersName?.trim(),
+        gender: formData.employee.gender?.trim(),
+        phone: formData.employee.phone?.trim(),
+        alternatePhone: formData.employee.alternatePhone?.trim(),
+        emailPersonal: formData.employee.emailPersonal?.trim(),
+        emailOfficial: formData.employee.emailOfficial?.trim(),
+        currentAddress: formData.employee.currentAddress?.trim(),
+        permanentAddress: formData.employee.permanentAddress?.trim(),
+        department: formData.employee.department?.departmentId || "",
+        designation: formData.employee.designation?.designationId || "",
+        joiningDate: formData.employee.joiningDate,
+        reportingManager:
+          formData.employee.reportingManager?.employeeId?.trim() || "",
+        overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
+        weeklyOffs: formData.employee.weeklyOffs?.length
+          ? formData.employee.weeklyOffs
+          : undefined,
+        pfEnrolled: Boolean(formData.employee.pfEnrolled),
+        uanNumber: formData.employee.uanNumber?.trim(),
+        esicEnrolled: Boolean(formData.employee.esicEnrolled),
+        esicNumber: formData.employee.esicNumber?.trim(),
+        companyId: formData.companyId,
+        idProofs: {
+          aadharNo: formData.idProofs.aadharNo?.trim(),
+          panNo: formData.idProofs.panNo?.trim(),
+          passport: formData.idProofs.passport?.trim(),
+          drivingLicense: formData.idProofs.drivingLicense?.trim(),
+          voterId: formData.idProofs.voterId?.trim(),
+        },
+        bankDetails: {
+          accountNumber: formData.bankDetails.accountNumber?.trim(),
+          accountHolderName: formData.bankDetails.accountHolderName?.trim(),
+          ifscCode: formData.bankDetails.ifscCode?.trim(),
+          bankName: formData.bankDetails.bankName?.trim(),
+          branchName: formData.bankDetails.branchName?.trim(),
+          upiId: formData.bankDetails.upiId?.trim(),
+          upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
+        },
+        salaryDetails: {
+          annualCtc: formData.salaryDetails.annualCtc || undefined,
+          monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
+          basicSalary: formData.salaryDetails.basicSalary || undefined,
+          hra: formData.salaryDetails.hra || undefined,
+          allowances: formData.salaryDetails.allowances || undefined,
+          employerPfContribution:
+            formData.salaryDetails.employerPfContribution || undefined,
+          employeePfContribution:
+            formData.salaryDetails.employeePfContribution || undefined,
+        },
+      };
+
+      const employeeData = removeEmptyFields(baseEmployeeData);
+      submitFormData.append("employee", JSON.stringify(employeeData));
+
+      // Update ID proof mappings with correct field name for Voter ID
+      const idProofMappings = {
+        aadharImgUrl: "aadharImage",
+        pancardImgUrl: "panImage",
+        passportImgUrl: "passportImage",
+        drivingLicenseImgUrl: "drivingLicenseImage",
+        voterIdImgUrl: "voterIdImage",
+      };
+
+      // Add ID proof files to FormData with logging
+      Object.entries(idProofMappings).forEach(([formField, apiField]) => {
+        const fileOrUrl = formData.idProofs[formField];
+        if (fileOrUrl instanceof File) {
+          // New file upload
+          console.log(
+            `Appending new ${formField} to FormData as ${apiField}:`,
+            fileOrUrl
+          );
+          submitFormData.append(apiField, fileOrUrl);
+        } else if (
+          typeof fileOrUrl === "string" &&
+          fileOrUrl.startsWith("http")
+        ) {
+          // Existing file URL - include in employee data
+          if (!employeeData.idProofs) {
+            employeeData.idProofs = {};
+          }
+          employeeData.idProofs[formField] = fileOrUrl;
         }
+        // If fileOrUrl is null, the field will be omitted, effectively removing the image
       });
-      return cleanObj;
-    };
 
-    const baseEmployeeData = {
-      name: formData.employee.name?.trim(),
-      fathersName: formData.employee.fathersName?.trim(),
-      gender: formData.employee.gender?.trim(),
-      phone: formData.employee.phone?.trim(),
-      alternatePhone: formData.employee.alternatePhone?.trim(),
-      emailPersonal: formData.employee.emailPersonal?.trim(),
-      emailOfficial: formData.employee.emailOfficial?.trim(),
-      currentAddress: formData.employee.currentAddress?.trim(),
-      permanentAddress: formData.employee.permanentAddress?.trim(),
-      department: formData.employee.department?.departmentId || "",
-      designation: formData.employee.designation?.designationId || "",
-      joiningDate: formData.employee.joiningDate,
-      reportingManager:
-        formData.employee.reportingManager?.employeeId?.trim() || "",
-      overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
-      weeklyOffs: formData.employee.weeklyOffs?.length
-        ? formData.employee.weeklyOffs
-        : undefined,
-      pfEnrolled: Boolean(formData.employee.pfEnrolled),
-      uanNumber: formData.employee.uanNumber?.trim(),
-      esicEnrolled: Boolean(formData.employee.esicEnrolled),
-      esicNumber: formData.employee.esicNumber?.trim(),
-      companyId: formData.companyId,
-      idProofs: {
-        aadharNo: formData.idProofs.aadharNo?.trim(),
-        panNo: formData.idProofs.panNo?.trim(),
-        passport: formData.idProofs.passport?.trim(),
-        drivingLicense: formData.idProofs.drivingLicense?.trim(),
-        voterId: formData.idProofs.voterId?.trim(),
-      },
-      bankDetails: {
-        accountNumber: formData.bankDetails.accountNumber?.trim(),
-        accountHolderName: formData.bankDetails.accountHolderName?.trim(),
-        ifscCode: formData.bankDetails.ifscCode?.trim(),
-        bankName: formData.bankDetails.bankName?.trim(),
-        branchName: formData.bankDetails.branchName?.trim(),
-        upiId: formData.bankDetails.upiId?.trim(),
-        upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
-      },
-      salaryDetails: {
-        annualCtc: formData.salaryDetails.annualCtc || undefined,
-        monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
-        basicSalary: formData.salaryDetails.basicSalary || undefined,
-        hra: formData.salaryDetails.hra || undefined,
-        allowances: formData.salaryDetails.allowances || undefined,
-        employerPfContribution:
-          formData.salaryDetails.employerPfContribution || undefined,
-        employeePfContribution:
-          formData.salaryDetails.employeePfContribution || undefined,
-      },
-    };
+      // Add other files
+      if (formData.employee.employeeImgUrl instanceof File) {
+        submitFormData.append("profileImage", formData.employee.employeeImgUrl);
+      }
+      if (formData.bankDetails.passbookImgUrl instanceof File) {
+        submitFormData.append(
+          "passbookImage",
+          formData.bankDetails.passbookImgUrl
+        );
+      }
 
-    const employeeData = removeEmptyFields(baseEmployeeData);
-    submitFormData.append("employee", JSON.stringify(employeeData));
+      if (employeeId) {
+        const result = await dispatch(
+          updateEmployee({
+            id: employeeId,
+            updatedData: submitFormData,
+          })
+        ).unwrap();
 
-    // Update ID proof mappings with correct field name for Voter ID
-    const idProofMappings = {
-      aadharImgUrl: 'aadharImage',
-      pancardImgUrl: 'panImage',
-      passportImgUrl: 'passportImage',
-      drivingLicenseImgUrl: 'drivingLicenseImage',
-      voterIdImgUrl: 'voterIdImage'
-    };
-
-    // Add ID proof files to FormData with logging
-    Object.entries(idProofMappings).forEach(([formField, apiField]) => {
-      const fileOrUrl = formData.idProofs[formField];
-      if (fileOrUrl instanceof File) {
-        // New file upload
-        console.log(`Appending new ${formField} to FormData as ${apiField}:`, fileOrUrl);
-        submitFormData.append(apiField, fileOrUrl);
-      } else if (typeof fileOrUrl === 'string' && fileOrUrl.startsWith('http')) {
-        // Existing file URL - include in employee data
-        if (!employeeData.idProofs) {
-          employeeData.idProofs = {};
+        if (result) {
+          toast.success("Employee updated successfully");
+          router.push("/hradmin/employees");
         }
-        employeeData.idProofs[formField] = fileOrUrl;
+      } else {
+        const result = await dispatch(createEmployee(submitFormData)).unwrap();
+        if (result) {
+          toast.success("Employee created successfully");
+          router.push("/hradmin/employees");
+        }
       }
-      // If fileOrUrl is null, the field will be omitted, effectively removing the image
-    });
+    } catch (err) {
+      let errorMessage = "An error occurred";
 
-    // Add other files
-    if (formData.employee.employeeImgUrl instanceof File) {
-      submitFormData.append("profileImage", formData.employee.employeeImgUrl);
-    }
-    if (formData.bankDetails.passbookImgUrl instanceof File) {
-      submitFormData.append("passbookImage", formData.bankDetails.passbookImgUrl);
-    }
-
-    if (employeeId) {
-      const result = await dispatch(
-        updateEmployee({
-          id: employeeId,
-          updatedData: submitFormData,
-        })
-      ).unwrap();
-
-      if (result) {
-        toast.success("Employee updated successfully");
-        router.push("/hradmin/employees");
+      if (err?.validationErrors) {
+        const validationMessages = Object.entries(err.validationErrors)
+          .map(([field, message]) => `${field}: ${message}`)
+          .join("\n");
+        errorMessage = validationMessages;
+      } else if (typeof err === "string") {
+        errorMessage = err;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.error) {
+        errorMessage = err.error;
       }
-    } else {
-      const result = await dispatch(createEmployee(submitFormData)).unwrap();
-      if (result) {
-        toast.success("Employee created successfully");
-        router.push("/hradmin/employees");
-      }
-    }
-  } catch (err) {
-    let errorMessage = "An error occurred";
 
-    if (err?.validationErrors) {
-      const validationMessages = Object.entries(err.validationErrors)
-        .map(([field, message]) => `${field}: ${message}`)
-        .join("\n");
-      errorMessage = validationMessages;
-    } else if (typeof err === "string") {
-      errorMessage = err;
-    } else if (err?.message) {
-      errorMessage = err.message;
-    } else if (err?.error) {
-      errorMessage = err.error;
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    toast.error(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const validateForm = () => {
     const { employee } = formData;
@@ -1014,14 +990,14 @@ const handleSubmit = async (e) => {
     if (file) {
       // Create a preview URL for the file
       const previewUrl = URL.createObjectURL(file);
-      
+
       // Map document type to the correct field names
       const fieldMappings = {
-        aadharNo: { imgField: 'aadharImgUrl' },
-        panNo: { imgField: 'pancardImgUrl' },
-        passport: { imgField: 'passportImgUrl' },
-        drivingLicense: { imgField: 'drivingLicenseImgUrl' },
-        voterId: { imgField: 'voterIdImgUrl' }
+        aadharNo: { imgField: "aadharImgUrl" },
+        panNo: { imgField: "pancardImgUrl" },
+        passport: { imgField: "passportImgUrl" },
+        drivingLicense: { imgField: "drivingLicenseImgUrl" },
+        voterId: { imgField: "voterIdImgUrl" },
       };
 
       const fields = fieldMappings[documentType];
@@ -1032,14 +1008,14 @@ const handleSubmit = async (e) => {
       setFormData((prev) => {
         const updatedIdProofs = {
           ...prev.idProofs,
-          [fields.imgField]: file // Store the File object for upload
+          [fields.imgField]: file, // Store the File object for upload
         };
 
         console.log(`Updated form data for ${documentType}:`, updatedIdProofs);
 
         return {
           ...prev,
-          idProofs: updatedIdProofs
+          idProofs: updatedIdProofs,
         };
       });
     }
@@ -1047,58 +1023,71 @@ const handleSubmit = async (e) => {
 
   // Move these functions before the sections array definition
   const checkPersonalDetailsCompletion = () => {
-    const requiredFields = ['name', 'phone', 'joiningDate', 'department', 'designation'];
-    return requiredFields.every(field => {
+    const requiredFields = [
+      "name",
+      "phone",
+      "joiningDate",
+      "department",
+      "designation",
+    ];
+    return requiredFields.every((field) => {
       const value = formData.employee[field];
-      return value && value.toString().trim() !== '';
+      return value && value.toString().trim() !== "";
     });
   };
 
   const checkIdProofsCompletion = () => {
-    return Boolean(formData.idProofs.aadharNo?.trim() && formData.idProofs.panNo?.trim());
+    return Boolean(
+      formData.idProofs.aadharNo?.trim() && formData.idProofs.panNo?.trim()
+    );
   };
 
   const checkBankDetailsCompletion = () => {
-    const requiredFields = ['accountNumber', 'accountHolderName', 'ifscCode', 'bankName'];
-    return requiredFields.every(field => {
+    const requiredFields = [
+      "accountNumber",
+      "accountHolderName",
+      "ifscCode",
+      "bankName",
+    ];
+    return requiredFields.every((field) => {
       const value = formData.bankDetails[field];
-      return value && value.toString().trim() !== '';
+      return value && value.toString().trim() !== "";
     });
   };
 
   const checkSalaryDetailsCompletion = () => {
-    const requiredFields = ['annualCtc', 'basicSalary'];
-    return requiredFields.every(field => {
+    const requiredFields = ["annualCtc", "basicSalary"];
+    return requiredFields.every((field) => {
       const value = formData.salaryDetails[field];
-      return value && value.toString().trim() !== '';
+      return value && value.toString().trim() !== "";
     });
   };
 
   // Then define the sections array using these functions
   const sections = [
-    { 
-      id: "personal", 
-      label: "Personal Details", 
+    {
+      id: "personal",
+      label: "Personal Details",
       icon: FiUser,
-      checkCompletion: checkPersonalDetailsCompletion 
+      checkCompletion: checkPersonalDetailsCompletion,
     },
-    { 
-      id: "idProofs", 
-      label: "ID Proofs", 
+    {
+      id: "idProofs",
+      label: "ID Proofs",
       icon: FiBook,
-      checkCompletion: checkIdProofsCompletion 
+      checkCompletion: checkIdProofsCompletion,
     },
-    { 
-      id: "bank", 
-      label: "Bank Details", 
+    {
+      id: "bank",
+      label: "Bank Details",
       icon: FiCreditCard,
-      checkCompletion: checkBankDetailsCompletion 
+      checkCompletion: checkBankDetailsCompletion,
     },
-    { 
-      id: "salary", 
-      label: "Salary", 
+    {
+      id: "salary",
+      label: "Salary",
       icon: "₹",
-      checkCompletion: checkSalaryDetailsCompletion 
+      checkCompletion: checkSalaryDetailsCompletion,
     },
   ];
 
@@ -1128,7 +1117,7 @@ const handleSubmit = async (e) => {
         console.log("Fetching designations for department:", departmentId);
 
         const response = await axios.get(
-          `http://localhost:8083/api/designations/department/${departmentId}`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/designations/department/${departmentId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1173,7 +1162,7 @@ const handleSubmit = async (e) => {
         console.log("Fetching managers for department:", departmentId);
 
         const response = await axios.get(
-          `http://localhost:8083/departments/${departmentId}/managers`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/${departmentId}/managers`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1263,8 +1252,18 @@ const handleSubmit = async (e) => {
                         />
                       )}
                       {section.label}
-                      <span className={`ml-2 ${section.checkCompletion() ? "text-green-500" : "text-red-500"}`}>
-                        {section.checkCompletion() ? <FiCheck className="w-4 h-4" /> : <FiX className="w-4 h-4" />}
+                      <span
+                        className={`ml-2 ${
+                          section.checkCompletion()
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }`}
+                      >
+                        {section.checkCompletion() ? (
+                          <FiCheck className="w-4 h-4" />
+                        ) : (
+                          <FiX className="w-4 h-4" />
+                        )}
                       </span>
                     </motion.button>
                   ))}
@@ -1774,51 +1773,60 @@ const handleSubmit = async (e) => {
                             label: "Aadhar No.",
                             key: "aadharNo",
                             docType: "Aadhar Card",
-                            imgField: "aadharImgUrl"
+                            imgField: "aadharImgUrl",
                           },
                           {
                             label: "PAN No.",
                             key: "panNo",
                             docType: "PAN Card",
-                            imgField: "pancardImgUrl"
+                            imgField: "pancardImgUrl",
                           },
                           {
                             label: "Passport",
                             key: "passport",
                             docType: "Passport",
-                            imgField: "passportImgUrl"
+                            imgField: "passportImgUrl",
                           },
                           {
                             label: "Driving License",
                             key: "drivingLicense",
                             docType: "Driving License",
-                            imgField: "drivingLicenseImgUrl"
+                            imgField: "drivingLicenseImgUrl",
                           },
                           {
                             label: "Voter ID",
                             key: "voterId",
                             docType: "Voter ID",
-                            imgField: "voterIdImgUrl"
+                            imgField: "voterIdImgUrl",
                           },
                         ].map(({ label, key, docType, imgField }) => (
                           <div key={key} className={inputGroupClass}>
-                            <label className={floatingLabelClass}>{label}</label>
+                            <label className={floatingLabelClass}>
+                              {label}
+                            </label>
                             <div className="relative flex items-center">
                               <input
                                 className={`${inputClass} pr-10`}
                                 value={formData.idProofs[key] || ""}
                                 onChange={(e) =>
-                                  handleInputChange("idProofs", key, e.target.value)
+                                  handleInputChange(
+                                    "idProofs",
+                                    key,
+                                    e.target.value
+                                  )
                                 }
                               />
                               <div className="absolute right-3 group">
                                 {formData.idProofs[imgField] ? (
                                   <div className="flex items-center gap-2">
                                     {/* Show preview for both new uploads and existing files */}
-                                    {formData.idProofs[imgField] instanceof File ? (
+                                    {formData.idProofs[imgField] instanceof
+                                    File ? (
                                       // For new uploads (File objects)
                                       <img
-                                        src={URL.createObjectURL(formData.idProofs[imgField])}
+                                        src={URL.createObjectURL(
+                                          formData.idProofs[imgField]
+                                        )}
                                         alt={`${docType} preview`}
                                         className="w-8 h-8 object-cover rounded"
                                       />
@@ -1837,8 +1845,8 @@ const handleSubmit = async (e) => {
                                           ...prev,
                                           idProofs: {
                                             ...prev.idProofs,
-                                            [imgField]: null
-                                          }
+                                            [imgField]: null,
+                                          },
                                         }));
                                       }}
                                       className="text-red-500 hover:text-red-700"
@@ -1868,13 +1876,22 @@ const handleSubmit = async (e) => {
                                       // Add file size validation (e.g., 5MB limit)
                                       const maxSize = 5 * 1024 * 1024; // 5MB
                                       if (file.size > maxSize) {
-                                        toast.error("File size should not exceed 5MB");
+                                        toast.error(
+                                          "File size should not exceed 5MB"
+                                        );
                                         return;
                                       }
                                       // Add file type validation
-                                      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+                                      const allowedTypes = [
+                                        "application/pdf",
+                                        "image/jpeg",
+                                        "image/jpg",
+                                        "image/png",
+                                      ];
                                       if (!allowedTypes.includes(file.type)) {
-                                        toast.error("Please upload a valid PDF or image file");
+                                        toast.error(
+                                          "Please upload a valid PDF or image file"
+                                        );
                                         return;
                                       }
                                       handleFileUpload(key, file);
@@ -2112,7 +2129,10 @@ const handleSubmit = async (e) => {
                     >
                       {loading ? (
                         <>
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            viewBox="0 0 24 24"
+                          >
                             <circle
                               className="opacity-25"
                               cx="12"
@@ -2149,7 +2169,10 @@ const handleSubmit = async (e) => {
                   >
                     {loading ? (
                       <>
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
                           <circle
                             className="opacity-25"
                             cx="12"
