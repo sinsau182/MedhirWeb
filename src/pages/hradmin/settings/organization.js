@@ -764,9 +764,26 @@ const OrganizationSettings = () => {
         <HradminNavbar />
 
         <div className="p-6 mt-16">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">
-            Organization Settings
-          </h1>
+          <div className="flex items-center gap-4 mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Organization Settings
+            </h1>
+            <button
+              onClick={() => {
+                if (activeTab === "departments") {
+                  setSelectedDepartment(null);
+                  setShowDepartmentModal(true);
+                } else {
+                  setSelectedDesignation(null);
+                  setShowDesignationModal(true);
+                }
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Add {activeTab === "departments" ? "Department" : "Designation"}
+            </button>
+          </div>
 
           {/* Tabs */}
           <div className="flex gap-4 mb-6 border-b">
@@ -785,186 +802,174 @@ const OrganizationSettings = () => {
             ))}
           </div>
 
-          {/* Add Button */}
-          <div className="mb-6">
-            <button
-              onClick={() => {
-                if (activeTab === "departments") {
-                  setSelectedDepartment(null);
-                  setShowDepartmentModal(true);
-                } else {
-                  setSelectedDesignation(null);
-                  setShowDesignationModal(true);
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Plus className="h-5 w-5" />
-              Add {activeTab === "departments" ? "Department" : "Designation"}
-            </button>
-          </div>
-
-          {/* Departments Table */}
-          {activeTab === "departments" && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department Head
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Leave Policy
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Weekly Holidays
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reduxDepartments.map((department) => (
-                    <tr
-                      key={department.id}
-                      onClick={() => {
-                        // Reset form changed state when opening new item
-                        setIsFormChanged(false);
-                        setSelectedDepartment(department);
-
-                        // Find the leave policy object from the policies array
-                        const selectedPolicy = policies.find(
-                          (p) => p.leavePolicyId === department.leavePolicy
-                        );
-
-                        // Format weekly holidays into array of objects
-                        const weeklyHolidaysArray =
-                          department.weeklyHolidays?.split(",").map((day) => ({
-                            value: day.trim(),
-                            label: day.trim(),
-                          })) || [];
-
-                        setDepartmentForm({
-                          name: department.name,
-                          description: department.description || "",
-                          head: department.departmentHead,
-                          leavePolicy: {
-                            value: department.leavePolicy,
-                            label:
-                              selectedPolicy?.name || department.leavePolicy,
-                          },
-                          weeklyHolidays: weeklyHolidaysArray,
-                        });
-                        setShowDepartmentEditModal(true);
-                      }}
-                      className="hover:bg-gray-50 cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {department.description}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.departmentHead}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {policies.find(
-                          (policy) =>
-                            policy.leavePolicyId === department.leavePolicy
-                        )?.name || department.leavePolicy}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.weeklyHolidays}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Designations Table */}
-          {activeTab === "designations" && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Is Manager
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Overtime Eligible
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {designationLoading ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center">
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : error ? (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="px-6 py-4 text-center text-red-500"
-                      >
-                        {error}
-                      </td>
-                    </tr>
-                  ) : fetchedDesignations.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center">
-                        No designations found
-                      </td>
-                    </tr>
-                  ) : (
-                    fetchedDesignations.map((designation) => (
-                      <tr
-                        key={designation.id}
-                        onClick={() => handleDesignationRowClick(designation)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {reduxDepartments.find(
-                            (dept) =>
-                              dept.departmentId === designation.department
-                          )?.name || designation.department}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {designation.description || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.manager ? "Yes" : "No"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.overtimeEligible ? "Yes" : "No"}
-                        </td>
+          {/* Tables Container with Fixed Height */}
+          <div className="h-[calc(100vh-280px)] overflow-hidden">
+            {/* Departments Table */}
+            {activeTab === "departments" && (
+              <div className="bg-white rounded-lg shadow h-full">
+                <div className="overflow-auto h-full">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Department Head
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Leave Policy
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Weekly Holidays
+                        </th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {reduxDepartments.map((department) => (
+                        <tr
+                          key={department.id}
+                          onClick={() => {
+                            // Reset form changed state when opening new item
+                            setIsFormChanged(false);
+                            setSelectedDepartment(department);
+
+                            // Find the leave policy object from the policies array
+                            const selectedPolicy = policies.find(
+                              (p) => p.leavePolicyId === department.leavePolicy
+                            );
+
+                            // Format weekly holidays into array of objects
+                            const weeklyHolidaysArray =
+                              department.weeklyHolidays?.split(",").map((day) => ({
+                                value: day.trim(),
+                                label: day.trim(),
+                              })) || [];
+
+                            setDepartmentForm({
+                              name: department.name,
+                              description: department.description || "",
+                              head: department.departmentHead,
+                              leavePolicy: {
+                                value: department.leavePolicy,
+                                label:
+                                  selectedPolicy?.name || department.leavePolicy,
+                              },
+                              weeklyHolidays: weeklyHolidaysArray,
+                            });
+                            setShowDepartmentEditModal(true);
+                          }}
+                          className="hover:bg-gray-50 cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {department.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {department.description}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {department.departmentHead}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {policies.find(
+                              (policy) =>
+                                policy.leavePolicyId === department.leavePolicy
+                            )?.name || department.leavePolicy}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {department.weeklyHolidays}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Designations Table */}
+            {activeTab === "designations" && (
+              <div className="bg-white rounded-lg shadow h-full">
+                <div className="overflow-auto h-full">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Department
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Is Manager
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Overtime Eligible
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {designationLoading ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center">
+                            Loading...
+                          </td>
+                        </tr>
+                      ) : error ? (
+                        <tr>
+                          <td
+                            colSpan="5"
+                            className="px-6 py-4 text-center text-red-500"
+                          >
+                            {error}
+                          </td>
+                        </tr>
+                      ) : fetchedDesignations.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center">
+                            No designations found
+                          </td>
+                        </tr>
+                      ) : (
+                        fetchedDesignations.map((designation) => (
+                          <tr
+                            key={designation.id}
+                            onClick={() => handleDesignationRowClick(designation)}
+                            className="hover:bg-gray-50 cursor-pointer"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {reduxDepartments.find(
+                                (dept) =>
+                                  dept.departmentId === designation.department
+                              )?.name || designation.department}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {designation.description || "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.manager ? "Yes" : "No"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.overtimeEligible ? "Yes" : "No"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

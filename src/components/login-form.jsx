@@ -17,6 +17,7 @@ import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { setItem } from "@/redux/slices/sessionStorageSlice"; // Import setItem action
 import { updateSessionActivity } from "@/utils/sessionManager";
+import { toast } from "sonner";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
@@ -61,7 +62,7 @@ export function LoginForm({ className, ...props }) {
         }
       }
     } catch (err) {
-      console.error("Login error:", err);
+      toast.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }

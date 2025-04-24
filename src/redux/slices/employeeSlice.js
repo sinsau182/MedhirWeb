@@ -88,17 +88,32 @@ export const updateEmployee = createAsyncThunk(
       // Create FormData object for file uploads
       const formData = new FormData();
 
-      // Add the employee data as a JSON string
-      const employeeData = updatedData.get("employee");
-      formData.append("employee", employeeData);
+      // Parse the employee data from the FormData
+      const employeeData = JSON.parse(updatedData.get("employee"));
 
-      // Add any files that were included
+      // Add files to the employee data if they exist
       if (updatedData.has("employeeImgUrl")) {
-        formData.append("employeeImgUrl", updatedData.get("employeeImgUrl"));
+        employeeData.employeeImgUrl = updatedData.get("employeeImgUrl");
       }
-      if (updatedData.has("aadharImgUrl")) {
-        formData.append("aadharImgUrl", updatedData.get("aadharImgUrl"));
-      }
+
+      // Define the ID proof mappings
+      const idProofMappings = {
+        aadharImage: 'aadharImage',
+        panImage: 'panImage',
+        passportImage: 'passportImage',
+        drivingLicenseImage: 'drivingLicenseImage',
+        voterIdImage: 'voterIdImage'
+      };
+
+      // Add ID proof files to the employee data
+      Object.entries(idProofMappings).forEach(([formField, apiField]) => {
+        if (updatedData.has(formField)) {
+          employeeData[apiField] = updatedData.get(formField);
+        }
+      });
+
+      // Add the complete employee data to FormData
+      formData.append("employee", JSON.stringify(employeeData));
 
       const response = await axios.put(`${API_BASE_URL}/employees/${id}`, formData, {
         headers: {

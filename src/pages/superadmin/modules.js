@@ -81,16 +81,6 @@ function SuperadminModules() {
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
-  // Helper function to get auth headers
-  // const getAuthHeaders = () => {
-  //   const token = getItemFromSessionStorage("token");
-  //   return {
-  //     headers: {
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //   };
-  // };
-
   const {
     modules,
     employees,
@@ -102,9 +92,6 @@ function SuperadminModules() {
     loading: companiesLoading,
     error: companiesError,
   } = useSelector((state) => state.companies);
-  // const { allEmployees, loading: employeesLoading, error: employeesError } = useSelector(
-  //   (state) => state.allEmployees
-  // );
 
   // Add console logging
   useEffect(() => {
@@ -126,7 +113,7 @@ function SuperadminModules() {
           dispatch(fetchEmployees()),
         ]);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        toast.error("Error fetching data: " + error.message);
         setEmployeeError(error.message);
       }
     };
@@ -146,7 +133,7 @@ function SuperadminModules() {
         dispatch(fetchEmployees()),
       ]);
     } catch (error) {
-      console.error('Error refreshing data:', error);
+      toast.error('Error refreshing data:', error);
       setError(error.message);
     } finally {
       setIsTableRefreshing(false);
@@ -184,7 +171,7 @@ function SuperadminModules() {
     setIsLoading(true);
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`http://localhost:8083/superadmin/modules/${selectedModule.moduleId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules/${selectedModule.moduleId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -200,28 +187,12 @@ function SuperadminModules() {
       setIsAddModuleOpen(false);
       await refreshData();
     } catch (error) {
-      console.error("Error deleting module:", error);
+      toast.error("Error deleting module:", error);
       alert(error.message || "Failed to delete module");
     } finally {
       setIsLoading(false);
     }
   };
-
-  // const fetchUsersByCompany = async (companyId) => {
-  //   try {
-  //     const response = await axios.get(
-  //       `http://localhost:8083/superadmin/companies/${companyId}/users`,
-  //       getAuthHeaders()
-  //     );
-  //     setCompanyUsers(response.data || []);
-  //   } catch (error) {
-  //     console.error('Error fetching company users:', error);
-  //     if (error.response?.status === 401) {
-  //       router.push("/login?error=Session expired. Please login again");
-  //     }
-  //     setCompanyUsers([]);
-  //   }
-  // };
 
   // Update handleCompanyChange
   const handleCompanyChange = (companyId) => {
@@ -248,7 +219,7 @@ function SuperadminModules() {
       let response;
       if (isEditMode) {
         // Update existing module
-        response = await fetch(`http://localhost:8083/superadmin/modules/${selectedModule.moduleId}`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules/${selectedModule.moduleId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -258,7 +229,7 @@ function SuperadminModules() {
         });
       } else {
         // Create new module
-        response = await fetch("http://localhost:8083/superadmin/modules", {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -281,7 +252,7 @@ function SuperadminModules() {
       // Refresh all data
       await refreshData();
     } catch (error) {
-      console.error("Error saving module:", error);
+      toast.error("Error saving module:", error);
       alert(error.message || "Failed to save module. Please try again.");
     } finally {
       setIsLoading(false);
@@ -310,7 +281,7 @@ function SuperadminModules() {
       setUserPhone("");
       setIsAddUserOpen(false);
     } catch (err) {
-      console.error("Error adding user:", err);
+      toast.error("Error adding user:", err);
       if (err.response?.status === 401) {
         router.push("/login?error=Session expired. Please login again");
       } else {
@@ -382,7 +353,7 @@ function SuperadminModules() {
             });
             setIsAddAdminModalOpen(false);
           } catch (error) {
-            console.error("Error adding admin:", error);
+            toast.error("Error adding admin:", error);
             alert(error.message || "Failed to add admin. Please check the data and try again.");
           } finally {
             setIsLoading(false);

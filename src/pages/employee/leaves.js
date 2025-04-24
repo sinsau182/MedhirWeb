@@ -18,12 +18,7 @@ const Leaves = () => {
 
   useEffect(() => {
     const storedToken = getItemFromSessionStorage('token');
-    setToken(storedToken);
-    
-    if (!storedToken) {
-      console.log('Token not found. Redirecting or handling auth...');
-      // Optional: redirect to login
-    }
+    setToken(storedToken); 
   }, []);
 
   const dispatch = useDispatch();

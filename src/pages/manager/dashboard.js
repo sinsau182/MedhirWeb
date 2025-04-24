@@ -42,6 +42,7 @@ import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { toast } from "sonner";
 
 const COLORS = [
   "#0088FE",
@@ -187,7 +188,7 @@ const Overview = () => {
         }
 
         const response = await axios.get(
-          "http://localhost:8083/employees/manager/EMP002", // Replace with your actual API endpoint
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/manager/EMP002`, // Replace with your actual API endpoint
           {
             headers: {
               Authorization: `Bearer ${token}`, // Include the token in the Authorization header
@@ -202,7 +203,7 @@ const Overview = () => {
           setEmployeeCount(0);
         }
       } catch (error) {
-        console.error("Error fetching employee count:", error);
+        toast.error("Error fetching employee count:", error);
         setEmployeeCount(0);
       }
     };

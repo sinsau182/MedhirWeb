@@ -229,32 +229,6 @@ const CustomDatePicker = ({
     onChange(newDates);
   };
 
-  // const calculateTotalDays = () => {
-  //   return selectedDateObjects.reduce((total, selected) => {
-  //     if (selected.timeSlot === 'First Half (Morning)' || 
-  //         selected.timeSlot === 'Second Half (Evening)') {
-  //       return total + 0.5;
-  //     }
-  //     return total + 1;
-  //   }, 0);
-  // };
-
-  // const isInRange = (date) => {
-  //   if (selectedDateObjects.length < 2 || !date) return false;
-  //   const sortedDates = selectedDateObjects
-  //     .map(d => d.date)
-  //     .sort((a, b) => a - b);
-  //   return isWithinInterval(date, { start: sortedDates[0], end: sortedDates[sortedDates.length - 1] });
-  // };
-
-  // const isStartOrEndDate = (date) => {
-  //   if (!date || selectedDateObjects.length === 0) return false;
-  //   const sortedDates = selectedDateObjects
-  //     .map(d => d.date)
-  //     .sort((a, b) => a - b);
-  //   return isSameDay(date, sortedDates[0]) || isSameDay(date, sortedDates[sortedDates.length - 1]);
-  // };
-
   return (
     <div className="relative" ref={calendarRef}>
       <div className="w-full space-y-2">

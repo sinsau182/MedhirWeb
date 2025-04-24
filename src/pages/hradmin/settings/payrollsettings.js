@@ -60,6 +60,22 @@ const PayrollSettings = () => {
     dispatch(fetchPTAX());
   }, [dispatch]);
 
+  useEffect(() => {
+    let timeoutId;
+    if (notification.show) {
+      timeoutId = setTimeout(() => {
+        setNotification({
+          show: false,
+          type: "",
+          message: "",
+        });
+      }, 2000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [notification.show]);
+
   const handleTdsSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -425,10 +441,14 @@ const PayrollSettings = () => {
           {notification.show && (
             <div className="fixed bottom-4 right-4 z-50">
               <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-md ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-md transform transition-all duration-300 ease-in-out ${
                   notification.type === "success"
                     ? "bg-green-100 text-green-800"
                     : "bg-red-100 text-red-800"
+                } ${
+                  notification.show
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-4 opacity-0"
                 }`}
               >
                 {notification.type === "success" ? (

@@ -16,6 +16,8 @@ function Employees() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("March");
   const [selectedYear, setSelectedYear] = useState("2024");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
@@ -69,6 +71,16 @@ function Employees() {
     setSelectedMonth(month);
     setSelectedYear(year);
     setIsCalendarOpen(false);
+  };
+
+  const handleViewDoc = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedImage(null);
   };
 
   const filteredEmployees = (employees || []).filter((employee) =>
@@ -196,16 +208,18 @@ function Employees() {
             : employee[key] || "";
 
         if (key === "passbookDoc") {
-          return (
+          return employee.bankDetails?.passbookImgUrl ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                // Document view logic
+                handleViewDoc(employee.bankDetails.passbookImgUrl);
               }}
               className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
             >
               View Doc
             </button>
+          ) : (
+            "-"
           );
         }
 
@@ -252,26 +266,6 @@ function Employees() {
 
   const headers = getTableHeaders();
 
-  const handlePassbookView = (imageUrl) => {
-    const modal = document.createElement("div");
-    modal.className =
-      "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
-    modal.innerHTML = `
-      <div class="bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Passbook Document</h3>
-          <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        <img src="${imageUrl}" alt="Passbook" class="max-w-full h-auto" />
-      </div>
-    `;
-    document.body.appendChild(modal);
-  };
-
   const renderBankDetailsRow = (row) => (
     <tr key={row.id}>
       <td className="px-5 py-4 text-sm">{row.name}</td>
@@ -284,7 +278,7 @@ function Employees() {
       <td className="px-5 py-4 text-sm">{row.upiNumber}</td>
       <td className="px-5 py-4 text-sm">
         <button
-          onClick={() => handlePassbookView(row.passbookDoc)}
+          onClick={() => handleViewDoc(row.passbookDoc)}
           className="text-blue-600 hover:text-blue-800"
         >
           View Details
@@ -329,9 +323,9 @@ function Employees() {
 
         <div className="p-6 mt-16">
           {/* Header with Search and Title */}
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-800 mb-4">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold text-gray-800">
                 Employee Management
               </h1>
               <button
@@ -347,7 +341,7 @@ function Employees() {
                 Add Employee
               </button>
             </div>
-            <div className="relative mt-1">
+            <div className="relative">
               <input
                 type="text"
                 placeholder="Search..."
@@ -360,84 +354,125 @@ function Employees() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-4 mb-6 border-b">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                className={`px-4 py-2 ${
-                  activeTab === tab
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-blue-600"
-                }`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="bg-gray-50">
+            <div className="flex">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  className={`px-8 py-3 text-sm font-medium transition-colors relative ${
+                    activeTab === tab
+                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg z-10"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Employee Table */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <div className="w-full">
-              <table className="w-full table-fixed">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    {headers.map((header) => (
-                      <th
-                        key={header.key}
-                        className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider"
-                      >
-                        {header.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {loading ? (
+              <div className="overflow-x-auto">
+                <table className="w-full table-fixed">
+                  <thead className="bg-gray-50 border-b sticky top-0">
                     <tr>
-                      <td
-                        colSpan={headers.length}
-                        className="text-center py-3 text-sm text-gray-500"
-                      >
-                        <div className="flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
-                          Loading...
-                        </div>
-                      </td>
+                      {headers.map((header) => (
+                        <th
+                          key={header.key}
+                          className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                        >
+                          {header.label}
+                        </th>
+                      ))}
                     </tr>
-                  ) : filteredEmployees.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={headers.length}
-                        className="text-center py-3 text-sm text-gray-500"
-                      >
-                        No employees found
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredEmployees.map((employee) => (
-                      <tr
-                        key={employee.id}
-                        className="hover:bg-gray-50 cursor-pointer"
-                        onClick={() => handleRowClick(employee)}
-                      >
-                        {headers.map((header) => (
-                          <td
-                            key={header.key}
-                            className="py-3 px-4 text-sm text-gray-800 truncate"
-                          >
-                            {getCellValue(employee, header.key)}
-                          </td>
-                        ))}
+                  </thead>
+                </table>
+              </div>
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 280px)" }}>
+                <table className="w-full table-fixed">
+                  <tbody className="divide-y divide-gray-100">
+                    {loading ? (
+                      <tr>
+                        <td
+                          colSpan={headers.length}
+                          className="text-center py-3 text-sm text-gray-500"
+                        >
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500 mr-2"></div>
+                            Loading...
+                          </div>
+                        </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : filteredEmployees.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={headers.length}
+                          className="text-center py-3 text-sm text-gray-500"
+                        >
+                          No employees found
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredEmployees.map((employee) => (
+                        <tr
+                          key={employee.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => handleRowClick(employee)}
+                        >
+                          {headers.map((header) => (
+                            <td
+                              key={header.key}
+                              className="py-3 px-4 text-sm text-gray-800 truncate"
+                            >
+                              {getCellValue(employee, header.key)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Add Modal for Document View */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Passbook Document</h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <img
+              src={selectedImage}
+              alt="Passbook Document"
+              className="max-w-full h-auto"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

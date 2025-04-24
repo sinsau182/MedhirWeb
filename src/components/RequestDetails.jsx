@@ -286,14 +286,16 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
           </TabsTrigger>
           <TabsTrigger
             value="expenseRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
           >
             <DollarSign className="h-4 w-4 mr-2" />
             <span>Reimbursement Requests</span>
           </TabsTrigger>
           <TabsTrigger
             value="advanceRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
           >
             <Wallet className="h-4 w-4 mr-2" />
             <span>Advance Requests</span>

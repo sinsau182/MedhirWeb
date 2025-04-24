@@ -13,7 +13,7 @@ export const fetchManagerEmployees = createAsyncThunk(
       }
 
       const response = await axios.get(
-        "http://localhost:8083/employees/manager/EMP002", // Hardcoded API endpoint
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/manager/EMP002`, // Hardcoded API endpoint
         {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header

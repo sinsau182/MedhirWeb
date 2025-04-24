@@ -19,7 +19,7 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { motion } from "framer-motion";
-import { FiUser, FiBook, FiCreditCard, FiUpload } from "react-icons/fi";
+import { FiUser, FiBook, FiCreditCard, FiUpload, FiCheck, FiX } from "react-icons/fi";
 // import Select from "react-select";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
@@ -397,7 +397,6 @@ function EmployeeForm() {
 
   const [formData, setFormData] = useState({
     employee: {
-      // employeeId: "",
       name: "",
       fathersName: "",
       gender: "",
@@ -414,7 +413,7 @@ function EmployeeForm() {
       overtimeEligibile: false,
       weeklyOffs: [],
       employeeImgUrl: null,
-      pfEnrolled: false,
+      pfEnrolled: true,
       uanNumber: "",
       esicEnrolled: false,
       esicNumber: "",
@@ -457,10 +456,10 @@ function EmployeeForm() {
     if (employee) {
       try {
         const parsedEmployee = JSON.parse(employee);
-
-        // Set complete form data with all fields, using empty strings for null/undefined values
-        setFormData({
+        setFormData((prevFormData) => ({
+          ...prevFormData,
           employee: {
+            ...prevFormData.employee,
             employeeId: parsedEmployee.employeeId || "",
             name: parsedEmployee.name || "",
             fathersName: parsedEmployee.fathersName || "",
@@ -488,16 +487,15 @@ function EmployeeForm() {
           companyId: parsedEmployee.companyId || company, // Ensure companyId is set
           idProofs: {
             aadharNo: parsedEmployee.idProofs?.aadharNo || "",
-            aadharImgUrl: parsedEmployee.idProofs?.aadharImgUrl || "",
+            aadharImgUrl: parsedEmployee.idProofs?.aadharImgUrl || null,
             panNo: parsedEmployee.idProofs?.panNo || "",
-            pancardImgUrl: parsedEmployee.idProofs?.pancardImgUrl || "",
+            pancardImgUrl: parsedEmployee.idProofs?.pancardImgUrl || null,
             passport: parsedEmployee.idProofs?.passport || "",
-            passportImgUrl: parsedEmployee.idProofs?.passportImgUrl || "",
+            passportImgUrl: parsedEmployee.idProofs?.passportImgUrl || null,
             drivingLicense: parsedEmployee.idProofs?.drivingLicense || "",
-            drivingLicenseImgUrl:
-              parsedEmployee.idProofs?.drivingLicenseImgUrl || "",
+            drivingLicenseImgUrl: parsedEmployee.idProofs?.drivingLicenseImgUrl || null,
             voterId: parsedEmployee.idProofs?.voterId || "",
-            voterIdImgUrl: parsedEmployee.idProofs?.voterIdImgUrl || "",
+            voterIdImgUrl: parsedEmployee.idProofs?.voterIdImgUrl || null,
           },
           bankDetails: {
             accountNumber: parsedEmployee.bankDetails?.accountNumber || "",
@@ -521,8 +519,8 @@ function EmployeeForm() {
             employeePfContribution:
               parsedEmployee.salaryDetails?.employeePfContribution || "",
           },
-        });
-        console.log(company);
+        }));
+        
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
         toast.error("Error loading employee data");
@@ -586,6 +584,38 @@ function EmployeeForm() {
     };
   };
 
+  const calculateSalaryDetails = (annualCtc, basicSalary) => {
+    const annual = parseFloat(annualCtc) || 0;
+    const basic = parseFloat(basicSalary) || 0;
+    
+    // Calculate monthly CTC
+    const monthlyCtc = (annual / 12).toFixed(2);
+    
+    // Calculate HRA (40% of basic)
+    const hra = (basic * 0.4).toFixed(2);
+    
+    // Calculate PF contributions if enrolled
+    const pfContributions = formData.employee.pfEnrolled
+      ? calculatePFContributions(basic)
+      : { employer: 0, employee: 0 };
+    
+    // Calculate allowances
+    const allowances = (
+      parseFloat(monthlyCtc) -
+      parseFloat(basic) -
+      parseFloat(hra) -
+      parseFloat(pfContributions.employee)
+    ).toFixed(2);
+    
+    return {
+      monthlyCtc,
+      hra,
+      allowances,
+      employerPfContribution: pfContributions.employer,
+      employeePfContribution: pfContributions.employee,
+    };
+  };
+
   const handleInputChange = (section, field, value) => {
     setFormData((prev) => {
       const updatedData = {
@@ -596,49 +626,19 @@ function EmployeeForm() {
         },
       };
 
-      // Calculate Monthly CTC when Annual CTC changes
-      if (section === "salaryDetails" && field === "annualCtc") {
-        const annual = parseFloat(value) || 0;
-        updatedData.salaryDetails.monthlyCtc = (annual / 12).toFixed(2);
-      }
-
-      // Calculate PF contributions when Basic Salary changes and PF is enrolled
-      if (
-        section === "salaryDetails" &&
-        field === "basicSalary" &&
-        prev.employee.pfEnrolled
-      ) {
-        const pfContributions = calculatePFContributions(value);
-        updatedData.salaryDetails.employerPfContribution =
-          pfContributions.employer;
-        updatedData.salaryDetails.employeePfContribution =
-          pfContributions.employee;
-
-        // Calculate HRA as 40% of basic salary
-        const basic = parseFloat(value) || 0;
-        updatedData.salaryDetails.hra = (basic * 0.4).toFixed(2);
-      }
-
-      // Calculate Allowances when Monthly CTC, HRA, Basic, or PF changes
-      if (
-        section === "salaryDetails" &&
-        (field === "monthlyCtc" ||
-          field === "hra" ||
-          field === "basicSalary" ||
-          field === "employerPfContribution" ||
-          field === "employeePfContribution")
-      ) {
-        const monthlyCTC =
-          parseFloat(updatedData.salaryDetails.monthlyCtc) || 0;
-        const hra = parseFloat(updatedData.salaryDetails.hra) || 0;
-        const basic = parseFloat(updatedData.salaryDetails.basicSalary) || 0;
-        const employerPF =
-          parseFloat(updatedData.salaryDetails.employerPfContribution) || 0;
-        const employeePF =
-          parseFloat(updatedData.salaryDetails.employeePfContribution) || 0;
-
-        const allowances = monthlyCTC - (hra + employeePF + employerPF + basic);
-        updatedData.salaryDetails.allowances = allowances.toFixed(2);
+      // Calculate salary details when annual CTC or basic salary changes
+      if (section === "salaryDetails") {
+        if (field === "annualCtc" || field === "basicSalary") {
+          const salaryDetails = calculateSalaryDetails(
+            field === "annualCtc" ? value : updatedData.salaryDetails.annualCtc,
+            field === "basicSalary" ? value : updatedData.salaryDetails.basicSalary
+          );
+          
+          updatedData.salaryDetails = {
+            ...updatedData.salaryDetails,
+            ...salaryDetails,
+          };
+        }
       }
 
       return updatedData;
@@ -682,7 +682,7 @@ const handleSubmit = async (e) => {
       const cleanObj = {};
       Object.entries(obj).forEach(([key, value]) => {
         if (value !== "" && value !== null && value !== undefined) {
-          if (typeof value === "object" && !Array.isArray(value)) {
+          if (typeof value === "object" && !Array.isArray(value) && !(value instanceof File)) {
             const nestedClean = removeEmptyFields(value);
             if (Object.keys(nestedClean).length > 0) {
               cleanObj[key] = nestedClean;
@@ -751,12 +751,36 @@ const handleSubmit = async (e) => {
     const employeeData = removeEmptyFields(baseEmployeeData);
     submitFormData.append("employee", JSON.stringify(employeeData));
 
-    // Add the profile image to FormData if it exists
+    // Update ID proof mappings with correct field name for Voter ID
+    const idProofMappings = {
+      aadharImgUrl: 'aadharImage',
+      pancardImgUrl: 'panImage',
+      passportImgUrl: 'passportImage',
+      drivingLicenseImgUrl: 'drivingLicenseImage',
+      voterIdImgUrl: 'voterIdImage'
+    };
+
+    // Add ID proof files to FormData with logging
+    Object.entries(idProofMappings).forEach(([formField, apiField]) => {
+      const fileOrUrl = formData.idProofs[formField];
+      if (fileOrUrl instanceof File) {
+        // New file upload
+        console.log(`Appending new ${formField} to FormData as ${apiField}:`, fileOrUrl);
+        submitFormData.append(apiField, fileOrUrl);
+      } else if (typeof fileOrUrl === 'string' && fileOrUrl.startsWith('http')) {
+        // Existing file URL - include in employee data
+        if (!employeeData.idProofs) {
+          employeeData.idProofs = {};
+        }
+        employeeData.idProofs[formField] = fileOrUrl;
+      }
+      // If fileOrUrl is null, the field will be omitted, effectively removing the image
+    });
+
+    // Add other files
     if (formData.employee.employeeImgUrl instanceof File) {
       submitFormData.append("profileImage", formData.employee.employeeImgUrl);
     }
-
-    // Add the passbook image to FormData as 'passbookImage' if it exists
     if (formData.bankDetails.passbookImgUrl instanceof File) {
       submitFormData.append("passbookImage", formData.bankDetails.passbookImgUrl);
     }
@@ -986,23 +1010,96 @@ const handleSubmit = async (e) => {
   //   }
   // };
 
-  const handleFileUpload = (section, field, file) => {
+  const handleFileUpload = (documentType, file) => {
     if (file) {
-      setFormData((prev) => ({
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: file,
-        },
-      }));
+      // Create a preview URL for the file
+      const previewUrl = URL.createObjectURL(file);
+      
+      // Map document type to the correct field names
+      const fieldMappings = {
+        aadharNo: { imgField: 'aadharImgUrl' },
+        panNo: { imgField: 'pancardImgUrl' },
+        passport: { imgField: 'passportImgUrl' },
+        drivingLicense: { imgField: 'drivingLicenseImgUrl' },
+        voterId: { imgField: 'voterIdImgUrl' }
+      };
+
+      const fields = fieldMappings[documentType];
+      if (!fields) return;
+
+      console.log(`Uploading ${documentType} file:`, file.name);
+
+      setFormData((prev) => {
+        const updatedIdProofs = {
+          ...prev.idProofs,
+          [fields.imgField]: file // Store the File object for upload
+        };
+
+        console.log(`Updated form data for ${documentType}:`, updatedIdProofs);
+
+        return {
+          ...prev,
+          idProofs: updatedIdProofs
+        };
+      });
     }
   };
 
+  // Move these functions before the sections array definition
+  const checkPersonalDetailsCompletion = () => {
+    const requiredFields = ['name', 'phone', 'joiningDate', 'department', 'designation'];
+    return requiredFields.every(field => {
+      const value = formData.employee[field];
+      return value && value.toString().trim() !== '';
+    });
+  };
+
+  const checkIdProofsCompletion = () => {
+    return Boolean(formData.idProofs.aadharNo?.trim() && formData.idProofs.panNo?.trim());
+  };
+
+  const checkBankDetailsCompletion = () => {
+    const requiredFields = ['accountNumber', 'accountHolderName', 'ifscCode', 'bankName'];
+    return requiredFields.every(field => {
+      const value = formData.bankDetails[field];
+      return value && value.toString().trim() !== '';
+    });
+  };
+
+  const checkSalaryDetailsCompletion = () => {
+    const requiredFields = ['annualCtc', 'basicSalary'];
+    return requiredFields.every(field => {
+      const value = formData.salaryDetails[field];
+      return value && value.toString().trim() !== '';
+    });
+  };
+
+  // Then define the sections array using these functions
   const sections = [
-    { id: "personal", label: "Personal Details", icon: FiUser },
-    { id: "idProofs", label: "ID Proofs", icon: FiBook },
-    { id: "bank", label: "Bank Details", icon: FiCreditCard },
-    { id: "salary", label: "Salary", icon: "₹" },
+    { 
+      id: "personal", 
+      label: "Personal Details", 
+      icon: FiUser,
+      checkCompletion: checkPersonalDetailsCompletion 
+    },
+    { 
+      id: "idProofs", 
+      label: "ID Proofs", 
+      icon: FiBook,
+      checkCompletion: checkIdProofsCompletion 
+    },
+    { 
+      id: "bank", 
+      label: "Bank Details", 
+      icon: FiCreditCard,
+      checkCompletion: checkBankDetailsCompletion 
+    },
+    { 
+      id: "salary", 
+      label: "Salary", 
+      icon: "₹",
+      checkCompletion: checkSalaryDetailsCompletion 
+    },
   ];
 
   const weekDays = [
@@ -1127,14 +1224,14 @@ const handleSubmit = async (e) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-0">
               <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
                 {employee ? "✏️ Edit Employee" : "New Employee"}
               </h1>
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="bg-white rounded-2xl shadow-sm p-6 relative overflow-hidden">
+            <form onSubmit={handleSubmit} className="flex flex-col ">
+              <div className="bg-white rounded-2xl shadow-sm p-4 relative overflow-hidden flex-1">
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50 rounded-full -mr-20 -mt-20 z-0" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-green-50 rounded-full -ml-16 -mb-16 z-0" />
@@ -1166,6 +1263,9 @@ const handleSubmit = async (e) => {
                         />
                       )}
                       {section.label}
+                      <span className={`ml-2 ${section.checkCompletion() ? "text-green-500" : "text-red-500"}`}>
+                        {section.checkCompletion() ? <FiCheck className="w-4 h-4" /> : <FiX className="w-4 h-4" />}
+                      </span>
                     </motion.button>
                   ))}
                 </div>
@@ -1501,7 +1601,7 @@ const handleSubmit = async (e) => {
                             </div>
                           ))}
 
-                          <div className="grid grid-1 gap-4">
+                          <div className="grid grid-cols-1 gap-4">
                             <ReportingManagerSelect
                               label="Reporting Manager"
                               options={managers}
@@ -1662,7 +1762,7 @@ const handleSubmit = async (e) => {
                     </div>
                   )}
 
-                  {/* ID Proofs Section (renamed from documents) */}
+                  {/* ID Proofs Section */}
                   {activeSection === "idProofs" && (
                     <div className="p-4">
                       <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -1674,66 +1774,112 @@ const handleSubmit = async (e) => {
                             label: "Aadhar No.",
                             key: "aadharNo",
                             docType: "Aadhar Card",
+                            imgField: "aadharImgUrl"
                           },
                           {
                             label: "PAN No.",
                             key: "panNo",
                             docType: "PAN Card",
+                            imgField: "pancardImgUrl"
                           },
                           {
                             label: "Passport",
                             key: "passport",
                             docType: "Passport",
+                            imgField: "passportImgUrl"
                           },
                           {
                             label: "Driving License",
                             key: "drivingLicense",
                             docType: "Driving License",
+                            imgField: "drivingLicenseImgUrl"
                           },
                           {
                             label: "Voter ID",
                             key: "voterId",
                             docType: "Voter ID",
+                            imgField: "voterIdImgUrl"
                           },
-                        ].map(({ label, key, docType }) => (
+                        ].map(({ label, key, docType, imgField }) => (
                           <div key={key} className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              {label}{" "}
-                            </label>
+                            <label className={floatingLabelClass}>{label}</label>
                             <div className="relative flex items-center">
                               <input
                                 className={`${inputClass} pr-10`}
                                 value={formData.idProofs[key] || ""}
                                 onChange={(e) =>
-                                  handleInputChange(
-                                    "idProofs",
-                                    key,
-                                    e.target.value
-                                  )
+                                  handleInputChange("idProofs", key, e.target.value)
                                 }
                               />
                               <div className="absolute right-3 group">
-                                <label
-                                  htmlFor={`upload-${key}`}
-                                  className="cursor-pointer"
-                                >
-                                  <FiUpload className="w-5 h-5 text-gray-500 hover:text-blue-600" />
-                                  <span className="invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
-                                    Upload {docType}
-                                  </span>
-                                </label>
+                                {formData.idProofs[imgField] ? (
+                                  <div className="flex items-center gap-2">
+                                    {/* Show preview for both new uploads and existing files */}
+                                    {formData.idProofs[imgField] instanceof File ? (
+                                      // For new uploads (File objects)
+                                      <img
+                                        src={URL.createObjectURL(formData.idProofs[imgField])}
+                                        alt={`${docType} preview`}
+                                        className="w-8 h-8 object-cover rounded"
+                                      />
+                                    ) : (
+                                      // For existing files (URLs)
+                                      <img
+                                        src={formData.idProofs[imgField]}
+                                        alt={`${docType} preview`}
+                                        className="w-8 h-8 object-cover rounded"
+                                      />
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          idProofs: {
+                                            ...prev.idProofs,
+                                            [imgField]: null
+                                          }
+                                        }));
+                                      }}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label
+                                    htmlFor={`upload-${key}`}
+                                    className="cursor-pointer"
+                                  >
+                                    <FiUpload className="w-5 h-5 text-gray-500 hover:text-blue-600" />
+                                    <span className="invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
+                                      Upload {docType}
+                                    </span>
+                                  </label>
+                                )}
                                 <input
                                   type="file"
                                   id={`upload-${key}`}
                                   className="hidden"
                                   accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={(e) =>
-                                    handleFileUpload(
-                                      "idProofs",
-                                      key,
-                                      e.target.files[0]
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      // Add file size validation (e.g., 5MB limit)
+                                      const maxSize = 5 * 1024 * 1024; // 5MB
+                                      if (file.size > maxSize) {
+                                        toast.error("File size should not exceed 5MB");
+                                        return;
+                                      }
+                                      // Add file type validation
+                                      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+                                      if (!allowedTypes.includes(file.type)) {
+                                        toast.error("Please upload a valid PDF or image file");
+                                        return;
+                                      }
+                                      handleFileUpload(key, file);
+                                    }
+                                  }}
                                 />
                               </div>
                             </div>
@@ -1798,7 +1944,6 @@ const handleSubmit = async (e) => {
                                   accept="image/*,.pdf"
                                   onChange={(e) =>
                                     handleFileUpload(
-                                      "bankDetails",
                                       "passbookImgUrl",
                                       e.target.files[0]
                                     )
@@ -1940,36 +2085,71 @@ const handleSubmit = async (e) => {
                 </motion.div>
               </div>
 
-              {/* Form Actions */}
-              <div className="mt-8 flex justify-end gap-4">
-                <motion.button
-                  type="button"
-                  className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200"
-                  onClick={() => router.push("/hradmin/employees")}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Cancel
-                </motion.button>
+              {/* Form Actions - Fixed at bottom */}
+              <div className="sticky z-10 bottom-0 border-t border-gray-200 mt-4 p-2">
+                <div className="flex justify-end gap-4">
+                  <motion.button
+                    type="button"
+                    className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200"
+                    onClick={() => router.push("/hradmin/employees")}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Cancel
+                  </motion.button>
 
-                {activeSection === "personal" && (
+                  {activeSection === "personal" && (
+                    <motion.button
+                      type="submit"
+                      className={`px-8 py-3 rounded-xl ${
+                        employeeId
+                          ? "bg-green-600 hover:bg-green-700"
+                          : "bg-blue-600 hover:bg-blue-700"
+                      } text-white transition-all duration-200 flex items-center gap-2`}
+                      disabled={loading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            {employeeId ? "Update Employee" : "Save and Exit"}
+                          </span>
+                        </>
+                      )}
+                    </motion.button>
+                  )}
+
                   <motion.button
                     type="submit"
-                    className={`px-8 py-3 rounded-xl ${
-                      employeeId
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-blue-600 hover:bg-blue-700"
-                    } text-white transition-all duration-200 flex items-center gap-2`}
+                    className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {loading ? (
                       <>
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          viewBox="0 0 24 24"
-                        >
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                           <circle
                             className="opacity-25"
                             cx="12"
@@ -1990,67 +2170,31 @@ const handleSubmit = async (e) => {
                     ) : (
                       <>
                         <span>
-                          {employeeId ? "Update Employee" : "Save and Exit"}
+                          {activeSection === "salary"
+                            ? employee
+                              ? "Update Employee"
+                              : "Save and Exit"
+                            : "Save and Continue"}
                         </span>
+                        {activeSection !== "salary" && (
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                          </svg>
+                        )}
                       </>
                     )}
                   </motion.button>
-                )}
-
-                <motion.button
-                  type="submit"
-                  className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
-                  disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>
-                        {activeSection === "salary"
-                          ? employee
-                            ? "Update Employee"
-                            : "Save and Exit"
-                          : "Save and Continue"}
-                      </span>
-                      {activeSection !== "salary" && (
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M13 7l5 5m0 0l-5 5m5-5H6"
-                          />
-                        </svg>
-                      )}
-                    </>
-                  )}
-                </motion.button>
+                </div>
               </div>
             </form>
           </motion.div>

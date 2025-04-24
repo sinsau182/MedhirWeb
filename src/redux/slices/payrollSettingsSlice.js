@@ -59,10 +59,13 @@ export const saveTDS = createAsyncThunk(
   async (tdsData, { getState, rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const companyId = localStorage.getItem("selectedCompanyId");
       const { isTdsConfigured } = getState().payrollSettings;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`;
       
-      // If TDS is already configured, use PUT to update, otherwise use POST to create
+      const url = isTdsConfigured 
+        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings/company/${companyId}`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`;
+
       const method = isTdsConfigured ? "put" : "post";
 
       const response = await axios({
@@ -75,33 +78,11 @@ export const saveTDS = createAsyncThunk(
         data: {
           tdsRate: parseFloat(tdsData.tdsRate),
           description: tdsData.description,
-          companyId: localStorage.getItem("selectedCompanyId"),
+          companyId: companyId,
         },
       });
       return response.data;
     } catch (error) {
-      // If we get a 404 saying settings already exist, try updating instead
-      if (error.response?.status === 404 && error.response?.data?.message?.includes("already exist")) {
-        try {
-          const token = getItemFromSessionStorage("token", null);
-          const response = await axios.put(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`,
-            {
-              tdsRate: parseFloat(tdsData.tdsRate),
-              description: tdsData.description,
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          return response.data;
-        } catch (updateError) {
-          return rejectWithValue(updateError.response?.data?.message || "Failed to update TDS settings");
-        }
-      }
       return rejectWithValue(error.response?.data?.message || "Failed to save TDS settings");
     }
   }
@@ -113,10 +94,13 @@ export const savePTAX = createAsyncThunk(
   async (ptaxData, { getState, rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const companyId = localStorage.getItem("selectedCompanyId");
       const { isPtaxConfigured } = getState().payrollSettings;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`;
       
-      // If Professional Tax is already configured, use PUT to update, otherwise use POST to create
+      const url = isPtaxConfigured 
+        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings/company/${companyId}`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`;
+
       const method = isPtaxConfigured ? "put" : "post";
 
       const response = await axios({
@@ -131,35 +115,11 @@ export const savePTAX = createAsyncThunk(
           amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
           amountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
           description: ptaxData.description,
-          companyId: localStorage.getItem("selectedCompanyId"),
+          companyId: companyId,
         },
       });
       return response.data;
     } catch (error) {
-      // If we get a 404 saying settings already exist, try updating instead
-      if (error.response?.status === 404 && error.response?.data?.message?.includes("already exist")) {
-        try {
-          const token = getItemFromSessionStorage("token", null);
-          const response = await axios.put(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`,
-            {
-              monthlySalaryThreshold: parseFloat(ptaxData.monthlySalaryThreshold),
-              amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
-              amountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
-              description: ptaxData.description,
-            },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          return response.data;
-        } catch (updateError) {
-          return rejectWithValue(updateError.response?.data?.message || "Failed to update Professional Tax settings");
-        }
-      }
       return rejectWithValue(error.response?.data?.message || "Failed to save Professional Tax settings");
     }
   }
