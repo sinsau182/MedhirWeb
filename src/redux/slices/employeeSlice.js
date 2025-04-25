@@ -3,8 +3,7 @@ import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -13,11 +12,14 @@ export const fetchEmployees = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
-      const response = await fetch(`${API_BASE_URL}/companies/${company}/employees`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/companies/${company}/employees`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch employees");
@@ -29,29 +31,6 @@ export const fetchEmployees = createAsyncThunk(
     }
   }
 );
-
-// // Fetch all employees
-// export const fetchAllEmployees = createAsyncThunk(
-//   "employees/fetchAllEmployees",
-//   async (_, { rejectWithValue }) => {
-//     try {
-//       const token = getItemFromSessionStorage("token", null);
-//       const response = await fetch(`${API_BASE_URL}/employees`, {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
-//       if (!response.ok) {
-//         throw new Error("Failed to fetch employees");
-//       }
-//       return await response.json();
-//     } catch (error) {
-//       return rejectWithValue(error.message);
-//     }
-//   }
-// );
-
-// Create employee
 
 export const createEmployee = createAsyncThunk(
   "employee/createEmployee",
@@ -70,9 +49,6 @@ export const createEmployee = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error("Error creating employee:", error);
-      // return rejectWithValue(
-      //   error.response ? error.response.data : error.message
-      // );
     }
   }
 );
@@ -84,12 +60,16 @@ export const updateEmployee = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
 
-      const response = await axios.put(`${API_BASE_URL}/employees/${id}`, updatedData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.put(
+        `${API_BASE_URL}/employees/${id}`,
+        updatedData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.data) {
         throw new Error("Failed to update employee");
