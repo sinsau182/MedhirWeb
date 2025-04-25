@@ -23,7 +23,14 @@ function Employees() {
   const { employees, loading, err } = useSelector((state) => state.employees);
 
   useEffect(() => {
-    dispatch(fetchEmployees());
+    const fetchData = async () => {
+      try {
+        await dispatch(fetchEmployees()).unwrap();
+      } catch (error) {
+        toast.error("Failed to fetch employees data");
+      }
+    };
+    fetchData();
   }, [dispatch]);
 
   const handleRowClick = (employee) => {
@@ -160,7 +167,6 @@ function Employees() {
 
     switch (activeTab) {
       case "Basic":
-        // Convert any potential objects to strings
         return typeof employee[key] === "object"
           ? employee[key]
             ? JSON.stringify(employee[key])
@@ -169,43 +175,19 @@ function Employees() {
 
       case "ID Proofs":
         if (key === "name" || key === "employeeId")
-          return typeof employee[key] === "object"
-            ? employee[key]
-              ? JSON.stringify(employee[key])
-              : ""
-            : employee[key] || "";
+          return employee[key] || "";
 
-        return employee.idProofs
-          ? typeof employee.idProofs[key] === "object"
-            ? employee.idProofs[key]
-              ? JSON.stringify(employee.idProofs[key])
-              : ""
-            : employee.idProofs[key] || ""
-          : "";
+        return employee.idProofs?.[key] || "";
 
       case "Salary Details":
         if (key === "name" || key === "employeeId")
-          return typeof employee[key] === "object"
-            ? employee[key]
-              ? JSON.stringify(employee[key])
-              : ""
-            : employee[key] || "";
+          return employee[key] || "";
 
-        return employee.salaryDetails
-          ? typeof employee.salaryDetails[key] === "object"
-            ? employee.salaryDetails[key]
-              ? JSON.stringify(employee.salaryDetails[key])
-              : ""
-            : employee.salaryDetails[key] || ""
-          : "";
+        return employee.salaryDetails?.[key] || "";
 
       case "Bank Details":
         if (key === "name" || key === "employeeId")
-          return typeof employee[key] === "object"
-            ? employee[key]
-              ? JSON.stringify(employee[key])
-              : ""
-            : employee[key] || "";
+          return employee[key] || "";
 
         if (key === "passbookDoc") {
           return employee.bankDetails?.passbookImgUrl ? (
@@ -223,39 +205,20 @@ function Employees() {
           );
         }
 
-        return employee.bankDetails
-          ? typeof employee.bankDetails[key] === "object"
-            ? employee.bankDetails[key]
-              ? JSON.stringify(employee.bankDetails[key])
-              : ""
-            : employee.bankDetails[key] || ""
-          : "";
+        return employee.bankDetails?.[key] || "";
 
       case "Leaves Policy":
         if (key === "name" || key === "employeeId" || key === "departmentName")
-          return typeof employee[key] === "object"
-            ? employee[key]
-              ? JSON.stringify(employee[key])
-              : ""
-            : employee[key] || "";
+          return employee[key] || "";
 
         if (key === "leavePolicy")
-          return employee.leaveDetails
-            ? typeof employee.leaveDetails[key] === "object"
-              ? employee.leaveDetails[key]
-                ? JSON.stringify(employee.leaveDetails[key])
-                : "-"
-              : employee.leaveDetails[key] || "-"
-            : "-";
+          return employee.leavePolicyName || "-";
 
         if (key === "leaveType") {
-          const leaveTypes = employee.leaveDetails?.leaveTypes || [];
-          // Ensure leaveTypes is an array and join it properly
-          return Array.isArray(leaveTypes)
-            ? leaveTypes.join(", ")
-            : typeof leaveTypes === "object"
-            ? JSON.stringify(leaveTypes)
-            : leaveTypes || "-";
+          if (Array.isArray(employee.leaveTypeNames)) {
+            return employee.leaveTypeNames.filter(Boolean).join(", ") || "-";
+          }
+          return employee.leaveTypeNames || "-";
         }
         return "";
 

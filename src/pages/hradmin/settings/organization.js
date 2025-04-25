@@ -140,13 +140,19 @@ const OrganizationSettings = () => {
   };
 
   const handleDepartmentEdit = (department) => {
-    setEditingDepartment(department.id);
+    setEditingDepartment(department.departmentId);
     setDepartmentForm({
       name: department.name,
-      description: department.description,
-      head: department.head,
-      leavePolicy: department.leavePolicy,
-      weeklyHolidays: department.weeklyHolidays,
+      description: department.description || "",
+      head: department.departmentHead || "",
+      leavePolicy: {
+        value: department.leavePolicy,
+        label: policies.find(p => p.leavePolicyId === department.leavePolicy)?.name || department.leavePolicy
+      },
+      weeklyHolidays: department.weeklyHolidays?.split(",").map(day => ({
+        value: day.trim(),
+        label: day.trim()
+      })) || []
     });
   };
 
@@ -163,31 +169,21 @@ const OrganizationSettings = () => {
       if (!departmentForm.head) {
         newErrors.head = "Department head is required";
       }
-      if (
-        !departmentForm.weeklyHolidays ||
-        departmentForm.weeklyHolidays.length === 0
-      ) {
+      if (!departmentForm.weeklyHolidays || departmentForm.weeklyHolidays.length === 0) {
         newErrors.weeklyHolidays = "Weekly holidays are required";
       }
 
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
-
         setNotification({
           show: true,
           type: "error",
           message: "Please fill in all required fields",
         });
-
         setTimeout(() => {
-          setNotification({
-            show: false,
-            type: "",
-            message: "",
-          });
+          setNotification({ show: false, type: "", message: "" });
           setErrors({});
         }, 2000);
-
         return;
       }
 
@@ -196,12 +192,14 @@ const OrganizationSettings = () => {
         description: departmentForm.description || "",
         departmentHead: departmentForm.head,
         leavePolicy: departmentForm.leavePolicy.value,
-        weeklyHolidays: departmentForm.weeklyHolidays
-          .map((day) => day.value)
-          .join(","),
+        weeklyHolidays: departmentForm.weeklyHolidays.map(day => day.value).join(","),
+        companyId: selectedCompanyId
       };
 
-      await dispatch(updateDepartment({ id, departmentData })).unwrap();
+      await dispatch(updateDepartment({ 
+        id: selectedDepartment.departmentId, 
+        departmentData 
+      })).unwrap();
 
       setNotification({
         show: true,
@@ -220,15 +218,11 @@ const OrganizationSettings = () => {
       });
       setIsFormChanged(false);
 
-      // Refresh departments list without page reload
+      // Refresh departments list
       dispatch(fetchDepartments());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
       setNotification({
@@ -236,13 +230,8 @@ const OrganizationSettings = () => {
         type: "error",
         message: error || "Failed to update department. Please try again.",
       });
-
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -251,7 +240,7 @@ const OrganizationSettings = () => {
     try {
       if (!selectedDepartment) return;
 
-      await dispatch(deleteDepartment(selectedDepartment.id)).unwrap();
+      await dispatch(deleteDepartment(selectedDepartment.departmentId)).unwrap();
 
       setNotification({
         show: true,
@@ -270,15 +259,11 @@ const OrganizationSettings = () => {
       });
       setIsFormChanged(false);
 
-      // Refresh departments list without page reload
+      // Refresh departments list
       dispatch(fetchDepartments());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
       setNotification({
@@ -286,13 +271,8 @@ const OrganizationSettings = () => {
         type: "error",
         message: error || "Failed to delete department. Please try again.",
       });
-
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -403,32 +383,57 @@ const OrganizationSettings = () => {
   };
 
   const handleDesignationEdit = (designation) => {
-    setEditingDesignation(designation.id);
+    setEditingDesignation(designation.designationId);
     setDesignationForm({
       name: designation.name,
-      description: designation.description,
-      department: designation.department,
-      manager: designation.manager,
-      overtimeEligible: designation.overtimeEligible,
+      description: designation.description || "",
+      department: {
+        value: designation.department,
+        label: reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department
+      },
+      manager: designation.manager || false,
+      overtimeEligible: designation.overtimeEligible || false
     });
   };
 
   const handleDesignationUpdate = async () => {
     try {
+      const newErrors = {};
+
+      if (!designationForm.name) {
+        newErrors.name = "Designation name is required";
+      }
+      if (!designationForm.department) {
+        newErrors.department = "Department is required";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setNotification({
+          show: true,
+          type: "error",
+          message: "Please fill in all required fields",
+        });
+        setTimeout(() => {
+          setNotification({ show: false, type: "", message: "" });
+          setErrors({});
+        }, 2000);
+        return;
+      }
+
       const designationData = {
         name: designationForm.name,
-        department: designationForm.department.value,
         description: designationForm.description || "",
+        department: designationForm.department.value,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
+        companyId: selectedCompanyId
       };
 
-      await dispatch(
-        updateDesignation({
-          id: selectedDesignation.id,
-          designationData,
-        })
-      ).unwrap();
+      await dispatch(updateDesignation({ 
+        id: selectedDesignation.designationId, 
+        designationData 
+      })).unwrap();
 
       setNotification({
         show: true,
@@ -436,46 +441,31 @@ const OrganizationSettings = () => {
         message: "Designation updated successfully!",
       });
 
-      // Refresh the designations list without page reload
-      dispatch(fetchDesignations());
-
-      // Reset form and close modal
       setShowDesignationModal(false);
       setSelectedDesignation(null);
       setDesignationForm({
         name: "",
-        department: "",
         description: "",
+        department: "",
         manager: false,
         overtimeEligible: false,
       });
+      setIsFormChanged(false);
+
+      // Refresh designations list
+      dispatch(fetchDesignations());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
-      // Extract error message properly
-      const errorMessage =
-        error?.message ||
-        (typeof error === "object" ? JSON.stringify(error) : error) ||
-        "Failed to update designation. Please try again.";
-
       setNotification({
         show: true,
         type: "error",
-        message: errorMessage,
+        message: error || "Failed to update designation. Please try again.",
       });
-
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -689,7 +679,9 @@ const OrganizationSettings = () => {
 
   const handleDesignationDelete = async () => {
     try {
-      await dispatch(deleteDesignation(selectedDesignation.id)).unwrap();
+      if (!selectedDesignation) return;
+
+      await dispatch(deleteDesignation(selectedDesignation.designationId)).unwrap();
 
       setNotification({
         show: true,
@@ -697,26 +689,22 @@ const OrganizationSettings = () => {
         message: "Designation deleted successfully!",
       });
 
-      // Refresh the designations list without page reload
-      dispatch(fetchDesignations());
-
-      // Reset form and close modal
       setShowDesignationModal(false);
       setSelectedDesignation(null);
       setDesignationForm({
         name: "",
-        department: "",
         description: "",
+        department: "",
         manager: false,
         overtimeEligible: false,
       });
+      setIsFormChanged(false);
+
+      // Refresh designations list
+      dispatch(fetchDesignations());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
       setNotification({
@@ -724,14 +712,8 @@ const OrganizationSettings = () => {
         type: "error",
         message: error || "Failed to delete designation. Please try again.",
       });
-
-      // Auto-hide notification after 2 seconds
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -802,8 +784,16 @@ const OrganizationSettings = () => {
             ))}
           </div>
 
-          {/* Tables Container with Fixed Height */}
-          <div className="h-[calc(100vh-280px)] overflow-hidden">
+          {/* Tables Container with Dynamic Height */}
+          <div className={`overflow-hidden ${
+            activeTab === "departments" 
+              ? reduxDepartments.length <= 8
+                ? "h-auto" 
+                : "h-[calc(100vh-280px)]"
+              : fetchedDesignations.length <= 8
+                ? "h-auto" 
+                : "h-[calc(100vh-280px)]"
+          }`}>
             {/* Departments Table */}
             {activeTab === "departments" && (
               <div className="bg-white rounded-lg shadow h-full">

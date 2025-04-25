@@ -997,6 +997,7 @@ function EmployeeForm() {
         passport: { imgField: "passportImgUrl" },
         drivingLicense: { imgField: "drivingLicenseImgUrl" },
         voterId: { imgField: "voterIdImgUrl" },
+        passbookImgUrl: { imgField: "passbookImgUrl" },
       };
 
       const fields = fieldMappings[documentType];
@@ -1005,17 +1006,17 @@ function EmployeeForm() {
       console.log(`Uploading ${documentType} file:`, file.name);
 
       setFormData((prev) => {
-        const updatedIdProofs = {
-          ...prev.idProofs,
-          [fields.imgField]: file, // Store the File object for upload
-        };
-
-        console.log(`Updated form data for ${documentType}:`, updatedIdProofs);
-
-        return {
+        const updatedData = {
           ...prev,
-          idProofs: updatedIdProofs,
+          [documentType === "passbookImgUrl" ? "bankDetails" : "idProofs"]: {
+            ...(documentType === "passbookImgUrl" ? prev.bankDetails : prev.idProofs),
+            [fields.imgField]: file, // Store the File object for upload
+          },
         };
+
+        console.log(`Updated form data for ${documentType}:`, updatedData);
+
+        return updatedData;
       });
     }
   };
@@ -1484,24 +1485,6 @@ function EmployeeForm() {
                             }
                           />
                         </div>
-
-                        {/* <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>
-                            Profile Image
-                          </label>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className={inputClass}
-                            onChange={(e) =>
-                              handleInputChange(
-                                "employee",
-                                "employeeImgUrl",
-                                e.target.files[0]
-                              )
-                            }
-                          />
-                        </div> */}
                       </div>
 
                       {/* Right Column - Professional Information */}
@@ -1729,31 +1712,6 @@ function EmployeeForm() {
                                 </div>
                               )}
                             </div>
-
-                            {/* Overtime Eligible Section */}
-                            {/* <div className="space-y-2">
-                              <div className="flex items-center mb-3">
-                                <input
-                                  type="checkbox"
-                                  id="overtimeEligible"
-                                  checked={formData.employee.overtimeEligibile}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "employee",
-                                      "overtimeEligibile",
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <label
-                                  htmlFor="overtimeEligible"
-                                  className="ml-2 text-sm text-gray-700"
-                                >
-                                  Overtime Eligible
-                                </label>
-                              </div>
-                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -1944,49 +1902,118 @@ function EmployeeForm() {
                       </div>
 
                       {/* Document Upload Section */}
-                      <div className="mt-6 space-y-4">
-                        <h4 className="text-md font-medium text-gray-700">
+                      <div className="mt-2 space-y-1">
+                        <h4 className="text-sm font-medium text-gray-700">
                           Account Verification Document
                         </h4>
                         <div className="flex items-start space-x-6">
                           {/* Passbook Photo Upload */}
                           <div className="flex-1">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
-                              <div className="flex flex-col items-center justify-center space-y-2">
+                            <div className={`border-2 border-dashed rounded-lg p-2 transition-all duration-200 ${
+                              formData.bankDetails.passbookImgUrl 
+                                ? 'border-green-200 bg-green-50' 
+                                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                            }`}>
+                              <div className="flex flex-col items-center justify-center">
                                 <input
                                   type="file"
                                   id="passbook-upload"
                                   className="hidden"
                                   accept="image/*,.pdf"
-                                  onChange={(e) =>
-                                    handleFileUpload(
-                                      "passbookImgUrl",
-                                      e.target.files[0]
-                                    )
-                                  }
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      // Add file size validation (e.g., 5MB limit)
+                                      const maxSize = 5 * 1024 * 1024; // 5MB
+                                      if (file.size > maxSize) {
+                                        toast.error("File size should not exceed 5MB");
+                                        return;
+                                      }
+                                      // Add file type validation
+                                      const allowedTypes = [
+                                        "application/pdf",
+                                        "image/jpeg",
+                                        "image/jpg",
+                                        "image/png",
+                                      ];
+                                      if (!allowedTypes.includes(file.type)) {
+                                        toast.error("Please upload a valid PDF or image file");
+                                        return;
+                                      }
+                                      handleFileUpload("passbookImgUrl", file);
+                                    }
+                                  }}
                                 />
                                 <label
                                   htmlFor="passbook-upload"
-                                  className="cursor-pointer text-center"
+                                  className="cursor-pointer text-center group"
                                 >
-                                  <div className="flex flex-col items-center space-y-2">
-                                    <FiUpload className="w-8 h-8 text-gray-400" />
-                                    <span className="text-sm font-medium text-gray-600">
-                                      Upload Passbook/Cancelled Cheque
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      Click to upload or drag and drop
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      PDF or Image file
-                                    </span>
+                                  <div className="flex flex-col items-center space-y-1">
+                                    <div className={`p-1 rounded-full ${
+                                      formData.bankDetails.passbookImgUrl 
+                                        ? 'bg-green-100 text-green-600' 
+                                        : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
+                                    }`}>
+                                      <FiUpload className="w-4 h-4" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                      <p className="text-xs font-medium text-gray-700">
+                                        {formData.bankDetails.passbookImgUrl 
+                                          ? 'Upload a different file' 
+                                          : 'Upload Passbook/Cancelled Cheque'}
+                                      </p>
+                                      <p className="text-[10px] text-gray-500">
+                                        PDF or Image file (max 5MB)
+                                      </p>
+                                    </div>
                                   </div>
                                 </label>
                               </div>
                               {formData.bankDetails.passbookImgUrl && (
-                                <div className="mt-2 text-sm text-gray-600">
-                                  File:{" "}
-                                  {formData.bankDetails.passbookImgUrl.name}
+                                <div className="mt-1.5 flex items-center justify-between bg-white rounded-lg p-1.5 shadow-sm">
+                                  <div className="flex items-center space-x-2">
+                                    {formData.bankDetails.passbookImgUrl instanceof File ? (
+                                      <img
+                                        src={URL.createObjectURL(formData.bankDetails.passbookImgUrl)}
+                                        alt="Passbook preview"
+                                        className="w-8 h-8 object-cover rounded border border-gray-200"
+                                      />
+                                    ) : (
+                                      <img
+                                        src={formData.bankDetails.passbookImgUrl}
+                                        alt="Passbook preview"
+                                        className="w-8 h-8 object-cover rounded border border-gray-200"
+                                      />
+                                    )}
+                                    <div className="flex flex-col">
+                                      <span className="text-xs font-medium text-gray-700 truncate max-w-[180px]">
+                                        {formData.bankDetails.passbookImgUrl instanceof File
+                                          ? formData.bankDetails.passbookImgUrl.name
+                                          : "Passbook Document"}
+                                      </span>
+                                      <span className="text-[10px] text-gray-500">
+                                        {formData.bankDetails.passbookImgUrl instanceof File
+                                          ? `${(formData.bankDetails.passbookImgUrl.size / 1024 / 1024).toFixed(2)} MB`
+                                          : "Uploaded Document"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        bankDetails: {
+                                          ...prev.bankDetails,
+                                          passbookImgUrl: null,
+                                        },
+                                      }));
+                                    }}
+                                    className="p-0.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-500 transition-colors"
+                                    title="Remove file"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
                                 </div>
                               )}
                             </div>
