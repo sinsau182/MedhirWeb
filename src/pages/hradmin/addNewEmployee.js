@@ -1,21 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-// import { Card } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
-// import Link from "next/link";
 import { toast } from "sonner";
 import { createEmployee, updateEmployee } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
-// import {
-//   FaUserCircle,
-//   FaUsers,
-//   FaCalendarCheck,
-//   FaMoneyCheckAlt,
-//   FaCog,
-//   FaArrowAltCircleUp,
-// } from "react-icons/fa";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { motion } from "framer-motion";
@@ -27,7 +16,6 @@ import {
   FiCheck,
   FiX,
 } from "react-icons/fi";
-// import Select from "react-select";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
 
@@ -217,15 +205,6 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
   );
 };
 
-// Add this function to generate the next employee ID
-// const generateEmployeeId = (lastEmployeeId) => {
-//   if (!lastEmployeeId) return "emp001";
-//   const currentNumber = parseInt(lastEmployeeId.slice(3));
-//   return `emp${(currentNumber + 1).toString().padStart(3, "0")}`;
-// };
-
-// Add this helper function before the EmployeeForm component
-
 const removeEmptyValues = (obj) => {
   const cleanObj = {};
   Object.entries(obj).forEach(([key, value]) => {
@@ -325,21 +304,14 @@ function EmployeeForm() {
     employee,
     activeSection: activeSectionParam,
   } = router.query;
-  // const [activePage, setActivePage] = useState("Employees");
+
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
-  // const [selectedTab, setSelectedTab] = useState(null);
   const [loading, setLoading] = useState(false);
-  // const [error, setError] = useState(null);
-  // const [success, setSuccess] = useState(null);
-  // const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previewModal, setPreviewModal] = useState({ show: false });
   const [activeSection, setActiveSection] = useState("personal");
-  // const [lastEmployeeId, setLastEmployeeId] = useState("");
-  // const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
-  // const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
 
@@ -607,19 +579,6 @@ function EmployeeForm() {
     });
   };
 
-  // const handleNestedInputChange = (section, parentField, field, value) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     [section]: {
-  //       ...prev,
-  //       [parentField]: {
-  //         ...prev[section][parentField],
-  //         [field]: value,
-  //       },
-  //     },
-  //   }));
-  // };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -820,16 +779,6 @@ function EmployeeForm() {
       errors.joiningDate = "Date of joining is required";
     }
 
-    // // Only validate format for new employees
-    // if (
-    //   !employeeId &&
-    //   employee.employeeId &&
-    //   !employee.employeeId.match(/^emp\d{3}$/)
-    // ) {
-    //   errors.employeeId =
-    //     "Employee ID must be in the format emp followed by 3 digits";
-    // }
-
     // Validate phone number format if provided
     if (employee.phone && !/^[0-9]{10}$/.test(employee.phone)) {
       errors.phone = "Invalid phone number format";
@@ -895,95 +844,10 @@ function EmployeeForm() {
     return true;
   };
 
-  // Function to handle direct employee creation from personal details
-  // const handleAddEmployeeFromPersonal = async () => {
-  //   if (!validateForm()) return;
-
-  //   setLoading(true);
-  //   try {
-  //     const personalFormData = new FormData();
-
-  //     // Clean the form data to remove empty values
-  //     const cleanEmployeeDetails = removeEmptyValues({
-  //       employeeId: formData.employee.employeeId,
-  //       name: formData.employee.name,
-  //       fathersName: formData.employee.fathersName,
-  //       gender: formData.employee.gender,
-  //       phone: formData.employee.phone,
-  //       alternatePhone: formData.employee.alternatePhone,
-  //       emailPersonal: formData.employee.emailPersonal,
-  //       emailOfficial: formData.employee.emailOfficial,
-  //       currentAddress: formData.employee.currentAddress,
-  //       permanentAddress: formData.employee.permanentAddress,
-  //       department: formData.employee.department,
-  //       designation: formData.employee.designation,
-  //       joiningDate: formData.employee.joiningDate,
-  //       reportingManager: formData.employee.reportingManager,
-  //       overtimeEligibile: formData.employee.overtimeEligibile,
-  //       weeklyOffs: formData.employee.weeklyOffs,
-  //     });
-
-  //     // Only append if we have non-empty data
-  //     if (Object.keys(cleanEmployeeDetails).length > 0) {
-  //       personalFormData.append(
-  //         "employee",
-  //         JSON.stringify(cleanEmployeeDetails)
-  //       );
-  //     }
-
-  //     // Add profile image if exists
-  //     if (formData.employee.employeeImgUrl instanceof File) {
-  //       personalFormData.append(
-  //         "employeeImgUrl",
-  //         formData.employee.employeeImgUrl
-  //       );
-  //     }
-
-  //     const result = await dispatch(createEmployee(personalFormData)).unwrap();
-  //     toast.success("Employee created successfully");
-  //     router.push("/hradmin/employees");
-  //   } catch (err) {
-  //     let errorMessage = "An error occurred";
-
-  //     if (err?.validationErrors) {
-  //       // Handle validation errors
-  //       const validationMessages = Object.entries(err.validationErrors)
-  //         .map(([field, message]) => `${field}: ${message}`)
-  //         .join("\n");
-  //       errorMessage = validationMessages;
-  //     } else if (typeof err === "string") {
-  //       errorMessage = err;
-  //     } else if (err?.message) {
-  //       errorMessage = err.message;
-  //     } else if (err?.error) {
-  //       errorMessage = err.error;
-  //     }
-
-  //     toast.error(errorMessage);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const handleTabClick = (tab) => {
-  //   router.push({
-  //     pathname: "/hradmin/employees",
-  //     query: { tab },
-  //   });
-  // };
-
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
     if (activeSectionParam) setActiveSection(activeSectionParam);
   }, [activeMainTab, activeSectionParam]);
-
-  // const handlePhotoUpload = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     // Handle the file upload logic here
-  //     console.log("Uploaded file:", file);
-  //   }
-  // };
 
   const handleFileUpload = (documentType, file) => {
     if (file) {
@@ -1009,7 +873,9 @@ function EmployeeForm() {
         const updatedData = {
           ...prev,
           [documentType === "passbookImgUrl" ? "bankDetails" : "idProofs"]: {
-            ...(documentType === "passbookImgUrl" ? prev.bankDetails : prev.idProofs),
+            ...(documentType === "passbookImgUrl"
+              ? prev.bankDetails
+              : prev.idProofs),
             [fields.imgField]: file, // Store the File object for upload
           },
         };
@@ -1046,7 +912,11 @@ function EmployeeForm() {
 
   const checkIdProofsCompletion = () => {
     return Boolean(
-      formData.idProofs.aadharNo?.trim() && formData.idProofs.panNo?.trim() && formData.idProofs.passport?.trim() && formData.idProofs.drivingLicense?.trim() && formData.idProofs.voterId?.trim()
+      formData.idProofs.aadharNo?.trim() &&
+        formData.idProofs.panNo?.trim() &&
+        formData.idProofs.passport?.trim() &&
+        formData.idProofs.drivingLicense?.trim() &&
+        formData.idProofs.voterId?.trim()
     );
   };
 
@@ -1561,10 +1431,6 @@ function EmployeeForm() {
                               required: true,
                               type: "date",
                             },
-                            // {
-                            //   label: "Reporting Manager",
-                            //   field: "reportingManager",
-                            // },
                           ].map(({ label, field, type, required }) => (
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
@@ -1917,11 +1783,13 @@ function EmployeeForm() {
                         <div className="flex items-start space-x-6">
                           {/* Passbook Photo Upload */}
                           <div className="flex-1">
-                            <div className={`border-2 border-dashed rounded-lg p-2 transition-all duration-200 ${
-                              formData.bankDetails.passbookImgUrl 
-                                ? 'border-green-200 bg-green-50' 
-                                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                            }`}>
+                            <div
+                              className={`border-2 border-dashed rounded-lg p-2 transition-all duration-200 ${
+                                formData.bankDetails.passbookImgUrl
+                                  ? "border-green-200 bg-green-50"
+                                  : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                              }`}
+                            >
                               <div className="flex flex-col items-center justify-center">
                                 <input
                                   type="file"
@@ -1934,7 +1802,9 @@ function EmployeeForm() {
                                       // Add file size validation (e.g., 5MB limit)
                                       const maxSize = 5 * 1024 * 1024; // 5MB
                                       if (file.size > maxSize) {
-                                        toast.error("File size should not exceed 5MB");
+                                        toast.error(
+                                          "File size should not exceed 5MB"
+                                        );
                                         return;
                                       }
                                       // Add file type validation
@@ -1945,7 +1815,9 @@ function EmployeeForm() {
                                         "image/png",
                                       ];
                                       if (!allowedTypes.includes(file.type)) {
-                                        toast.error("Please upload a valid PDF or image file");
+                                        toast.error(
+                                          "Please upload a valid PDF or image file"
+                                        );
                                         return;
                                       }
                                       handleFileUpload("passbookImgUrl", file);
@@ -1957,18 +1829,20 @@ function EmployeeForm() {
                                   className="cursor-pointer text-center group"
                                 >
                                   <div className="flex flex-col items-center space-y-1">
-                                    <div className={`p-1 rounded-full ${
-                                      formData.bankDetails.passbookImgUrl 
-                                        ? 'bg-green-100 text-green-600' 
-                                        : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
-                                    }`}>
+                                    <div
+                                      className={`p-1 rounded-full ${
+                                        formData.bankDetails.passbookImgUrl
+                                          ? "bg-green-100 text-green-600"
+                                          : "bg-blue-100 text-blue-600 group-hover:bg-blue-200"
+                                      }`}
+                                    >
                                       <FiUpload className="w-4 h-4" />
                                     </div>
                                     <div className="space-y-0.5">
                                       <p className="text-xs font-medium text-gray-700">
-                                        {formData.bankDetails.passbookImgUrl 
-                                          ? 'Upload a different file' 
-                                          : 'Upload Passbook/Cancelled Cheque'}
+                                        {formData.bankDetails.passbookImgUrl
+                                          ? "Upload a different file"
+                                          : "Upload Passbook/Cancelled Cheque"}
                                       </p>
                                       <p className="text-[10px] text-gray-500">
                                         PDF or Image file (max 5MB)
@@ -1980,28 +1854,41 @@ function EmployeeForm() {
                               {formData.bankDetails.passbookImgUrl && (
                                 <div className="mt-1.5 flex items-center justify-between bg-white rounded-lg p-1.5 shadow-sm">
                                   <div className="flex items-center space-x-2">
-                                    {formData.bankDetails.passbookImgUrl instanceof File ? (
+                                    {formData.bankDetails
+                                      .passbookImgUrl instanceof File ? (
                                       <img
-                                        src={URL.createObjectURL(formData.bankDetails.passbookImgUrl)}
+                                        src={URL.createObjectURL(
+                                          formData.bankDetails.passbookImgUrl
+                                        )}
                                         alt="Passbook preview"
                                         className="w-8 h-8 object-cover rounded border border-gray-200"
                                       />
                                     ) : (
                                       <img
-                                        src={formData.bankDetails.passbookImgUrl}
+                                        src={
+                                          formData.bankDetails.passbookImgUrl
+                                        }
                                         alt="Passbook preview"
                                         className="w-8 h-8 object-cover rounded border border-gray-200"
                                       />
                                     )}
                                     <div className="flex flex-col">
                                       <span className="text-xs font-medium text-gray-700 truncate max-w-[180px]">
-                                        {formData.bankDetails.passbookImgUrl instanceof File
-                                          ? formData.bankDetails.passbookImgUrl.name
+                                        {formData.bankDetails
+                                          .passbookImgUrl instanceof File
+                                          ? formData.bankDetails.passbookImgUrl
+                                              .name
                                           : "Passbook Document"}
                                       </span>
                                       <span className="text-[10px] text-gray-500">
-                                        {formData.bankDetails.passbookImgUrl instanceof File
-                                          ? `${(formData.bankDetails.passbookImgUrl.size / 1024 / 1024).toFixed(2)} MB`
+                                        {formData.bankDetails
+                                          .passbookImgUrl instanceof File
+                                          ? `${(
+                                              formData.bankDetails
+                                                .passbookImgUrl.size /
+                                              1024 /
+                                              1024
+                                            ).toFixed(2)} MB`
                                           : "Uploaded Document"}
                                       </span>
                                     </div>
@@ -2226,7 +2113,6 @@ function EmployeeForm() {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            {/* Preview content */}
           </div>
         </div>
       )}
