@@ -20,42 +20,41 @@ export const fetchExpenses = createAsyncThunk(
 );
 
 export const createExpense = createAsyncThunk(
-    "expenses/createExpense",
-    async (expenseData, { rejectWithValue }) => {
-      try {
-        let body;
-        let headers = {};
-  
-        if (expenseData.receipt) {
-          // If there's a file, use FormData
-          body = new FormData();
-          Object.entries(expenseData).forEach(([key, value]) => {
-            body.append(key, value);
-          });
-        } else {
-          // Otherwise, send JSON data
-          body = JSON.stringify(expenseData);
-          headers["Content-Type"] = "application/json";
-        }
-  
-        const response = await fetch("http://192.168.0.200:8084/expenses", {
-          method: "POST",
-          body,
-          headers,
+  "expenses/createExpense",
+  async (expenseData, { rejectWithValue }) => {
+    try {
+      let body;
+      let headers = {};
+
+      if (expenseData.receipt) {
+        // If there's a file, use FormData
+        body = new FormData();
+        Object.entries(expenseData).forEach(([key, value]) => {
+          body.append(key, value);
         });
-  
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to create expense");
-        }
-  
-        return data;
-      } catch (error) {
-        return rejectWithValue(error.message);
+      } else {
+        // Otherwise, send JSON data
+        body = JSON.stringify(expenseData);
+        headers["Content-Type"] = "application/json";
       }
+
+      const response = await fetch("http://192.168.0.200:8084/expenses", {
+        method: "POST",
+        body,
+        headers,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create expense");
+      }
+
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  );
-  
+  }
+);
 
 // Update employee
 export const updateExpense = createAsyncThunk(
@@ -102,70 +101,74 @@ export const deleteExpense = createAsyncThunk(
 // Slice
 
 const expenseSlice = createSlice({
-    name: "expenses",
-    initialState: {
-        expenses: [],
-        loading: false,
-        error: null,
-    },
-    reducers: {},
-    extraReducers: (builder) => {
-        builder
-        .addCase(fetchExpenses.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(fetchExpenses.fulfilled, (state, action) => {
-            state.loading = false;
-            state.expenses = action.payload;
-        })
-        .addCase(fetchExpenses.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload;
-        })
-        .addCase(createExpense.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(createExpense.fulfilled, (state, action) => {
-            state.loading = false;
-            state.expenses.push(action.payload);
-        })
-        .addCase(createExpense.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload;
-        })
-        .addCase(updateExpense.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(updateExpense.fulfilled, (state, action) => {
-            state.loading = false;
-            const index = state.expenses.findIndex((expense) => expense.id === action.payload.id);
-            if (index !== -1) {
-            state.expenses[index] = action.payload;
-            }
-        })
-        .addCase(updateExpense.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload;
-        })
-        .addCase(deleteExpense.pending, (state) => {
-            state.loading = true;
-            state.error = null;
-        })
-        .addCase(deleteExpense.fulfilled, (state, action) => {
-            state.loading = false;
-            const index = state.expenses.findIndex((expense) => expense.id === action.payload);
-            if (index !== -1) {
-            state.expenses.splice(index, 1);
-            }
-        })
-        .addCase(deleteExpense.rejected, (state, action) => {
-            state.loading = false;
-            state.error = action.payload;
-        });
-    },
-    });
+  name: "expenses",
+  initialState: {
+    expenses: [],
+    loading: false,
+    error: null,
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchExpenses.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchExpenses.fulfilled, (state, action) => {
+        state.loading = false;
+        state.expenses = action.payload;
+      })
+      .addCase(fetchExpenses.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(createExpense.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createExpense.fulfilled, (state, action) => {
+        state.loading = false;
+        state.expenses.push(action.payload);
+      })
+      .addCase(createExpense.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateExpense.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateExpense.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.expenses.findIndex(
+          (expense) => expense.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.expenses[index] = action.payload;
+        }
+      })
+      .addCase(updateExpense.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteExpense.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteExpense.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.expenses.findIndex(
+          (expense) => expense.id === action.payload
+        );
+        if (index !== -1) {
+          state.expenses.splice(index, 1);
+        }
+      })
+      .addCase(deleteExpense.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
+});
 
 export default expenseSlice.reducer;

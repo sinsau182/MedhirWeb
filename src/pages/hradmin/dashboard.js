@@ -39,6 +39,10 @@ import HradminNavbar from "@/components/HradminNavbar";
 
 import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
+import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const COLORS = [
   "#0088FE",
@@ -64,6 +68,9 @@ const Overview = () => {
 
   const [activeTab, setActiveTab] = useState("leaveRequests");
 
+  const [profileUpdates, setProfileUpdates] = useState([]);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [pendingCompOffs, setPendingCompOffs] = useState([]);
 
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
@@ -71,18 +78,12 @@ const Overview = () => {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
-  console.log("Employees:", employees.length); // Log the employees data
-
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-  };
-
-  const handleLogout = () => {
-    console.log("Logout clicked");
   };
 
   const handleAttendanceClick = () => {
@@ -97,7 +98,68 @@ const Overview = () => {
     setShowCharts(false); // Ensure Charts are hidden
   };
 
+  const fetchProfileUpdates = async () => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`,
+        { headers }
+      );
+      if (!response.ok) {
+        throw new Error(
+          `HTTP error! status: ${response.status} ${response.statusText}`
+        );
+      }
+      const data = await response.json();
+      setProfileUpdates(data);
+    } catch (error) {
+      toast.error(`Failed to fetch profile updates: ${error.message}`);
+      setProfileUpdates([]);
+    }
+  };
 
+  const fetchPendingRequests = async () => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data && Array.isArray(response.data.leaves)) {
+        const regularLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName !== "Comp-Off"
+        );
+        const compOffLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName === "Comp-Off"
+        );
+
+        setPendingLeaves(regularLeaves);
+        setPendingCompOffs(compOffLeaves);
+      } else {
+        setPendingLeaves([]);
+        setPendingCompOffs([]);
+      }
+    } catch (error) {
+      setPendingLeaves([]);
+      setPendingCompOffs([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingRequests();
+    fetchProfileUpdates();
+  }, []);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -135,7 +197,8 @@ const Overview = () => {
     {
       icon: <FaClock className="h-6 w-6 text-yellow-500" />,
       label: "Pending Tasks",
-      count: 12,
+      count:
+        profileUpdates.length + pendingLeaves.length + pendingCompOffs.length,
     },
 
     {
@@ -205,7 +268,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">Active employees</p>
                           <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
-                            <span className="text-xs text-blue-600 font-medium">+12 from last month</span>
+                            <span className="text-xs text-blue-600 font-medium">
+                              +12 from last month
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -232,7 +297,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">Tasks pending</p>
                           <div className="ml-2 px-2 py-1 bg-yellow-50 rounded-full">
-                            <span className="text-xs text-yellow-600 font-medium">High priority</span>
+                            <span className="text-xs text-yellow-600 font-medium">
+                              High priority
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -258,7 +325,9 @@ const Overview = () => {
                         <div className="flex items-center text-gray-600">
                           <p className="text-sm">Current status</p>
                           <div className="ml-2 px-2 py-1 bg-purple-50 rounded-full">
-                            <span className="text-xs text-purple-600 font-medium">March 2024</span>
+                            <span className="text-xs text-purple-600 font-medium">
+                              March 2024
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -478,4 +547,4 @@ color: "#4B5563",
   );
 };
 
-export default Overview;
+export default withAuth(Overview);

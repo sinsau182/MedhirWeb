@@ -19,7 +19,7 @@ RUN npm run build --omit=dev
 # Runner
 FROM base AS runner
 WORKDIR /app
-ENV NODE_ENV=production
+ENV NODE_ENV=custom
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.env ./.env

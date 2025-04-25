@@ -1,39 +1,47 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
-const API_URL = 'http://192.168.0.200:8083';
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const fetchLeavePolicies = createAsyncThunk(
-  'leavePolicy/fetchLeavePolicies',
+  "leavePolicy/fetchLeavePolicies",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/leave-policies`, {
+      const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
+      const response = await axios.get(`${API_URL}/leave-policies/company/${company}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
     } catch (error) {
       if (error.response) {
-        return rejectWithValue(error.response.data.message || 'Failed to fetch leave policies');
+        return rejectWithValue(
+          error.response.data.message || "Failed to fetch leave policies"
+        );
       }
-      return rejectWithValue('Network error: Unable to fetch leave policies');
+      return rejectWithValue("Network error: Unable to fetch leave policies");
     }
   }
 );
 
 export const createLeavePolicy = createAsyncThunk(
-  'leavePolicy/createLeavePolicy',
+  "leavePolicy/createLeavePolicy",
   async (policyData, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/leave-policies`, policyData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.post(
+        `${API_URL}/leave-policies`,
+        policyData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       // Fetch updated policies after successful creation
       await dispatch(fetchLeavePolicies());
       return response.data;
@@ -41,26 +49,30 @@ export const createLeavePolicy = createAsyncThunk(
       if (error.response) {
         const message = error.response.data.message;
         if (error.response.status === 409) {
-          return rejectWithValue('Leave policy with this name already exists');
+          return rejectWithValue("Leave policy with this name already exists");
         }
-        return rejectWithValue(message || 'Failed to create leave policy');
+        return rejectWithValue(message || "Failed to create leave policy");
       }
-      return rejectWithValue('Network error: Unable to create leave policy');
+      return rejectWithValue("Network error: Unable to create leave policy");
     }
   }
 );
 
 export const updateLeavePolicy = createAsyncThunk(
-  'leavePolicy/updateLeavePolicy',
+  "leavePolicy/updateLeavePolicy",
   async ({ id, policyData }, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_URL}/leave-policies/${id}`, policyData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        `${API_URL}/leave-policies/${id}`,
+        policyData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       // After successfully updating, fetch updated list
       await dispatch(fetchLeavePolicies());
       return response.data;
@@ -69,31 +81,37 @@ export const updateLeavePolicy = createAsyncThunk(
         const errorData = error.response.data;
         switch (error.response.status) {
           case 400:
-            return rejectWithValue('Invalid leave policy data. Please check all fields.');
+            return rejectWithValue(
+              "Invalid leave policy data. Please check all fields."
+            );
           case 401:
-            return rejectWithValue('Session expired. Please login again.');
+            return rejectWithValue("Session expired. Please login again.");
           case 404:
-            return rejectWithValue('Leave policy not found.');
+            return rejectWithValue("Leave policy not found.");
           case 500:
-            return rejectWithValue('Server error. Please try again later.');
+            return rejectWithValue("Server error. Please try again later.");
           default:
-            return rejectWithValue(errorData.message || errorData.error || 'Failed to update leave policy');
+            return rejectWithValue(
+              errorData.message ||
+                errorData.error ||
+                "Failed to update leave policy"
+            );
         }
       }
-      return rejectWithValue('Network error: Unable to update leave policy');
+      return rejectWithValue("Network error: Unable to update leave policy");
     }
   }
 );
 
 export const deleteLeavePolicy = createAsyncThunk(
-  'leavePolicy/deleteLeavePolicy',
+  "leavePolicy/deleteLeavePolicy",
   async (id, { rejectWithValue, dispatch }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getItemFromSessionStorage("token", null);
       await axios.delete(`${API_URL}/leave-policies/${id}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       // After successfully deleting, fetch updated list
       await dispatch(fetchLeavePolicies());
@@ -103,22 +121,26 @@ export const deleteLeavePolicy = createAsyncThunk(
         const errorData = error.response.data;
         switch (error.response.status) {
           case 401:
-            return rejectWithValue('Session expired. Please login again.');
+            return rejectWithValue("Session expired. Please login again.");
           case 404:
-            return rejectWithValue('Leave policy not found.');
+            return rejectWithValue("Leave policy not found.");
           case 500:
-            return rejectWithValue('Server error. Please try again later.');
+            return rejectWithValue("Server error. Please try again later.");
           default:
-            return rejectWithValue(errorData.message || errorData.error || 'Failed to delete leave policy');
+            return rejectWithValue(
+              errorData.message ||
+                errorData.error ||
+                "Failed to delete leave policy"
+            );
         }
       }
-      return rejectWithValue('Network error: Unable to delete leave policy');
+      return rejectWithValue("Network error: Unable to delete leave policy");
     }
   }
 );
 
 const leavePolicySlice = createSlice({
-  name: 'leavePolicy',
+  name: "leavePolicy",
   initialState: {
     loading: false,
     error: null,
@@ -126,7 +148,7 @@ const leavePolicySlice = createSlice({
     policies: [],
     lastUpdated: null,
     deleteSuccess: false,
-    updateSuccess: false
+    updateSuccess: false,
   },
   reducers: {
     resetLeavePolicyState: (state) => {
@@ -204,4 +226,4 @@ const leavePolicySlice = createSlice({
 });
 
 export const { resetLeavePolicyState } = leavePolicySlice.actions;
-export default leavePolicySlice.reducer; 
+export default leavePolicySlice.reducer;

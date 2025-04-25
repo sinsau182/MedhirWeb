@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules/users";
 
@@ -7,7 +8,7 @@ export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -29,7 +30,7 @@ export const addUser = createAsyncThunk(
   "users/addUser",
   async (userData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         method: "POST",
         headers: { 
@@ -40,7 +41,6 @@ export const addUser = createAsyncThunk(
       });
 
       const data = await response.json();
-      console.log("Response Data:", data.user.id);
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to add user");

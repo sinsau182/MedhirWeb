@@ -1,105 +1,123 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import axios from "axios";
 
-const API_URL = 'http://192.168.0.200:8083';
-
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 // Fetch departments for dropdown
 export const fetchDepartmentsForDropdown = createAsyncThunk(
-  'designation/fetchDepartments',
+  "designation/fetchDepartments",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/departments`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch departments');
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch departments"
+      );
     }
   }
 );
 
 // Fetch all designations
 export const fetchDesignations = createAsyncThunk(
-  'designation/fetchDesignations',
+  "designation/fetchDesignations",
   async (_, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(`${API_URL}/api/designations`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to fetch designations');
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch designations"
+      );
     }
   }
 );
 
 // Create designation
 export const createDesignation = createAsyncThunk(
-  'designation/create',
+  "designation/create",
   async (designationData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_URL}/api/designations`, designationData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.post(
+        `${API_URL}/api/designations`,
+        designationData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to create designation');
+      return rejectWithValue(
+        error.response?.data || "Failed to create designation"
+      );
     }
   }
 );
 
 // Update designation
 export const updateDesignation = createAsyncThunk(
-  'designation/update',
+  "designation/update",
   async ({ id, designationData }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.put(`${API_URL}/api/designations/${id}`, designationData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        `${API_URL}/api/designations/${id}`,
+        designationData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to update designation');
+      return rejectWithValue(
+        error.response?.data || "Failed to update designation"
+      );
     }
   }
 );
 
 // Delete designation
 export const deleteDesignation = createAsyncThunk(
-  'designation/delete',
+  "designation/delete",
   async (id, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = getItemFromSessionStorage("token", null);
       const response = await axios.delete(`${API_URL}/api/designations/${id}`, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || 'Failed to delete designation');
+      return rejectWithValue(
+        error.response?.data || "Failed to delete designation"
+      );
     }
   }
 );
 
 const designationSlice = createSlice({
-  name: 'designation',
+  name: "designation",
   initialState: {
     departments: [],
     designations: [],
@@ -107,7 +125,8 @@ const designationSlice = createSlice({
     error: null,
     success: false,
     updateSuccess: false,
-    deleteSuccess: false
+    deleteSuccess: false,
+    overtimeEligible: false,
   },
   reducers: {
     resetDesignationState: (state) => {
@@ -116,7 +135,7 @@ const designationSlice = createSlice({
       state.success = false;
       state.updateSuccess = false;
       state.deleteSuccess = false;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -188,8 +207,8 @@ const designationSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  }
+  },
 });
 
 export const { resetDesignationState } = designationSlice.actions;
-export default designationSlice.reducer; 
+export default designationSlice.reducer;

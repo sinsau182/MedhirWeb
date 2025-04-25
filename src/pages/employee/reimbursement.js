@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchExpenses, createExpense } from "@/redux/slices/expenseSlice";
 import { toast } from "sonner";
+import withAuth from "@/components/withAuth";
 
 const Expenses = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -23,7 +24,11 @@ const Expenses = () => {
   });
 
   const projectCategories = ["Travel", "Meals", "Fuel"];
-  const nonProjectCategories = ["Equipment", "Cleaning Liquid", "Advance Salary"];
+  const nonProjectCategories = [
+    "Equipment",
+    "Cleaning Liquid",
+    "Advance Salary",
+  ];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -36,24 +41,22 @@ const Expenses = () => {
       [name]: value,
     }));
   };
-    
-  
-    const handleFileChange = (e) => {
-      const file = e.target.files[0];
-      console.log("Selected file:", file); // Debugging
-      if (file) {
-        setExpenseData((prevData) => ({
-          ...prevData,
-          receipt: file,
-        }));
-      }
-    };
-  
-    const handleClick = () => {
-      if (fileInputRef.current) {
-        fileInputRef.current.click();
-      }
-    };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setExpenseData((prevData) => ({
+        ...prevData,
+        receipt: file,
+      }));
+    }
+  };
+
+  const handleClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   // Fetch expenses when the component mounts
   useEffect(() => {
@@ -78,16 +81,16 @@ const Expenses = () => {
         <div className="p-5 bg-gray-100 h-full">
           {/* Page Heading */}
           <div className="mb-6 pt-16">
-            <h1 className="text-2xl font-bold text-gray-800">
-            Reimbursements
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-800">Reimbursements</h1>
           </div>
 
           {/* Content Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Submit New Expense */}
             <div className="bg-white shadow-md rounded-lg p-6 md:border-r md:border-gray-300">
-              <h2 className="text-lg font-semibold mb-4">Submit New Reimbursement</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                Submit New Reimbursement
+              </h2>
               <form>
                 {/* Expense Type Selection */}
                 <div className="mb-4">
@@ -102,10 +105,10 @@ const Expenses = () => {
                         value="project"
                         checked={expenseData.expenseType === "project"}
                         onChange={(e) => {
-                          setExpenseData(prev => ({
+                          setExpenseData((prev) => ({
                             ...prev,
                             expenseType: e.target.value,
-                            category: "" // Reset category when type changes
+                            category: "", // Reset category when type changes
                           }));
                         }}
                         className="mr-2"
@@ -119,10 +122,10 @@ const Expenses = () => {
                         value="non-project"
                         checked={expenseData.expenseType === "non-project"}
                         onChange={(e) => {
-                          setExpenseData(prev => ({
+                          setExpenseData((prev) => ({
                             ...prev,
                             expenseType: e.target.value,
-                            category: "" // Reset category when type changes
+                            category: "", // Reset category when type changes
                           }));
                         }}
                         className="mr-2"
@@ -160,14 +163,17 @@ const Expenses = () => {
                       required
                     >
                       <option value="">Select a category</option>
-                      {expenseData.expenseType === "project" 
-                        ? projectCategories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                      {expenseData.expenseType === "project"
+                        ? projectCategories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
                           ))
-                        : nonProjectCategories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))
-                      }
+                        : nonProjectCategories.map((cat) => (
+                            <option key={cat} value={cat}>
+                              {cat}
+                            </option>
+                          ))}
                     </select>
                   </div>
                 </div>
@@ -254,7 +260,9 @@ const Expenses = () => {
                 showAllExpenses ? "h-[600px]" : "h-[550px]"
               }`}
             >
-              <h2 className="text-lg font-semibold mb-4">Recent Reimbursements </h2>
+              <h2 className="text-lg font-semibold mb-4">
+                Recent Reimbursements{" "}
+              </h2>
               <div
                 className={`space-y-4 ${
                   showAllExpenses ? "overflow-y-auto" : "overflow-hidden"
@@ -323,4 +331,4 @@ const Expenses = () => {
   );
 };
 
-export default Expenses;
+export default withAuth(Expenses);

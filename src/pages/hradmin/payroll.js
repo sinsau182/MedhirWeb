@@ -1,88 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { Search, Calendar } from "lucide-react";
+import { Search, Calendar, Check, X, Pencil } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
-import { set } from "mongoose";
+import withAuth from "@/components/withAuth";
+import { toast } from "sonner";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
-// Sample data
-const payrollData = [
-  {
-    employeeId: "EMP025",
-    name: "random nigga",
-    paidDays: "22/22",
-    ctc: "50,000",
-    salary: "45,000",
-    basic: "25,000",
-    hra: "10,000",
-    allowance: "5,000",
-    overtimePay: "2,000",
-    deductions: "3,000",
-    reimbursement: "1,000",
-    netPay: "45,000",
-  },
-  // ... other payroll data
-];
-
-const advanceData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    oldAdvance: "10,000",
-    thisMonthAdvance: "5,000",
-    deductInThisMonth: "2,000",
-    balanceForNextMonth: "13,000",
-  },
-  // ... other advance data
-];
-
-const reimbursementData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    reimbursementAmount: "2,000",
-    status: "Approved",
-    type: "Travel",
-    category: "Local Transport",
-    description: "Client meeting travel",
-    receipt: "receipt.pdf",
-  },
-  // ... other reimbursement data
-];
-
-const paymentHistoryData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    paymentDate: "2024-03-01",
-    amount: "45,000",
-    paymentMode: "Bank Transfer",
-    status: "Paid",
-  },
-  // ... other payment history data
-];
-
-const deductionsData = [
-  {
-    employeeId: "EMP001",
-    name: "John Doe",
-    department: "Sales",
-    employeePF: "2,750",
-    employerPF: "2,750",
-    tds: "2,000",
-    profTax: "200",
-    advanceAdjusted: "2,000",
-    netDeductions: "5,000",
-  },
-  // ... other deductions data
-];
 
 function PayrollManagement() {
+  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+
   const paidDays = 25;
   const monthDays = 30;
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
@@ -96,6 +26,8 @@ function PayrollManagement() {
   const { employees, loading, err } = useSelector((state) => state.employees);
   const [tdsData, setTdsData] = useState([]);
   const [ptaxData, setPtaxData] = useState([]);
+  const [editingOvertime, setEditingOvertime] = useState(null);
+  const [overtimeValue, setOvertimeValue] = useState("");
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
@@ -112,20 +44,32 @@ function PayrollManagement() {
         setTdsData(await fetchTDS());
         setPtaxData(await fetchPTAX());
       } catch (error) {
-        console.error("Error fetching data:", error);
+        toast.error("Failed to fetch data");
       }
-    }
+    };
     fetchData();
   }, [dispatch]);
 
   const fetchTDS = async () => {
-    const token = localStorage.getItem("token");
-    const response = await fetch("http://192.168.0.200:8083/api/tds-settings", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const token = getItemFromSessionStorage("token", null);
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_API_BASE_URL + "/tds-settings/company/" + selectedCompanyId,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 404) {
+      // Return default TDS settings when not found
+      return {
+        tdsRate: 0,
+        description: "Default TDS settings",
+      };
+    }
+
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Failed to fetch TDS");
@@ -134,23 +78,79 @@ function PayrollManagement() {
   };
 
   const fetchPTAX = async () => {
-    const token = localStorage.getItem("token");
-    const response = await fetch("http://192.168.0.200:8083/api/professional-tax-settings", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const token = getItemFromSessionStorage("token", null);
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_API_BASE_URL + "/professional-tax-settings/company/" + selectedCompanyId,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 404) {
+      // Return default professional tax settings when not found
+      return {
+        monthlySalaryThreshold: 25000,
+        amountAboveThreshold: 200,
+        amountBelowThreshold: 0,
+        description: "Default Professional Tax settings",
+      };
+    }
+
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error || "Failed to fetch PF");
+      throw new Error(data.error || "Failed to fetch Professional Tax");
     }
     return data;
   };
 
-  console.log("tds: ", tdsData);
-  console.log("ptax: ", ptaxData);
+  const handleOvertimeEdit = (employeeId, currentValue) => {
+    setEditingOvertime(employeeId);
+    setOvertimeValue(currentValue);
+  };
 
+  const handleOvertimeSave = async (employeeId) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(
+        `http://192.168.0.200:8083/api/employees/${employeeId}/overtime`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            overtimePay: parseFloat(overtimeValue) || 0,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update overtime pay");
+      }
+
+      // Refresh the employee data
+      dispatch(fetchEmployees());
+      setEditingOvertime(null);
+      setOvertimeValue("");
+    } catch (error) {
+      toast.error("Failed to update overtime pay");
+    }
+  };
+
+  const handleOvertimeCancel = () => {
+    setEditingOvertime(null);
+    setOvertimeValue("");
+  };
+
+  const handleOvertimeKeyPress = (e, employeeId) => {
+    if (e.key === "Enter") {
+      handleOvertimeSave(employeeId);
+    }
+  };
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
@@ -158,55 +158,201 @@ function PayrollManagement() {
         <table className="w-full table-fixed">
           <thead>
             <tr className="border-b">
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">EMP ID</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">NAME</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">PAID DAYS</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">MONTHLY CTC</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">THIS MONTH</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">BASIC</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">HRA</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">ALLOWANCE</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">OVERTIME PAY</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">REIMB.</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">EMP. PF</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">EMPR. PF</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">DEDUCTIONS</th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">NET PAY</th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">
+                EMP ID
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                NAME
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">
+                PAID DAYS
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                MONTHLY CTC
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                THIS MONTH
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                BASIC
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                HRA
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                ALLOWANCE
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                OVERTIME PAY
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                REIMB.
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                EMP. PF
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                EMPR. PF
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+                DEDUCTIONS
+              </th>
+              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">
+                NET PAY
+              </th>
             </tr>
           </thead>
           <tbody>
             {employees
-              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter((employee) =>
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
               .map((employee, index) => {
-                const basic = parseFloat((employee.salaryDetails.basicSalary * (paidDays/monthDays)).toFixed(2));
-                const hra = parseFloat((employee.salaryDetails.hra * (paidDays/monthDays)).toFixed(2));
-                const allowance = parseFloat((employee.salaryDetails.allowances * (paidDays/monthDays)).toFixed(2));
+                const basic = parseFloat(
+                  (
+                    employee.salaryDetails.basicSalary *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const hra = parseFloat(
+                  (employee.salaryDetails.hra * (paidDays / monthDays)).toFixed(
+                    0
+                  )
+                );
+                const allowance = parseFloat(
+                  (
+                    employee.salaryDetails.allowances *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
                 const overtimePay = parseFloat(employee.overtimePay || 0);
                 const reimbursement = parseFloat(employee.reimbursement || 0);
-                const employeePF = parseFloat((employee.salaryDetails.employeePfContribution * (paidDays/monthDays)).toFixed(2));
-                const employerPF = parseFloat((employee.salaryDetails.employerPfContribution * (paidDays/monthDays)).toFixed(2));
-                const tds = parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2));
-                const profTax = employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold ? ptaxData.amountAboveThreshold : 0;
-                const advanceAdjusted = parseFloat(employee.advanceAdjusted || 0);
-                const deductions = parseFloat((tds + advanceAdjusted + profTax).toFixed(2));
-                const netPay = parseFloat((basic + hra + allowance + overtimePay + reimbursement - deductions).toFixed(2));
+                const employeePF = parseFloat(
+                  (
+                    employee.salaryDetails.employeePfContribution *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const employerPF = parseFloat(
+                  (
+                    employee.salaryDetails.employerPfContribution *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const tds = parseFloat(
+                  (
+                    employee.salaryDetails.monthlyCtc *
+                    (tdsData.tdsRate / 100)
+                  ).toFixed(0)
+                );
+                const profTax =
+                  employee.salaryDetails.monthlyCtc >
+                  ptaxData.monthlySalaryThreshold
+                    ? ptaxData.amountAboveThreshold
+                    : 0;
+                const advanceAdjusted = parseFloat(
+                  employee.advanceAdjusted || 0
+                );
+                const deductions = parseFloat(
+                  (tds + advanceAdjusted + profTax).toFixed(0)
+                );
+                const netPay = parseFloat(
+                  (
+                    basic +
+                    hra +
+                    allowance +
+                    overtimePay +
+                    reimbursement -
+                    deductions
+                  ).toFixed(0)
+                );
 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
-                    <td className="py-2 px-2 text-sm text-gray-800">{employee.employeeId}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">{employee.name}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">{paidDays}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{employee.salaryDetails.monthlyCtc}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays/monthDays)).toFixed(2))}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{basic}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      {employee.employeeId}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      {employee.name}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      {paidDays}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{employee.salaryDetails.monthlyCtc}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.monthlyCtc *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      )}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{basic}
+                    </td>
                     <td className="py-2 px-2 text-sm text-gray-800">₹{hra}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{allowance}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{overtimePay}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{reimbursement}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{employeePF}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{employerPF}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{deductions}</td>
-                    <td className="py-2 px-2 text-sm font-semibold text-gray-900">₹{netPay}</td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{allowance}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      {editingOvertime === employee.employeeId ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={overtimeValue}
+                            onChange={(e) => setOvertimeValue(e.target.value)}
+                            onKeyPress={(e) =>
+                              handleOvertimeKeyPress(e, employee.employeeId)
+                            }
+                            className="w-24 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter amount"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() =>
+                              handleOvertimeSave(employee.employeeId)
+                            }
+                            className="p-1 text-green-600 hover:text-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={handleOvertimeCancel}
+                            className="p-1 text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
+                          onClick={() =>
+                            handleOvertimeEdit(employee.employeeId, overtimePay)
+                          }
+                        >
+                          ₹{overtimePay}
+                          <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{reimbursement}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{employeePF}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{employerPF}
+                    </td>
+                    <td className="py-2 px-2 text-sm text-gray-800">
+                      ₹{deductions}
+                    </td>
+                    <td className="py-2 px-2 text-sm font-semibold text-gray-900">
+                      ₹{netPay}
+                    </td>
                   </tr>
                 );
               })}
@@ -222,41 +368,104 @@ function PayrollManagement() {
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee ID</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee PF</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Employer PF</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">TDS</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Professional Tax</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Advance Adjusted</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Net Deductions</th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Employee ID
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Employee PF
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Employer PF
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                TDS
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Professional Tax
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Advance Adjusted
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Net Deductions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {employees
-              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter((employee) =>
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
               .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employeePfContribution * (paidDays / monthDays)).toFixed(2))}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat((employee.salaryDetails.employerPfContribution * (paidDays / monthDays)).toFixed(2))}</td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹
-                    {parseFloat((employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)).toFixed(2))}
+                    {employee.employeeId}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.name}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.department}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
-                    {employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold
+                    {parseFloat(
+                      (
+                        employee.salaryDetails.employeePfContribution *
+                        (paidDays / monthDays)
+                      ).toFixed(0)
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹
+                    {parseFloat(
+                      (
+                        employee.salaryDetails.employerPfContribution *
+                        (paidDays / monthDays)
+                      ).toFixed(0)
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹
+                    {parseFloat(
+                      (
+                        employee.salaryDetails.monthlyCtc *
+                        (tdsData.tdsRate / 100)
+                      ).toFixed(0)
+                    )}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹
+                    {employee.salaryDetails.monthlyCtc >
+                    ptaxData.monthlySalaryThreshold
                       ? ptaxData.amountAboveThreshold
                       : 0}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.advanceAdjusted}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{parseFloat(((employee.salaryDetails.employerPfContribution + employee.salaryDetails.employeePfContribution +  (employee.salaryDetails.monthlyCtc * (tdsData.tdsRate / 100)) + (employee.salaryDetails.monthlyCtc > ptaxData.monthlySalaryThreshold
-                      ? ptaxData.amountAboveThreshold
-                      : 0)) * (paidDays/monthDays)).toFixed(2))}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.advanceAdjusted}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹
+                    {parseFloat(
+                      (
+                        (employee.salaryDetails.employerPfContribution +
+                          employee.salaryDetails.employeePfContribution +
+                          employee.salaryDetails.monthlyCtc *
+                            (tdsData.tdsRate / 100) +
+                          (employee.salaryDetails.monthlyCtc >
+                          ptaxData.monthlySalaryThreshold
+                            ? ptaxData.amountAboveThreshold
+                            : 0)) *
+                        (paidDays / monthDays)
+                      ).toFixed(0)
+                    )}
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -271,27 +480,57 @@ function PayrollManagement() {
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee ID</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Old Advance</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">This Month Advance</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Deduct in This Month</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Balance for Next Month</th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Employee ID
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Old Advance
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                This Month Advance
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Deduct in This Month
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Balance for Next Month
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {employees
-              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter((employee) =>
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
               .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.oldAdvance}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.thisMonthAdvance}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.deductInThisMonth}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.balanceForNextMonth}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.employeeId}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.name}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.department}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.oldAdvance}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.thisMonthAdvance}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.deductInThisMonth}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.balanceForNextMonth}
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -306,30 +545,66 @@ function PayrollManagement() {
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee ID</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Description</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Receipt</th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Employee ID
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Type
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Category
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Amount
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Receipt
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {employees
-              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter((employee) =>
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
               .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.type}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.category}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.description}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.reimbursementAmount}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.status}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.employeeId}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.name}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.department}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.type}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.category}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.description}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.reimbursementAmount}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.status}
+                  </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     <button
                       onClick={() => alert("No uploaded receipt")}
@@ -352,27 +627,57 @@ function PayrollManagement() {
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee ID</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Payment Date</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Payment Mode</th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Employee ID
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Payment Date
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Amount
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Payment Mode
+              </th>
+              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {employees
-              .filter((employee) => employee.name.toLowerCase().includes(searchQuery.toLowerCase()))
+              .filter((employee) =>
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
               .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.employeeId}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.name}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.paymentDate}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">₹{employee.amount}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.paymentMode}</td>
-                  <td className="py-2 px-2 text-xs text-gray-600">{employee.status}</td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.employeeId}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.name}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.department}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.paymentDate}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    ₹{employee.amount}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.paymentMode}
+                  </td>
+                  <td className="py-2 px-2 text-xs text-gray-600">
+                    {employee.status}
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -383,12 +688,16 @@ function PayrollManagement() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar 
-        isCollapsed={isSidebarCollapsed} 
-        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div
+        className={`flex-1 ${
+          isSidebarCollapsed ? "ml-16" : "ml-64"
+        } transition-all duration-300`}
+      >
         <HradminNavbar />
 
         <div className="p-6 mt-16">
@@ -415,26 +724,46 @@ function PayrollManagement() {
                   onClick={toggleCalendar}
                 >
                   <Calendar className="h-5 w-5" />
-                  <span className="font-medium text-base">{selectedYear}-{selectedMonth.toLocaleString('default', { month: 'long' })}</span>
+                  <span className="font-medium text-base">
+                    {selectedYear}-
+                    {selectedMonth.toLocaleString("default", { month: "long" })}
+                  </span>
                 </Badge>
                 {isCalendarOpen && (
                   <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                     <div className="p-3 border-b">
-                      <div className="text-sm font-medium text-gray-700">{selectedYear}</div>
+                      <div className="text-sm font-medium text-gray-700">
+                        {selectedYear}
+                      </div>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 p-3">
                       {[
-                        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                        "Jan",
+                        "Feb",
+                        "Mar",
+                        "Apr",
+                        "May",
+                        "Jun",
+                        "Jul",
+                        "Aug",
+                        "Sep",
+                        "Oct",
+                        "Nov",
+                        "Dec",
                       ].map((month) => (
                         <button
                           key={month}
                           className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                            month === selectedMonth.toLocaleString('default', { month: 'long' }).slice(0, 3) 
-                              ? 'bg-blue-50 text-blue-600 font-medium hover:bg-blue-100' 
-                              : 'hover:bg-gray-50 text-gray-700'
+                            month ===
+                            selectedMonth
+                              .toLocaleString("default", { month: "long" })
+                              .slice(0, 3)
+                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                              : "hover:bg-gray-50 text-gray-700"
                           }`}
-                          onClick={() => handleMonthSelection(month, selectedYear)}
+                          onClick={() =>
+                            handleMonthSelection(month, selectedYear)
+                          }
                         >
                           {month}
                         </button>
@@ -480,4 +809,4 @@ function PayrollManagement() {
   );
 }
 
-export default PayrollManagement;
+export default withAuth(PayrollManagement);

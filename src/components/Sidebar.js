@@ -25,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { FiLoader } from "react-icons/fi";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
@@ -33,13 +34,13 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const role = localStorage.getItem("currentRole");
+    const role = sessionStorage.getItem("currentRole");
     setCurrentRole(role);
 
     // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
       ...prev,
-      settings: true, // Always keep settings expanded
+      settings: true,
     }));
 
     const handleRouteChangeStart = () => setIsLoading(true);
@@ -97,20 +98,25 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       menuKey: "settings",
       subItems: [
         {
-          label: "Organization Settings",
+          label: "Organization",
           icon: <FaBuilding />,
           link: "/hradmin/settings/organization",
         },
         {
-          label: "Payroll Settings",
+          label: "Payroll",
           icon: <FaMoneyCheckAlt />,
           link: "/hradmin/settings/payrollsettings",
         },
         {
-          label: "Leave Settings",
+          label: "Leaves",
           icon: <FaCalendarAlt />,
           link: "/hradmin/settings/leave",
         },
+        {
+          label: "Admin Access",
+          icon: <FaUsers />,
+          link: "/hradmin/settings/admin-access",
+        }
       ],
     },
 
@@ -187,7 +193,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       {/* Spinner and Overlay */}
       {isLoading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+
+          <FiLoader className="w-10 h-10 animate-spin text-blue-600" />
+
         </div>
       )}
 
@@ -258,9 +266,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                               </span>
                               <span className="transform transition-transform duration-200">
                                 {isExpanded ? (
-                                  <FaChevronDown className="w-4 h-4" />
+                                  <FaAngleLeft className="w-4 h-4" />
                                 ) : (
-                                  <FaChevronRight className="w-4 h-4" />
+                                  <FaAngleRight className="w-4 h-4" />
                                 )}
                               </span>
                             </>

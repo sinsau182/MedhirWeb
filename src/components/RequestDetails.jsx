@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,386 +9,259 @@ import {
   DollarSign,
   Wallet,
   Eye,
+  Loader2,
 } from "lucide-react";
-import { RequestTab } from "@/lib/types";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
 import PropTypes from "prop-types";
+import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useDispatch, useSelector } from "react-redux";
+import Leaves from "@/pages/employee/leaves";
+import {
+  fetchPendingLeaveRequests,
+  fetchProfileUpdates,
+  updateLeaveStatus,
+  updateProfileRequestStatus,
+  clearErrors,
+} from "@/redux/slices/requestDetailsSlice";
+
+// --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
+const ChangesModal = ({ isOpen, onClose, changes }) => {
+  if (!isOpen || !changes || changes.length === 0) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg p-6 shadow-xl max-w-md w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">Field Changes</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-3 max-h-60 overflow-y-auto">
+          {changes.map((change, index) => (
+            <div key={index} className="border rounded p-3 bg-gray-50 text-sm">
+              <p className="font-medium text-gray-700 mb-1">
+                {change.fieldName}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-gray-500">Old Value:</p>
+                  <p className="text-gray-800 break-words">
+                    {change.oldValue || "(empty)"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">New Value:</p>
+                  <p className="text-green-700 break-words">
+                    {change.newValue || "(empty)"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 text-right">
+          <Button onClick={onClose} variant="outline" size="sm">
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+ChangesModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  changes: PropTypes.arrayOf(
+    PropTypes.shape({
+      fieldName: PropTypes.string,
+      oldValue: PropTypes.string,
+      newValue: PropTypes.string,
+    })
+  ),
+};
+// --- End Modal Component ---
 
 const RequestDetails = ({ activeTab, onTabChange }) => {
-  const { toast } = useToast();
+  const dispatch = useDispatch();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
 
-  // Fetch leave requests
-  const { data: leaveRequests = [], isLoading: isLoadingLeave } = useQuery({
-    queryKey: ["/api/leave-requests"],
-    enabled: activeTab === "leaveRequests",
-  });
+  // Get state from Redux
+  const {
+    pendingLeaves,
+    pendingCompOffs,
+    profileUpdates,
+    loading,
+    error,
+    profileLoading,
+    profileError,
+    approvingProfileUpdateId,
+    approvingLeaveId,
+    rejectingLeaveId,
+  } = useSelector((state) => state.requestDetails);
 
-  // Fetch profile updates
-  const { data: profileUpdates = [], isLoading: isLoadingProfile } = useQuery({
-    queryKey: ["/api/profile-updates"],
-    enabled: activeTab === "profileUpdates",
-  });
+  // Placeholder for expense and advance requests (not implemented in the slice)
+  const [expenseRequests, setExpenseRequests] = useState([]);
+  const [isLoadingExpense, setIsLoadingExpense] = useState(false);
+  const [advanceRequests, setAdvanceRequests] = useState([]);
+  const [isLoadingAdvance, setIsLoadingAdvance] = useState(false);
 
-  // Fetch expense requests
-  const { data: expenseRequests = [], isLoading: isLoadingExpense } = useQuery({
-    queryKey: ["/api/expense-requests"],
-    enabled: activeTab === "expenseRequests",
-  });
-
-  // Fetch advance requests
-  const { data: advanceRequests = [], isLoading: isLoadingAdvance } = useQuery({
-    queryKey: ["/api/advance-requests"],
-    enabled: activeTab === "advanceRequests",
-  });
-
-  // Fetch comp off requests
-  const { data: compOffRequests = [], isLoading: isLoadingCompOff } = useQuery({
-    queryKey: ["/api/comp-off-requests"],
-    enabled: activeTab === "compOffRequests",
-  });
-
-  // Update leave request status
-  const updateLeaveStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/leave-requests/${id}/status`, {
-        status,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
-      toast({
-        title: "Status updated",
-        description: "The leave request has been updated successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the leave request.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update profile update status
-  const updateProfileStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/profile-updates/${id}/status`, {
-        status,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/profile-updates"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
-      toast({
-        title: "Status updated",
-        description: "The profile update has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the profile update.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update expense request status
-  const updateExpenseStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/expense-requests/${id}/status`, {
-        status,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
-      toast({
-        title: "Status updated",
-        description: "The expense request has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the expense request.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update advance request status
-  const updateAdvanceStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/advance-requests/${id}/status`, {
-        status,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/advance-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
-      toast({
-        title: "Status updated",
-        description: "The advance request has been updated successfully.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the advance request.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update comp off request status
-  const updateCompOffStatus = useMutation({
-    mutationFn: async ({ id, status }) => {
-      return apiRequest("PATCH", `/api/comp-off-requests/${id}/status`, {
-        status,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/comp-off-requests"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/requests/counts"] });
-      toast({
-        title: "Status updated",
-        description: "The comp off request has been updated successfully.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "There was an error updating the comp off request.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleApprove = (type, id) => {
-    switch (type) {
-      case "leaveRequests":
-        updateLeaveStatus.mutate({ id, status: "approved" });
-        break;
-      case "profileUpdates":
-        updateProfileStatus.mutate({ id, status: "approved" });
-        break;
-      case "expenseRequests":
-        updateExpenseStatus.mutate({ id, status: "approved" });
-        break;
-      case "advanceRequests":
-        updateAdvanceStatus.mutate({ id, status: "approved" });
-        break;
-      case "compOffRequests":
-        updateCompOffStatus.mutate({ id, status: "approved" });
-        break;
-    }
-  };
-
-  const handleReject = (type, id) => {
-    switch (type) {
-      case "leaveRequests":
-        updateLeaveStatus.mutate({ id, status: "rejected" });
-        break;
-      case "profileUpdates":
-        updateProfileStatus.mutate({ id, status: "rejected" });
-        break;
-      case "expenseRequests":
-        updateExpenseStatus.mutate({ id, status: "rejected" });
-        break;
-      case "advanceRequests":
-        updateAdvanceStatus.mutate({ id, status: "rejected" });
-        break;
-      case "compOffRequests":
-        updateCompOffStatus.mutate({ id, status: "rejected" });
-        break;
+  // Function to open the modal
+  const handleViewDetails = (changes) => {
+    if (changes && changes.length > 0) {
+      setSelectedUpdateChanges(changes);
+      setIsModalOpen(true);
+    } else {
+      toast.info("No specific field changes available for this request.");
     }
   };
 
   const formatDate = (dateString) => {
-    return format(new Date(dateString), "MMM dd, yyyy");
+    if (!dateString) return "N/A";
+    try {
+      // Parse the MongoDB date format and convert to local date
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (error) {
+      return "Invalid Date";
+    }
   };
 
+  // Fetch data on component mount
+  useEffect(() => {
+    dispatch(fetchPendingLeaveRequests());
+    dispatch(fetchProfileUpdates());
+
+    // Cleanup function
+    return () => {
+      dispatch(clearErrors());
+    };
+  }, [dispatch]);
+
+  // --- Approve/Reject Logic for Profile Updates ---
+  const handleApproveProfileUpdate = async (employeeId) => {
+    if (!employeeId) {
+      toast.error("Employee ID missing.");
+      return;
+    }
+
+    try {
+      const resultAction = await dispatch(
+        updateProfileRequestStatus({
+          employeeId,
+          status: "Approved",
+        })
+      );
+
+      if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
+        toast.success(`Profile update for ${employeeId} approved.`);
+        // Re-fetch the list to remove the approved item
+        dispatch(fetchProfileUpdates());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to approve profile update"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "An unknown error occurred.");
+    }
+  };
+
+  const handleRejectProfileUpdate = async (employeeId) => {
+    if (!employeeId) {
+      toast.error("Employee ID missing.");
+      return;
+    }
+
+    try {
+      const resultAction = await dispatch(
+        updateProfileRequestStatus({
+          employeeId,
+          status: "Rejected",
+        })
+      );
+
+      if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
+        toast.success(`Profile update for ${employeeId} rejected.`);
+        // Re-fetch the list to remove the rejected item
+        dispatch(fetchProfileUpdates());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to reject profile update"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "An unknown error occurred.");
+    }
+  };
+
+  const handleApprove = async (leaveId) => {
+    try {
+      const resultAction = await dispatch(
+        updateLeaveStatus({
+          leaveId,
+          status: "Approved",
+          remarks: "approved successfully",
+        })
+      );
+
+      if (updateLeaveStatus.fulfilled.match(resultAction)) {
+        toast.success("Request approved successfully");
+        // Refresh the list after successful approval
+        dispatch(fetchPendingLeaveRequests());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to approve request"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to approve request");
+    }
+  };
+
+  const handleReject = async (leaveId) => {
+    try {
+      const resultAction = await dispatch(
+        updateLeaveStatus({
+          leaveId,
+          status: "Rejected",
+          remarks: "Request rejected by HR",
+        })
+      );
+
+      if (updateLeaveStatus.fulfilled.match(resultAction)) {
+        toast.success("Request rejected successfully");
+        // Refresh the list after successful rejection
+        dispatch(fetchPendingLeaveRequests());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to reject request"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to reject request");
+    }
+  };
+
+  // Updated combined loading state
   const isLoading =
-    (activeTab === "leaveRequests" && isLoadingLeave) ||
-    (activeTab === "profileUpdates" && isLoadingProfile) ||
-    (activeTab === "expenseRequests" && isLoadingExpense) ||
-    (activeTab === "advanceRequests" && isLoadingAdvance) ||
-    (activeTab === "compOffRequests" && isLoadingCompOff);
-
-  // Hardcoded leave request data
-  const hardcodedLeaveRequests = [
-    {
-      id: 1,
-      employeeId: "EMP101",
-      name: "John Doe",
-      department: "Sales",
-      typeOfLeave: "Annual Leave",
-      startDate: "Jun 15, 2023",
-      endDate: "Jun 18, 2023",
-      leaveBalance: "15 days",
-      reason: "Family vacation",
-    },
-    {
-      id: 2,
-      employeeId: "EMP102",
-      name: "Jane Smith",
-      department: "Marketing",
-      typeOfLeave: "Sick Leave",
-      startDate: "Jun 20, 2023",
-      endDate: "Jun 21, 2023",
-      leaveBalance: "8 days",
-      reason: "Medical appointment",
-    },
-    {
-      id: 3,
-      employeeId: "EMP103",
-      name: "Michael Brown",
-      department: "Engineering",
-      typeOfLeave: "Emergency Leave",
-      startDate: "Jun 25, 2023",
-      endDate: "Jun 30, 2023",
-      leaveBalance: "5 days",
-      reason: "Personal emergency",
-    },
-  ];
-
-  // Hardcoded profile update data
-  const hardcodedProfileUpdates = [
-    {
-      id: 1,
-      employeeId: "EMP104",
-      name: "David Wilson",
-      department: "IT",
-      updateType: "Phone Number",
-      hasDetails: false,
-      reason: "Personal information update",
-    },
-    {
-      id: 2,
-      employeeId: "EMP105",
-      name: "Lisa Johnson",
-      department: "HR",
-      updateType: "3 fields updated",
-      hasDetails: true,
-      details: [
-        {
-          field: "Address",
-          oldValue: "123 Old Street, City",
-          newValue: "456 New Avenue, Town",
-        },
-        {
-          field: "Emergency Contact",
-          oldValue: "Mary Johnson - 9876543210",
-          newValue: "John Johnson - 8765432109",
-        },
-        {
-          field: "Phone Number",
-          oldValue: "9876543210",
-          newValue: "8765432109",
-        },
-      ],
-      reason: "Moved to new location and changed contact information",
-    },
-    {
-      id: 3,
-      employeeId: "EMP106",
-      name: "Robert Chen",
-      department: "Finance",
-      updateType: "2 fields updated",
-      hasDetails: false,
-      reason: "Updated personal details after marriage",
-    },
-  ];
-
-  // Hardcoded expense request data
-  const hardcodedExpenseRequests = [
-    {
-      id: 1,
-      employeeId: "EMP107",
-      name: "Robert Johnson",
-      department: "Sales",
-      amount: "₹5000",
-      description: "Client meeting expenses",
-      hasReceipt: true,
-    },
-    {
-      id: 2,
-      employeeId: "EMP108",
-      name: "Sarah Williams",
-      department: "Marketing",
-      amount: "₹7500",
-      description: "Marketing event costs",
-      hasReceipt: true,
-    },
-  ];
-
-  // Hardcoded advance request data
-  const hardcodedAdvanceRequests = [
-    {
-      id: 1,
-      employeeId: "EMP109",
-      name: "David Wilson",
-      department: "IT",
-      amount: "₹15000",
-      reason: "Home emergency repairs",
-      repaymentPlan: "6 months EMI",
-    },
-    {
-      id: 2,
-      employeeId: "EMP110",
-      name: "Emily Davis",
-      department: "HR",
-      amount: "₹10000",
-      reason: "Education fees",
-      repaymentPlan: "12 months EMI",
-    },
-  ];
-
-  // Hardcoded comp off request data
-  const hardcodedCompOffRequests = [
-    {
-      id: 1,
-      employeeId: "EMP104",
-      name: "Sarah Johnson",
-      department: "Engineering",
-      date: "2024-03-15",
-      shiftType: "First Half",
-      description: "Worked extra hours during project deadline",
-    },
-
-    {
-      id: 2,
-      employeeId: "EMP105",
-      name: "Robert Wilson",
-      department: "Marketing",
-      date: "2024-03-16",
-      shiftType: "Full Day",
-      description: "Weekend work for campaign launch",
-    },
-    {
-      id: 3,
-      employeeId: "EMP106",
-      name: "Emily Brown",
-      department: "Sales",
-      date: "2024-03-17",
-      shiftType: "Second Half",
-      description: "Extended client meeting",
-    },
-  ];
+    loading || profileLoading || isLoadingExpense || isLoadingAdvance;
 
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
       <h2 className="text-xl font-semibold text-blue-800 mb-5 pl-2">
         Request Details
       </h2>
-      <Tabs value={activeTab} onValueChange={(value) => onTabChange(value)}>
+      <Tabs value={activeTab} onValueChange={onTabChange}>
         <TabsList className="grid grid-cols-5 gap-3 mb-5 bg-transparent p-0">
           <TabsTrigger
             value="leaveRequests"
@@ -450,7 +323,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                     End Date
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Leave Balance
+                    Shift Type
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Reason
@@ -461,47 +334,94 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {hardcodedLeaveRequests.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                      {request.employeeId}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.typeOfLeave}</td>
-                    <td className="px-5 py-4 text-sm">{request.startDate}</td>
-                    <td className="px-5 py-4 text-sm">{request.endDate}</td>
-                    <td className="px-5 py-4 text-sm">
-                      {request.leaveBalance}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{request.reason}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleApprove("leaveRequests", request.id)
-                        }
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleReject("leaveRequests", request.id)
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="9" className="text-center py-5">
+                      Loading...
                     </td>
                   </tr>
-                ))}
+                ) : error ? (
+                  <tr>
+                    <td colSpan="9" className="text-center py-5 text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : !pendingLeaves || pendingLeaves.length === 0 ? (
+                  <tr>
+                    <td colSpan="9" className="text-center py-5 text-gray-500">
+                      No pending leave requests.
+                    </td>
+                  </tr>
+                ) : (
+                  pendingLeaves.map((request, index) => (
+                    <tr
+                      key={`${request.leaveId}-${request.employeeId}-${index}`}
+                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                        {request.employeeId}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.employeeName}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.department}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.leaveType}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {formatDate(request.startDate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {formatDate(request.endDate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {(() => {
+                          switch (request.shiftType) {
+                            case "FULL_DAY":
+                              return "Full Day";
+                            case "FIRST_HALF":
+                              return "First Half (Morning)";
+                            case "SECOND_HALF":
+                              return "Second Half (Evening)";
+                            default:
+                              return request.shiftType || "-";
+                          }
+                        })()}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.reason}</td>
+                      <td className="px-5 py-4 text-sm font-medium space-x-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          onClick={() => handleApprove(request.leaveId)}
+                          disabled={approvingLeaveId === request.leaveId}
+                          title={request.remarks || "Approve request"}
+                        >
+                          {approvingLeaveId === request.leaveId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          onClick={() => handleReject(request.leaveId)}
+                          disabled={rejectingLeaveId === request.leaveId}
+                          title="Reject request"
+                        >
+                          {rejectingLeaveId === request.leaveId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -535,43 +455,90 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {hardcodedCompOffRequests.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                      {request.employeeId}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{formatDate(request.date)}</td>
-                    <td className="px-5 py-4 text-sm">{request.shiftType}</td>
-                    <td className="px-5 py-4 text-sm">{request.description}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleApprove("compOffRequests", request.id)
-                        }
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleReject("compOffRequests", request.id)
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5">
+                      Loading...
                     </td>
                   </tr>
-                ))}
+                ) : error ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5 text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : !pendingCompOffs || pendingCompOffs.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5 text-gray-500">
+                      No pending comp-off requests.
+                    </td>
+                  </tr>
+                ) : (
+                  pendingCompOffs.map((request, index) => (
+                    <tr
+                      key={`${request.leaveId}-${request.employeeId}-${index}`}
+                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                        {request.employeeId}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.employeeName}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.department}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {formatDate(request.startDate)}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {(() => {
+                          switch (request.shiftType) {
+                            case "FULL_DAY":
+                              return "Full Day";
+                            case "FIRST_HALF":
+                              return "First Half (Morning)";
+                            case "SECOND_HALF":
+                              return "Second Half (Evening)";
+                            default:
+                              return request.shiftType || "-";
+                          }
+                        })()}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.reason}</td>
+                      <td className="px-5 py-4 text-sm font-medium space-x-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          onClick={() => handleApprove(request.leaveId)}
+                          disabled={approvingLeaveId === request.leaveId}
+                          title={request.remarks || "Approve request"}
+                        >
+                          {approvingLeaveId === request.leaveId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          onClick={() => handleReject(request.leaveId)}
+                          disabled={rejectingLeaveId === request.leaveId}
+                          title="Reject request"
+                        >
+                          {rejectingLeaveId === request.leaveId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -588,13 +555,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                     Employee Name
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Department
-                  </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Updates
-                  </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Reason
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Actions
@@ -602,45 +563,88 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {hardcodedProfileUpdates.map((update) => (
-                  <tr
-                    key={update.id}
-                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                      {update.employeeId}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{update.name}</td>
-                    <td className="px-5 py-4 text-sm">{update.department}</td>
-                    <td className="px-5 py-4 text-sm text-blue-500 cursor-pointer">
-                      {update.updateType}{" "}
-                      {update.hasDetails && <span>(View)</span>}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{update.reason}</td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleApprove("profileUpdates", update.id)
-                        }
-                        >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleReject("profileUpdates", update.id)
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {profileLoading ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-5">
+                      Loading...
                     </td>
                   </tr>
-                ))}
+                ) : profileError ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-5 text-red-500">
+                      {profileError}
+                    </td>
+                  </tr>
+                ) : profileUpdates.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-5 text-gray-500">
+                      No pending profile update requests.
+                    </td>
+                  </tr>
+                ) : (
+                  profileUpdates.map((update) => {
+                    const isApproving =
+                      approvingProfileUpdateId === update.employeeId;
+                    return (
+                      <tr
+                        key={update.id || update.employeeId}
+                        className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                          {update.employeeId}
+                        </td>
+                        <td className="px-5 py-4 text-sm">
+                          {update.employeeName}
+                        </td>
+                        <td className="px-5 py-4 text-sm">
+                          {update.changes && update.changes.length > 0 ? (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-blue-600 hover:underline"
+                              onClick={() => handleViewDetails(update.changes)}
+                              disabled={isApproving}
+                            >
+                              {`${update.changes.length} field(s) changed`}
+                            </Button>
+                          ) : (
+                            <span className="text-gray-500 italic">
+                              No specific changes listed
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-sm font-medium space-x-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() =>
+                              handleApproveProfileUpdate(update.employeeId)
+                            }
+                            disabled={isApproving || !!approvingProfileUpdateId}
+                          >
+                            {isApproving ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() =>
+                              handleRejectProfileUpdate(update.employeeId)
+                            }
+                            disabled={isApproving || !!approvingProfileUpdateId}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -674,54 +678,68 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {hardcodedExpenseRequests.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                      {request.employeeId}
+                {isLoadingExpense ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5">
+                      Loading...
                     </td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.amount}</td>
-                    <td className="px-5 py-4 text-sm">{request.description}</td>
-                    <td className="px-5 py-4 text-sm">
-                      {request.hasReceipt && (
+                  </tr>
+                ) : expenseRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5 text-gray-500">
+                      No pending expense requests.
+                    </td>
+                  </tr>
+                ) : (
+                  expenseRequests.map((request) => (
+                    <tr
+                      key={request.id}
+                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                        {request.employeeId}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.name}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.department}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.amount}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.description}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.hasReceipt && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
+                          className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          disabled
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
+                          <Check className="h-4 w-4" />
                         </Button>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleApprove("expenseRequests", request.id)
-                        }
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleReject("expenseRequests", request.id)
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          disabled
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -755,55 +773,73 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {hardcodedAdvanceRequests.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                      {request.employeeId}
-                    </td>
-                    <td className="px-5 py-4 text-sm">{request.name}</td>
-                    <td className="px-5 py-4 text-sm">{request.department}</td>
-                    <td className="px-5 py-4 text-sm">{request.amount}</td>
-                    <td className="px-5 py-4 text-sm">{request.reason}</td>
-                    <td className="px-5 py-4 text-sm">
-                      {request.repaymentPlan}
-                    </td>
-                    <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleApprove("advanceRequests", request.id)
-                        }
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                        onClick={() =>
-                          handleReject("advanceRequests", request.id)
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {isLoadingAdvance ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5">
+                      Loading...
                     </td>
                   </tr>
-                ))}
+                ) : advanceRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="text-center py-5 text-gray-500">
+                      No pending advance requests.
+                    </td>
+                  </tr>
+                ) : (
+                  advanceRequests.map((request) => (
+                    <tr
+                      key={request.id}
+                      className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                        {request.employeeId}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.name}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.department}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.amount}</td>
+                      <td className="px-5 py-4 text-sm">{request.reason}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.repaymentPlan}
+                      </td>
+                      <td className="px-5 py-4 text-sm font-medium space-x-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          disabled
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
+                          disabled
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Modal for showing changes */}
+      <ChangesModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        changes={selectedUpdateChanges}
+      />
     </div>
   );
 };
 
-// Move propTypes definition AFTER the component declaration
 RequestDetails.propTypes = {
   activeTab: PropTypes.string.isRequired,
   onTabChange: PropTypes.func.isRequired,
