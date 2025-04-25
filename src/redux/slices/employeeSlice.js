@@ -27,7 +27,6 @@ export const fetchEmployees = createAsyncThunk(
       return await response.json();
     } catch (error) {
       toast.error("Error fetching employees:", error);
-      // return rejectWithValue(error.message);
     }
   }
 );
