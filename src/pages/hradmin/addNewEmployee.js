@@ -1029,6 +1029,14 @@ function EmployeeForm() {
       "joiningDate",
       "department",
       "designation",
+      "reportingManager",
+      "currentAddress",
+      "gender",
+      "fathersName",
+      "alternatePhone",
+      "emailPersonal",
+      "emailOfficial",
+      "permanentAddress",
     ];
     return requiredFields.every((field) => {
       const value = formData.employee[field];
@@ -1038,7 +1046,7 @@ function EmployeeForm() {
 
   const checkIdProofsCompletion = () => {
     return Boolean(
-      formData.idProofs.aadharNo?.trim() && formData.idProofs.panNo?.trim()
+      formData.idProofs.aadharNo?.trim() && formData.idProofs.panNo?.trim() && formData.idProofs.passport?.trim() && formData.idProofs.drivingLicense?.trim() && formData.idProofs.voterId?.trim()
     );
   };
 
@@ -1048,6 +1056,10 @@ function EmployeeForm() {
       "accountHolderName",
       "ifscCode",
       "bankName",
+      "branchName",
+      "passbookImgUrl",
+      "upiId",
+      "upiPhoneNumber",
     ];
     return requiredFields.every((field) => {
       const value = formData.bankDetails[field];
@@ -1231,7 +1243,7 @@ function EmployeeForm() {
                     <motion.button
                       key={section.id}
                       type="button"
-                      className={`flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      className={`flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
                         activeSection === section.id
                           ? "bg-blue-50 text-blue-600 shadow-sm"
                           : "text-gray-600 hover:bg-gray-50"
@@ -1252,19 +1264,15 @@ function EmployeeForm() {
                         />
                       )}
                       {section.label}
-                      <span
-                        className={`ml-2 ${
-                          section.checkCompletion()
-                            ? "text-green-500"
-                            : "text-red-500"
-                        }`}
-                      >
+                      <div className="absolute -top-1.5 -right-1.5">
                         {section.checkCompletion() ? (
-                          <FiCheck className="w-4 h-4" />
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-200">
+                            <FiCheck className="w-3 h-3 text-white" />
+                          </div>
                         ) : (
-                          <FiX className="w-4 h-4" />
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-lg shadow-red-200" />
                         )}
-                      </span>
+                      </div>
                     </motion.button>
                   ))}
                 </div>
@@ -1275,7 +1283,7 @@ function EmployeeForm() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative z-10"
+                  className="relative z-10 pb-20"
                 >
                   {/* Personal Details Section */}
                   {activeSection === "personal" && (
@@ -2126,14 +2134,12 @@ function EmployeeForm() {
                     </div>
                   )}
                 </motion.div>
-              </div>
 
-              {/* Form Actions - Fixed at bottom */}
-              <div className="sticky z-10 bottom-0 border-t border-gray-200 mt-4 p-2">
-                <div className="flex justify-end gap-4">
+                {/* Fixed Action Buttons */}
+                <div className="fixed bottom-8 right-8 z-50 flex gap-4">
                   <motion.button
                     type="button"
-                    className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200"
+                    className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg"
                     onClick={() => router.push("/hradmin/employees")}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -2141,54 +2147,9 @@ function EmployeeForm() {
                     Cancel
                   </motion.button>
 
-                  {activeSection === "personal" && (
-                    <motion.button
-                      type="submit"
-                      className={`px-8 py-3 rounded-xl ${
-                        employeeId
-                          ? "bg-green-600 hover:bg-green-700"
-                          : "bg-blue-600 hover:bg-blue-700"
-                      } text-white transition-all duration-200 flex items-center gap-2`}
-                      disabled={loading}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {loading ? (
-                        <>
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>
-                            {employeeId ? "Update Employee" : "Save and Exit"}
-                          </span>
-                        </>
-                      )}
-                    </motion.button>
-                  )}
-
                   <motion.button
                     type="submit"
-                    className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2"
+                    className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
