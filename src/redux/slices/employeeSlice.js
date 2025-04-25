@@ -83,39 +83,34 @@ export const updateEmployee = createAsyncThunk(
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      // const company = localStorage.getItem("selectedCompanyId");
 
       // Create FormData object for file uploads
-      const formData = new FormData();
+      // const formData = new FormData();
 
       // Parse the employee data from the FormData
-      const employeeData = JSON.parse(updatedData.get("employee"));
-
-      // Add files to the employee data if they exist
-      if (updatedData.has("employeeImgUrl")) {
-        employeeData.employeeImgUrl = updatedData.get("employeeImgUrl");
-      }
+      // const employeeData = JSON.parse(updatedData.get("employee"));
 
       // Define the ID proof mappings
-      const idProofMappings = {
-        aadharImage: 'aadharImage',
-        panImage: 'panImage',
-        passportImage: 'passportImage',
-        drivingLicenseImage: 'drivingLicenseImage',
-        voterIdImage: 'voterIdImage'
-      };
+      // const idProofMappings = {
+      //   aadharImgUrl: "aadharImage",
+      //   pancardImgUrl: "panImage",
+      //   passportImgUrl: "passportImage",
+      //   drivingLicenseImgUrl: "drivingLicenseImage",
+      //   voterIdImgUrl: "voterIdImage",
+      // };
 
       // Add ID proof files to the employee data
-      Object.entries(idProofMappings).forEach(([formField, apiField]) => {
-        if (updatedData.has(formField)) {
-          employeeData[apiField] = updatedData.get(formField);
-        }
-      });
+      // Object.entries(idProofMappings).forEach(([formField, apiField]) => {
+      //   if (updatedData.has(formField)) {
+      //     employeeData[apiField] = updatedData.get(formField);
+      //   }
+      // });
 
       // Add the complete employee data to FormData
-      formData.append("employee", JSON.stringify(employeeData));
+      // formData.append("employee", JSON.stringify(employeeData));
 
-      const response = await axios.put(`${API_BASE_URL}/employees/${id}`, formData, {
+      const response = await axios.put(`${API_BASE_URL}/employees/${id}`, updatedData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,

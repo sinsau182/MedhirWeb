@@ -148,5 +148,5 @@ const ManagerEmployees = () => {
       </div>
     </div>
   );
-}
+};
 export default withAuth(ManagerEmployees);
