@@ -1097,7 +1097,7 @@ function EmployeeForm() {
           >
             <div className="flex items-center justify-between mb-0">
               <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-                {employee ? "✏️ Edit Employee" : "New Employee"}
+                {employee ? "Edit Employee" : "New Employee"}
               </h1>
             </div>
 
