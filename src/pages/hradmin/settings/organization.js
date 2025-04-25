@@ -147,12 +147,15 @@ const OrganizationSettings = () => {
       head: department.departmentHead || "",
       leavePolicy: {
         value: department.leavePolicy,
-        label: policies.find(p => p.leavePolicyId === department.leavePolicy)?.name || department.leavePolicy
+        label:
+          policies.find((p) => p.leavePolicyId === department.leavePolicy)
+            ?.name || department.leavePolicy,
       },
-      weeklyHolidays: department.weeklyHolidays?.split(",").map(day => ({
-        value: day.trim(),
-        label: day.trim()
-      })) || []
+      weeklyHolidays:
+        department.weeklyHolidays?.split(",").map((day) => ({
+          value: day.trim(),
+          label: day.trim(),
+        })) || [],
     });
   };
 
@@ -169,7 +172,10 @@ const OrganizationSettings = () => {
       if (!departmentForm.head) {
         newErrors.head = "Department head is required";
       }
-      if (!departmentForm.weeklyHolidays || departmentForm.weeklyHolidays.length === 0) {
+      if (
+        !departmentForm.weeklyHolidays ||
+        departmentForm.weeklyHolidays.length === 0
+      ) {
         newErrors.weeklyHolidays = "Weekly holidays are required";
       }
 
@@ -192,14 +198,18 @@ const OrganizationSettings = () => {
         description: departmentForm.description || "",
         departmentHead: departmentForm.head,
         leavePolicy: departmentForm.leavePolicy.value,
-        weeklyHolidays: departmentForm.weeklyHolidays.map(day => day.value).join(","),
-        companyId: selectedCompanyId
+        weeklyHolidays: departmentForm.weeklyHolidays
+          .map((day) => day.value)
+          .join(","),
+        companyId: selectedCompanyId,
       };
 
-      await dispatch(updateDepartment({ 
-        id: selectedDepartment.departmentId, 
-        departmentData 
-      })).unwrap();
+      await dispatch(
+        updateDepartment({
+          id: selectedDepartment.departmentId,
+          departmentData,
+        })
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -240,7 +250,9 @@ const OrganizationSettings = () => {
     try {
       if (!selectedDepartment) return;
 
-      await dispatch(deleteDepartment(selectedDepartment.departmentId)).unwrap();
+      await dispatch(
+        deleteDepartment(selectedDepartment.departmentId)
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -389,10 +401,13 @@ const OrganizationSettings = () => {
       description: designation.description || "",
       department: {
         value: designation.department,
-        label: reduxDepartments.find(dept => dept.departmentId === designation.department)?.name || designation.department
+        label:
+          reduxDepartments.find(
+            (dept) => dept.departmentId === designation.department
+          )?.name || designation.department,
       },
       manager: designation.manager || false,
-      overtimeEligible: designation.overtimeEligible || false
+      overtimeEligible: designation.overtimeEligible || false,
     });
   };
 
@@ -427,13 +442,15 @@ const OrganizationSettings = () => {
         department: designationForm.department.value,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
-        companyId: selectedCompanyId
+        companyId: selectedCompanyId,
       };
 
-      await dispatch(updateDesignation({ 
-        id: selectedDesignation.designationId, 
-        designationData 
-      })).unwrap();
+      await dispatch(
+        updateDesignation({
+          id: selectedDesignation.designationId,
+          designationData,
+        })
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -681,7 +698,9 @@ const OrganizationSettings = () => {
     try {
       if (!selectedDesignation) return;
 
-      await dispatch(deleteDesignation(selectedDesignation.designationId)).unwrap();
+      await dispatch(
+        deleteDesignation(selectedDesignation.designationId)
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -785,15 +804,17 @@ const OrganizationSettings = () => {
           </div>
 
           {/* Tables Container with Dynamic Height */}
-          <div className={`overflow-hidden ${
-            activeTab === "departments" 
-              ? reduxDepartments.length <= 8
-                ? "h-auto" 
+          <div
+            className={`overflow-hidden ${
+              activeTab === "departments"
+                ? reduxDepartments.length <= 8
+                  ? "h-auto"
+                  : "h-[calc(100vh-280px)]"
+                : fetchedDesignations.length <= 8
+                ? "h-auto"
                 : "h-[calc(100vh-280px)]"
-              : fetchedDesignations.length <= 8
-                ? "h-auto" 
-                : "h-[calc(100vh-280px)]"
-          }`}>
+            }`}
+          >
             {/* Departments Table */}
             {activeTab === "departments" && (
               <div className="bg-white rounded-lg shadow h-full">
@@ -834,10 +855,12 @@ const OrganizationSettings = () => {
 
                             // Format weekly holidays into array of objects
                             const weeklyHolidaysArray =
-                              department.weeklyHolidays?.split(",").map((day) => ({
-                                value: day.trim(),
-                                label: day.trim(),
-                              })) || [];
+                              department.weeklyHolidays
+                                ?.split(",")
+                                .map((day) => ({
+                                  value: day.trim(),
+                                  label: day.trim(),
+                                })) || [];
 
                             setDepartmentForm({
                               name: department.name,
@@ -846,7 +869,8 @@ const OrganizationSettings = () => {
                               leavePolicy: {
                                 value: department.leavePolicy,
                                 label:
-                                  selectedPolicy?.name || department.leavePolicy,
+                                  selectedPolicy?.name ||
+                                  department.leavePolicy,
                               },
                               weeklyHolidays: weeklyHolidaysArray,
                             });
@@ -930,7 +954,9 @@ const OrganizationSettings = () => {
                         fetchedDesignations.map((designation) => (
                           <tr
                             key={designation.id}
-                            onClick={() => handleDesignationRowClick(designation)}
+                            onClick={() =>
+                              handleDesignationRowClick(designation)
+                            }
                             className="hover:bg-gray-50 cursor-pointer"
                           >
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
