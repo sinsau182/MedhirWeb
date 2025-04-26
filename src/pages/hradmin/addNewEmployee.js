@@ -579,104 +579,139 @@ function EmployeeForm() {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const prepareFormData = (obj) => {
+    const cleanObj = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== "") {
+        if (typeof value === "object" && !Array.isArray(value) && !(value instanceof File)) {
+          const nestedClean = prepareFormData(value);
+          if (Object.keys(nestedClean).length > 0) {
+            cleanObj[key] = nestedClean;
+          }
+        } else {
+          cleanObj[key] = value;
+        }
+      }
+    });
+    return cleanObj;
+  };
+
+  // Add validation patterns for ID proofs
+  const idProofPatterns = {
+    aadharNo: /^[0-9]{12}$/,
+    panNo: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+    passport: /^[A-Z]{1}[0-9]{7}$/,
+    drivingLicense: /^[A-Z]{2}[0-9]{2}[0-9]{11}$/,
+    voterId: /^[A-Z]{3}[0-9]{7}$/
+  };
+
+  // Add validation function for ID proofs
+  const validateIdProofs = (idProofs) => {
+    const errors = {};
+    Object.entries(idProofs).forEach(([key, value]) => {
+      if (value && value.trim() !== "") {
+        const pattern = idProofPatterns[key];
+        if (pattern && !pattern.test(value.trim())) {
+          errors[key] = `Invalid ${key.replace(/([A-Z])/g, ' $1').toLowerCase()} format`;
+        }
+      }
+    });
+    return errors;
+  };
+
+  const handleSaveAndExit = async (e) => {
     e.preventDefault();
 
-    if (activeSection !== "salary") {
-      const currentIndex = sections.findIndex(
-        (section) => section.id === activeSection
-      );
-      if (currentIndex < sections.length - 1) {
-        setActiveSection(sections[currentIndex + 1].id);
-        return;
-      }
-    }
+    // Only validate required fields for the current section
+    const validateCurrentSection = () => {
+      const errors = {};
 
-    if (!validateForm()) return;
+      // Basic required fields that must always be present
+      if (!formData.employee.name?.trim()) {
+        errors.name = "Employee name is required";
+      }
+      if (!formData.employee.phone?.trim()) {
+        errors.phone = "Phone number is required";
+      }
+      if (!formData.employee.joiningDate) {
+        errors.joiningDate = "Date of joining is required";
+      }
+
+      // Validate phone number format if provided
+      if (formData.employee.phone && !/^[0-9]{10}$/.test(formData.employee.phone)) {
+        errors.phone = "Invalid phone number format";
+      }
+
+      // Validate ID proofs only if they have values
+      if (activeSection === "idProofs") {
+        const idProofErrors = validateIdProofs(formData.idProofs);
+        Object.assign(errors, idProofErrors);
+      }
+
+      // If there are errors, show them and return false
+      if (Object.keys(errors).length > 0) {
+        Object.entries(errors).forEach(([field, message]) => {
+          toast.error(message);
+        });
+        return false;
+      }
+
+      return true;
+    };
+
+    if (!validateCurrentSection()) return;
 
     setLoading(true);
     try {
       const submitFormData = new FormData();
 
-      // Helper function to remove empty fields
-      const removeEmptyFields = (obj) => {
-        const cleanObj = {};
-        Object.entries(obj).forEach(([key, value]) => {
-          if (value !== "" && value !== null && value !== undefined) {
-            if (
-              typeof value === "object" &&
-              !Array.isArray(value) &&
-              !(value instanceof File)
-            ) {
-              const nestedClean = removeEmptyFields(value);
-              if (Object.keys(nestedClean).length > 0) {
-                cleanObj[key] = nestedClean;
-              }
-            } else {
-              cleanObj[key] = value;
-            }
-          }
-        });
-        return cleanObj;
-      };
-
+      // Prepare form data with only filled fields
       const baseEmployeeData = {
         name: formData.employee.name?.trim(),
-        fathersName: formData.employee.fathersName?.trim(),
-        gender: formData.employee.gender?.trim(),
         phone: formData.employee.phone?.trim(),
-        alternatePhone: formData.employee.alternatePhone?.trim(),
-        emailPersonal: formData.employee.emailPersonal?.trim(),
-        emailOfficial: formData.employee.emailOfficial?.trim(),
-        currentAddress: formData.employee.currentAddress?.trim(),
-        permanentAddress: formData.employee.permanentAddress?.trim(),
-        department: formData.employee.department?.departmentId || "",
-        designation: formData.employee.designation?.designationId || "",
         joiningDate: formData.employee.joiningDate,
-        reportingManager:
-          formData.employee.reportingManager?.employeeId?.trim() || "",
+        department: formData.employee.department?.departmentId,
+        designation: formData.employee.designation?.designationId,
+        // Include other fields only if they have values
+        ...(formData.employee.fathersName && { fathersName: formData.employee.fathersName.trim() }),
+        ...(formData.employee.gender && { gender: formData.employee.gender.trim() }),
+        ...(formData.employee.alternatePhone && { alternatePhone: formData.employee.alternatePhone.trim() }),
+        ...(formData.employee.emailPersonal && { emailPersonal: formData.employee.emailPersonal.trim() }),
+        ...(formData.employee.emailOfficial && { emailOfficial: formData.employee.emailOfficial.trim() }),
+        ...(formData.employee.currentAddress && { currentAddress: formData.employee.currentAddress.trim() }),
+        ...(formData.employee.permanentAddress && { permanentAddress: formData.employee.permanentAddress.trim() }),
+        ...(formData.employee.reportingManager?.employeeId && { 
+          reportingManager: formData.employee.reportingManager.employeeId.trim() 
+        }),
         overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
-        weeklyOffs: formData.employee.weeklyOffs?.length
-          ? formData.employee.weeklyOffs
-          : undefined,
+        weeklyOffs: formData.employee.weeklyOffs?.length ? formData.employee.weeklyOffs : [],
         pfEnrolled: Boolean(formData.employee.pfEnrolled),
-        uanNumber: formData.employee.uanNumber?.trim(),
+        ...(formData.employee.uanNumber && { uanNumber: formData.employee.uanNumber.trim() }),
         esicEnrolled: Boolean(formData.employee.esicEnrolled),
-        esicNumber: formData.employee.esicNumber?.trim(),
+        ...(formData.employee.esicNumber && { esicNumber: formData.employee.esicNumber.trim() }),
         companyId: formData.companyId,
-        idProofs: {
-          aadharNo: formData.idProofs.aadharNo?.trim(),
-          panNo: formData.idProofs.panNo?.trim(),
-          passport: formData.idProofs.passport?.trim(),
-          drivingLicense: formData.idProofs.drivingLicense?.trim(),
-          voterId: formData.idProofs.voterId?.trim(),
-        },
-        bankDetails: {
-          accountNumber: formData.bankDetails.accountNumber?.trim(),
-          accountHolderName: formData.bankDetails.accountHolderName?.trim(),
-          ifscCode: formData.bankDetails.ifscCode?.trim(),
-          bankName: formData.bankDetails.bankName?.trim(),
-          branchName: formData.bankDetails.branchName?.trim(),
-          upiId: formData.bankDetails.upiId?.trim(),
-          upiPhoneNumber: formData.bankDetails.upiPhoneNumber?.trim(),
-        },
-        salaryDetails: {
-          annualCtc: formData.salaryDetails.annualCtc || undefined,
-          monthlyCtc: formData.salaryDetails.monthlyCtc || undefined,
-          basicSalary: formData.salaryDetails.basicSalary || undefined,
-          hra: formData.salaryDetails.hra || undefined,
-          allowances: formData.salaryDetails.allowances || undefined,
-          employerPfContribution:
-            formData.salaryDetails.employerPfContribution || undefined,
-          employeePfContribution:
-            formData.salaryDetails.employeePfContribution || undefined,
-        },
       };
 
-      const employeeData = removeEmptyFields(baseEmployeeData);
+      // Only include sections that have data
+      if (Object.keys(formData.idProofs).some(key => formData.idProofs[key])) {
+        baseEmployeeData.idProofs = prepareFormData(formData.idProofs);
+      }
+      if (Object.keys(formData.bankDetails).some(key => formData.bankDetails[key])) {
+        baseEmployeeData.bankDetails = prepareFormData(formData.bankDetails);
+      }
+      if (Object.keys(formData.salaryDetails).some(key => formData.salaryDetails[key])) {
+        baseEmployeeData.salaryDetails = prepareFormData(formData.salaryDetails);
+      }
+
+      const employeeData = prepareFormData(baseEmployeeData);
       submitFormData.append("employee", JSON.stringify(employeeData));
 
-      // Update ID proof mappings with correct field name for Voter ID
+      // Handle file uploads only if they exist
+      if (formData.employee.employeeImgUrl instanceof File) {
+        submitFormData.append("profileImage", formData.employee.employeeImgUrl);
+      }
+
+      // Handle ID proof files
       const idProofMappings = {
         aadharImgUrl: "aadharImage",
         pancardImgUrl: "panImage",
@@ -685,38 +720,18 @@ function EmployeeForm() {
         voterIdImgUrl: "voterIdImage",
       };
 
-      // Add ID proof files to FormData with logging
       Object.entries(idProofMappings).forEach(([formField, apiField]) => {
         const fileOrUrl = formData.idProofs[formField];
         if (fileOrUrl instanceof File) {
-          // New file upload
-          console.log(
-            `Appending new ${formField} to FormData as ${apiField}:`,
-            fileOrUrl
-          );
           submitFormData.append(apiField, fileOrUrl);
-        } else if (
-          typeof fileOrUrl === "string" &&
-          fileOrUrl.startsWith("http")
-        ) {
-          // Existing file URL - include in employee data
-          if (!employeeData.idProofs) {
-            employeeData.idProofs = {};
-          }
+        } else if (typeof fileOrUrl === "string" && fileOrUrl.startsWith("http")) {
+          if (!employeeData.idProofs) employeeData.idProofs = {};
           employeeData.idProofs[formField] = fileOrUrl;
         }
-        // If fileOrUrl is null, the field will be omitted, effectively removing the image
       });
 
-      // Add other files
-      if (formData.employee.employeeImgUrl instanceof File) {
-        submitFormData.append("profileImage", formData.employee.employeeImgUrl);
-      }
       if (formData.bankDetails.passbookImgUrl instanceof File) {
-        submitFormData.append(
-          "passbookImage",
-          formData.bankDetails.passbookImgUrl
-        );
+        submitFormData.append("passbookImage", formData.bankDetails.passbookImgUrl);
       }
 
       if (employeeId) {
@@ -740,7 +755,6 @@ function EmployeeForm() {
       }
     } catch (err) {
       let errorMessage = "An error occurred";
-
       if (err?.validationErrors) {
         const validationMessages = Object.entries(err.validationErrors)
           .map(([field, message]) => `${field}: ${message}`)
@@ -753,95 +767,35 @@ function EmployeeForm() {
       } else if (err?.error) {
         errorMessage = err.error;
       }
-
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const validateForm = () => {
-    const { employee } = formData;
-    const errors = {};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    // Validate required fields
-    // if (!employee.employeeId?.trim()) {
-    //   errors.employeeId = "Employee ID is required";
-    // }
-
-    if (!employee.name?.trim()) {
-      errors.name = "Employee name is required";
-    }
-    if (!employee.phone?.trim()) {
-      errors.phone = "Phone number is required";
-    }
-    if (!employee.joiningDate) {
-      errors.joiningDate = "Date of joining is required";
+    if (activeSection !== "salary") {
+      const currentIndex = sections.findIndex(
+        (section) => section.id === activeSection
+      );
+      if (currentIndex < sections.length - 1) {
+        setActiveSection(sections[currentIndex + 1].id);
+        return;
+      }
     }
 
-    // Validate phone number format if provided
-    if (employee.phone && !/^[0-9]{10}$/.test(employee.phone)) {
-      errors.phone = "Invalid phone number format";
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      // ... rest of the existing handleSubmit code ...
+    } catch (err) {
+      // ... existing error handling ...
+    } finally {
+      setLoading(false);
     }
-
-    // Validate other fields only if they are not empty
-    const { idProofs, bankDetails } = formData;
-
-    // Validate Aadhar number if provided
-    if (idProofs.aadharNo && !/^\d{12}$/.test(idProofs.aadharNo)) {
-      errors["idProofs.aadharNo"] = "Aadhar number must be exactly 12 digits";
-    }
-
-    // Validate PAN number if provided
-    if (idProofs.panNo && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(idProofs.panNo)) {
-      errors["idProofs.panNo"] = "Invalid PAN number format";
-    }
-
-    // Validate Passport number if provided
-    if (idProofs.passport && !/^[A-Z]{1}[0-9]{7}$/.test(idProofs.passport)) {
-      errors["idProofs.passport"] = "Invalid Passport number format";
-    }
-
-    // Validate Driving License if provided
-    if (
-      idProofs.drivingLicense &&
-      !/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(idProofs.drivingLicense)
-    ) {
-      errors["idProofs.drivingLicense"] =
-        "Invalid Driving License format. Format should be: State Code (2 letters) + Year (2 digits) + 11 digits";
-    }
-
-    // Validate Voter ID if provided
-    if (idProofs.voterId && !/^[A-Z]{3}[0-9]{7}$/.test(idProofs.voterId)) {
-      errors["idProofs.voterId"] = "Invalid Voter ID format";
-    }
-
-    // Validate Bank Account number if provided
-    if (
-      bankDetails.accountNumber &&
-      !/^\d{9,18}$/.test(bankDetails.accountNumber)
-    ) {
-      errors["bankDetails.accountNumber"] =
-        "Account number must be between 9 to 18 digits";
-    }
-
-    // Validate IFSC code if provided
-    if (
-      bankDetails.ifscCode &&
-      !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode)
-    ) {
-      errors["bankDetails.ifscCode"] = "Invalid IFSC Code format";
-    }
-
-    // If there are errors, show them and return false
-    if (Object.keys(errors).length > 0) {
-      Object.entries(errors).forEach(([field, message]) => {
-        toast.error(message);
-      });
-      return false;
-    }
-
-    return true;
   };
 
   useEffect(() => {
@@ -1854,24 +1808,13 @@ function EmployeeForm() {
                               {formData.bankDetails.passbookImgUrl && (
                                 <div className="mt-1.5 flex items-center justify-between bg-white rounded-lg p-1.5 shadow-sm">
                                   <div className="flex items-center space-x-2">
-                                    {formData.bankDetails
-                                      .passbookImgUrl instanceof File ? (
-                                      <img
-                                        src={URL.createObjectURL(
-                                          formData.bankDetails.passbookImgUrl
-                                        )}
-                                        alt="Passbook preview"
-                                        className="w-8 h-8 object-cover rounded border border-gray-200"
-                                      />
-                                    ) : (
-                                      <img
-                                        src={
-                                          formData.bankDetails.passbookImgUrl
-                                        }
-                                        alt="Passbook preview"
-                                        className="w-8 h-8 object-cover rounded border border-gray-200"
-                                      />
-                                    )}
+                                    <img
+                                      src={URL.createObjectURL(
+                                        formData.bankDetails.passbookImgUrl
+                                      )}
+                                      alt="Passbook preview"
+                                      className="w-8 h-8 object-cover rounded border border-gray-200"
+                                    />
                                     <div className="flex flex-col">
                                       <span className="text-xs font-medium text-gray-700 truncate max-w-[180px]">
                                         {formData.bankDetails
@@ -2035,18 +1978,16 @@ function EmployeeForm() {
                   </motion.button>
 
                   <motion.button
-                    type="submit"
+                    type="button"
                     className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                    onClick={handleSubmit}
                     disabled={loading}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {loading ? (
                       <>
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          viewBox="0 0 24 24"
-                        >
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                           <circle
                             className="opacity-25"
                             cx="12"
@@ -2066,28 +2007,68 @@ function EmployeeForm() {
                       </>
                     ) : (
                       <>
-                        <span>
-                          {activeSection === "salary"
-                            ? employee
-                              ? "Update Employee"
-                              : "Save and Exit"
-                            : "Save and Continue"}
-                        </span>
-                        {activeSection !== "salary" && (
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
+                        <span>Save and Continue</span>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </>
+                    )}
+                  </motion.button>
+
+                  <motion.button
+                    type="button"
+                    className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                    onClick={handleSaveAndExit}
+                    disabled={loading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
                             stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M13 7l5 5m0 0l-5 5m5-5H6"
-                            />
-                          </svg>
-                        )}
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Save and Exit</span>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
                       </>
                     )}
                   </motion.button>

@@ -17,6 +17,7 @@ import Sidebar from "@/components/Sidebar";
 import { Badge } from "@/components/ui/badge";
 import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
+import { toast } from "sonner";
 
 // // Hardcoded users for testing
 // const TEST_USERS = [
@@ -76,36 +77,13 @@ function AdminAccess() {
     // Add other access types here if needed in the future
   ];
 
-  // API Utilities
-  // const getAuthHeaders = () => {
-  //   const token = getItemFromSessionStorage("token");
-  //   if (!token) {
-  //     router.push("/login?error=Please login to continue");
-  //     return null;
-  //   }
-  //   return {
-  //     headers: {
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //   };
-  // };
-
-  // const handleApiError = (error, customMessage = "Operation failed") => {
-  //   console.error(customMessage, error);
-  //   if (error.response?.status === 401) {
-  //     router.push("/login?error=Session expired. Please login again");
-  //   } else {
-  //     setError(error.response?.data?.message || customMessage);
-  //   }
-  // };
-
   // Fetch companies
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          "http://localhost:8083/hradmin/companies/MED102",
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/MED102`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -133,7 +111,7 @@ function AdminAccess() {
           }
         }
       } catch (error) {
-        console.error("Error fetching companies:", error);
+        toast.error("Error fetching companies:", error);
       }
     };
 
@@ -146,7 +124,7 @@ function AdminAccess() {
       setLoading(true);
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(
-        `http://localhost:8083/hradmin/companies/${companyId}/employees`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/${companyId}/employees`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -161,7 +139,7 @@ function AdminAccess() {
         throw new Error("Unexpected response format");
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      toast.error("Error fetching users:", error);
       setError("Failed to fetch users. Please try again.");
     } finally {
       setLoading(false);
@@ -203,7 +181,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
-        `http://localhost:8083/hradmin/employees/${userToUnassign.employeeId}/roles`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/employees/${userToUnassign.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Remove",
@@ -227,7 +205,7 @@ function AdminAccess() {
         setSuccessMessage("HR Admin role removed successfully!");
       }
     } catch (error) {
-      console.error("Error removing HR Admin role:", error);
+      toast.error("Error removing HR Admin role:", error);
       setError("Failed to remove HR Admin role. Please try again.");
     } finally {
       setIsConfirmModalOpen(false); // Close the modal
@@ -259,7 +237,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
-        `http://localhost:8083/hradmin/employees/${user.employeeId}/roles`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/employees/${user.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Add",
@@ -283,7 +261,7 @@ function AdminAccess() {
         setSuccessMessage("HR Admin role assigned successfully!");
       }
     } catch (error) {
-      console.error("Error assigning HR Admin role:", error);
+      toast.error("Error assigning HR Admin role:", error);
       setError("Failed to assign HR Admin role. Please try again.");
     } finally {
       setIsAssignConfirmModalOpen(false); // Close the modal
@@ -293,11 +271,6 @@ function AdminAccess() {
   // Handle admin unassignment (Simulated)
   const handleUnassignAdmin = async () => {
     if (!userToUnassign) return;
-
-    console.log(
-      "Simulating unassigning admin access for user:",
-      userToUnassign.userId
-    );
 
     // Update local state to reflect unassignment (for UI)
     setUsers((prevUsers) =>

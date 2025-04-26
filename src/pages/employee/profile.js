@@ -32,6 +32,8 @@ function EmployeeProfilePage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isPageInEditMode, setIsPageInEditMode] = useState(false);
   const [isEditable, setIsEditable] = useState(true); // Controls if editing is allowed based on updateStatus
+  const [showPendingChangesModal, setShowPendingChangesModal] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(null);
 
   // Main state for form data, used during editing
   const [formData, setFormData] = useState({
@@ -96,6 +98,154 @@ function EmployeeProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchPendingChanges = () => {
+    if (!employeeById?.pendingUpdateRequest) {
+      toast.error("No pending changes found");
+      return;
+    }
+
+    const changes = {
+      personalInfo: [],
+      bankDetails: [],
+      documents: []
+    };
+
+    // Compare personal information
+    if (employeeById.pendingUpdateRequest.emailPersonal && employeeById.pendingUpdateRequest.emailPersonal !== employeeById.emailPersonal) {
+      changes.personalInfo.push({
+        field: 'Personal Email',
+        oldValue: employeeById.emailPersonal,
+        newValue: employeeById.pendingUpdateRequest.emailPersonal
+      });
+    }
+    if (employeeById.pendingUpdateRequest.phone && employeeById.pendingUpdateRequest.phone !== employeeById.phone) {
+      changes.personalInfo.push({
+        field: 'Phone',
+        oldValue: employeeById.phone,
+        newValue: employeeById.pendingUpdateRequest.phone
+      });
+    }
+    if (employeeById.pendingUpdateRequest.alternatePhone && employeeById.pendingUpdateRequest.alternatePhone !== employeeById.alternatePhone) {
+      changes.personalInfo.push({
+        field: 'Alternate Phone',
+        oldValue: employeeById.alternatePhone,
+        newValue: employeeById.pendingUpdateRequest.alternatePhone
+      });
+    }
+    if (employeeById.pendingUpdateRequest.currentAddress && employeeById.pendingUpdateRequest.currentAddress !== employeeById.currentAddress) {
+      changes.personalInfo.push({
+        field: 'Current Address',
+        oldValue: employeeById.currentAddress,
+        newValue: employeeById.pendingUpdateRequest.currentAddress
+      });
+    }
+    if (employeeById.pendingUpdateRequest.permanentAddress && employeeById.pendingUpdateRequest.permanentAddress !== employeeById.permanentAddress) {
+      changes.personalInfo.push({
+        field: 'Permanent Address',
+        oldValue: employeeById.permanentAddress,
+        newValue: employeeById.pendingUpdateRequest.permanentAddress
+      });
+    }
+
+    // Compare bank details
+    if (employeeById.pendingUpdateRequest.accountNumber && employeeById.pendingUpdateRequest.accountNumber !== employeeById.bankDetails?.accountNumber) {
+      changes.bankDetails.push({
+        field: 'Account Number',
+        oldValue: employeeById.bankDetails?.accountNumber,
+        newValue: employeeById.pendingUpdateRequest.accountNumber
+      });
+    }
+    if (employeeById.pendingUpdateRequest.bankName && employeeById.pendingUpdateRequest.bankName !== employeeById.bankDetails?.bankName) {
+      changes.bankDetails.push({
+        field: 'Bank Name',
+        oldValue: employeeById.bankDetails?.bankName,
+        newValue: employeeById.pendingUpdateRequest.bankName
+      });
+    }
+    if (employeeById.pendingUpdateRequest.branchName && employeeById.pendingUpdateRequest.branchName !== employeeById.bankDetails?.branchName) {
+      changes.bankDetails.push({
+        field: 'Branch Name',
+        oldValue: employeeById.bankDetails?.branchName,
+        newValue: employeeById.pendingUpdateRequest.branchName
+      });
+    }
+    if (employeeById.pendingUpdateRequest.ifscCode && employeeById.pendingUpdateRequest.ifscCode !== employeeById.bankDetails?.ifscCode) {
+      changes.bankDetails.push({
+        field: 'IFSC Code',
+        oldValue: employeeById.bankDetails?.ifscCode,
+        newValue: employeeById.pendingUpdateRequest.ifscCode
+      });
+    }
+    if (employeeById.pendingUpdateRequest.upiPhoneNumber && employeeById.pendingUpdateRequest.upiPhoneNumber !== employeeById.bankDetails?.upiPhoneNumber) {
+      changes.bankDetails.push({
+        field: 'UPI Phone',
+        oldValue: employeeById.bankDetails?.upiPhoneNumber,
+        newValue: employeeById.pendingUpdateRequest.upiPhoneNumber
+      });
+    }
+
+    // Check document changes
+    if (employeeById.pendingUpdateRequest.profileImgUrl && employeeById.pendingUpdateRequest.profileImgUrl !== employeeById.employeeImgUrl) {
+      changes.documents.push({
+        field: 'Profile Image',
+        oldValue: employeeById.employeeImgUrl,
+        newValue: employeeById.pendingUpdateRequest.profileImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.passbookImgUrl && employeeById.pendingUpdateRequest.passbookImgUrl !== employeeById.bankDetails?.passbookImgUrl) {
+      changes.documents.push({
+        field: 'Bank Passbook',
+        oldValue: employeeById.bankDetails?.passbookImgUrl,
+        newValue: employeeById.pendingUpdateRequest.passbookImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.aadharImgUrl && employeeById.pendingUpdateRequest.aadharImgUrl !== employeeById.idProofs?.aadharImgUrl) {
+      changes.documents.push({
+        field: 'Aadhar Card',
+        oldValue: employeeById.idProofs?.aadharImgUrl,
+        newValue: employeeById.pendingUpdateRequest.aadharImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.pancardImgUrl && employeeById.pendingUpdateRequest.pancardImgUrl !== employeeById.idProofs?.pancardImgUrl) {
+      changes.documents.push({
+        field: 'PAN Card',
+        oldValue: employeeById.idProofs?.pancardImgUrl,
+        newValue: employeeById.pendingUpdateRequest.pancardImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.passportImgUrl && employeeById.pendingUpdateRequest.passportImgUrl !== employeeById.idProofs?.passportImgUrl) {
+      changes.documents.push({
+        field: 'Passport',
+        oldValue: employeeById.idProofs?.passportImgUrl,
+        newValue: employeeById.pendingUpdateRequest.passportImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.drivingLicenseImgUrl && employeeById.pendingUpdateRequest.drivingLicenseImgUrl !== employeeById.idProofs?.drivingLicenseImgUrl) {
+      changes.documents.push({
+        field: 'Driving License',
+        oldValue: employeeById.idProofs?.drivingLicenseImgUrl,
+        newValue: employeeById.pendingUpdateRequest.drivingLicenseImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.voterIdImgUrl && employeeById.pendingUpdateRequest.voterIdImgUrl !== employeeById.idProofs?.voterIdImgUrl) {
+      changes.documents.push({
+        field: 'Voter ID',
+        oldValue: employeeById.idProofs?.voterIdImgUrl,
+        newValue: employeeById.pendingUpdateRequest.voterIdImgUrl,
+        isImage: true
+      });
+    }
+
+    setPendingChanges(changes);
+    setShowPendingChangesModal(true);
   };
 
   // Fetch data on component mount or when URL 'id' changes
@@ -307,7 +457,7 @@ function EmployeeProfilePage() {
         formDataPayload.append("aadharImage", formData.idProofs.aadharImage);
       }
       if (formData.idProofs.panImage instanceof File) {
-        formDataPayload.append("panImage", formData.idProofs.panImage);
+        formData.append("panImage", formData.idProofs.panImage);
       }
       if (formData.idProofs.passportImage instanceof File) {
         formDataPayload.append(
@@ -428,15 +578,21 @@ function EmployeeProfilePage() {
                             ? "Update Pending"
                             : "Active Employee"}
                         </span>
+                        {employeeById?.updateStatus === "Pending" && (
+                          <button
+                            onClick={fetchPendingChanges}
+                            className="ml-2 px-2 py-0.5 bg-white/20 rounded-md text-xs hover:bg-white/30 transition-colors"
+                          >
+                            View Changes
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2 bg-white/10 backdrop-blur px-3 py-1.5 rounded-full text-white text-sm">
                         <FaCalendarCheck className="w-4 h-4" />
                         <span>
                           Joined on{" "}
                           {employeeById?.joiningDate
-                            ? new Date(
-                                employeeById.joiningDate
-                              ).toLocaleDateString()
+                            ? new Date(employeeById.joiningDate).toLocaleDateString()
                             : "N/A"}
                         </span>
                       </div>
@@ -1261,6 +1417,101 @@ function EmployeeProfilePage() {
           </div>
         </main>
       </div>
+
+      {/* Add the Pending Changes Modal */}
+      {showPendingChangesModal && pendingChanges && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Field Changes</h3>
+              <button
+                onClick={() => setShowPendingChangesModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {/* Personal Information Changes */}
+                    {pendingChanges.personalInfo.map((field, index) => (
+                <div key={field.field + index} className="border rounded p-3 bg-gray-50 text-sm">
+                  <p className="font-medium text-gray-700 mb-1">{field.field}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      <p className="text-gray-800 break-words">{field.oldValue || "(empty)"}</p>
+                  </div>
+                    <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      <p className="text-green-700 break-words">{field.newValue || "(empty)"}</p>
+                </div>
+                  </div>
+                </div>
+              ))}
+              {/* Bank Details Changes */}
+                    {pendingChanges.bankDetails.map((field, index) => (
+                <div key={field.field + index} className="border rounded p-3 bg-gray-50 text-sm">
+                  <p className="font-medium text-gray-700 mb-1">{field.field}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      <p className="text-gray-800 break-words">{field.oldValue || "(empty)"}</p>
+                  </div>
+                <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      <p className="text-green-700 break-words">{field.newValue || "(empty)"}</p>
+                  </div>
+                </div>
+                </div>
+              ))}
+              {/* Document Updates */}
+              {pendingChanges.documents.map((doc, index) => (
+                <div key={doc.field + index} className="border rounded p-3 bg-gray-50 text-sm">
+                  <p className="font-medium text-gray-700 mb-1">{doc.field}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      {doc.isImage ? (
+                        doc.oldValue ? (
+                          <a href={doc.oldValue} target="_blank" rel="noopener noreferrer">
+                            <img src={doc.oldValue} alt={`Old ${doc.field}`} className="h-16 rounded border" />
+                          </a>
+                        ) : (
+                          <span className="italic text-gray-400">(empty)</span>
+                        )
+                      ) : (
+                        <p className="text-gray-800 break-words">{doc.oldValue || "(empty)"}</p>
+                      )}
+                </div>
+                    <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      {doc.isImage ? (
+                        doc.newValue ? (
+                          <a href={doc.newValue} target="_blank" rel="noopener noreferrer">
+                            <img src={doc.newValue} alt={`New ${doc.field}`} className="h-16 rounded border" />
+                          </a>
+                        ) : (
+                          <span className="italic text-gray-400">(empty)</span>
+                        )
+                      ) : (
+                        <p className="text-green-700 break-words">{doc.newValue || "(empty)"}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 text-right">
+              <button
+                onClick={() => setShowPendingChangesModal(false)}
+                className="border border-gray-300 rounded px-4 py-1 text-sm hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
