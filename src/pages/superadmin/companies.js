@@ -11,11 +11,6 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   Table,
-  TableHead,
-  TableRow,
-  TableHeader,
-  TableBody,
-  TableCell,
 } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit } from "lucide-react";

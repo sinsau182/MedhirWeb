@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
-import { Calendar, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchLeaves, createLeave, applyLeave, fetchLeaveHistory, clearErrors, applyCompOffLeave } from "@/redux/slices/leaveSlice";
 import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveBalanceSlice";
 import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
-import axios from 'axios';
 import { toast } from "sonner";
 import CustomDatePicker from '@/components/CustomDatePicker';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';

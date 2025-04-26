@@ -11,12 +11,9 @@ import {
   Eye,
   Loader2,
 } from "lucide-react";
-import { format } from "date-fns";
 import PropTypes from "prop-types";
-import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
-import Leaves from "@/pages/employee/leaves";
 import {
   fetchPendingLeaveRequests,
   fetchProfileUpdates,

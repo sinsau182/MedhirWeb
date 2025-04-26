@@ -1,9 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
-
+import getConfig from "next/config";
 // Define the base URL
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const {publicRuntimeConfig} = getConfig();
+const BASE_URL = publicRuntimeConfig.apiURL;
 
 // Fetch leave balance for a specific employee
 export const fetchLeaveBalance = createAsyncThunk(

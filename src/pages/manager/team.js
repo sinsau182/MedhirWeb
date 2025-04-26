@@ -78,7 +78,7 @@ const ManagerEmployees = () => {
                       Name
                     </th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                      Father's Name
+                      Father&apos;s Name
                     </th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Phone No.

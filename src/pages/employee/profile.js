@@ -21,7 +21,8 @@ import {
 } from "react-icons/fi";
 import { FaCalendarCheck } from "react-icons/fa";
 import { X } from "lucide-react";
-
+import Image from "next/image";
+import getConfig from "next/config";
 function EmployeeProfilePage() {
   const router = useRouter();
   const { id } = router.query; // Get ID from URL query parameter
@@ -32,6 +33,8 @@ function EmployeeProfilePage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isPageInEditMode, setIsPageInEditMode] = useState(false);
   const [isEditable, setIsEditable] = useState(true); // Controls if editing is allowed based on updateStatus
+
+  const {publicRuntimeConfig}=getConfig();
 
   // Main state for form data, used during editing
   const [formData, setFormData] = useState({
@@ -74,7 +77,7 @@ function EmployeeProfilePage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/id/${employeeIdToFetch}`
+        `${publicRuntimeConfig.API_BASE_URL}/employee/id/${employeeIdToFetch}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -326,7 +329,7 @@ function EmployeeProfilePage() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/update-request`,
+        `${publicRuntimeConfig.API_BASE_URL}/employee/update-request`,
         {
           method: "PUT",
           body: formDataPayload,
@@ -472,7 +475,7 @@ function EmployeeProfilePage() {
                       <div className="w-28 h-28 rounded-xl bg-white p-1 shadow-lg">
                         <div className="w-full h-full rounded-lg bg-gray-100 border border-white overflow-hidden flex items-center justify-center">
                           {formData.employee.profileImage instanceof File ? (
-                            <img
+                            <Image
                               src={URL.createObjectURL(
                                 formData.employee.profileImage
                               )}
@@ -480,7 +483,7 @@ function EmployeeProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : employeeById?.employeeImgUrl ? (
-                            <img
+                            <Image
                               src={employeeById.employeeImgUrl}
                               alt="Profile"
                               className="w-full h-full object-cover"
@@ -624,7 +627,7 @@ function EmployeeProfilePage() {
                         {/* Father's Name - Read Only */}
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Father's Name
+                            Father&apos;s Name
                           </label>
                           <p className="text-base text-gray-900">
                             {employeeById?.fathersName || "-"}

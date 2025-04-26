@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "sonner";
-
+import getConfig from "next/config";
 function AdminAccess() {
   const router = useRouter();
   const [companies, setCompanies] = useState([]);
@@ -36,14 +36,14 @@ function AdminAccess() {
   const [isAssignConfirmModalOpen, setIsAssignConfirmModalOpen] =
     useState(false);
   const [usersToAssignInfo, setUsersToAssignInfo] = useState([]);
-
+  const {publicRuntimeConfig} = getConfig();
   // Fetch companies
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/MED102`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED102`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -84,7 +84,7 @@ function AdminAccess() {
       setLoading(true);
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/${companyId}/employees`,
+        `${publicRuntimeConfig.apiURL}/hradmin/companies/${companyId}/employees`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -141,7 +141,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/employees/${userToUnassign.employeeId}/roles`,
+        `${publicRuntimeConfig.apiURL}/hradmin/employees/${userToUnassign.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Remove",
@@ -197,7 +197,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/employees/${user.employeeId}/roles`,
+        `${publicRuntimeConfig.apiURL}/hradmin/employees/${user.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Add",

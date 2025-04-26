@@ -8,7 +8,7 @@ import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
-
+import getConfig from "next/config";
 
 function PayrollManagement() {
   const selectedCompanyId = localStorage.getItem("selectedCompanyId");
@@ -30,7 +30,7 @@ function PayrollManagement() {
   const [overtimeValue, setOvertimeValue] = useState("");
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
-
+  const {publicRuntimeConfig} = getConfig();
   const handleMonthSelection = (month, year) => {
     setSelectedMonth(month);
     setSelectedYear(year);
@@ -53,7 +53,7 @@ function PayrollManagement() {
   const fetchTDS = async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      process.env.NEXT_PUBLIC_API_BASE_URL + "/tds-settings/company/" + selectedCompanyId,
+      publicRuntimeConfig.apiURL + "/tds-settings/company/" + selectedCompanyId,
       {
         method: "GET",
         headers: {
@@ -80,7 +80,7 @@ function PayrollManagement() {
   const fetchPTAX = async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      process.env.NEXT_PUBLIC_API_BASE_URL + "/professional-tax-settings/company/" + selectedCompanyId,
+      publicRuntimeConfig.apiURL + "/professional-tax-settings/company/" + selectedCompanyId,
       {
         method: "GET",
         headers: {

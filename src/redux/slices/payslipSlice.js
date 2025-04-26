@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
-
+import getConfig from "next/config";
+const {publicRuntimeConfig} = getConfig();
 // Async thunk for fetching payslip details
 export const fetchPayslipDetails = createAsyncThunk(
   "payslip/fetchPayslipDetails",
@@ -9,7 +10,7 @@ export const fetchPayslipDetails = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/payslip/generate/${employeeId}/${month}/${year}`,
+        `${publicRuntimeConfig.apiURL}/payslip/generate/${employeeId}/${month}/${year}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -30,7 +31,7 @@ export const fetchEmployeeDetails = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/id/${employeeId}`,
+        `${publicRuntimeConfig.apiURL}/employee/id/${employeeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

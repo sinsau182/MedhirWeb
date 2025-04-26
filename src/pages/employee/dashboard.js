@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { FaCalendarAlt, FaUserCheck, FaClock } from "react-icons/fa"; // Removed FaUser since we won't need it
+import { FaCalendarAlt } from "react-icons/fa"; // Removed FaUser since we won't need it
 import Link from "next/link";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
 import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveBalanceSlice";
 

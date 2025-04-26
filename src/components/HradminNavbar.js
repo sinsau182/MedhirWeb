@@ -18,8 +18,8 @@ import {
   getItemFromSessionStorage,
   removeItem,
 } from "@/redux/slices/sessionStorageSlice";
-import { jwtDecode } from "jwt-decode";
 import { toast } from "sonner";
+import getConfig from "next/config";
 
 const Navbar = () => {
   const router = useRouter();
@@ -31,6 +31,7 @@ const Navbar = () => {
   const [selectedCompany, setSelectedCompany] = useState(""); // Default selected company
   const [navbarColor, setNavbarColor] = useState("bg-[#A8D5BA]"); // Default color
   const [currentRole, setCurrentRole] = useState("");
+  const { publicRuntimeConfig } = getConfig();
 
   useEffect(() => {
     const storedCompany = localStorage.getItem("selectedCompany");
@@ -87,7 +88,7 @@ const Navbar = () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/MED102`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED102`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -110,7 +111,7 @@ const Navbar = () => {
     };
 
     fetchCompanies();
-  }, []);
+  }, [selectedCompany]);
 
   useEffect(() => {
     const handleStorageChange = (event) => {
