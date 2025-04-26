@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Search, UserPlus, Calendar } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "react-hot-toast";
 
 function Employees() {
@@ -63,13 +62,7 @@ function Employees() {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
-  const handleMonthSelection = (month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    setIsCalendarOpen(false);
-  };
 
   const filteredEmployees = (employees || []).filter((employee) =>
     employee?.name?.toLowerCase().includes(searchInput.toLowerCase())
@@ -252,46 +245,7 @@ function Employees() {
 
   const headers = getTableHeaders();
 
-  const handlePassbookView = (imageUrl) => {
-    const modal = document.createElement("div");
-    modal.className =
-      "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
-    modal.innerHTML = `
-      <div class="bg-white p-4 rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Passbook Document</h3>
-          <button class="text-gray-500 hover:text-gray-700" onclick="this.closest('.fixed').remove()">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        <img src="${imageUrl}" alt="Passbook" class="max-w-full h-auto" />
-      </div>
-    `;
-    document.body.appendChild(modal);
-  };
 
-  const renderBankDetailsRow = (row) => (
-    <tr key={row.id}>
-      <td className="px-5 py-4 text-sm">{row.name}</td>
-      <td className="px-5 py-4 text-sm">{row.accountHolderName}</td>
-      <td className="px-5 py-4 text-sm">{row.accountNumber}</td>
-      <td className="px-5 py-4 text-sm">{row.bankName}</td>
-      <td className="px-5 py-4 text-sm">{row.ifscCode}</td>
-      <td className="px-5 py-4 text-sm">{row.branchName}</td>
-      <td className="px-5 py-4 text-sm">{row.upiId}</td>
-      <td className="px-5 py-4 text-sm">{row.upiNumber}</td>
-      <td className="px-5 py-4 text-sm">
-        <button
-          onClick={() => handlePassbookView(row.passbookDoc)}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          View Details
-        </button>
-      </td>
-    </tr>
-  );
 
   if (err) {
     return (

@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
-import company, { CompanyServiceClient } from "@/generated/company_grpc_web_pb";
-
+import getConfig from "next/config";
+const {publicRuntimeConfig} = getConfig();
 // Async thunk for fetching TDS settings
 export const fetchTDS = createAsyncThunk(
   "payrollSettings/fetchTDS",
@@ -11,7 +11,7 @@ export const fetchTDS = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings/company/${company}`,
+        `${publicRuntimeConfig.apiURL}/tds-settings/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -36,7 +36,7 @@ export const fetchPTAX = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings/company/${company}`,
+        `${publicRuntimeConfig.apiURL}/professional-tax-settings/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -60,7 +60,7 @@ export const saveTDS = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const { isTdsConfigured } = getState().payrollSettings;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`;
+      const url = `${publicRuntimeConfig.apiURL}/tds-settings`;
       
       // If TDS is already configured, use PUT to update, otherwise use POST to create
       const method = isTdsConfigured ? "put" : "post";
@@ -85,7 +85,7 @@ export const saveTDS = createAsyncThunk(
         try {
           const token = getItemFromSessionStorage("token", null);
           const response = await axios.put(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`,
+            `${publicRuntimeConfig.apiURL}/tds-settings`,
             {
               tdsRate: parseFloat(tdsData.tdsRate),
               description: tdsData.description,
@@ -114,7 +114,7 @@ export const savePTAX = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const { isPtaxConfigured } = getState().payrollSettings;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`;
+      const url = `${publicRuntimeConfig.apiURL}/professional-tax-settings`;
       
       // If Professional Tax is already configured, use PUT to update, otherwise use POST to create
       const method = isPtaxConfigured ? "put" : "post";
@@ -141,7 +141,7 @@ export const savePTAX = createAsyncThunk(
         try {
           const token = getItemFromSessionStorage("token", null);
           const response = await axios.put(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`,
+            `${publicRuntimeConfig.apiURL}/professional-tax-settings`,
             {
               monthlySalaryThreshold: parseFloat(ptaxData.monthlySalaryThreshold),
               amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),

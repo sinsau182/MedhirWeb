@@ -1,9 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { setItem, getItem, removeItem } from "./sessionStorageSlice";
-
+import getConfig from "next/config";
 // Define the base URL
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/auth";
+const {publicRuntimeConfig} = getConfig();
+const BASE_URL = publicRuntimeConfig.apiURL + "/auth";
 
 export const registerUser = createAsyncThunk(
   "auth/register",

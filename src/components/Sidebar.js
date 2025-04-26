@@ -1,17 +1,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import {
-  FaBars,
-  FaAngleDoubleLeft,
-  FaChartPie,
   FaUsers,
-  FaCalendarCheck,
   FaMoneyCheckAlt,
   FaCog,
   FaBuilding,
   FaCalendarAlt,
-  FaChevronDown,
-  FaChevronRight,
   FaAngleLeft,
   FaAngleRight,
 } from "react-icons/fa";

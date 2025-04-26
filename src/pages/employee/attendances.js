@@ -6,8 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { CheckCircle2, X, Clock, CalendarIcon } from "lucide-react";
+import { CheckCircle2, Clock, CalendarIcon } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";

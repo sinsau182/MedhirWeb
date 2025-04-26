@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa"; // Import the icons
-import { Search, UserPlus, Trash, Edit, Grid2x2 } from "lucide-react";
+import { Grid2x2 } from "lucide-react";
 import { useRouter } from "next/router";
-import withAuth from "@/components/withAuth";
 
 export default function SuperadminHeaders() {
   const router = useRouter();

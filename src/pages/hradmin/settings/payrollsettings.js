@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
+import { X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import withAuth from "@/components/withAuth";
-import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTDS,
   fetchPTAX,
   saveTDS,
   savePTAX,
-  clearErrors,
   resetTdsForm,
   resetPtaxForm,
 } from "@/redux/slices/payrollSettingsSlice";
@@ -177,7 +175,7 @@ const PayrollSettings = () => {
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No TDS settings configured. Click "Configure" to set up TDS settings.
+          No TDS settings configured. Click &quot;Configure&quot; to set up TDS settings.
         </p>
       )}
     </div>
@@ -209,7 +207,7 @@ const PayrollSettings = () => {
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No Professional Tax settings configured. Click "Configure" to set up
+          No Professional Tax settings configured. Click &quot;Configure&quot; to set up
           Professional Tax settings.
         </p>
       )}

@@ -7,9 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { setDate } from "date-fns";
 import withAuth from "@/components/withAuth";
-import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import { toast } from "sonner";
 import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
 

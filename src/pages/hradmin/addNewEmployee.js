@@ -23,7 +23,7 @@ import { FiUser, FiBook, FiCreditCard, FiUpload } from "react-icons/fi";
 // import Select from "react-select";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
-
+import getConfig from "next/config";
 // Add this CSS class to your global styles or component
 const inputGroupClass =
   "relative border border-gray-200 rounded-lg focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 bg-gray-50 transition-all duration-200";
@@ -335,7 +335,7 @@ function EmployeeForm() {
   // const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
-
+  const {publicRuntimeConfig}=getConfig();
   // Add department fetch on component mount
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -349,7 +349,7 @@ function EmployeeForm() {
         }
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/company/${companyId}`,
+          `${publicRuntimeConfig.apiURL}/departments/company/${companyId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -374,7 +374,7 @@ function EmployeeForm() {
     };
 
     fetchDepartments();
-  }, []);
+  }, [publicRuntimeConfig.apiURL]);
 
   // const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
@@ -520,7 +520,7 @@ function EmployeeForm() {
         toast.error("Error loading employee data");
       }
     }
-  }, [employee]);
+  }, [company, employee]);
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -965,7 +965,7 @@ const handleSubmit = async (e) => {
         const departmentId = formData.employee.department.departmentId;
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/designations/department/${departmentId}`,
+          `${publicRuntimeConfig.apiURL}/api/designations/department/${departmentId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -990,7 +990,7 @@ const handleSubmit = async (e) => {
     };
 
     fetchDesignations();
-  }, [formData.employee.department?.departmentId]);
+  }, [formData.employee.department.departmentId, publicRuntimeConfig.apiURL]);
 
   // Fetch managers when department changes
   useEffect(() => {
@@ -1005,7 +1005,7 @@ const handleSubmit = async (e) => {
         const token = getItemFromSessionStorage("token", null);
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/${departmentId}/managers`,
+          `${publicRuntimeConfig.apiURL}/departments/${departmentId}/managers`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1030,7 +1030,7 @@ const handleSubmit = async (e) => {
     };
 
     fetchManagers();
-  }, [formData.employee.department?.departmentId]);
+  }, [formData.employee.department?.departmentId, publicRuntimeConfig.apiURL]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1135,7 +1135,7 @@ const handleSubmit = async (e) => {
                         <div className="grid grid-cols-2 gap-4">
                           <div className={inputGroupClass}>
                             <label className={floatingLabelClass}>
-                              Father's Name
+                              Father&apos;s Name
                             </label>
                             <input
                               type="text"

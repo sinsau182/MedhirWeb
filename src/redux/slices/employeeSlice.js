@@ -2,9 +2,10 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
-
+import getConfig from "next/config";
+const {publicRuntimeConfig} = getConfig();
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL + "/hradmin";
+  publicRuntimeConfig.apiURL + "/hradmin";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(

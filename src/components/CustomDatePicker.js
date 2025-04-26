@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar as CalendarIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, isWeekend, isWithinInterval, isSameDay, eachDayOfInterval } from 'date-fns';
+import { format, isWeekend, isSameDay } from 'date-fns';
 import { toast } from 'sonner';
 
 const CustomDatePicker = ({

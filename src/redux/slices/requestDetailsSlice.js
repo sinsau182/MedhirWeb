@@ -1,126 +1,155 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { getItemFromSessionStorage } from './sessionStorageSlice';
-
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { getItemFromSessionStorage } from "./sessionStorageSlice";
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
 // Async thunks for fetching data
 export const fetchPendingLeaveRequests = createAsyncThunk(
-  'requestDetails/fetchPendingLeaveRequests',
+  "requestDetails/fetchPendingLeaveRequests",
   async (_, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token');
-      const company = localStorage.getItem('selectedCompanyId');
+      const token = getItemFromSessionStorage("token");
+      const company = localStorage.getItem("selectedCompanyId");
       if (!token) {
-        return rejectWithValue('Authentication token not found');
+        return rejectWithValue("Authentication token not found");
       }
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await axios.get(
+        `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       if (response.data && Array.isArray(response.data.leaves)) {
-        const regularLeaves = response.data.leaves.filter(leave => leave.leaveName !== "Comp-Off");
-        const compOffLeaves = response.data.leaves.filter(leave => leave.leaveName === "Comp-Off");
-        
+        const regularLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName !== "Comp-Off"
+        );
+        const compOffLeaves = response.data.leaves.filter(
+          (leave) => leave.leaveName === "Comp-Off"
+        );
+
         return {
           regularLeaves,
-          compOffLeaves
+          compOffLeaves,
         };
       }
-      
+
       return { regularLeaves: [], compOffLeaves: [] };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch pending leave requests');
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch pending leave requests"
+      );
     }
   }
 );
 
 export const fetchProfileUpdates = createAsyncThunk(
-  'requestDetails/fetchProfileUpdates',
+  "requestDetails/fetchProfileUpdates",
   async (_, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token');
+      const token = getItemFromSessionStorage("token");
       if (!token) {
-        return rejectWithValue('Authentication token not found');
+        return rejectWithValue("Authentication token not found");
       }
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      const response = await axios.get(
+        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      });
+      );
 
       if (response.data && Array.isArray(response.data)) {
-        const updatesWithChanges = response.data.filter(update => update.changes && update.changes.length > 0);
+        const updatesWithChanges = response.data.filter(
+          (update) => update.changes && update.changes.length > 0
+        );
         return updatesWithChanges;
       }
-      
+
       return [];
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch profile updates');
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch profile updates"
+      );
     }
   }
 );
 
 export const updateLeaveStatus = createAsyncThunk(
-  'requestDetails/updateLeaveStatus',
+  "requestDetails/updateLeaveStatus",
   async ({ leaveId, status, remarks }, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token');
+      const token = getItemFromSessionStorage("token");
       if (!token) {
-        return rejectWithValue('Authentication token not found');
+        return rejectWithValue("Authentication token not found");
       }
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/update-status`,
+        `${publicRuntimeConfig.apiURL}/leave/update-status`,
         {
           leaveId,
           status,
-          remarks
+          remarks,
         },
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || `Failed to ${status.toLowerCase()} leave request`);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          `Failed to ${status.toLowerCase()} leave request`
+      );
     }
   }
 );
 
 export const updateProfileRequestStatus = createAsyncThunk(
-  'requestDetails/updateProfileRequestStatus',
+  "requestDetails/updateProfileRequestStatus",
   async ({ employeeId, status }, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token');
+      const token = getItemFromSessionStorage("token");
       if (!token) {
-        return rejectWithValue('Authentication token not found');
+        return rejectWithValue("Authentication token not found");
       }
 
       const formData = new FormData();
-      formData.append('status', status);
+      formData.append("status", status);
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests/${employeeId}`,
+        `${publicRuntimeConfig.apiURL}/hradmin/update-requests/${employeeId}`,
         formData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
       return { employeeId, status, data: response.data };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || `Failed to ${status.toLowerCase()} profile update`);
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          `Failed to ${status.toLowerCase()} profile update`
+      );
     }
   }
 );
@@ -136,12 +165,12 @@ const initialState = {
   profileError: null,
   approvingProfileUpdateId: null,
   approvingLeaveId: null,
-  rejectingLeaveId: null
+  rejectingLeaveId: null,
 };
 
 // Create the slice
 const requestDetailsSlice = createSlice({
-  name: 'requestDetails',
+  name: "requestDetails",
   initialState,
   reducers: {
     clearErrors: (state) => {
@@ -156,7 +185,7 @@ const requestDetailsSlice = createSlice({
     },
     setRejectingLeaveId: (state, action) => {
       state.rejectingLeaveId = action.payload;
-    }
+    },
   },
   extraReducers: (builder) => {
     // Fetch pending leave requests
@@ -174,7 +203,7 @@ const requestDetailsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch profile updates
       .addCase(fetchProfileUpdates.pending, (state) => {
         state.profileLoading = true;
@@ -188,12 +217,12 @@ const requestDetailsSlice = createSlice({
         state.profileLoading = false;
         state.profileError = action.payload;
       })
-      
+
       // Update leave status
       .addCase(updateLeaveStatus.pending, (state, action) => {
-        if (action.meta.arg.status === 'Approved') {
+        if (action.meta.arg.status === "Approved") {
           state.approvingLeaveId = action.meta.arg.leaveId;
-        } else if (action.meta.arg.status === 'Rejected') {
+        } else if (action.meta.arg.status === "Rejected") {
           state.rejectingLeaveId = action.meta.arg.leaveId;
         }
       })
@@ -205,7 +234,7 @@ const requestDetailsSlice = createSlice({
         state.approvingLeaveId = null;
         state.rejectingLeaveId = null;
       })
-      
+
       // Update profile request status
       .addCase(updateProfileRequestStatus.pending, (state, action) => {
         state.approvingProfileUpdateId = action.meta.arg.employeeId;
@@ -216,11 +245,16 @@ const requestDetailsSlice = createSlice({
       .addCase(updateProfileRequestStatus.rejected, (state) => {
         state.approvingProfileUpdateId = null;
       });
-  }
+  },
 });
 
 // Export actions
-export const { clearErrors, setApprovingProfileUpdateId, setApprovingLeaveId, setRejectingLeaveId } = requestDetailsSlice.actions;
+export const {
+  clearErrors,
+  setApprovingProfileUpdateId,
+  setApprovingLeaveId,
+  setRejectingLeaveId,
+} = requestDetailsSlice.actions;
 
 // Export reducer
-export default requestDetailsSlice.reducer; 
+export default requestDetailsSlice.reducer;
