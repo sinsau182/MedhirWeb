@@ -21,11 +21,13 @@ import {
 } from "react-icons/fi";
 import { FaCalendarCheck } from "react-icons/fa";
 import { X } from "lucide-react";
-import Image from "next/image";
 import getConfig from "next/config";
+
 function EmployeeProfilePage() {
   const router = useRouter();
   const { id } = router.query; // Get ID from URL query parameter
+
+  const {publicRuntimeConfig}=getConfig();
 
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -33,8 +35,8 @@ function EmployeeProfilePage() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isPageInEditMode, setIsPageInEditMode] = useState(false);
   const [isEditable, setIsEditable] = useState(true); // Controls if editing is allowed based on updateStatus
-
-  const {publicRuntimeConfig}=getConfig();
+  const [showPendingChangesModal, setShowPendingChangesModal] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState(null);
 
   // Main state for form data, used during editing
   const [formData, setFormData] = useState({
@@ -77,7 +79,7 @@ function EmployeeProfilePage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${publicRuntimeConfig.API_BASE_URL}/employee/id/${employeeIdToFetch}`
+        `${publicRuntimeConfig.apiURL}/employee/id/${employeeIdToFetch}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -99,6 +101,154 @@ function EmployeeProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchPendingChanges = () => {
+    if (!employeeById?.pendingUpdateRequest) {
+      toast.error("No pending changes found");
+      return;
+    }
+
+    const changes = {
+      personalInfo: [],
+      bankDetails: [],
+      documents: []
+    };
+
+    // Compare personal information
+    if (employeeById.pendingUpdateRequest.emailPersonal && employeeById.pendingUpdateRequest.emailPersonal !== employeeById.emailPersonal) {
+      changes.personalInfo.push({
+        field: 'Personal Email',
+        oldValue: employeeById.emailPersonal,
+        newValue: employeeById.pendingUpdateRequest.emailPersonal
+      });
+    }
+    if (employeeById.pendingUpdateRequest.phone && employeeById.pendingUpdateRequest.phone !== employeeById.phone) {
+      changes.personalInfo.push({
+        field: 'Phone',
+        oldValue: employeeById.phone,
+        newValue: employeeById.pendingUpdateRequest.phone
+      });
+    }
+    if (employeeById.pendingUpdateRequest.alternatePhone && employeeById.pendingUpdateRequest.alternatePhone !== employeeById.alternatePhone) {
+      changes.personalInfo.push({
+        field: 'Alternate Phone',
+        oldValue: employeeById.alternatePhone,
+        newValue: employeeById.pendingUpdateRequest.alternatePhone
+      });
+    }
+    if (employeeById.pendingUpdateRequest.currentAddress && employeeById.pendingUpdateRequest.currentAddress !== employeeById.currentAddress) {
+      changes.personalInfo.push({
+        field: 'Current Address',
+        oldValue: employeeById.currentAddress,
+        newValue: employeeById.pendingUpdateRequest.currentAddress
+      });
+    }
+    if (employeeById.pendingUpdateRequest.permanentAddress && employeeById.pendingUpdateRequest.permanentAddress !== employeeById.permanentAddress) {
+      changes.personalInfo.push({
+        field: 'Permanent Address',
+        oldValue: employeeById.permanentAddress,
+        newValue: employeeById.pendingUpdateRequest.permanentAddress
+      });
+    }
+
+    // Compare bank details
+    if (employeeById.pendingUpdateRequest.accountNumber && employeeById.pendingUpdateRequest.accountNumber !== employeeById.bankDetails?.accountNumber) {
+      changes.bankDetails.push({
+        field: 'Account Number',
+        oldValue: employeeById.bankDetails?.accountNumber,
+        newValue: employeeById.pendingUpdateRequest.accountNumber
+      });
+    }
+    if (employeeById.pendingUpdateRequest.bankName && employeeById.pendingUpdateRequest.bankName !== employeeById.bankDetails?.bankName) {
+      changes.bankDetails.push({
+        field: 'Bank Name',
+        oldValue: employeeById.bankDetails?.bankName,
+        newValue: employeeById.pendingUpdateRequest.bankName
+      });
+    }
+    if (employeeById.pendingUpdateRequest.branchName && employeeById.pendingUpdateRequest.branchName !== employeeById.bankDetails?.branchName) {
+      changes.bankDetails.push({
+        field: 'Branch Name',
+        oldValue: employeeById.bankDetails?.branchName,
+        newValue: employeeById.pendingUpdateRequest.branchName
+      });
+    }
+    if (employeeById.pendingUpdateRequest.ifscCode && employeeById.pendingUpdateRequest.ifscCode !== employeeById.bankDetails?.ifscCode) {
+      changes.bankDetails.push({
+        field: 'IFSC Code',
+        oldValue: employeeById.bankDetails?.ifscCode,
+        newValue: employeeById.pendingUpdateRequest.ifscCode
+      });
+    }
+    if (employeeById.pendingUpdateRequest.upiPhoneNumber && employeeById.pendingUpdateRequest.upiPhoneNumber !== employeeById.bankDetails?.upiPhoneNumber) {
+      changes.bankDetails.push({
+        field: 'UPI Phone',
+        oldValue: employeeById.bankDetails?.upiPhoneNumber,
+        newValue: employeeById.pendingUpdateRequest.upiPhoneNumber
+      });
+    }
+
+    // Check document changes
+    if (employeeById.pendingUpdateRequest.profileImgUrl && employeeById.pendingUpdateRequest.profileImgUrl !== employeeById.employeeImgUrl) {
+      changes.documents.push({
+        field: 'Profile Image',
+        oldValue: employeeById.employeeImgUrl,
+        newValue: employeeById.pendingUpdateRequest.profileImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.passbookImgUrl && employeeById.pendingUpdateRequest.passbookImgUrl !== employeeById.bankDetails?.passbookImgUrl) {
+      changes.documents.push({
+        field: 'Bank Passbook',
+        oldValue: employeeById.bankDetails?.passbookImgUrl,
+        newValue: employeeById.pendingUpdateRequest.passbookImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.aadharImgUrl && employeeById.pendingUpdateRequest.aadharImgUrl !== employeeById.idProofs?.aadharImgUrl) {
+      changes.documents.push({
+        field: 'Aadhar Card',
+        oldValue: employeeById.idProofs?.aadharImgUrl,
+        newValue: employeeById.pendingUpdateRequest.aadharImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.pancardImgUrl && employeeById.pendingUpdateRequest.pancardImgUrl !== employeeById.idProofs?.pancardImgUrl) {
+      changes.documents.push({
+        field: 'PAN Card',
+        oldValue: employeeById.idProofs?.pancardImgUrl,
+        newValue: employeeById.pendingUpdateRequest.pancardImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.passportImgUrl && employeeById.pendingUpdateRequest.passportImgUrl !== employeeById.idProofs?.passportImgUrl) {
+      changes.documents.push({
+        field: 'Passport',
+        oldValue: employeeById.idProofs?.passportImgUrl,
+        newValue: employeeById.pendingUpdateRequest.passportImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.drivingLicenseImgUrl && employeeById.pendingUpdateRequest.drivingLicenseImgUrl !== employeeById.idProofs?.drivingLicenseImgUrl) {
+      changes.documents.push({
+        field: 'Driving License',
+        oldValue: employeeById.idProofs?.drivingLicenseImgUrl,
+        newValue: employeeById.pendingUpdateRequest.drivingLicenseImgUrl,
+        isImage: true
+      });
+    }
+    if (employeeById.pendingUpdateRequest.voterIdImgUrl && employeeById.pendingUpdateRequest.voterIdImgUrl !== employeeById.idProofs?.voterIdImgUrl) {
+      changes.documents.push({
+        field: 'Voter ID',
+        oldValue: employeeById.idProofs?.voterIdImgUrl,
+        newValue: employeeById.pendingUpdateRequest.voterIdImgUrl,
+        isImage: true
+      });
+    }
+
+    setPendingChanges(changes);
+    setShowPendingChangesModal(true);
   };
 
   // Fetch data on component mount or when URL 'id' changes
@@ -310,7 +460,7 @@ function EmployeeProfilePage() {
         formDataPayload.append("aadharImage", formData.idProofs.aadharImage);
       }
       if (formData.idProofs.panImage instanceof File) {
-        formDataPayload.append("panImage", formData.idProofs.panImage);
+        formData.append("panImage", formData.idProofs.panImage);
       }
       if (formData.idProofs.passportImage instanceof File) {
         formDataPayload.append(
@@ -329,7 +479,7 @@ function EmployeeProfilePage() {
       }
 
       const response = await fetch(
-        `${publicRuntimeConfig.API_BASE_URL}/employee/update-request`,
+        `${publicRuntimeConfig.apiURL}/employee/update-request`,
         {
           method: "PUT",
           body: formDataPayload,
@@ -409,7 +559,9 @@ function EmployeeProfilePage() {
         <main className="p-6 pt-24">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="relative h-64 bg-gradient-to-r from-blue-600 to-blue-700">
+              <div className="relative h-64 bg-gradient-to-r bg-[#3B6FA0]
+
+">
                 <div className="absolute inset-0 opacity-10 bg-[url('/pattern.svg')] bg-repeat"></div>
                 <div className="relative h-full px-8 py-6 flex flex-col justify-between">
                   {/* Top Row */}
@@ -429,15 +581,21 @@ function EmployeeProfilePage() {
                             ? "Update Pending"
                             : "Active Employee"}
                         </span>
+                        {employeeById?.updateStatus === "Pending" && (
+                          <button
+                            onClick={fetchPendingChanges}
+                            className="ml-2 px-2 py-0.5 bg-white/20 rounded-md text-xs hover:bg-white/30 transition-colors"
+                          >
+                            View Changes
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2 bg-white/10 backdrop-blur px-3 py-1.5 rounded-full text-white text-sm">
                         <FaCalendarCheck className="w-4 h-4" />
                         <span>
                           Joined on{" "}
                           {employeeById?.joiningDate
-                            ? new Date(
-                                employeeById.joiningDate
-                              ).toLocaleDateString()
+                            ? new Date(employeeById.joiningDate).toLocaleDateString()
                             : "N/A"}
                         </span>
                       </div>
@@ -475,7 +633,7 @@ function EmployeeProfilePage() {
                       <div className="w-28 h-28 rounded-xl bg-white p-1 shadow-lg">
                         <div className="w-full h-full rounded-lg bg-gray-100 border border-white overflow-hidden flex items-center justify-center">
                           {formData.employee.profileImage instanceof File ? (
-                            <Image
+                            <img
                               src={URL.createObjectURL(
                                 formData.employee.profileImage
                               )}
@@ -483,7 +641,7 @@ function EmployeeProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : employeeById?.employeeImgUrl ? (
-                            <Image
+                            <img
                               src={employeeById.employeeImgUrl}
                               alt="Profile"
                               className="w-full h-full object-cover"
@@ -609,192 +767,421 @@ function EmployeeProfilePage() {
               </div>
 
               {/* --- Profile Info Sections --- */}
-              <div className="pt-10 px-14 pb-10 bg-gray-50">
-                <div className="grid grid-cols-12 gap-8">
+              <div className="p-6 bg-gray-50">
+                <div className="grid grid-cols-1 lg:grid-cols-11 gap-6">
                   {/* --- Left Column --- */}
-                  <div className="col-span-12 lg:col-span-5 space-y-6">
-                    {/* Personal Information Card */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                      <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
-                        <div className="flex items-center">
-                          <FiUser className="w-5 h-5 text-blue-500 mr-2" />
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            Personal Information
-                          </h3>
+
+
+                  {/* --- Middle Column --- */}
+                  <div className="lg:col-span-8 space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                      {/* Personal Information Card */}
+                      <div className="lg:col-span-6">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                          <div className="flex justify-between items-center mb-3 pb-3 -mt-2 border-b border-gray-100">
+                            <div className="flex items-center">
+                              <FiUser className="w-5 h-5 text-blue-500 mr-2" />
+                              <h3 className="text-lg font-semibold text-gray-800">
+                                Personal Information
+                              </h3>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Father's Name - Read Only */}
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Father's Name
+                              </label>
+                              <p className="text-base text-gray-900">
+                                {employeeById?.fathersName || "-"}
+                              </p>
+                            </div>
+                            {/* Gender - Read Only */}
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Gender
+                              </label>
+                              <p className="text-base text-gray-900">
+                                {employeeById?.gender || "-"}
+                              </p>
+                            </div>
+                            {/* Phone - Editable */}
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Phone
+                              </label>
+                              {isPageInEditMode ? (
+                                <input
+                                  type="tel"
+                                  value={formData.employee.phone1}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      "employee",
+                                      "phone1",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                                  pattern="[0-9]{10}"
+                                  disabled={!isEditable}
+                                />
+                              ) : (
+                                <p className="text-base text-gray-900">
+                                  {employeeById?.phone || "-"}
+                                </p>
+                              )}
+                            </div>
+                            {/* Alternate Phone - Editable */}
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Alternate Phone
+                              </label>
+                              {isPageInEditMode ? (
+                                <input
+                                  type="tel"
+                                  value={formData.employee.phone2 || ""}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      "employee",
+                                      "phone2",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                                  pattern="[0-9]{10}"
+                                  placeholder="10-digit number"
+                                  disabled={!isEditable}
+                                />
+                              ) : (
+                                <p className="text-base text-gray-900">
+                                  {employeeById?.alternatePhone || "-"}
+                                </p>
+                              )}
+                            </div>
+                            {/* Personal Email - Editable */}
+                            <div className="col-span-2 bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Personal Email
+                              </label>
+                              {isPageInEditMode ? (
+                                <input
+                                  type="email"
+                                  value={formData.employee.email.personal}
+                                  onChange={(e) =>
+                                    handleNestedInputChange(
+                                      "employee",
+                                      "email",
+                                      "personal",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                                  disabled={!isEditable}
+                                />
+                              ) : (
+                                <p className="text-base text-gray-900">
+                                  {employeeById?.emailPersonal || "-"}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-5">
-                        {/* Father's Name - Read Only */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Father&apos;s Name
-                          </label>
-                          <p className="text-base text-gray-900">
-                            {employeeById?.fathersName || "-"}
-                          </p>
+
+                      {/* Statutory Information Card */}
+                      <div className="lg:col-span-6">
+                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
+                          <FiShield className="w-5 h-5 text-blue-500 mr-2" />
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            Statutory Information
+                          </h3>
                         </div>
-                        {/* Gender - Read Only */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Gender
-                          </label>
-                          <p className="text-base text-gray-900">
-                            {employeeById?.gender || "-"}
-                          </p>
-                        </div>
-                        {/* Phone - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Phone
-                          </label>
-                          {isPageInEditMode ? (
-                            <input
-                              type="tel"
-                              value={formData.employee.phone1}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "phone1",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                              pattern="[0-9]{10}"
-                              disabled={!isEditable}
-                            />
-                          ) : (
-                            <p className="text-base text-gray-900">
-                              {employeeById?.phone || "-"}
-                            </p>
+                          <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                              PF Status
+                            </label>
+                            <div className="flex items-center">
+                              <div
+                                className={`w-2 h-2 rounded-full mr-2 ${
+                                  employeeById?.pfEnrolled
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                              ></div>
+                              <p className="text-base text-gray-900">
+                                {employeeById?.pfEnrolled
+                                  ? "Enrolled"
+                                  : "Not Enrolled"}
+                              </p>
+                            </div>
+                          </div>
+                          {employeeById?.pfEnrolled && (
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                UAN Number
+                              </label>
+                              <p className="text-base text-gray-900">
+                                {employeeById?.uanNumber || "-"}
+                              </p>
+                            </div>
                           )}
-                        </div>
-                        {/* Alternate Phone - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Alternate Phone
-                          </label>
-                          {isPageInEditMode ? (
-                            <input
-                              type="tel"
-                              value={formData.employee.phone2 || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "phone2",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                              pattern="[0-9]{10}"
-                              placeholder="10-digit number"
-                              disabled={!isEditable}
-                            />
-                          ) : (
-                            <p className="text-base text-gray-900">
-                              {employeeById?.alternatePhone || "-"}
-                            </p>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                              ESIC Status
+                            </label>
+                            <div className="flex items-center">
+                              <div
+                                className={`w-2 h-2 rounded-full mr-2 ${
+                                  employeeById?.esicEnrolled
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                              ></div>
+                              <p className="text-base text-gray-900">
+                                {employeeById?.esicEnrolled
+                                  ? "Enrolled"
+                                  : "Not Enrolled"}
+                              </p>
+                            </div>
+                          </div>
+                          {employeeById?.esicEnrolled && (
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                ESIC Number
+                              </label>
+                              <p className="text-base text-gray-900">
+                                {employeeById?.esicNumber || "-"}
+                              </p>
+                            </div>
                           )}
-                        </div>
-                        {/* Personal Email - Editable */}
-                        <div className="col-span-2 bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Personal Email
-                          </label>
-                          {isPageInEditMode ? (
-                            <input
-                              type="email"
-                              value={formData.employee.email.personal}
-                              onChange={(e) =>
-                                handleNestedInputChange(
-                                  "employee",
-                                  "email",
-                                  "personal",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                              disabled={!isEditable}
-                            />
-                          ) : (
-                            <p className="text-base text-gray-900">
-                              {employeeById?.emailPersonal || "-"}
-                            </p>
-                          )}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Address Information Card */}
+                    {/* ID Proofs Card */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                      <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-5 pb-2 -mt-2 border-b border-gray-100">
                         <div className="flex items-center">
-                          <FiMapPin className="w-5 h-5 text-blue-500 mr-2" />
+                          <FiBook className="w-5 h-5 text-blue-500 mr-2" />
                           <h3 className="text-lg font-semibold text-gray-800">
-                            Address Information
+                            Identity Documents
                           </h3>
                         </div>
                       </div>
-                      <div className="space-y-5">
-                        {/* Current Address - Editable */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {[
+                          {
+                            label: "Aadhar No.",
+                            key: "aadharNo",
+                            imgUrlKey: "aadharImgUrl",
+                            fileKey: "aadharImage",
+                          },
+                          {
+                            label: "PAN No.",
+                            key: "panNo",
+                            imgUrlKey: "pancardImgUrl",
+                            fileKey: "panImage",
+                          },
+                          {
+                            label: "Passport",
+                            key: "passport",
+                            imgUrlKey: "passportImgUrl",
+                            fileKey: "passportImage",
+                          },
+                          {
+                            label: "Driving License",
+                            key: "drivingLicense",
+                            imgUrlKey: "drivingLicenseImgUrl",
+                            fileKey: "drivingLicenseImage",
+                          },
+                          {
+                            label: "Voter ID",
+                            key: "voterId",
+                            imgUrlKey: "voterIdImgUrl",
+                            fileKey: "voterIdImage",
+                          },
+                        ].map(({ label, key, imgUrlKey, fileKey }) => (
+                          <div
+                            key={key}
+                            className="bg-gray-50 p-3 rounded-lg space-y-1"
+                          >
+                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                              {label}
+                            </label>
+                            {/* Always show the number as read-only */}
+                            <p className="text-base text-gray-900">
+                              {employeeById?.idProofs?.[key] || "-"}
+                            </p>
+                            <div className="pt-2 border-t border-gray-200 mt-2">
+                              {isPageInEditMode ? (
+                                <div>
+                                  {!formData.idProofs[fileKey] && (
+                                    <label
+                                      htmlFor={`upload-${key}`}
+                                      className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                                        isEditable
+                                          ? "cursor-pointer"
+                                          : "opacity-50 cursor-not-allowed"
+                                      }`}
+                                    >
+                                      <FiUpload className="w-3 h-3 mr-1" /> Upload
+                                    </label>
+                                  )}
+                                  <input
+                                    type="file"
+                                    id={`upload-${key}`}
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    disabled={!isEditable}
+                                    onChange={(e) => {
+                                      const file = e.target.files[0];
+                                      if (file) {
+                                        handleInputChange(
+                                          "idProofs",
+                                          fileKey,
+                                          file
+                                        );
+                                      }
+                                    }}
+                                  />
+                                  {formData.idProofs[fileKey] instanceof
+                                    File && (
+                                    <div className="mt-2 flex items-center text-sm">
+                                      <span className="text-gray-600 mr-2 truncate">
+                                        {formData.idProofs[fileKey].name}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleInputChange(
+                                            "idProofs",
+                                            fileKey,
+                                            null
+                                          )
+                                        }
+                                        className="text-red-500 hover:text-red-700"
+                                        disabled={!isEditable}
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : employeeById?.idProofs?.[imgUrlKey] ? (
+                                <a
+                                  href={employeeById.idProofs[imgUrlKey]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                >
+                                  <FiEye className="w-4 h-4 mr-1" /> View
+                                  Document
+                                </a>
+                              ) : (
+                                <p className="text-xs text-gray-500">
+                                  No document
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Salary Information Card */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <div className="flex items-center mb-5 pb-3 -mt-2 border-b border-gray-100">
+                        <FiDollarSign className="w-5 h-5 text-blue-500 mr-2" />
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Salary Information
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Current Address
+                            Annual CTC
                           </label>
-                          {isPageInEditMode ? (
-                            <textarea
-                              value={formData.employee.currentAddress}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "currentAddress",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                              rows={3}
-                              disabled={!isEditable}
-                            />
-                          ) : (
-                            <p className="text-base text-gray-900 mt-1">
-                              {employeeById?.currentAddress || "-"}
-                            </p>
-                          )}
+                          <p className="text-base text-gray-900">
+                            ₹
+                            {employeeById?.salaryDetails?.annualCtc?.toLocaleString() ||
+                              "-"}
+                          </p>
                         </div>
-                        {/* Permanent Address - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Permanent Address
+                            Monthly CTC
                           </label>
-                          {isPageInEditMode ? (
-                            <textarea
-                              value={formData.employee.permanentAddress}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "permanentAddress",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                              rows={3}
-                              disabled={!isEditable}
-                            />
-                          ) : (
-                            <p className="text-base text-gray-900 mt-1">
-                              {employeeById?.permanentAddress || "-"}
-                            </p>
-                          )}
+                          <p className="text-base text-gray-900">
+                            ₹
+                            {employeeById?.salaryDetails?.monthlyCtc?.toLocaleString() ||
+                              "-"}
+                          </p>
                         </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            Basic Salary
+                          </label>
+                          <p className="text-base text-gray-900">
+                            ₹
+                            {employeeById?.salaryDetails?.basicSalary?.toLocaleString() ||
+                              "-"}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            HRA
+                          </label>
+                          <p className="text-base text-gray-900">
+                            ₹
+                            {employeeById?.salaryDetails?.hra?.toLocaleString() ||
+                              "-"}
+                          </p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            Allowances
+                          </label>
+                          <p className="text-base text-gray-900">
+                            ₹
+                            {employeeById?.salaryDetails?.allowances?.toLocaleString() ||
+                              "-"}
+                          </p>
+                        </div>
+                        {employeeById?.pfEnrolled && (
+                          <>
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Employer PF
+                              </label>
+                              <p className="text-base text-gray-900">
+                                ₹
+                                {employeeById?.salaryDetails?.employerPfContribution?.toLocaleString() ||
+                                  "-"}
+                              </p>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                Employee PF
+                              </label>
+                              <p className="text-base text-gray-900">
+                                ₹
+                                {employeeById?.salaryDetails?.employeePfContribution?.toLocaleString() ||
+                                  "-"}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* --- Right Column --- */}
-                  <div className="col-span-12 lg:col-span-7 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="lg:col-span-3">
                       {/* Bank Information Card */}
                       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                        <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-5 pb-5 border-b border-gray-100">
                           <div className="flex items-center">
                             <FiCreditCard className="w-5 h-5 text-blue-500 mr-2" />
                             <h3 className="text-lg font-semibold text-gray-800">
@@ -802,7 +1189,7 @@ function EmployeeProfilePage() {
                             </h3>
                           </div>
                         </div>
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 gap-6">
                           {/* Account Number - Editable */}
                           <div className="bg-gray-50 p-3 rounded-lg">
                             <label className="text-sm text-gray-600 mb-1.5 block font-medium">
@@ -941,7 +1328,7 @@ function EmployeeProfilePage() {
                             </p>
                           </div>
                           {/* Passbook Upload - Enabled in Edit Mode */}
-                          <div className="border-t pt-4 mt-2">
+                          <div className="border-t pt-4 mt-4">
                             <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                               Bank Passbook
                             </label>
@@ -1023,301 +1410,111 @@ function EmployeeProfilePage() {
                                 )}
                               </div>
                             )}
+                        </div>
                           </div>
                         </div>
                       </div>
-
-                      {/* Statutory Information Card (Read-only) */}
-                      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                        <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
-                          <FiShield className="w-5 h-5 text-blue-500 mr-2" />
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            Statutory Information
-                          </h3>
-                        </div>
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                              PF Status
-                            </label>
-                            <div className="flex items-center">
-                              <div
-                                className={`w-2 h-2 rounded-full mr-2 ${
-                                  employeeById?.pfEnrolled
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                }`}
-                              ></div>
-                              <p className="text-base text-gray-900">
-                                {employeeById?.pfEnrolled
-                                  ? "Enrolled"
-                                  : "Not Enrolled"}
-                              </p>
-                            </div>
-                          </div>
-                          {employeeById?.pfEnrolled && (
-                            <div className="bg-gray-50 p-3 rounded-lg">
-                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                                UAN Number
-                              </label>
-                              <p className="text-base text-gray-900">
-                                {employeeById?.uanNumber || "-"}
-                              </p>
-                            </div>
-                          )}
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                              ESIC Status
-                            </label>
-                            <div className="flex items-center">
-                              <div
-                                className={`w-2 h-2 rounded-full mr-2 ${
-                                  employeeById?.esicEnrolled
-                                    ? "bg-green-500"
-                                    : "bg-red-500"
-                                }`}
-                              ></div>
-                              <p className="text-base text-gray-900">
-                                {employeeById?.esicEnrolled
-                                  ? "Enrolled"
-                                  : "Not Enrolled"}
-                              </p>
-                            </div>
-                          </div>
-                          {employeeById?.esicEnrolled && (
-                            <div className="bg-gray-50 p-3 rounded-lg">
-                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                                ESIC Number
-                              </label>
-                              <p className="text-base text-gray-900">
-                                {employeeById?.esicNumber || "-"}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* ID Proofs Card */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                      <div className="flex justify-between items-center mb-5 pb-3 border-b border-gray-100">
-                        <div className="flex items-center">
-                          <FiBook className="w-5 h-5 text-blue-500 mr-2" />
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            Identity Documents
-                          </h3>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                        {[
-                          {
-                            label: "Aadhar No.",
-                            key: "aadharNo",
-                            imgUrlKey: "aadharImgUrl",
-                            fileKey: "aadharImage",
-                          },
-                          {
-                            label: "PAN No.",
-                            key: "panNo",
-                            imgUrlKey: "pancardImgUrl",
-                            fileKey: "panImage",
-                          },
-                          {
-                            label: "Passport",
-                            key: "passport",
-                            imgUrlKey: "passportImgUrl",
-                            fileKey: "passportImage",
-                          },
-                          {
-                            label: "Driving License",
-                            key: "drivingLicense",
-                            imgUrlKey: "drivingLicenseImgUrl",
-                            fileKey: "drivingLicenseImage",
-                          },
-                          {
-                            label: "Voter ID",
-                            key: "voterId",
-                            imgUrlKey: "voterIdImgUrl",
-                            fileKey: "voterIdImage",
-                          },
-                        ].map(({ label, key, imgUrlKey, fileKey }) => (
-                          <div
-                            key={key}
-                            className="bg-gray-50 p-3 rounded-lg space-y-1"
-                          >
-                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                              {label}
-                            </label>
-                            {/* Always show the number as read-only */}
-                            <p className="text-base text-gray-900">
-                              {employeeById?.idProofs?.[key] || "-"}
-                            </p>
-                            <div className="pt-2 border-t border-gray-200 mt-2">
-                              {isPageInEditMode ? (
-                                <div>
-                                  <label
-                                    htmlFor={`upload-${key}`}
-                                    className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                      isEditable
-                                        ? "cursor-pointer"
-                                        : "opacity-50 cursor-not-allowed"
-                                    }`}
-                                  >
-                                    <FiUpload className="w-3 h-3 mr-1" /> Upload
-                                  </label>
-                                  <input
-                                    type="file"
-                                    id={`upload-${key}`}
-                                    className="hidden"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    disabled={!isEditable}
-                                    onChange={(e) => {
-                                      const file = e.target.files[0];
-                                      if (file) {
-                                        handleInputChange(
-                                          "idProofs",
-                                          fileKey,
-                                          file
-                                        );
-                                      }
-                                    }}
-                                  />
-                                  {formData.idProofs[fileKey] instanceof
-                                    File && (
-                                    <div className="mt-2 flex items-center text-sm">
-                                      <span className="text-gray-600 mr-2 truncate">
-                                        {formData.idProofs[fileKey].name}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleInputChange(
-                                            "idProofs",
-                                            fileKey,
-                                            null
-                                          )
-                                        }
-                                        className="text-red-500 hover:text-red-700"
-                                        disabled={!isEditable}
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : employeeById?.[imgUrlKey] ? (
-                                <a
-                                  href={employeeById[imgUrlKey]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                >
-                                  <FiEye className="w-4 h-4 mr-1" /> View
-                                  Document
-                                </a>
-                              ) : (
-                                <p className="text-xs text-gray-500">
-                                  No document
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Salary Information Card (Read-only) */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                      <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
-                        <FiDollarSign className="w-5 h-5 text-blue-500 mr-2" />
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          Salary Information
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Annual CTC
-                          </label>
-                          <p className="text-base text-gray-900">
-                            ₹
-                            {employeeById?.salaryDetails?.annualCtc?.toLocaleString() ||
-                              "-"}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Monthly CTC
-                          </label>
-                          <p className="text-base text-gray-900">
-                            ₹
-                            {employeeById?.salaryDetails?.monthlyCtc?.toLocaleString() ||
-                              "-"}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Basic Salary
-                          </label>
-                          <p className="text-base text-gray-900">
-                            ₹
-                            {employeeById?.salaryDetails?.basicSalary?.toLocaleString() ||
-                              "-"}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            HRA
-                          </label>
-                          <p className="text-base text-gray-900">
-                            ₹
-                            {employeeById?.salaryDetails?.hra?.toLocaleString() ||
-                              "-"}
-                          </p>
-                        </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Allowances
-                          </label>
-                          <p className="text-base text-gray-900">
-                            ₹
-                            {employeeById?.salaryDetails?.allowances?.toLocaleString() ||
-                              "-"}
-                          </p>
-                        </div>
-                        {employeeById?.pfEnrolled && (
-                          <>
-                            <div className="bg-gray-50 p-3 rounded-lg">
-                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                                Employer PF
-                              </label>
-                              <p className="text-base text-gray-900">
-                                ₹
-                                {employeeById?.salaryDetails?.employerPfContribution?.toLocaleString() ||
-                                  "-"}
-                              </p>
-                            </div>
-                            <div className="bg-gray-50 p-3 rounded-lg">
-                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                                Employee PF
-                              </label>
-                              <p className="text-base text-gray-900">
-                                ₹
-                                {employeeById?.salaryDetails?.employeePfContribution?.toLocaleString() ||
-                                  "-"}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      {/* Add the Pending Changes Modal */}
+      {showPendingChangesModal && pendingChanges && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Field Changes</h3>
+              <button
+                onClick={() => setShowPendingChangesModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {/* Personal Information Changes */}
+                    {pendingChanges.personalInfo.map((field, index) => (
+                <div key={field.field + index} className="border rounded p-3 bg-gray-50 text-sm">
+                  <p className="font-medium text-gray-700 mb-1">{field.field}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      <p className="text-gray-800 break-words">{field.oldValue || "(empty)"}</p>
+                  </div>
+                    <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      <p className="text-green-700 break-words">{field.newValue || "(empty)"}</p>
+                </div>
+                  </div>
+                </div>
+              ))}
+              {/* Bank Details Changes */}
+                    {pendingChanges.bankDetails.map((field, index) => (
+                <div key={field.field + index} className="border rounded p-3 bg-gray-50 text-sm">
+                  <p className="font-medium text-gray-700 mb-1">{field.field}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      <p className="text-gray-800 break-words">{field.oldValue || "(empty)"}</p>
+                  </div>
+                <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      <p className="text-green-700 break-words">{field.newValue || "(empty)"}</p>
+                  </div>
+                </div>
+                </div>
+              ))}
+              {/* Document Updates */}
+              {pendingChanges.documents.map((doc, index) => (
+                <div key={doc.field + index} className="border rounded p-3 bg-gray-50 text-sm">
+                  <p className="font-medium text-gray-700 mb-1">{doc.field}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      {doc.isImage ? (
+                        doc.oldValue ? (
+                          <a href={doc.oldValue} target="_blank" rel="noopener noreferrer">
+                            <img src={doc.oldValue} alt={`Old ${doc.field}`} className="h-16 rounded border" />
+                          </a>
+                        ) : (
+                          <span className="italic text-gray-400">(empty)</span>
+                        )
+                      ) : (
+                        <p className="text-gray-800 break-words">{doc.oldValue || "(empty)"}</p>
+                      )}
+                </div>
+                    <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      {doc.isImage ? (
+                        doc.newValue ? (
+                          <a href={doc.newValue} target="_blank" rel="noopener noreferrer">
+                            <img src={doc.newValue} alt={`New ${doc.field}`} className="h-16 rounded border" />
+                          </a>
+                        ) : (
+                          <span className="italic text-gray-400">(empty)</span>
+                        )
+                      ) : (
+                        <p className="text-green-700 break-words">{doc.newValue || "(empty)"}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 text-right">
+              <button
+                onClick={() => setShowPendingChangesModal(false)}
+                className="border border-gray-300 rounded px-4 py-1 text-sm hover:bg-gray-100"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
