@@ -152,6 +152,7 @@ export const applyLeave = createAsyncThunk(
         {
           ...leaveData,
           employeeId: "EMP001", // Hardcoded as requested
+          companyId: "CID101", // Hardcoded as requested
           leaveName: "Leave", // Hardcoded as requested
           shiftType: leaveData.shiftType // Use the shift type from the form
         },
@@ -227,12 +228,12 @@ export const applyCompOffLeave = createAsyncThunk(
 
       const response = await axios.post(`${API_BASE_URL}/leave/apply`, {
         employeeId: "EMP001",
+        companyId: "CID101", // Hardcoded as requested
         leaveName: "Comp-Off",
         startDate: formData.startDate,
         endDate: formData.endDate,
         shiftType: formData.shiftType,
         reason: formData.reason,
-        companyId: formData.companyId,
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
