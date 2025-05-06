@@ -1,19 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
-import { Calendar, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchLeaves, createLeave, applyLeave, fetchLeaveHistory, clearErrors, applyCompOffLeave } from "@/redux/slices/leaveSlice";
 import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveBalanceSlice";
 import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
-import axios from 'axios';
 import { toast } from "sonner";
 import CustomDatePicker from '@/components/CustomDatePicker';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import withAuth from "@/components/withAuth";
 
 const Leaves = () => {
-  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
   const [token, setToken] = useState(null);
 
   useEffect(() => {
@@ -56,9 +54,9 @@ const Leaves = () => {
   
 
   useEffect(() => {
-    dispatch(fetchLeaves("EMP001"));
+    dispatch(fetchLeaves("MED101"));
     dispatch(fetchLeaveHistory());
-    dispatch(fetchLeaveBalance("EMP001"));
+    dispatch(fetchLeaveBalance("MED101"));
     dispatch(fetchPublicHolidays());
 
     return () => {
@@ -145,35 +143,35 @@ const Leaves = () => {
     setCompOffForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // Format dates to YYYY-MM-DD format
-      const formatDate = (date) => {
-        return new Date(date).toISOString().split('T')[0];
-      };
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   try {
+  //     // Format dates to YYYY-MM-DD format
+  //     const formatDate = (date) => {
+  //       return new Date(date).toISOString().split('T')[0];
+  //     };
 
-      const leaveData = {
-        employeeId: "emp123",
-        employeeName: "Arun",
-        department: "Engineering",
-        leaveType: "Casual Leave",
-        startDate: formatDate(leaveForm.dates[0].date),
-        endDate: formatDate(leaveForm.dates[leaveForm.dates.length - 1].date),
-        shiftType: leaveForm.shiftType,
-        reason: leaveForm.reason,
-        status: "Pending",
-        companyId: selectedCompanyId
-      };
+  //     const leaveData = {
+  //       employeeId: "emp123",
+  //       employeeName: "Arun",
+  //       department: "Engineering",
+  //       leaveType: "Casual Leave",
+  //       startDate: formatDate(leaveForm.dates[0].date),
+  //       endDate: formatDate(leaveForm.dates[leaveForm.dates.length - 1].date),
+  //       shiftType: leaveForm.shiftType,
+  //       reason: leaveForm.reason,
+  //       status: "Pending",
+  //       companyId: selectedCompanyId
+  //     };
       
-      await dispatch(createLeave({ ...leaveData, companyId: selectedCompanyId })).unwrap();
-      closeModal();
-      // Refresh the page to show updated leave history
-      window.location.reload();
-    } catch (error) {
-      toast.error(error.message || "Failed to create leave");
-    }
-  };
+  //     await dispatch(createLeave({ ...leaveData, companyId: selectedCompanyId })).unwrap();
+  //     closeModal();
+  //     // Refresh the page to show updated leave history
+  //     window.location.reload();
+  //   } catch (error) {
+  //     toast.error(error.message || "Failed to create leave");
+  //   }
+  // };
 
   const handleCompOffSubmit = async (e) => {
     e.preventDefault();
@@ -189,7 +187,6 @@ const Leaves = () => {
         endDate: compOffForm.dates[0].date.toISOString().split('T')[0],
         shiftType: compOffForm.dates[0]?.timeSlot || compOffForm.dates[0]?.shiftType || 'Full Day',
         reason: compOffForm.description,
-        companyId: selectedCompanyId
       };
 
       const resultAction = await dispatch(applyCompOffLeave(formData));
@@ -198,7 +195,7 @@ const Leaves = () => {
         closeCompOffModal();
         // Refresh both leave history and balance
         dispatch(fetchLeaveHistory());
-        dispatch(fetchLeaveBalance("EMP001"));
+        dispatch(fetchLeaveBalance("MED101"));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for comp-off");
       }
@@ -215,7 +212,6 @@ const Leaves = () => {
       endDate: leaveForm.dates[leaveForm.dates.length - 1]?.date.toISOString().split('T')[0],
       shiftType: leaveForm.dates[0]?.timeSlot || leaveForm.dates[0]?.shiftType || 'Full Day',
       reason: leaveForm.reason,
-      companyId: selectedCompanyId
     };
 
     if (!formData.startDate || !formData.endDate || !formData.reason) {
@@ -238,7 +234,7 @@ const Leaves = () => {
         toast.success("Leave application submitted successfully");
         closeModal();
         dispatch(fetchLeaveHistory());
-        dispatch(fetchLeaveBalance("EMP001"));
+        dispatch(fetchLeaveBalance("MED101"));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for leave");
       }

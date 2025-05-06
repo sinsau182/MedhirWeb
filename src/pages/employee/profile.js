@@ -21,10 +21,13 @@ import {
 } from "react-icons/fi";
 import { FaCalendarCheck } from "react-icons/fa";
 import { X } from "lucide-react";
+import getConfig from "next/config";
 
 function EmployeeProfilePage() {
   const router = useRouter();
   const { id } = router.query; // Get ID from URL query parameter
+
+  const {publicRuntimeConfig}=getConfig();
 
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -72,16 +75,17 @@ function EmployeeProfilePage() {
 
   // --- Data Fetching ---
   const fetchByEmployeeId = async () => {
-    const employeeIdToFetch = "MED130"; // Use ID from URL or default
+    const employeeIdToFetch = "MED101"; // Use ID from URL or default
     setLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/id/${employeeIdToFetch}`
+        `${publicRuntimeConfig.apiURL}/employee/id/${employeeIdToFetch}`
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log("Employee Data:", data); // Debug log
       setEmployeeById(data);
 
       // Check update status to enable/disable editing
@@ -426,7 +430,9 @@ function EmployeeProfilePage() {
         // Personal info
         emailPersonal: formData.employee.email.personal,
         phone: formData.employee.phone1,
-        alternatePhone: formData.employee.phone2, // Added alternatePhone
+        ...(formData.employee.phone2 !== employeeById.alternatePhone && {
+          alternatePhone: formData.employee.phone2
+        }),
         // Address info
         currentAddress: formData.employee.currentAddress,
         permanentAddress: formData.employee.permanentAddress,
@@ -476,7 +482,7 @@ function EmployeeProfilePage() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employee/update-request`,
+        `${publicRuntimeConfig.apiURL}/employee/update-request`,
         {
           method: "PUT",
           body: formDataPayload,
@@ -694,11 +700,11 @@ function EmployeeProfilePage() {
                         </div>
                         <div className="flex items-center space-x-2 text-white/80 text-sm">
                           <span>
-                            {employeeById?.designation || "Designation"}
+                            {employeeById?.designationName || "-"}
                           </span>
                           <span className="text-white/40">•</span>
                           <span>
-                            {employeeById?.department || "Department"}
+                            {employeeById?.departmentName || "-"}
                           </span>
                         </div>
                       </div>

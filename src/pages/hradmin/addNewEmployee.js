@@ -17,6 +17,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import getConfig from "next/config";
 import axios from "axios";
 
 // Add this CSS class to your global styles or component
@@ -80,7 +81,7 @@ const DepartmentSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">{value.name || value}</span>
+              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
             ) : (
               <span className="text-gray-500">Select department</span>
             )}
@@ -127,7 +128,6 @@ const DepartmentSelect = ({ label, options, value, onChange }) => {
   );
 };
 
-// Add DesignationSelect component after DepartmentSelect
 const DesignationSelect = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -143,6 +143,10 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Debug log to check values
+  console.log("DesignationSelect - Current value:", value);
+  console.log("DesignationSelect - Available options:", options);
+
   return (
     <div className={inputGroupClass} ref={dropdownRef}>
       <label className={floatingLabelClass}>{label}</label>
@@ -153,7 +157,7 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">{value.name || value}</span>
+              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
             ) : (
               <span className="text-gray-500">Select designation</span>
             )}
@@ -314,6 +318,7 @@ function EmployeeForm() {
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
+  const {publicRuntimeConfig}=getConfig();
 
   // Add department fetch on component mount
   useEffect(() => {
@@ -331,7 +336,7 @@ function EmployeeForm() {
         console.log("Fetching departments for company:", companyId);
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/company/${companyId}`,
+          `${publicRuntimeConfig.apiURL}/departments/company/${companyId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -435,6 +440,7 @@ function EmployeeForm() {
     if (employee) {
       try {
         const parsedEmployee = JSON.parse(employee);
+        console.log("Parsed Employee Data:", parsedEmployee); // Debug log
         setFormData((prevFormData) => ({
           ...prevFormData,
           employee: {
@@ -449,8 +455,14 @@ function EmployeeForm() {
             emailOfficial: parsedEmployee.emailOfficial || "",
             currentAddress: parsedEmployee.currentAddress || "",
             permanentAddress: parsedEmployee.permanentAddress || "",
-            department: parsedEmployee.departmentName || "",
-            designation: parsedEmployee.designationName || "",
+            department: {
+              departmentId: parsedEmployee.department,
+              name: parsedEmployee.departmentName
+            },
+            designation: {
+              designationId: parsedEmployee.designation,
+              name: parsedEmployee.designationName
+            },
             joiningDate: parsedEmployee.joiningDate || "",
             reportingManager: parsedEmployee.reportingManager || "",
             overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
@@ -463,7 +475,7 @@ function EmployeeForm() {
             esicEnrolled: Boolean(parsedEmployee.esicEnrolled),
             esicNumber: parsedEmployee.esicNumber || "",
           },
-          companyId: parsedEmployee.companyId || company, // Ensure companyId is set
+          companyId: parsedEmployee.companyId || company,
           idProofs: {
             aadharNo: parsedEmployee.idProofs?.aadharNo || "",
             aadharImgUrl: parsedEmployee.idProofs?.aadharImgUrl || null,
@@ -503,6 +515,7 @@ function EmployeeForm() {
 
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
+        console.error("Error parsing employee data:", error);
         toast.error("Error loading employee data");
       }
     }
@@ -584,11 +597,19 @@ function EmployeeForm() {
     Object.entries(obj).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
         if (typeof value === "object" && !Array.isArray(value) && !(value instanceof File)) {
+          // Handle nested objects (like idProofs, bankDetails, etc.)
           const nestedClean = prepareFormData(value);
           if (Object.keys(nestedClean).length > 0) {
             cleanObj[key] = nestedClean;
           }
+        } else if (value instanceof File) {
+          // Skip File objects as they'll be handled separately in FormData
+          return;
+        } else if (Array.isArray(value)) {
+          // Handle arrays
+          cleanObj[key] = value;
         } else {
+          // Handle primitive values
           cleanObj[key] = value;
         }
       }
@@ -609,9 +630,17 @@ function EmployeeForm() {
   const validateIdProofs = (idProofs) => {
     const errors = {};
     Object.entries(idProofs).forEach(([key, value]) => {
-      if (value && value.trim() !== "") {
+      // Skip validation for image fields
+      if (key.toLowerCase().includes('imgurl')) {
+        return;
+      }
+      
+      // Convert value to string and trim if it's not null/undefined
+      const stringValue = value ? String(value).trim() : '';
+      
+      if (stringValue !== '') {
         const pattern = idProofPatterns[key];
-        if (pattern && !pattern.test(value.trim())) {
+        if (pattern && !pattern.test(stringValue)) {
           errors[key] = `Invalid ${key.replace(/([A-Z])/g, ' $1').toLowerCase()} format`;
         }
       }
@@ -692,13 +721,39 @@ function EmployeeForm() {
         companyId: formData.companyId,
       };
 
-      // Only include sections that have data
-      if (Object.keys(formData.idProofs).some(key => formData.idProofs[key])) {
-        baseEmployeeData.idProofs = prepareFormData(formData.idProofs);
+      // Handle ID proofs separately to ensure proper format
+      const idProofsData = {};
+      Object.entries(formData.idProofs).forEach(([key, value]) => {
+        if (value instanceof File) {
+          // Skip File objects as they'll be handled separately
+          return;
+        }
+        if (value && typeof value === 'string' && !key.toLowerCase().includes('imgurl')) {
+          idProofsData[key] = value.trim();
+        }
+      });
+      if (Object.keys(idProofsData).length > 0) {
+        baseEmployeeData.idProofs = idProofsData;
       }
+
+      // Handle bank details
       if (Object.keys(formData.bankDetails).some(key => formData.bankDetails[key])) {
-        baseEmployeeData.bankDetails = prepareFormData(formData.bankDetails);
+        const bankDetailsData = {};
+        Object.entries(formData.bankDetails).forEach(([key, value]) => {
+          if (value instanceof File) {
+            // Skip File objects as they'll be handled separately
+            return;
+          }
+          if (value && typeof value === 'string' && !key.toLowerCase().includes('imgurl')) {
+            bankDetailsData[key] = value.trim();
+          }
+        });
+        if (Object.keys(bankDetailsData).length > 0) {
+          baseEmployeeData.bankDetails = bankDetailsData;
+        }
       }
+
+      // Handle salary details
       if (Object.keys(formData.salaryDetails).some(key => formData.salaryDetails[key])) {
         baseEmployeeData.salaryDetails = prepareFormData(formData.salaryDetails);
       }
@@ -724,9 +779,6 @@ function EmployeeForm() {
         const fileOrUrl = formData.idProofs[formField];
         if (fileOrUrl instanceof File) {
           submitFormData.append(apiField, fileOrUrl);
-        } else if (typeof fileOrUrl === "string" && fileOrUrl.startsWith("http")) {
-          if (!employeeData.idProofs) employeeData.idProofs = {};
-          employeeData.idProofs[formField] = fileOrUrl;
         }
       });
 
@@ -849,7 +901,6 @@ function EmployeeForm() {
       "joiningDate",
       "department",
       "designation",
-      "reportingManager",
       "currentAddress",
       "gender",
       "fathersName",
@@ -941,19 +992,21 @@ function EmployeeForm() {
   useEffect(() => {
     const fetchDesignations = async () => {
       try {
-        // Only fetch if a department is selected and has a departmentId
-        if (!formData.employee.department?.departmentId) {
+        // Get department ID from either object or string format
+        const deptId = typeof formData.employee.department === 'object' 
+          ? formData.employee.department.departmentId 
+          : formData.employee.department;
+
+        if (!deptId) {
           setDesignations([]);
           return;
         }
 
         const token = getItemFromSessionStorage("token", null);
-        const departmentId = formData.employee.department.departmentId;
-
-        console.log("Fetching designations for department:", departmentId);
+        console.log("Fetching designations for department:", deptId);
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/designations/department/${departmentId}`,
+          `${publicRuntimeConfig.apiURL}/api/designations/department/${deptId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -982,7 +1035,7 @@ function EmployeeForm() {
     };
 
     fetchDesignations();
-  }, [formData.employee.department?.departmentId]);
+  }, [formData.employee.department]);
 
   // Fetch managers when department changes
   useEffect(() => {
@@ -998,7 +1051,7 @@ function EmployeeForm() {
         console.log("Fetching managers for department:", departmentId);
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/departments/${departmentId}/managers`,
+          `${publicRuntimeConfig.apiURL}/departments/${departmentId}/managers`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1377,7 +1430,7 @@ function EmployeeForm() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-2 gap-4">
                           {[
                             {
                               label: "Date of Joining",
@@ -1410,7 +1463,7 @@ function EmployeeForm() {
                             </div>
                           ))}
 
-                          <div className="grid grid-cols-1 gap-4">
+                          <div className="grid grid-1 gap-4">
                             <ReportingManagerSelect
                               label="Reporting Manager"
                               options={managers}
@@ -1808,30 +1861,32 @@ function EmployeeForm() {
                               {formData.bankDetails.passbookImgUrl && (
                                 <div className="mt-1.5 flex items-center justify-between bg-white rounded-lg p-1.5 shadow-sm">
                                   <div className="flex items-center space-x-2">
-                                    <img
-                                      src={URL.createObjectURL(
-                                        formData.bankDetails.passbookImgUrl
-                                      )}
-                                      alt="Passbook preview"
-                                      className="w-8 h-8 object-cover rounded border border-gray-200"
-                                    />
+                                    {formData.bankDetails.passbookImgUrl instanceof File ? (
+                                      <img
+                                        src={URL.createObjectURL(formData.bankDetails.passbookImgUrl)}
+                                        alt="Passbook preview"
+                                        className="w-8 h-8 object-cover rounded border border-gray-200"
+                                      />
+                                    ) : typeof formData.bankDetails.passbookImgUrl === 'string' ? (
+                                      <img
+                                        src={formData.bankDetails.passbookImgUrl}
+                                        alt="Passbook preview"
+                                        className="w-8 h-8 object-cover rounded border border-gray-200"
+                                        onError={(e) => {
+                                          e.target.onerror = null;
+                                          e.target.src = '/placeholder-image.png';
+                                        }}
+                                      />
+                                    ) : null}
                                     <div className="flex flex-col">
                                       <span className="text-xs font-medium text-gray-700 truncate max-w-[180px]">
-                                        {formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? formData.bankDetails.passbookImgUrl
-                                              .name
+                                        {formData.bankDetails.passbookImgUrl instanceof File
+                                          ? formData.bankDetails.passbookImgUrl.name
                                           : "Passbook Document"}
                                       </span>
                                       <span className="text-[10px] text-gray-500">
-                                        {formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? `${(
-                                              formData.bankDetails
-                                                .passbookImgUrl.size /
-                                              1024 /
-                                              1024
-                                            ).toFixed(2)} MB`
+                                        {formData.bankDetails.passbookImgUrl instanceof File
+                                          ? `${(formData.bankDetails.passbookImgUrl.size / 1024 / 1024).toFixed(2)} MB`
                                           : "Uploaded Document"}
                                       </span>
                                     </div>

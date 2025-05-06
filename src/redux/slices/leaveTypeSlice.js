@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
-
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import getConfig from "next/config";
+const {publicRuntimeConfig} = getConfig();
+const API_URL = publicRuntimeConfig.apiURL;
 
 // Fetch all leave types
 export const fetchLeaveTypes = createAsyncThunk(

@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
-import company, { CompanyServiceClient } from "@/generated/company_grpc_web_pb";
-
+import getConfig from "next/config";
+const {publicRuntimeConfig} = getConfig();
 // Async thunk for fetching TDS settings
 export const fetchTDS = createAsyncThunk(
   "payrollSettings/fetchTDS",
@@ -11,7 +11,7 @@ export const fetchTDS = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings/company/${company}`,
+        `${publicRuntimeConfig.apiURL}/tds-settings/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -36,7 +36,7 @@ export const fetchPTAX = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings/company/${company}`,
+        `${publicRuntimeConfig.apiURL}/professional-tax-settings/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -59,13 +59,10 @@ export const saveTDS = createAsyncThunk(
   async (tdsData, { getState, rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const companyId = localStorage.getItem("selectedCompanyId");
       const { isTdsConfigured } = getState().payrollSettings;
+      const url = `${publicRuntimeConfig.apiURL}/tds-settings`;
       
-      const url = isTdsConfigured 
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings/company/${companyId}`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/tds-settings`;
-
+      // If TDS is already configured, use PUT to update, otherwise use POST to create
       const method = isTdsConfigured ? "put" : "post";
 
       const response = await axios({
@@ -78,11 +75,33 @@ export const saveTDS = createAsyncThunk(
         data: {
           tdsRate: parseFloat(tdsData.tdsRate),
           description: tdsData.description,
-          companyId: companyId,
+          companyId: localStorage.getItem("selectedCompanyId"),
         },
       });
       return response.data;
     } catch (error) {
+      // If we get a 404 saying settings already exist, try updating instead
+      if (error.response?.status === 404 && error.response?.data?.message?.includes("already exist")) {
+        try {
+          const token = getItemFromSessionStorage("token", null);
+          const response = await axios.put(
+            `${publicRuntimeConfig.apiURL}/tds-settings`,
+            {
+              tdsRate: parseFloat(tdsData.tdsRate),
+              description: tdsData.description,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          return response.data;
+        } catch (updateError) {
+          return rejectWithValue(updateError.response?.data?.message || "Failed to update TDS settings");
+        }
+      }
       return rejectWithValue(error.response?.data?.message || "Failed to save TDS settings");
     }
   }
@@ -94,13 +113,10 @@ export const savePTAX = createAsyncThunk(
   async (ptaxData, { getState, rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const companyId = localStorage.getItem("selectedCompanyId");
       const { isPtaxConfigured } = getState().payrollSettings;
+      const url = `${publicRuntimeConfig.apiURL}/professional-tax-settings`;
       
-      const url = isPtaxConfigured 
-        ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings/company/${companyId}`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/professional-tax-settings`;
-
+      // If Professional Tax is already configured, use PUT to update, otherwise use POST to create
       const method = isPtaxConfigured ? "put" : "post";
 
       const response = await axios({
@@ -115,11 +131,35 @@ export const savePTAX = createAsyncThunk(
           amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
           amountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
           description: ptaxData.description,
-          companyId: companyId,
+          companyId: localStorage.getItem("selectedCompanyId"),
         },
       });
       return response.data;
     } catch (error) {
+      // If we get a 404 saying settings already exist, try updating instead
+      if (error.response?.status === 404 && error.response?.data?.message?.includes("already exist")) {
+        try {
+          const token = getItemFromSessionStorage("token", null);
+          const response = await axios.put(
+            `${publicRuntimeConfig.apiURL}/professional-tax-settings`,
+            {
+              monthlySalaryThreshold: parseFloat(ptaxData.monthlySalaryThreshold),
+              amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
+              amountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
+              description: ptaxData.description,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          return response.data;
+        } catch (updateError) {
+          return rejectWithValue(updateError.response?.data?.message || "Failed to update Professional Tax settings");
+        }
+      }
       return rejectWithValue(error.response?.data?.message || "Failed to save Professional Tax settings");
     }
   }

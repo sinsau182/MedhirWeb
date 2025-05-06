@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL + "/superadmin/modules/users";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.apiURL + "/superadmin/modules/users";
 
 // Fetch users
 export const fetchUsers = createAsyncThunk(
@@ -33,7 +34,7 @@ export const addUser = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const response = await fetch(API_BASE_URL, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },

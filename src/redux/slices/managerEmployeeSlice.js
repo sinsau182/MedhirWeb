@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice"; // Assuming this utility exists
-
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
 // Async thunk to fetch manager's employees
 export const fetchManagerEmployees = createAsyncThunk(
   "managerEmployee/fetchManagerEmployees",
@@ -13,7 +14,7 @@ export const fetchManagerEmployees = createAsyncThunk(
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/manager/EMP002`, // Hardcoded API endpoint
+        `${publicRuntimeConfig.apiURL}/employees/manager/EMP002`, // Hardcoded API endpoint
         {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header

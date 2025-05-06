@@ -3,14 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 
 import {
   fetchModules,
-  addModule,
-  updateModule,
-  deleteModule,
   fetchEmployees,
 } from "@/redux/slices/modulesSlice";
 // import { fetchAllEmployees } from "@/redux/slices/allEmployeesSlice";
 import { fetchCompanies } from "@/redux/slices/companiesSlice";
-import { fetchUsers, addUser } from "@/redux/slices/usersSlice";
+import { addUser } from "@/redux/slices/usersSlice";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,11 +31,10 @@ import { Search, UserPlus, Edit, Trash } from "lucide-react";
 
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import withAuth from "@/components/withAuth";
-import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
-
+import getConfig from "next/config";
 function SuperadminModules() {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -80,6 +76,8 @@ function SuperadminModules() {
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
+
+  const {publicRuntimeConfig} = getConfig();
 
   const {
     modules,
@@ -171,7 +169,7 @@ function SuperadminModules() {
     setIsLoading(true);
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules/${selectedModule.moduleId}`, {
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/superadmin/modules/${selectedModule.moduleId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -219,7 +217,7 @@ function SuperadminModules() {
       let response;
       if (isEditMode) {
         // Update existing module
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules/${selectedModule.moduleId}`, {
+        response = await fetch(`${publicRuntimeConfig.apiURL}/superadmin/modules/${selectedModule.moduleId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -229,7 +227,7 @@ function SuperadminModules() {
         });
       } else {
         // Create new module
-        response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules`, {
+        response = await fetch(`${publicRuntimeConfig.apiURL}/superadmin/modules`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

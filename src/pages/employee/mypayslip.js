@@ -7,9 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { setDate } from "date-fns";
 import withAuth from "@/components/withAuth";
-import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import { toast } from "sonner";
 import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
 
@@ -79,7 +77,7 @@ const PayrollPage = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
 
-  const employeeId = "emp123"; // This should be dynamically set based on the logged-in user
+  const employeeId = "MED101"; // This should be dynamically set based on the logged-in user
 
   useEffect(() => {
     // Fetch employee details to get date of joining

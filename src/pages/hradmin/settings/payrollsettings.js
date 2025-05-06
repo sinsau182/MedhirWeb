@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
+import { X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import withAuth from "@/components/withAuth";
-import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTDS,
   fetchPTAX,
   saveTDS,
   savePTAX,
-  clearErrors,
   resetTdsForm,
   resetPtaxForm,
 } from "@/redux/slices/payrollSettingsSlice";
@@ -59,22 +57,6 @@ const PayrollSettings = () => {
     dispatch(fetchTDS());
     dispatch(fetchPTAX());
   }, [dispatch]);
-
-  useEffect(() => {
-    let timeoutId;
-    if (notification.show) {
-      timeoutId = setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
-      }, 2000);
-    }
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [notification.show]);
 
   const handleTdsSubmit = async (e) => {
     e.preventDefault();
@@ -193,7 +175,7 @@ const PayrollSettings = () => {
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No TDS settings configured. Click "Configure" to set up TDS settings.
+          No TDS settings configured. Click &quot;Configure&quot; to set up TDS settings.
         </p>
       )}
     </div>
@@ -225,7 +207,7 @@ const PayrollSettings = () => {
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No Professional Tax settings configured. Click "Configure" to set up
+          No Professional Tax settings configured. Click &quot;Configure&quot; to set up
           Professional Tax settings.
         </p>
       )}
@@ -441,14 +423,10 @@ const PayrollSettings = () => {
           {notification.show && (
             <div className="fixed bottom-4 right-4 z-50">
               <div
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transform transition-all duration-300 ease-in-out ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-md ${
                   notification.type === "success"
                     ? "bg-green-100 text-green-800"
                     : "bg-red-100 text-red-800"
-                } ${
-                  notification.show
-                    ? "translate-y-0 opacity-100"
-                    : "translate-y-4 opacity-0"
                 }`}
               >
                 {notification.type === "success" ? (

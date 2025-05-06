@@ -1,7 +1,6 @@
+/* eslint-disable react/display-name */
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { useSelector, useDispatch } from "react-redux";
-import { getItem, removeItem } from "@/redux/slices/sessionStorageSlice";
 
 const withAuth = (WrappedComponent) => {
   return (props) => {

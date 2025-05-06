@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/router";
 import RoleToggle from "./ui/roletoggle";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,19 +19,21 @@ import {
   getItemFromSessionStorage,
   removeItem,
 } from "@/redux/slices/sessionStorageSlice";
-import { jwtDecode } from "jwt-decode";
 import { toast } from "sonner";
+import getConfig from "next/config";
 
 const Navbar = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const [userInfo, setUserInfo] = useState({ name: "", email: "" });
+  const [employeeData, setEmployeeData] = useState(null);
   const { items } = useSelector((state) => state.sessionStorage);
 
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(""); // Default selected company
   const [navbarColor, setNavbarColor] = useState("bg-[#A8D5BA]"); // Default color
   const [currentRole, setCurrentRole] = useState("");
+  const { publicRuntimeConfig } = getConfig();
 
   useEffect(() => {
     const storedCompany = localStorage.getItem("selectedCompany");
@@ -87,7 +90,7 @@ const Navbar = () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/companies/MED102`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED101`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -110,7 +113,32 @@ const Navbar = () => {
     };
 
     fetchCompanies();
-  }, []);
+  }, [selectedCompany]);
+
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      if (currentRole === "employee") {
+        try {
+          const token = getItemFromSessionStorage("token", null);
+          const response = await axios.get(
+            `${publicRuntimeConfig.apiURL}/employee/id/MED101`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          if (response.data) {
+            setEmployeeData(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching employee data:", error);
+        }
+      }
+    };
+
+    fetchEmployeeData();
+  }, [currentRole]);
 
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -224,6 +252,27 @@ const Navbar = () => {
             </DropdownMenu>
           )}
 
+          {/* Employee Name - Only for employee role */}
+          {currentRole === "employee" && employeeData && (
+            <div 
+              onClick={() => router.push("/employee/profile")}
+              className="h-9 px-5 flex items-center justify-between rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white/90 backdrop-blur-sm hover:bg-gray-50 cursor-pointer"
+            >
+              <span className="text-sm font-medium text-gray-600">
+                {employeeData.name}
+              </span>
+            </div>
+          )}
+
+          {/* Company Name - Only for manager role */}
+          {currentRole === "manager" && selectedCompany && (
+            <div className="h-9 px-5 flex items-center justify-between rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white/90 backdrop-blur-sm hover:bg-gray-50">
+              <span className="text-sm font-medium text-gray-600">
+                {selectedCompany}
+              </span>
+            </div>
+          )}
+
           {/* Profile Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -232,10 +281,10 @@ const Navbar = () => {
                 className="relative h-10 w-10 rounded-full"
               >
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src="/avatar.jpg" alt={userInfo.name} />
+                  <AvatarImage src="/avatar.jpg" alt={employeeData?.name || userInfo.name} />
                   <AvatarFallback>
-                    {userInfo.name
-                      ? userInfo.name.substring(0, 2).toUpperCase()
+                    {(employeeData?.name || userInfo.name)
+                      ? (employeeData?.name || userInfo.name).substring(0, 2).toUpperCase()
                       : "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -244,9 +293,11 @@ const Navbar = () => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">John Doe</p>
+                  <p className="text-sm font-medium leading-none">
+                    {employeeData?.name || "User Name"}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    doejohn@gmail.com
+                    {employeeData?.emailOfficial || "user@email.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -268,6 +319,7 @@ const Navbar = () => {
                 onClick={handleLogout}
                 className="text-destructive cursor-pointer"
               >
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

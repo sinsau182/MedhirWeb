@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
-
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/superadmin/modules`;
-const HR_EMPLOYEES_ENDPOINT = `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/minimal`;
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = `${publicRuntimeConfig.apiURL}/superadmin/modules`;
+const HR_EMPLOYEES_ENDPOINT = `${publicRuntimeConfig.apiURL}/employees/minimal`;
 
 // Fetch modules
 export const fetchModules = createAsyncThunk(
@@ -33,50 +34,51 @@ export const fetchEmployees = createAsyncThunk(
     try {
       // Get the HR admin token instead of superadmin token
       const token = getItemFromSessionStorage("token");
-      
+
       const response = await fetch(HR_EMPLOYEES_ENDPOINT, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (!response.ok) {
         if (response.status === 403) {
           // If forbidden, try without token (if the API allows public access)
           const publicResponse = await fetch(HR_EMPLOYEES_ENDPOINT, {
-            method: 'GET',
+            method: "GET",
             headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
+              Accept: "application/json",
+              "Content-Type": "application/json",
             },
           });
-          
+
           if (!publicResponse.ok) {
-            throw new Error("You don't have permission to access employee data. Please contact your administrator.");
+            throw new Error(
+              "You don't have permission to access employee data. Please contact your administrator."
+            );
           }
-          
+
           const publicData = await publicResponse.json();
           return Array.isArray(publicData) ? publicData : [publicData];
         }
-        
+
         const errorData = await response.text();
         console.error("Error response:", errorData);
         throw new Error(
-          typeof errorData === 'string' 
-            ? errorData 
+          typeof errorData === "string"
+            ? errorData
             : JSON.parse(errorData).message || "Failed to fetch employees"
         );
       }
 
       const data = await response.json();
-      
+
       // Handle both array and single object responses
       const employees = Array.isArray(data) ? data : [data];
       return employees;
-
     } catch (error) {
       console.error("Error fetching employees:", error);
       return rejectWithValue(error.message);
@@ -90,18 +92,18 @@ export const addModule = createAsyncThunk(
   async (moduleData, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      
+
       const response = await fetch(API_BASE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           moduleName: moduleData.moduleName,
           description: moduleData.description,
           employeeIds: moduleData.employeeIds,
-          companyId: moduleData.companyId
+          companyId: moduleData.companyId,
         }),
       });
 

@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-key */
 import React, { useState, useEffect } from "react";
 
 import {
@@ -17,20 +18,9 @@ import {
 import {
   FaUser,
   FaCalendar,
-  FaClock,
-  FaCreditCard,
-  FaUserCircle,
-  FaChartPie,
-  FaTasks,
   FaUsers,
-  FaCalendarCheck,
-  FaMoneyCheckAlt,
-  FaCog,
-  FaBars,
-  FaTimes,
 } from "react-icons/fa";
 
-import Link from "next/link";
 
 import RequestDetails from "@/components/RequestDetails";
 
@@ -43,7 +33,7 @@ import withAuth from "@/components/withAuth";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
-
+import getConfig from "next/config";
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -68,6 +58,8 @@ const Overview = () => {
 
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
+
+  const {publicRuntimeConfig} = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
   }, [dispatch]);
@@ -94,7 +86,7 @@ const Overview = () => {
         Authorization: `Bearer ${token}`,
       };
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/hradmin/update-requests`,
+        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
         { headers }
       );
       if (!response.ok) {
@@ -119,7 +111,7 @@ const Overview = () => {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/leave/status/${company}/Pending`,
+        `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -188,7 +180,7 @@ const Overview = () => {
         }
 
         const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/employees/manager/EMP002`, // Replace with your actual API endpoint
+          `${publicRuntimeConfig.apiURL}/employees/manager/EMP002`, // Replace with your actual API endpoint
           {
             headers: {
               Authorization: `Bearer ${token}`, // Include the token in the Authorization header

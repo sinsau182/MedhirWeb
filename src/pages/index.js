@@ -6,7 +6,7 @@ export default function Home() {
 
   useEffect(() => {
     router.replace("/login"); // Change '/dashboard' to any page you want
-  }, []);
+  }, [router]);
 
   return null; // Or a loading screen if needed
 }
