@@ -18,6 +18,7 @@ function Employees() {
   const [selectedYear, setSelectedYear] = useState("2024");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [hoveredEmployeeId, setHoveredEmployeeId] = useState(null);
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
@@ -97,8 +98,8 @@ function Employees() {
   const tabs = [
     "Basic",
     "ID Proofs",
-    "Salary Details",
     "Bank Details",
+    "Salary Details",
     "Leaves Policy",
   ];
 
@@ -229,26 +230,6 @@ function Employees() {
 
   const headers = getTableHeaders();
 
-  const renderBankDetailsRow = (row) => (
-    <tr key={row.id}>
-      <td className="px-5 py-4 text-sm">{row.name}</td>
-      <td className="px-5 py-4 text-sm">{row.accountHolderName}</td>
-      <td className="px-5 py-4 text-sm">{row.accountNumber}</td>
-      <td className="px-5 py-4 text-sm">{row.bankName}</td>
-      <td className="px-5 py-4 text-sm">{row.ifscCode}</td>
-      <td className="px-5 py-4 text-sm">{row.branchName}</td>
-      <td className="px-5 py-4 text-sm">{row.upiId}</td>
-      <td className="px-5 py-4 text-sm">{row.upiNumber}</td>
-      <td className="px-5 py-4 text-sm">
-        <button
-          onClick={() => handleViewDoc(row.passbookDoc)}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          View Details
-        </button>
-      </td>
-    </tr>
-  );
 
   if (err) {
     return (
@@ -344,7 +325,7 @@ function Employees() {
                       {headers.map((header) => (
                         <th
                           key={header.key}
-                          className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                          className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider"
                         >
                           {header.label}
                         </th>
@@ -380,18 +361,31 @@ function Employees() {
                     ) : (
                       filteredEmployees.map((employee) => (
                         <tr
-                          key={employee.id}
+                          key={employee.employeeId}
                           className="hover:bg-gray-50 cursor-pointer"
                           onClick={() => handleRowClick(employee)}
+                          onMouseEnter={() => setHoveredEmployeeId(employee.employeeId)}
+                          onMouseLeave={() => setHoveredEmployeeId(null)}
                         >
-                          {headers.map((header) => (
-                            <td
-                              key={header.key}
-                              className="py-3 px-4 text-sm text-gray-800 truncate"
-                            >
-                              {getCellValue(employee, header.key)}
-                            </td>
-                          ))}
+                          {headers.map((header) => {
+                            const cellValue = getCellValue(employee, header.key);
+                            return (
+                              <td
+                                key={`${employee.employeeId}-${header.key}`}
+                                className="py-3 px-3 text-sm text-gray-800 relative max-w-xs"
+                              >
+                                {hoveredEmployeeId === employee.employeeId ? (
+                                  <span className="block whitespace-normal break-words">
+                                    {cellValue}
+                                  </span>
+                                ) : (
+                                  <span className="block truncate" title={cellValue}>
+                                    {cellValue}
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))
                     )}

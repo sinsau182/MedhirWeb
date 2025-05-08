@@ -14,7 +14,7 @@ export const fetchManagerEmployees = createAsyncThunk(
       }
 
       const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/employees/manager/EMP002`, // Hardcoded API endpoint
+        `${publicRuntimeConfig.apiURL}/employees/manager/MED101`, // Hardcoded API endpoint
         {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header

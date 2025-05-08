@@ -94,12 +94,13 @@ const Overview = () => {
   const fetchProfileUpdates = async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
+        `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`,
         { headers }
       );
       if (!response.ok) {

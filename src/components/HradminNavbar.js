@@ -256,7 +256,7 @@ const Navbar = () => {
           {currentRole === "employee" && employeeData && (
             <div 
               onClick={() => router.push("/employee/profile")}
-              className="h-9 px-5 flex items-center justify-between rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white/90 backdrop-blur-sm hover:bg-gray-50 cursor-pointer"
+              className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
             >
               <span className="text-sm font-medium text-gray-600">
                 {employeeData.name}
@@ -266,8 +266,8 @@ const Navbar = () => {
 
           {/* Company Name - Only for manager role */}
           {currentRole === "manager" && selectedCompany && (
-            <div className="h-9 px-5 flex items-center justify-between rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 bg-white/90 backdrop-blur-sm hover:bg-gray-50">
-              <span className="text-sm font-medium text-gray-600">
+            <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100">
+              <span className="text-base font-semibold text-blue-900">
                 {selectedCompany}
               </span>
             </div>
@@ -276,11 +276,11 @@ const Navbar = () => {
           {/* Profile Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+            <Button
                 variant="ghost"
-                className="relative h-10 w-10 rounded-full"
+                className="relative h-12 w-12 rounded-lg border-2 border-blue-300"
               >
-                <Avatar className="h-9 w-9">
+                <Avatar className="h-10 w-10 rounded-lg">
                   <AvatarImage src="/avatar.jpg" alt={employeeData?.name || userInfo.name} />
                   <AvatarFallback>
                     {(employeeData?.name || userInfo.name)

@@ -81,12 +81,13 @@ const Overview = () => {
   const fetchProfileUpdates = async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
+        `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`,
         { headers }
       );
       if (!response.ok) {
@@ -180,7 +181,7 @@ const Overview = () => {
         }
 
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/employees/manager/EMP002`, // Replace with your actual API endpoint
+          `${publicRuntimeConfig.apiURL}/employees/manager/MED101`, // Replace with your actual API endpoint
           {
             headers: {
               Authorization: `Bearer ${token}`, // Include the token in the Authorization header

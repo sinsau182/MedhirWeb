@@ -54,7 +54,7 @@ const Leaves = () => {
   
 
   useEffect(() => {
-    dispatch(fetchLeaves("MED101"));
+    // dispatch(fetchLeaves("MED101"));
     dispatch(fetchLeaveHistory());
     dispatch(fetchLeaveBalance("MED101"));
     dispatch(fetchPublicHolidays());

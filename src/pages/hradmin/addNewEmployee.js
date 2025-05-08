@@ -251,7 +251,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">{value.name || value}</span>
+              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
             ) : (
               <span className="text-gray-500">Select manager</span>
             )}
@@ -282,7 +282,10 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                   value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
                 }`}
                 onClick={() => {
-                  onChange(manager);
+                  onChange({
+                    employeeId: manager.employeeId,
+                    name: manager.name
+                  });
                   setIsOpen(false);
                 }}
               >
@@ -464,7 +467,10 @@ function EmployeeForm() {
               name: parsedEmployee.designationName
             },
             joiningDate: parsedEmployee.joiningDate || "",
-            reportingManager: parsedEmployee.reportingManager || "",
+            reportingManager: parsedEmployee.reportingManager ? {
+              employeeId: parsedEmployee.reportingManager,
+              name: parsedEmployee.reportingManagerName
+            } : "",
             overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
             weeklyOffs: Array.isArray(parsedEmployee.weeklyOffs)
               ? parsedEmployee.weeklyOffs
@@ -665,6 +671,9 @@ function EmployeeForm() {
       if (!formData.employee.joiningDate) {
         errors.joiningDate = "Date of joining is required";
       }
+      if(!formData.employee.emailPersonal?.trim()){
+        errors.emailPersonal = "Personal email is required";
+      }
 
       // Validate phone number format if provided
       if (formData.employee.phone && !/^[0-9]{10}$/.test(formData.employee.phone)) {
@@ -710,7 +719,8 @@ function EmployeeForm() {
         ...(formData.employee.currentAddress && { currentAddress: formData.employee.currentAddress.trim() }),
         ...(formData.employee.permanentAddress && { permanentAddress: formData.employee.permanentAddress.trim() }),
         ...(formData.employee.reportingManager?.employeeId && { 
-          reportingManager: formData.employee.reportingManager.employeeId.trim() 
+          reportingManager: formData.employee.reportingManager.employeeId,
+          reportingManagerName: formData.employee.reportingManager.name
         }),
         overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
         weeklyOffs: formData.employee.weeklyOffs?.length ? formData.employee.weeklyOffs : [],
@@ -1274,16 +1284,20 @@ function EmployeeForm() {
                               label: "Personal Email",
                               field: "emailPersonal",
                               type: "email",
+                              required: true,
                             },
                             {
                               label: "Official Email",
                               field: "emailOfficial",
                               type: "email",
                             },
-                          ].map(({ label, field, type }) => (
+                          ].map(({ label, field, type, required }) => (
                             <div key={field} className={inputGroupClass}>
                               <label className={floatingLabelClass}>
-                                {label}
+                                {label}{" "}
+                                {required && (
+                                  <span className="text-red-400">*</span>
+                                )}
                               </label>
                               <input
                                 type={type}
@@ -1430,7 +1444,7 @@ function EmployeeForm() {
                           />
                         </div>
 
-                        <div className="grid grid-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                           {[
                             {
                               label: "Date of Joining",

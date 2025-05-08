@@ -20,8 +20,8 @@ function PayrollManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("March");
-  const [selectedYear, setSelectedYear] = useState("2024");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "long" }));
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
@@ -161,7 +161,7 @@ function PayrollManagement() {
           <thead className="sticky top-0 bg-gray-50">
             <tr>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                EMP ID
+                EMPLOYEE ID
               </th>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 NAME
@@ -509,7 +509,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹{employee.oldAdvance}
@@ -580,7 +580,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.type}
@@ -656,7 +656,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.paymentDate}
@@ -742,7 +742,7 @@ function PayrollManagement() {
                         "Oct",
                         "Nov",
                         "Dec",
-                      ].map((month) => (
+                      ].slice(0, new Date().getMonth() + 1).map((month) => (
                         <button
                           key={month}
                           className={`p-3 text-sm rounded-md transition-colors duration-200 ${
