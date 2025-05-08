@@ -15,7 +15,7 @@ const Overview = () => {
 
   // Fetch leave balance when component mounts
   useEffect(() => {
-    dispatch(fetchLeaveBalance("EMP001"));
+    dispatch(fetchLeaveBalance("MED101"));
     
     // Clean up function to reset leave balance state when component unmounts
     return () => {

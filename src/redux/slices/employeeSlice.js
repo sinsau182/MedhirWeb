@@ -14,11 +14,14 @@ export const fetchEmployees = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
-      const response = await fetch(`${API_BASE_URL}/companies/${company}/employees`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/companies/${company}/employees`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch employees");
@@ -26,33 +29,9 @@ export const fetchEmployees = createAsyncThunk(
       return await response.json();
     } catch (error) {
       toast.error("Error fetching employees:", error);
-      // return rejectWithValue(error.message);
     }
   }
 );
-
-// // Fetch all employees
-// export const fetchAllEmployees = createAsyncThunk(
-//   "employees/fetchAllEmployees",
-//   async (_, { rejectWithValue }) => {
-//     try {
-//       const token = getItemFromSessionStorage("token", null);
-//       const response = await fetch(`${API_BASE_URL}/employees`, {
-//         headers: {
-//           Authorization: `Bearer ${token}`,
-//         },
-//       });
-//       if (!response.ok) {
-//         throw new Error("Failed to fetch employees");
-//       }
-//       return await response.json();
-//     } catch (error) {
-//       return rejectWithValue(error.message);
-//     }
-//   }
-// );
-
-// Create employee
 
 export const createEmployee = createAsyncThunk(
   "employee/createEmployee",
@@ -71,9 +50,6 @@ export const createEmployee = createAsyncThunk(
       return response.data;
     } catch (error) {
       toast.error("Error creating employee:", error);
-      // return rejectWithValue(
-      //   error.response ? error.response.data : error.message
-      // );
     }
   }
 );
@@ -84,29 +60,17 @@ export const updateEmployee = createAsyncThunk(
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
 
-      // Create FormData object for file uploads
-      const formData = new FormData();
-
-      // Add the employee data as a JSON string
-      const employeeData = updatedData.get("employee");
-      formData.append("employee", employeeData);
-
-      // Add any files that were included
-      if (updatedData.has("employeeImgUrl")) {
-        formData.append("employeeImgUrl", updatedData.get("employeeImgUrl"));
-      }
-      if (updatedData.has("aadharImgUrl")) {
-        formData.append("aadharImgUrl", updatedData.get("aadharImgUrl"));
-      }
-
-      const response = await axios.put(`${API_BASE_URL}/employees/${id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.put(
+        `${API_BASE_URL}/employees/${id}`,
+        updatedData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.data) {
         throw new Error("Failed to update employee");

@@ -54,12 +54,13 @@ export const fetchProfileUpdates = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
+      const company = localStorage.getItem("selectedCompanyId");
       if (!token) {
         return rejectWithValue("Authentication token not found");
       }
 
       const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
+        `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

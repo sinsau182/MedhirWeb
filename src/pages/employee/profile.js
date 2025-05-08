@@ -32,6 +32,7 @@ function EmployeeProfilePage() {
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [employeeById, setEmployeeById] = useState(null); // Holds the fetched employee data
+  const [managerName, setManagerName] = useState(""); // Add state for manager name
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isPageInEditMode, setIsPageInEditMode] = useState(false);
   const [isEditable, setIsEditable] = useState(true); // Controls if editing is allowed based on updateStatus
@@ -75,7 +76,7 @@ function EmployeeProfilePage() {
 
   // --- Data Fetching ---
   const fetchByEmployeeId = async () => {
-    const employeeIdToFetch = "MED130"; // Use ID from URL or default
+    const employeeIdToFetch = "MED101"; // Use ID from URL or default
     setLoading(true);
     try {
       const response = await fetch(
@@ -85,7 +86,26 @@ function EmployeeProfilePage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log("Employee Data:", data); // Debug log
       setEmployeeById(data);
+
+      // Fetch manager name if reporting manager exists
+      if (data.reportingManager) {
+        try {
+          const managerResponse = await fetch(
+            `${publicRuntimeConfig.apiURL}/employee/id/${data.reportingManager}`
+          );
+          if (managerResponse.ok) {
+            const managerData = await managerResponse.json();
+            setManagerName(managerData.name);
+          }
+        } catch (error) {
+          console.error("Failed to fetch manager details:", error);
+          setManagerName("-");
+        }
+      } else {
+        setManagerName("-");
+      }
 
       // Check update status to enable/disable editing
       if (data.updateStatus === "Pending") {
@@ -429,19 +449,23 @@ function EmployeeProfilePage() {
         // Personal info
         emailPersonal: formData.employee.email.personal,
         phone: formData.employee.phone1,
-        alternatePhone: formData.employee.phone2, // Added alternatePhone
+        ...(formData.employee.phone2 !== employeeById.alternatePhone && {
+          alternatePhone: formData.employee.phone2
+        }),
         // Address info
         currentAddress: formData.employee.currentAddress,
         permanentAddress: formData.employee.permanentAddress,
-        // Bank info
-        accountHolderName: formData.bank.accountHolderName,
-        accountNumber: formData.bank.accountNumber,
-        bankName: formData.bank.bankName,
-        branchName: formData.bank.branchName,
-        ifscCode: formData.bank.ifscCode,
-        upiPhoneNumber: formData.bank.upiPhone,
-        // ID proofs - only include file uploads, not the numbers
       };
+
+      // Only include bank details if both account number and IFSC are filled
+      if (formData.bank.accountNumber && formData.bank.ifscCode) {
+        payload.accountNumber = formData.bank.accountNumber;
+        payload.ifscCode = formData.bank.ifscCode;
+        payload.accountHolderName = formData.bank.accountHolderName;
+        payload.bankName = formData.bank.bankName;
+        payload.branchName = formData.bank.branchName;
+        payload.upiPhoneNumber = formData.bank.upiPhone;
+      }
 
       // Create FormData for the request
       const formDataPayload = new FormData();
@@ -460,19 +484,13 @@ function EmployeeProfilePage() {
         formDataPayload.append("aadharImage", formData.idProofs.aadharImage);
       }
       if (formData.idProofs.panImage instanceof File) {
-        formData.append("panImage", formData.idProofs.panImage);
+        formDataPayload.append("panImage", formData.idProofs.panImage);
       }
       if (formData.idProofs.passportImage instanceof File) {
-        formDataPayload.append(
-          "passportImage",
-          formData.idProofs.passportImage
-        );
+        formDataPayload.append("passportImage", formData.idProofs.passportImage);
       }
       if (formData.idProofs.drivingLicenseImage instanceof File) {
-        formDataPayload.append(
-          "drivingLicenseImage",
-          formData.idProofs.drivingLicenseImage
-        );
+        formDataPayload.append("drivingLicenseImage", formData.idProofs.drivingLicenseImage);
       }
       if (formData.idProofs.voterIdImage instanceof File) {
         formDataPayload.append("voterIdImage", formData.idProofs.voterIdImage);
@@ -490,15 +508,12 @@ function EmployeeProfilePage() {
       try {
         result = await response.json();
       } catch (jsonError) {
-        // If JSON parsing fails, fallback to text response
         toast.error("Failed to parse response");
         result = { message: await response.text() };
       }
 
       if (response.ok) {
-        toast.success(
-          result.message || "Update request submitted successfully."
-        );
+        toast.success(result.message || "Update request submitted successfully.");
         setIsPageInEditMode(false);
         fetchByEmployeeId();
       } else {
@@ -697,11 +712,11 @@ function EmployeeProfilePage() {
                         </div>
                         <div className="flex items-center space-x-2 text-white/80 text-sm">
                           <span>
-                            {employeeById?.designation || "Designation"}
+                            {employeeById?.designationName || "-"}
                           </span>
                           <span className="text-white/40">•</span>
                           <span>
-                            {employeeById?.department || "Department"}
+                            {employeeById?.departmentName || "-"}
                           </span>
                         </div>
                       </div>
@@ -750,7 +765,7 @@ function EmployeeProfilePage() {
                           Reports to
                         </span>
                         <span className="font-medium">
-                          {employeeById?.reportingManager || "-"}
+                          {managerName}
                         </span>
                       </div>
                       <div className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white">

@@ -10,6 +10,7 @@ import {
   clearSession,
 } from "@/utils/sessionManager";
 import "../styles/globals.css";
+import Layout from '../components/Layout';
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,9 @@ function MyApp({ Component, pageProps }) {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
         <Toaster />
       </QueryClientProvider>
     </Provider>

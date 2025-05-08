@@ -1,13 +1,19 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { getItemFromSessionStorage } from "./sessionStorageSlice";
 
-const API_BASE_URL = "http://192.168.0.200:8084/expenses/emp123";
+const API_BASE_URL = "http://localhost:8083/reimbursements";
 
 // Fetch employees
 export const fetchExpenses = createAsyncThunk(
   "expenses/fetchExpenses",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(API_BASE_URL,{
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch expenses");
@@ -15,7 +21,7 @@ export const fetchExpenses = createAsyncThunk(
       return await response.json();
     } catch (error) {
       return rejectWithValue(error.message);
-    }
+    } 
   }
 );
 
@@ -24,8 +30,7 @@ export const createExpense = createAsyncThunk(
   async (expenseData, { rejectWithValue }) => {
     try {
       let body;
-      let headers = {};
-
+      const token = getItemFromSessionStorage("token", null);
       if (expenseData.receipt) {
         // If there's a file, use FormData
         body = new FormData();
@@ -35,13 +40,14 @@ export const createExpense = createAsyncThunk(
       } else {
         // Otherwise, send JSON data
         body = JSON.stringify(expenseData);
-        headers["Content-Type"] = "application/json";
       }
 
-      const response = await fetch("http://192.168.0.200:8084/expenses", {
+      const response = await fetch("http://localhost:8083/reimbursements", {
         method: "POST",
         body,
-        headers,
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
 
       const data = await response.json();

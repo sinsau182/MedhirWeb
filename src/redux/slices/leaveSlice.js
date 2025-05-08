@@ -16,7 +16,7 @@ export const fetchLeaves = createAsyncThunk(
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/leave/employee/EMP001`,
+        `${API_BASE_URL}/leave/employee/MED101`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -166,7 +166,7 @@ export const applyLeave = createAsyncThunk(
         `${API_BASE_URL}/leave/apply`,
         {
           ...leaveData,
-          employeeId: "EMP001", // Hardcoded as requested
+          employeeId: "MED101", // Hardcoded as requested
           companyId: "CID101", // Hardcoded as requested
           leaveName: "Leave", // Hardcoded as requested
           shiftType: leaveData.shiftType, // Use the shift type from the form
@@ -201,7 +201,7 @@ export const fetchLeaveHistory = createAsyncThunk(
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/leave/employee/EMP001`,
+        `${API_BASE_URL}/leave/employee/MED101`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -248,7 +248,7 @@ export const applyCompOffLeave = createAsyncThunk(
       const response = await axios.post(
         `${API_BASE_URL}/leave/apply`,
         {
-          employeeId: "EMP001",
+          employeeId: "MED101", // Hardcoded as requested
           companyId: "CID101", // Hardcoded as requested
           leaveName: "Comp-Off",
           startDate: formData.startDate,

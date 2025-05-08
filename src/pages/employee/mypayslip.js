@@ -77,7 +77,7 @@ const PayrollPage = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
 
-  const employeeId = "emp123"; // This should be dynamically set based on the logged-in user
+  const employeeId = "MED101"; // This should be dynamically set based on the logged-in user
 
   useEffect(() => {
     // Fetch employee details to get date of joining

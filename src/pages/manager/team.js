@@ -13,6 +13,7 @@ const ManagerEmployees = () => {
   );
   const [searchInput, setSearchInput] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [hoveredEmployeeId, setHoveredEmployeeId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchManagerEmployees());
@@ -71,28 +72,31 @@ const ManagerEmployees = () => {
               <table className="w-full table-fixed">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Employee ID
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                      Department
+                    </th>
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Father&apos;s Name
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Phone No.
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Email(Off.)
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       DOJ
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Designation
                     </th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Current Address
                     </th>
                   </tr>
@@ -112,30 +116,52 @@ const ManagerEmployees = () => {
                       <tr
                         key={employee.employeeId}
                         className="hover:bg-gray-50 cursor-pointer"
+                        onMouseEnter={() =>
+                          setHoveredEmployeeId(employee.employeeId)
+                        }
+                        onMouseLeave={() => setHoveredEmployeeId(null)}
                       >
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.employeeId}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.name}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
+                          {employee?.departmentName}
+                        </td>
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.fathersName}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.phone}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.emailOfficial}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.joiningDate}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
+                        <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.designationName}
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-800 truncate">
-                          {employee?.currentAddress}
+                        <td className="py-3 px-3 text-sm text-gray-800 relative max-w-xs">
+                          {hoveredEmployeeId === employee.employeeId ? (
+                            // Show full address on hover
+                            <span className="block whitespace-normal break-words">
+                              {employee?.currentAddress}
+                            </span>
+                          ) : (
+                            // Show truncated with tooltip
+                            <div className="truncate relative group">
+                              <span className="block truncate">
+                                {employee?.currentAddress}
+                              </span>
+                              <div className="absolute left-0 top-full mt-1 w-72 p-2 bg-white text-black text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible z-50 break-words border border-gray-300">
+                                {employee?.currentAddress}
+                              </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -148,5 +174,5 @@ const ManagerEmployees = () => {
       </div>
     </div>
   );
-}
+};
 export default withAuth(ManagerEmployees);

@@ -54,9 +54,9 @@ const Leaves = () => {
   
 
   useEffect(() => {
-    dispatch(fetchLeaves("EMP001"));
+    // dispatch(fetchLeaves("MED101"));
     dispatch(fetchLeaveHistory());
-    dispatch(fetchLeaveBalance("EMP001"));
+    dispatch(fetchLeaveBalance("MED101"));
     dispatch(fetchPublicHolidays());
 
     return () => {
@@ -195,7 +195,7 @@ const Leaves = () => {
         closeCompOffModal();
         // Refresh both leave history and balance
         dispatch(fetchLeaveHistory());
-        dispatch(fetchLeaveBalance("EMP001"));
+        dispatch(fetchLeaveBalance("MED101"));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for comp-off");
       }
@@ -234,7 +234,7 @@ const Leaves = () => {
         toast.success("Leave application submitted successfully");
         closeModal();
         dispatch(fetchLeaveHistory());
-        dispatch(fetchLeaveBalance("EMP001"));
+        dispatch(fetchLeaveBalance("MED101"));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for leave");
       }

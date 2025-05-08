@@ -19,6 +19,41 @@ import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "sonner";
 import getConfig from "next/config";
+
+// // Hardcoded users for testing
+// const TEST_USERS = [
+//   {
+//     userId: 101,
+//     name: "Alice Johnson",
+//     email: "alice.j@techsolutions.com",
+//     isAdmin: true, // Let's make Alice an admin initially for testing
+//   },
+//   {
+//     userId: 102,
+//     name: "Bob Williams",
+//     email: "bob.w@techsolutions.com",
+//     isAdmin: false,
+//   },
+//   {
+//     userId: 103,
+//     name: "Charlie Brown",
+//     email: "charlie.b@techsolutions.com",
+//     isAdmin: false,
+//   },
+//   {
+//     userId: 201,
+//     name: "Diana Miller",
+//     email: "diana.m@globalservices.com",
+//     isAdmin: false,
+//   },
+//   {
+//     userId: 202,
+//     name: "Ethan Davis",
+//     email: "ethan.d@globalservices.com",
+//     isAdmin: true, // Let's make Ethan an admin initially for testing
+//   },
+// ];
+
 function AdminAccess() {
   const router = useRouter();
   const [companies, setCompanies] = useState([]);
@@ -37,13 +72,20 @@ function AdminAccess() {
     useState(false);
   const [usersToAssignInfo, setUsersToAssignInfo] = useState([]);
   const {publicRuntimeConfig} = getConfig();
+
+  // Define available access types
+  const ACCESS_TYPES = [
+    { id: "hr_admin", label: "HR Admin Access" },
+    // Add other access types here if needed in the future
+  ];
+
   // Fetch companies
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED102`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED101`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -276,32 +318,32 @@ function AdminAccess() {
         <main className="flex-1 px-6 pt-24 pb-6 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h1 className="text-2xl font-bold text-gray-800 mb-6">
-                Grant Admin Access
-              </h1>
-
-              {/* Company Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Company
-                </label>
-                <Select onValueChange={handleCompanyChange}>
-                  <SelectTrigger className="w-full">
-                    {selectedCompany
-                      ? selectedCompany.companyName
-                      : "Select a company"}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {companies.map((company) => (
-                      <SelectItem
-                        key={company.companyId}
-                        value={company.companyId}
-                      >
-                        {company.companyName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Grant Admin Access
+                </h1>
+                <div className="flex items-center gap-2">
+                  {/* <label className="text-sm font-medium text-gray-700">
+                    Select Company
+                  </label> */}
+                  <Select onValueChange={handleCompanyChange} className="w-[200px]">
+                    <SelectTrigger>
+                      {selectedCompany
+                        ? selectedCompany.companyName
+                        : "Select a company"}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem
+                          key={company.companyId}
+                          value={company.companyId}
+                        >
+                          {company.companyName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* User Search and Selection List */}
@@ -318,51 +360,70 @@ function AdminAccess() {
                     />
                   </div>
 
-                  <div className="max-h-96 overflow-y-auto border rounded-lg">
-                    {loading ? (
-                      <div className="p-4 text-center text-gray-500">
-                        Loading users...
-                      </div>
-                    ) : filteredUsers.length === 0 ? (
-                      <div className="p-4 text-center text-gray-500">
-                        No users found
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {filteredUsers.map((user) => (
-                          <div
-                            key={user.employeeId}
-                            className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                              selectedUsers.includes(user.employeeId) &&
-                              !user.roles.includes("HRADMIN")
-                                ? "bg-blue-50"
-                                : ""
-                            }`}
-                            onClick={() =>
-                              user.roles.includes("HRADMIN")
-                                ? handleUserClickForUnassign(user)
-                                : handleUserSelectForAssign(user)
-                            }
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium text-gray-900">
-                                  {user.name}
-                                </p>
-                                <p className="text-sm text-gray-500">
-                                  {user.emailPersonal}
-                                </p>
-                              </div>
-                              {user.roles.includes("HRADMIN") ? (
-                                <Badge variant="destructive">HR Admin</Badge>
-                              ) : selectedUsers.includes(user.employeeId) ? (
-                                <div className="w-4 h-4 bg-blue-500 rounded-full" />
-                              ) : null}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                  {/* Table Container with Fixed Height and Sticky Header */}
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="max-h-[calc(100vh-400px)] overflow-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                              Name & Email
+                            </th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                              Status
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {loading ? (
+                            <tr>
+                              <td colSpan="2" className="px-4 py-4 text-center text-gray-500">
+                                Loading users...
+                              </td>
+                            </tr>
+                          ) : filteredUsers.length === 0 ? (
+                            <tr>
+                              <td colSpan="2" className="px-4 py-4 text-center text-gray-500">
+                                No users found
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredUsers.map((user) => (
+                              <tr
+                                key={user.employeeId}
+                                className={`hover:bg-gray-50 cursor-pointer ${
+                                  selectedUsers.includes(user.employeeId) &&
+                                  !user.roles.includes("HRADMIN")
+                                    ? "bg-blue-50"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  user.roles.includes("HRADMIN")
+                                    ? handleUserClickForUnassign(user)
+                                    : handleUserSelectForAssign(user)
+                                }
+                              >
+                                <td className="px-4 py-4">
+                                  <p className="font-medium text-gray-900">
+                                    {user.name}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {user.emailPersonal}
+                                  </p>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                  {user.roles.includes("HRADMIN") ? (
+                                    <Badge variant="destructive">HR Admin</Badge>
+                                  ) : selectedUsers.includes(user.employeeId) ? (
+                                    <div className="w-4 h-4 bg-blue-500 rounded-full ml-auto" />
+                                  ) : null}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* Action Buttons */}

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { LogOut } from "lucide-react";
 import { useRouter } from "next/router";
 import RoleToggle from "./ui/roletoggle";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,6 +26,7 @@ const Navbar = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const [userInfo, setUserInfo] = useState({ name: "", email: "" });
+  const [employeeData, setEmployeeData] = useState(null);
   const { items } = useSelector((state) => state.sessionStorage);
 
   const [companies, setCompanies] = useState([]);
@@ -88,7 +90,7 @@ const Navbar = () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED102`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED101`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -112,6 +114,31 @@ const Navbar = () => {
 
     fetchCompanies();
   }, [selectedCompany]);
+
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      if (currentRole === "employee") {
+        try {
+          const token = getItemFromSessionStorage("token", null);
+          const response = await axios.get(
+            `${publicRuntimeConfig.apiURL}/employee/id/MED101`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          if (response.data) {
+            setEmployeeData(response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching employee data:", error);
+        }
+      }
+    };
+
+    fetchEmployeeData();
+  }, [currentRole]);
 
   useEffect(() => {
     const handleStorageChange = (event) => {
@@ -225,18 +252,39 @@ const Navbar = () => {
             </DropdownMenu>
           )}
 
+          {/* Employee Name - Only for employee role */}
+          {currentRole === "employee" && employeeData && (
+            <div 
+              onClick={() => router.push("/employee/profile")}
+              className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
+            >
+              <span className="text-sm font-medium text-gray-600">
+                {employeeData.name}
+              </span>
+            </div>
+          )}
+
+          {/* Company Name - Only for manager role */}
+          {currentRole === "manager" && selectedCompany && (
+            <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100">
+              <span className="text-base font-semibold text-blue-900">
+                {selectedCompany}
+              </span>
+            </div>
+          )}
+
           {/* Profile Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+            <Button
                 variant="ghost"
-                className="relative h-10 w-10 rounded-full"
+                className="relative h-12 w-12 rounded-lg border-2 border-blue-300"
               >
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src="/avatar.jpg" alt={userInfo.name} />
+                <Avatar className="h-10 w-10 rounded-lg">
+                  <AvatarImage src="/avatar.jpg" alt={employeeData?.name || userInfo.name} />
                   <AvatarFallback>
-                    {userInfo.name
-                      ? userInfo.name.substring(0, 2).toUpperCase()
+                    {(employeeData?.name || userInfo.name)
+                      ? (employeeData?.name || userInfo.name).substring(0, 2).toUpperCase()
                       : "U"}
                   </AvatarFallback>
                 </Avatar>
@@ -245,9 +293,11 @@ const Navbar = () => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">John Doe</p>
+                  <p className="text-sm font-medium leading-none">
+                    {employeeData?.name || "User Name"}
+                  </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    doejohn@gmail.com
+                    {employeeData?.emailOfficial || "user@email.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -269,6 +319,7 @@ const Navbar = () => {
                 onClick={handleLogout}
                 className="text-destructive cursor-pointer"
               >
+                <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

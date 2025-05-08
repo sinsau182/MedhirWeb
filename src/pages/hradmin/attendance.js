@@ -5,9 +5,13 @@ import HradminNavbar from "@/components/HradminNavbar";
 import { useRouter } from "next/router";
 import { Badge } from "@/components/ui/badge";
 import withAuth from "@/components/withAuth";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchEmployees } from "@/redux/slices/employeeSlice";
 
 function Attendance() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const { employees = [], loading: employeesLoading } = useSelector((state) => state.employees || {});
   const [searchInput, setSearchInput] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
@@ -16,7 +20,15 @@ function Attendance() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState("2024");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    dispatch(fetchEmployees()).catch((err) => {
+      setError("Failed to fetch employees");
+      console.error("Error fetching employees:", err);
+    });
+  }, [dispatch]);
 
   // Check authentication and role
   useEffect(() => {
@@ -33,13 +45,14 @@ function Attendance() {
     }
   }, [router]);
 
-  // Generate dates for January 2024
+  // Generate dates for the selected month
   useEffect(() => {
     try {
       const generateDates = () => {
         const dates = [];
-        for (let i = 1; i <= 31; i++) {
-          const date = new Date(2024, 0, i);
+        const daysInMonth = new Date(selectedYear, selectedMonth.getMonth() + 1, 0).getDate();
+        for (let i = 1; i <= daysInMonth; i++) {
+          const date = new Date(selectedYear, selectedMonth.getMonth(), i);
           dates.push({
             day: i,
             weekday: date.toLocaleString("default", { weekday: "short" }),
@@ -51,16 +64,16 @@ function Attendance() {
     } catch (err) {
       setError("Error generating dates");
     }
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
-  // Sample employee data with attendance records
-  const employees = [
-    {
-      id: "MED001",
-      name: "Arun",
-      department: "SALES",
+  // Generate random attendance data for employees
+  const generateAttendanceData = (employee) => {
+    return {
+      id: employee.employeeId,
+      name: employee.name,
+      department: employee.departmentName,
       p_twd: "18/20",
-      attendance: Array(31)
+      attendance: Array(dates.length)
         .fill(null)
         .map((_, i) => {
           // Weekends (Saturdays and Sundays)
@@ -76,227 +89,62 @@ function Attendance() {
           if (random > 0.4) return "approved_leave"; // Approved leave
           return true; // Present
         }),
-    },
-    {
-      id: "MED002",
-      name: "Naman",
-      department: "Design",
-      p_twd: "18/20",
-      attendance: Array(31)
-        .fill(null)
-        .map((_, i) => {
-          // Weekends (Saturdays and Sundays)
-          if (i % 7 === 5 || i % 7 === 6) return "weekend";
-          // Firm holiday (15th)
-          if (i === 14) return "holiday";
-          // Regular attendance
-          if (i < 3) return null;
-          // Random attendance status
-          const random = Math.random();
-          if (random > 0.8) return false; // Absent
-          if (random > 0.6) return "half"; // Half day
-          if (random > 0.4) return "approved_leave"; // Approved leave
-          return true; // Present
-        }),
-    },
-    {
-      id: "MED003",
-      name: "Amit",
-      department: "Marketing",
-      p_twd: "18/20",
-      attendance: Array(31)
-        .fill(null)
-        .map((_, i) => {
-          // Weekends (Saturdays and Sundays)
-          if (i % 7 === 5 || i % 7 === 6) return "weekend";
-          // Firm holiday (15th)
-          if (i === 14) return "holiday";
-          // Regular attendance
-          if (i < 3) return null;
-          // Random attendance status
-          const random = Math.random();
-          if (random > 0.8) return false; // Absent
-          if (random > 0.6) return "half"; // Half day
-          if (random > 0.4) return "approved_leave"; // Approved leave
-          return true; // Present
-        }),
-    },
-    {
-      id: "MED004",
-      name: "Mahesh",
-      department: "SALES",
-      p_twd: "18/20",
-      attendance: Array(31)
-        .fill(null)
-        .map((_, i) => {
-          // Weekends (Saturdays and Sundays)
-          if (i % 7 === 5 || i % 7 === 6) return "weekend";
-          // Firm holiday (15th)
-          if (i === 14) return "holiday";
-          // Regular attendance
-          if (i < 3) return null;
-          // Random attendance status
-          const random = Math.random();
-          if (random > 0.8) return false; // Absent
-          if (random > 0.6) return "half"; // Half day
-          if (random > 0.4) return "approved_leave"; // Approved leave
-          return true; // Present
-        }),
-    },
-    {
-      id: "MED005",
-      name: "Rohit",
-      department: "HR",
-      p_twd: "18/20",
-      attendance: Array(31)
-        .fill(null)
-        .map((_, i) => {
-          // Weekends (Saturdays and Sundays)
-          if (i % 7 === 5 || i % 7 === 6) return "weekend";
-          // Firm holiday (15th)
-          if (i === 14) return "holiday";
-          // Regular attendance
-          if (i < 3) return null;
-          // Random attendance status
-          const random = Math.random();
-          if (random > 0.8) return false; // Absent
-          if (random > 0.6) return "half"; // Half day
-          if (random > 0.4) return "approved_leave"; // Approved leave
-          return true; // Present
-        }),
-    },
-    {
-      id: "MED006",
-      name: "Suresh",
-      department: "IT",
-      p_twd: "18/20",
-      attendance: Array(31)
-        .fill(null)
-        .map((_, i) => {
-          // Weekends (Saturdays and Sundays)
-          if (i % 7 === 5 || i % 7 === 6) return "weekend";
-          // Firm holiday (15th)
-          if (i === 14) return "holiday";
-          // Regular attendance
-          if (i < 3) return null;
-          // Random attendance status
-          const random = Math.random();
-          if (random > 0.8) return false; // Absent
-          if (random > 0.6) return "half"; // Half day
-          if (random > 0.4) return "approved_leave"; // Approved leave
-          return true; // Present
-        }),
-    },
-  ];
+    };
+  };
 
-  // Leave data
-  const leaveData = [
-    {
-      id: "MED001",
-      name: "Arun",
-      department: "SALES",
+  // Generate random leave data for employees
+  const generateLeaveData = (employee) => {
+    return {
+      id: employee.employeeId,
+      name: employee.name,
+      department: employee.departmentName,
       noOfPayableDays: "25",
-      leavesTaken: "5",
+      leavesTaken: Math.floor(Math.random() * 7).toString(),
       leavesEarned: "10",
       leavesFromPreviousYear: "2",
-      compOffEarned: "3",
+      compOffEarned: Math.floor(Math.random() * 4).toString(),
       compOffCarriedForward: "1",
       netLeaves: "7",
-    },
-    {
-      id: "MED002",
-      name: "Naman",
-      department: "Design",
-      noOfPayableDays: "25",
-      leavesTaken: "3",
-      leavesEarned: "10",
-      leavesFromPreviousYear: "2",
-      compOffEarned: "2",
-      compOffCarriedForward: "1",
-      netLeaves: "9",
-    },
-    {
-      id: "MED003",
-      name: "Amit",
-      department: "Marketing",
-      noOfPayableDays: "25",
-      leavesTaken: "2",
-      leavesEarned: "10",
-      leavesFromPreviousYear: "2",
-      compOffEarned: "4",
-      compOffCarriedForward: "1",
-      netLeaves: "10",
-    },
-    {
-      id: "MED004",
-      name: "Mahesh",
-      department: "SALES",
-      noOfPayableDays: "25",
-      leavesTaken: "4",
-      leavesEarned: "10",
-      leavesFromPreviousYear: "2",
-      compOffEarned: "2",
-      compOffCarriedForward: "1",
-      netLeaves: "8",
-    },
-    {
-      id: "MED005",
-      name: "Rohit",
-      department: "HR",
-      noOfPayableDays: "25",
-      leavesTaken: "6",
-      leavesEarned: "10",
-      leavesFromPreviousYear: "2",
-      compOffEarned: "3",
-      compOffCarriedForward: "1",
-      netLeaves: "6",
-    },
-    {
-      id: "MED006",
-      name: "Suresh",
-      department: "IT",
-      noOfPayableDays: "25",
-      leavesTaken: "3",
-      leavesEarned: "10",
-      leavesFromPreviousYear: "2",
-      compOffEarned: "2",
-      compOffCarriedForward: "1",
-      netLeaves: "9",
-    },
-  ];
-
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
+    };
   };
+
+  // const toggleSidebar = () => {
+  //   setIsSidebarCollapsed(!isSidebarCollapsed);
+  // };
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
   const handleMonthSelection = (month, year) => {
-    setSelectedMonth(month);
+    setSelectedMonth(new Date(year, month));
     setSelectedYear(year);
     setIsCalendarOpen(false);
   };
 
+  // Generate attendance and leave data for filtered employees
   const filteredEmployees = React.useMemo(
     () =>
-      employees.filter(
-        (employee) =>
-          employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-          employee.id.toLowerCase().includes(searchInput.toLowerCase()) ||
-          employee.department.toLowerCase().includes(searchInput.toLowerCase())
-      ),
-    [searchInput]
+      employees
+        .filter(
+          (employee) =>
+            employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+            employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
+            employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())
+        )
+        .map(generateAttendanceData),
+    [searchInput, employees, dates.length]
   );
 
   const filteredLeaveData = React.useMemo(
     () =>
-      leaveData.filter(
-        (leave) =>
-          leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-          leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
-          leave.department.toLowerCase().includes(searchInput.toLowerCase())
-      ),
-    [searchInput]
+      employees
+        .filter(
+          (employee) =>
+            employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+            employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
+            employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())
+        )
+        .map(generateLeaveData),
+    [searchInput, employees]
   );
 
   const getAttendanceColor = React.useCallback((status) => {
@@ -393,7 +241,7 @@ function Attendance() {
               <td className="py-1 px-1 text-sm text-gray-800 border-r">
                 {employee.name}
               </td>
-              <td className="py-1 px-1 text-sm text-gray-800 border-r">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
                 {employee.department}
               </td>
               {employee.attendance.map((status, index) => (
@@ -498,7 +346,7 @@ function Attendance() {
     </div>
   );
 
-  if (isLoading) {
+  if (isLoading || employeesLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -586,7 +434,7 @@ function Attendance() {
                         "Oct",
                         "Nov",
                         "Dec",
-                      ].map((month) => (
+                      ].slice(0, new Date().getMonth() + 1).map((month) => (
                         <button
                           key={month}
                           className={`p-3 text-sm rounded-md transition-colors duration-200 ${

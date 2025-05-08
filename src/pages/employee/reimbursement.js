@@ -15,12 +15,14 @@ const Expenses = () => {
   const fileInputRef = useRef(null);
 
   const [expenseData, setExpenseData] = useState({
-    employeeId: "emp123",
+    employeeId: "MED101",
+    employeeName: "Aparna",
+    department: "Human Resource",
     amount: "",
     category: "",
     description: "",
     receipt: null,
-    expenseType: "project", // Default to project expenses
+    reimbursementType: "project", // Default to project expenses
   });
 
   const projectCategories = ["Travel", "Meals", "Fuel"];
@@ -29,6 +31,8 @@ const Expenses = () => {
     "Cleaning Liquid",
     "Advance Salary",
   ];
+
+  const [fileError, setFileError] = useState("");
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -44,12 +48,26 @@ const Expenses = () => {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setExpenseData((prevData) => ({
-        ...prevData,
-        receipt: file,
-      }));
+    if (!file) return;
+
+    // 2MB size limit
+    if (file.size > 1 * 1024 * 1024) {
+      setFileError("Image size too large. Please select a file under 1MB.");
+      return;
     }
+
+    // Accept only jpg, png, pdf
+    const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      setFileError("Unsupported file format. Please select a JPG, PNG, or PDF.");
+      return;
+    }
+
+    setFileError(""); // Clear error if valid
+    setExpenseData((prevData) => ({
+      ...prevData,
+      receipt: file,
+    }));
   };
 
   const handleClick = () => {
@@ -87,7 +105,7 @@ const Expenses = () => {
           {/* Content Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Submit New Expense */}
-            <div className="bg-white shadow-md rounded-lg p-6 md:border-r md:border-gray-300">
+            <div className="bg-white shadow-md rounded-lg p-6 h-[590px] flex flex-col">
               <h2 className="text-lg font-semibold mb-4">
                 Submit New Reimbursement
               </h2>
@@ -101,13 +119,13 @@ const Expenses = () => {
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        name="expenseType"
+                        name="reimbursementType"
                         value="project"
-                        checked={expenseData.expenseType === "project"}
+                        checked={expenseData.reimbursementType === "project"}
                         onChange={(e) => {
                           setExpenseData((prev) => ({
                             ...prev,
-                            expenseType: e.target.value,
+                            reimbursementType: e.target.value,
                             category: "", // Reset category when type changes
                           }));
                         }}
@@ -118,13 +136,13 @@ const Expenses = () => {
                     <label className="flex items-center">
                       <input
                         type="radio"
-                        name="expenseType"
+                        name="reimbursementType"
                         value="non-project"
-                        checked={expenseData.expenseType === "non-project"}
+                        checked={expenseData.reimbursementType === "non-project"}
                         onChange={(e) => {
                           setExpenseData((prev) => ({
                             ...prev,
-                            expenseType: e.target.value,
+                            reimbursementType: e.target.value,
                             category: "", // Reset category when type changes
                           }));
                         }}
@@ -163,7 +181,7 @@ const Expenses = () => {
                       required
                     >
                       <option value="">Select a category</option>
-                      {expenseData.expenseType === "project"
+                      {expenseData.reimbursementType === "project"
                         ? projectCategories.map((cat) => (
                             <option key={cat} value={cat}>
                               {cat}
@@ -197,7 +215,7 @@ const Expenses = () => {
                     Upload Receipt
                   </label>
                   <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center text-gray-500 relative cursor-pointer hover:border-gray-400"
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-5 text-center text-gray-500 relative cursor-pointer hover:border-gray-400"
                     onClick={handleClick}
                   >
                     <input
@@ -207,46 +225,75 @@ const Expenses = () => {
                       accept=".jpg,.png,.pdf"
                       onChange={handleFileChange}
                     />
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-8 w-8 mx-auto text-gray-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    <p className="text-sm mt-2">Click to upload receipt</p>
-                    <p className="text-xs">JPG, PNG, or PDF</p>
+                    {expenseData.receipt ? (
+                      <div className="flex flex-col items-center justify-center">
+                        <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path stroke="#22c55e" strokeWidth="2" d="M5 13l4 4L19 7"/></svg>
+                        <span className="text-green-600 font-medium mt-2">{expenseData.receipt.name}</span>
+                        <span className="text-xs text-green-500">(Uploaded!)</span>
+                        <button
+                          type="button"
+                          className="text-xs text-blue-500 underline mt-2"
+                          onClick={e => { e.stopPropagation(); fileInputRef.current.value = ''; setExpenseData(prev => ({ ...prev, receipt: null })); }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-8 w-8 mx-auto text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                        <p className="text-sm mt-2">Click to upload receipt</p>
+                        <p className="text-xs">JPG, PNG, or PDF</p>
+                      </>
+                    )}
                   </div>
-                  {expenseData.receipt && (
-                    <p className="mt-2 text-sm text-green-600">
-                      File uploaded: {expenseData.receipt.name}
-                    </p>
+                  {fileError && (
+                    <div style={{ color: 'red', marginTop: 2, fontSize: 14 }}>{fileError}</div>
                   )}
                 </div>
 
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition duration-200"
+                  className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition duration-200 mt-0"
                   onClick={(e) => {
                     e.preventDefault();
-                    dispatch(createExpense(expenseData));
-                    setExpenseData({
-                      employeeId: "emp123",
-                      amount: "",
-                      category: "",
-                      description: "",
-                      receipt: null,
-                      expenseType: "project",
-                    });
-                    toast.success("Expense submitted successfully!");
+                    try {
+                      if (!expenseData.amount || !expenseData.category || !expenseData.description || !expenseData.receipt) {
+                        toast.error("Please fill in all required fields.");
+                        return;
+                      }
+                      dispatch(createExpense(expenseData));
+                      setExpenseData({
+                        employeeId: "MED101",
+                        employeeName: "Aparna",
+                        department: "Human Resource",
+                        amount: "",
+                        category: "",
+                        description: "",
+                        receipt: null,
+                        reimbursementType: "project",
+                      });
+                      toast.success("Expense submitted successfully!");
+                    } catch (error) {
+                      if (error.response && error.response.status === 500) {
+                        toast.error("We couldn't process your reimbursement right now. Please try again later.");
+                      } else {
+                        toast.error("An unexpected error occurred. Please try again.");
+                      }
+                    }
                   }}
                 >
                   Send For Approval
@@ -255,24 +302,14 @@ const Expenses = () => {
             </div>
 
             {/* Recent Expenses */}
-            <div
-              className={`bg-white shadow-md rounded-lg p-6 flex flex-col transition-all duration-300 ${
-                showAllExpenses ? "h-[600px]" : "h-[550px]"
-              }`}
-            >
+            <div className="bg-white shadow-md rounded-lg p-6 h-[590px] flex flex-col">
               <h2 className="text-lg font-semibold mb-4">
                 Recent Reimbursements{" "}
               </h2>
-              <div
-                className={`space-y-4 ${
-                  showAllExpenses ? "overflow-y-auto" : "overflow-hidden"
-                } flex-grow`}
-              >
+              <div className={`space-y-4 flex-grow ${showAllExpenses ? 'overflow-y-auto' : 'overflow-hidden'}`}>
                 {/* Expense Item */}
                 {loading ? (
                   <p className="text-gray-500">Loading...</p>
-                ) : error ? (
-                  <p className="text-red-500">Error: {error}</p>
                 ) : expenses.length === 0 ? (
                   <p className="text-gray-500">No recent expenses found.</p>
                 ) : (

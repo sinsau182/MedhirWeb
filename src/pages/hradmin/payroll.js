@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
 
+
 function PayrollManagement() {
   const selectedCompanyId = localStorage.getItem("selectedCompanyId");
 
@@ -19,8 +20,8 @@ function PayrollManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("March");
-  const [selectedYear, setSelectedYear] = useState("2024");
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "long" }));
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
 
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
@@ -31,6 +32,7 @@ function PayrollManagement() {
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
   const {publicRuntimeConfig} = getConfig();
+
   const handleMonthSelection = (month, year) => {
     setSelectedMonth(month);
     setSelectedYear(year);
@@ -53,7 +55,7 @@ function PayrollManagement() {
   const fetchTDS = async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      publicRuntimeConfig.apiURL + "/tds-settings/company/" + selectedCompanyId,
+      publicRuntimeConfig.apiURL + "/professional-tax-settings/company/" + selectedCompanyId,
       {
         method: "GET",
         headers: {
@@ -154,55 +156,55 @@ function PayrollManagement() {
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="w-full overflow-auto">
-        <table className="w-full table-fixed">
-          <thead>
-            <tr className="border-b">
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">
-                EMP ID
+      <div className="max-h-[calc(100vh-280px)] overflow-auto">
+        <table className="w-full">
+          <thead className="sticky top-0 bg-gray-50">
+            <tr>
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                EMPLOYEE ID
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 NAME
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 PAID DAYS
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 MONTHLY CTC
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 THIS MONTH
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 BASIC
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 HRA
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 ALLOWANCE
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 OVERTIME PAY
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 REIMB.
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 EMP. PF
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 EMPR. PF
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[10%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 DEDUCTIONS
               </th>
-              <th className="py-2 px-2 text-left text-xs font-semibold text-gray-700 w-[8%]">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 NET PAY
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -269,52 +271,44 @@ function PayrollManagement() {
 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       {employee.employeeId}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       {employee.name}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       {paidDays}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{employee.salaryDetails.monthlyCtc}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
-                      ₹
-                      {parseFloat(
-                        (
-                          employee.salaryDetails.monthlyCtc *
-                          (paidDays / monthDays)
-                        ).toFixed(0)
-                      )}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays / monthDays)).toFixed(0))}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{basic}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">₹{hra}</td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{hra}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{allowance}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       {editingOvertime === employee.employeeId ? (
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             value={overtimeValue}
                             onChange={(e) => setOvertimeValue(e.target.value)}
-                            onKeyPress={(e) =>
-                              handleOvertimeKeyPress(e, employee.employeeId)
-                            }
+                            onKeyPress={(e) => handleOvertimeKeyPress(e, employee.employeeId)}
                             className="w-24 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter amount"
                             autoFocus
                           />
                           <button
-                            onClick={() =>
-                              handleOvertimeSave(employee.employeeId)
-                            }
+                            onClick={() => handleOvertimeSave(employee.employeeId)}
                             className="p-1 text-green-600 hover:text-green-700"
                           >
                             <Check className="h-4 w-4" />
@@ -329,28 +323,26 @@ function PayrollManagement() {
                       ) : (
                         <div
                           className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
-                          onClick={() =>
-                            handleOvertimeEdit(employee.employeeId, overtimePay)
-                          }
+                          onClick={() => handleOvertimeEdit(employee.employeeId, overtimePay)}
                         >
                           ₹{overtimePay}
                           <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
                         </div>
                       )}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{reimbursement}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{employeePF}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{employerPF}
                     </td>
-                    <td className="py-2 px-2 text-sm text-gray-800">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{deductions}
                     </td>
-                    <td className="py-2 px-2 text-sm font-semibold text-gray-900">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{netPay}
                     </td>
                   </tr>
@@ -364,40 +356,40 @@ function PayrollManagement() {
 
   const renderDeductionsTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="w-full overflow-auto">
+      <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="sticky top-0 bg-gray-50">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee ID
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Name
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Department
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee PF
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employer PF
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 TDS
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Professional Tax
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Advance Adjusted
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Net Deductions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -411,7 +403,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
@@ -476,34 +468,34 @@ function PayrollManagement() {
 
   const renderAdvanceTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="w-full overflow-auto">
+      <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="sticky top-0 bg-gray-50">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee ID
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Name
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Department
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Old Advance
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 This Month Advance
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Deduct in This Month
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Balance for Next Month
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -517,7 +509,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹{employee.oldAdvance}
@@ -541,40 +533,40 @@ function PayrollManagement() {
 
   const renderReimbursementTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="w-full overflow-auto">
+      <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="sticky top-0 bg-gray-50">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee ID
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Name
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Department
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Type
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Category
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Description
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Amount
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Status
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Receipt
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -588,7 +580,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.type}
@@ -623,34 +615,34 @@ function PayrollManagement() {
 
   const renderPaymentHistoryTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="w-full overflow-auto">
+      <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="sticky top-0 bg-gray-50">
             <tr>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee ID
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Name
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Department
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Payment Date
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Amount
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Payment Mode
               </th>
-              <th className="text-left py-2 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Status
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -664,7 +656,7 @@ function PayrollManagement() {
                     {employee.name}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.department}
+                    {employee.departmentName}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.paymentDate}
@@ -750,7 +742,7 @@ function PayrollManagement() {
                         "Oct",
                         "Nov",
                         "Dec",
-                      ].map((month) => (
+                      ].slice(0, new Date().getMonth() + 1).map((month) => (
                         <button
                           key={month}
                           className={`p-3 text-sm rounded-md transition-colors duration-200 ${
@@ -776,26 +768,28 @@ function PayrollManagement() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-4 mb-6 border-b">
-            {[
-              "Salary Statement",
-              "Deductions",
-              "Advance",
-              "Reimbursement",
-              "Payment History",
-            ].map((section) => (
-              <button
-                key={section}
-                className={`px-4 py-2 text-sm font-medium ${
-                  selectedSection === section
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-blue-600"
-                }`}
-                onClick={() => setSelectedSection(section)}
-              >
-                {section}
-              </button>
-            ))}
+          <div className="bg-gray-50">
+            <div className="flex">
+              {[
+                "Salary Statement",
+                "Deductions",
+                "Advance",
+                "Reimbursement",
+                "Payment History",
+              ].map((section) => (
+                <button
+                  key={section}
+                  className={`px-8 py-4 text-sm font-medium transition-colors relative ${
+                    selectedSection === section
+                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg z-10"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setSelectedSection(section)}
+                >
+                  {section}
+                </button>
+              ))}
+            </div>
           </div>
 
           {selectedSection === "Salary Statement" && renderPayrollTable()}
