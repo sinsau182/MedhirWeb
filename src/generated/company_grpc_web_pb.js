@@ -10,8 +10,6 @@
 // 	protoc              v5.29.3
 // source: company.proto
 
-
-/* eslint-disable */
 // @ts-nocheck
 
 

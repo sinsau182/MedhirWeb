@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-key */
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 
 import {
   BarChart,
@@ -28,7 +28,7 @@ import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 
 import { useSelector, useDispatch } from "react-redux";
-import { fetchEmployees } from "@/redux/slices/employeeSlice";
+// import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
@@ -55,14 +55,10 @@ const Overview = () => {
   const [profileUpdates, setProfileUpdates] = useState([]);
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
+  const [employeeCount, setEmployeeCount] = useState(0);
 
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
-
-  const {publicRuntimeConfig} = getConfig();
-  useEffect(() => {
-    dispatch(fetchEmployees());
-  }, [dispatch]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -78,16 +74,19 @@ const Overview = () => {
     setShowCharts(false); // Ensure Charts are hidden
   };
 
-  const fetchProfileUpdates = async () => {
+  const publicRuntimeConfig = getConfig().publicRuntimeConfig;
+
+  const fetchProfileUpdates = useCallback( async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
+      const employeeId = sessionStorage.getItem("employeeId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`,
+        `${publicRuntimeConfig.apiURL}/manager/${employeeId}/members/update-requests`,
         { headers }
       );
       if (!response.ok) {
@@ -98,21 +97,18 @@ const Overview = () => {
       const data = await response.json();
       setProfileUpdates(data);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to fetch profile updates: ${error.message}`,
-        variant: "destructive",
-      });
+      toast.error("Error fetching profile updates:", error);
       setProfileUpdates([]);
     }
-  };
+  }, [publicRuntimeConfig.apiURL]);
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = useCallback( async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
+      const employeeId = sessionStorage.getItem("employeeId");
       const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
+        `${publicRuntimeConfig.apiURL}/manager/leave/status/Pending/${employeeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -139,12 +135,12 @@ const Overview = () => {
       setPendingLeaves([]);
       setPendingCompOffs([]);
     }
-  };
+  }, [publicRuntimeConfig.apiURL]);
 
   useEffect(() => {
     fetchPendingRequests();
     fetchProfileUpdates();
-  }, []);
+  }, [fetchPendingRequests, fetchProfileUpdates]);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -176,12 +172,13 @@ const Overview = () => {
     const fetchEmployeeCount = async () => {
       try {
         const token = getItemFromSessionStorage("token", null); // Retrieve the token from sessionStorage
+        const employeeId = sessionStorage.getItem("employeeId");
         if (!token) {
           throw new Error("Authentication token is missing");
         }
 
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/employees/manager/MED101`, // Replace with your actual API endpoint
+          `${publicRuntimeConfig.apiURL}/employees/manager/${employeeId}`, // Replace with your actual API endpoint
           {
             headers: {
               Authorization: `Bearer ${token}`, // Include the token in the Authorization header
@@ -202,9 +199,7 @@ const Overview = () => {
     };
 
     fetchEmployeeCount();
-  }, []);
-
-  const [employeeCount, setEmployeeCount] = useState(0);
+  }, [publicRuntimeConfig.apiURL]);
 
   const overviewData = [
     {
@@ -527,22 +522,6 @@ const Overview = () => {
                                     COLORS[index % COLORS.length],
                                 }}
                               ></span>
-
-                              {/* <span
-
-style={{
-
-fontWeight: activeIndex === index ? "bold" : "normal",
-
-color: "#4B5563",
-
-}}
-
->
-
-{`${entry.name}: ${entry.value} employees`}
-
-</span> */}
                             </div>
                           ))}
                         </div>

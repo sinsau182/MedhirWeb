@@ -143,10 +143,6 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Debug log to check values
-  console.log("DesignationSelect - Current value:", value);
-  console.log("DesignationSelect - Available options:", options);
-
   return (
     <div className={inputGroupClass} ref={dropdownRef}>
       <label className={floatingLabelClass}>{label}</label>
@@ -331,12 +327,9 @@ function EmployeeForm() {
         const companyId = localStorage.getItem("selectedCompanyId");
 
         if (!companyId) {
-          console.error("No company ID found");
           toast.error("Company ID not found");
           return;
         }
-
-        console.log("Fetching departments for company:", companyId);
 
         const response = await axios.get(
           `${publicRuntimeConfig.apiURL}/departments/company/${companyId}`,
@@ -348,19 +341,15 @@ function EmployeeForm() {
           }
         );
 
-        console.log("Departments API response:", response.data);
-
         if (response.data && Array.isArray(response.data)) {
           setDepartments(response.data);
           if (response.data.length === 0) {
             toast.warning("No departments found for this company");
           }
         } else {
-          console.error("Invalid departments data format:", response.data);
           toast.error("Invalid departments data received");
         }
       } catch (error) {
-        console.error("Error fetching departments:", error.response || error);
         toast.error(
           error.response?.data?.message || "Failed to fetch departments"
         );
@@ -368,9 +357,7 @@ function EmployeeForm() {
     };
 
     fetchDepartments();
-  }, []);
-
-  // const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  }, [publicRuntimeConfig.apiURL]);
 
   const weekDayOptions = [
     { value: "SUNDAY", label: "Sunday" },
@@ -443,7 +430,6 @@ function EmployeeForm() {
     if (employee) {
       try {
         const parsedEmployee = JSON.parse(employee);
-        console.log("Parsed Employee Data:", parsedEmployee); // Debug log
         setFormData((prevFormData) => ({
           ...prevFormData,
           employee: {
@@ -521,11 +507,10 @@ function EmployeeForm() {
 
         setEmployeeId(parsedEmployee.employeeId);
       } catch (error) {
-        console.error("Error parsing employee data:", error);
         toast.error("Error loading employee data");
       }
     }
-  }, [employee]);
+  }, [employee, company]);
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -883,8 +868,6 @@ function EmployeeForm() {
       const fields = fieldMappings[documentType];
       if (!fields) return;
 
-      console.log(`Uploading ${documentType} file:`, file.name);
-
       setFormData((prev) => {
         const updatedData = {
           ...prev,
@@ -895,8 +878,6 @@ function EmployeeForm() {
             [fields.imgField]: file, // Store the File object for upload
           },
         };
-
-        console.log(`Updated form data for ${documentType}:`, updatedData);
 
         return updatedData;
       });
@@ -1013,7 +994,6 @@ function EmployeeForm() {
         }
 
         const token = getItemFromSessionStorage("token", null);
-        console.log("Fetching designations for department:", deptId);
 
         const response = await axios.get(
           `${publicRuntimeConfig.apiURL}/api/designations/department/${deptId}`,
@@ -1025,19 +1005,15 @@ function EmployeeForm() {
           }
         );
 
-        console.log("Designations API response:", response.data);
-
         if (response.data && Array.isArray(response.data)) {
           setDesignations(response.data);
           if (response.data.length === 0) {
             toast.warning("No designations found for this department");
           }
         } else {
-          console.error("Invalid designations data format:", response.data);
           toast.error("Invalid designations data received");
         }
       } catch (error) {
-        console.error("Error fetching designations:", error.response || error);
         toast.error(
           error.response?.data?.message || "Failed to fetch designations"
         );
@@ -1045,7 +1021,7 @@ function EmployeeForm() {
     };
 
     fetchDesignations();
-  }, [formData.employee.department]);
+  }, [formData.employee.department, publicRuntimeConfig.apiURL]);
 
   // Fetch managers when department changes
   useEffect(() => {
@@ -1058,7 +1034,6 @@ function EmployeeForm() {
         }
 
         const token = getItemFromSessionStorage("token", null);
-        console.log("Fetching managers for department:", departmentId);
 
         const response = await axios.get(
           `${publicRuntimeConfig.apiURL}/departments/${departmentId}/managers`,
@@ -1070,19 +1045,15 @@ function EmployeeForm() {
           }
         );
 
-        console.log("Managers API response:", response.data);
-
         if (response.data && Array.isArray(response.data)) {
           setManagers(response.data);
           if (response.data.length === 0) {
             toast.warning("No managers found for this department");
           }
         } else {
-          console.error("Invalid managers data format:", response.data);
           toast.error("Invalid managers data received");
         }
       } catch (error) {
-        console.error("Error fetching managers:", error.response || error);
         toast.error(
           error.response?.data?.message || "Failed to fetch managers"
         );
@@ -1090,7 +1061,7 @@ function EmployeeForm() {
     };
 
     fetchManagers();
-  }, [formData.employee.department?.departmentId]);
+  }, [formData.employee.department?.departmentId, publicRuntimeConfig.apiURL]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1204,7 +1175,7 @@ function EmployeeForm() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className={inputGroupClass}>
                             <label className={floatingLabelClass}>
-                              Father's Name
+                              Father&apos;s Name
                             </label>
                             <input
                               type="text"

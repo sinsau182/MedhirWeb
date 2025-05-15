@@ -6,16 +6,12 @@ import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "react-hot-toast";
 
 function Employees() {
   const [activeTab, setActiveTab] = useState("Basic");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [searchInput, setSearchInput] = useState("");
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState("March");
-  const [selectedYear, setSelectedYear] = useState("2024");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState(null);
@@ -73,14 +69,6 @@ function Employees() {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
-
-  const handleMonthSelection = (month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    setIsCalendarOpen(false);
-  };
-
   const handleViewDoc = (imageUrl) => {
     setSelectedImage(imageUrl);
     setIsModalOpen(true);
@@ -114,6 +102,7 @@ function Employees() {
           { key: "emailOfficial", label: "Email(Off.)" },
           { key: "joiningDate", label: "DOJ" },
           { key: "designationName", label: "Designation" },
+          { key: "assignTo", label: "Members" },
           { key: "currentAddress", label: "Current Address" },
         ];
       case "ID Proofs":
@@ -168,6 +157,12 @@ function Employees() {
 
     switch (activeTab) {
       case "Basic":
+        if (key === "assignTo") {
+          if (Array.isArray(employee[key])) {
+            return employee[key].map(id => id).join(", ");
+          }
+          return employee[key] || "";
+        }
         return typeof employee[key] === "object"
           ? employee[key]
             ? JSON.stringify(employee[key])

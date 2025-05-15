@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Search, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -34,7 +34,7 @@ function Attendance() {
   useEffect(() => {
     try {
       const role = sessionStorage.getItem("currentRole");
-      if (!role || role !== "hr") {
+      if (!role || role !== "HRADMIN") {
         router.push("/login");
         return;
       }
@@ -67,7 +67,7 @@ function Attendance() {
   }, [selectedMonth, selectedYear]);
 
   // Generate random attendance data for employees
-  const generateAttendanceData = (employee) => {
+  const generateAttendanceData = useCallback((employee) => {
     return {
       id: employee.employeeId,
       name: employee.name,
@@ -90,7 +90,7 @@ function Attendance() {
           return true; // Present
         }),
     };
-  };
+  }, [dates.length]);
 
   // Generate random leave data for employees
   const generateLeaveData = (employee) => {
@@ -108,9 +108,6 @@ function Attendance() {
     };
   };
 
-  // const toggleSidebar = () => {
-  //   setIsSidebarCollapsed(!isSidebarCollapsed);
-  // };
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
@@ -131,7 +128,7 @@ function Attendance() {
             employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())
         )
         .map(generateAttendanceData),
-    [searchInput, employees, dates.length]
+    [searchInput, employees, generateAttendanceData]
   );
 
   const filteredLeaveData = React.useMemo(
@@ -155,14 +152,6 @@ function Attendance() {
     if (status === "weekend") return "bg-gray-300"; // Weekend
     if (status === "holiday") return "bg-gray-400"; // Holiday
     if (status === "approved_leave") return "bg-green-200"; // Light green for approved leave
-    return "";
-  }, []);
-
-  const getAttendanceText = React.useCallback((status) => {
-    if (status === true) return "P";
-    if (status === false) return "Un. App. Leave";
-    if (status === "half") return "Approved LOP";
-    if (status === "approved_leave") return "P(App. Leave)";
     return "";
   }, []);
 

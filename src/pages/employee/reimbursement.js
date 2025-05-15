@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { fetchExpenses, createExpense } from "@/redux/slices/expenseSlice";
 import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
@@ -11,12 +12,17 @@ const Expenses = () => {
   const [showAllExpenses, setShowAllExpenses] = useState(false); // State to toggle "View More"
   const dispatch = useDispatch();
   const { expenses, loading, error } = useSelector((state) => state.expenses);
+  const employeeId = sessionStorage.getItem("employeeId");
+
+  const token = getItemFromSessionStorage("token");
+  const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
+  const employeeName = decodedToken.name; // Extract
 
   const fileInputRef = useRef(null);
 
   const [expenseData, setExpenseData] = useState({
-    employeeId: "MED101",
-    employeeName: "Aparna",
+    employeeId: employeeId,
+    employeeName: employeeName,
     department: "Human Resource",
     amount: "",
     category: "",
@@ -277,8 +283,8 @@ const Expenses = () => {
                       }
                       dispatch(createExpense(expenseData));
                       setExpenseData({
-                        employeeId: "MED101",
-                        employeeName: "Aparna",
+                        employeeId: employeeId,
+                        employeeName: employeeName,
                         department: "Human Resource",
                         amount: "",
                         category: "",
@@ -316,13 +322,13 @@ const Expenses = () => {
                   expenses
                     .slice(0, showAllExpenses ? expenses.length : 5)
                     .map((expense) => {
-                      const formattedDate = new Date(
-                        expense.timestamp
-                      ).toLocaleDateString("en-GB", {
+                      const formattedDate = new Date(expense.createdAt).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
+                        timeZone: "UTC", // Add this line to avoid local time zone shifts
                       });
+                      
 
                       return (
                         <div

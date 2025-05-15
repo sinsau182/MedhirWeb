@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
-
-const API_BASE_URL = "http://localhost:8083/reimbursements";
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.apiURL + "/reimbursements";
 
 // Fetch employees
 export const fetchExpenses = createAsyncThunk(
@@ -9,7 +10,8 @@ export const fetchExpenses = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL,{
+      const employeeId = sessionStorage.getItem("employeeId");
+      const response = await fetch(`${API_BASE_URL}/employee/${employeeId}`,{
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -42,7 +44,8 @@ export const createExpense = createAsyncThunk(
         body = JSON.stringify(expenseData);
       }
 
-      const response = await fetch("http://localhost:8083/reimbursements", {
+      const response = await fetch(
+        `${publicRuntimeConfig.apiURL}/reimbursements`, {
         method: "POST",
         body,
         headers: {

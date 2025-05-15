@@ -4,7 +4,7 @@ import { setItem, getItem, removeItem } from "./sessionStorageSlice";
 import getConfig from "next/config";
 // Define the base URL
 const {publicRuntimeConfig} = getConfig();
-const BASE_URL = publicRuntimeConfig.apiURL + "/auth";
+const BASE_URL = publicRuntimeConfig.apiURL + "/api/auth";
 
 export const registerUser = createAsyncThunk(
   "auth/register",
@@ -26,6 +26,11 @@ export const loginUser = createAsyncThunk(
       if (response.data.token) {
         // Store token in sessionStorage using sessionStorageSlice
         await dispatch(setItem({ key: 'token', value: response.data.token }));
+        await sessionStorage.setItem('roles', JSON.stringify(response.data.roles));
+        await sessionStorage.setItem('employeeId', response.data.employeeId);
+        if (!response.data.passwordChanged) {
+          await sessionStorage.setItem('passwordChanged', response.data.passwordChanged);
+        }
       }
       return response.data;
     } catch (error) {

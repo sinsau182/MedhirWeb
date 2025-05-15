@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Search, Calendar, Check, X, Pencil } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -39,20 +39,9 @@ function PayrollManagement() {
     setIsCalendarOpen(false);
   };
 
-  useEffect(() => {
-    dispatch(fetchEmployees());
-    const fetchData = async () => {
-      try {
-        setTdsData(await fetchTDS());
-        setPtaxData(await fetchPTAX());
-      } catch (error) {
-        toast.error("Failed to fetch data");
-      }
-    };
-    fetchData();
-  }, [dispatch]);
 
-  const fetchTDS = async () => {
+
+  const fetchTDS = useCallback(async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
       publicRuntimeConfig.apiURL + "/professional-tax-settings/company/" + selectedCompanyId,
@@ -77,9 +66,9 @@ function PayrollManagement() {
       throw new Error(data.error || "Failed to fetch TDS");
     }
     return data;
-  };
+  }, [publicRuntimeConfig.apiURL, selectedCompanyId]);
 
-  const fetchPTAX = async () => {
+  const fetchPTAX = useCallback( async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
       publicRuntimeConfig.apiURL + "/professional-tax-settings/company/" + selectedCompanyId,
@@ -106,7 +95,20 @@ function PayrollManagement() {
       throw new Error(data.error || "Failed to fetch Professional Tax");
     }
     return data;
-  };
+  }, [publicRuntimeConfig.apiURL, selectedCompanyId]);
+
+  useEffect(() => {
+    dispatch(fetchEmployees());
+    const fetchData = async () => {
+      try {
+        setTdsData(await fetchTDS());
+        setPtaxData(await fetchPTAX());
+      } catch (error) {
+        toast.error("Failed to fetch data");
+      }
+    };
+    fetchData();
+  }, [dispatch, fetchTDS, fetchPTAX]);
 
   const handleOvertimeEdit = (employeeId, currentValue) => {
     setEditingOvertime(employeeId);
@@ -340,10 +342,10 @@ function PayrollManagement() {
                       ₹{employerPF}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{deductions}
+                      ₹{deductions || 0}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{netPay}
+                      ₹{netPay || 0}
                     </td>
                   </tr>
                 );
@@ -412,7 +414,7 @@ function PayrollManagement() {
                         employee.salaryDetails.employeePfContribution *
                         (paidDays / monthDays)
                       ).toFixed(0)
-                    )}
+                    ) || 0}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
@@ -421,7 +423,7 @@ function PayrollManagement() {
                         employee.salaryDetails.employerPfContribution *
                         (paidDays / monthDays)
                       ).toFixed(0)
-                    )}
+                    ) || 0}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
@@ -430,7 +432,7 @@ function PayrollManagement() {
                         employee.salaryDetails.monthlyCtc *
                         (tdsData.tdsRate / 100)
                       ).toFixed(0)
-                    )}
+                    ) || 0}
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     ₹
@@ -456,7 +458,7 @@ function PayrollManagement() {
                             : 0)) *
                         (paidDays / monthDays)
                       ).toFixed(0)
-                    )}
+                    ) || 0}
                   </td>
                 </tr>
               ))}

@@ -5,18 +5,20 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
+
 // Fetch Leaves
 export const fetchLeaves = createAsyncThunk(
   "leaves/fetchLeaves",
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/leave/employee/MED101`,
+        `${API_BASE_URL}/leave/employee/${employeeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -162,12 +164,15 @@ export const applyLeave = createAsyncThunk(
         throw new Error("Missing required fields");
       }
 
+      const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
+        const companyId = decodedToken.companyId; // Extract
+
       const response = await axios.post(
         `${API_BASE_URL}/leave/apply`,
         {
           ...leaveData,
-          employeeId: "MED101", // Hardcoded as requested
-          companyId: "CID101", // Hardcoded as requested
+          employeeId: sessionStorage.getItem("employeeId"), // Hardcoded as requested
+          companyId: companyId, // Hardcoded as requested
           leaveName: "Leave", // Hardcoded as requested
           shiftType: leaveData.shiftType, // Use the shift type from the form
         },
@@ -196,12 +201,13 @@ export const fetchLeaveHistory = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/leave/employee/MED101`,
+        `${API_BASE_URL}/leave/employee/${employeeId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -245,11 +251,14 @@ export const applyCompOffLeave = createAsyncThunk(
         throw new Error("No authentication token found");
       }
 
+        const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
+        const companyId = decodedToken.companyId; // Extract
+
       const response = await axios.post(
         `${API_BASE_URL}/leave/apply`,
         {
-          employeeId: "MED101", // Hardcoded as requested
-          companyId: "CID101", // Hardcoded as requested
+          employeeId: sessionStorage.getItem("employeeId"), // Hardcoded as requested
+          companyId: companyId, // Hardcoded as requested
           leaveName: "Comp-Off",
           startDate: formData.startDate,
           endDate: formData.endDate,
