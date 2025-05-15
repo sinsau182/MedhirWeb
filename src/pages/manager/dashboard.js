@@ -15,12 +15,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import {
-  FaUser,
-  FaCalendar,
-  FaUsers,
-} from "react-icons/fa";
-
+import { FaUser, FaCalendar, FaUsers } from "react-icons/fa";
 
 import RequestDetails from "@/components/RequestDetails";
 
@@ -76,7 +71,7 @@ const Overview = () => {
 
   const publicRuntimeConfig = getConfig().publicRuntimeConfig;
 
-  const fetchProfileUpdates = useCallback( async () => {
+  const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
@@ -102,7 +97,7 @@ const Overview = () => {
     }
   }, [publicRuntimeConfig.apiURL]);
 
-  const fetchPendingRequests = useCallback( async () => {
+  const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
