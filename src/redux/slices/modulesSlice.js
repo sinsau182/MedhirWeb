@@ -11,14 +11,27 @@ export const fetchModules = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+
+      // If no token, redirect to login
+      if (!token) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return rejectWithValue("Token missing. Redirecting to login.");
+      }
+
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch modules");
+      // If token is invalid or expired (typically 401 or 403)
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return rejectWithValue("Unauthorized. Redirecting to login.");
       }
       return await response.json();
     } catch (error) {
@@ -32,8 +45,15 @@ export const fetchEmployees = createAsyncThunk(
   "modules/fetchEmployees",
   async (_, { rejectWithValue }) => {
     try {
-      // Get the HR admin token instead of superadmin token
       const token = getItemFromSessionStorage("token");
+
+      // If no token, redirect to login
+      if (!token) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return rejectWithValue("Token missing. Redirecting to login.");
+      }
 
       const response = await fetch(HR_EMPLOYEES_ENDPOINT, {
         method: "GET",
@@ -44,47 +64,26 @@ export const fetchEmployees = createAsyncThunk(
         },
       });
 
-      if (!response.ok) {
-        if (response.status === 403) {
-          // If forbidden, try without token (if the API allows public access)
-          const publicResponse = await fetch(HR_EMPLOYEES_ENDPOINT, {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (!publicResponse.ok) {
-            throw new Error(
-              "You don't have permission to access employee data. Please contact your administrator."
-            );
-          }
-
-          const publicData = await publicResponse.json();
-          return Array.isArray(publicData) ? publicData : [publicData];
+      // If token is invalid or expired (typically 401 or 403)
+      if (response.status === 401 || response.status === 403) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
         }
-
-        const errorData = await response.text();
-        console.error("Error response:", errorData);
-        throw new Error(
-          typeof errorData === "string"
-            ? errorData
-            : JSON.parse(errorData).message || "Failed to fetch employees"
-        );
+        return rejectWithValue("Unauthorized. Redirecting to login.");
       }
 
       const data = await response.json();
-
-      // Handle both array and single object responses
       const employees = Array.isArray(data) ? data : [data];
       return employees;
     } catch (error) {
       console.error("Error fetching employees:", error);
-      return rejectWithValue(error.message);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch employees"
+      );
     }
   }
 );
+
 
 // Add module
 export const addModule = createAsyncThunk(

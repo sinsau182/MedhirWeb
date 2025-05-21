@@ -9,12 +9,13 @@ export const fetchManagerEmployees = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null); // Retrieve the token from sessionStorage
+      const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
       if (!token) {
         throw new Error("Authentication token is missing");
       }
 
       const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/employees/manager/EMP002`, // Hardcoded API endpoint
+        `${publicRuntimeConfig.apiURL}/employees/manager/${employeeId}`, // Hardcoded API endpoint
         {
           headers: {
             Authorization: `Bearer ${token}`, // Include the token in the Authorization header

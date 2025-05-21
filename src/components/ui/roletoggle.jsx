@@ -1,54 +1,61 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { useRouter } from "next/router";
 
 const roleLabels = {
-  employee: "Employee",
-  manager: "Manager",
-  hr: "HR Admin",
+  EMPLOYEE: "Employee",
+  MANAGER: "Manager",
+  HRADMIN: "HR Admin",
 };
 
 const roleColors = {
-  hr: "bg-blue-500 text-white",
-  manager: "bg-green-500 text-white",
-  employee: "bg-purple-500 text-white",
+  HRADMIN: "bg-blue-500 text-white",
+  MANAGER: "bg-green-500 text-white",
+  EMPLOYEE: "bg-purple-500 text-white",
 };
+
+// Define the desired order of roles
+const roleOrder = ["EMPLOYEE", "MANAGER", "HRADMIN"];
 
 const RoleToggle = () => {
   const router = useRouter();
-  const roles = Object.keys(roleLabels);
   const [currentRole, setCurrentRole] = useState(null);
+  const [availableRoles, setAvailableRoles] = useState([]);
 
   useEffect(() => {
-    const storedRole = sessionStorage.getItem("currentRole");
-    if (storedRole && roles.includes(storedRole)) {
-      setCurrentRole(storedRole);
-    } else {
-      setCurrentRole(roles[0]);
+    const roles = JSON.parse(sessionStorage.getItem("roles") || "[]");
+    if (roles.length > 0) {
+      // Sort roles according to the defined order
+      const sortedRoles = roleOrder.filter(role => roles.includes(role));
+      setAvailableRoles(sortedRoles);
+      
+      const storedRole = sessionStorage.getItem("currentRole");
+      if (storedRole && roles.includes(storedRole)) {
+        setCurrentRole(storedRole);
+      } else {
+        setCurrentRole(sortedRoles[0]);
+      }
     }
   }, []);
 
   const switchRole = (role) => {
-    
-  
     if (role !== currentRole) {
       setCurrentRole(role);
       sessionStorage.setItem("currentRole", role);
-      if (role === "hr") {
-        router.push("/hradmin/dashboard"); // Redirect to HR dashboard
-      } else if (role === "manager") {
-        router.push("/manager/dashboard"); // Redirect to Manager dashboard
-      } else if (role === "employee") {
-        router.push("/employee/dashboard"); // Redirect to Employee dashboard
+      if (role === "HRADMIN") {
+        router.push("/hradmin/dashboard");
+      } else if (role === "MANAGER") {
+        router.push("/manager/dashboard");
+      } else if (role === "EMPLOYEE") {
+        router.push("/employee/dashboard");
       }
     }
   };
 
   return (
     <div className="flex items-center gap-2">
-      {roles.map((role) => (
+      {availableRoles.map((role) => (
         <Button
           key={role}
           variant={role === currentRole ? "default" : "outline"}

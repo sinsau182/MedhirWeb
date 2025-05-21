@@ -1,3 +1,5 @@
+import { jwtDecode } from "jwt-decode";
+
 export const updateSessionActivity = () => {
   const now = new Date().getTime();
   sessionStorage.setItem("lastActivity", now.toString());
@@ -14,4 +16,29 @@ export const isSessionExpiredDueToInactivity = () => {
 
 export const clearSession = () => {
   sessionStorage.removeItem("lastActivity");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("currentRole");
+  sessionStorage.removeItem("roles");
+  sessionStorage.removeItem("employeeId");
+  sessionStorage.removeItem("passwordChanged");
+};
+
+export const isTokenExpired = () => {
+  try {
+    const token = sessionStorage.getItem("token");
+    if (!token) return true;
+
+    const decodedToken = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+
+    return decodedToken.exp < currentTime;
+  } catch (error) {
+    console.error("Error checking token expiration:", error);
+    return true;
+  }
+};
+
+export const handleTokenExpiration = () => {
+  clearSession();
+  window.location.href = "/login";
 };

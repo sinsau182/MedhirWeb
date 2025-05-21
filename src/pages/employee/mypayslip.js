@@ -60,7 +60,10 @@ const downloadPDF = () => {
 
 const currentYear = new Date().getFullYear();
 const currentMonthIndex = new Date().getMonth(); // 0-based index (0 = Jan, 11 = Dec)
-const latestMonthIndex = Math.max(0, currentMonthIndex - 2); // Ensure it doesn't go below 0
+const currentDate = new Date().getDate();
+const latestMonthIndex = currentDate > 10 
+  ? Math.max(0, currentMonthIndex - 1) 
+  : Math.max(0, currentMonthIndex - 2); // Adjust based on current date
 const monthsList = Array.from({ length: latestMonthIndex + 1 }, (_, i) =>
   new Date(currentYear, i).toLocaleString("default", { month: "long" })
 );
@@ -77,7 +80,7 @@ const PayrollPage = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
 
-  const employeeId = "emp123"; // This should be dynamically set based on the logged-in user
+  const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
 
   useEffect(() => {
     // Fetch employee details to get date of joining
@@ -94,7 +97,7 @@ const PayrollPage = () => {
     return () => {
       dispatch(resetPayslipState());
     };
-  }, [dispatch, employeeId]);
+  }, [dispatch, employeeId, selectedMonth, selectedYear]);
 
   // Update date of joining when employee data is fetched
   useEffect(() => {

@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-key */
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 
 import {
   BarChart,
@@ -45,15 +45,12 @@ const COLORS = [
 ];
 
 const Overview = () => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const [showCharts, setShowCharts] = useState(false);
 
   const [activeIndex, setActiveIndex] = useState(null);
-
-  // const [requestToggle, setRequestToggle] = useState(false);
 
   const [showRequestDetails, setShowRequestDetails] = useState(false); // New state
 
@@ -79,27 +76,22 @@ const Overview = () => {
     setActiveTab(tab);
   };
 
-  const handleAttendanceClick = () => {
-    setShowCharts((prevShowCharts) => !prevShowCharts); // Toggle Charts
-
-    setShowRequestDetails(false); // Ensure Request Details are hidden
-  };
-
   const handleOpenRequestsClick = () => {
     setShowRequestDetails((prevShowRequestDetails) => !prevShowRequestDetails); // Toggle Request Details
 
     setShowCharts(false); // Ensure Charts are hidden
   };
 
-  const fetchProfileUpdates = async () => {
+  const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const company = localStorage.getItem("selectedCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       };
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
+        `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`,
         { headers }
       );
       if (!response.ok) {
@@ -113,9 +105,9 @@ const Overview = () => {
       toast.error(`Failed to fetch profile updates: ${error.message}`);
       setProfileUpdates([]);
     }
-  };
-
-  const fetchPendingRequests = async () => {
+  }, [publicRuntimeConfig.apiURL]); // No dependencies; update if needed
+  
+  const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
       const company = localStorage.getItem("selectedCompanyId");
@@ -128,7 +120,7 @@ const Overview = () => {
           },
         }
       );
-
+  
       if (response.data && Array.isArray(response.data.leaves)) {
         const regularLeaves = response.data.leaves.filter(
           (leave) => leave.leaveName !== "Comp-Off"
@@ -136,7 +128,7 @@ const Overview = () => {
         const compOffLeaves = response.data.leaves.filter(
           (leave) => leave.leaveName === "Comp-Off"
         );
-
+  
         setPendingLeaves(regularLeaves);
         setPendingCompOffs(compOffLeaves);
       } else {
@@ -147,12 +139,12 @@ const Overview = () => {
       setPendingLeaves([]);
       setPendingCompOffs([]);
     }
-  };
-
+  }, [publicRuntimeConfig.apiURL]); // No dependencies; update if needed
+  
   useEffect(() => {
     fetchPendingRequests();
     fetchProfileUpdates();
-  }, []);
+  }, [fetchPendingRequests, fetchProfileUpdates]);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -184,14 +176,14 @@ const Overview = () => {
     {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Total Employees",
-      count: employees.length,
+      count: employees?.length ?? 0,
     },
 
     {
       icon: <FaClock className="h-6 w-6 text-yellow-500" />,
       label: "Pending Tasks",
       count:
-        profileUpdates.length + pendingLeaves.length + pendingCompOffs.length,
+        (profileUpdates.length || 0) + (pendingLeaves.length || 0) + (pendingCompOffs.length || 0),
     },
 
     {
@@ -499,22 +491,6 @@ const Overview = () => {
                                     COLORS[index % COLORS.length],
                                 }}
                               ></span>
-
-                              {/* <span
-
-style={{
-
-fontWeight: activeIndex === index ? "bold" : "normal",
-
-color: "#4B5563",
-
-}}
-
->
-
-{`${entry.name}: ${entry.value} employees`}
-
-</span> */}
                             </div>
                           ))}
                         </div>

@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Plus,
-  X,
-  CheckCircle,
-  AlertCircle,
-  Edit2,
-  Save,
-  XCircle,
-} from "lucide-react";
+import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
@@ -35,9 +27,7 @@ const OrganizationSettings = () => {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("departments");
-  const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false);
   const [showDesignationModal, setShowDesignationModal] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState(null);
   const [departmentForm, setDepartmentForm] = useState({
     name: "",
     description: "",
@@ -45,7 +35,6 @@ const OrganizationSettings = () => {
     leavePolicy: "",
     weeklyHolidays: [],
   });
-  const [editingDesignation, setEditingDesignation] = useState(null);
   const [designationForm, setDesignationForm] = useState({
     name: "",
     description: "",
@@ -66,37 +55,9 @@ const OrganizationSettings = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
-  const [departments, setDepartments] = useState([
-    {
-      id: 1,
-      name: "Engineering",
-      description: "Software Development Team",
-      head: "John Doe",
-      leavePolicy: { value: "standard", label: "Standard Leave Policy" },
-      weeklyHolidays: [
-        { value: "Saturday", label: "Saturday" },
-        { value: "Sunday", label: "Sunday" },
-      ],
-    },
-  ]);
+
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [selectedDesignation, setSelectedDesignation] = useState(null);
-  const [designations, setDesignations] = useState([
-    {
-      id: 1,
-      name: "Software Engineer",
-      description: "Develops software applications",
-      department: { value: 1, label: "Engineering" },
-      manager: false,
-    },
-    {
-      id: 2,
-      name: "Engineering Manager",
-      description: "Manages engineering team",
-      department: { value: 1, label: "Engineering" },
-      manager: true,
-    },
-  ]);
 
   const dispatch = useDispatch();
   const {
@@ -133,21 +94,8 @@ const OrganizationSettings = () => {
     { value: "Saturday", label: "Saturday" },
   ];
 
-  const router = useRouter();
-
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  const handleDepartmentEdit = (department) => {
-    setEditingDepartment(department.id);
-    setDepartmentForm({
-      name: department.name,
-      description: department.description,
-      head: department.head,
-      leavePolicy: department.leavePolicy,
-      weeklyHolidays: department.weeklyHolidays,
-    });
   };
 
   const handleDepartmentUpdate = async (id) => {
@@ -172,22 +120,15 @@ const OrganizationSettings = () => {
 
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
-
         setNotification({
           show: true,
           type: "error",
           message: "Please fill in all required fields",
         });
-
         setTimeout(() => {
-          setNotification({
-            show: false,
-            type: "",
-            message: "",
-          });
+          setNotification({ show: false, type: "", message: "" });
           setErrors({});
         }, 2000);
-
         return;
       }
 
@@ -199,9 +140,15 @@ const OrganizationSettings = () => {
         weeklyHolidays: departmentForm.weeklyHolidays
           .map((day) => day.value)
           .join(","),
+        companyId: selectedCompanyId,
       };
 
-      await dispatch(updateDepartment({ id, departmentData })).unwrap();
+      await dispatch(
+        updateDepartment({
+          id: selectedDepartment.departmentId,
+          departmentData,
+        })
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -220,15 +167,11 @@ const OrganizationSettings = () => {
       });
       setIsFormChanged(false);
 
-      // Refresh departments list without page reload
+      // Refresh departments list
       dispatch(fetchDepartments());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
       setNotification({
@@ -236,13 +179,8 @@ const OrganizationSettings = () => {
         type: "error",
         message: error || "Failed to update department. Please try again.",
       });
-
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -251,7 +189,9 @@ const OrganizationSettings = () => {
     try {
       if (!selectedDepartment) return;
 
-      await dispatch(deleteDepartment(selectedDepartment.id)).unwrap();
+      await dispatch(
+        deleteDepartment(selectedDepartment.departmentId)
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -270,15 +210,11 @@ const OrganizationSettings = () => {
       });
       setIsFormChanged(false);
 
-      // Refresh departments list without page reload
+      // Refresh departments list
       dispatch(fetchDepartments());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
       setNotification({
@@ -286,13 +222,8 @@ const OrganizationSettings = () => {
         type: "error",
         message: error || "Failed to delete department. Please try again.",
       });
-
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -402,30 +333,43 @@ const OrganizationSettings = () => {
     }
   };
 
-  const handleDesignationEdit = (designation) => {
-    setEditingDesignation(designation.id);
-    setDesignationForm({
-      name: designation.name,
-      description: designation.description,
-      department: designation.department,
-      manager: designation.manager,
-      overtimeEligible: designation.overtimeEligible,
-    });
-  };
-
   const handleDesignationUpdate = async () => {
     try {
+      const newErrors = {};
+
+      if (!designationForm.name) {
+        newErrors.name = "Designation name is required";
+      }
+      if (!designationForm.department) {
+        newErrors.department = "Department is required";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        setNotification({
+          show: true,
+          type: "error",
+          message: "Please fill in all required fields",
+        });
+        setTimeout(() => {
+          setNotification({ show: false, type: "", message: "" });
+          setErrors({});
+        }, 2000);
+        return;
+      }
+
       const designationData = {
         name: designationForm.name,
-        department: designationForm.department.value,
         description: designationForm.description || "",
+        department: designationForm.department.value,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
+        companyId: selectedCompanyId,
       };
 
       await dispatch(
         updateDesignation({
-          id: selectedDesignation.id,
+          id: selectedDesignation.designationId,
           designationData,
         })
       ).unwrap();
@@ -436,46 +380,31 @@ const OrganizationSettings = () => {
         message: "Designation updated successfully!",
       });
 
-      // Refresh the designations list without page reload
-      dispatch(fetchDesignations());
-
-      // Reset form and close modal
       setShowDesignationModal(false);
       setSelectedDesignation(null);
       setDesignationForm({
         name: "",
-        department: "",
         description: "",
+        department: "",
         manager: false,
         overtimeEligible: false,
       });
+      setIsFormChanged(false);
+
+      // Refresh designations list
+      dispatch(fetchDesignations());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
-      // Extract error message properly
-      const errorMessage =
-        error?.message ||
-        (typeof error === "object" ? JSON.stringify(error) : error) ||
-        "Failed to update designation. Please try again.";
-
       setNotification({
         show: true,
         type: "error",
-        message: errorMessage,
+        message: error || "Failed to update designation. Please try again.",
       });
-
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -588,53 +517,6 @@ const OrganizationSettings = () => {
     }
   };
 
-  const handleRowClick = (item) => {
-    // Reset form changed state when opening new item
-    setIsFormChanged(false);
-
-    if (activeTab === "departments") {
-      setSelectedDepartment(item);
-
-      // Find the leave policy object from the policies array
-      const selectedPolicy = policies.find(
-        (p) => p.leavePolicyId === item.leavePolicy
-      );
-
-      // Format weekly holidays into array of objects
-      const weeklyHolidaysArray =
-        item.weeklyHolidays?.split(",").map((day) => ({
-          value: day.trim(),
-          label: day.trim(),
-        })) || [];
-
-      setDepartmentForm({
-        name: item.name,
-        description: item.description || "",
-        head: item.departmentHead || "",
-        leavePolicy: {
-          value: item.leavePolicy,
-          label: selectedPolicy?.name || item.leavePolicy,
-        },
-        weeklyHolidays: weeklyHolidaysArray,
-      });
-      setShowDepartmentEditModal(true);
-    } else {
-      setSelectedDesignation(item);
-      setDesignationForm({
-        name: item.name,
-        department: {
-          value: item.department,
-          label: item.department,
-        },
-        description: item.description || "",
-        manager: item.manager || false,
-        overtimeEligible: item.overtimeEligible || false,
-      });
-      setShowDesignationModal(true);
-    }
-    setIsEditing(true);
-  };
-
   const handleModalClose = () => {
     // Reset all form and state values
     setShowDepartmentModal(false);
@@ -689,7 +571,11 @@ const OrganizationSettings = () => {
 
   const handleDesignationDelete = async () => {
     try {
-      await dispatch(deleteDesignation(selectedDesignation.id)).unwrap();
+      if (!selectedDesignation) return;
+
+      await dispatch(
+        deleteDesignation(selectedDesignation.designationId)
+      ).unwrap();
 
       setNotification({
         show: true,
@@ -697,26 +583,22 @@ const OrganizationSettings = () => {
         message: "Designation deleted successfully!",
       });
 
-      // Refresh the designations list without page reload
-      dispatch(fetchDesignations());
-
-      // Reset form and close modal
       setShowDesignationModal(false);
       setSelectedDesignation(null);
       setDesignationForm({
         name: "",
-        department: "",
         description: "",
+        department: "",
         manager: false,
         overtimeEligible: false,
       });
+      setIsFormChanged(false);
+
+      // Refresh designations list
+      dispatch(fetchDesignations());
 
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     } catch (error) {
       setNotification({
@@ -724,14 +606,8 @@ const OrganizationSettings = () => {
         type: "error",
         message: error || "Failed to delete designation. Please try again.",
       });
-
-      // Auto-hide notification after 2 seconds
       setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
+        setNotification({ show: false, type: "", message: "" });
       }, 2000);
     }
   };
@@ -764,9 +640,26 @@ const OrganizationSettings = () => {
         <HradminNavbar />
 
         <div className="p-6 mt-16">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">
-            Organization Settings
-          </h1>
+          <div className="flex items-center gap-4 mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Organization Settings
+            </h1>
+            <button
+              onClick={() => {
+                if (activeTab === "departments") {
+                  setSelectedDepartment(null);
+                  setShowDepartmentModal(true);
+                } else {
+                  setSelectedDesignation(null);
+                  setShowDesignationModal(true);
+                }
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Add {activeTab === "departments" ? "Department" : "Designation"}
+            </button>
+          </div>
 
           {/* Tabs */}
           <div className="flex gap-4 mb-6 border-b">
@@ -785,186 +678,189 @@ const OrganizationSettings = () => {
             ))}
           </div>
 
-          {/* Add Button */}
-          <div className="mb-6">
-            <button
-              onClick={() => {
-                if (activeTab === "departments") {
-                  setSelectedDepartment(null);
-                  setShowDepartmentModal(true);
-                } else {
-                  setSelectedDesignation(null);
-                  setShowDesignationModal(true);
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Plus className="h-5 w-5" />
-              Add {activeTab === "departments" ? "Department" : "Designation"}
-            </button>
-          </div>
-
-          {/* Departments Table */}
-          {activeTab === "departments" && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department Head
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Leave Policy
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Weekly Holidays
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {reduxDepartments.map((department) => (
-                    <tr
-                      key={department.id}
-                      onClick={() => {
-                        // Reset form changed state when opening new item
-                        setIsFormChanged(false);
-                        setSelectedDepartment(department);
-
-                        // Find the leave policy object from the policies array
-                        const selectedPolicy = policies.find(
-                          (p) => p.leavePolicyId === department.leavePolicy
-                        );
-
-                        // Format weekly holidays into array of objects
-                        const weeklyHolidaysArray =
-                          department.weeklyHolidays?.split(",").map((day) => ({
-                            value: day.trim(),
-                            label: day.trim(),
-                          })) || [];
-
-                        setDepartmentForm({
-                          name: department.name,
-                          description: department.description || "",
-                          head: department.departmentHead,
-                          leavePolicy: {
-                            value: department.leavePolicy,
-                            label:
-                              selectedPolicy?.name || department.leavePolicy,
-                          },
-                          weeklyHolidays: weeklyHolidaysArray,
-                        });
-                        setShowDepartmentEditModal(true);
-                      }}
-                      className="hover:bg-gray-50 cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {department.description}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.departmentHead}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {policies.find(
-                          (policy) =>
-                            policy.leavePolicyId === department.leavePolicy
-                        )?.name || department.leavePolicy}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {department.weeklyHolidays}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Designations Table */}
-          {activeTab === "designations" && (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Is Manager
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Overtime Eligible
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {designationLoading ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center">
-                        Loading...
-                      </td>
-                    </tr>
-                  ) : error ? (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="px-6 py-4 text-center text-red-500"
-                      >
-                        {error}
-                      </td>
-                    </tr>
-                  ) : fetchedDesignations.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-4 text-center">
-                        No designations found
-                      </td>
-                    </tr>
-                  ) : (
-                    fetchedDesignations.map((designation) => (
-                      <tr
-                        key={designation.id}
-                        onClick={() => handleDesignationRowClick(designation)}
-                        className="hover:bg-gray-50 cursor-pointer"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {reduxDepartments.find(
-                            (dept) =>
-                              dept.departmentId === designation.department
-                          )?.name || designation.department}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {designation.description || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.manager ? "Yes" : "No"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {designation.overtimeEligible ? "Yes" : "No"}
-                        </td>
+          {/* Tables Container with Dynamic Height */}
+          <div
+            className={`overflow-hidden ${
+              activeTab === "departments"
+                ? reduxDepartments.length <= 8
+                  ? "h-auto"
+                  : "h-[calc(100vh-280px)]"
+                : fetchedDesignations.length <= 8
+                ? "h-auto"
+                : "h-[calc(100vh-280px)]"
+            }`}
+          >
+            {/* Departments Table */}
+            {activeTab === "departments" && (
+              <div className="bg-white rounded-lg shadow h-full">
+                <div className="overflow-auto h-full">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Department Head
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Leave Policy
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Weekly Holidays
+                        </th>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {reduxDepartments.map((department) => (
+                        <tr
+                          key={department.id}
+                          onClick={() => {
+                            // Reset form changed state when opening new item
+                            setIsFormChanged(false);
+                            setSelectedDepartment(department);
+
+                            // Find the leave policy object from the policies array
+                            const selectedPolicy = policies.find(
+                              (p) => p.leavePolicyId === department.leavePolicy
+                            );
+
+                            // Format weekly holidays into array of objects
+                            const weeklyHolidaysArray =
+                              department.weeklyHolidays
+                                ?.split(",")
+                                .map((day) => ({
+                                  value: day.trim(),
+                                  label: day.trim(),
+                                })) || [];
+
+                            setDepartmentForm({
+                              name: department.name,
+                              description: department.description || "",
+                              head: department.departmentHead,
+                              leavePolicy: {
+                                value: department.leavePolicy,
+                                label:
+                                  selectedPolicy?.name ||
+                                  department.leavePolicy,
+                              },
+                              weeklyHolidays: weeklyHolidaysArray,
+                            });
+                            setShowDepartmentEditModal(true);
+                          }}
+                          className="hover:bg-gray-50 cursor-pointer"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {department.name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            {department.description}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {department.departmentHead}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {policies.find(
+                              (policy) =>
+                                policy.leavePolicyId === department.leavePolicy
+                            )?.name || department.leavePolicy}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {department.weeklyHolidays}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Designations Table */}
+            {activeTab === "designations" && (
+              <div className="bg-white rounded-lg shadow h-full">
+                <div className="overflow-auto h-full">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Department
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Description
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Is Manager
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Overtime Eligible
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {designationLoading ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center">
+                            Loading...
+                          </td>
+                        </tr>
+                      ) : error ? (
+                        <tr>
+                          <td
+                            colSpan="5"
+                            className="px-6 py-4 text-center text-red-500"
+                          >
+                            {error}
+                          </td>
+                        </tr>
+                      ) : fetchedDesignations.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-4 text-center">
+                            No designations found
+                          </td>
+                        </tr>
+                      ) : (
+                        fetchedDesignations.map((designation) => (
+                          <tr
+                            key={designation.id}
+                            onClick={() =>
+                              handleDesignationRowClick(designation)
+                            }
+                            className="hover:bg-gray-50 cursor-pointer"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {reduxDepartments.find(
+                                (dept) =>
+                                  dept.departmentId === designation.department
+                              )?.name || designation.department}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {designation.description || "-"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.manager ? "Yes" : "No"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.overtimeEligible ? "Yes" : "No"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

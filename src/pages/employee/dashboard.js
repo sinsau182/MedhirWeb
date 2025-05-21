@@ -10,18 +10,19 @@ import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveB
 const Overview = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
-  // const { leaveHistory } = useSelector((state) => state.leaveReducer);
+  const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
   const { balance, loading, error } = useSelector((state) => state.leaveBalance);
+  
 
   // Fetch leave balance when component mounts
   useEffect(() => {
-    dispatch(fetchLeaveBalance("EMP001"));
+    dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
     
     // Clean up function to reset leave balance state when component unmounts
     return () => {
       dispatch(resetLeaveBalanceState());
     };
-  }, [dispatch]);
+  }, [dispatch, employeeId]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);

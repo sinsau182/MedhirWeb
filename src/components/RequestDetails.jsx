@@ -14,6 +14,8 @@ import {
 import PropTypes from "prop-types";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
+
+
 import {
   fetchPendingLeaveRequests,
   fetchProfileUpdates,
@@ -38,24 +40,86 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="space-y-3 max-h-60 overflow-y-auto">
+        <div className="space-y-3 max-h-96 overflow-y-auto">
           {changes.map((change, index) => (
             <div key={index} className="border rounded p-3 bg-gray-50 text-sm">
               <p className="font-medium text-gray-700 mb-1">
                 {change.fieldName}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
                 <div>
-                  <p className="text-xs text-gray-500">Old Value:</p>
-                  <p className="text-gray-800 break-words">
-                    {change.oldValue || "(empty)"}
-                  </p>
+                  <p className="text-xs text-gray-500 mb-2">Old Value:</p>
+                  {change.fieldName.toLowerCase().includes('image') || change.fieldName.toLowerCase().includes('aadhar') ? (
+                    change.oldValue ? (
+                      <div className="space-y-2">
+                        <a href={change.oldValue} target="_blank" rel="noopener noreferrer" className="block">
+                          <img 
+                            src={change.oldValue} 
+                            alt={`Old ${change.fieldName}`} 
+                            className="w-full h-32 object-contain rounded border bg-white p-2"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/placeholder-image.png';
+                            }}
+                          />
+                        </a>
+                        <a href={change.oldValue} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800">
+                          View Full Image
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="italic text-gray-400">(empty)</span>
+                    )
+                  ) : (
+                    <p className="text-gray-800 break-words">
+                      {change.oldValue || "(empty)"}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center justify-center h-full">
+                  <svg 
+                    className="w-6 h-6 text-gray-400" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M13 7l5 5m0 0l-5 5m5-5H6" 
+                    />
+                  </svg>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">New Value:</p>
-                  <p className="text-green-700 break-words">
-                    {change.newValue || "(empty)"}
-                  </p>
+                  <p className="text-xs text-gray-500 mb-2">New Value:</p>
+                  {change.fieldName.toLowerCase().includes('image') || change.fieldName.toLowerCase().includes('aadhar') ? (
+                    change.newValue ? (
+                      <div className="space-y-2">
+                        <a href={change.newValue} target="_blank" rel="noopener noreferrer" className="block">
+                          <img 
+                            src={change.newValue} 
+                            alt={`New ${change.fieldName}`} 
+                            className="w-full h-32 object-contain rounded border bg-white p-2"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '/placeholder-image.png';
+                            }}
+                          />
+                        </a>
+                        <a href={change.newValue} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800">
+                          View Full Image
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="italic text-gray-400">(empty)</span>
+                    )
+                  ) : (
+                    <p className="text-green-700 break-words">
+                      {change.newValue || "(empty)"}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -283,14 +347,16 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
           </TabsTrigger>
           <TabsTrigger
             value="expenseRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
           >
             <DollarSign className="h-4 w-4 mr-2" />
             <span>Reimbursement Requests</span>
           </TabsTrigger>
           <TabsTrigger
             value="advanceRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
           >
             <Wallet className="h-4 w-4 mr-2" />
             <span>Advance Requests</span>

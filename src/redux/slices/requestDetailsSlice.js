@@ -10,19 +10,27 @@ export const fetchPendingLeaveRequests = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token");
       const company = localStorage.getItem("selectedCompanyId");
+      const currentRole = sessionStorage.getItem("currentRole");
+      const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
         return rejectWithValue("Authentication token not found");
       }
 
-      const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+
+      let url = "";
+      if (currentRole === "MANAGER") {
+        url = `${publicRuntimeConfig.apiURL}/manager/leave/status/Pending/${employeeId}`;
+      } else {
+        url = `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`;
+      }
+
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.data && Array.isArray(response.data.leaves)) {
         const regularLeaves = response.data.leaves.filter(
@@ -54,19 +62,28 @@ export const fetchProfileUpdates = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
+      const company = localStorage.getItem("selectedCompanyId");
+      const currentRole = sessionStorage.getItem("currentRole");
+      const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
         return rejectWithValue("Authentication token not found");
       }
 
-      const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/hradmin/update-requests`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      console.log(employeeId);
+
+      let url = "";
+      if (currentRole === "MANAGER") {
+        url = `${publicRuntimeConfig.apiURL}/manager/${employeeId}/members/update-requests`;
+      } else {
+        url = `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`;
+      }
+
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (response.data && Array.isArray(response.data)) {
         const updatesWithChanges = response.data.filter(
@@ -126,6 +143,8 @@ export const updateProfileRequestStatus = createAsyncThunk(
   async ({ employeeId, status }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
+      const managerId = sessionStorage.getItem("employeeId");
+      const currentRole = sessionStorage.getItem("currentRole");
       if (!token) {
         return rejectWithValue("Authentication token not found");
       }
@@ -133,8 +152,15 @@ export const updateProfileRequestStatus = createAsyncThunk(
       const formData = new FormData();
       formData.append("status", status);
 
+      let url = "";
+      if (currentRole === "MANAGER") {
+        url = `${publicRuntimeConfig.apiURL}/manager/${managerId}/members/${employeeId}/update-requests`;
+      } else {
+        url = `${publicRuntimeConfig.apiURL}/hradmin/update-requests/${employeeId}`;
+      }
+
       const response = await axios.put(
-        `${publicRuntimeConfig.apiURL}/hradmin/update-requests/${employeeId}`,
+        url,
         formData,
         {
           headers: {
