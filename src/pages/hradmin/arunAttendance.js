@@ -1,6 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchEmployees } from '@/redux/slices/employeeSlice';
+import { fetchAllEmployeeAttendanceOneMonth } from '@/redux/slices/attendancesSlice';
 
 const dayAbbr = ['M', 'T', 'W', 'TH', 'F', 'Sa', 'S'];
 const days = Array.from({ length: 31 }, (_, i) => {
@@ -30,8 +33,8 @@ const legend = [
 
 const months = [
   { value: '2025-May', label: 'May 2025' },
-  { value: '2025-Apr', label: 'April 2025' },
-  { value: '2025-Mar', label: 'March 2025' },
+  { value: '2025-Apr', label: 'Apr 2025' },
+  { value: '2025-Mar', label: 'Mar 2025' },
 ];
 
 const statusOptions = [
@@ -144,106 +147,124 @@ function getDeterministicStatus(empIndex, dayIndex) {
   return statuses[combinedIndex];
 }
 
-// Generate 20 employees with deterministic attendance for first 14 days, rest empty
-const employeeList = [
-  { name: 'Aparna Sharma', dept: 'Human Resource' },
-  { name: 'Rahul Verma', dept: 'Development' },
-  { name: 'Priya Patel', dept: 'Design' },
-  { name: 'Amit Kumar', dept: 'Development' },
-  { name: 'Neha Singh', dept: 'Marketing' },
-  { name: 'Vikram Mehta', dept: 'Sales' },
-  { name: 'Ananya Gupta', dept: 'Design' },
-  { name: 'Rajesh Kumar', dept: 'Development' },
-  { name: 'Sneha Reddy', dept: 'Human Resource' },
-  { name: 'Karan Malhotra', dept: 'Marketing' },
-  { name: 'Suresh Iyer', dept: 'Finance' },
-  { name: 'Meena Joshi', dept: 'Support' },
-  { name: 'Rohit Sinha', dept: 'Development' },
-  { name: 'Divya Nair', dept: 'Design' },
-  { name: 'Arjun Kapoor', dept: 'Sales' },
-  { name: 'Pooja Batra', dept: 'Marketing' },
-  { name: 'Sanjay Rao', dept: 'Finance' },
-  { name: 'Kavita Desai', dept: 'Support' },
-  { name: 'Nitin Shah', dept: 'Development' },
-  { name: 'Ritu Jain', dept: 'Design' },
-  // 11 more employees
-  { name: 'Manoj Pillai', dept: 'Sales' },
-  { name: 'Shweta Tripathi', dept: 'Marketing' },
-  { name: 'Deepak Chawla', dept: 'Finance' },
-  { name: 'Aishwarya Menon', dept: 'Support' },
-  { name: 'Vikas Dubey', dept: 'Development' },
-  { name: 'Priyanka Chopra', dept: 'Design' },
-  { name: 'Harshad Mehta', dept: 'Sales' },
-  { name: 'Geeta Kumari', dept: 'Marketing' },
-  { name: 'Tarun Khanna', dept: 'Finance' },
-  { name: 'Snehal Patil', dept: 'Support' },
-  { name: 'Ramesh Pawar', dept: 'Development' },
-];
-
-const attendanceData = employeeList.map((emp, idx) => ({
-  empId: `MED${101 + idx}`,
-  name: emp.name,
-  dept: emp.dept,
-  days: [
-    ...Array.from({ length: 14 }, (_, dayIdx) => getDeterministicStatus(idx, dayIdx)),
-    ...Array(17).fill(''),
-  ],
-}));
-
 const EmployeeAttendance = () => {
+  const dispatch = useDispatch();
+  const { employees = [], loading: employeesLoading } = useSelector((state) => state.employees || {});
+  const { attendance, loading: attendanceLoading, error: attendanceError } = useSelector((state) => state.attendances || {});
+
   const [activeTab, setActiveTab] = useState('attendance');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState('2025-May');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [playcardFilter, setPlaycardFilter] = useState(null);
+  const [dates, setDates] = useState([]);
 
-  // Find index for selected date (move this above useMemo)
+  // Fetch employees on mount
+  useEffect(() => {
+    dispatch(fetchEmployees());
+  }, [dispatch]);
+
+  // Fetch attendance data when month or year changes
+  useEffect(() => {
+    const month = selectedMonth.slice(0, 3);
+    const year = selectedYear;
+    dispatch(fetchAllEmployeeAttendanceOneMonth({ month: `${month}-${year.slice(2)}`, year }));
+  }, [dispatch, selectedMonth, selectedYear]);
+
+  // Generate dates for the selected month
+  useEffect(() => {
+    const generateDates = () => {
+      const dates = [];
+      const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+      const daysInMonth = new Date(selectedYear, monthIndex + 1, 0).getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        const date = new Date(selectedYear, monthIndex, i);
+        dates.push({
+          day: i,
+          weekday: date.toLocaleString('default', { weekday: 'short' }),
+        });
+      }
+      return dates;
+    };
+    setDates(generateDates());
+  }, [selectedMonth, selectedYear]);
+
+  // Generate attendance data for employees
+  const generateAttendanceData = useCallback((employee) => {
+    const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
+    if (!attendanceRecord) {
+      return {
+        id: employee.employeeId,
+        name: employee.name,
+        department: employee.departmentName,
+        attendance: Array(dates.length).fill({ value: null, label: '' })
+      };
+    }
+    const attendanceArray = Array(dates.length).fill(null).map((_, index) => {
+      const day = (index + 1).toString();
+      const status = attendanceRecord.dailyAttendance[day];
+      if (!status) return { value: null, label: '' };
+      let value;
+      switch (status) {
+        case 'P': value = true; break;
+        case 'A': value = false; break;
+        case 'P/A': value = 'half'; break;
+        case 'H': value = 'holiday'; break;
+        case 'PH': value = 'holiday'; break;
+        default: value = null;
+      }
+      return { value, label: status };
+    });
+    return {
+      id: employee.employeeId,
+      name: employee.name,
+      department: employee.departmentName,
+      attendance: attendanceArray
+    };
+  }, [dates.length, attendance]);
+
+  // Filtered employees with attendance data
+  const filteredData = useMemo(() => {
+    return employees
+      .filter(
+        (employee) =>
+          employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          employee.departmentName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .map(generateAttendanceData);
+  }, [searchQuery, employees, generateAttendanceData]);
+
+  // Find index for selected date
   const selectedDateObj = selectedDate;
   const selectedIdx = selectedDateObj.getDate() - 1;
-  const safeIdx = selectedIdx >= 0 && selectedIdx < days.length ? selectedIdx : 0;
-
-  // Filter data based on search, status, and playcard filter
-  const filteredData = useMemo(() => {
-    return attendanceData.filter(employee => {
-      const matchesSearch = searchQuery === '' || 
-        employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        employee.empId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        employee.dept.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = selectedStatus === 'all' || 
-        (days[safeIdx].isMonday ? 'W' : employee.days[safeIdx]) === selectedStatus;
-      const matchesPlaycard = !playcardFilter || (() => {
-        let val = employee.days[safeIdx];
-        if (days[safeIdx].isMonday) val = 'W';
-        return val === playcardFilter;
-      })();
-      return matchesSearch && matchesStatus && matchesPlaycard;
-    });
-  }, [searchQuery, selectedStatus, playcardFilter, safeIdx]);
+  const safeIdx = selectedIdx >= 0 && selectedIdx < dates.length ? selectedIdx : 0;
 
   // Calculate summary counts for selected date
-  const summary = { P: 0, AB: 0, H: 0, W: 0 };
+  const summary = { P: 0, A: 0, H: 0, W: 0 };
   filteredData.forEach(emp => {
-    let val = emp.days[safeIdx];
-    if (days[safeIdx].isMonday) val = 'W';
+    let val = emp.attendance[safeIdx]?.label;
+    if (dates[safeIdx]?.weekday === 'Mon') val = 'W';
     if (val === 'P') summary.P++;
-    else if (val === 'AB') summary.AB++;
-    else if (val === 'H') summary.H++;
+    else if (val === 'A') summary.A++;
+    else if (val === 'P/A') summary.H++;
     else if (val === 'W' || val === '') summary.W++;
   });
 
   // Render cell: if Monday, always show W
-  const renderCell = (status, i) => {
-    if (days[i].isMonday) {
+  const renderCell = (att, i) => {
+    if (dates[i]?.weekday === 'Mon') {
       return <span className={`inline-flex w-6 h-6 rounded bg-gray-100 text-gray-400 font-medium items-center justify-center text-[10px] shadow-sm border border-gray-100`}>W</span>;
     }
-    if (days[i].isSunday) {
-      if (status === 'P') {
-        return <span className={`inline-flex w-6 h-6 rounded bg-green-50 text-green-600 font-medium items-center justify-center text-[10px] shadow-sm border border-green-100`}>{status}</span>;
+    if (dates[i]?.weekday === 'Sun') {
+      if (att.label === 'P') {
+        return <span className={`inline-flex w-6 h-6 rounded bg-green-50 text-green-600 font-medium items-center justify-center text-[10px] shadow-sm border border-green-100`}>{att.label}</span>;
       }
-      return <span className={`inline-flex w-6 h-6 rounded bg-red-50 text-red-500 font-medium items-center justify-center text-[10px] shadow-sm border border-red-100`}>{status}</span>;
+      return <span className={`inline-flex w-6 h-6 rounded bg-red-50 text-red-500 font-medium items-center justify-center text-[10px] shadow-sm border border-red-100`}>{att.label}</span>;
     }
-    return <span className={`inline-flex w-6 h-6 rounded ${statusStyles[status] || statusStyles['']} items-center justify-center text-[10px] shadow-sm border border-gray-100`}>{status}</span>;
+    return <span className={`inline-flex w-6 h-6 rounded ${statusStyles[att.label] || statusStyles['']} items-center justify-center text-[10px] shadow-sm border border-gray-100`}>{att.label}</span>;
   };
 
   return (
@@ -312,7 +333,7 @@ const EmployeeAttendance = () => {
                   <div
                     className="flex flex-col items-center justify-center rounded-lg min-w-[110px] py-3 px-3 bg-red-50 border border-red-100 text-red-600 text-xs md:text-sm font-normal shadow-sm transition-all duration-150"
                   >
-                    <span className="text-lg md:text-xl font-medium mb-1">{summary.AB}</span>
+                    <span className="text-lg md:text-xl font-medium mb-1">{summary.A}</span>
                     <span>Absent</span>
                   </div>
                   <div
@@ -390,14 +411,14 @@ const EmployeeAttendance = () => {
                     <colgroup>
                       <col style={{ width: '120px' }} />
                       <col style={{ width: '120px' }} />
-                      {days.map(() => <col style={{ width: '32px' }} />)}
+                      {dates.map(() => <col style={{ width: '32px' }} />)}
                     </colgroup>
                     <thead>
                       <tr className="bg-gray-50 text-gray-600 h-7 py-0" style={{ position: 'sticky', top: 0, zIndex: 2, background: '#F9FAFB' }}>
                         <th className="h-7 py-0" style={{ background: '#F9FAFB' }}></th><th className="h-7 py-0" style={{ background: '#F9FAFB' }}></th>
-                        {days.map((d, i) => (
+                        {dates.map((d, i) => (
                           <th
-                            key={d.date}
+                            key={d.day}
                             className={`h-7 py-0 px-0.5 font-medium text-center cursor-pointer ${i === safeIdx ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-400' : ''}`}
                             style={{ background: '#F9FAFB' }}
                             onClick={() => {
@@ -406,16 +427,16 @@ const EmployeeAttendance = () => {
                               setSelectedDate(newDate);
                             }}
                           >
-                            {d.date}
+                            {d.day}
                           </th>
                         ))}
                       </tr>
                       <tr className="bg-gray-50 text-gray-600 h-7 py-0 border-b border-gray-200" style={{ position: 'sticky', top: 28, zIndex: 1, background: '#F9FAFB' }}>
                         <th className="h-7 py-0 px-3 font-medium text-left" style={{ background: '#F9FAFB' }}>Name</th>
                         <th className="h-7 py-0 px-3 font-medium text-left" style={{ background: '#F9FAFB' }}>Dept</th>
-                        {days.map((d, i) => (
+                        {dates.map((d, i) => (
                           <th
-                            key={d.date}
+                            key={d.day}
                             className={`h-7 py-0 px-0.5 font-medium text-center cursor-pointer ${i === safeIdx ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-400' : ''}`}
                             style={{ background: '#F9FAFB' }}
                             onClick={() => {
@@ -424,18 +445,18 @@ const EmployeeAttendance = () => {
                               setSelectedDate(newDate);
                             }}
                           >
-                            <span className={d.abbr === 'S' ? 'text-red-500' : ''}>{d.abbr}</span>
+                            <span className={d.weekday === 'Mon' ? 'text-red-500' : ''}>{d.weekday}</span>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredData.map((row, idx) => (
-                        <tr key={row.empId} className="border-t border-gray-100 hover:bg-gray-50/50">
+                        <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50/50">
                           <td className="px-3 py-2 whitespace-nowrap text-gray-600">{row.name}</td>
-                          <td className="px-3 py-2 whitespace-nowrap text-gray-600">{row.dept}</td>
-                          {row.days.map((status, i) => (
-                            <td key={i} className="px-0.5 py-1 text-center">{renderCell(status, i)}</td>
+                          <td className="px-3 py-2 whitespace-nowrap text-gray-600">{row.department}</td>
+                          {row.attendance.map((att, i) => (
+                            <td key={i} className="px-0.5 py-1 text-center">{renderCell(att, i)}</td>
                           ))}
                         </tr>
                       ))}
