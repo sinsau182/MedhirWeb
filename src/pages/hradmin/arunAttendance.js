@@ -472,4 +472,4 @@ const EmployeeAttendance = () => {
   );
 };
 
-export default EmployeeAttendance; 
+export default EmployeeAttendance;
