@@ -5,7 +5,6 @@ import HradminNavbar from "@/components/HradminNavbar";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createLeaveType,
-  resetLeaveTypeState,
   fetchLeaveTypes,
   deleteLeaveType,
   updateLeaveType,
@@ -25,7 +24,6 @@ import {
 } from "@/redux/slices/publicHolidaySlice";
 import { toast } from "react-toastify";
 import withAuth from "@/components/withAuth";
-import company from "@/generated/company_grpc_web_pb";
 
 const LeaveSettings = () => {
   const selectedCompanyId = localStorage.getItem("selectedCompanyId");

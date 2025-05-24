@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
+import { X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import withAuth from "@/components/withAuth";
@@ -10,7 +10,6 @@ import {
   fetchPTAX,
   saveTDS,
   savePTAX,
-  clearErrors,
   resetTdsForm,
   resetPtaxForm,
 } from "@/redux/slices/payrollSettingsSlice";
@@ -48,7 +47,6 @@ const PayrollSettings = () => {
   const [isTdsFormChanged, setIsTdsFormChanged] = useState(false);
   const [isProfessionalTaxFormChanged, setIsProfessionalTaxFormChanged] =
     useState(false);
-  const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({
     show: false,
     type: "",
@@ -187,13 +185,10 @@ const PayrollSettings = () => {
       {isTdsConfigured && tdsData ? (
         <div className="space-y-2">
           <p className="text-gray-600 text-2xl">Rate: {tdsData.tdsRate}%</p>
-          {/* {tdsData.description && (
-            <p className="text-gray-600 text-sm">{tdsData.description}</p>
-          )} */}
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No TDS settings configured. Click "Configure" to set up TDS settings.
+          No TDS settings configured. Click Configure to set up TDS settings.
         </p>
       )}
     </div>
@@ -219,13 +214,10 @@ const PayrollSettings = () => {
           <p className="text-gray-600">
             Amount Above Threshold: ₹{ptaxData.amountAboveThreshold}
           </p>
-          {/* {ptaxData.description && (
-            <p className="text-gray-600 text-sm">{ptaxData.description}</p>
-          )} */}
         </div>
       ) : (
         <p className="text-gray-600 text-sm">
-          No Professional Tax settings configured. Click "Configure" to set up
+          No Professional Tax settings configured. Click Configure to set up
           Professional Tax settings.
         </p>
       )}

@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {
-  Plus,
-  X,
-  CheckCircle,
-  AlertCircle,
-  Edit2,
-  Save,
-  XCircle,
-} from "lucide-react";
+import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
 import Select from "react-select";
-import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createDepartment,
@@ -35,9 +26,7 @@ const OrganizationSettings = () => {
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("departments");
-  const [showAddDepartmentModal, setShowAddDepartmentModal] = useState(false);
   const [showDesignationModal, setShowDesignationModal] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState(null);
   const [departmentForm, setDepartmentForm] = useState({
     name: "",
     description: "",
@@ -45,7 +34,6 @@ const OrganizationSettings = () => {
     leavePolicy: "",
     weeklyHolidays: [],
   });
-  const [editingDesignation, setEditingDesignation] = useState(null);
   const [designationForm, setDesignationForm] = useState({
     name: "",
     description: "",
@@ -61,42 +49,13 @@ const OrganizationSettings = () => {
   });
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
-  const [showDesignationEditModal, setShowDesignationEditModal] =
-    useState(false);
+  const [showDesignationEditModal, setShowDesignationEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
-  const [departments, setDepartments] = useState([
-    {
-      id: 1,
-      name: "Engineering",
-      description: "Software Development Team",
-      head: "John Doe",
-      leavePolicy: { value: "standard", label: "Standard Leave Policy" },
-      weeklyHolidays: [
-        { value: "Saturday", label: "Saturday" },
-        { value: "Sunday", label: "Sunday" },
-      ],
-    },
-  ]);
+
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [selectedDesignation, setSelectedDesignation] = useState(null);
-  const [designations, setDesignations] = useState([
-    {
-      id: 1,
-      name: "Software Engineer",
-      description: "Develops software applications",
-      department: { value: 1, label: "Engineering" },
-      manager: false,
-    },
-    {
-      id: 2,
-      name: "Engineering Manager",
-      description: "Manages engineering team",
-      department: { value: 1, label: "Engineering" },
-      manager: true,
-    },
-  ]);
 
   const dispatch = useDispatch();
   const {
@@ -133,30 +92,8 @@ const OrganizationSettings = () => {
     { value: "Saturday", label: "Saturday" },
   ];
 
-  const router = useRouter();
-
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
-  const handleDepartmentEdit = (department) => {
-    setEditingDepartment(department.departmentId);
-    setDepartmentForm({
-      name: department.name,
-      description: department.description || "",
-      head: department.departmentHead || "",
-      leavePolicy: {
-        value: department.leavePolicy,
-        label:
-          policies.find((p) => p.leavePolicyId === department.leavePolicy)
-            ?.name || department.leavePolicy,
-      },
-      weeklyHolidays:
-        department.weeklyHolidays?.split(",").map((day) => ({
-          value: day.trim(),
-          label: day.trim(),
-        })) || [],
-    });
   };
 
   const handleDepartmentUpdate = async (id) => {
@@ -394,23 +331,6 @@ const OrganizationSettings = () => {
     }
   };
 
-  // const handleDesignationEdit = (designation) => {
-  //   setEditingDesignation(designation.designationId);
-  //   setDesignationForm({
-  //     name: designation.name,
-  //     description: designation.description || "",
-  //     department: {
-  //       value: designation.department,
-  //       label:
-  //         reduxDepartments.find(
-  //           (dept) => dept.departmentId === designation.department
-  //         )?.name || designation.department,
-  //     },
-  //     manager: designation.manager || false,
-  //     overtimeEligible: designation.overtimeEligible || false,
-  //   });
-  // };
-
   const handleDesignationUpdate = async () => {
     try {
       const newErrors = {};
@@ -436,10 +356,14 @@ const OrganizationSettings = () => {
         return;
       }
 
+      const designationDepartmentId = reduxDepartments.find(
+        (dept) => dept.name === designationForm.department.value
+      )?.departmentId;
+
       const designationData = {
         name: designationForm.name,
         description: designationForm.description || "",
-        department: designationForm.department.value,
+        department: designationDepartmentId,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
         companyId: selectedCompanyId,
@@ -479,7 +403,7 @@ const OrganizationSettings = () => {
       setNotification({
         show: true,
         type: "error",
-        message: error || "Failed to update designation. Please try again.",
+        message: error.message || "Failed to update designation. Please try again.",
       });
       setTimeout(() => {
         setNotification({ show: false, type: "", message: "" });
@@ -593,53 +517,6 @@ const OrganizationSettings = () => {
         department: selectedOption,
       });
     }
-  };
-
-  const handleRowClick = (item) => {
-    // Reset form changed state when opening new item
-    setIsFormChanged(false);
-
-    if (activeTab === "departments") {
-      setSelectedDepartment(item);
-
-      // Find the leave policy object from the policies array
-      const selectedPolicy = policies.find(
-        (p) => p.leavePolicyId === item.leavePolicy
-      );
-
-      // Format weekly holidays into array of objects
-      const weeklyHolidaysArray =
-        item.weeklyHolidays?.split(",").map((day) => ({
-          value: day.trim(),
-          label: day.trim(),
-        })) || [];
-
-      setDepartmentForm({
-        name: item.name,
-        description: item.description || "",
-        head: item.departmentHead || "",
-        leavePolicy: {
-          value: item.leavePolicy,
-          label: selectedPolicy?.name || item.leavePolicy,
-        },
-        weeklyHolidays: weeklyHolidaysArray,
-      });
-      setShowDepartmentEditModal(true);
-    } else {
-      setSelectedDesignation(item);
-      setDesignationForm({
-        name: item.name,
-        department: {
-          value: item.department,
-          label: item.department,
-        },
-        description: item.description || "",
-        manager: item.manager || false,
-        overtimeEligible: item.overtimeEligible || false,
-      });
-      setShowDesignationModal(true);
-    }
-    setIsEditing(true);
   };
 
   const handleModalClose = () => {

@@ -27,10 +27,6 @@ const ManagerEmployees = () => {
     employee.name.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  if (loading) {
-    return <div>Loading employees...</div>;
-  }
-
   if (error) {
     return <div>Error: {error}</div>;
   }
@@ -128,7 +124,22 @@ const ManagerEmployees = () => {
                           {employee?.name}
                         </td>
                         <td className="py-3 px-3 text-sm text-gray-800 truncate">
-                          {employee?.departmentName}
+                          {hoveredEmployeeId === employee.employeeId ? (
+                            // Show full department name on hover
+                            <span className="block whitespace-normal break-words">
+                              {employee?.departmentName}
+                            </span>
+                          ) : (
+                            // Show truncated with tooltip
+                            <div className="truncate relative group">
+                              <span className="block truncate">
+                                {employee?.departmentName}
+                              </span>
+                              <div className="absolute left-0 top-full mt-1 w-72 p-2 bg-white text-black text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible z-50 break-words border border-gray-300">
+                                {employee?.departmentName}
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-3 text-sm text-gray-800 truncate">
                           {employee?.fathersName}

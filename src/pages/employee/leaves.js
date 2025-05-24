@@ -3,7 +3,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { X } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchLeaves, createLeave, applyLeave, fetchLeaveHistory, clearErrors, applyCompOffLeave } from "@/redux/slices/leaveSlice";
+import { applyLeave, fetchLeaveHistory, clearErrors, applyCompOffLeave } from "@/redux/slices/leaveSlice";
 import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveBalanceSlice";
 import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
 import { toast } from "sonner";
@@ -33,6 +33,8 @@ const Leaves = () => {
   const [showLOPWarning, setShowLOPWarning] = useState(false);
   const [requestedDays, setRequestedDays] = useState(0);
 
+  const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
+
   
   // Simplified form states
   const [leaveForm, setLeaveForm] = useState({
@@ -54,16 +56,15 @@ const Leaves = () => {
   
 
   useEffect(() => {
-    // dispatch(fetchLeaves("MED101"));
     dispatch(fetchLeaveHistory());
-    dispatch(fetchLeaveBalance("MED101"));
+    dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
     dispatch(fetchPublicHolidays());
 
     return () => {
       dispatch(clearErrors());
       dispatch(resetLeaveBalanceState());
     };
-  }, [dispatch]);
+  }, [dispatch, employeeId]);
 
   // Add click outside handler for calendar
   useEffect(() => {
@@ -134,44 +135,10 @@ const Leaves = () => {
     setLeaveForm(prev => ({ ...prev, dates }));
   };
 
-  const handleCompOffDatesChange = (dates) => {
-    setCompOffForm(prev => ({ ...prev, dates }));
-  };
-
   const handleCompOffFormChange = (e) => {
     const { name, value } = e.target;
     setCompOffForm(prev => ({ ...prev, [name]: value }));
   };
-
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   try {
-  //     // Format dates to YYYY-MM-DD format
-  //     const formatDate = (date) => {
-  //       return new Date(date).toISOString().split('T')[0];
-  //     };
-
-  //     const leaveData = {
-  //       employeeId: "emp123",
-  //       employeeName: "Arun",
-  //       department: "Engineering",
-  //       leaveType: "Casual Leave",
-  //       startDate: formatDate(leaveForm.dates[0].date),
-  //       endDate: formatDate(leaveForm.dates[leaveForm.dates.length - 1].date),
-  //       shiftType: leaveForm.shiftType,
-  //       reason: leaveForm.reason,
-  //       status: "Pending",
-  //       companyId: selectedCompanyId
-  //     };
-      
-  //     await dispatch(createLeave({ ...leaveData, companyId: selectedCompanyId })).unwrap();
-  //     closeModal();
-  //     // Refresh the page to show updated leave history
-  //     window.location.reload();
-  //   } catch (error) {
-  //     toast.error(error.message || "Failed to create leave");
-  //   }
-  // };
 
   const handleCompOffSubmit = async (e) => {
     e.preventDefault();
@@ -195,7 +162,7 @@ const Leaves = () => {
         closeCompOffModal();
         // Refresh both leave history and balance
         dispatch(fetchLeaveHistory());
-        dispatch(fetchLeaveBalance("MED101"));
+        dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for comp-off");
       }
@@ -234,7 +201,7 @@ const Leaves = () => {
         toast.success("Leave application submitted successfully");
         closeModal();
         dispatch(fetchLeaveHistory());
-        dispatch(fetchLeaveBalance("MED101"));
+        dispatch(fetchLeaveBalance(employeeId));
       } else {
         throw new Error(resultAction.error.message || "Failed to apply for leave");
       }

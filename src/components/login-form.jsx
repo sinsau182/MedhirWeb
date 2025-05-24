@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { setItem } from "@/redux/slices/sessionStorageSlice"; // Import setItem action
 import { updateSessionActivity } from "@/utils/sessionManager";
@@ -41,24 +40,19 @@ export function LoginForm({ className, ...props }) {
         const token = result.payload.token;
 
         if (typeof window !== "undefined") {
-          dispatch(setItem({ key: "token", value: token, encrypt: true })); // Store token in sessionStorage
-
-          // Start session tracking immediately
+          dispatch(setItem({ key: "token", value: token, encrypt: true }));
           updateSessionActivity();
         }
 
-        // Decode token to get roles
-        const decodedToken = jwtDecode(token);
-        const roles = decodedToken.roles || [];
+        const roles = sessionStorage.getItem("roles");
 
-        // Redirect based on role
         if (roles.includes("SUPERADMIN")) {
           router.push("/superadmin/companies");
-        } else if (roles.includes("HRADMIN")) {
+        } else if (roles.includes("EMPLOYEE")) {
           router.push("/employee/dashboard");
-          sessionStorage.setItem("currentRole", "employee");
+          sessionStorage.setItem("currentRole", "EMPLOYEE");
         } else {
-          router.push("/dashboard"); // Default route
+          router.push("/dashboard");
         }
       }
     } catch (err) {

@@ -10,22 +10,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/router";
 import RoleToggle from "./ui/roletoggle";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  getItemFromSessionStorage,
-  removeItem,
-} from "@/redux/slices/sessionStorageSlice";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
 import getConfig from "next/config";
+import { clearSession } from "@/utils/sessionManager";
 
 const Navbar = () => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [userInfo, setUserInfo] = useState({ name: "", email: "" });
   const [employeeData, setEmployeeData] = useState(null);
   const { items } = useSelector((state) => state.sessionStorage);
 
@@ -75,10 +71,9 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    dispatch(removeItem({ key: "token" }));
-    // dispatch(removeItem({ key: 'user' }));
-    dispatch(removeItem({ key: "currentRole" }));
+    clearSession();
     router.push("/login");
+    toast.success("Logged out successfully");
   };
 
   const handleProfileClick = () => {
@@ -89,8 +84,9 @@ const Navbar = () => {
     const fetchCompanies = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
+        const employeeId = sessionStorage.getItem("employeeId");
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED101`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -108,41 +104,42 @@ const Navbar = () => {
           }
         }
       } catch (error) {
-        toast.error("Error fetching companies:", error);
+        toast.error(
+          error.response?.data?.message || "Error fetching companies"
+        );
       }
     };
 
-    fetchCompanies();
-  }, [selectedCompany]);
+    if (currentRole === "HRADMIN") {
+      fetchCompanies();
+    }
+  }, [selectedCompany, currentRole, publicRuntimeConfig.apiURL]);
 
   useEffect(() => {
-    const fetchEmployeeData = async () => {
-      if (currentRole === "employee") {
-        try {
-          const token = getItemFromSessionStorage("token", null);
-          const response = await axios.get(
-            `${publicRuntimeConfig.apiURL}/employee/id/MED101`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          if (response.data) {
-            setEmployeeData(response.data);
-          }
-        } catch (error) {
-          console.error("Error fetching employee data:", error);
+    const fetchEmployeeDataFromToken = () => {
+      try {
+        const token = getItemFromSessionStorage("token", null);
+        if (token) {
+          const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
+          setEmployeeData(decodedToken);
         }
+      } catch (error) {
+        console.error("Error decoding token:", error);
       }
     };
 
-    fetchEmployeeData();
+    fetchEmployeeDataFromToken();
   }, [currentRole]);
 
   useEffect(() => {
+    const currentRole = sessionStorage.getItem("currentRole");
+
     const handleStorageChange = (event) => {
-      if (event.key === "selectedCompany" && event.newValue) {
+      if (
+        currentRole === "HRADMIN" &&
+        event.key === "selectedCompany" &&
+        event.newValue
+      ) {
         setSelectedCompany(event.newValue);
 
         // Retrieve the color code from localStorage
@@ -153,14 +150,24 @@ const Navbar = () => {
       }
     };
 
-    window.addEventListener("storage", handleStorageChange);
+    if (currentRole === "HRADMIN") {
+      window.addEventListener("storage", handleStorageChange);
+    }
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
+      if (currentRole === "HRADMIN") {
+        window.removeEventListener("storage", handleStorageChange);
+      }
     };
   }, [companies]);
 
   const handleCompanyChange = (companyName) => {
+    const currentRole = sessionStorage.getItem("currentRole");
+
+    if (currentRole !== "HRADMIN") {
+      return;
+    }
+
     const currentSelectedCompany = localStorage.getItem("selectedCompany");
 
     if (companyName !== currentSelectedCompany) {
@@ -172,11 +179,16 @@ const Navbar = () => {
       );
 
       if (selectedCompanyData) {
-
         // Store selected company name and color code in localStorage
         localStorage.setItem("selectedCompany", companyName);
-        localStorage.setItem("selectedCompanyColor", selectedCompanyData.colorCode);
-        localStorage.setItem("selectedCompanyId", selectedCompanyData.companyId);
+        localStorage.setItem(
+          "selectedCompanyColor",
+          selectedCompanyData.colorCode
+        );
+        localStorage.setItem(
+          "selectedCompanyId",
+          selectedCompanyData.companyId
+        );
 
         window.location.reload();
 
@@ -188,7 +200,6 @@ const Navbar = () => {
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${navbarColor}`}>
-
       <nav className="flex justify-between items-center p-3 shadow-md w-full">
         {/* Logo and Role Badges */}
         <div className="flex items-center gap-4">
@@ -206,14 +217,14 @@ const Navbar = () => {
         </div>
 
         {/* Right Section: Profile */}
-        <div className="flex items-center gap-6 relative">
+        <div className="flex items-center gap-2 relative">
           {/* Company Dropdown */}
-          {currentRole === "hr" && (
+          {currentRole === "HRADMIN" && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="h-10 px-6 flex items-center justify-between rounded-full border border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 bg-white hover:bg-gray-100"
+                  className="h-10 px-6 flex items-center justify-between rounded-full border border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 bg-white hover:bg-gray-100 mr-4"
                 >
                   <span className="text-sm font-semibold text-gray-700">
                     {selectedCompany}
@@ -252,23 +263,23 @@ const Navbar = () => {
             </DropdownMenu>
           )}
 
-          {/* Employee Name - Only for employee role */}
-          {currentRole === "employee" && employeeData && (
-            <div 
-              onClick={() => router.push("/employee/profile")}
-              className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
-            >
-              <span className="text-sm font-medium text-gray-600">
-                {employeeData.name}
+          {/* Company Name - Only for manager role */}
+          {currentRole === "MANAGER" && employeeData && (
+            <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 mr-4">
+              <span className="text-base font-semibold text-blue-900">
+                {employeeData.companyName}
               </span>
             </div>
           )}
 
-          {/* Company Name - Only for manager role */}
-          {currentRole === "manager" && selectedCompany && (
-            <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100">
-              <span className="text-base font-semibold text-blue-900">
-                {selectedCompany}
+          {/* Employee Name - For all roles */}
+          {employeeData && (
+            <div
+              onClick={() => router.push("/employee/profile")}
+              className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
+            >
+              <span className="text-sm font-medium text-gray-600">
+                Hi, {employeeData.name}
               </span>
             </div>
           )}
@@ -276,18 +287,13 @@ const Navbar = () => {
           {/* Profile Avatar */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <Button
+              <Button
                 variant="ghost"
-                className="relative h-12 w-12 rounded-lg border-2 border-blue-300"
+                className="relative h-10 w-10 rounded-lg bg-gradient-to-b from-gray-50 to-gray-200 shadow-[0_2px_4px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.15)] hover:translate-y-[-1px] transition-all duration-200"
               >
-                <Avatar className="h-10 w-10 rounded-lg">
-                  <AvatarImage src="/avatar.jpg" alt={employeeData?.name || userInfo.name} />
-                  <AvatarFallback>
-                    {(employeeData?.name || userInfo.name)
-                      ? (employeeData?.name || userInfo.name).substring(0, 2).toUpperCase()
-                      : "U"}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="flex items-center justify-center h-full w-full">
+                  <User className="h-9 w-9 text-gray-900 drop-shadow-sm" />
+                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -297,7 +303,7 @@ const Navbar = () => {
                     {employeeData?.name || "User Name"}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {employeeData?.emailOfficial || "user@email.com"}
+                    {employeeData?.sub || "user@email.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>

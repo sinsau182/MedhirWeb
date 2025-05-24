@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
@@ -19,40 +19,6 @@ import { UserMinus, UserPlus } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { toast } from "sonner";
 import getConfig from "next/config";
-
-// // Hardcoded users for testing
-// const TEST_USERS = [
-//   {
-//     userId: 101,
-//     name: "Alice Johnson",
-//     email: "alice.j@techsolutions.com",
-//     isAdmin: true, // Let's make Alice an admin initially for testing
-//   },
-//   {
-//     userId: 102,
-//     name: "Bob Williams",
-//     email: "bob.w@techsolutions.com",
-//     isAdmin: false,
-//   },
-//   {
-//     userId: 103,
-//     name: "Charlie Brown",
-//     email: "charlie.b@techsolutions.com",
-//     isAdmin: false,
-//   },
-//   {
-//     userId: 201,
-//     name: "Diana Miller",
-//     email: "diana.m@globalservices.com",
-//     isAdmin: false,
-//   },
-//   {
-//     userId: 202,
-//     name: "Ethan Davis",
-//     email: "ethan.d@globalservices.com",
-//     isAdmin: true, // Let's make Ethan an admin initially for testing
-//   },
-// ];
 
 function AdminAccess() {
   const router = useRouter();
@@ -79,13 +45,42 @@ function AdminAccess() {
     // Add other access types here if needed in the future
   ];
 
+    // Fetch users for selected company
+    const fetchUsers = useCallback( async (companyId) => {
+      try {
+        setLoading(true);
+        const token = getItemFromSessionStorage("token", null);
+        const response = await axios.get(
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/${companyId}/employees`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+  
+        if (response.data && Array.isArray(response.data)) {
+          setUsers(response.data); // Store the full user objects
+          setError("");
+        } else {
+          throw new Error("Unexpected response format");
+        }
+      } catch (error) {
+        toast.error("Error fetching users:", error);
+        setError("Failed to fetch users. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    }, [publicRuntimeConfig.apiURL]);
+
   // Fetch companies
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
+        const employeeId = sessionStorage.getItem("employeeId");
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/MED101`,
+          `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -118,35 +113,7 @@ function AdminAccess() {
     };
 
     fetchCompanies();
-  }, []);
-
-  // Fetch users for selected company
-  const fetchUsers = async (companyId) => {
-    try {
-      setLoading(true);
-      const token = getItemFromSessionStorage("token", null);
-      const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/hradmin/companies/${companyId}/employees`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data && Array.isArray(response.data)) {
-        setUsers(response.data); // Store the full user objects
-        setError("");
-      } else {
-        throw new Error("Unexpected response format");
-      }
-    } catch (error) {
-      toast.error("Error fetching users:", error);
-      setError("Failed to fetch users. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [fetchUsers, publicRuntimeConfig.apiURL]);
 
   // Handle company selection
   const handleCompanyChange = (companyId) => {

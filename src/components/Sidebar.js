@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaAngleLeft,
   FaAngleRight,
+  FaTasks,
 } from "react-icons/fa";
 import {
   Briefcase,
@@ -15,19 +16,24 @@ import {
   ChartColumnIncreasing,
   Clock,
   CreditCard,
+  CreditCardIcon,
   ReceiptIcon,
   Users,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [department, setDepartment] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
+    const dept = sessionStorage.getItem("departmentName");
     setCurrentRole(role);
+    setDepartment(dept);
 
     // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
@@ -49,30 +55,30 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       label: "Dashboard",
       icon: <ChartColumnIncreasing />,
       link: "/hradmin/dashboard",
-      roles: ["hr"],
+      roles: ["HRADMIN"],
     },
     {
       label: "Employees",
       icon: <Users />,
       link: "/hradmin/employees",
-      roles: ["hr"],
+      roles: ["HRADMIN"],
     },
     {
       label: "Attendance",
       icon: <Clock />,
       link: "/hradmin/attendance",
-      roles: ["hr"],
+      roles: ["HRADMIN"],
     },
     {
       label: "Payroll",
       icon: <ReceiptIcon />,
       link: "/hradmin/payroll",
-      roles: ["hr"],
+      roles: ["HRADMIN"],
     },
     {
       label: "Settings",
       icon: <FaCog />,
-      roles: ["hr"],
+      roles: ["HRADMIN"],
       hasSubmenu: true,
       menuKey: "settings",
       subItems: [
@@ -103,57 +109,85 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       label: "Dashboard",
       icon: <ChartColumnIncreasing />,
       link: "/manager/dashboard",
-      roles: ["manager"],
+      roles: ["MANAGER"],
     },
     {
       label: "Team",
       icon: <Briefcase />,
       link: "/manager/team",
-      roles: ["manager"],
+      roles: ["MANAGER"],
     },
     {
       label: "Attendance",
       icon: <Clock />,
       link: "/manager/attendance",
-      roles: ["manager"],
+      roles: ["MANAGER"],
+    },
+    {
+      label: "Lead Management",
+      icon: <FaTasks />,
+      link: "/manager/leads",
+      roles: ["MANAGER"],
     },
 
     {
       label: "Dashboard",
       icon: <ChartColumnIncreasing />,
       link: "/employee/dashboard",
-      roles: ["employee"],
+      roles: ["EMPLOYEE"],
     },
     {
       label: "Leave",
       icon: <Calendar />,
       link: "/employee/leaves",
-      roles: ["employee"],
+      roles: ["EMPLOYEE"],
+    },
+    // {
+    //   label: "Reimbursement",
+    //   icon: <CreditCard />,
+    //   link: "/employee/reimbursement",
+    //   roles: ["EMPLOYEE"],
+    // },
+    {
+      label: "Expenses",
+      icon: <ReceiptIcon />,
+      link: "/employee/expenses",
+      roles: ["EMPLOYEE"],
     },
     {
-      label: "Reimbursement",
-      icon: <CreditCard />,
-      link: "/employee/reimbursement",
-      roles: ["employee"],
+      label: "Income",
+      icon: <Wallet />,
+      link: "/employee/income",
+      roles: ["EMPLOYEE"],
     },
     {
       label: "Attendance",
       icon: <Clock />,
       link: "/employee/attendances",
-      roles: ["employee"],
+      roles: ["EMPLOYEE"],
     },
     {
       label: "My Payslips",
       icon: <ReceiptIcon />,
       link: "/employee/mypayslip",
-      roles: ["employee"],
+      roles: ["EMPLOYEE"],
     },
+    {
+      label: "Lead Management",
+      icon: <FaTasks />,
+      link: "/employee/leads",
+      roles: ["EMPLOYEE"],
+    },
+  
   ];
 
-  // Filter menu items based on currentRole
-  const filteredMenu = menuItems.filter((item) =>
-    item.roles.includes(currentRole)
-  );
+  // Filter menu items based on currentRole and department
+  const filteredMenu = menuItems.filter((item) => {
+    if (item.label === "Lead Management") {
+      return item.roles.includes(currentRole) && department === "Sales";
+    }
+    return item.roles.includes(currentRole);
+  });
 
   const isActiveLink = (link) => {
     if (!link) return false;
