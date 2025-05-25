@@ -7,20 +7,23 @@ import { Badge } from "@/components/ui/badge";
 import withAuth from "@/components/withAuth";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
 function Attendance() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees = [], loading: employeesLoading } = useSelector((state) => state.employees || {});
   const [searchInput, setSearchInput] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "long" }));
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [dates, setDates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+  const { attendance, loading, err } = useSelector((state) => state.attendances);
 
   // Fetch employees on component mount
   useEffect(() => {
@@ -29,6 +32,15 @@ function Attendance() {
       console.error("Error fetching employees:", err);
     });
   }, [dispatch]);
+
+  // Fetch attendance data when month or year changes
+  useEffect(() => {
+    const month = selectedMonth.slice(0, 3); // Get first 3 letters of month (e.g., "Apr")
+    const year = selectedYear;
+    dispatch(fetchAllEmployeeAttendanceOneMonth({ month: month, year }));
+  }, [dispatch, selectedMonth, selectedYear]);
+
+  console.log(attendance);
 
   // Check authentication and role
   useEffect(() => {
@@ -50,9 +62,10 @@ function Attendance() {
     try {
       const generateDates = () => {
         const dates = [];
-        const daysInMonth = new Date(selectedYear, selectedMonth.getMonth() + 1, 0).getDate();
+        const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+        const daysInMonth = new Date(selectedYear, monthIndex + 1, 0).getDate();
         for (let i = 1; i <= daysInMonth; i++) {
-          const date = new Date(selectedYear, selectedMonth.getMonth(), i);
+          const date = new Date(selectedYear, monthIndex, i);
           dates.push({
             day: i,
             weekday: date.toLocaleString("default", { weekday: "short" }),
@@ -66,45 +79,84 @@ function Attendance() {
     }
   }, [selectedMonth, selectedYear]);
 
-  // Generate random attendance data for employees
+  // Generate attendance data for employees
   const generateAttendanceData = useCallback((employee) => {
-    return {
-      id: employee.employeeId,
-      name: employee.name,
-      department: employee.departmentName,
-      p_twd: "18/20",
-      attendance: Array(dates.length)
-        .fill(null)
-        .map((_, i) => {
-          // Weekends (Saturdays and Sundays)
-          if (i % 7 === 5 || i % 7 === 6) return "weekend";
-          // Firm holiday (15th)
-          if (i === 14) return "holiday";
-          // Regular attendance
-          if (i < 3) return null;
-          // Random attendance status
-          const random = Math.random();
-          if (random > 0.8) return false; // Absent
-          if (random > 0.6) return "half"; // Half day
-          if (random > 0.4) return "approved_leave"; // Approved leave
-          return true; // Present
-        }),
-    };
-  }, [dates.length]);
+    // Find matching attendance record for this employee
+    const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
+    
+    if (!attendanceRecord) {
+      return {
+        id: employee.employeeId,
+        name: employee.name,
+        department: employee.departmentName,
+        p_twd: "0/0",
+        attendance: Array(dates.length).fill({ value: null, label: "" })
+      };
+    }
 
-  // Generate random leave data for employees
-  const generateLeaveData = (employee) => {
+    // Convert daily attendance to array format
+    const attendanceArray = Array(dates.length).fill(null).map((_, index) => {
+      const day = (index + 1).toString();
+      const status = attendanceRecord.dailyAttendance[day];
+      if (!status) return { value: null, label: "" };
+      let value;
+      switch (status) {
+        case 'P':
+          value = true; break;
+        case 'A':
+          value = false; break;
+        case 'P/A':
+          value = 'half'; break;
+        case 'H':
+          value = 'holiday'; break;
+        case 'PH':
+          value = 'holiday'; break;
+        default:
+          value = null;
+      }
+      return { value, label: status };
+    });
+
     return {
       id: employee.employeeId,
       name: employee.name,
       department: employee.departmentName,
-      noOfPayableDays: "25",
-      leavesTaken: Math.floor(Math.random() * 7).toString(),
-      leavesEarned: "10",
-      leavesFromPreviousYear: "2",
-      compOffEarned: Math.floor(Math.random() * 4).toString(),
-      compOffCarriedForward: "1",
-      netLeaves: "7",
+      p_twd: `${attendanceRecord.payableDays}/${attendanceRecord.workingDays}`,
+      attendance: attendanceArray
+    };
+  }, [dates.length, attendance]);
+
+  // Generate leave data for employees
+  const generateLeaveData = (employee) => {
+    // Find matching attendance record for this employee
+    const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
+    
+    if (!attendanceRecord) {
+      return {
+        id: employee.employeeId,
+        name: employee.name,
+        department: employee.departmentName,
+        noOfPayableDays: "0",
+        leavesTaken: "0",
+        leavesEarned: "0",
+        leavesFromPreviousYear: "0",
+        compOffEarned: "0",
+        compOffCarriedForward: "0",
+        netLeaves: "0"
+      };
+    }
+
+    return {
+      id: employee.employeeId,
+      name: employee.name,
+      department: employee.departmentName,
+      noOfPayableDays: attendanceRecord.payableDays.toString(),
+      leavesTaken: attendanceRecord.leavesTaken.toString(),
+      leavesEarned: attendanceRecord.leavesEarned.toString(),
+      leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
+      compOffEarned: attendanceRecord.compOffEarned.toString(),
+      compOffCarriedForward: "0", // Not provided in API response
+      netLeaves: attendanceRecord.netLeaveBalance.toString()
     };
   };
 
@@ -112,7 +164,7 @@ function Attendance() {
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
   const handleMonthSelection = (month, year) => {
-    setSelectedMonth(new Date(year, month));
+    setSelectedMonth(month);
     setSelectedYear(year);
     setIsCalendarOpen(false);
   };
@@ -147,7 +199,7 @@ function Attendance() {
   const getAttendanceColor = React.useCallback((status) => {
     if (status === null) return "bg-gray-100"; // Empty
     if (status === true) return "bg-green-600"; // Present (dark green)
-    if (status === false) return "bg-red-200"; // Absent (light red)
+    if (status === false) return "bg-[#FF0000]"; // Absent (light red)
     if (status === "half") return "bg-yellow-500"; // Half day
     if (status === "weekend") return "bg-gray-300"; // Weekend
     if (status === "holiday") return "bg-gray-400"; // Holiday
@@ -193,20 +245,20 @@ function Attendance() {
 
       <table className="w-full table-fixed">
         <thead>
-          <tr className="border-b">
-            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r">
+          <tr className="border-b border-black">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black">
               Emp ID
             </th>
-            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r border-black">
               Name
             </th>
-            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r">
+            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black">
               Dept
             </th>
             {dates.map((date) => (
               <th
                 key={date.day}
-                className="py-1 px-0 text-center text-xs font-semibold text-gray-700 w-[2%] border-r"
+                className="py-1 px-0 text-center text-xs font-semibold text-gray-700 w-[2%] border-r border-black"
               >
                 <div className="leading-none">
                   {String(date.day).padStart(2, "0")}
@@ -218,28 +270,30 @@ function Attendance() {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-black">
           {filteredEmployees.map((employee, index) => (
             <tr
               key={index}
               className="hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              <td className="py-1 px-1 text-sm text-gray-800 border-r">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r border-black">
                 {employee.id}
               </td>
-              <td className="py-1 px-1 text-sm text-gray-800 border-r">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
                 {employee.name}
               </td>
-              <td className="py-1 px-1 text-sm text-gray-800 border-r whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
+              <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
                 {employee.department}
               </td>
-              {employee.attendance.map((status, index) => (
+              {employee.attendance.map((att, index) => (
                 <td
                   key={index}
-                  className={`py-1 px-0 text-center border-r ${getAttendanceColor(
-                    status
+                  className={`py-1 px-0 text-center border-r border-black ${getAttendanceColor(
+                    att.value
                   )}`}
-                ></td>
+                >
+                  {att.label}
+                </td>
               ))}
             </tr>
           ))}
@@ -252,40 +306,40 @@ function Attendance() {
     <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b">
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+          <tr className="border-b border-black">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Emp ID
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Name
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Dept
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Pay Days
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Leaves Taken
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Leaves Earned
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Leaves CF Prev Year
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               Comp Off
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
               CF Comp Off
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap">
+            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-black">
               Balance
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-black">
           {filteredLeaveData.map((leave) => {
             // Calculate leave balance
             const leaveBalance =
@@ -297,34 +351,34 @@ function Attendance() {
 
             return (
               <tr key={leave.id} className="hover:bg-gray-50">
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.id}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.name}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.department}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.noOfPayableDays}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.leavesTaken}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.leavesEarned}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.leavesFromPreviousYear}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.compOffEarned}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
                   {leave.compOffCarriedForward}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap">
+                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-black">
                   {leaveBalance}
                 </td>
               </tr>
@@ -335,13 +389,13 @@ function Attendance() {
     </div>
   );
 
-  if (isLoading || employeesLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  // if (isLoading || employeesLoading) {
+  //   return (
+  //     <div className="flex justify-center items-center h-screen">
+  //       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  //     </div>
+  //   );
+  // }
 
   if (error) {
     return (
@@ -351,13 +405,13 @@ function Attendance() {
     );
   }
 
-  if (!dates.length) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        Loading dates...
-      </div>
-    );
-  }
+  // if (!dates.length) {
+  //   return (
+  //     <div className="flex justify-center items-center h-screen">
+  //       Loading dates...
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -399,48 +453,64 @@ function Attendance() {
                   <Calendar className="h-5 w-5" />
                   <span className="font-medium text-base">
                     {selectedYear}-
-                    {selectedMonth.toLocaleString("default", { month: "long" })}
+                    {selectedMonth}
                   </span>
                 </Badge>
                 {isCalendarOpen && (
                   <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    <div className="p-3 border-b">
+                    <div className="p-3 border-b flex justify-between items-center">
                       <div className="text-sm font-medium text-gray-700">
                         {selectedYear}
                       </div>
+                      <select
+                        value={selectedYear}
+                        onChange={e => {
+                          setSelectedYear(e.target.value);
+                          if (e.target.value === '2024') {
+                            setSelectedMonth('Aug');
+                          } else {
+                            setSelectedMonth('Jan');
+                          }
+                        }}
+                        className="ml-2 border rounded px-2 py-1 text-sm"
+                      >
+                        {[2024, 2025].map(year => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 p-3">
-                      {[
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "May",
-                        "Jun",
-                        "Jul",
-                        "Aug",
-                        "Sep",
-                        "Oct",
-                        "Nov",
-                        "Dec",
-                      ].slice(0, new Date().getMonth() + 1).map((month) => (
-                        <button
-                          key={month}
-                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                            month ===
-                            selectedMonth
-                              .toLocaleString("default", { month: "long" })
-                              .slice(0, 3)
-                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                              : "hover:bg-gray-50 text-gray-700"
-                          }`}
-                          onClick={() =>
-                            handleMonthSelection(month, selectedYear)
-                          }
-                        >
-                          {month}
-                        </button>
-                      ))}
+                      {(() => {
+                        const currentYear = new Date().getFullYear();
+                        const currentMonthIdx = new Date().getMonth(); // 0-based
+                        let months = [
+                          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                        ];
+                        let startIdx = 0;
+                        let endIdx = 11;
+                        if (parseInt(selectedYear) === 2024) {
+                          startIdx = 7; // August (0-based)
+                          endIdx = 11;
+                        } else if (parseInt(selectedYear) === 2025) {
+                          startIdx = 0;
+                          // If 2025 is the current year, restrict to current month
+                          endIdx = (currentYear === 2025) ? currentMonthIdx : 11;
+                        }
+                        return months.slice(startIdx, endIdx + 1).map((month) => (
+                          <button
+                            key={month}
+                            className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                              month === selectedMonth.slice(0, 3)
+                                ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                            onClick={() => handleMonthSelection(month, selectedYear)}
+                          >
+                            {month}
+                          </button>
+                        ));
+                      })()}
                     </div>
                   </div>
                 )}

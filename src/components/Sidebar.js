@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaAngleLeft,
   FaAngleRight,
+  FaTasks,
 } from "react-icons/fa";
 import {
   Briefcase,
@@ -15,19 +16,24 @@ import {
   ChartColumnIncreasing,
   Clock,
   CreditCard,
+  CreditCardIcon,
   ReceiptIcon,
   Users,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [department, setDepartment] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
+    const dept = sessionStorage.getItem("departmentName");
     setCurrentRole(role);
+    setDepartment(dept);
 
     // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
@@ -117,6 +123,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/manager/attendance",
       roles: ["MANAGER"],
     },
+    {
+      label: "Lead Management",
+      icon: <FaTasks />,
+      link: "/manager/leads",
+      roles: ["MANAGER"],
+    },
 
     {
       label: "Dashboard",
@@ -130,10 +142,22 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/employee/leaves",
       roles: ["EMPLOYEE"],
     },
+    // {
+    //   label: "Reimbursement",
+    //   icon: <CreditCard />,
+    //   link: "/employee/reimbursement",
+    //   roles: ["EMPLOYEE"],
+    // },
     {
-      label: "Reimbursement",
-      icon: <CreditCard />,
-      link: "/employee/reimbursement",
+      label: "Expenses",
+      icon: <ReceiptIcon />,
+      link: "/employee/expenses",
+      roles: ["EMPLOYEE"],
+    },
+    {
+      label: "Income",
+      icon: <Wallet />,
+      link: "/employee/income",
       roles: ["EMPLOYEE"],
     },
     {
@@ -148,12 +172,22 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/employee/mypayslip",
       roles: ["EMPLOYEE"],
     },
+    {
+      label: "Lead Management",
+      icon: <FaTasks />,
+      link: "/employee/leads",
+      roles: ["EMPLOYEE"],
+    },
+  
   ];
 
-  // Filter menu items based on currentRole
-  const filteredMenu = menuItems.filter((item) =>
-    item.roles.includes(currentRole)
-  );
+  // Filter menu items based on currentRole and department
+  const filteredMenu = menuItems.filter((item) => {
+    if (item.label === "Lead Management") {
+      return item.roles.includes(currentRole) && department === "Sales";
+    }
+    return item.roles.includes(currentRole);
+  });
 
   const isActiveLink = (link) => {
     if (!link) return false;

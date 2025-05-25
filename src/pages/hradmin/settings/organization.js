@@ -4,7 +4,6 @@ import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
 import Select from "react-select";
-import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createDepartment,
@@ -50,8 +49,7 @@ const OrganizationSettings = () => {
   });
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
-  const [showDesignationEditModal, setShowDesignationEditModal] =
-    useState(false);
+  const [showDesignationEditModal, setShowDesignationEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -358,10 +356,14 @@ const OrganizationSettings = () => {
         return;
       }
 
+      const designationDepartmentId = reduxDepartments.find(
+        (dept) => dept.name === designationForm.department.value
+      )?.departmentId;
+
       const designationData = {
         name: designationForm.name,
         description: designationForm.description || "",
-        department: designationForm.department.value,
+        department: designationDepartmentId,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
         companyId: selectedCompanyId,
@@ -401,7 +403,7 @@ const OrganizationSettings = () => {
       setNotification({
         show: true,
         type: "error",
-        message: error || "Failed to update designation. Please try again.",
+        message: error.message || "Failed to update designation. Please try again.",
       });
       setTimeout(() => {
         setNotification({ show: false, type: "", message: "" });

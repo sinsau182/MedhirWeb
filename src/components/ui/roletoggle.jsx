@@ -7,12 +7,14 @@ const roleLabels = {
   EMPLOYEE: "Employee",
   MANAGER: "Manager",
   HRADMIN: "HR Admin",
+  SALES: "Sales Employee"
 };
 
 const roleColors = {
   HRADMIN: "bg-blue-500 text-white",
   MANAGER: "bg-green-500 text-white",
   EMPLOYEE: "bg-purple-500 text-white",
+  SALES: "bg-yellow-500 text-white"
 };
 
 // Define the desired order of roles
@@ -22,10 +24,21 @@ const RoleToggle = () => {
   const router = useRouter();
   const [currentRole, setCurrentRole] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
+  const [roleDisplayLabels, setRoleDisplayLabels] = useState(roleLabels);
 
   useEffect(() => {
     const roles = JSON.parse(sessionStorage.getItem("roles") || "[]");
+    const department = sessionStorage.getItem("departmentName");
+    
     if (roles.length > 0) {
+      // Update role labels if department is Sales
+      if (department === "Sales") {
+        setRoleDisplayLabels({
+          ...roleLabels,
+          EMPLOYEE: "Sales Employee"
+        });
+      }
+      
       // Sort roles according to the defined order
       const sortedRoles = roleOrder.filter(role => roles.includes(role));
       setAvailableRoles(sortedRoles);
@@ -66,7 +79,7 @@ const RoleToggle = () => {
           )}
           onClick={() => switchRole(role)}
         >
-          {roleLabels[role]}
+          {roleDisplayLabels[role]}
         </Button>
       ))}
     </div>

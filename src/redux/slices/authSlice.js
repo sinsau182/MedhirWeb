@@ -31,6 +31,7 @@ export const loginUser = createAsyncThunk(
         if (!response.data.passwordChanged) {
           await sessionStorage.setItem('passwordChanged', response.data.passwordChanged);
         }
+        await sessionStorage.setItem('departmentName', response.data.departmentName);
       }
       return response.data;
     } catch (error) {
