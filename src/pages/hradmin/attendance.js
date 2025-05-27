@@ -27,7 +27,9 @@ function Attendance() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
+
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [isDepartmentFilterOpen, setIsDepartmentFilterOpen] = useState(false);
 
@@ -191,7 +193,7 @@ function Attendance() {
       return {
         id: employee.employeeId,
         name: employee.name,
-        department: employee.departmentName,
+        department: employee.departmentName || '', // Add fallback empty string
         noOfPayableDays: "0",
         leavesTaken: "0",
         leavesEarned: "0",
@@ -205,7 +207,7 @@ function Attendance() {
     return {
       id: employee.employeeId,
       name: employee.name,
-      department: attendanceRecord.departmentName, // Use departmentName from attendance record
+      department: attendanceRecord.departmentName || employee.departmentName || '', // Try both sources with fallback
       noOfPayableDays: attendanceRecord.payableDays.toString(),
       leavesTaken: attendanceRecord.leavesTaken.toString(),
       leavesEarned: attendanceRecord.leavesEarned.toString(),
@@ -271,6 +273,9 @@ function Attendance() {
     [searchInput, employees, generateAttendanceData] // Added generateAttendanceData dependency
   );
 
+
+  
+
   const filteredLeaveData = useMemo(
     () =>
       employees
@@ -281,7 +286,7 @@ function Attendance() {
             (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
         )
         .map(generateLeaveData),
-    [searchInput, employees, generateLeaveData]
+    [searchInput, employees, generateLeaveData, attendance]
   );
 
    // Extract unique departments for filter options (moved from renderLeaveTable)
@@ -295,6 +300,8 @@ function Attendance() {
       return Array.from(departments).map(dept => ({ value: dept, label: dept }));
     }, [employees]);
 
+
+
     // Filter leave data based on search input and selected departments (moved from renderLeaveTable)
     const filteredAndSearchedLeaveData = useMemo(() => {
       let data = employees.map(generateLeaveData); // Start with all leave data mapped
@@ -303,6 +310,8 @@ function Attendance() {
       if (selectedDepartments.length > 0) {
         data = data.filter(leave => selectedDepartments.includes(leave.department));
       }
+
+      console.log(data)
 
       // Apply search filter
       if (searchInput) {
@@ -315,7 +324,7 @@ function Attendance() {
       }
 
       return data;
-    }, [searchInput, selectedDepartments, employees, generateLeaveData]);
+    }, [searchInput, selectedDepartments, employees, generateLeaveData, attendance]);
 
     // Calculate attendance summary statistics
     const calculateAttendanceSummary = useCallback((employeesData, dateToSummarize = null) => {
@@ -403,7 +412,7 @@ function Attendance() {
     }, [filteredAndSearchedLeaveData]);
 
    // Determine the date to use for the summary
-    const today = new Date();
+
     const currentDay = today.getDate();
     const currentMonthShort = today.toLocaleString("default", { month: "short" });
     const currentYearFull = today.getFullYear().toString();
@@ -649,77 +658,7 @@ function Attendance() {
             <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
 
-          {/* Calendar */}
-          <div className="relative">
-            <Badge
-              variant="outline"
-              className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-              onClick={toggleCalendar}
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium text-sm">
-                {selectedYear}-{selectedMonth}
-          </span>
-            </Badge>
-            {isCalendarOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                {/* Existing calendar content */}
-                <div className="p-3 border-b flex justify-between items-center">
-                  <div className="text-sm font-medium text-gray-700">
-                    {selectedYear}
-                  </div>
-                  <select
-                    value={selectedYear}
-                    onChange={e => {
-                      setSelectedYear(e.target.value);
-                      if (e.target.value === '2024') {
-                        setSelectedMonth('Aug');
-                      } else {
-                        setSelectedMonth('Jan');
-                      }
-                    }}
-                    className="ml-2 border rounded px-2 py-1 text-sm"
-                  >
-                    {[2024, 2025].map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 p-3">
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const currentMonthIdx = new Date().getMonth(); // 0-based
-                    let months = [
-                      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                    ];
-                    let startIdx = 0;
-                    let endIdx = 11;
-                    if (parseInt(selectedYear) === 2024) {
-                      startIdx = 7; // August (0-based)
-                      endIdx = 11;
-                    } else if (parseInt(selectedYear) === 2025) {
-                      startIdx = 0;
-                      endIdx = (currentYear === 2025) ? currentMonthIdx : 11;
-                    }
-                    return months.slice(startIdx, endIdx + 1).map((month) => (
-                      <button
-                        key={month}
-                        className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                          month === selectedMonth.slice(0, 3)
-                            ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                            : "hover:bg-gray-50 text-gray-700"
-                        }`}
-                        onClick={() => handleMonthSelection(month, selectedYear)}
-                      >
-                        {month}
-                      </button>
-                    ));
-                  })()}
-        </div>
-        </div>
-            )}
-        </div>
+          
         </div>
 
         {/* Table */}
@@ -1070,6 +1009,77 @@ function Attendance() {
             <h1 className="text-xl font-semibold text-gray-800">
               Attendance Management
             </h1>
+            {/* Calendar */}
+          <div className="relative ml-auto">
+            <Badge
+              variant="outline"
+              className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+              onClick={toggleCalendar}
+            >
+              <Calendar className="h-4 w-4" />
+              <span className="font-medium text-sm">
+                {selectedYear}-{selectedMonth}
+          </span>
+            </Badge>
+            {isCalendarOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                {/* Existing calendar content */}
+                <div className="p-3 border-b flex justify-between items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    {selectedYear}
+                  </div>
+                  <select
+                    value={selectedYear}
+                    onChange={e => {
+                      setSelectedYear(e.target.value);
+                      if (e.target.value === '2024') {
+                        setSelectedMonth('Aug');
+                      } else {
+                        setSelectedMonth('Jan');
+                      }
+                    }}
+                    className="ml-2 border rounded px-2 py-1 text-sm"
+                  >
+                    {[2024, 2025].map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 p-3">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const currentMonthIdx = new Date().getMonth(); // 0-based
+                    let months = [
+                      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                    ];
+                    let startIdx = 0;
+                    let endIdx = 11;
+                    if (parseInt(selectedYear) === 2024) {
+                      startIdx = 7; // August (0-based)
+                      endIdx = 11;
+                    } else if (parseInt(selectedYear) === 2025) {
+                      startIdx = 0;
+                      endIdx = (currentYear === 2025) ? currentMonthIdx : 11;
+                    }
+                    return months.slice(startIdx, endIdx + 1).map((month) => (
+                      <button
+                        key={month}
+                        className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                          month === selectedMonth.slice(0, 3)
+                            ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                        onClick={() => handleMonthSelection(month, selectedYear)}
+                      >
+                        {month}
+                      </button>
+                    ));
+                  })()}
+        </div>
+        </div>
+            )}
+        </div>
           </div>
 
           {/* Tabs */}

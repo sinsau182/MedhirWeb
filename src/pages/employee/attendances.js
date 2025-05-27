@@ -53,7 +53,8 @@ const EmployeeAttendance = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.dailyAttendance;
 
         const year = today.getFullYear();
         const month = today.getMonth();
@@ -268,7 +269,7 @@ const EmployeeAttendance = () => {
       {/* Main Content */}
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         {/* Navbar */}

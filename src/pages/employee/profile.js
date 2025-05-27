@@ -635,7 +635,7 @@ function EmployeeProfilePage() {
 
       <div
         className={`flex-1 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-20" : "ml-64"
+          isSidebarCollapsed ? "ml-20" : "ml-56"
         }`}
       >
         <HradminNavbar />

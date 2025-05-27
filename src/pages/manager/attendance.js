@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Search, Calendar, Check, X } from "lucide-react";
+import React, { useCallback, useState, useEffect, useMemo } from "react";
+import { Search, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { useRouter } from "next/router";
@@ -15,6 +15,9 @@ function Attendance() {
   const { employees = [], loading: employeesLoading } = useSelector(
     (state) => state.managerEmployee || {}
   );
+  const { attendance, loading, err } = useSelector((state) => state.attendances);
+
+  // State variables
   const [searchInput, setSearchInput] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "long" }));
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -24,9 +27,26 @@ function Attendance() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedFilters, setSelectedFilters] = useState([]);
-  // Fetch employees on component mount
+  const [selectedStatuses, setSelectedStatuses] = useState([]);
+  const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
+
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
+  const [isDepartmentFilterOpen, setIsDepartmentFilterOpen] = useState(false);
+
+  // Constants/Options
+  const statusOptions = [
+    { value: 'P', label: 'Present', color: '#CCFFCC' },
+    { value: 'P/A', label: 'Half Day', color: '#FFFFCC' },
+    { value: 'A', label: 'Absent', color: '#FFCCCC' },
+    { value: 'H', label: 'Holiday', color: '#E0E0E0' },
+    { value: 'PH', label: 'Present on Holiday', color: '#AACCFF' },
+    { value: 'PH/A', label: 'Half Day on Holiday', color: '#B8D4FF' },
+    { value: 'LOP', label: 'Loss of Pay', color: '#FF99CC' }
+  ];
+
+  // Effects
   useEffect(() => {
     dispatch(fetchManagerEmployees()).catch((err) => {
       setError("Failed to fetch employees");
@@ -34,16 +54,58 @@ function Attendance() {
     });
   }, [dispatch]);
 
-    // Fetch attendance data when month or year changes
-    useEffect(() => {
-      const month = selectedMonth.slice(0, 3); // Get first 3 letters of month (e.g., "Apr")
-      const year = selectedYear;
-     dispatch(fetchAllEmployeeAttendanceOneMonth({ month: month, year }));
-    }, [dispatch, selectedMonth, selectedYear]);
+  useEffect(() => {
+    const { query } = router;
+    
+    if (query.selectedDate && query.selectedMonth && query.selectedYear) {
+      // If date params are in the query, set the state
+      setSelectedDate(parseInt(query.selectedDate, 10));
+      setSelectedMonth(query.selectedMonth);
+      setSelectedYear(query.selectedYear);
+    }
 
-    const { attendance, loading, err } = useSelector((state) => state.attendances);
+    if (query.selectedStatuses) {
+      // If status param is in the query, set the selected statuses
+      // Assuming selectedStatuses is expected as a comma-separated string or an array in the query
+       const statuses = Array.isArray(query.selectedStatuses) 
+                         ? query.selectedStatuses 
+                         : [query.selectedStatuses];
+      setSelectedStatuses(statuses);
+    }
 
-  // Check authentication and role
+  }, [router.query]); // Dependency on router.query
+
+  useEffect(() => {
+    const month = selectedMonth.slice(0, 3); // Get first 3 letters of month
+    const year = selectedYear;
+    
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonthShort = today.toLocaleString("default", { month: "short" });
+    const currentYearFull = today.getFullYear().toString();
+
+    // Prepare API parameters
+    let apiParams = { month, year };
+
+    // If no date is selected, use current date
+    let dateToUse = selectedDate;
+    if (dateToUse === null) {
+      dateToUse = currentDay;
+    }
+
+    // Add date parameter
+    apiParams.date = dateToUse;
+
+    // Add status filter if any statuses are selected
+    if (selectedStatuses.length > 0) {
+      apiParams.status = selectedStatuses.join(',');
+    }
+
+    console.log("Fetching attendance data with params:", apiParams);
+    dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+
+  }, [dispatch, selectedMonth, selectedYear, selectedDate, selectedStatuses]);
+
   useEffect(() => {
     try {
       const role = sessionStorage.getItem("currentRole");
@@ -58,7 +120,6 @@ function Attendance() {
     }
   }, [router]);
 
-  // Generate dates for the selected month
   useEffect(() => {
     try {
       const generateDates = () => {
@@ -80,9 +141,8 @@ function Attendance() {
     }
   }, [selectedMonth, selectedYear]);
 
-  // Generate attendance data for employees
+  // Callbacks
   const generateAttendanceData = useCallback((employee) => {
-    // Find matching attendance record for this employee
     const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
     
     if (!attendanceRecord) {
@@ -95,52 +155,47 @@ function Attendance() {
       };
     }
 
-        // Convert daily attendance to array format
-        const attendanceArray = Array(dates.length).fill(null).map((_, index) => {
-          const day = (index + 1).toString();
-          const status = attendanceRecord.dailyAttendance[day];
-          if (!status) return { value: null, label: "" };
-          let value;
-          switch (status) {
-            case 'P':
-              value = true; break;
-            case 'A':
-              value = false; break;
-            case 'P/A':
-              value = 'half'; break;
-            case 'H':
-              value = 'holiday'; break;
-            case 'PH':
-              value = 'present_holiday'; break;
-            case 'PH/A':
-              value = 'half_holiday'; break;
-            case 'LOP':
-              value = 'lop'; break;
-            default:
-              value = null;
-          }
-          return { value, label: status };
-        });
+    const attendanceArray = Array(dates.length).fill(null).map((_, index) => {
+      const day = (index + 1).toString();
+      const status = attendanceRecord.dailyAttendance?.[day];
+      
+      const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP'];
 
-        return {
-          id: employee.employeeId,
-          name: employee.name,
-          department: employee.departmentName,
-          p_twd: `${attendanceRecord.payableDays}/${attendanceRecord.workingDays}`,
-          attendance: attendanceArray
-        };
-      }, [dates.length, attendance]);
+      if (!status || !validStatuses.includes(status)) {
+        return { value: null, label: "" };
+      }
+      
+      let value;
+      switch (status) {
+        case 'P': value = true; break;
+        case 'A': value = false; break;
+        case 'P/A': value = 'half'; break;
+        case 'H': value = 'holiday'; break;
+        case 'PH': value = 'holiday'; break; // Assuming PH is treated as holiday for internal value
+        case 'PH/A': value = 'half'; break; // Assuming PH/A is also a half day
+        case 'LOP': value = 'absent'; break; // Assuming LOP is similar to absent for internal value
+        default: value = null;
+      }
+      return { value, label: status };
+    });
 
-  // Generate leave data for employees
-  const generateLeaveData = (employee) => {
-    // Find matching attendance record for this employee
+    return {
+      id: employee.employeeId,
+      name: employee.name,
+      department: employee.departmentName,
+      p_twd: `${attendanceRecord.payableDays}/${attendanceRecord.workingDays}`,
+      attendance: attendanceArray
+    };
+  }, [dates.length, attendance]);
+
+   const generateLeaveData = useCallback((employee) => {
     const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
     
     if (!attendanceRecord) {
       return {
         id: employee.employeeId,
         name: employee.name,
-        department: employee.departmentName,
+        department: employee.departmentName || '', // Add fallback empty string
         noOfPayableDays: "0",
         leavesTaken: "0",
         leavesEarned: "0",
@@ -151,309 +206,506 @@ function Attendance() {
       };
     }
 
-  return {
-    id: employee.employeeId,
-    name: employee.name,
-    department: employee.departmentName,
-    noOfPayableDays: attendanceRecord.payableDays.toString(),
-    leavesTaken: attendanceRecord.leavesTaken.toString(),
-    leavesEarned: attendanceRecord.leavesEarned.toString(),
-    leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
-    compOffEarned: attendanceRecord.compOffEarned.toString(),
-    compOffCarriedForward: "0", // Not provided in API response
-    netLeaves: attendanceRecord.netLeaveBalance.toString()
-  };
-};
+    return {
+      id: employee.employeeId,
+      name: employee.name,
+      department: attendanceRecord.departmentName || employee.departmentName || '', // Try both sources with fallback
+      noOfPayableDays: attendanceRecord.payableDays.toString(),
+      leavesTaken: attendanceRecord.leavesTaken.toString(),
+      leavesEarned: attendanceRecord.leavesEarned.toString(),
+      leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
+      compOffEarned: attendanceRecord.compOffEarned.toString(),
+      compOffCarriedForward: "0", // Not provided in API response
+      netLeaves: attendanceRecord.netLeaveBalance.toString()
+    };
+  }, [attendance]); // Added attendance as dependency
 
-  const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
+  const getAttendanceColor = useCallback((status) => {
+    if (status === null) return "bg-gray-100"; // No Data
+    if (status === "P") return "bg-[#CCFFCC]"; // Present (Light green)
+    if (status === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
+    if (status === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
+    if (status === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
+    if (status === "PH") return "bg-[#AACCFF]"; // Present on Holiday (Light blue)
+    if (status === "PH/A") return "bg-[#B8D4FF]"; // Half Day on Holiday (Lighter blue)
+    if (status === "LOP") return "bg-[#FF99CC]"; // Loss of Pay (Pink)
+    if (status === "weekend") return "bg-gray-300"; // Weekend
+    return "";
+  }, []);
 
-  const handleMonthSelection = (month, year) => {
+  const toggleStatus = useCallback((status) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status)
+        : [...prev, status]
+    );
+  }, []); // Added empty dependency array
+
+  const handleDateClick = useCallback((day) => {
+    setSelectedDate(prevDate => (prevDate === day ? null : day)); // Toggle selection
+  }, []); // Added empty dependency array
+
+   const toggleDepartment = useCallback((department) => {
+     setSelectedDepartments(prev => 
+       prev.includes(department) 
+         ? prev.filter(d => d !== department)
+         : [...prev, department]
+     );
+   }, []); // Added empty dependency array
+
+  const toggleCalendar = useCallback(() => setIsCalendarOpen(!isCalendarOpen), [isCalendarOpen]); // Added isCalendarOpen as dependency
+
+  const handleMonthSelection = useCallback((month, year) => {
     setSelectedMonth(month);
     setSelectedYear(year);
     setIsCalendarOpen(false);
-  };
-  // Generate attendance and leave data for filtered employees
-  const filteredEmployees = React.useMemo(
+  }, []); // Added empty dependency array
+
+  // Memoized values
+  const filteredEmployees = useMemo(
     () =>
       employees
         .filter(
           (employee) =>
             employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
             employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
-            employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())
+            (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
         )
-        .map(generateAttendanceData),
-    [searchInput, employees, generateAttendanceData]
+        .map(generateAttendanceData), // Map after filtering
+    [searchInput, employees, generateAttendanceData] // Added generateAttendanceData dependency
   );
 
-  const filteredLeaveData = React.useMemo(
+
+  
+
+  const filteredLeaveData = useMemo(
     () =>
       employees
         .filter(
           (employee) =>
             employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            employee.employeeId
-              .toLowerCase()
-              .includes(searchInput.toLowerCase()) ||
-            employee.departmentName
-              .toLowerCase()
-              .includes(searchInput.toLowerCase())
+            employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
+            (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
         )
         .map(generateLeaveData),
-    [searchInput, employees, attendance]
+    [searchInput, employees, generateLeaveData, attendance]
   );
 
-  const getAttendanceColor = React.useCallback((status) => {
-    if (status === null) return "bg-white"; // White background for future days
-    if (status === true) return "bg-green-600"; // Present (dark green)
-    if (status === false) return "bg-[#FF0000]"; // Absent (light red)
-    if (status === "half") return "bg-yellow-500"; // Half day
-    if (status === "weekend") return "bg-gray-300"; // Weekend
-    if (status === "holiday") return "bg-gray-400"; // Holiday
-    if (status === "present_holiday") return "bg-green-200"; // Present on Holiday
-    if (status === "half_holiday") return "bg-yellow-200"; // Half Day on Holiday
-    if (status === "lop") return "bg-red-200"; // Loss of Pay
-    if (status === "approved_leave") return "bg-green-200"; // Light green for approved leave
-    return "";
-  }, []);
+   // Extract unique departments for filter options (moved from renderLeaveTable)
+    const departmentOptions = useMemo(() => {
+      const departments = new Set();
+      employees.forEach(employee => {
+        if (employee.departmentName) {
+          departments.add(employee.departmentName);
+        }
+      });
+      return Array.from(departments).map(dept => ({ value: dept, label: dept }));
+    }, [employees]);
 
-  const getStatusLabel = React.useCallback((status) => {
-    if (status === null) return ""; // Empty string for future days
-    if (status === true) return "P";
-    if (status === false) return "A";
-    if (status === "half") return "P/A";
-    if (status === "weekend") return "W";
-    if (status === "holiday") return "H";
-    if (status === "present_holiday") return "PH";
-    if (status === "half_holiday") return "PH/A";
-    if (status === "lop") return "LOP";
-    if (status === "approved_leave") return "AL";
-    return "";
-  }, []);
 
-  // const getAttendanceText = React.useCallback((status) => {
-  //   if (status === true) return "P";
-  //   if (status === false) return "Un. App. Leave";
-  //   if (status === "half") return "Approved LOP";
-  //   if (status === "approved_leave") return "P(App. Leave)";
-  //   return "";
-  // }, []);
 
-  const renderAttendanceTable = () => (
-    <div className="bg-white rounded-lg shadow-sm">
-      {/* Status Summary Section removed as per request */}
+    // Filter leave data based on search input and selected departments (moved from renderLeaveTable)
+    const filteredAndSearchedLeaveData = useMemo(() => {
+      let data = employees.map(generateLeaveData); // Start with all leave data mapped
 
-      {/* Detailed Legend */}
-      <div className="p-4 border-b">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Status Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-600 rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Present (P)</span>
-              <p className="text-[10px] text-gray-500">Full day attendance</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Half Day (P/A)</span>
-              <p className="text-[10px] text-gray-500">Partial attendance</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-[#FF0000] rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Absent (A)</span>
-              <p className="text-[10px] text-gray-500">No attendance</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-400 rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Holiday (H)</span>
-              <p className="text-[10px] text-gray-500">Public/Company holiday</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-200 rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Present on Holiday (PH)</span>
-              <p className="text-[10px] text-gray-500">Working on holiday</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-200 rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Half Day on Holiday (PH/A)</span>
-              <p className="text-[10px] text-gray-500">Partial work on holiday</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-200 rounded"></div>
-            <div>
-              <span className="text-xs font-medium text-gray-700">Loss of Pay (LOP)</span>
-              <p className="text-[10px] text-gray-500">Unpaid leave</p>
-            </div>
-          </div>
+      // Apply department filter
+      if (selectedDepartments.length > 0) {
+        data = data.filter(leave => selectedDepartments.includes(leave.department));
+      }
+
+      console.log(data)
+
+      // Apply search filter
+      if (searchInput) {
+         data = data.filter(
+          (leave) =>
+            leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+            leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
+            (leave.department && leave.department.toLowerCase().includes(searchInput.toLowerCase())) // Added check for leave.department
+        );
+      }
+
+      return data;
+    }, [searchInput, selectedDepartments, employees, generateLeaveData, attendance]);
+
+    // Calculate attendance summary statistics
+    const calculateAttendanceSummary = useCallback((employeesData, dateToSummarize = null) => {
+      let totalPresent = 0;
+      let totalAbsent = 0;
+      let totalHalfDay = 0;
+      let totalHoliday = 0;
+      let totalPresentOnHoliday = 0;
+      let totalHalfDayOnHoliday = 0;
+      let totalLOP = 0;
+
+      // Determine which data to use for summary based on dateToSummarize
+      const dataForSummary = dateToSummarize !== null
+        ? employeesData.filter(employee => {
+            const dayIndex = dateToSummarize - 1;
+             // Check if employee has attendance data for the specific date and it's not null
+             return employee.attendance && employee.attendance.length > dayIndex && employee.attendance[dayIndex].label !== null;
+        })
+        : employeesData; // Use full list if no specific date for summary
+
+
+      dataForSummary.forEach(employee => {
+        if (dateToSummarize !== null) {
+          const dayIndex = dateToSummarize - 1;
+          // Check if attendance data exists for the specific day before accessing
+          if (employee.attendance && employee.attendance.length > dayIndex) {
+            const att = employee.attendance[dayIndex];
+            switch(att.label) {
+              case 'P': totalPresent++; break;
+              case 'A': totalAbsent++; break;
+              case 'P/A': totalHalfDay++; break;
+              case 'H': totalHoliday++; break;
+              case 'PH': totalPresentOnHoliday++; break;
+              case 'PH/A': totalHalfDayOnHoliday++; break;
+              case 'LOP': totalLOP++; break;
+            }
+          }
+        } else {
+          // If no specific date, summarize all attendance days
+           employee.attendance.forEach(att => {
+             // Only count valid statuses for summary
+            if (att.label !== null && att.label !== "") {
+                switch(att.label) {
+                  case 'P': totalPresent++; break;
+                  case 'A': totalAbsent++; break;
+                  case 'P/A': totalHalfDay++; break;
+                  case 'H': totalHoliday++; break;
+                  case 'PH': totalPresentOnHoliday++; break;
+                  case 'PH/A': totalHalfDayOnHoliday++; break;
+                  case 'LOP': totalLOP++; break;
+                }
+            }
+          });
+        }
+      });
+
+      return {
+        totalPresent,
+        totalAbsent,
+        totalHalfDay,
+        totalHoliday,
+        totalPresentOnHoliday,
+        totalHalfDayOnHoliday,
+        totalLOP
+      };
+    }, []); // Removed filteredEmployees dependency, now depends on employeesData passed in
+
+    // Calculate leave summary statistics
+    const calculateLeaveSummary = useCallback(() => {
+      let totalLeavesTaken = 0;
+      let totalLeavesEarned = 0;
+      let totalNetLeaveBalance = 0;
+
+      filteredAndSearchedLeaveData.forEach(leave => {
+        totalLeavesTaken += parseFloat(leave.leavesTaken);
+        totalLeavesEarned += parseFloat(leave.leavesEarned);
+        totalNetLeaveBalance += parseFloat(leave.netLeaves);
+      });
+
+      return {
+        totalLeavesTaken: totalLeavesTaken.toFixed(1),
+        totalLeavesEarned: totalLeavesEarned.toFixed(1),
+        totalNetLeaveBalance: totalNetLeaveBalance.toFixed(1)
+      };
+    }, [filteredAndSearchedLeaveData]);
+
+   // Determine the date to use for the summary
+
+    const currentDay = today.getDate();
+    const currentMonthShort = today.toLocaleString("default", { month: "short" });
+    const currentYearFull = today.getFullYear().toString();
+
+    // summaryDate should be selectedDate if not null, otherwise today's date if viewing current month/year
+    const summaryDate = selectedDate !== null ? selectedDate : 
+                        (selectedMonth.slice(0, 3) === currentMonthShort && selectedYear === currentYearFull ? currentDay : null);
+
+
+  // Render functions
+  const renderAttendanceTable = (props) => {
+    const { 
+      dates, 
+      statusOptions, 
+      selectedStatuses, 
+      isStatusFilterOpen, 
+      toggleStatus, 
+      searchInput,
+      setSearchInput,
+      isCalendarOpen,
+      toggleCalendar,
+      selectedYear,
+      selectedMonth,
+      handleMonthSelection,
+      selectedDate,
+      handleDateClick,
+      filteredEmployees: originalFilteredEmployees,
+      getAttendanceColor,
+      calculateAttendanceSummary,
+      attendance,
+      summaryDate
+    } = props;
+
+    // Determine which data to use for rendering
+    let dataToRender = originalFilteredEmployees;
+
+    // If we have attendance data from the API and status filters are applied
+    if (attendance && attendance.length > 0 && selectedStatuses.length > 0) {
+      // Filter originalFilteredEmployees based on the attendance status on the summaryDate
+      dataToRender = originalFilteredEmployees
+        .filter(employee => {
+          // Find the employee's attendance record from the fetched data
+          const empAttendanceRecord = attendance.find(attRec => attRec.employeeId === employee.id);
+          if (!empAttendanceRecord) return false; // Employee not in fetched attendance data
+
+          // Get the attendance status for the summaryDate (current date or selected date)
+          const statusForSummaryDate = empAttendanceRecord.dailyAttendance?.[summaryDate?.toString()];
+          
+          // Check if the status for the summaryDate is included in the selected statuses
+          // If selectedStatuses is empty, this filter is skipped by the outer 'if' condition
+          return selectedStatuses.includes(statusForSummaryDate);
+        })
+        .map(employee => {
+           // Map the employee data, ensuring attendance array uses fetched data
+          const empAttendanceRecord = attendance.find(attRec => attRec.employeeId === employee.id);
+          
+          // Create attendance array for the employee using fetched data
+          const attendanceArray = Array(dates.length).fill({ value: null, label: "" }).map((_, index) => {
+            const day = (index + 1).toString();
+            const status = empAttendanceRecord?.dailyAttendance?.[day];
+            
+            if (!status) {
+              return { value: null, label: "" };
+            }
+
+            // Map the status to the correct format
+            let value;
+            switch (status) {
+              case 'P': value = true; break;
+              case 'A': value = false; break;
+              case 'P/A': value = 'half'; break;
+              case 'H': value = 'holiday'; break;
+              case 'PH': value = 'holiday'; break;
+              case 'PH/A': value = 'half'; break;
+              case 'LOP': value = 'absent'; break;
+              default: value = null;
+            }
+            return { value, label: status };
+          });
+
+          return {
+            ...employee,
+            attendance: attendanceArray
+          };
+        });
+    } else if (selectedStatuses.length === 0 && attendance && attendance.length > 0) {
+        // If no status filters are applied, but we have fetched attendance data (e.g., due to date selection)
+        // We still need to use the data from the 'attendance' state, but without filtering by status
+         dataToRender = originalFilteredEmployees
+          .filter(employee => attendance.some(attRec => attRec.employeeId === employee.id))
+           .map(employee => {
+             const empAttendanceRecord = attendance.find(attRec => attRec.employeeId === employee.id);
+          
+             const attendanceArray = Array(dates.length).fill({ value: null, label: "" }).map((_, index) => {
+                const day = (index + 1).toString();
+                const status = empAttendanceRecord?.dailyAttendance?.[day];
+                
+                if (!status) {
+                  return { value: null, label: "" };
+                }
+
+                let value;
+                switch (status) {
+                  case 'P': value = true; break;
+                  case 'A': value = false; break;
+                  case 'P/A': value = 'half'; break;
+                  case 'H': value = 'holiday'; break;
+                  case 'PH': value = 'holiday'; break;
+                  case 'PH/A': value = 'half'; break;
+                  case 'LOP': value = 'absent'; break;
+                  default: value = null;
+                }
+                return { value, label: status };
+             });
+
+             return {
+               ...employee,
+               attendance: attendanceArray
+             };
+           });
+    } else if (selectedStatuses.length > 0 && (!attendance || attendance.length === 0)) {
+       // If status filters are applied, but no attendance data was returned from the API for the selected date
+       // This means no employee had the selected status on that date, so show empty table
+       dataToRender = [];
+    } else {
+        // Default case: no date selected, no status filters, use the original data mapped with full month attendance
+        // originalFilteredEmployees already contains this via generateAttendanceData
+        dataToRender = originalFilteredEmployees;
+    }
+
+
+    // Calculate summary based on the rendered data
+    const summary = calculateAttendanceSummary(dataToRender, summaryDate);
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+        {/* Summary Cards in Single Row */}
+        <div className="flex gap-4 overflow-x-auto pb-4 border-b border-gray-200">
+          {statusOptions.map((status) => {
+            // Map the status value to the correct summary key
+            let summaryKey;
+            switch(status.value) {
+              case 'P': summaryKey = 'totalPresent'; break;
+              case 'A': summaryKey = 'totalAbsent'; break;
+              case 'P/A': summaryKey = 'totalHalfDay'; break;
+              case 'H': summaryKey = 'totalHoliday'; break;
+              case 'PH': summaryKey = 'totalPresentOnHoliday'; break;
+              case 'PH/A': summaryKey = 'totalHalfDayOnHoliday'; break;
+              case 'LOP': summaryKey = 'totalLOP'; break;
+              default: summaryKey = '';
+            }
+            
+            const count = summary[summaryKey] || 0;
+            
+            return (
+              <div 
+                key={status.value} 
+                className="rounded-lg p-4 min-w-[160px] text-gray-800"
+                style={{ backgroundColor: status.color }}
+              >
+                <p className="text-sm text-gray-700 mb-1 font-medium">{status.label}</p>
+                <h3 className="text-2xl font-bold">{count}</h3>
+              </div>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Filters, Search, and Calendar Row above table */}
-      <div className="p-4 border-b flex flex-wrap items-center gap-4">
-        <div className="bg-white shadow-sm rounded-lg px-4 py-2 relative">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md hover:bg-gray-50"
-          >
-            <span>Filter Status</span>
-            <svg
-              className={`w-4 h-4 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+        {/* Filters, Search, and Calendar Section */}
+        <div className="flex items-center gap-4">
+          {/* Status Filter */}
+          <div className="relative z-40">
+            <button
+              onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
+              className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          {isFilterOpen && (
-            <div className="absolute left-0 mt-2 w-64 bg-white border rounded-md shadow-lg z-10">
-              <div className="p-2">
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('P')}
-                      onChange={() => handleFilterChange('P')}
-                    />
-                    <span className="text-sm text-gray-700">Present (P)</span>
-                  </label>
-                </div>
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('P/A')}
-                      onChange={() => handleFilterChange('P/A')}
-                    />
-                    <span className="text-sm text-gray-700">Half Day (P/A)</span>
-                  </label>
-                </div>
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('A')}
-                      onChange={() => handleFilterChange('A')}
-                    />
-                    <span className="text-sm text-gray-700">Absent (A)</span>
-                  </label>
-                </div>
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('H')}
-                      onChange={() => handleFilterChange('H')}
-                    />
-                    <span className="text-sm text-gray-700">Holiday (H)</span>
-                  </label>
-                </div>
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('PH')}
-                      onChange={() => handleFilterChange('PH')}
-                    />
-                    <span className="text-sm text-gray-700">Present on Holiday (PH)</span>
-                  </label>
-                </div>
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('PH/A')}
-                      onChange={() => handleFilterChange('PH/A')}
-                    />
-                    <span className="text-sm text-gray-700">Half Day on Holiday (PH/A)</span>
-                  </label>
-                </div>
-                <div className="mb-2">
-                  <label className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                      checked={selectedFilters.includes('LOP')}
-                      onChange={() => handleFilterChange('LOP')}
-                    />
-                    <span className="text-sm text-gray-700">Loss of Pay (LOP)</span>
-                  </label>
-                </div>
-                <div className="border-t pt-2 mt-2">
-                  <button
-                    onClick={() => setSelectedFilters([])}
-                    className="w-full text-sm text-gray-600 hover:text-gray-800 py-1"
-                  >
-                    Clear All
-                  </button>
+              <span className="text-sm text-gray-700">Filter by Status</span>
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                {selectedStatuses.length}
+              </span>
+              {/* Show selected status labels outside */}
+              {selectedStatuses.length > 0 && (
+                <span className="flex flex-wrap gap-1 ml-2">
+                  {selectedStatuses.map((status) => {
+                    const found = statusOptions.find(opt => opt.value === status);
+                    return (
+                      <span
+                        key={status}
+                        className="flex items-center px-2 py-0.5 rounded text-xs"
+                        style={{
+                          backgroundColor: found ? found.color : "#eee",
+                          color: "#333",
+                          border: "1px solid #ddd"
+                        }}
+                      >
+                        {found ? found.label : status}
+                        <button
+                          type="button"
+                          className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setSelectedStatuses(prev => prev.filter(s => s !== status));
+                          }}
+                          aria-label={`Remove ${found ? found.label : status}`}
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    );
+                  })}
+                </span>
+              )}
+            </button>
+            
+            {isStatusFilterOpen && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-40">
+                <div className="p-2 max-h-48 overflow-y-auto">
+                  {statusOptions.map(status => (
+                    <label key={status.value} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedStatuses.includes(status.value)}
+                        onChange={() => toggleStatus(status.value)}
+                        className="rounded border-gray-300"
+                      />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
+                      <span className="text-sm">{status.label}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
-          {selectedFilters.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {selectedFilters.map((filter) => (
-                <span
-                  key={filter}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full"
-                >
-                  {filter}
-                  <button
-                    onClick={() => handleFilterChange(filter)}
-                    className="hover:text-blue-900"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-64">
+            <input
+              type="text"
+              placeholder="Search employees..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          </div>
+
+          
         </div>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by name, ID or department..."
-            className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-          <svg className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35"/></svg>
+
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm">
+          {/* Legend */}
+          <div className="p-4 border-b flex flex-wrap gap-4 text-xs">
+            {statusOptions.map(status => (
+              <div key={status.value} className="flex items-center gap-1">
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: status.color }}></div>
+                <span>{status.label} ({status.value})</span>
+        </div>
+            ))}
+            <div className="flex items-center gap-1">
+              <div className="w-3 h-3 bg-gray-100 rounded"></div>
+              <span>No Data</span>
         </div>
       </div>
 
-      <table className="w-full table-fixed">
+          <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="border-b border-black">
-            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black">
+                {/* Fixed Columns */}
+                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black sticky left-0 bg-white z-20 shadow-sm">
               Emp ID
             </th>
-            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r border-black">
+                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r border-black sticky left-[8%] bg-white z-20 shadow-sm">
               Name
             </th>
-            <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black">
+                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black sticky left-[18%] bg-white z-20 shadow-sm">
               Dept
             </th>
-            {dates.map((date) => (
+
+                {/* Scrollable Date Columns */}
+                {dates.map((date) => {
+                  const isToday = date.day === new Date().getDate() && selectedMonth === new Date().toLocaleString("default", { month: "long" }) && selectedYear === new Date().getFullYear().toString();
+                  const isSelected = selectedDate === date.day;
+
+                  return (
               <th
                 key={date.day}
-                className="py-1 px-0 text-center text-xs font-semibold text-gray-700 w-[2%] border-r border-black"
+                      className={`py-1 px-0 text-center text-xs font-semibold text-gray-700 border-r border-black cursor-pointer hover:bg-gray-100
+                        ${isToday ? 'bg-blue-100' : ''}
+                        ${isSelected ? 'bg-blue-300 text-blue-900' : ''}
+                      `}
+                      onClick={() => handleDateClick(date.day)}
               >
                 <div className="leading-none">
                   {String(date.day).padStart(2, "0")}
@@ -462,127 +714,258 @@ function Attendance() {
                   {date.weekday}
                 </div>
               </th>
-            ))}
+                  );
+                })}
           </tr>
         </thead>
         <tbody className="divide-y divide-black">
-          {filteredEmployees.map((employee, index) => (
+              {/* Use dataToRender which contains either full month data or backend-filtered data */}
+              {dataToRender.map((employee, index) => (
             <tr
               key={index}
               className="hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              <td className="py-1 px-1 text-sm text-gray-800 border-r border-black">
+                  {/* Fixed Cells */}
+                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black sticky left-0 bg-white z-10">
                 {employee.id}
               </td>
-              <td className="py-1 px-1 text-sm text-gray-800 border-r border-black">
+                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] sticky left-[8%] bg-white z-10">
                 {employee.name}
               </td>
-              <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
+                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] sticky left-[18%] bg-white z-10">
                 {employee.department}
               </td>
-              {employee.attendance.map((att, index) => (
+
+                  {/* Scrollable Attendance Cells */}
+                  {dates.map((date, index) => {
+                    const day = date.day;
+                    const employeeAttendanceForMonth = originalFilteredEmployees.find(emp => emp.id === employee.id)?.attendance; // Get full month attendance from original data
+                    
+                    let attendanceForDay = { value: null, label: "" }; // Default to no data
+
+                    // Determine the attendance data to display based on selectedDate and fetched attendance
+                    if (selectedDate !== null) {
+                        // If a specific date is selected, find the matching attendance record for that day in the fetched attendance
+                        const fetchedAttendanceForEmployee = attendance?.find(attRec => attRec.employeeId === employee.id);                       
+                        if (fetchedAttendanceForEmployee?.dailyAttendance?.[day.toString()]) {
+                           const status = fetchedAttendanceForEmployee.dailyAttendance[day.toString()];
+                            // Map backend status to frontend label/value if needed, or use directly
+                            // For now, just using the label from the existing logic
+                             const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP'];
+                             if (validStatuses.includes(status)) {
+                                let value;
+                                switch (status) {
+                                  case 'P': value = true; break;
+                                  case 'A': value = false; break;
+                                  case 'P/A': value = 'half'; break;
+                                  case 'H': value = 'holiday'; break;
+                                  case 'PH': value = 'holiday'; break;
+                                  case 'PH/A': value = 'half'; break;
+                                  case 'LOP': value = 'absent'; break;
+                                  default: value = null;
+                                }
+                                attendanceForDay = { value, label: status };
+                             } else {
+                                 attendanceForDay = { value: null, label: "" }; // Handle invalid status
+                             }
+                        }                       
+                    } else if (employeeAttendanceForMonth && employeeAttendanceForMonth.length > index) {
+                        // If no specific date is selected, use the full month attendance from originalFilteredEmployees
+                        attendanceForDay = employeeAttendanceForMonth[index];
+                    }
+
+                    return (
                 <td
                   key={index}
-                  className={`py-1 px-0 text-center border-r border-black ${getAttendanceColor(att.value)}`}
+                        className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${getAttendanceColor(attendanceForDay.label)}`}
                 >
-                  <span className="text-xs font-medium text-black">
-                    {getStatusLabel(att.value)}
-                  </span>
+                        {attendanceForDay.label}
                 </td>
-              ))}
-            </tr>
+                    );
+                  })}
+                </tr>
           ))}
         </tbody>
       </table>
+        </div>
     </div>
   );
+  };
 
-  const renderLeaveTable = () => (
-    <div className="bg-white rounded-lg shadow-sm overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-black">
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+  const renderLeaveTable = (props) => {
+     const {
+      searchInput,
+      setSearchInput,
+      departmentOptions,
+      selectedDepartments,
+      isDepartmentFilterOpen,
+      toggleDepartment,
+      filteredAndSearchedLeaveData, // This already contains mapped data
+      calculateLeaveSummary 
+    } = props;
+
+    const leaveSummary = calculateLeaveSummary(); // Call the passed function
+
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+        {/* Leave Summary Cards - Removed */}
+        {/* Filters and Search Section */}
+        <div className="flex items-center gap-4 mb-4">
+          {/* Department Filter */}
+          <div className="relative z-10">
+            <button
+              onClick={() => setIsDepartmentFilterOpen(!isDepartmentFilterOpen)}
+              className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
+            >
+              <span className="text-sm text-gray-700">Filter by Department</span>
+              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                {selectedDepartments.length}
+              </span>
+              {/* Show selected department labels outside */}
+              {selectedDepartments.length > 0 && (
+                <span className="flex flex-wrap gap-1 ml-2">
+                  {selectedDepartments.map((dept) => (
+                    <span
+                      key={dept}
+                      className="flex items-center px-2 py-0.5 rounded text-xs bg-blue-50 text-blue-700 border border-blue-100"
+                    >
+                      {dept}
+                      <button
+                        type="button"
+                        className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedDepartments(prev => prev.filter(d => d !== dept));
+                        }}
+                        aria-label={`Remove ${dept}`}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </button>
+            
+            {isDepartmentFilterOpen && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-20">
+                <div className="p-2 max-h-48 overflow-y-auto">
+                  {departmentOptions.map(dept => (
+                    <label key={dept.value} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedDepartments.includes(dept.value)}
+                        onChange={() => toggleDepartment(dept.value)}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm">{dept.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-72">
+            <input
+              type="text"
+              placeholder="Search employees..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+          </div>
+        </div>
+
+        {/* Leave Table */}
+        <div className="overflow-x-auto border border-gray-200 rounded-md">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Emp ID
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Name
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Dept
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Pay Days
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Leaves Taken
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Leaves Earned
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Leaves CF Prev Year
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               Comp Off
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-r border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
               CF Comp Off
             </th>
-            <th className="py-2 px-2 text-left text-[13px] font-semibold text-gray-600 whitespace-nowrap border-black">
+                <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
               Balance
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-black">
-          {filteredLeaveData.map((leave) => {
-            // Calculate leave balance
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAndSearchedLeaveData.map((leave) => {
             const leaveBalance =
-              parseInt(leave.leavesEarned) +
-              parseInt(leave.leavesFromPreviousYear) +
-              parseInt(leave.compOffEarned) +
-              parseInt(leave.compOffCarriedForward) -
-              parseInt(leave.leavesTaken);
+                  parseFloat(leave.leavesEarned) +
+                  parseFloat(leave.leavesFromPreviousYear) +
+                  parseFloat(leave.compOffEarned) +
+                  parseFloat(leave.compOffCarriedForward) -
+                  parseFloat(leave.leavesTaken);
 
             return (
-              <tr key={leave.id} className="hover:bg-gray-50">
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                  <tr key={leave.id} className="hover:bg-gray-100">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.id}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.name}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.department}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.noOfPayableDays}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.leavesTaken}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.leavesEarned}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.leavesFromPreviousYear}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.compOffEarned}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-r border-black">
+                    <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
                   {leave.compOffCarriedForward}
                 </td>
-                <td className="py-2 px-2 text-[13px] text-gray-600 whitespace-nowrap border-black">
-                  {leaveBalance}
+                    <td className={`py-3 px-4 whitespace-nowrap text-sm ${leaveBalance < 0 ? 'text-red-600 font-semibold' : 'text-gray-800'}`}>
+                      {leaveBalance.toFixed(1)}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+        </div>
     </div>
   );
+  };
 
   // if (isLoading || employeesLoading) {
   //   return (
@@ -617,7 +1000,7 @@ function Attendance() {
 
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         <HradminNavbar />
@@ -628,77 +1011,77 @@ function Attendance() {
             <h1 className="text-xl font-semibold text-gray-800">
               Attendance Management
             </h1>
-            <div className="relative">
-              <Badge
-                variant="outline"
-                className="px-6 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-                onClick={toggleCalendar}
-              >
-                <Calendar className="h-5 w-5" />
-                <span className="font-medium text-base">
-                  {selectedYear}-
-                  {selectedMonth}
-                </span>
-              </Badge>
-              {isCalendarOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                  <div className="p-3 border-b flex justify-between items-center">
-                    <div className="text-sm font-medium text-gray-700">
-                      {selectedYear}
-                    </div>
-                    <select
-                      value={selectedYear}
-                      onChange={e => {
-                        setSelectedYear(e.target.value);
-                        if (e.target.value === '2024') {
-                          setSelectedMonth('Aug');
-                        } else {
-                          setSelectedMonth('Jan');
-                        }
-                      }}
-                      className="ml-2 border rounded px-2 py-1 text-sm"
-                    >
-                      {[2024, 2025].map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
+            {/* Calendar */}
+          <div className="relative ml-auto">
+            <Badge
+              variant="outline"
+              className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+              onClick={toggleCalendar}
+            >
+              <Calendar className="h-4 w-4" />
+              <span className="font-medium text-sm">
+                {selectedYear}-{selectedMonth}
+          </span>
+            </Badge>
+            {isCalendarOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                {/* Existing calendar content */}
+                <div className="p-3 border-b flex justify-between items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    {selectedYear}
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5 p-3">
-                    {(() => {
-                      const currentYear = new Date().getFullYear();
-                      const currentMonthIdx = new Date().getMonth(); // 0-based
-                      let months = [
-                        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                      ];
-                      let startIdx = 0;
-                      let endIdx = 11;
-                      if (parseInt(selectedYear) === 2024) {
-                        startIdx = 7; // August (0-based)
-                        endIdx = 11;
-                      } else if (parseInt(selectedYear) === 2025) {
-                        startIdx = 0;
-                        // If 2025 is the current year, restrict to current month
-                        endIdx = (currentYear === 2025) ? currentMonthIdx : 11;
+                  <select
+                    value={selectedYear}
+                    onChange={e => {
+                      setSelectedYear(e.target.value);
+                      if (e.target.value === '2024') {
+                        setSelectedMonth('Aug');
+                      } else {
+                        setSelectedMonth('Jan');
                       }
-                      return months.slice(startIdx, endIdx + 1).map((month) => (
-                        <button
-                          key={month}
-                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                            month === selectedMonth.slice(0, 3)
-                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                              : "hover:bg-gray-50 text-gray-700"
-                          }`}
-                          onClick={() => handleMonthSelection(month, selectedYear)}
-                        >
-                          {month}
-                        </button>
-                      ));
-                    })()}
-                  </div>
+                    }}
+                    className="ml-2 border rounded px-2 py-1 text-sm"
+                  >
+                    {[2024, 2025].map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
+                <div className="grid grid-cols-3 gap-1.5 p-3">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const currentMonthIdx = new Date().getMonth(); // 0-based
+                    let months = [
+                      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                    ];
+                    let startIdx = 0;
+                    let endIdx = 11;
+                    if (parseInt(selectedYear) === 2024) {
+                      startIdx = 7; // August (0-based)
+                      endIdx = 11;
+                    } else if (parseInt(selectedYear) === 2025) {
+                      startIdx = 0;
+                      endIdx = (currentYear === 2025) ? currentMonthIdx : 11;
+                    }
+                    return months.slice(startIdx, endIdx + 1).map((month) => (
+                      <button
+                        key={month}
+                        className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                          month === selectedMonth.slice(0, 3)
+                            ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                        onClick={() => handleMonthSelection(month, selectedYear)}
+                      >
+                        {month}
+                      </button>
+                    ));
+                  })()}
+        </div>
+        </div>
+            )}
+        </div>
           </div>
 
           {/* Tabs */}
@@ -718,9 +1101,39 @@ function Attendance() {
             ))}
           </div>
 
+          {/* Conditionally render based on active tab, passing props */}
           {activeTab === "Attendance Tracker"
-            ? renderAttendanceTable()
-            : renderLeaveTable()}
+            ? renderAttendanceTable({
+                dates,
+                statusOptions,
+                selectedStatuses,
+                isStatusFilterOpen,
+                toggleStatus,
+                searchInput,
+                setSearchInput,
+                isCalendarOpen,
+                toggleCalendar,
+                selectedYear,
+                selectedMonth,
+                handleMonthSelection,
+                selectedDate,
+                handleDateClick,
+                filteredEmployees,
+                getAttendanceColor,
+                calculateAttendanceSummary,
+                attendance,
+                summaryDate
+              })
+            : renderLeaveTable({
+                searchInput,
+                setSearchInput,
+                departmentOptions,
+                selectedDepartments,
+                isDepartmentFilterOpen,
+                toggleDepartment,
+                filteredAndSearchedLeaveData,
+                calculateLeaveSummary
+              })}
         </div>
       </div>
     </div>

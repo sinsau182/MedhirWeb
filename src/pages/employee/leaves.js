@@ -213,7 +213,7 @@ const Leaves = () => {
   return (
     <div className="flex h-screen">
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-64"} transition-all duration-300`}>
+      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-56"} transition-all duration-300`}>
         <HradminNavbar />
         
         {/* Main Content Area */}
