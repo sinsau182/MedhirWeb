@@ -35,6 +35,11 @@ import { toast } from "sonner";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
+
+// Import necessary hooks and actions
+import { useRouter } from "next/router";
+import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -45,6 +50,9 @@ const COLORS = [
 ];
 
 const Overview = () => {
+
+  // Get router instance
+  const router = useRouter();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -60,13 +68,71 @@ const Overview = () => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
 
+  // Add state for current day attendance summary
+  const [currentDayAttendanceSummary, setCurrentDayAttendanceSummary] = useState({
+    totalPresent: 0,
+    totalAbsent: 0,
+  });
+
   const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees);
+  // Update the useSelector hook
+  const { employees, loading: employeesLoading } = useSelector(
+    (state) => state.employees || {}
+  );
+  const { attendance, loading: attendanceLoading, err: attendanceErr } = useSelector((state) => state.attendances || {}); // Add attendance state
 
   const {publicRuntimeConfig} = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
   }, [dispatch]);
+
+  // Add useEffect to fetch current day's attendance and calculate summary
+  useEffect(() => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.toLocaleString("default", { month: "short" });
+    const currentYear = today.getFullYear().toString();
+
+    // Fetch attendance data for the current day
+    dispatch(
+      fetchAllEmployeeAttendanceOneMonth({
+        month: currentMonth,
+        year: currentYear,
+        date: currentDay, // Fetch only for the current day
+      })
+    );
+  }, [dispatch]); // Dependency on dispatch
+
+  // Calculate current day summary whenever attendance data changes
+  useEffect(() => {
+    if (attendance && attendance.length > 0) {
+      let presentCount = 0;
+      let absentCount = 0;
+      const today = new Date();
+      const currentDay = today.getDate().toString(); // Need day as string key
+
+      attendance.forEach(employeeRecord => {
+        const status = employeeRecord.dailyAttendance?.[currentDay];
+        if (status === 'P') {
+          presentCount++;
+        } else if (status === 'A' || status === 'LOP') { // Consider LOP as Absent for this summary? Adjust if needed.
+          absentCount++;
+        }
+      });
+
+      setCurrentDayAttendanceSummary({
+        totalPresent: presentCount,
+        totalAbsent: absentCount,
+      });
+    } else {
+       // If no attendance data fetched (e.g. empty response), reset summary
+      setCurrentDayAttendanceSummary({
+        totalPresent: 0,
+        totalAbsent: 0,
+      });
+    }
+  }, [attendance]); // Dependency on attendance state
+
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -81,6 +147,25 @@ const Overview = () => {
 
     setShowCharts(false); // Ensure Charts are hidden
   };
+
+  // Handler for clicking the attendance summary counts
+  const handleAttendanceCountClick = useCallback((status) => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.toLocaleString("default", { month: "long" }); // Use long month for consistency with attendance page state
+    const currentYear = today.getFullYear().toString();
+
+    // Navigate to attendance page with selected date and status filter
+    router.push({
+      pathname: '/hradmin/attendance',
+      query: {
+        selectedDate: currentDay,
+        selectedMonth: currentMonth,
+        selectedYear: currentYear,
+        selectedStatuses: status, // 'P' or 'A'
+      },
+    });
+  }, [router]);
 
   const fetchProfileUpdates = useCallback(async () => {
     try {
@@ -117,7 +202,7 @@ const Overview = () => {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-          },
+          }
         }
       );
   
@@ -177,21 +262,38 @@ const Overview = () => {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Total Employees",
       count: employees?.length ?? 0,
+      onClick: null,
     },
-
     {
       icon: <FaClock className="h-6 w-6 text-yellow-500" />,
       label: "Pending Tasks",
       count:
         (profileUpdates.length || 0) + (pendingLeaves.length || 0) + (pendingCompOffs.length || 0),
+      onClick: handleOpenRequestsClick,
     },
-
-    {
-      icon: <FaCreditCard className="h-6 w-6 text-purple-500" />,
-      label: "Payroll Status",
-      count: "Processed",
-    },
+    // Payroll Status card removed
   ];
+
+  // Decide which items to display in the overview section
+  // Only Total Employees and Pending Tasks for a 2-column layout
+  const itemsToDisplayInOverview = overviewData.filter(item =>
+    item.label === "Total Employees" ||
+    item.label === "Pending Tasks"
+  );
+
+  const onPieEnter = useCallback(
+    (_, index) => {
+      setActiveIndex(index);
+    },
+    [setActiveIndex]
+  );
+
+  const onPieLeave = useCallback(
+    (_, index) => {
+      setActiveIndex(null);
+    },
+    [setActiveIndex]
+  );
 
   return (
     <div className="min-h-screen flex bg-gray-100">
@@ -226,99 +328,111 @@ const Overview = () => {
           {/* Overview Cards */}
 
           <div className="flex justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mb-6">
-              {overviewData
+            {/* Updated grid layout and data source */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-12 mb-6"> {/* Changed to lg:grid-cols-2 */}
+              {itemsToDisplayInOverview.map((item, index) => (
+                // Conditional rendering for the "Total Employees" card
+                item.label === "Total Employees" ? (
+                  <div
+                    key={index}
+                    className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                    style={{ height: "250px", width: "350px" }} // Adjust width if needed
+                    // No overall click handler for the card, clicks will be on specific counts
+                  >
+                    <div className="flex justify-between items-center w-full mb-8">
+                      <p className="text-xl font-semibold text-gray-800">
+                        {item.label}
+                      </p>
+                      <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+                        <FaUsers className="text-blue-600 text-2xl" />
+                      </div>
+                    </div>
+                    <div className="space-y-4"> {/* Increased space-y */}
+                      <div className="flex items-center text-gray-600">
+                         <p className="text-sm mr-2">Total Employees:</p>
+                         <p className="text-2xl font-bold text-gray-900">{item.count}</p>
+                      </div>
 
-                .filter((item) => item.label !== "Payroll Status")
+                       {/* Present Today */}
+                      <div
+                        className="flex items-center text-gray-600 cursor-pointer hover:text-green-700"
+                        onClick={() => handleAttendanceCountClick('P')}
+                      >
+                         <p className="text-sm mr-2">Present Today:</p>
+                         <p className="text-xl font-bold text-green-600">{currentDayAttendanceSummary.totalPresent}</p>
+                      </div>
 
-                .map((item, index) =>
-                  item.label === "Total Employees" ? (
-                    <div
-                      key={index}
-                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
-                    >
-                      <div className="flex justify-between items-center w-full mb-8">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {item.label}
-                        </p>
-                        <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
-                          <FaUsers className="text-blue-600 text-2xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-5xl font-bold text-gray-900">
-                          {item.count}
-                        </p>
-                        <div className="flex items-center text-gray-600">
-                          <p className="text-sm">Active employees</p>
-                          <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
-                            <span className="text-xs text-blue-600 font-medium">
-                              +12 from last month
-                            </span>
-                          </div>
-                        </div>
+                       {/* Absent Today */}
+                      <div
+                        className="flex items-center text-gray-600 cursor-pointer hover:text-red-700"
+                        onClick={() => handleAttendanceCountClick('A')}
+                      >
+                         <p className="text-sm mr-2">Absent Today:</p>
+                         <p className="text-xl font-bold text-red-600">{currentDayAttendanceSummary.totalAbsent}</p>
                       </div>
                     </div>
-                  ) : item.label === "Pending Tasks" ? (
-                    <div
-                      key={index}
-                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
-                      onClick={handleOpenRequestsClick}
-                    >
-                      <div className="flex justify-between items-center w-full mb-8">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {item.label}
-                        </p>
-                        <div className="p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-full">
-                          <FaClock className="text-yellow-600 text-2xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-5xl font-bold text-gray-900">
-                          {item.count}
-                        </p>
-                        <div className="flex items-center text-gray-600">
-                          <p className="text-sm">Tasks pending</p>
-                          <div className="ml-2 px-2 py-1 bg-yellow-50 rounded-full">
-                            <span className="text-xs text-yellow-600 font-medium">
-                              High priority
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      key={index}
-                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
-                    >
-                      <div className="flex justify-between items-center w-full mb-8">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {item.label}
-                        </p>
-                        <div className="p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-full">
-                          <FaCreditCard className="text-purple-600 text-2xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-5xl font-bold text-gray-900">
-                          {item.count}
-                        </p>
-                        <div className="flex items-center text-gray-600">
-                          <p className="text-sm">Current status</p>
-                          <div className="ml-2 px-2 py-1 bg-purple-50 rounded-full">
-                            <span className="text-xs text-purple-600 font-medium">
-                              March 2024
-                            </span>
-                          </div>
-                        </div>
+                  </div>
+                ) : (
+                   // Rendering for other cards (Pending Tasks, Payroll Status)
+                   <div
+                    key={index}
+                    className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                    style={{ height: "250px", width: "350px" }} // Adjust width if needed
+                    onClick={item.onClick} // Apply click handler
+                  >
+                    <div className="flex justify-between items-center w-full mb-8">
+                      <p className="text-xl font-semibold text-gray-800">
+                        {item.label}
+                      </p>
+                      <div className={`p-3 rounded-full ${ // Dynamic background color based on label
+                         item.label === "Total Employees" ? "bg-gradient-to-r from-blue-50 to-blue-100" :
+                         item.label === "Pending Tasks" ? "bg-gradient-to-r from-yellow-50 to-yellow-100" :
+                         item.label === "Present Today" ? "bg-gradient-to-r from-green-50 to-green-100" :
+                         item.label === "Absent Today" ? "bg-gradient-to-r from-red-50 to-red-100" : ""
+                      }`}>
+                        {/* Dynamic icon based on label */}
+                         {item.label === "Total Employees" && <FaUsers className="text-blue-600 text-2xl" />}
+                         {item.label === "Pending Tasks" && <FaClock className="text-yellow-600 text-2xl" />}
+                         {(item.label === "Present Today" || item.label === "Absent Today") && (
+                            <FaUser className={`text-2xl ${item.label === "Present Today" ? "text-green-600" : "text-red-600"}`} />
+                         )}
+                         {item.label === "Payroll Status" && <FaCreditCard className="text-purple-600 text-2xl" />}
                       </div>
                     </div>
-                  )
-                )}
+                    <div className="space-y-2">
+                      <p className="text-5xl font-bold text-gray-900">
+                        {item.count}
+                      </p>
+                       {/* Add descriptive text below the count */}
+                      <div className="flex items-center text-gray-600">
+                         {item.label === "Total Employees" && <p className="text-sm">Active employees</p>}
+                         {item.label === "Pending Tasks" && <p className="text-sm">Tasks pending</p>}
+                         {item.label === "Present Today" && <p className="text-sm">Employees present</p>}
+                         {item.label === "Absent Today" && <p className="text-sm">Employees absent</p>}
+                         {item.label === "Payroll Status" && <p className="text-sm">Current status</p>}
+                      </div>
+                      {/* Optional: add more detail/badge like last month comparison or priority */}
+                       {(item.label === "Total Employees" || item.label === "Pending Tasks" || item.label === "Payroll Status") && (
+                          <div className={`ml-2 px-2 py-1 rounded-full ${
+                             item.label === "Total Employees" ? "bg-blue-50" :
+                             item.label === "Pending Tasks" ? "bg-yellow-50" :
+                             item.label === "Payroll Status" ? "bg-purple-50" : ""
+                          }`}>
+                             <span className={`text-xs font-medium ${
+                                item.label === "Total Employees" ? "text-blue-600" :
+                                item.label === "Pending Tasks" ? "text-yellow-600" :
+                                item.label === "Payroll Status" ? "text-purple-600" : ""
+                             }`}>
+                                {item.label === "Total Employees" ? "+12 from last month" :
+                                 item.label === "Pending Tasks" ? "High priority" :
+                                 item.label === "Payroll Status" ? "March 2024" : ""}
+                             </span>
+                          </div>
+                       )}
+                    </div>
+                  </div>
+                )
+              ))}
             </div>
           </div>
 
@@ -329,7 +443,7 @@ const Overview = () => {
                   Weekly Attendance
                 </h2>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100" height={300}>
                   <BarChart data={data}>
                     <XAxis
                       dataKey="name"

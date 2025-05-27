@@ -264,7 +264,7 @@ const Navbar = () => {
           )}
 
           {/* Company Name - Only for manager role */}
-          {currentRole === "MANAGER" && employeeData && (
+          {(currentRole === "MANAGER" || currentRole === "EMPLOYEE") && employeeData && (
             <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 mr-4">
               <span className="text-base font-semibold text-blue-900">
                 {employeeData.companyName}

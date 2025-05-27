@@ -204,7 +204,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   return (
     <aside
       className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white shadow-md transition-all duration-300 ${
-        isCollapsed ? "w-16" : "w-64"
+        isCollapsed ? "w-16" : "w-56"
       }`}
     >
       {/* Collapse/Expand Button - Moved to top left */}

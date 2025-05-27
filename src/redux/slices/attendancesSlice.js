@@ -24,9 +24,10 @@ export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
 
 const fetchOneEmployeeAttendanceAllMonth = createAsyncThunk(
     "attendances/fetchOneEmployeeAttendanceAllMonth",
-    async (_, { rejectWithValue }) => {
+    async ({ month, year }, { rejectWithValue }) => {
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}/employee/1/month/Apr-25/year/2025`, {
+        const employeeId = sessionStorage.getItem("employeeId");
+        const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/month/${month}/year/${year}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
@@ -42,9 +43,10 @@ const fetchOneEmployeeAttendanceAllMonth = createAsyncThunk(
 
 export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchOneEmployeeAttendanceOneMonth",
-    async (_, { rejectWithValue }) => {
+    async ({ month, year }, { rejectWithValue }) => {
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}/employee/1/month/Apr-25/year/2025`, {
+        const employeeId = sessionStorage.getItem("employeeId");
+        const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/month/${month}/year/${year}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
