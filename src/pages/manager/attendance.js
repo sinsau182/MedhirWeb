@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useMemo } from "react";
+import React, { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { Search, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -29,6 +29,9 @@ function Attendance() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
+  const statusFilterRef = useRef(null);
+  const calendarRef = useRef(null);
+  const departmentFilterRef = useRef(null);
 
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today.getDate());
@@ -38,12 +41,13 @@ function Attendance() {
   // Constants/Options
   const statusOptions = [
     { value: 'P', label: 'Present', color: '#CCFFCC' },
+    { value: 'PH', label: 'Present on Holiday', color: '#5cbf85' },
     { value: 'P/A', label: 'Half Day', color: '#FFFFCC' },
+    { value: 'PH/A', label: 'Half Day on Holiday', color: '#ffcc80' },
     { value: 'A', label: 'Absent', color: '#FFCCCC' },
+    { value: 'LOP', label: 'Loss of Pay', color: '#e57373' },
     { value: 'H', label: 'Holiday', color: '#E0E0E0' },
-    { value: 'PH', label: 'Present on Holiday', color: '#AACCFF' },
-    { value: 'PH/A', label: 'Half Day on Holiday', color: '#B8D4FF' },
-    { value: 'LOP', label: 'Loss of Pay', color: '#FF99CC' }
+    { value: 'P/LOP', label: 'Present on Loss of Pay', color: '#A89EF6' }
   ];
 
   // Effects
@@ -141,6 +145,48 @@ function Attendance() {
     }
   }, [selectedMonth, selectedYear]);
 
+    // Add useEffect for click outside handling
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (statusFilterRef.current && !statusFilterRef.current.contains(event.target)) {
+          setIsStatusFilterOpen(false);
+        }
+      };
+  
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, []);
+  
+    // Add useEffect for calendar click outside handling
+    useEffect(() => {
+      const handleCalendarClickOutside = (event) => {
+        if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+          setIsCalendarOpen(false);
+        }
+      };
+  
+      document.addEventListener('mousedown', handleCalendarClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleCalendarClickOutside);
+      };
+    }, []);
+  
+    useEffect(() => {
+      const handleDepartmentClickOutside = (event) => {
+        if (departmentFilterRef.current && !departmentFilterRef.current.contains(event.target)) {
+          setIsDepartmentFilterOpen(false);
+        }
+      };
+  
+      document.addEventListener('mousedown', handleDepartmentClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleDepartmentClickOutside);
+      };
+    }, []);
+    
+  
   // Callbacks
   const generateAttendanceData = useCallback((employee) => {
     const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
@@ -159,7 +205,7 @@ function Attendance() {
       const day = (index + 1).toString();
       const status = attendanceRecord.dailyAttendance?.[day];
       
-      const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP'];
+      const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP', 'P/LOP'];
 
       if (!status || !validStatuses.includes(status)) {
         return { value: null, label: "" };
@@ -174,6 +220,7 @@ function Attendance() {
         case 'PH': value = 'holiday'; break; // Assuming PH is treated as holiday for internal value
         case 'PH/A': value = 'half'; break; // Assuming PH/A is also a half day
         case 'LOP': value = 'absent'; break; // Assuming LOP is similar to absent for internal value
+        case 'P/LOP': value = 'present'; break; // Assuming P/LOP is similar to present for internal value
         default: value = null;
       }
       return { value, label: status };
@@ -226,9 +273,10 @@ function Attendance() {
     if (status === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
     if (status === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
     if (status === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
-    if (status === "PH") return "bg-[#AACCFF]"; // Present on Holiday (Light blue)
-    if (status === "PH/A") return "bg-[#B8D4FF]"; // Half Day on Holiday (Lighter blue)
-    if (status === "LOP") return "bg-[#FF99CC]"; // Loss of Pay (Pink)
+    if (status === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
+    if (status === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
+    if (status === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
+    if (status === "P/LOP") return "bg-[#A89EF6]"; // Present on Loss of Pay (Light gray)
     if (status === "weekend") return "bg-gray-300"; // Weekend
     return "";
   }, []);
@@ -278,18 +326,18 @@ function Attendance() {
 
   
 
-  const filteredLeaveData = useMemo(
-    () =>
-      employees
-        .filter(
-          (employee) =>
-            employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
-            (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
-        )
-        .map(generateLeaveData),
-    [searchInput, employees, generateLeaveData, attendance]
-  );
+  // const filteredLeaveData = useMemo(
+  //   () =>
+  //     employees
+  //       .filter(
+  //         (employee) =>
+  //           employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+  //           employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
+  //           (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
+  //       )
+  //       .map(generateLeaveData),
+  //   [searchInput, employees, generateLeaveData, attendance]
+  // );
 
    // Extract unique departments for filter options (moved from renderLeaveTable)
     const departmentOptions = useMemo(() => {
@@ -337,7 +385,7 @@ function Attendance() {
       let totalPresentOnHoliday = 0;
       let totalHalfDayOnHoliday = 0;
       let totalLOP = 0;
-
+      let totalPresentOnLOP = 0;
       // Determine which data to use for summary based on dateToSummarize
       const dataForSummary = dateToSummarize !== null
         ? employeesData.filter(employee => {
@@ -362,6 +410,7 @@ function Attendance() {
               case 'PH': totalPresentOnHoliday++; break;
               case 'PH/A': totalHalfDayOnHoliday++; break;
               case 'LOP': totalLOP++; break;
+              case 'P/LOP': totalPresentOnLOP++; break;
             }
           }
         } else {
@@ -377,6 +426,7 @@ function Attendance() {
                   case 'PH': totalPresentOnHoliday++; break;
                   case 'PH/A': totalHalfDayOnHoliday++; break;
                   case 'LOP': totalLOP++; break;
+                  case 'P/LOP': totalPresentOnLOP++; break;
                 }
             }
           });
@@ -390,7 +440,8 @@ function Attendance() {
         totalHoliday,
         totalPresentOnHoliday,
         totalHalfDayOnHoliday,
-        totalLOP
+        totalLOP,
+        totalPresentOnLOP
       };
     }, []); // Removed filteredEmployees dependency, now depends on employeesData passed in
 
@@ -490,6 +541,7 @@ function Attendance() {
               case 'PH': value = 'holiday'; break;
               case 'PH/A': value = 'half'; break;
               case 'LOP': value = 'absent'; break;
+              case 'P/LOP': value = 'present'; break;
               default: value = null;
             }
             return { value, label: status };
@@ -525,6 +577,7 @@ function Attendance() {
                   case 'PH': value = 'holiday'; break;
                   case 'PH/A': value = 'half'; break;
                   case 'LOP': value = 'absent'; break;
+                  case 'P/LOP': value = 'present'; break;
                   default: value = null;
                 }
                 return { value, label: status };
@@ -550,7 +603,7 @@ function Attendance() {
     const summary = calculateAttendanceSummary(dataToRender, summaryDate);
 
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-4 space-y-6">
         {/* Summary Cards in Single Row */}
         <div className="flex gap-4 overflow-x-auto pb-4 border-b border-gray-200">
           {statusOptions.map((status) => {
@@ -564,6 +617,7 @@ function Attendance() {
               case 'PH': summaryKey = 'totalPresentOnHoliday'; break;
               case 'PH/A': summaryKey = 'totalHalfDayOnHoliday'; break;
               case 'LOP': summaryKey = 'totalLOP'; break;
+              case 'P/LOP': summaryKey = 'totalPresentOnLOP'; break;
               default: summaryKey = '';
             }
             
@@ -572,11 +626,11 @@ function Attendance() {
             return (
               <div 
                 key={status.value} 
-                className="rounded-lg p-4 min-w-[160px] text-gray-800"
+                className="rounded-lg p-4 min-w-[130px] text-gray-800 flex flex-col"
                 style={{ backgroundColor: status.color }}
               >
-                <p className="text-sm text-gray-700 mb-1 font-medium">{status.label}</p>
-                <h3 className="text-2xl font-bold">{count}</h3>
+                <p className="text-sm text-gray-700 mb-1 font-medium min-h-[20px]">{status.label}</p>
+                <h3 className="text-xl font-bold mt-auto">{count}</h3>
               </div>
             );
           })}
@@ -585,7 +639,7 @@ function Attendance() {
         {/* Filters, Search, and Calendar Section */}
         <div className="flex items-center gap-4">
           {/* Status Filter */}
-          <div className="relative z-40">
+          <div className="relative z-40" ref={statusFilterRef}>
             <button
               onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
               className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
@@ -751,7 +805,7 @@ function Attendance() {
                            const status = fetchedAttendanceForEmployee.dailyAttendance[day.toString()];
                             // Map backend status to frontend label/value if needed, or use directly
                             // For now, just using the label from the existing logic
-                             const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP'];
+                             const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP', 'P/LOP'];
                              if (validStatuses.includes(status)) {
                                 let value;
                                 switch (status) {
@@ -762,6 +816,7 @@ function Attendance() {
                                   case 'PH': value = 'holiday'; break;
                                   case 'PH/A': value = 'half'; break;
                                   case 'LOP': value = 'absent'; break;
+                                  case 'P/LOP': value = 'present'; break;
                                   default: value = null;
                                 }
                                 attendanceForDay = { value, label: status };
@@ -812,7 +867,7 @@ function Attendance() {
         {/* Filters and Search Section */}
         <div className="flex items-center gap-4 mb-4">
           {/* Department Filter */}
-          <div className="relative z-10">
+          <div className="relative z-10" ref={departmentFilterRef}>
             <button
               onClick={() => setIsDepartmentFilterOpen(!isDepartmentFilterOpen)}
               className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
@@ -1012,7 +1067,7 @@ function Attendance() {
               Attendance Management
             </h1>
             {/* Calendar */}
-          <div className="relative ml-auto">
+          <div className="relative ml-auto" ref={calendarRef}>
             <Badge
               variant="outline"
               className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"

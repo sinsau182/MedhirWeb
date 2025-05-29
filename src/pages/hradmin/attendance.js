@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useMemo } from "react";
+import React, { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { Search, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -27,6 +27,9 @@ function Attendance() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
+  const statusFilterRef = useRef(null);
+  const calendarRef = useRef(null);
+  const departmentFilterRef = useRef(null);
 
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today.getDate());
@@ -36,13 +39,13 @@ function Attendance() {
   // Constants/Options
   const statusOptions = [
     { value: 'P', label: 'Present', color: '#CCFFCC' },
-    { value: 'P/A', label: 'Half Day', color: '#FFFFCC' },
-    { value: 'A', label: 'Absent', color: '#FFCCCC' },
-    { value: 'H', label: 'Holiday', color: '#E0E0E0' },
     { value: 'PH', label: 'Present on Holiday', color: '#5cbf85' },
+    { value: 'P/A', label: 'Half Day', color: '#FFFFCC' },
     { value: 'PH/A', label: 'Half Day on Holiday', color: '#ffcc80' },
+    { value: 'A', label: 'Absent', color: '#FFCCCC' },
     { value: 'LOP', label: 'Loss of Pay', color: '#e57373' },
-    { value: 'P/LOP', label: 'Present on Loss of Pay', color: '#a9a9a9' }
+    { value: 'H', label: 'Holiday', color: '#E0E0E0' },
+    { value: 'P/LOP', label: 'Present on Loss of Pay', color: '#A89EF6' }
   ];
 
   // Effects
@@ -140,6 +143,47 @@ function Attendance() {
     }
   }, [selectedMonth, selectedYear]);
 
+  // Add useEffect for click outside handling
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (statusFilterRef.current && !statusFilterRef.current.contains(event.target)) {
+        setIsStatusFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Add useEffect for calendar click outside handling
+  useEffect(() => {
+    const handleCalendarClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleCalendarClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleCalendarClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleDepartmentClickOutside = (event) => {
+      if (departmentFilterRef.current && !departmentFilterRef.current.contains(event.target)) {
+        setIsDepartmentFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleDepartmentClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleDepartmentClickOutside);
+    };
+  }, []);
+
   // Callbacks
   const generateAttendanceData = useCallback((employee) => {
     const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
@@ -229,7 +273,7 @@ function Attendance() {
     if (status === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
     if (status === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
     if (status === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
-    if (status === "P/LOP") return "bg-[#a9a9a9]"; // Present on Loss of Pay (Light gray)
+    if (status === "P/LOP") return "bg-[#A89EF6]"; // Present on Loss of Pay (Light gray)
     if (status === "weekend") return "bg-gray-300"; // Weekend
     return "";
   }, []);
@@ -578,11 +622,11 @@ function Attendance() {
             return (
               <div 
                 key={status.value} 
-                className="rounded-lg p-4 min-w-[130px] text-gray-800"
+                className="rounded-lg p-4 min-w-[130px] text-gray-800 flex flex-col"
                 style={{ backgroundColor: status.color }}
               >
-                <p className="text-sm text-gray-700 mb-1 font-medium">{status.label}</p>
-                <h3 className="text-xl font-bold">{count}</h3>
+                <p className="text-sm text-gray-700 mb-1 font-medium min-h-[20px]">{status.label}</p>
+                <h3 className="text-xl font-bold mt-auto">{count}</h3>
               </div>
             );
           })}
@@ -591,7 +635,7 @@ function Attendance() {
         {/* Filters, Search, and Calendar Section */}
         <div className="flex items-center gap-4">
           {/* Status Filter */}
-          <div className="relative z-40">
+          <div className="relative z-40" ref={statusFilterRef}>
             <button
               onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
               className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
@@ -819,7 +863,7 @@ function Attendance() {
         {/* Filters and Search Section */}
         <div className="flex items-center gap-4 mb-4">
           {/* Department Filter */}
-          <div className="relative z-10">
+          <div className="relative z-10" ref={departmentFilterRef}>
             <button
               onClick={() => setIsDepartmentFilterOpen(!isDepartmentFilterOpen)}
               className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
@@ -1019,7 +1063,7 @@ function Attendance() {
               Attendance Management
             </h1>
             {/* Calendar */}
-          <div className="relative ml-auto">
+          <div className="relative ml-auto" ref={calendarRef}>
             <Badge
               variant="outline"
               className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
