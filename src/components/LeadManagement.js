@@ -206,6 +206,20 @@ const LeadManagement = ({ role }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // If this is a sales rep or designer assignment
+    if ((name === "salesRep" || name === "designer") && value) {
+      // Only update status to "Assigned" if the current status is "New"
+      if (formData.status === "New") {
+        setFormData((prev) => ({ 
+          ...prev, 
+          [name]: value,
+          status: "Assigned" 
+        }));
+        return;
+      }
+    }
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -1645,7 +1659,7 @@ const LeadManagement = ({ role }) => {
                   key={col.key}
                   className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
                     col.key === "leadId"
-                      ? "w-16"
+                      ? "w-24"
                       : col.key === "name"
                       ? "w-40"
                       : col.key === "contactNumber"

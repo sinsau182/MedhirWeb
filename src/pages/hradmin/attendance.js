@@ -39,9 +39,10 @@ function Attendance() {
     { value: 'P/A', label: 'Half Day', color: '#FFFFCC' },
     { value: 'A', label: 'Absent', color: '#FFCCCC' },
     { value: 'H', label: 'Holiday', color: '#E0E0E0' },
-    { value: 'PH', label: 'Present on Holiday', color: '#AACCFF' },
-    { value: 'PH/A', label: 'Half Day on Holiday', color: '#B8D4FF' },
-    { value: 'LOP', label: 'Loss of Pay', color: '#FF99CC' }
+    { value: 'PH', label: 'Present on Holiday', color: '#5cbf85' },
+    { value: 'PH/A', label: 'Half Day on Holiday', color: '#ffcc80' },
+    { value: 'LOP', label: 'Loss of Pay', color: '#e57373' },
+    { value: 'P/LOP', label: 'Present on Loss of Pay', color: '#a9a9a9' }
   ];
 
   // Effects
@@ -157,7 +158,7 @@ function Attendance() {
       const day = (index + 1).toString();
       const status = attendanceRecord.dailyAttendance?.[day];
       
-      const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP'];
+      const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP', 'P/LOP'];
 
       if (!status || !validStatuses.includes(status)) {
         return { value: null, label: "" };
@@ -172,6 +173,7 @@ function Attendance() {
         case 'PH': value = 'holiday'; break; // Assuming PH is treated as holiday for internal value
         case 'PH/A': value = 'half'; break; // Assuming PH/A is also a half day
         case 'LOP': value = 'absent'; break; // Assuming LOP is similar to absent for internal value
+        case 'P/LOP': value = 'present'; break; // Assuming P/LOP is similar to present for internal value
         default: value = null;
       }
       return { value, label: status };
@@ -224,9 +226,10 @@ function Attendance() {
     if (status === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
     if (status === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
     if (status === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
-    if (status === "PH") return "bg-[#AACCFF]"; // Present on Holiday (Light blue)
-    if (status === "PH/A") return "bg-[#B8D4FF]"; // Half Day on Holiday (Lighter blue)
-    if (status === "LOP") return "bg-[#FF99CC]"; // Loss of Pay (Pink)
+    if (status === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
+    if (status === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
+    if (status === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
+    if (status === "P/LOP") return "bg-[#a9a9a9]"; // Present on Loss of Pay (Light gray)
     if (status === "weekend") return "bg-gray-300"; // Weekend
     return "";
   }, []);
@@ -274,20 +277,19 @@ function Attendance() {
   );
 
 
-  
+  // const filteredLeaveData = useMemo(
+  //   () =>
+  //     employees
+  //       .filter(
+  //         (employee) =>
+  //           employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+  //           employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
+  //           (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
+  //       )
+  //       .map(generateLeaveData),
+  //   [searchInput, employees, generateLeaveData, attendance]
+  // );
 
-  const filteredLeaveData = useMemo(
-    () =>
-      employees
-        .filter(
-          (employee) =>
-            employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
-            (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
-        )
-        .map(generateLeaveData),
-    [searchInput, employees, generateLeaveData, attendance]
-  );
 
    // Extract unique departments for filter options (moved from renderLeaveTable)
     const departmentOptions = useMemo(() => {
@@ -335,7 +337,7 @@ function Attendance() {
       let totalPresentOnHoliday = 0;
       let totalHalfDayOnHoliday = 0;
       let totalLOP = 0;
-
+      let totalPresentOnLOP = 0;
       // Determine which data to use for summary based on dateToSummarize
       const dataForSummary = dateToSummarize !== null
         ? employeesData.filter(employee => {
@@ -360,6 +362,7 @@ function Attendance() {
               case 'PH': totalPresentOnHoliday++; break;
               case 'PH/A': totalHalfDayOnHoliday++; break;
               case 'LOP': totalLOP++; break;
+              case 'P/LOP': totalPresentOnLOP++; break;
             }
           }
         } else {
@@ -375,6 +378,7 @@ function Attendance() {
                   case 'PH': totalPresentOnHoliday++; break;
                   case 'PH/A': totalHalfDayOnHoliday++; break;
                   case 'LOP': totalLOP++; break;
+                  case 'P/LOP': totalPresentOnLOP++; break;
                 }
             }
           });
@@ -388,7 +392,8 @@ function Attendance() {
         totalHoliday,
         totalPresentOnHoliday,
         totalHalfDayOnHoliday,
-        totalLOP
+        totalLOP,
+        totalPresentOnLOP
       };
     }, []); // Removed filteredEmployees dependency, now depends on employeesData passed in
 
@@ -488,6 +493,7 @@ function Attendance() {
               case 'PH': value = 'holiday'; break;
               case 'PH/A': value = 'half'; break;
               case 'LOP': value = 'absent'; break;
+              case 'P/LOP': value = 'present'; break;
               default: value = null;
             }
             return { value, label: status };
@@ -523,6 +529,7 @@ function Attendance() {
                   case 'PH': value = 'holiday'; break;
                   case 'PH/A': value = 'half'; break;
                   case 'LOP': value = 'absent'; break;
+                  case 'P/LOP': value = 'present'; break;
                   default: value = null;
                 }
                 return { value, label: status };
@@ -548,7 +555,7 @@ function Attendance() {
     const summary = calculateAttendanceSummary(dataToRender, summaryDate);
 
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-4 space-y-6">
         {/* Summary Cards in Single Row */}
         <div className="flex gap-4 overflow-x-auto pb-4 border-b border-gray-200">
           {statusOptions.map((status) => {
@@ -562,6 +569,7 @@ function Attendance() {
               case 'PH': summaryKey = 'totalPresentOnHoliday'; break;
               case 'PH/A': summaryKey = 'totalHalfDayOnHoliday'; break;
               case 'LOP': summaryKey = 'totalLOP'; break;
+              case 'P/LOP': summaryKey = 'totalPresentOnLOP'; break;
               default: summaryKey = '';
             }
             
@@ -570,11 +578,11 @@ function Attendance() {
             return (
               <div 
                 key={status.value} 
-                className="rounded-lg p-4 min-w-[160px] text-gray-800"
+                className="rounded-lg p-4 min-w-[130px] text-gray-800"
                 style={{ backgroundColor: status.color }}
               >
                 <p className="text-sm text-gray-700 mb-1 font-medium">{status.label}</p>
-                <h3 className="text-2xl font-bold">{count}</h3>
+                <h3 className="text-xl font-bold">{count}</h3>
               </div>
             );
           })}
@@ -749,7 +757,7 @@ function Attendance() {
                            const status = fetchedAttendanceForEmployee.dailyAttendance[day.toString()];
                             // Map backend status to frontend label/value if needed, or use directly
                             // For now, just using the label from the existing logic
-                             const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP'];
+                             const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP', 'P/LOP'];
                              if (validStatuses.includes(status)) {
                                 let value;
                                 switch (status) {
@@ -760,6 +768,7 @@ function Attendance() {
                                   case 'PH': value = 'holiday'; break;
                                   case 'PH/A': value = 'half'; break;
                                   case 'LOP': value = 'absent'; break;
+                                  case 'P/LOP': value = 'present'; break;
                                   default: value = null;
                                 }
                                 attendanceForDay = { value, label: status };

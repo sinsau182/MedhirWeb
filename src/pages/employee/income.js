@@ -45,7 +45,7 @@ const Income = () => {
     <>
       <HradminNavbar />
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
-      <div style={{ marginLeft: isSidebarCollapsed ? 80 : 250, marginTop: 48, padding: '32px 32px 32px 32px', background: '#fafbfc', minHeight: '100vh' }}>
+      <div style={{ marginLeft: isSidebarCollapsed ? 64 : 220, marginTop: 48, padding: '32px 32px 32px 32px', background: '#fafbfc', minHeight: '100vh' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
           <h2 style={{ margin: 0, fontWeight: 600, fontSize: 22, color: '#374151' }}>Income</h2>
           <button
