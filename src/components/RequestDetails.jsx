@@ -17,7 +17,6 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
-
 import {
   fetchPendingLeaveRequests,
   fetchProfileUpdates,
@@ -55,21 +54,32 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
               <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
                 <div>
                   <p className="text-xs text-gray-500 mb-2">Old Value:</p>
-                  {change.fieldName.toLowerCase().includes('image') || change.fieldName.toLowerCase().includes('aadhar') ? (
+                  {change.fieldName.toLowerCase().includes("image") ||
+                  change.fieldName.toLowerCase().includes("aadhar") ? (
                     change.oldValue ? (
                       <div className="space-y-2">
-                        <a href={change.oldValue} target="_blank" rel="noopener noreferrer" className="block">
-                          <img 
-                            src={change.oldValue} 
-                            alt={`Old ${change.fieldName}`} 
+                        <a
+                          href={change.oldValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={change.oldValue}
+                            alt={`Old ${change.fieldName}`}
                             className="w-full h-32 object-contain rounded border bg-white p-2"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = '/placeholder-image.png';
+                              e.target.src = "/placeholder-image.png";
                             }}
                           />
                         </a>
-                        <a href={change.oldValue} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800">
+                        <a
+                          href={change.oldValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
                           View Full Image
                         </a>
                       </div>
@@ -83,38 +93,49 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
                   )}
                 </div>
                 <div className="flex items-center justify-center h-full">
-                  <svg 
-                    className="w-6 h-6 text-gray-400" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    className="w-6 h-6 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M13 7l5 5m0 0l-5 5m5-5H6" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
                     />
                   </svg>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-2">New Value:</p>
-                  {change.fieldName.toLowerCase().includes('image') || change.fieldName.toLowerCase().includes('aadhar') ? (
+                  {change.fieldName.toLowerCase().includes("image") ||
+                  change.fieldName.toLowerCase().includes("aadhar") ? (
                     change.newValue ? (
                       <div className="space-y-2">
-                        <a href={change.newValue} target="_blank" rel="noopener noreferrer" className="block">
-                          <img 
-                            src={change.newValue} 
-                            alt={`New ${change.fieldName}`} 
+                        <a
+                          href={change.newValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={change.newValue}
+                            alt={`New ${change.fieldName}`}
                             className="w-full h-32 object-contain rounded border bg-white p-2"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = '/placeholder-image.png';
+                              e.target.src = "/placeholder-image.png";
                             }}
                           />
                         </a>
-                        <a href={change.newValue} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800">
+                        <a
+                          href={change.newValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
                           View Full Image
                         </a>
                       </div>
@@ -335,8 +356,6 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     }
   };
 
-
-
   // Handle expense approval
   const handleApproveExpense = async (expenseId) => {
     try {
@@ -345,7 +364,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         updateExpenseRequestStatus({
           expenseId,
           status: "Approved",
-          remarks: "Approved by Authorized Person"
+          remarks: "Approved by Authorized Person",
         })
       );
 
@@ -354,7 +373,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         // Refresh the expenses list
         dispatch(fetchExpenseRequests());
       } else {
-        throw new Error(resultAction.error.message || "Failed to approve expense");
+        throw new Error(
+          resultAction.error.message || "Failed to approve expense"
+        );
       }
     } catch (error) {
       toast.error(error.message || "Failed to approve expense");
@@ -371,7 +392,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         updateExpenseRequestStatus({
           expenseId,
           status: "Rejected",
-          remarks: "Rejected by Authorized Person"
+          remarks: "Rejected by Authorized Person",
         })
       );
 
@@ -380,7 +401,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         // Refresh the expenses list
         dispatch(fetchExpenseRequests());
       } else {
-        throw new Error(resultAction.error.message || "Failed to reject expense");
+        throw new Error(
+          resultAction.error.message || "Failed to reject expense"
+        );
       }
     } catch (error) {
       toast.error(error.message || "Failed to reject expense");
@@ -397,7 +420,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         updateIncomeRequestStatus({
           incomeId,
           status: "Approved",
-          remarks: "Approved by Authorized Person"
+          remarks: "Approved by Authorized Person",
         })
       );
 
@@ -406,7 +429,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         // Refresh the income requests list
         dispatch(fetchIncomeRequests());
       } else {
-        throw new Error(resultAction.error.message || "Failed to approve income");
+        throw new Error(
+          resultAction.error.message || "Failed to approve income"
+        );
       }
     } catch (error) {
       toast.error(error.message || "Failed to approve income");
@@ -423,7 +448,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         updateIncomeRequestStatus({
           incomeId,
           status: "Rejected",
-          remarks: "Rejected by Authorized Person"
+          remarks: "Rejected by Authorized Person",
         })
       );
 
@@ -432,7 +457,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
         // Refresh the income requests list
         dispatch(fetchIncomeRequests());
       } else {
-        throw new Error(resultAction.error.message || "Failed to reject income");
+        throw new Error(
+          resultAction.error.message || "Failed to reject income"
+        );
       }
     } catch (error) {
       toast.error(error.message || "Failed to reject income");
@@ -440,11 +467,6 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       setRejectingIncomeId(null);
     }
   };
-
-        
-  
-
-
 
   // Updated combined loading state
   const isLoading =
@@ -893,14 +915,16 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">
                         {request.submittedBy}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.employeeName}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.employeeName}
+                      </td>
                       <td className="px-5 py-4 text-sm">
                         {request.department}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.totalAmount}</td>
                       <td className="px-5 py-4 text-sm">
-                        {request.comments}
+                        {request.totalAmount}
                       </td>
+                      <td className="px-5 py-4 text-sm">{request.comments}</td>
                       {/* <td className="px-5 py-4 text-sm">
                         {request.file && (
                           <Button
@@ -919,7 +943,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          onClick={() => handleApproveExpense(request.expenseId)}
+                          onClick={() =>
+                            handleApproveExpense(request.expenseId)
+                          }
                           disabled={approvingExpenseId === request.expenseId}
                         >
                           {approvingExpenseId === request.expenseId ? (
@@ -999,7 +1025,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">
                         {request.submittedBy}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.employeeName}</td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.employeeName}
+                      </td>
                       <td className="px-5 py-4 text-sm">
                         {request.department}
                       </td>
@@ -1009,7 +1037,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         {request.repaymentPlan}
                       </td>
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
-                      <Button
+                        <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
