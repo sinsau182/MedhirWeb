@@ -34,10 +34,21 @@ export function LoginForm({ className, ...props }) {
     setIsLoading(true);
 
     try {
-      const result = await dispatch(loginUser(credentials));
+      // Check if the email is a superadmin email (you can modify this condition based on your requirements)
+      const isSuperadmin = credentials.email.toLowerCase().includes('superadmin');
+      
+      const result = await dispatch(loginUser({ 
+        credentials,
+        isSuperadmin 
+      }));
 
       if (result.meta.requestStatus === "fulfilled") {
         const token = result.payload.token;
+
+        if (token) {
+          const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
+          sessionStorage.setItem("employeeCompanyId", decodedToken.companyId);
+        }
 
         if (typeof window !== "undefined") {
           dispatch(setItem({ key: "token", value: token, encrypt: true }));

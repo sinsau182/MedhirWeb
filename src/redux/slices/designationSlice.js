@@ -31,7 +31,7 @@ export const fetchDesignations = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const response = await axios.get(`${API_URL}/api/designations/company/${company}`, {
         headers: {
           "Content-Type": "application/json",

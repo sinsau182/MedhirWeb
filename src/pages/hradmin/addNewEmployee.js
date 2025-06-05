@@ -296,7 +296,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
 };
 
 function EmployeeForm() {
-  const company = localStorage.getItem("selectedCompanyId");
+  const company = sessionStorage.getItem("currentCompanyId");
 
   const router = useRouter();
   const dispatch = useDispatch();
@@ -324,7 +324,7 @@ function EmployeeForm() {
     const fetchDepartments = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
-        const companyId = localStorage.getItem("selectedCompanyId");
+        const companyId = sessionStorage.getItem("currentCompanyId");
 
         if (!companyId) {
           toast.error("Company ID not found");

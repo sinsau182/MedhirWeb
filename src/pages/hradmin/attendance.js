@@ -238,14 +238,14 @@ function Attendance() {
             "PH/A",
             "LOP",
             "P/LOP",
-          ];
+          ].map(status => status.toUpperCase());
 
-          if (!status || !validStatuses.includes(status)) {
+          if (!status || !validStatuses.includes(status.toUpperCase())) {
             return { value: null, label: "" };
           }
 
           let value;
-          switch (status) {
+          switch (status.toUpperCase()) {
             case "P":
               value = true;
               break;
@@ -260,16 +260,16 @@ function Attendance() {
               break;
             case "PH":
               value = "holiday";
-              break; // Assuming PH is treated as holiday for internal value
+              break;
             case "PH/A":
               value = "half";
-              break; // Assuming PH/A is also a half day
+              break;
             case "LOP":
               value = "absent";
-              break; // Assuming LOP is similar to absent for internal value
+              break;
             case "P/LOP":
               value = "present";
-              break; // Assuming P/LOP is similar to present for internal value
+              break;
             default:
               value = null;
           }
@@ -327,15 +327,16 @@ function Attendance() {
 
   const getAttendanceColor = useCallback((status) => {
     if (status === null) return "bg-gray-100"; // No Data
-    if (status === "P") return "bg-[#CCFFCC]"; // Present (Light green)
-    if (status === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
-    if (status === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
-    if (status === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
-    if (status === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
-    if (status === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
-    if (status === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
-    if (status === "P/LOP") return "bg-[#A89EF6]"; // Present on Loss of Pay (Light gray)
-    if (status === "weekend") return "bg-gray-300"; // Weekend
+    const upperStatus = status.toUpperCase();
+    if (upperStatus === "P") return "bg-[#CCFFCC]"; // Present (Light green)
+    if (upperStatus === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
+    if (upperStatus === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
+    if (upperStatus === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
+    if (upperStatus === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
+    if (upperStatus === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
+    if (upperStatus === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
+    if (upperStatus === "P/LOP") return "bg-[#A89EF6]"; // Present on Loss of Pay (Light gray)
+    if (upperStatus === "WEEKEND") return "bg-gray-300"; // Weekend
     return "";
   }, []);
 
@@ -480,7 +481,7 @@ function Attendance() {
           // Check if attendance data exists for the specific day before accessing
           if (employee.attendance && employee.attendance.length > dayIndex) {
             const att = employee.attendance[dayIndex];
-            switch (att.label) {
+            switch (att.label.toUpperCase()) {
               case "P":
                 totalPresent++;
                 break;
@@ -512,7 +513,7 @@ function Attendance() {
           employee.attendance.forEach((att) => {
             // Only count valid statuses for summary
             if (att.label !== null && att.label !== "") {
-              switch (att.label) {
+              switch (att.label.toUpperCase()) {
                 case "P":
                   totalPresent++;
                   break;
@@ -635,7 +636,7 @@ function Attendance() {
 
           // Check if the status for the summaryDate is included in the selected statuses
           // If selectedStatuses is empty, this filter is skipped by the outer 'if' condition
-          return selectedStatuses.includes(statusForSummaryDate);
+          return selectedStatuses.map(s => s.toUpperCase()).includes(statusForSummaryDate?.toUpperCase());
         })
         .map((employee) => {
           // Map the employee data, ensuring attendance array uses fetched data
@@ -656,7 +657,7 @@ function Attendance() {
 
               // Map the status to the correct format
               let value;
-              switch (status) {
+              switch (status.toUpperCase()) {
                 case "P":
                   value = true;
                   break;
@@ -719,7 +720,7 @@ function Attendance() {
               }
 
               let value;
-              switch (status) {
+              switch (status.toUpperCase()) {
                 case "P":
                   value = true;
                   break;
@@ -1032,9 +1033,9 @@ function Attendance() {
                           "LOP",
                           "P/LOP",
                         ];
-                        if (validStatuses.includes(status)) {
+                        if (validStatuses.includes(status.toUpperCase())) {
                           let value;
-                          switch (status) {
+                          switch (status.toUpperCase()) {
                             case "P":
                               value = true;
                               break;
@@ -1082,7 +1083,7 @@ function Attendance() {
                           attendanceForDay.label
                         )}`}
                       >
-                        {attendanceForDay.label}
+                        {attendanceForDay.label?.toUpperCase()}
                       </td>
                     );
                   })}

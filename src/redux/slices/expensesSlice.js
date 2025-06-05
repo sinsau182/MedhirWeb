@@ -4,6 +4,7 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL + "/expenses";
 
+
 // Fetch expenses by employee ID
 export const fetchExpenseByEmployeeId = createAsyncThunk(
     "expenses/fetchExpenseByEmployeeId",
@@ -18,12 +19,14 @@ export const fetchExpenseByEmployeeId = createAsyncThunk(
                 }
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error("Failed to fetch expense by employee ID");
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
-            return await response.json();
+            return data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Network Error");
         }
     }
 );
@@ -34,7 +37,7 @@ export const createExpense = createAsyncThunk(
     async (expenseData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}`, {
+            const response = await fetch(`${API_BASE_URL}/employee`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -43,12 +46,14 @@ export const createExpense = createAsyncThunk(
                 body: JSON.stringify(expenseData)
             });
 
+            const data = await response.json(); // always parse the response
+
             if (!response.ok) {
-                throw new Error("Failed to create expense");
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
-            return await response.json();
+            return data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Network error");
         }
     }
 );
@@ -58,7 +63,7 @@ export const updateExpense = createAsyncThunk(
     async (expenseData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}/${expenseData.id}`, {
+            const response = await fetch(`${API_BASE_URL}/employee/${expenseData.id}`, {
                 method: "PUT",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -67,12 +72,14 @@ export const updateExpense = createAsyncThunk(
                 body: JSON.stringify(expenseData)
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error("Failed to update expense");
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
-            return await response.json();
+            return data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Network Error");
         }
     }
 );
@@ -125,7 +132,7 @@ export const expensesSlice = createSlice({
             .addCase(updateExpense.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message;
-            });
+            })
     }
 });
 

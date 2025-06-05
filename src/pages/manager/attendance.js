@@ -1,4 +1,10 @@
-import React, { useCallback, useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { Search, Calendar } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -15,12 +21,18 @@ function Attendance() {
   const { employees = [], loading: employeesLoading } = useSelector(
     (state) => state.managerEmployee || {}
   );
-  const { attendance, loading, err } = useSelector((state) => state.attendances);
+  const { attendance, loading, err } = useSelector(
+    (state) => state.attendances
+  );
 
   // State variables
   const [searchInput, setSearchInput] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "long" }));
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toLocaleString("default", { month: "long" })
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString()
+  );
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [dates, setDates] = useState([]);
@@ -40,14 +52,14 @@ function Attendance() {
 
   // Constants/Options
   const statusOptions = [
-    { value: 'P', label: 'Present', color: '#CCFFCC' },
-    { value: 'PH', label: 'Present on Holiday', color: '#5cbf85' },
-    { value: 'P/A', label: 'Half Day', color: '#FFFFCC' },
-    { value: 'PH/A', label: 'Half Day on Holiday', color: '#ffcc80' },
-    { value: 'A', label: 'Absent', color: '#FFCCCC' },
-    { value: 'LOP', label: 'Loss of Pay', color: '#e57373' },
-    { value: 'H', label: 'Holiday', color: '#E0E0E0' },
-    { value: 'P/LOP', label: 'Present on Loss of Pay', color: '#A89EF6' }
+    { value: "P", label: "Present", color: "#CCFFCC" },
+    { value: "PH", label: "Present on Holiday", color: "#5cbf85" },
+    { value: "P/A", label: "Half Day", color: "#FFFFCC" },
+    { value: "PH/A", label: "Half Day on Holiday", color: "#ffcc80" },
+    { value: "A", label: "Absent", color: "#FFCCCC" },
+    { value: "LOP", label: "Loss of Pay", color: "#e57373" },
+    { value: "H", label: "Holiday", color: "#E0E0E0" },
+    { value: "P/LOP", label: "Present on Loss of Pay", color: "#A89EF6" },
   ];
 
   // Effects
@@ -60,7 +72,7 @@ function Attendance() {
 
   useEffect(() => {
     const { query } = router;
-    
+
     if (query.selectedDate && query.selectedMonth && query.selectedYear) {
       // If date params are in the query, set the state
       setSelectedDate(parseInt(query.selectedDate, 10));
@@ -71,21 +83,22 @@ function Attendance() {
     if (query.selectedStatuses) {
       // If status param is in the query, set the selected statuses
       // Assuming selectedStatuses is expected as a comma-separated string or an array in the query
-       const statuses = Array.isArray(query.selectedStatuses) 
-                         ? query.selectedStatuses 
-                         : [query.selectedStatuses];
+      const statuses = Array.isArray(query.selectedStatuses)
+        ? query.selectedStatuses
+        : [query.selectedStatuses];
       setSelectedStatuses(statuses);
     }
-
   }, [router.query]); // Dependency on router.query
 
   useEffect(() => {
     const month = selectedMonth.slice(0, 3); // Get first 3 letters of month
     const year = selectedYear;
-    
+
     const today = new Date();
     const currentDay = today.getDate();
-    const currentMonthShort = today.toLocaleString("default", { month: "short" });
+    const currentMonthShort = today.toLocaleString("default", {
+      month: "short",
+    });
     const currentYearFull = today.getFullYear().toString();
 
     // Prepare API parameters
@@ -102,12 +115,11 @@ function Attendance() {
 
     // Add status filter if any statuses are selected
     if (selectedStatuses.length > 0) {
-      apiParams.status = selectedStatuses.join(',');
+      apiParams.status = selectedStatuses.join(",");
     }
 
     console.log("Fetching attendance data with params:", apiParams);
     dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
-
   }, [dispatch, selectedMonth, selectedYear, selectedDate, selectedStatuses]);
 
   useEffect(() => {
@@ -128,7 +140,9 @@ function Attendance() {
     try {
       const generateDates = () => {
         const dates = [];
-        const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+        const monthIndex = new Date(
+          `${selectedMonth} 1, ${selectedYear}`
+        ).getMonth();
         const daysInMonth = new Date(selectedYear, monthIndex + 1, 0).getDate();
         for (let i = 1; i <= daysInMonth; i++) {
           const date = new Date(selectedYear, monthIndex, i);
@@ -145,163 +159,211 @@ function Attendance() {
     }
   }, [selectedMonth, selectedYear]);
 
-    // Add useEffect for click outside handling
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (statusFilterRef.current && !statusFilterRef.current.contains(event.target)) {
-          setIsStatusFilterOpen(false);
-        }
-      };
-  
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }, []);
-  
-    // Add useEffect for calendar click outside handling
-    useEffect(() => {
-      const handleCalendarClickOutside = (event) => {
-        if (calendarRef.current && !calendarRef.current.contains(event.target)) {
-          setIsCalendarOpen(false);
-        }
-      };
-  
-      document.addEventListener('mousedown', handleCalendarClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleCalendarClickOutside);
-      };
-    }, []);
-  
-    useEffect(() => {
-      const handleDepartmentClickOutside = (event) => {
-        if (departmentFilterRef.current && !departmentFilterRef.current.contains(event.target)) {
-          setIsDepartmentFilterOpen(false);
-        }
-      };
-  
-      document.addEventListener('mousedown', handleDepartmentClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleDepartmentClickOutside);
-      };
-    }, []);
-    
-  
+  // Add useEffect for click outside handling
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        statusFilterRef.current &&
+        !statusFilterRef.current.contains(event.target)
+      ) {
+        setIsStatusFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Add useEffect for calendar click outside handling
+  useEffect(() => {
+    const handleCalendarClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleCalendarClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleCalendarClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleDepartmentClickOutside = (event) => {
+      if (
+        departmentFilterRef.current &&
+        !departmentFilterRef.current.contains(event.target)
+      ) {
+        setIsDepartmentFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDepartmentClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleDepartmentClickOutside);
+    };
+  }, []);
+
   // Callbacks
-  const generateAttendanceData = useCallback((employee) => {
-    const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
-    
-    if (!attendanceRecord) {
+  const generateAttendanceData = useCallback(
+    (employee) => {
+      const attendanceRecord = attendance?.find(
+        (record) => record.employeeId === employee.employeeId
+      );
+
+      if (!attendanceRecord) {
+        return {
+          id: employee.employeeId,
+          name: employee.name,
+          department: employee.departmentName,
+          p_twd: "0/0",
+          attendance: Array(dates.length).fill({ value: null, label: "" }),
+        };
+      }
+
+      const attendanceArray = Array(dates.length)
+        .fill(null)
+        .map((_, index) => {
+          const day = (index + 1).toString();
+          const status = attendanceRecord.dailyAttendance?.[day];
+
+          const validStatuses = [
+            "P",
+            "A",
+            "P/A",
+            "H",
+            "PH",
+            "PH/A",
+            "LOP",
+            "P/LOP",
+          ].map((status) => status.toUpperCase());
+
+          if (!status || !validStatuses.includes(status.toUpperCase())) {
+            return { value: null, label: "" };
+          }
+
+          let value;
+          switch (status.toUpperCase()) {
+            case "P":
+              value = true;
+              break;
+            case "A":
+              value = false;
+              break;
+            case "P/A":
+              value = "half";
+              break;
+            case "H":
+              value = "holiday";
+              break;
+            case "PH":
+              value = "holiday";
+              break; // Assuming PH is treated as holiday for internal value
+            case "PH/A":
+              value = "half";
+              break; // Assuming PH/A is also a half day
+            case "LOP":
+              value = "absent";
+              break; // Assuming LOP is similar to absent for internal value
+            case "P/LOP":
+              value = "present";
+              break; // Assuming P/LOP is similar to present for internal value
+            default:
+              value = null;
+          }
+          return { value, label: status };
+        });
+
       return {
         id: employee.employeeId,
         name: employee.name,
         department: employee.departmentName,
-        p_twd: "0/0",
-        attendance: Array(dates.length).fill({ value: null, label: "" })
+        p_twd: `${attendanceRecord.payableDays}/${attendanceRecord.workingDays}`,
+        attendance: attendanceArray,
       };
-    }
+    },
+    [dates.length, attendance]
+  );
 
-    const attendanceArray = Array(dates.length).fill(null).map((_, index) => {
-      const day = (index + 1).toString();
-      const status = attendanceRecord.dailyAttendance?.[day];
-      
-      const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP', 'P/LOP'];
+  const generateLeaveData = useCallback(
+    (employee) => {
+      const attendanceRecord = attendance?.find(
+        (record) => record.employeeId === employee.employeeId
+      );
 
-      if (!status || !validStatuses.includes(status)) {
-        return { value: null, label: "" };
+      if (!attendanceRecord) {
+        return {
+          id: employee.employeeId,
+          name: employee.name,
+          department: employee.departmentName || "", // Add fallback empty string
+          noOfPayableDays: "0",
+          leavesTaken: "0",
+          leavesEarned: "0",
+          leavesFromPreviousYear: "0",
+          compOffEarned: "0",
+          compOffCarriedForward: "0",
+          netLeaves: "0",
+        };
       }
-      
-      let value;
-      switch (status) {
-        case 'P': value = true; break;
-        case 'A': value = false; break;
-        case 'P/A': value = 'half'; break;
-        case 'H': value = 'holiday'; break;
-        case 'PH': value = 'holiday'; break; // Assuming PH is treated as holiday for internal value
-        case 'PH/A': value = 'half'; break; // Assuming PH/A is also a half day
-        case 'LOP': value = 'absent'; break; // Assuming LOP is similar to absent for internal value
-        case 'P/LOP': value = 'present'; break; // Assuming P/LOP is similar to present for internal value
-        default: value = null;
-      }
-      return { value, label: status };
-    });
 
-    return {
-      id: employee.employeeId,
-      name: employee.name,
-      department: employee.departmentName,
-      p_twd: `${attendanceRecord.payableDays}/${attendanceRecord.workingDays}`,
-      attendance: attendanceArray
-    };
-  }, [dates.length, attendance]);
-
-   const generateLeaveData = useCallback((employee) => {
-    const attendanceRecord = attendance?.find(record => record.employeeId === employee.employeeId);
-    
-    if (!attendanceRecord) {
       return {
         id: employee.employeeId,
         name: employee.name,
-        department: employee.departmentName || '', // Add fallback empty string
-        noOfPayableDays: "0",
-        leavesTaken: "0",
-        leavesEarned: "0",
-        leavesFromPreviousYear: "0",
-        compOffEarned: "0",
-        compOffCarriedForward: "0",
-        netLeaves: "0"
+        department:
+          attendanceRecord.departmentName || employee.departmentName || "", // Try both sources with fallback
+        noOfPayableDays: attendanceRecord.payableDays.toString(),
+        leavesTaken: attendanceRecord.leavesTaken.toString(),
+        leavesEarned: attendanceRecord.leavesEarned.toString(),
+        leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
+        compOffEarned: attendanceRecord.compOffEarned.toString(),
+        compOffCarriedForward: "0", // Not provided in API response
+        netLeaves: attendanceRecord.netLeaveBalance.toString(),
       };
-    }
-
-    return {
-      id: employee.employeeId,
-      name: employee.name,
-      department: attendanceRecord.departmentName || employee.departmentName || '', // Try both sources with fallback
-      noOfPayableDays: attendanceRecord.payableDays.toString(),
-      leavesTaken: attendanceRecord.leavesTaken.toString(),
-      leavesEarned: attendanceRecord.leavesEarned.toString(),
-      leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
-      compOffEarned: attendanceRecord.compOffEarned.toString(),
-      compOffCarriedForward: "0", // Not provided in API response
-      netLeaves: attendanceRecord.netLeaveBalance.toString()
-    };
-  }, [attendance]); // Added attendance as dependency
+    },
+    [attendance]
+  ); // Added attendance as dependency
 
   const getAttendanceColor = useCallback((status) => {
     if (status === null) return "bg-gray-100"; // No Data
-    if (status === "P") return "bg-[#CCFFCC]"; // Present (Light green)
-    if (status === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
-    if (status === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
-    if (status === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
-    if (status === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
-    if (status === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
-    if (status === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
-    if (status === "P/LOP") return "bg-[#A89EF6]"; // Present on Loss of Pay (Light gray)
-    if (status === "weekend") return "bg-gray-300"; // Weekend
+    const upperStatus = status.toUpperCase();
+    if (upperStatus === "P") return "bg-[#CCFFCC]"; // Present (Light green)
+    if (upperStatus === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
+    if (upperStatus === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
+    if (upperStatus === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
+    if (upperStatus === "PH") return "bg-[#5cbf85]"; // Present on Holiday (Light blue)
+    if (upperStatus === "PH/A") return "bg-[#ffcc80]"; // Half Day on Holiday (Lighter blue)
+    if (upperStatus === "LOP") return "bg-[#e57373]"; // Loss of Pay (Pink)
+    if (upperStatus === "P/LOP") return "bg-[#A89EF6]"; // Present on Loss of Pay (Light gray)
+    if (upperStatus === "WEEKEND") return "bg-gray-300"; // Weekend
     return "";
   }, []);
 
   const toggleStatus = useCallback((status) => {
-    setSelectedStatuses(prev => 
-      prev.includes(status) 
-        ? prev.filter(s => s !== status)
+    setSelectedStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
         : [...prev, status]
     );
   }, []); // Added empty dependency array
 
   const handleDateClick = useCallback((day) => {
-    setSelectedDate(prevDate => (prevDate === day ? null : day)); // Toggle selection
+    setSelectedDate((prevDate) => (prevDate === day ? null : day)); // Toggle selection
   }, []); // Added empty dependency array
 
-   const toggleDepartment = useCallback((department) => {
-     setSelectedDepartments(prev => 
-       prev.includes(department) 
-         ? prev.filter(d => d !== department)
-         : [...prev, department]
-     );
-   }, []); // Added empty dependency array
+  const toggleDepartment = useCallback((department) => {
+    setSelectedDepartments((prev) =>
+      prev.includes(department)
+        ? prev.filter((d) => d !== department)
+        : [...prev, department]
+    );
+  }, []); // Added empty dependency array
 
-  const toggleCalendar = useCallback(() => setIsCalendarOpen(!isCalendarOpen), [isCalendarOpen]); // Added isCalendarOpen as dependency
+  const toggleCalendar = useCallback(
+    () => setIsCalendarOpen(!isCalendarOpen),
+    [isCalendarOpen]
+  ); // Added isCalendarOpen as dependency
 
   const handleMonthSelection = useCallback((month, year) => {
     setSelectedMonth(month);
@@ -316,15 +378,17 @@ function Attendance() {
         .filter(
           (employee) =>
             employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            employee.employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
-            (employee.departmentName && employee.departmentName.toLowerCase().includes(searchInput.toLowerCase())) // Added check for departmentName
+            employee.employeeId
+              .toLowerCase()
+              .includes(searchInput.toLowerCase()) ||
+            (employee.departmentName &&
+              employee.departmentName
+                .toLowerCase()
+                .includes(searchInput.toLowerCase())) // Added check for departmentName
         )
         .map(generateAttendanceData), // Map after filtering
     [searchInput, employees, generateAttendanceData] // Added generateAttendanceData dependency
   );
-
-
-  
 
   // const filteredLeaveData = useMemo(
   //   () =>
@@ -339,45 +403,56 @@ function Attendance() {
   //   [searchInput, employees, generateLeaveData, attendance]
   // );
 
-   // Extract unique departments for filter options (moved from renderLeaveTable)
-    const departmentOptions = useMemo(() => {
-      const departments = new Set();
-      employees.forEach(employee => {
-        if (employee.departmentName) {
-          departments.add(employee.departmentName);
-        }
-      });
-      return Array.from(departments).map(dept => ({ value: dept, label: dept }));
-    }, [employees]);
-
-
-
-    // Filter leave data based on search input and selected departments (moved from renderLeaveTable)
-    const filteredAndSearchedLeaveData = useMemo(() => {
-      let data = employees.map(generateLeaveData); // Start with all leave data mapped
-
-      // Apply department filter
-      if (selectedDepartments.length > 0) {
-        data = data.filter(leave => selectedDepartments.includes(leave.department));
+  // Extract unique departments for filter options (moved from renderLeaveTable)
+  const departmentOptions = useMemo(() => {
+    const departments = new Set();
+    employees.forEach((employee) => {
+      if (employee.departmentName) {
+        departments.add(employee.departmentName);
       }
+    });
+    return Array.from(departments).map((dept) => ({
+      value: dept,
+      label: dept,
+    }));
+  }, [employees]);
 
-      console.log(data)
+  // Filter leave data based on search input and selected departments (moved from renderLeaveTable)
+  const filteredAndSearchedLeaveData = useMemo(() => {
+    let data = employees.map(generateLeaveData); // Start with all leave data mapped
 
-      // Apply search filter
-      if (searchInput) {
-         data = data.filter(
-          (leave) =>
-            leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
-            (leave.department && leave.department.toLowerCase().includes(searchInput.toLowerCase())) // Added check for leave.department
-        );
-      }
+    // Apply department filter
+    if (selectedDepartments.length > 0) {
+      data = data.filter((leave) =>
+        selectedDepartments.includes(leave.department)
+      );
+    }
 
-      return data;
-    }, [searchInput, selectedDepartments, employees, generateLeaveData, attendance]);
+    console.log(data);
 
-    // Calculate attendance summary statistics
-    const calculateAttendanceSummary = useCallback((employeesData, dateToSummarize = null) => {
+    // Apply search filter
+    if (searchInput) {
+      data = data.filter(
+        (leave) =>
+          leave.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+          leave.id.toLowerCase().includes(searchInput.toLowerCase()) ||
+          (leave.department &&
+            leave.department.toLowerCase().includes(searchInput.toLowerCase())) // Added check for leave.department
+      );
+    }
+
+    return data;
+  }, [
+    searchInput,
+    selectedDepartments,
+    employees,
+    generateLeaveData,
+    attendance,
+  ]);
+
+  // Calculate attendance summary statistics
+  const calculateAttendanceSummary = useCallback(
+    (employeesData, dateToSummarize = null) => {
       let totalPresent = 0;
       let totalAbsent = 0;
       let totalHalfDay = 0;
@@ -387,47 +462,83 @@ function Attendance() {
       let totalLOP = 0;
       let totalPresentOnLOP = 0;
       // Determine which data to use for summary based on dateToSummarize
-      const dataForSummary = dateToSummarize !== null
-        ? employeesData.filter(employee => {
-            const dayIndex = dateToSummarize - 1;
-             // Check if employee has attendance data for the specific date and it's not null
-             return employee.attendance && employee.attendance.length > dayIndex && employee.attendance[dayIndex].label !== null;
-        })
-        : employeesData; // Use full list if no specific date for summary
+      const dataForSummary =
+        dateToSummarize !== null
+          ? employeesData.filter((employee) => {
+              const dayIndex = dateToSummarize - 1;
+              // Check if employee has attendance data for the specific date and it's not null
+              return (
+                employee.attendance &&
+                employee.attendance.length > dayIndex &&
+                employee.attendance[dayIndex].label !== null
+              );
+            })
+          : employeesData; // Use full list if no specific date for summary
 
-
-      dataForSummary.forEach(employee => {
+      dataForSummary.forEach((employee) => {
         if (dateToSummarize !== null) {
           const dayIndex = dateToSummarize - 1;
           // Check if attendance data exists for the specific day before accessing
           if (employee.attendance && employee.attendance.length > dayIndex) {
             const att = employee.attendance[dayIndex];
-            switch(att.label) {
-              case 'P': totalPresent++; break;
-              case 'A': totalAbsent++; break;
-              case 'P/A': totalHalfDay++; break;
-              case 'H': totalHoliday++; break;
-              case 'PH': totalPresentOnHoliday++; break;
-              case 'PH/A': totalHalfDayOnHoliday++; break;
-              case 'LOP': totalLOP++; break;
-              case 'P/LOP': totalPresentOnLOP++; break;
+            switch (att.label.toUpperCase()) {
+              case "P":
+                totalPresent++;
+                break;
+              case "A":
+                totalAbsent++;
+                break;
+              case "P/A":
+                totalHalfDay++;
+                break;
+              case "H":
+                totalHoliday++;
+                break;
+              case "PH":
+                totalPresentOnHoliday++;
+                break;
+              case "PH/A":
+                totalHalfDayOnHoliday++;
+                break;
+              case "LOP":
+                totalLOP++;
+                break;
+              case "P/LOP":
+                totalPresentOnLOP++;
+                break;
             }
           }
         } else {
           // If no specific date, summarize all attendance days
-           employee.attendance.forEach(att => {
-             // Only count valid statuses for summary
+          employee.attendance.forEach((att) => {
+            // Only count valid statuses for summary
             if (att.label !== null && att.label !== "") {
-                switch(att.label) {
-                  case 'P': totalPresent++; break;
-                  case 'A': totalAbsent++; break;
-                  case 'P/A': totalHalfDay++; break;
-                  case 'H': totalHoliday++; break;
-                  case 'PH': totalPresentOnHoliday++; break;
-                  case 'PH/A': totalHalfDayOnHoliday++; break;
-                  case 'LOP': totalLOP++; break;
-                  case 'P/LOP': totalPresentOnLOP++; break;
-                }
+              switch (att.label.toUpperCase()) {
+                case "P":
+                  totalPresent++;
+                  break;
+                case "A":
+                  totalAbsent++;
+                  break;
+                case "P/A":
+                  totalHalfDay++;
+                  break;
+                case "H":
+                  totalHoliday++;
+                  break;
+                case "PH":
+                  totalPresentOnHoliday++;
+                  break;
+                case "PH/A":
+                  totalHalfDayOnHoliday++;
+                  break;
+                case "LOP":
+                  totalLOP++;
+                  break;
+                case "P/LOP":
+                  totalPresentOnLOP++;
+                  break;
+              }
             }
           });
         }
@@ -441,48 +552,54 @@ function Attendance() {
         totalPresentOnHoliday,
         totalHalfDayOnHoliday,
         totalLOP,
-        totalPresentOnLOP
+        totalPresentOnLOP,
       };
-    }, []); // Removed filteredEmployees dependency, now depends on employeesData passed in
+    },
+    []
+  ); // Removed filteredEmployees dependency, now depends on employeesData passed in
 
-    // Calculate leave summary statistics
-    const calculateLeaveSummary = useCallback(() => {
-      let totalLeavesTaken = 0;
-      let totalLeavesEarned = 0;
-      let totalNetLeaveBalance = 0;
+  // Calculate leave summary statistics
+  const calculateLeaveSummary = useCallback(() => {
+    let totalLeavesTaken = 0;
+    let totalLeavesEarned = 0;
+    let totalNetLeaveBalance = 0;
 
-      filteredAndSearchedLeaveData.forEach(leave => {
-        totalLeavesTaken += parseFloat(leave.leavesTaken);
-        totalLeavesEarned += parseFloat(leave.leavesEarned);
-        totalNetLeaveBalance += parseFloat(leave.netLeaves);
-      });
+    filteredAndSearchedLeaveData.forEach((leave) => {
+      totalLeavesTaken += parseFloat(leave.leavesTaken);
+      totalLeavesEarned += parseFloat(leave.leavesEarned);
+      totalNetLeaveBalance += parseFloat(leave.netLeaves);
+    });
 
-      return {
-        totalLeavesTaken: totalLeavesTaken.toFixed(1),
-        totalLeavesEarned: totalLeavesEarned.toFixed(1),
-        totalNetLeaveBalance: totalNetLeaveBalance.toFixed(1)
-      };
-    }, [filteredAndSearchedLeaveData]);
+    return {
+      totalLeavesTaken: totalLeavesTaken.toFixed(1),
+      totalLeavesEarned: totalLeavesEarned.toFixed(1),
+      totalNetLeaveBalance: totalNetLeaveBalance.toFixed(1),
+    };
+  }, [filteredAndSearchedLeaveData]);
 
-   // Determine the date to use for the summary
+  // Determine the date to use for the summary
 
-    const currentDay = today.getDate();
-    const currentMonthShort = today.toLocaleString("default", { month: "short" });
-    const currentYearFull = today.getFullYear().toString();
+  const currentDay = today.getDate();
+  const currentMonthShort = today.toLocaleString("default", { month: "short" });
+  const currentYearFull = today.getFullYear().toString();
 
-    // summaryDate should be selectedDate if not null, otherwise today's date if viewing current month/year
-    const summaryDate = selectedDate !== null ? selectedDate : 
-                        (selectedMonth.slice(0, 3) === currentMonthShort && selectedYear === currentYearFull ? currentDay : null);
-
+  // summaryDate should be selectedDate if not null, otherwise today's date if viewing current month/year
+  const summaryDate =
+    selectedDate !== null
+      ? selectedDate
+      : selectedMonth.slice(0, 3) === currentMonthShort &&
+        selectedYear === currentYearFull
+      ? currentDay
+      : null;
 
   // Render functions
   const renderAttendanceTable = (props) => {
-    const { 
-      dates, 
-      statusOptions, 
-      selectedStatuses, 
-      isStatusFilterOpen, 
-      toggleStatus, 
+    const {
+      dates,
+      statusOptions,
+      selectedStatuses,
+      isStatusFilterOpen,
+      toggleStatus,
       searchInput,
       setSearchInput,
       isCalendarOpen,
@@ -496,7 +613,7 @@ function Attendance() {
       getAttendanceColor,
       calculateAttendanceSummary,
       attendance,
-      summaryDate
+      summaryDate,
     } = props;
 
     // Determine which data to use for rendering
@@ -506,98 +623,151 @@ function Attendance() {
     if (attendance && attendance.length > 0 && selectedStatuses.length > 0) {
       // Filter originalFilteredEmployees based on the attendance status on the summaryDate
       dataToRender = originalFilteredEmployees
-        .filter(employee => {
+        .filter((employee) => {
           // Find the employee's attendance record from the fetched data
-          const empAttendanceRecord = attendance.find(attRec => attRec.employeeId === employee.id);
+          const empAttendanceRecord = attendance.find(
+            (attRec) => attRec.employeeId === employee.id
+          );
           if (!empAttendanceRecord) return false; // Employee not in fetched attendance data
 
           // Get the attendance status for the summaryDate (current date or selected date)
-          const statusForSummaryDate = empAttendanceRecord.dailyAttendance?.[summaryDate?.toString()];
-          
+          const statusForSummaryDate =
+            empAttendanceRecord.dailyAttendance?.[summaryDate?.toString()];
+
           // Check if the status for the summaryDate is included in the selected statuses
           // If selectedStatuses is empty, this filter is skipped by the outer 'if' condition
-          return selectedStatuses.includes(statusForSummaryDate);
+          return selectedStatuses.map(s => s.toUpperCase()).includes(statusForSummaryDate?.toUpperCase());
         })
-        .map(employee => {
-           // Map the employee data, ensuring attendance array uses fetched data
-          const empAttendanceRecord = attendance.find(attRec => attRec.employeeId === employee.id);
-          
-          // Create attendance array for the employee using fetched data
-          const attendanceArray = Array(dates.length).fill({ value: null, label: "" }).map((_, index) => {
-            const day = (index + 1).toString();
-            const status = empAttendanceRecord?.dailyAttendance?.[day];
-            
-            if (!status) {
-              return { value: null, label: "" };
-            }
+        .map((employee) => {
+          // Map the employee data, ensuring attendance array uses fetched data
+          const empAttendanceRecord = attendance.find(
+            (attRec) => attRec.employeeId === employee.id
+          );
 
-            // Map the status to the correct format
-            let value;
-            switch (status) {
-              case 'P': value = true; break;
-              case 'A': value = false; break;
-              case 'P/A': value = 'half'; break;
-              case 'H': value = 'holiday'; break;
-              case 'PH': value = 'holiday'; break;
-              case 'PH/A': value = 'half'; break;
-              case 'LOP': value = 'absent'; break;
-              case 'P/LOP': value = 'present'; break;
-              default: value = null;
-            }
-            return { value, label: status };
-          });
+          // Create attendance array for the employee using fetched data
+          const attendanceArray = Array(dates.length)
+            .fill({ value: null, label: "" })
+            .map((_, index) => {
+              const day = (index + 1).toString();
+              const status = empAttendanceRecord?.dailyAttendance?.[day];
+
+              if (!status) {
+                return { value: null, label: "" };
+              }
+
+              // Map the status to the correct format
+              let value;
+              switch (status.toUpperCase()) {
+                case "P":
+                  value = true;
+                  break;
+                case "A":
+                  value = false;
+                  break;
+                case "P/A":
+                  value = "half";
+                  break;
+                case "H":
+                  value = "holiday";
+                  break;
+                case "PH":
+                  value = "holiday";
+                  break;
+                case "PH/A":
+                  value = "half";
+                  break;
+                case "LOP":
+                  value = "absent";
+                  break;
+                case "P/LOP":
+                  value = "present";
+                  break;
+                default:
+                  value = null;
+              }
+              return { value, label: status };
+            });
 
           return {
             ...employee,
-            attendance: attendanceArray
+            attendance: attendanceArray,
           };
         });
-    } else if (selectedStatuses.length === 0 && attendance && attendance.length > 0) {
-        // If no status filters are applied, but we have fetched attendance data (e.g., due to date selection)
-        // We still need to use the data from the 'attendance' state, but without filtering by status
-         dataToRender = originalFilteredEmployees
-          .filter(employee => attendance.some(attRec => attRec.employeeId === employee.id))
-           .map(employee => {
-             const empAttendanceRecord = attendance.find(attRec => attRec.employeeId === employee.id);
-          
-             const attendanceArray = Array(dates.length).fill({ value: null, label: "" }).map((_, index) => {
-                const day = (index + 1).toString();
-                const status = empAttendanceRecord?.dailyAttendance?.[day];
-                
-                if (!status) {
-                  return { value: null, label: "" };
-                }
+    } else if (
+      selectedStatuses.length === 0 &&
+      attendance &&
+      attendance.length > 0
+    ) {
+      // If no status filters are applied, but we have fetched attendance data (e.g., due to date selection)
+      // We still need to use the data from the 'attendance' state, but without filtering by status
+      dataToRender = originalFilteredEmployees
+        .filter((employee) =>
+          attendance.some((attRec) => attRec.employeeId === employee.id)
+        )
+        .map((employee) => {
+          const empAttendanceRecord = attendance.find(
+            (attRec) => attRec.employeeId === employee.id
+          );
 
-                let value;
-                switch (status) {
-                  case 'P': value = true; break;
-                  case 'A': value = false; break;
-                  case 'P/A': value = 'half'; break;
-                  case 'H': value = 'holiday'; break;
-                  case 'PH': value = 'holiday'; break;
-                  case 'PH/A': value = 'half'; break;
-                  case 'LOP': value = 'absent'; break;
-                  case 'P/LOP': value = 'present'; break;
-                  default: value = null;
-                }
-                return { value, label: status };
-             });
+          const attendanceArray = Array(dates.length)
+            .fill({ value: null, label: "" })
+            .map((_, index) => {
+              const day = (index + 1).toString();
+              const status = empAttendanceRecord?.dailyAttendance?.[day];
 
-             return {
-               ...employee,
-               attendance: attendanceArray
-             };
-           });
-    } else if (selectedStatuses.length > 0 && (!attendance || attendance.length === 0)) {
-       // If status filters are applied, but no attendance data was returned from the API for the selected date
-       // This means no employee had the selected status on that date, so show empty table
-       dataToRender = [];
+              if (!status) {
+                return { value: null, label: "" };
+              }
+
+              let value;
+              switch (status.toUpperCase()) {
+                case "P":
+                  value = true;
+                  break;
+                case "A":
+                  value = false;
+                  break;
+                case "P/A":
+                  value = "half";
+                  break;
+                case "H":
+                  value = "holiday";
+                  break;
+                case "PH":
+                  value = "holiday";
+                  break;
+                case "PH/A":
+                  value = "half";
+                  break;
+                case "LOP":
+                  value = "absent";
+                  break;
+                case "P/LOP":
+                  value = "present";
+                  break;
+                default:
+                  value = null;
+              }
+              return { value, label: status };
+            });
+
+          return {
+            ...employee,
+            attendance: attendanceArray,
+          };
+        });
+    } else if (
+      selectedStatuses.length > 0 &&
+      (!attendance || attendance.length === 0)
+    ) {
+      // If status filters are applied, but no attendance data was returned from the API for the selected date
+      // This means no employee had the selected status on that date, so show empty table
+      dataToRender = [];
     } else {
-        // Default case: no date selected, no status filters, use the original data mapped with full month attendance
-        // originalFilteredEmployees already contains this via generateAttendanceData
-        dataToRender = originalFilteredEmployees;
+      // Default case: no date selected, no status filters, use the original data mapped with full month attendance
+      // originalFilteredEmployees already contains this via generateAttendanceData
+      dataToRender = originalFilteredEmployees;
     }
-
 
     // Calculate summary based on the rendered data
     const summary = calculateAttendanceSummary(dataToRender, summaryDate);
@@ -609,27 +779,46 @@ function Attendance() {
           {statusOptions.map((status) => {
             // Map the status value to the correct summary key
             let summaryKey;
-            switch(status.value) {
-              case 'P': summaryKey = 'totalPresent'; break;
-              case 'A': summaryKey = 'totalAbsent'; break;
-              case 'P/A': summaryKey = 'totalHalfDay'; break;
-              case 'H': summaryKey = 'totalHoliday'; break;
-              case 'PH': summaryKey = 'totalPresentOnHoliday'; break;
-              case 'PH/A': summaryKey = 'totalHalfDayOnHoliday'; break;
-              case 'LOP': summaryKey = 'totalLOP'; break;
-              case 'P/LOP': summaryKey = 'totalPresentOnLOP'; break;
-              default: summaryKey = '';
+            switch (status.value) {
+              case "P":
+                summaryKey = "totalPresent";
+                break;
+              case "A":
+                summaryKey = "totalAbsent";
+                break;
+              case "P/A":
+                summaryKey = "totalHalfDay";
+                break;
+              case "H":
+                summaryKey = "totalHoliday";
+                break;
+              case "PH":
+                summaryKey = "totalPresentOnHoliday";
+                break;
+              case "PH/A":
+                summaryKey = "totalHalfDayOnHoliday";
+                break;
+              case "LOP":
+                summaryKey = "totalLOP";
+                break;
+              case "P/LOP":
+                summaryKey = "totalPresentOnLOP";
+                break;
+              default:
+                summaryKey = "";
             }
-            
+
             const count = summary[summaryKey] || 0;
-            
+
             return (
-              <div 
-                key={status.value} 
+              <div
+                key={status.value}
                 className="rounded-lg p-4 min-w-[130px] text-gray-800 flex flex-col"
                 style={{ backgroundColor: status.color }}
               >
-                <p className="text-sm text-gray-700 mb-1 font-medium min-h-[20px]">{status.label}</p>
+                <p className="text-sm text-gray-700 mb-1 font-medium min-h-[20px]">
+                  {status.label}
+                </p>
                 <h3 className="text-xl font-bold mt-auto">{count}</h3>
               </div>
             );
@@ -652,7 +841,9 @@ function Attendance() {
               {selectedStatuses.length > 0 && (
                 <span className="flex flex-wrap gap-1 ml-2">
                   {selectedStatuses.map((status) => {
-                    const found = statusOptions.find(opt => opt.value === status);
+                    const found = statusOptions.find(
+                      (opt) => opt.value === status
+                    );
                     return (
                       <span
                         key={status}
@@ -660,16 +851,18 @@ function Attendance() {
                         style={{
                           backgroundColor: found ? found.color : "#eee",
                           color: "#333",
-                          border: "1px solid #ddd"
+                          border: "1px solid #ddd",
                         }}
                       >
                         {found ? found.label : status}
                         <button
                           type="button"
                           className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none"
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedStatuses(prev => prev.filter(s => s !== status));
+                            setSelectedStatuses((prev) =>
+                              prev.filter((s) => s !== status)
+                            );
                           }}
                           aria-label={`Remove ${found ? found.label : status}`}
                         >
@@ -681,19 +874,25 @@ function Attendance() {
                 </span>
               )}
             </button>
-            
+
             {isStatusFilterOpen && (
               <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-40">
                 <div className="p-2 max-h-48 overflow-y-auto">
-                  {statusOptions.map(status => (
-                    <label key={status.value} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                  {statusOptions.map((status) => (
+                    <label
+                      key={status.value}
+                      className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedStatuses.includes(status.value)}
                         onChange={() => toggleStatus(status.value)}
                         className="rounded border-gray-300"
                       />
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: status.color }}></div>
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: status.color }}
+                      ></div>
                       <span className="text-sm">{status.label}</span>
                     </label>
                   ))}
@@ -713,142 +912,192 @@ function Attendance() {
             />
             <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
-
-          
         </div>
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow-sm">
           {/* Legend */}
           <div className="p-4 border-b flex flex-wrap gap-4 text-xs">
-            {statusOptions.map(status => (
+            {statusOptions.map((status) => (
               <div key={status.value} className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded" style={{ backgroundColor: status.color }}></div>
-                <span>{status.label} ({status.value})</span>
-        </div>
+                <div
+                  className="w-3 h-3 rounded"
+                  style={{ backgroundColor: status.color }}
+                ></div>
+                <span>
+                  {status.label} ({status.value})
+                </span>
+              </div>
             ))}
             <div className="flex items-center gap-1">
               <div className="w-3 h-3 bg-gray-100 rounded"></div>
               <span>No Data</span>
-        </div>
-      </div>
+            </div>
+          </div>
 
           <table className="w-full table-fixed border-collapse">
-        <thead>
-          <tr className="border-b border-black">
+            <thead>
+              <tr className="border-b border-black">
                 {/* Fixed Columns */}
                 <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black sticky left-0 bg-white z-20 shadow-sm">
-              Emp ID
-            </th>
+                  Emp ID
+                </th>
                 <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r border-black sticky left-[8%] bg-white z-20 shadow-sm">
-              Name
-            </th>
+                  Name
+                </th>
                 <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black sticky left-[18%] bg-white z-20 shadow-sm">
-              Dept
-            </th>
+                  Dept
+                </th>
 
                 {/* Scrollable Date Columns */}
                 {dates.map((date) => {
-                  const isToday = date.day === new Date().getDate() && selectedMonth === new Date().toLocaleString("default", { month: "long" }) && selectedYear === new Date().getFullYear().toString();
+                  const isToday =
+                    date.day === new Date().getDate() &&
+                    selectedMonth ===
+                      new Date().toLocaleString("default", { month: "long" }) &&
+                    selectedYear === new Date().getFullYear().toString();
                   const isSelected = selectedDate === date.day;
 
                   return (
-              <th
-                key={date.day}
+                    <th
+                      key={date.day}
                       className={`py-1 px-0 text-center text-xs font-semibold text-gray-700 border-r border-black cursor-pointer hover:bg-gray-100
-                        ${isToday ? 'bg-blue-100' : ''}
-                        ${isSelected ? 'bg-blue-300 text-blue-900' : ''}
+                        ${isToday ? "bg-blue-100" : ""}
+                        ${isSelected ? "bg-blue-300 text-blue-900" : ""}
                       `}
                       onClick={() => handleDateClick(date.day)}
-              >
-                <div className="leading-none">
-                  {String(date.day).padStart(2, "0")}
-                </div>
-                <div className="text-gray-500 text-[10px] leading-tight">
-                  {date.weekday}
-                </div>
-              </th>
+                    >
+                      <div className="leading-none">
+                        {String(date.day).padStart(2, "0")}
+                      </div>
+                      <div className="text-gray-500 text-[10px] leading-tight">
+                        {date.weekday}
+                      </div>
+                    </th>
                   );
                 })}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-black">
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black">
               {/* Use dataToRender which contains either full month data or backend-filtered data */}
               {dataToRender.map((employee, index) => (
-            <tr
-              key={index}
-              className="hover:bg-gray-50 transition-colors cursor-pointer"
-            >
+                <tr
+                  key={index}
+                  className="hover:bg-gray-50 transition-colors cursor-pointer"
+                >
                   {/* Fixed Cells */}
                   <td className="py-1 px-1 text-sm text-gray-800 border-r border-black sticky left-0 bg-white z-10">
-                {employee.id}
-              </td>
+                    {employee.id}
+                  </td>
                   <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] sticky left-[8%] bg-white z-10">
-                {employee.name}
-              </td>
+                    {employee.name}
+                  </td>
                   <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] sticky left-[18%] bg-white z-10">
-                {employee.department}
-              </td>
+                    {employee.department}
+                  </td>
 
                   {/* Scrollable Attendance Cells */}
                   {dates.map((date, index) => {
                     const day = date.day;
-                    const employeeAttendanceForMonth = originalFilteredEmployees.find(emp => emp.id === employee.id)?.attendance; // Get full month attendance from original data
-                    
+                    const employeeAttendanceForMonth =
+                      originalFilteredEmployees.find(
+                        (emp) => emp.id === employee.id
+                      )?.attendance; // Get full month attendance from original data
+
                     let attendanceForDay = { value: null, label: "" }; // Default to no data
 
                     // Determine the attendance data to display based on selectedDate and fetched attendance
                     if (selectedDate !== null) {
-                        // If a specific date is selected, find the matching attendance record for that day in the fetched attendance
-                        const fetchedAttendanceForEmployee = attendance?.find(attRec => attRec.employeeId === employee.id);                       
-                        if (fetchedAttendanceForEmployee?.dailyAttendance?.[day.toString()]) {
-                           const status = fetchedAttendanceForEmployee.dailyAttendance[day.toString()];
-                            // Map backend status to frontend label/value if needed, or use directly
-                            // For now, just using the label from the existing logic
-                             const validStatuses = ['P', 'A', 'P/A', 'H', 'PH', 'PH/A', 'LOP', 'P/LOP'];
-                             if (validStatuses.includes(status)) {
-                                let value;
-                                switch (status) {
-                                  case 'P': value = true; break;
-                                  case 'A': value = false; break;
-                                  case 'P/A': value = 'half'; break;
-                                  case 'H': value = 'holiday'; break;
-                                  case 'PH': value = 'holiday'; break;
-                                  case 'PH/A': value = 'half'; break;
-                                  case 'LOP': value = 'absent'; break;
-                                  case 'P/LOP': value = 'present'; break;
-                                  default: value = null;
-                                }
-                                attendanceForDay = { value, label: status };
-                             } else {
-                                 attendanceForDay = { value: null, label: "" }; // Handle invalid status
-                             }
-                        }                       
-                    } else if (employeeAttendanceForMonth && employeeAttendanceForMonth.length > index) {
-                        // If no specific date is selected, use the full month attendance from originalFilteredEmployees
-                        attendanceForDay = employeeAttendanceForMonth[index];
+                      // If a specific date is selected, find the matching attendance record for that day in the fetched attendance
+                      const fetchedAttendanceForEmployee = attendance?.find(
+                        (attRec) => attRec.employeeId === employee.id
+                      );
+                      if (
+                        fetchedAttendanceForEmployee?.dailyAttendance?.[
+                          day.toString()
+                        ]
+                      ) {
+                        const status =
+                          fetchedAttendanceForEmployee.dailyAttendance[
+                            day.toString()
+                          ];
+                        // Map backend status to frontend label/value if needed, or use directly
+                        // For now, just using the label from the existing logic
+                        const validStatuses = [
+                          "P",
+                          "A",
+                          "P/A",
+                          "H",
+                          "PH",
+                          "PH/A",
+                          "LOP",
+                          "P/LOP",
+                        ];
+                        if (validStatuses.includes(status.toUpperCase())) {
+                          let value;
+                          switch (status.toUpperCase()) {
+                            case "P":
+                              value = true;
+                              break;
+                            case "A":
+                              value = false;
+                              break;
+                            case "P/A":
+                              value = "half";
+                              break;
+                            case "H":
+                              value = "holiday";
+                              break;
+                            case "PH":
+                              value = "holiday";
+                              break;
+                            case "PH/A":
+                              value = "half";
+                              break;
+                            case "LOP":
+                              value = "absent";
+                              break;
+                            case "P/LOP":
+                              value = "present";
+                              break;
+                            default:
+                              value = null;
+                          }
+                          attendanceForDay = { value, label: status };
+                        } else {
+                          attendanceForDay = { value: null, label: "" }; // Handle invalid status
+                        }
+                      }
+                    } else if (
+                      employeeAttendanceForMonth &&
+                      employeeAttendanceForMonth.length > index
+                    ) {
+                      // If no specific date is selected, use the full month attendance from originalFilteredEmployees
+                      attendanceForDay = employeeAttendanceForMonth[index];
                     }
 
                     return (
-                <td
-                  key={index}
-                        className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${getAttendanceColor(attendanceForDay.label)}`}
-                >
-                        {attendanceForDay.label}
-                </td>
+                      <td
+                        key={index}
+                        className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${getAttendanceColor(
+                          attendanceForDay.label
+                        )}`}
+                      >
+                        {attendanceForDay.label?.toUpperCase()}
+                      </td>
                     );
                   })}
                 </tr>
-          ))}
-        </tbody>
-      </table>
+              ))}
+            </tbody>
+          </table>
         </div>
-    </div>
-  );
+      </div>
+    );
   };
 
   const renderLeaveTable = (props) => {
-     const {
+    const {
       searchInput,
       setSearchInput,
       departmentOptions,
@@ -856,7 +1105,7 @@ function Attendance() {
       isDepartmentFilterOpen,
       toggleDepartment,
       filteredAndSearchedLeaveData, // This already contains mapped data
-      calculateLeaveSummary 
+      calculateLeaveSummary,
     } = props;
 
     const leaveSummary = calculateLeaveSummary(); // Call the passed function
@@ -872,7 +1121,9 @@ function Attendance() {
               onClick={() => setIsDepartmentFilterOpen(!isDepartmentFilterOpen)}
               className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
             >
-              <span className="text-sm text-gray-700">Filter by Department</span>
+              <span className="text-sm text-gray-700">
+                Filter by Department
+              </span>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
                 {selectedDepartments.length}
               </span>
@@ -888,9 +1139,11 @@ function Attendance() {
                       <button
                         type="button"
                         className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none"
-                        onClick={e => {
+                        onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedDepartments(prev => prev.filter(d => d !== dept));
+                          setSelectedDepartments((prev) =>
+                            prev.filter((d) => d !== dept)
+                          );
                         }}
                         aria-label={`Remove ${dept}`}
                       >
@@ -901,12 +1154,15 @@ function Attendance() {
                 </span>
               )}
             </button>
-            
+
             {isDepartmentFilterOpen && (
               <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-20">
                 <div className="p-2 max-h-48 overflow-y-auto">
-                  {departmentOptions.map(dept => (
-                    <label key={dept.value} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
+                  {departmentOptions.map((dept) => (
+                    <label
+                      key={dept.value}
+                      className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedDepartments.includes(dept.value)}
@@ -940,86 +1196,92 @@ function Attendance() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Emp ID
-            </th>
+                  Emp ID
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Name
-            </th>
+                  Name
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Dept
-            </th>
+                  Dept
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Pay Days
-            </th>
+                  Pay Days
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Leaves Taken
-            </th>
+                  Leaves Taken
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Leaves Earned
-            </th>
+                  Leaves Earned
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Leaves CF Prev Year
-            </th>
+                  Leaves CF Prev Year
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              Comp Off
-            </th>
+                  Comp Off
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider border-r border-gray-200">
-              CF Comp Off
-            </th>
+                  CF Comp Off
+                </th>
                 <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-              Balance
-            </th>
-          </tr>
-        </thead>
+                  Balance
+                </th>
+              </tr>
+            </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAndSearchedLeaveData.map((leave) => {
-            const leaveBalance =
+                const leaveBalance =
                   parseFloat(leave.leavesEarned) +
                   parseFloat(leave.leavesFromPreviousYear) +
                   parseFloat(leave.compOffEarned) +
                   parseFloat(leave.compOffCarriedForward) -
                   parseFloat(leave.leavesTaken);
 
-            return (
+                return (
                   <tr key={leave.id} className="hover:bg-gray-100">
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.id}
-                </td>
+                      {leave.id}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.name}
-                </td>
+                      {leave.name}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.department}
-                </td>
+                      {leave.department}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.noOfPayableDays}
-                </td>
+                      {leave.noOfPayableDays}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.leavesTaken}
-                </td>
+                      {leave.leavesTaken}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.leavesEarned}
-                </td>
+                      {leave.leavesEarned}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.leavesFromPreviousYear}
-                </td>
+                      {leave.leavesFromPreviousYear}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.compOffEarned}
-                </td>
+                      {leave.compOffEarned}
+                    </td>
                     <td className="py-3 px-4 whitespace-nowrap text-sm text-gray-800 border-r border-gray-200">
-                  {leave.compOffCarriedForward}
-                </td>
-                    <td className={`py-3 px-4 whitespace-nowrap text-sm ${leaveBalance < 0 ? 'text-red-600 font-semibold' : 'text-gray-800'}`}>
+                      {leave.compOffCarriedForward}
+                    </td>
+                    <td
+                      className={`py-3 px-4 whitespace-nowrap text-sm ${
+                        leaveBalance < 0
+                          ? "text-red-600 font-semibold"
+                          : "text-gray-800"
+                      }`}
+                    >
                       {leaveBalance.toFixed(1)}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-    </div>
-  );
+      </div>
+    );
   };
 
   // if (isLoading || employeesLoading) {
@@ -1067,76 +1329,90 @@ function Attendance() {
               Attendance Management
             </h1>
             {/* Calendar */}
-          <div className="relative ml-auto" ref={calendarRef}>
-            <Badge
-              variant="outline"
-              className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-              onClick={toggleCalendar}
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium text-sm">
-                {selectedYear}-{selectedMonth}
-          </span>
-            </Badge>
-            {isCalendarOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                {/* Existing calendar content */}
-                <div className="p-3 border-b flex justify-between items-center">
-                  <div className="text-sm font-medium text-gray-700">
-                    {selectedYear}
+            <div className="relative ml-auto" ref={calendarRef}>
+              <Badge
+                variant="outline"
+                className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                onClick={toggleCalendar}
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="font-medium text-sm">
+                  {selectedYear}-{selectedMonth}
+                </span>
+              </Badge>
+              {isCalendarOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                  {/* Existing calendar content */}
+                  <div className="p-3 border-b flex justify-between items-center">
+                    <div className="text-sm font-medium text-gray-700">
+                      {selectedYear}
+                    </div>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => {
+                        setSelectedYear(e.target.value);
+                        if (e.target.value === "2024") {
+                          setSelectedMonth("Aug");
+                        } else {
+                          setSelectedMonth("Jan");
+                        }
+                      }}
+                      className="ml-2 border rounded px-2 py-1 text-sm"
+                    >
+                      {[2024, 2025].map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    value={selectedYear}
-                    onChange={e => {
-                      setSelectedYear(e.target.value);
-                      if (e.target.value === '2024') {
-                        setSelectedMonth('Aug');
-                      } else {
-                        setSelectedMonth('Jan');
+                  <div className="grid grid-cols-3 gap-1.5 p-3">
+                    {(() => {
+                      const currentYear = new Date().getFullYear();
+                      const currentMonthIdx = new Date().getMonth(); // 0-based
+                      let months = [
+                        "Jan",
+                        "Feb",
+                        "Mar",
+                        "Apr",
+                        "May",
+                        "Jun",
+                        "Jul",
+                        "Aug",
+                        "Sep",
+                        "Oct",
+                        "Nov",
+                        "Dec",
+                      ];
+                      let startIdx = 0;
+                      let endIdx = 11;
+                      if (parseInt(selectedYear) === 2024) {
+                        startIdx = 7; // August (0-based)
+                        endIdx = 11;
+                      } else if (parseInt(selectedYear) === 2025) {
+                        startIdx = 0;
+                        endIdx = currentYear === 2025 ? currentMonthIdx : 11;
                       }
-                    }}
-                    className="ml-2 border rounded px-2 py-1 text-sm"
-                  >
-                    {[2024, 2025].map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
+                      return months.slice(startIdx, endIdx + 1).map((month) => (
+                        <button
+                          key={month}
+                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                            month === selectedMonth.slice(0, 3)
+                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                              : "hover:bg-gray-50 text-gray-700"
+                          }`}
+                          onClick={() =>
+                            handleMonthSelection(month, selectedYear)
+                          }
+                        >
+                          {month}
+                        </button>
+                      ));
+                    })()}
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-1.5 p-3">
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const currentMonthIdx = new Date().getMonth(); // 0-based
-                    let months = [
-                      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-                    ];
-                    let startIdx = 0;
-                    let endIdx = 11;
-                    if (parseInt(selectedYear) === 2024) {
-                      startIdx = 7; // August (0-based)
-                      endIdx = 11;
-                    } else if (parseInt(selectedYear) === 2025) {
-                      startIdx = 0;
-                      endIdx = (currentYear === 2025) ? currentMonthIdx : 11;
-                    }
-                    return months.slice(startIdx, endIdx + 1).map((month) => (
-                      <button
-                        key={month}
-                        className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                          month === selectedMonth.slice(0, 3)
-                            ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                            : "hover:bg-gray-50 text-gray-700"
-                        }`}
-                        onClick={() => handleMonthSelection(month, selectedYear)}
-                      >
-                        {month}
-                      </button>
-                    ));
-                  })()}
-        </div>
-        </div>
-            )}
-        </div>
+              )}
+            </div>
           </div>
 
           {/* Tabs */}
@@ -1177,7 +1453,7 @@ function Attendance() {
                 getAttendanceColor,
                 calculateAttendanceSummary,
                 attendance,
-                summaryDate
+                summaryDate,
               })
             : renderLeaveTable({
                 searchInput,
@@ -1187,7 +1463,7 @@ function Attendance() {
                 isDepartmentFilterOpen,
                 toggleDepartment,
                 filteredAndSearchedLeaveData,
-                calculateLeaveSummary
+                calculateLeaveSummary,
               })}
         </div>
       </div>

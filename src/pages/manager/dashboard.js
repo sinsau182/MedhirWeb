@@ -29,6 +29,8 @@ import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
 import getConfig from "next/config";
+import { fetchExpenseRequests, fetchIncomeRequests } from "@/redux/slices/requestDetailsSlice";
+
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -54,6 +56,15 @@ const Overview = () => {
 
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
+  const {
+    expensesRequests,
+    incomeRequests,
+  } = useSelector((state) => state.requestDetails);
+
+  useEffect(() => {
+    dispatch(fetchExpenseRequests());
+    dispatch(fetchIncomeRequests());
+  }, [dispatch]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -74,7 +85,6 @@ const Overview = () => {
   const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
       const employeeId = sessionStorage.getItem("employeeId");
       const headers = {
         "Content-Type": "application/json",
@@ -100,7 +110,6 @@ const Overview = () => {
   const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
       const employeeId = sessionStorage.getItem("employeeId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/manager/leave/status/Pending/${employeeId}`,
@@ -207,7 +216,7 @@ const Overview = () => {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
       label: "Open Requests",
       count:
-        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
+        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length + expensesRequests.length + incomeRequests.length,
     },
   ];
 

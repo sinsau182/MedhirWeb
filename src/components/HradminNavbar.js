@@ -32,11 +32,18 @@ const Navbar = () => {
   const { publicRuntimeConfig } = getConfig();
 
   useEffect(() => {
-    const storedCompany = localStorage.getItem("selectedCompany");
-    const storedColor = localStorage.getItem("selectedCompanyColor");
+    const storedCompany = sessionStorage.getItem("currentCompany");
+    const storedColor = sessionStorage.getItem("currentCompanyColor");
+    const lastSelectedCompany = localStorage.getItem("lastSelectedCompany");
+    const lastSelectedCompanyId = localStorage.getItem("lastSelectedCompanyId");
 
     if (storedCompany) {
       setSelectedCompany(storedCompany);
+    } else if (lastSelectedCompany) {
+      // If no current company in session, use last selected from localStorage
+      setSelectedCompany(lastSelectedCompany);
+      sessionStorage.setItem("currentCompany", lastSelectedCompany);
+      sessionStorage.setItem("currentCompanyId", lastSelectedCompanyId);
     }
 
     if (storedColor) {
@@ -95,12 +102,25 @@ const Navbar = () => {
         );
         if (response.data && Array.isArray(response.data)) {
           setCompanies(response.data); // Store the full company objects
-          if (
-            !response.data.some(
-              (company) => company.companyName === selectedCompany
-            )
-          ) {
-            setSelectedCompany(response.data[0].companyName); // Set default company if current selection is not in the list
+          
+          // Only set default company if no lastSelectedCompany exists in localStorage
+          const lastSelectedCompany = localStorage.getItem("lastSelectedCompany");
+          if (!lastSelectedCompany) {
+            if (
+              !response.data.some(
+                (company) => company.companyName === selectedCompany
+              )
+            ) {
+              setSelectedCompany(response.data[0].companyName);
+              sessionStorage.setItem("currentCompany", response.data[0].companyName);
+              sessionStorage.setItem("currentCompanyId", response.data[0].companyId);
+              sessionStorage.setItem("currentCompanyColor", response.data[0].colorCode);
+              
+              // Also set in localStorage for future reference
+              localStorage.setItem("lastSelectedCompany", response.data[0].companyName);
+              localStorage.setItem("lastSelectedCompanyId", response.data[0].companyId);
+              localStorage.setItem("lastSelectedCompanyColor", response.data[0].colorCode);
+            }
           }
         }
       } catch (error) {
@@ -168,7 +188,7 @@ const Navbar = () => {
       return;
     }
 
-    const currentSelectedCompany = localStorage.getItem("selectedCompany");
+    const currentSelectedCompany = sessionStorage.getItem("currentCompany");
 
     if (companyName !== currentSelectedCompany) {
       setSelectedCompany(companyName);
@@ -179,16 +199,15 @@ const Navbar = () => {
       );
 
       if (selectedCompanyData) {
-        // Store selected company name and color code in localStorage
-        localStorage.setItem("selectedCompany", companyName);
-        localStorage.setItem(
-          "selectedCompanyColor",
-          selectedCompanyData.colorCode
-        );
-        localStorage.setItem(
-          "selectedCompanyId",
-          selectedCompanyData.companyId
-        );
+        // Store current company in sessionStorage
+        sessionStorage.setItem("currentCompany", companyName);
+        sessionStorage.setItem("currentCompanyColor", selectedCompanyData.colorCode);
+        sessionStorage.setItem("currentCompanyId", selectedCompanyData.companyId);
+
+        // Store last selected company in localStorage
+        localStorage.setItem("lastSelectedCompany", companyName);
+        localStorage.setItem("lastSelectedCompanyColor", selectedCompanyData.colorCode);
+        localStorage.setItem("lastSelectedCompanyId", selectedCompanyData.companyId);
 
         window.location.reload();
 

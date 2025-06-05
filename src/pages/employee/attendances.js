@@ -261,6 +261,10 @@ const EmployeeAttendance = () => {
     });
   };
 
+  const getDayName = (dateObj) => {
+    return dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
   return (
     <div className="flex h-screen">
       {/* Sidebar */}
@@ -386,7 +390,7 @@ const EmployeeAttendance = () => {
                         onClick={() => handleDateClick(day)}
                         className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass}`}
                       >
-                        {dayNumber}
+                        {dayNumber} {getDayName(day)}
                       </div>
                     );
                   })}
@@ -399,12 +403,19 @@ const EmployeeAttendance = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">
-                  {date
-                    ? date.toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })
+                {date
+                    ? (
+                        <>
+                          {date.toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                          <div className="text-base font-semibold text-gray-800 mt-1">
+                            {getDayName(date)}
+                          </div>
+                        </>
+                      )
                     : "Select a date"}
                 </CardTitle>
                 <CardDescription>Attendance details</CardDescription>

@@ -5,7 +5,7 @@ import withAuth from "@/components/withAuth";
 import { useRouter } from "next/router";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchExpenseByEmployeeId } from "@/redux/slices/expensesSlice";
-import { FiEye } from "react-icons/fi";
+import { FiEye, FiFileText } from "react-icons/fi";
 
 const Expenses = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -51,6 +51,68 @@ const Expenses = () => {
     router.push(`/employee/add-expense?id=${expense.expenseId}`);
   };
   
+  // Empty state component
+  const EmptyState = () => (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '48px 24px',
+      background: '#fff',
+      borderRadius: 12,
+      boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+      marginTop: 16
+    }}>
+      <div style={{
+        width: 64,
+        height: 64,
+        borderRadius: '50%',
+        background: '#f3f4f6',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16
+      }}>
+        <FiFileText size={32} color="#6b7280" />
+      </div>
+      <h3 style={{
+        fontSize: 18,
+        fontWeight: 600,
+        color: '#374151',
+        marginBottom: 8
+      }}>
+        No Expenses Found
+      </h3>
+      <p style={{
+        fontSize: 14,
+        color: '#6b7280',
+        textAlign: 'center',
+        maxWidth: 400,
+        marginBottom: 24
+      }}>
+        You haven't submitted any expenses yet. Click the button below to add your first expense.
+      </p>
+      <button
+        style={{
+          background: '#2563eb',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 6,
+          padding: '10px 24px',
+          fontWeight: 600,
+          fontSize: 14,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}
+        onClick={() => router.push('/employee/add-expense')}
+      >
+        Add Your First Expense
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -68,6 +130,35 @@ const Expenses = () => {
             Add Expense
           </button>
         </div>
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px',
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            marginTop: 16
+          }}>
+            <div style={{ color: '#6b7280', fontSize: 16 }}>Loading expenses...</div>
+          </div>
+        ) : error ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px',
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            marginTop: 16
+          }}>
+            <div style={{ color: '#ef4444', fontSize: 16 }}>Error: {error}</div>
+          </div>
+        ) : expenses.length === 0 ? (
+          <EmptyState />
+        ) : (
         <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: 0, marginTop: 16 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
@@ -112,6 +203,7 @@ const Expenses = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </>
   );

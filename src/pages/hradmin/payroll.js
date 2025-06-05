@@ -12,7 +12,7 @@ import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
 function PayrollManagement() {
-  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
   const dispatch = useDispatch();
 
   const { attendance } = useSelector((state) => state.attendances);

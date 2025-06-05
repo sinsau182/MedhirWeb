@@ -18,13 +18,14 @@ export const fetchIncomeByEmployeeId = createAsyncThunk(
                 }
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to fetch income by employee ID");
+                return rejectWithValue(data.message || "Something went wrong");
             }
-            return await response.json();
+            return data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Network Error");
         }
     }
 );
@@ -35,7 +36,7 @@ export const createIncome = createAsyncThunk(
     async (incomeData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}`, {
+            const response = await fetch(`${API_BASE_URL}/employee`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -44,13 +45,14 @@ export const createIncome = createAsyncThunk(
                 body: JSON.stringify(incomeData)
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to create income");
+                return rejectWithValue(data.message || "Something went wrong");
             }
-            return await response.json();
+            return data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Network Error");
         }
     }
 );
@@ -61,7 +63,7 @@ export const updateIncome = createAsyncThunk(
     async (incomeData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}/${incomeData.incomeId}`, {
+            const response = await fetch(`${API_BASE_URL}/employee/${incomeData.id}`, {
                 method: "PUT",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -70,13 +72,14 @@ export const updateIncome = createAsyncThunk(
                 body: JSON.stringify(incomeData)
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update income");
+                return rejectWithValue(data.message || "Something went wrong");
             }
-            return await response.json();
+            return data;
         } catch (error) {
-            return rejectWithValue(error.message);
+            return rejectWithValue(error.message || "Network Error");
         }
     }
 );

@@ -15,6 +15,8 @@ import PropTypes from "prop-types";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+
 
 import {
   fetchPendingLeaveRequests,
@@ -22,6 +24,10 @@ import {
   updateLeaveStatus,
   updateProfileRequestStatus,
   clearErrors,
+  fetchExpenseRequests,
+  fetchIncomeRequests,
+  updateExpenseRequestStatus,
+  updateIncomeRequestStatus,
 } from "@/redux/slices/requestDetailsSlice";
 
 // --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
@@ -157,6 +163,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     pendingLeaves,
     pendingCompOffs,
     profileUpdates,
+    expensesRequests,
+    incomeRequests,
     loading,
     error,
     profileLoading,
@@ -167,10 +175,14 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   } = useSelector((state) => state.requestDetails);
 
   // Placeholder for expense and advance requests (not implemented in the slice)
-  const [expenseRequests, setExpenseRequests] = useState([]);
+
   const [isLoadingExpense, setIsLoadingExpense] = useState(false);
-  const [advanceRequests, setAdvanceRequests] = useState([]);
-  const [isLoadingAdvance, setIsLoadingAdvance] = useState(false);
+  const [isLoadingIncome, setIsLoadingIncome] = useState(false);
+
+  const [approvingExpenseId, setApprovingExpenseId] = useState(null);
+  const [rejectingExpenseId, setRejectingExpenseId] = useState(null);
+  const [approvingIncomeId, setApprovingIncomeId] = useState(null);
+  const [rejectingIncomeId, setRejectingIncomeId] = useState(null);
 
   // Function to open the modal
   const handleViewDetails = (changes) => {
@@ -207,6 +219,16 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       dispatch(clearErrors());
     };
   }, [dispatch]);
+
+  // Fetch expenses when the expense tab is active
+  useEffect(() => {
+    if (activeTab === "expenseRequests") {
+      dispatch(fetchExpenseRequests());
+    }
+    if (activeTab === "incomeRequests") {
+      dispatch(fetchIncomeRequests());
+    }
+  }, [activeTab, dispatch]);
 
   // --- Approve/Reject Logic for Profile Updates ---
   const handleApproveProfileUpdate = async (employeeId) => {
@@ -313,9 +335,120 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     }
   };
 
+
+
+  // Handle expense approval
+  const handleApproveExpense = async (expenseId) => {
+    try {
+      setApprovingExpenseId(expenseId);
+      const resultAction = await dispatch(
+        updateExpenseRequestStatus({
+          expenseId,
+          status: "Approved",
+          remarks: "Approved by Authorized Person"
+        })
+      );
+
+      if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Expense approved successfully");
+        // Refresh the expenses list
+        dispatch(fetchExpenseRequests());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to approve expense");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to approve expense");
+    } finally {
+      setApprovingExpenseId(null);
+    }
+  };
+
+  // Handle expense rejection
+  const handleRejectExpense = async (expenseId) => {
+    try {
+      setRejectingExpenseId(expenseId);
+      const resultAction = await dispatch(
+        updateExpenseRequestStatus({
+          expenseId,
+          status: "Rejected",
+          remarks: "Rejected by Authorized Person"
+        })
+      );
+
+      if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Expense rejected successfully");
+        // Refresh the expenses list
+        dispatch(fetchExpenseRequests());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to reject expense");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to reject expense");
+    } finally {
+      setRejectingExpenseId(null);
+    }
+  };
+
+  // Handle income approval
+  const handleApproveIncome = async (incomeId) => {
+    try {
+      setApprovingIncomeId(incomeId);
+      const resultAction = await dispatch(
+        updateIncomeRequestStatus({
+          incomeId,
+          status: "Approved",
+          remarks: "Approved by Authorized Person"
+        })
+      );
+
+      if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Income approved successfully");
+        // Refresh the income requests list
+        dispatch(fetchIncomeRequests());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to approve income");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to approve income");
+    } finally {
+      setApprovingIncomeId(null);
+    }
+  };
+
+  // Handle income rejection
+  const handleRejectIncome = async (incomeId) => {
+    try {
+      setRejectingIncomeId(incomeId);
+      const resultAction = await dispatch(
+        updateIncomeRequestStatus({
+          incomeId,
+          status: "Rejected",
+          remarks: "Rejected by Authorized Person"
+        })
+      );
+
+      if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Income rejected successfully");
+        // Refresh the income requests list
+        dispatch(fetchIncomeRequests());
+      } else {
+        throw new Error(resultAction.error.message || "Failed to reject income");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to reject income");
+    } finally {
+      setRejectingIncomeId(null);
+    }
+  };
+
+        
+  
+
+
+
   // Updated combined loading state
   const isLoading =
-    loading || profileLoading || isLoadingExpense || isLoadingAdvance;
+    loading || profileLoading || isLoadingExpense || isLoadingIncome;
 
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
@@ -347,19 +480,17 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
           </TabsTrigger>
           <TabsTrigger
             value="expenseRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
           >
             <DollarSign className="h-4 w-4 mr-2" />
-            <span>Reimbursement Requests</span>
+            <span>Expense Requests</span>
           </TabsTrigger>
           <TabsTrigger
-            value="advanceRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled
+            value="incomeRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
           >
             <Wallet className="h-4 w-4 mr-2" />
-            <span>Advance Requests</span>
+            <span>Income Requests</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="leaveRequests">
@@ -747,57 +878,68 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       Loading...
                     </td>
                   </tr>
-                ) : expenseRequests.length === 0 ? (
+                ) : expensesRequests.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center py-5 text-gray-500">
                       No pending expense requests.
                     </td>
                   </tr>
                 ) : (
-                  expenseRequests.map((request) => (
+                  expensesRequests.map((request) => (
                     <tr
-                      key={request.id}
+                      key={request.expenseId}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                        {request.employeeId}
+                        {request.submittedBy}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.name}</td>
+                      <td className="px-5 py-4 text-sm">{request.employeeName}</td>
                       <td className="px-5 py-4 text-sm">
                         {request.department}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.amount}</td>
+                      <td className="px-5 py-4 text-sm">{request.totalAmount}</td>
                       <td className="px-5 py-4 text-sm">
-                        {request.description}
+                        {request.comments}
                       </td>
-                      <td className="px-5 py-4 text-sm">
-                        {request.hasReceipt && (
+                      {/* <td className="px-5 py-4 text-sm">
+                        {request.file && (
                           <Button
                             size="sm"
                             variant="outline"
                             className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
+                            onClick={() => window.open(request.file, '_blank')}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
                         )}
-                      </td>
+                      </td> */}
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleApproveExpense(request.expenseId)}
+                          disabled={approvingExpenseId === request.expenseId}
                         >
-                          <Check className="h-4 w-4" />
+                          {approvingExpenseId === request.expenseId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleRejectExpense(request.expenseId)}
+                          disabled={rejectingExpenseId === request.expenseId}
                         >
-                          <X className="h-4 w-4" />
+                          {rejectingExpenseId === request.expenseId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                       </td>
                     </tr>
@@ -807,7 +949,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
             </table>
           </div>
         </TabsContent>
-        <TabsContent value="advanceRequests">
+        <TabsContent value="incomeRequests">
           <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
@@ -836,28 +978,28 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                 </tr>
               </thead>
               <tbody>
-                {isLoadingAdvance ? (
+                {isLoadingIncome ? (
                   <tr>
                     <td colSpan="7" className="text-center py-5">
                       Loading...
                     </td>
                   </tr>
-                ) : advanceRequests.length === 0 ? (
+                ) : incomeRequests.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center py-5 text-gray-500">
-                      No pending advance requests.
+                      No pending income requests.
                     </td>
                   </tr>
                 ) : (
-                  advanceRequests.map((request) => (
+                  incomeRequests.map((request) => (
                     <tr
                       key={request.id}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                        {request.employeeId}
+                        {request.submittedBy}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.name}</td>
+                      <td className="px-5 py-4 text-sm">{request.employeeName}</td>
                       <td className="px-5 py-4 text-sm">
                         {request.department}
                       </td>
@@ -867,21 +1009,31 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         {request.repaymentPlan}
                       </td>
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
-                        <Button
+                      <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleApproveIncome(request.incomeId)}
+                          disabled={approvingIncomeId === request.incomeId}
                         >
-                          <Check className="h-4 w-4" />
+                          {approvingIncomeId === request.incomeId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleRejectIncome(request.incomeId)}
+                          disabled={rejectingIncomeId === request.incomeId}
                         >
-                          <X className="h-4 w-4" />
+                          {rejectingIncomeId === request.incomeId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                       </td>
                     </tr>

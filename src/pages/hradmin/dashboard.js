@@ -39,6 +39,7 @@ import getConfig from "next/config";
 // Import necessary hooks and actions
 import { useRouter } from "next/router";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import { fetchExpenseRequests, fetchIncomeRequests } from "@/redux/slices/requestDetailsSlice";
 
 const COLORS = [
   "#0088FE",
@@ -80,11 +81,19 @@ const Overview = () => {
     (state) => state.employees || {}
   );
   const { attendance, loading: attendanceLoading, err: attendanceErr } = useSelector((state) => state.attendances || {}); // Add attendance state
+  // Get state from Redux
+  const {
+    expensesRequests,
+    incomeRequests,
+  } = useSelector((state) => state.requestDetails);
+  console.log(expensesRequests);
 
   const {publicRuntimeConfig} = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
-  }, [dispatch]);
+    dispatch(fetchExpenseRequests());
+    dispatch(fetchIncomeRequests());
+  }, [dispatch, sessionStorage.getItem("currentCompanyId")]);
 
   // Add useEffect to fetch current day's attendance and calculate summary
   useEffect(() => {
@@ -101,7 +110,7 @@ const Overview = () => {
         date: currentDay, // Fetch only for the current day
       })
     );
-  }, [dispatch]); // Dependency on dispatch
+  }, [dispatch, sessionStorage.getItem("currentCompanyId")]); // Dependency on dispatch
 
   // Calculate current day summary whenever attendance data changes
   useEffect(() => {
@@ -170,7 +179,7 @@ const Overview = () => {
   const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -195,7 +204,7 @@ const Overview = () => {
   const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
         {
@@ -229,7 +238,7 @@ const Overview = () => {
   useEffect(() => {
     fetchPendingRequests();
     fetchProfileUpdates();
-  }, [fetchPendingRequests, fetchProfileUpdates]);
+  }, [fetchPendingRequests, fetchProfileUpdates, sessionStorage.getItem("currentCompanyId")]);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -268,7 +277,11 @@ const Overview = () => {
       icon: <FaClock className="h-6 w-6 text-yellow-500" />,
       label: "Pending Tasks",
       count:
-        (profileUpdates.length || 0) + (pendingLeaves.length || 0) + (pendingCompOffs.length || 0),
+        (profileUpdates?.length || 0) + 
+        (pendingLeaves?.length || 0) + 
+        (pendingCompOffs?.length || 0) + 
+        (expensesRequests?.length || 0) +
+        (incomeRequests?.length || 0),
       onClick: handleOpenRequestsClick,
     },
     // Payroll Status card removed

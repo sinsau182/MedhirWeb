@@ -3,7 +3,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
 import { useRouter } from "next/router";
-import { FiEye, FiCopy } from "react-icons/fi";
+import { FiEye, FiCopy, FiDollarSign } from "react-icons/fi";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchIncomeByEmployeeId } from "@/redux/slices/incomesSlice";
 
@@ -13,8 +13,6 @@ const Income = () => {
   const router = useRouter();
   const dispatch = useDispatch();
   const { incomes, loading, error } = useSelector((state) => state.incomes);
-  console.log(incomes);
-
 
   useEffect(() => {
     dispatch(fetchIncomeByEmployeeId());
@@ -41,6 +39,69 @@ const Income = () => {
     router.push(`/employee/add-income?id=${income.incomeId}`);
   };
 
+    // Empty state component
+    const EmptyState = () => (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '48px 24px',
+        background: '#fff',
+        borderRadius: 12,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+        marginTop: 16
+      }}>
+        <div style={{
+          width: 64,
+          height: 64,
+          borderRadius: '50%',
+          background: '#f3f4f6',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 16
+        }}>
+          <FiDollarSign size={32} color="#6b7280" />
+        </div>
+        <h3 style={{
+          fontSize: 18,
+          fontWeight: 600,
+          color: '#374151',
+          marginBottom: 8
+        }}>
+          No Income Records Found
+        </h3>
+        <p style={{
+          fontSize: 14,
+          color: '#6b7280',
+          textAlign: 'center',
+          maxWidth: 400,
+          marginBottom: 24
+        }}>
+          You haven't submitted any income records yet. Click the button below to add your first income record.
+        </p>
+        <button
+          style={{
+            background: '#2563eb',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '10px 24px',
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+          onClick={() => router.push('/employee/add-income')}
+        >
+          Add Your First Income
+        </button>
+      </div>
+    );
+
   return (
     <>
       <HradminNavbar />
@@ -55,6 +116,35 @@ const Income = () => {
             Add Income
           </button>
         </div>
+        {loading ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px',
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            marginTop: 16
+          }}>
+            <div style={{ color: '#6b7280', fontSize: 16 }}>Loading income records...</div>
+          </div>
+        ) : error ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px',
+            background: '#fff',
+            borderRadius: 12,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            marginTop: 16
+          }}>
+            <div style={{ color: '#ef4444', fontSize: 16 }}>Error: {error}</div>
+          </div>
+        ) : incomes.length === 0 ? (
+          <EmptyState />
+        ) : (
         <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', padding: 0, marginTop: 16 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
@@ -97,6 +187,7 @@ const Income = () => {
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </>
   );
