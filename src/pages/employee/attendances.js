@@ -390,7 +390,7 @@ const EmployeeAttendance = () => {
                         onClick={() => handleDateClick(day)}
                         className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass}`}
                       >
-                        {dayNumber} {getDayName(day)}
+                        {dayNumber}
                       </div>
                     );
                   })}
@@ -403,7 +403,7 @@ const EmployeeAttendance = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">
-                {date
+                  {date
                     ? (
                         <>
                           {date.toLocaleDateString("en-US", {
