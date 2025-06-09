@@ -44,8 +44,9 @@ const fetchOneEmployeeAttendanceAllMonth = createAsyncThunk(
 export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchOneEmployeeAttendanceOneMonth",
     async ({ month, year }, { rejectWithValue }) => {
-        const token = getItemFromSessionStorage("token", null);
-        const employeeId = sessionStorage.getItem("employeeId");
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const employeeId = sessionStorage.getItem("employeeId");
         const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/month/${month}/year/${year}`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -53,11 +54,17 @@ export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
             }
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-            throw new Error("Failed to fetch attendance by employee ID");
+            return rejectWithValue(data.message || "Something went wrong"); // backend error
         }
-        return await response.json();
+        return data;
+        
+    } catch (error) {
+        return rejectWithValue(error.message || "Network Error");
     }
+}
 );
 
 export const attendancesSlice = createSlice({

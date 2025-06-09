@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -6,14 +6,25 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { CheckCircle2, Clock, CalendarIcon } from "lucide-react";
+import { CheckCircle2, Clock, CalendarIcon, Calendar } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
-import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { Badge } from "@/components/ui/badge";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+
 
 const EmployeeAttendance = () => {
+  const dispatch = useDispatch();
+  const { attendance, loading, error } = useSelector(
+    (state) => state.attendances
+  );
+
+  console.log('Attendance Error:', error);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [date, setDate] = useState(null); // State to manage selected date
   const [attendanceData, setAttendanceData] = useState([]); // State for attendance data for the calendar
@@ -22,126 +33,158 @@ const EmployeeAttendance = () => {
   const [showToast, setShowToast] = useState(false); // State to control toast visibility
   const [reasonSubmitted, setReasonSubmitted] = useState(false); // State to track if reason was submitted
   const [monthlySummary, setMonthlySummary] = useState({}); // State to store monthly attendance summary counts
+  const calendarRef = useRef(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  // Get current date info
+  const today = new Date();
+  const currentMonth = today.toLocaleString("default", { month: "short" });
+  const currentYear = today.getFullYear().toString();
 
+  // Initialize with current month and year
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  // Add useEffect for calendar click outside handling
   useEffect(() => {
-    const fetchMonthlyAttendance = async () => {
-      const employeeId = sessionStorage.getItem("employeeId");
-      const token = getItemFromSessionStorage("token", null);
-
-      if (!employeeId || !token) {
-        toast.error("Employee ID or token not found in session storage.");
-        return;
-      }
-
-      const today = new Date();
-      const year = today.getFullYear();
-      const monthDate = new Date(year, today.getMonth(), 1);
-      const monthShortName = monthDate.toLocaleDateString('en-US', { month: 'short' });
-
-      const url = `http://localhost:8083/api/attendance/employee/${employeeId}/month/${monthShortName}/year/${year}`;
-
-      try {
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        const data = result.dailyAttendance;
-
-        const year = today.getFullYear();
-        const month = today.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        const formattedData = [];
-        const summaryCounts = {
-          'Present': 0,
-          'Present on Holiday': 0,
-          'Half Day on Holiday': 0,
-          'Half Day': 0,
-          'On Leave': 0,
-          'Holiday': 0,
-          'Weekend': 0,
-          'Loss of Pay': 0,
-          'Absent': 0,
-          'No Data': 0,
-        };
-
-        for (let day = 1; day <= daysInMonth; day++) {
-          const status = data[day.toString()] || null;
-          let fullStatus = 'No Data';
-          let leaveType = null;
-
-          switch (status) {
-            case 'P':
-              fullStatus = 'Present';
-              break;
-            case 'A':
-              fullStatus = 'Absent';
-              break;
-            case 'L':
-              fullStatus = 'On Leave';
-              leaveType = 'Full Day';
-              break;
-            case 'H':
-              fullStatus = 'Holiday';
-              break;
-            case 'W':
-              fullStatus = 'Weekend';
-              break;
-            case 'PH':
-              fullStatus = 'Present on Holiday';
-              leaveType = 'On Holiday';
-              break;
-            case 'PH/A':
-              fullStatus = 'Half Day on Holiday';
-              leaveType = 'Half Day on Holiday';
-              break;
-            case 'P/A':
-              fullStatus = 'Half Day';
-              leaveType = 'Half Day';
-              break;
-            case 'LOP':
-              fullStatus = 'Loss of Pay';
-              leaveType = 'Loss of Pay';
-              break;
-            default:
-              fullStatus = 'No Data';
-          }
-
-          formattedData.push({
-            date: new Date(year, month, day),
-            status: fullStatus,
-            isLate: false,
-            checkIn: null,
-            checkOut: null,
-            leaveType: leaveType,
-            checkinTimes: [],
-            checkoutTimes: [],
-            totalWorkingMinutes: 0,
-          });
-
-          summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
-        }
-        setAttendanceData(formattedData);
-        setMonthlySummary(summaryCounts);
-      } catch (error) {
-        toast.error(`Failed to fetch monthly attendance data: ${error.message}`);
-        setAttendanceData([]);
-        setMonthlySummary({});
+    const handleCalendarClickOutside = (event) => {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
       }
     };
 
-    fetchMonthlyAttendance();
-    // Auto-hide toast after 3 seconds
+    document.addEventListener("mousedown", handleCalendarClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleCalendarClickOutside);
+    };
   }, []);
+
+  const toggleCalendar = useCallback(
+    () => setIsCalendarOpen(!isCalendarOpen),
+    [isCalendarOpen]
+  );
+
+  const handleMonthSelection = useCallback((month, year) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    setIsCalendarOpen(false);
+
+    // Get employee ID from session storage
+    const employeeId = sessionStorage.getItem("employeeId");
+    if (!employeeId) {
+      toast.error("Employee ID not found in session storage.");
+      return;
+    }
+
+    // Dispatch the action to fetch attendance data
+    dispatch(fetchOneEmployeeAttendanceOneMonth({
+      employeeId,
+      month,
+      year
+    }));
+  }, [dispatch]);
+
+  // Initial data fetch when component mounts
+  useEffect(() => {
+    const employeeId = sessionStorage.getItem("employeeId");
+    if (!employeeId) {
+      toast.error("Employee ID not found in session storage.");
+      return;
+    }
+
+    // Fetch data for current month and year
+    dispatch(fetchOneEmployeeAttendanceOneMonth({
+      employeeId,
+      month: currentMonth,
+      year: currentYear
+    }));
+  }, [dispatch, currentMonth, currentYear]);
+
+  // Update attendance data when Redux store changes
+  useEffect(() => {
+    if (attendance && !loading && !error) {
+      const data = attendance.dailyAttendance || {};
+      const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+      const daysInMonth = new Date(parseInt(selectedYear), monthIndex + 1, 0).getDate();
+
+      const formattedData = [];
+      const summaryCounts = {
+        Present: 0,
+        "Present on Holiday": 0,
+        "Half Day on Holiday": 0,
+        "Half Day": 0,
+        "On Leave": 0,
+        Holiday: 0,
+        Weekend: 0,
+        "Loss of Pay": 0,
+        Absent: 0,
+        "No Data": 0,
+      };
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const status = data[day.toString()] || null;
+        let fullStatus = "No Data";
+        let leaveType = null;
+
+        switch (status) {
+          case "P":
+            fullStatus = "Present";
+            break;
+          case "A":
+            fullStatus = "Absent";
+            break;
+          case "L":
+            fullStatus = "On Leave";
+            leaveType = "Full Day";
+            break;
+          case "H":
+            fullStatus = "Holiday";
+            break;
+          case "W":
+            fullStatus = "Weekend";
+            break;
+          case "PH":
+            fullStatus = "Present on Holiday";
+            leaveType = "On Holiday";
+            break;
+          case "PH/A":
+            fullStatus = "Half Day on Holiday";
+            leaveType = "Half Day on Holiday";
+            break;
+          case "P/A":
+            fullStatus = "Half Day";
+            leaveType = "Half Day";
+            break;
+          case "LOP":
+            fullStatus = "Loss of Pay";
+            leaveType = "Loss of Pay";
+            break;
+          default:
+            fullStatus = "No Data";
+        }
+
+        formattedData.push({
+          date: new Date(parseInt(selectedYear), monthIndex, day),
+          status: fullStatus,
+          isLate: false,
+          checkIn: null,
+          checkOut: null,
+          leaveType: leaveType,
+          checkinTimes: attendance?.checkinTimes || [],
+          checkoutTimes: attendance?.checkoutTimes || [],
+          totalWorkingMinutes: attendance?.totalWorkingMinutes || 0,
+        });
+
+        summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
+      }
+      setAttendanceData(formattedData);
+      setMonthlySummary(summaryCounts);
+    } else if (error) {
+      toast.error(`Failed to fetch attendance data: ${error}`);
+      setAttendanceData([]);
+      setMonthlySummary({});
+    }
+  }, [attendance, loading, error, selectedMonth, selectedYear]);
 
   // Auto-hide toast after 3 seconds
   useEffect(() => {
@@ -158,14 +201,13 @@ const EmployeeAttendance = () => {
   };
 
   const generateCalendarDays = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const year = parseInt(selectedYear);
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     let daysArray = [];
 
     for (let day = 1; day <= daysInMonth; day++) {
-      daysArray.push(new Date(year, month, day));
+      daysArray.push(new Date(year, monthIndex, day));
     }
 
     return daysArray;
@@ -199,7 +241,9 @@ const EmployeeAttendance = () => {
       const year = selectedDate.getFullYear();
       const day = selectedDate.getDate();
       // Get the short month name (e.g., "Apr")
-      const monthShortName = selectedDate.toLocaleDateString('en-US', { month: 'short' });
+      const monthShortName = selectedDate.toLocaleDateString("en-US", {
+        month: "short",
+      });
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
       const url = `http://localhost:8083/api/attendance/employee/${employeeId}/month/${monthShortName}/year/${year}`;
@@ -216,7 +260,7 @@ const EmployeeAttendance = () => {
       }
 
       const data = await response.json();
-      
+
       // Update state with fetched data while preserving status and color information
       setAttendanceData((prevData) => {
         const updatedData = prevData.map((d) => {
@@ -225,11 +269,12 @@ const EmployeeAttendance = () => {
               ...d,
               checkinTimes: data.checkinTimes || d.checkinTimes,
               checkoutTimes: data.checkoutTimes || d.checkoutTimes,
-              totalWorkingMinutes: data.totalWorkingMinutes || d.totalWorkingMinutes,
+              totalWorkingMinutes:
+                data.totalWorkingMinutes || d.totalWorkingMinutes,
               // Preserve the status and other display properties
               status: d.status,
               isLate: d.isLate,
-              leaveType: d.leaveType
+              leaveType: d.leaveType,
             };
           }
           return d;
@@ -237,9 +282,7 @@ const EmployeeAttendance = () => {
         return updatedData;
       });
     } catch (error) {
-      toast.error(
-        `Failed to fetch attendance data: ${error.message}`
-      );
+      toast.error(`Failed to fetch attendance data: ${error.message}`);
     }
   };
 
@@ -262,7 +305,7 @@ const EmployeeAttendance = () => {
   };
 
   const getDayName = (dateObj) => {
-    return dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    return dateObj.toLocaleDateString("en-US", { weekday: "long" });
   };
 
   return (
@@ -296,38 +339,64 @@ const EmployeeAttendance = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {/* Present */}
                   <div className="flex flex-col bg-green-100 p-3 rounded-lg">
-                    <span className="font-medium text-green-800">Present (P)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Present'] || 0}</span>
+                    <span className="font-medium text-green-800">
+                      Present (P)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Present"] || 0}
+                    </span>
                   </div>
                   {/* Half Day */}
                   <div className="flex flex-col bg-yellow-100 p-3 rounded-lg">
-                    <span className="font-medium text-yellow-800">Half Day (P/A)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Half Day'] || 0}</span>
+                    <span className="font-medium text-yellow-800">
+                      Half Day (P/A)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Half Day"] || 0}
+                    </span>
                   </div>
                   {/* Absent */}
                   <div className="flex flex-col bg-red-200 p-3 rounded-lg">
                     <span className="font-medium text-red-900">Absent (A)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Absent'] || 0}</span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Absent"] || 0}
+                    </span>
                   </div>
                   {/* Holiday */}
                   <div className="flex flex-col bg-gray-200 p-3 rounded-lg">
-                    <span className="font-medium text-gray-700">Holiday (H)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Holiday'] || 0}</span>
+                    <span className="font-medium text-gray-700">
+                      Holiday (H)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Holiday"] || 0}
+                    </span>
                   </div>
                   {/* Present on Holiday */}
                   <div className="flex flex-col bg-blue-100 p-3 rounded-lg">
-                    <span className="font-medium text-blue-800">Present on Holiday (PH)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Present on Holiday'] || 0}</span>
+                    <span className="font-medium text-blue-800">
+                      Present on Holiday (PH)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Present on Holiday"] || 0}
+                    </span>
                   </div>
                   {/* Half Day on Holiday */}
                   <div className="flex flex-col bg-orange-200 p-3 rounded-lg">
-                    <span className="font-medium text-orange-800">Half Day on Holiday (PH/A)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Half Day on Holiday'] || 0}</span>
+                    <span className="font-medium text-orange-800">
+                      Half Day on Holiday (PH/A)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Half Day on Holiday"] || 0}
+                    </span>
                   </div>
                   {/* Loss of Pay */}
                   <div className="flex flex-col bg-purple-100 p-3 rounded-lg">
-                    <span className="font-medium text-purple-800">Loss of Pay (LOP)</span>
-                    <span className="text-2xl font-bold">{monthlySummary['Loss of Pay'] || 0}</span>
+                    <span className="font-medium text-purple-800">
+                      Loss of Pay (LOP)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Loss of Pay"] || 0}
+                    </span>
                   </div>
                   {/* No Data removed */}
                 </div>
@@ -338,63 +407,192 @@ const EmployeeAttendance = () => {
             {/* Attendance Calendar */}
             <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle className="text-xl">Attendance Calendar</CardTitle>
-                <CardDescription>
-                  View and track your attendance history
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl">Attendance Calendar</CardTitle>
+                    <CardDescription>
+                      View and track your attendance history
+                    </CardDescription>
+                  </div>
+                  <div className="relative" ref={calendarRef}>
+                    <Badge
+                      variant="outline"
+                      className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                      onClick={toggleCalendar}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      <span className="font-medium text-sm">
+                        {selectedYear}-{selectedMonth}
+                      </span>
+                    </Badge>
+                    {isCalendarOpen && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                        {/* Existing calendar content */}
+                        <div className="p-3 border-b flex justify-between items-center">
+                          <div className="text-sm font-medium text-gray-700">
+                            {selectedYear}
+                          </div>
+                          <select
+                            value={selectedYear}
+                            onChange={(e) => {
+                              const newYear = e.target.value;
+                              setSelectedYear(newYear);
+                              
+                              // Set default month based on year
+                              if (newYear === "2024") {
+                                setSelectedMonth("Aug");
+                                // Fetch data for August 2024
+                                const employeeId = sessionStorage.getItem("employeeId");
+                                if (employeeId) {
+                                  dispatch(fetchOneEmployeeAttendanceOneMonth({
+                                    employeeId,
+                                    month: "Aug",
+                                    year: newYear
+                                  }));
+                                }
+                              } else {
+                                setSelectedMonth("Jan");
+                                // Fetch data for January 2025
+                                const employeeId = sessionStorage.getItem("employeeId");
+                                if (employeeId) {
+                                  dispatch(fetchOneEmployeeAttendanceOneMonth({
+                                    employeeId,
+                                    month: "Jan",
+                                    year: newYear
+                                  }));
+                                }
+                              }
+                            }}
+                            className="ml-2 border rounded px-2 py-1 text-sm"
+                          >
+                            {[2024, 2025].map((year) => (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5 p-3">
+                          {(() => {
+                            const currentYear = new Date().getFullYear();
+                            const currentMonthIdx = new Date().getMonth(); // 0-based
+                            let months = [
+                              "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                            ];
+                            
+                            // Determine which months to show based on year
+                            let startIdx = 0;
+                            let endIdx = 11;
+                            
+                            if (parseInt(selectedYear) === 2024) {
+                              startIdx = 7; // August (0-based)
+                              endIdx = 11; // December
+                            } else if (parseInt(selectedYear) === 2025) {
+                              startIdx = 0; // January
+                              endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                            }
+                            
+                            return months
+                              .slice(startIdx, endIdx + 1)
+                              .map((month) => (
+                                <button
+                                  key={month}
+                                  className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                                    month === selectedMonth
+                                      ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                                      : "hover:bg-gray-50 text-gray-700"
+                                  }`}
+                                  onClick={() => handleMonthSelection(month, selectedYear)}
+                                >
+                                  {month}
+                                </button>
+                              ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardHeader>
+
               <CardContent>
                 {/* Calendar Days */}
-                <div className="flex flex-wrap gap-1 border rounded-md p-2">
-                  {calendarDays.map((day, index) => {
-                    // Find attendance status for the current day
-                    const dayData = attendanceData.find(
-                      (d) => d.date.toDateString() === day.toDateString()
-                    );
-                    const status = dayData?.status;
-                    const dayNumber = day.getDate();
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
+                    <p>Loading attendance data...</p>
+                  </div>
+                ) : error ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
+                    <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
+                    <p className="text-lg font-medium">Error loading attendance data</p>
+                    <p className="text-sm text-muted-foreground/80">{error}</p>
+                  </div>
+                ) : !attendance?.dailyAttendance || Object.keys(attendance.dailyAttendance || {}).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
+                    <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
+                    <p className="text-lg font-medium">No attendance data available</p>
+                    <p className="text-sm text-muted-foreground/80">There is no attendance data for the selected month.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1 border rounded-md p-2">
+                    {calendarDays.map((day, index) => {
+                      // Find attendance status for the current day
+                      const dayData = attendanceData.find(
+                        (d) => d.date.toDateString() === day.toDateString()
+                      );
+                      const status = dayData?.status;
+                      const dayNumber = day.getDate();
 
-                    // Determine background color based on status
-                    let bgColorClass = "hover:bg-gray-200";
-                    if (dayData) {
-                      switch (status) {
-                        case 'Present':
-                          bgColorClass = "bg-green-100 hover:bg-green-200 text-green-800";
-                          break;
-                        case 'Absent':
-                          bgColorClass = "bg-red-200 hover:bg-red-300 text-red-900";
-                          break;
-                        case 'Half Day':
-                          bgColorClass = "bg-yellow-100 hover:bg-yellow-200 text-yellow-800";
-                          break;
-                        case 'Holiday':
-                          bgColorClass = "bg-gray-200 hover:bg-gray-300 text-gray-700";
-                          break;
-                        case 'Present on Holiday':
-                          bgColorClass = "bg-blue-100 hover:bg-blue-200 text-blue-800";
-                          break;
-                        case 'Half Day on Holiday':
-                          bgColorClass = "bg-orange-200 hover:bg-orange-300 text-orange-800";
-                          break;
-                        case 'Loss of Pay':
-                          bgColorClass = "bg-purple-100 hover:bg-purple-200 text-purple-800";
-                          break;
-                        default:
-                          bgColorClass = "hover:bg-gray-200";
+                      // Determine background color based on status
+                      let bgColorClass = "hover:bg-gray-200";
+                      if (dayData) {
+                        switch (status) {
+                          case "Present":
+                            bgColorClass =
+                              "bg-green-100 hover:bg-green-200 text-green-800";
+                            break;
+                          case "Absent":
+                            bgColorClass =
+                              "bg-red-200 hover:bg-red-300 text-red-900";
+                            break;
+                          case "Half Day":
+                            bgColorClass =
+                              "bg-yellow-100 hover:bg-yellow-200 text-yellow-800";
+                            break;
+                          case "Holiday":
+                            bgColorClass =
+                              "bg-gray-200 hover:bg-gray-300 text-gray-700";
+                            break;
+                          case "Present on Holiday":
+                            bgColorClass =
+                              "bg-blue-100 hover:bg-blue-200 text-blue-800";
+                            break;
+                          case "Half Day on Holiday":
+                            bgColorClass =
+                              "bg-orange-200 hover:bg-orange-300 text-orange-800";
+                            break;
+                          case "Loss of Pay":
+                            bgColorClass =
+                              "bg-purple-100 hover:bg-purple-200 text-purple-800";
+                            break;
+                          default:
+                            bgColorClass = "hover:bg-gray-200";
+                        }
                       }
-                    }
 
-                    return (
-                      <div
-                        key={index}
-                        onClick={() => handleDateClick(day)}
-                        className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass}`}
-                      >
-                        {dayNumber}
-                      </div>
-                    );
-                  })}
-                </div>
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => handleDateClick(day)}
+                          className={`w-[6.5%] text-center p-2 cursor-pointer rounded-md transition ${bgColorClass}`}
+                        >
+                          {dayNumber}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {/* Legend Table removed */}
               </CardContent>
             </Card>
@@ -403,20 +601,20 @@ const EmployeeAttendance = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-xl">
-                  {date
-                    ? (
-                        <>
-                          {date.toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                          <div className="text-base font-semibold text-gray-800 mt-1">
-                            {getDayName(date)}
-                          </div>
-                        </>
-                      )
-                    : "Select a date"}
+                  {date ? (
+                    <>
+                      {date.toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                      <div className="text-base font-semibold text-gray-800 mt-1">
+                        {getDayName(date)}
+                      </div>
+                    </>
+                  ) : (
+                    "Select a date"
+                  )}
                 </CardTitle>
                 <CardDescription>Attendance details</CardDescription>
               </CardHeader>
@@ -454,21 +652,21 @@ const EmployeeAttendance = () => {
                           <span className="text-sm font-medium">Status:</span>
                           <span
                             className={`${
-                              status === 'Present'
-                                ? 'bg-green-100 text-green-800'
-                                : status === 'Absent'
-                                ? 'bg-red-200 text-red-900'
-                                : status === 'Half Day'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : status === 'Holiday'
-                                ? 'bg-gray-200 text-gray-700'
-                                : status === 'Present on Holiday'
-                                ? 'bg-blue-100 text-blue-800'
-                                : status === 'Half Day on Holiday'
-                                ? 'bg-orange-200 text-orange-800'
-                                : status === 'Loss of Pay'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-gray-100 text-gray-700'
+                              status === "Present"
+                                ? "bg-green-100 text-green-800"
+                                : status === "Absent"
+                                ? "bg-red-200 text-red-900"
+                                : status === "Half Day"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : status === "Holiday"
+                                ? "bg-gray-200 text-gray-700"
+                                : status === "Present on Holiday"
+                                ? "bg-blue-100 text-blue-800"
+                                : status === "Half Day on Holiday"
+                                ? "bg-orange-200 text-orange-800"
+                                : status === "Loss of Pay"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-gray-100 text-gray-700"
                             } text-xs font-semibold px-2 py-1 rounded-full`}
                           >
                             {status}
