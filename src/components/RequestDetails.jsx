@@ -28,6 +28,7 @@ import {
   updateExpenseRequestStatus,
   updateIncomeRequestStatus,
 } from "@/redux/slices/requestDetailsSlice";
+import { fetchEmployeeDetails } from "@/redux/slices/payslipSlice";
 
 // --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
 const ChangesModal = ({ isOpen, onClose, changes }) => {
@@ -178,6 +179,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
+  const [employeeDetails, setEmployeeDetails] = useState({});
 
   // Get state from Redux
   const {
@@ -194,6 +196,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     approvingLeaveId,
     rejectingLeaveId,
   } = useSelector((state) => state.requestDetails);
+
+  const { employeeData } = useSelector((state) => state.payslip);
 
   // Placeholder for expense and advance requests (not implemented in the slice)
 
@@ -250,6 +254,44 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
       dispatch(fetchIncomeRequests());
     }
   }, [activeTab, dispatch]);
+
+  // Fetch employee details for expense and income requests
+  useEffect(() => {
+    const fetchEmployeeInfo = async () => {
+      if (activeTab === "expenseRequests" && expensesRequests.length > 0) {
+        for (const request of expensesRequests) {
+          if (!employeeDetails[request.submittedBy]) {
+            try {
+              await dispatch(fetchEmployeeDetails(request.submittedBy)).unwrap();
+              setEmployeeDetails(prev => ({
+                ...prev,
+                [request.submittedBy]: employeeData
+              }));
+            } catch (error) {
+              console.error("Failed to fetch employee details:", error);
+            }
+          }
+        }
+      }
+      if (activeTab === "incomeRequests" && incomeRequests.length > 0) {
+        for (const request of incomeRequests) {
+          if (!employeeDetails[request.submittedBy]) {
+            try {
+              await dispatch(fetchEmployeeDetails(request.submittedBy)).unwrap();
+              setEmployeeDetails(prev => ({
+                ...prev,
+                [request.submittedBy]: employeeData
+              }));
+            } catch (error) {
+              console.error("Failed to fetch employee details:", error);
+            }
+          }
+        }
+      }
+    };
+
+    fetchEmployeeInfo();
+  }, [activeTab, expensesRequests, incomeRequests, dispatch, employeeData]);
 
   // --- Approve/Reject Logic for Profile Updates ---
   const handleApproveProfileUpdate = async (employeeId) => {
@@ -888,9 +930,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Receipt
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -916,36 +958,21 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         {request.submittedBy}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {request.employeeName}
+                        {employeeDetails[request.submittedBy]?.name || "Loading..."}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {request.department}
+                        {employeeDetails[request.submittedBy]?.department || "Loading..."}
                       </td>
                       <td className="px-5 py-4 text-sm">
                         {request.totalAmount}
                       </td>
                       <td className="px-5 py-4 text-sm">{request.comments}</td>
-                      {/* <td className="px-5 py-4 text-sm">
-                        {request.file && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
-                            onClick={() => window.open(request.file, '_blank')}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                        )}
-                      </td> */}
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          onClick={() =>
-                            handleApproveExpense(request.expenseId)
-                          }
+                          onClick={() => handleApproveExpense(request.expenseId)}
                           disabled={approvingExpenseId === request.expenseId}
                         >
                           {approvingExpenseId === request.expenseId ? (
@@ -995,12 +1022,12 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Reason
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Repayment Plan
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -1026,16 +1053,16 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         {request.submittedBy}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {request.employeeName}
+                        {employeeDetails[request.submittedBy]?.name || "Loading..."}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {request.department}
+                        {employeeDetails[request.submittedBy]?.department || "Loading..."}
                       </td>
                       <td className="px-5 py-4 text-sm">{request.amount}</td>
-                      <td className="px-5 py-4 text-sm">{request.reason}</td>
+                      {/* <td className="px-5 py-4 text-sm">{request.reason}</td>
                       <td className="px-5 py-4 text-sm">
                         {request.repaymentPlan}
-                      </td>
+                      </td> */}
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"

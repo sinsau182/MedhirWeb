@@ -1342,7 +1342,7 @@ const LeaveSettings = () => {
               {/* Leave Policy Edit Modal */}
               {showPolicyEditModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="bg-white rounded-lg p-6 w-full max-w-xl">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-semibold text-gray-800">
                         Edit Leave Policy
@@ -1355,6 +1355,8 @@ const LeaveSettings = () => {
                       </button>
                     </div>
 
+                    {/* Add scrollable content area */}
+                    <div className="overflow-y-auto max-h-[80vh] pr-2">
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
@@ -1575,6 +1577,7 @@ const LeaveSettings = () => {
                         </button>
                       </div>
                     </form>
+                    </div>
                   </div>
                 </div>
               )}

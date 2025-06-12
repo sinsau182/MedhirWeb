@@ -75,6 +75,12 @@ const Overview = () => {
     totalAbsent: 0,
   });
 
+    // Animation state for Total Employees card
+    const [loadingNumbers, setLoadingNumbers] = useState(true);
+    const [displayedTotal, setDisplayedTotal] = useState(0);
+    const [displayedPresent, setDisplayedPresent] = useState(0);
+    const [displayedAbsent, setDisplayedAbsent] = useState(0);
+
   const dispatch = useDispatch();
   // Update the useSelector hook
   const { employees, loading: employeesLoading } = useSelector(
@@ -141,6 +147,47 @@ const Overview = () => {
       });
     }
   }, [attendance]); // Dependency on attendance state
+
+  useEffect(() => {
+    setLoadingNumbers(true);
+    const timer = setTimeout(() => {
+      setLoadingNumbers(false);
+    }, 1000); // 1 second loading
+    return () => clearTimeout(timer);
+  }, [employees, currentDayAttendanceSummary]);
+
+  // Count up animation for numbers
+  useEffect(() => {
+    if (!loadingNumbers) {
+      let total = employees?.length ?? 0;
+      let present = currentDayAttendanceSummary.totalPresent;
+      let absent = currentDayAttendanceSummary.totalAbsent;
+      let duration = 500; // ms
+      let steps = 20;
+      let stepTime = duration / steps;
+      let i = 0;
+      let totalStep = total / steps;
+      let presentStep = present / steps;
+      let absentStep = absent / steps;
+      const interval = setInterval(() => {
+        i++;
+        setDisplayedTotal(Math.round(Math.min(total, i * totalStep)));
+        setDisplayedPresent(Math.round(Math.min(present, i * presentStep)));
+        setDisplayedAbsent(Math.round(Math.min(absent, i * absentStep)));
+        if (i >= steps) {
+          setDisplayedTotal(total);
+          setDisplayedPresent(present);
+          setDisplayedAbsent(absent);
+          clearInterval(interval);
+        }
+      }, stepTime);
+      return () => clearInterval(interval);
+    } else {
+      setDisplayedTotal(0);
+      setDisplayedPresent(0);
+      setDisplayedAbsent(0);
+    }
+  }, [loadingNumbers, employees, currentDayAttendanceSummary]);
 
 
   const toggleSidebar = () => {
@@ -344,44 +391,47 @@ const Overview = () => {
             {/* Updated grid layout and data source */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-12 mb-6"> {/* Changed to lg:grid-cols-2 */}
               {itemsToDisplayInOverview.map((item, index) => (
-                // Conditional rendering for the "Total Employees" card
                 item.label === "Total Employees" ? (
                   <div
                     key={index}
-                    className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                    style={{ height: "250px", width: "350px" }} // Adjust width if needed
-                    // No overall click handler for the card, clicks will be on specific counts
+                    className="relative bg-white/90 shadow-xl rounded-2xl flex flex-col items-center justify-between border border-gray-100 p-8 w-full max-w-xl mx-auto transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
+                    style={{ minHeight: "220px" }}
                   >
-                    <div className="flex justify-between items-center w-full mb-8">
-                      <p className="text-xl font-semibold text-gray-800">
-                        {item.label}
-                      </p>
-                      <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
-                        <FaUsers className="text-blue-600 text-2xl" />
+                    <div className="flex justify-between items-center w-full mb-6">
+                      <h2 className="text-lg font-bold text-gray-800">Today's Attendance</h2>
+                      <div className="p-2 bg-blue-50 rounded-full">
+                        <FaUsers className="text-blue-600 text-xl" />
                       </div>
                     </div>
-                    <div className="space-y-4"> {/* Increased space-y */}
-                      <div className="flex items-center text-gray-600">
-                         <p className="text-sm mr-2">Total Employees:</p>
-                         <p className="text-2xl font-bold text-gray-900">{item.count}</p>
+                    <div className="flex w-full justify-center items-end gap-0 text-center mt-2">
+                      {/* Total Employees */}
+                      <div className="flex flex-col items-center justify-center flex-1">
+                        <span className="text-7xl font-extrabold text-gray-800 leading-tight">{displayedTotal}</span>
+                        <span className="text-sm text-gray-400 mt-2 tracking-wide">Total</span>
                       </div>
-
-                       {/* Present Today */}
-                      <div
-                        className="flex items-center text-gray-600 cursor-pointer hover:text-green-700"
-                        onClick={() => handleAttendanceCountClick('P')}
-                      >
-                         <p className="text-sm mr-2">Present Today:</p>
-                         <p className="text-xl font-bold text-green-600">{currentDayAttendanceSummary.totalPresent}</p>
+                      {/* Divider */}
+                      <div className="h-16 border-l border-gray-200 mx-4"></div>
+                      {/* Present */}
+                      <div className="flex flex-col items-center justify-center flex-1">
+                        <span
+                          className="text-7xl font-extrabold text-green-700 leading-tight cursor-pointer hover:underline transition"
+                          onClick={() => handleAttendanceCountClick('P')}
+                        >
+                          {displayedPresent}
+                        </span>
+                        <span className="text-sm text-gray-400 mt-2 tracking-wide">Present</span>
                       </div>
-
-                       {/* Absent Today */}
-                      <div
-                        className="flex items-center text-gray-600 cursor-pointer hover:text-red-700"
-                        onClick={() => handleAttendanceCountClick('A')}
-                      >
-                         <p className="text-sm mr-2">Absent Today:</p>
-                         <p className="text-xl font-bold text-red-600">{currentDayAttendanceSummary.totalAbsent}</p>
+                      {/* Divider */}
+                      <div className="h-16 border-l border-gray-200 mx-4"></div>
+                      {/* Absent */}
+                      <div className="flex flex-col items-center justify-center flex-1">
+                        <span
+                          className="text-7xl font-extrabold text-red-400 leading-tight cursor-pointer hover:underline transition"
+                          onClick={() => handleAttendanceCountClick('A')}
+                        >
+                          {displayedAbsent}
+                        </span>
+                        <span className="text-sm text-gray-400 mt-2 tracking-wide">Absent</span>
                       </div>
                     </div>
                   </div>
