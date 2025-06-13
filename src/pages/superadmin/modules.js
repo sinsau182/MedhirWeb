@@ -6,7 +6,7 @@ import {
   fetchEmployees,
   addModule,
   updateModule,
-  deleteModule
+  deleteModule,
 } from "@/redux/slices/modulesSlice";
 // import { fetchAllEmployees } from "@/redux/slices/allEmployeesSlice";
 import { fetchCompanies } from "@/redux/slices/companiesSlice";
@@ -39,39 +39,31 @@ import { useRouter } from "next/router";
 import { toast } from "sonner";
 import getConfig from "next/config";
 
-
 function SuperadminModules() {
   const router = useRouter();
   const dispatch = useDispatch();
-
 
   const [searchInput, setSearchInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-
   const [isAddModuleOpen, setIsAddModuleOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-
   const [selectedModule, setSelectedModule] = useState(null);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [userPhone, setUserPhone] = useState("");
 
-
   const [moduleName, setModuleName] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
-
 
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
   const [employeeError, setEmployeeError] = useState(null);
-
 
   // const [companyUsers, setCompanyUsers] = useState([]);
 
@@ -79,7 +71,7 @@ function SuperadminModules() {
 
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
 
-  const {publicRuntimeConfig} = getConfig();
+  const { publicRuntimeConfig } = getConfig();
 
   const {
     modules,
@@ -133,7 +125,7 @@ function SuperadminModules() {
         dispatch(fetchEmployees()),
       ]);
     } catch (error) {
-      toast.error('Error refreshing data:', error);
+      toast.error("Error refreshing data:", error);
       setError(error.message);
     } finally {
       setIsTableRefreshing(false);
@@ -156,15 +148,20 @@ function SuperadminModules() {
     setModuleName(selectedModule.moduleName);
     setModuleDescription(selectedModule.description);
     setSelectedCompany(selectedModule.company.companyId);
-    setSelectedEmployees(selectedModule.employees.map(emp => ({
-      name: emp.name,
-      employeeId: emp.employeeId
-    })));
+    setSelectedEmployees(
+      selectedModule.employees.map((emp) => ({
+        name: emp.name,
+        employeeId: emp.employeeId,
+      }))
+    );
     setIsAddModuleOpen(true);
   };
 
   const handleDeleteModule = async () => {
-    if (!selectedModule || !window.confirm("Are you sure you want to delete this module?")) {
+    if (
+      !selectedModule ||
+      !window.confirm("Are you sure you want to delete this module?")
+    ) {
       return;
     }
 
@@ -198,15 +195,17 @@ function SuperadminModules() {
         moduleName: moduleName.trim(),
         description: moduleDescription.trim(),
         companyId: selectedCompany,
-        employeeIds: selectedEmployees.map(employee => employee.employeeId)
+        employeeIds: selectedEmployees.map((employee) => employee.employeeId),
       };
 
       if (isEditMode) {
         // Update existing module
-        await dispatch(updateModule({
-          moduleId: selectedModule.moduleId,
-          moduleData
-        })).unwrap();
+        await dispatch(
+          updateModule({
+            moduleId: selectedModule.moduleId,
+            moduleData,
+          })
+        ).unwrap();
       } else {
         // Create new module
         await dispatch(addModule(moduleData)).unwrap();
@@ -255,7 +254,7 @@ function SuperadminModules() {
         alert("Failed to add user");
       }
     }
-  }
+  };
 
   // Add new state for Add Admin modal
   const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
@@ -263,12 +262,17 @@ function SuperadminModules() {
     name: "",
     email: "",
     phone: "",
-    companyId: ""
+    companyId: "",
   });
 
   // Add handleAddAdmin function
   const handleAddAdmin = async () => {
-    if (!newAdminData.name || !newAdminData.email || !newAdminData.phone || !newAdminData.companyId) {
+    if (
+      !newAdminData.name ||
+      !newAdminData.email ||
+      !newAdminData.phone ||
+      !newAdminData.companyId
+    ) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -282,7 +286,7 @@ function SuperadminModules() {
 
     // Validate phone number format (basic validation)
     const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(newAdminData.phone.replace(/\D/g, ''))) {
+    if (!phoneRegex.test(newAdminData.phone.replace(/\D/g, ""))) {
       toast.error("Please enter a valid 10-digit phone number");
       return;
     }
@@ -291,35 +295,38 @@ function SuperadminModules() {
     try {
       // Create FormData object
       const formData = new FormData();
-      
+
       // Add employee data as a JSON string
       const employeeData = {
         name: newAdminData.name.trim(),
         emailPersonal: newAdminData.email.trim(),
-        phone: newAdminData.phone.replace(/\D/g, ''),
-        companyId: newAdminData.companyId
+        phone: newAdminData.phone.replace(/\D/g, ""),
+        companyId: newAdminData.companyId,
       };
-      
-      formData.append('employee', JSON.stringify(employeeData));
+
+      formData.append("employee", JSON.stringify(employeeData));
 
       await dispatch(createEmployee(formData)).unwrap();
-      
+
       // Refresh the employees list
       await dispatch(fetchEmployees());
-      
+
       // Reset form and close modal
       setNewAdminData({
         name: "",
         email: "",
         phone: "",
-        companyId: ""
+        companyId: "",
       });
       setIsAddAdminModalOpen(false);
-      
+
       toast.success("Admin added successfully!");
     } catch (error) {
       console.error("Error adding admin:", error);
-      toast.error(error.message || "Failed to add admin. Please check the data and try again.");
+      toast.error(
+        error.message ||
+          "Failed to add admin. Please check the data and try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -387,11 +394,29 @@ function SuperadminModules() {
             {isLoading || isTableRefreshing ? (
               <div className="text-center py-4">
                 <div className="flex items-center justify-center space-x-2">
-                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-5 w-5 text-blue-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
-                  <span>{isTableRefreshing ? "Refreshing data..." : "Loading..."}</span>
+                  <span>
+                    {isTableRefreshing ? "Refreshing data..." : "Loading..."}
+                  </span>
                 </div>
               </div>
             ) : error ? (
@@ -443,8 +468,11 @@ function SuperadminModules() {
                             {module.company.name}
                           </TableCell>
                           <TableCell className="px-6 py-4">
-                            {Array.isArray(module.employees) && module.employees.length > 0
-                              ? module.employees.map((employee) => employee.name).join(", ")
+                            {Array.isArray(module.employees) &&
+                            module.employees.length > 0
+                              ? module.employees
+                                  .map((employee) => employee.name)
+                                  .join(", ")
                               : "No admins assigned"}
                           </TableCell>
                         </TableRow>
@@ -490,16 +518,24 @@ function SuperadminModules() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Company Name <span className="text-red-500">*</span>
             </label>
-            <Select 
+            <Select
               onValueChange={(value) => {
-                const company = companies.find(c => c.name === value);
+                const company = companies.find((c) => c.name === value);
                 setSelectedCompany(company?.companyId || null);
-              }} 
-              value={companies.find(c => c.companyId === selectedCompany)?.name || ""}
+              }}
+              value={
+                companies.find((c) => c.companyId === selectedCompany)?.name ||
+                ""
+              }
             >
               <SelectTrigger className="bg-white text-gray-900 border border-gray-300 hover:border-blue-500 cursor-pointer rounded-md px-3 py-2">
-                <span className={`${!selectedCompany ? "text-gray-500" : "text-gray-900"}`}>
-                  {companies.find(c => c.companyId === selectedCompany)?.name || "Select Company"}
+                <span
+                  className={`${
+                    !selectedCompany ? "text-gray-500" : "text-gray-900"
+                  }`}
+                >
+                  {companies.find((c) => c.companyId === selectedCompany)
+                    ?.name || "Select Company"}
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -551,7 +587,9 @@ function SuperadminModules() {
               <button
                 type="button"
                 className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-left text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center"
-                onClick={() => setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)}
+                onClick={() =>
+                  setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)
+                }
               >
                 <span>
                   {selectedEmployees.length > 0
@@ -575,7 +613,10 @@ function SuperadminModules() {
                 </svg>
               </button>
               {isEmployeeDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-[300px] overflow-hidden flex flex-col" style={{ bottom: 'auto' }}>
+                <div
+                  className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-[300px] overflow-hidden flex flex-col"
+                  style={{ bottom: "auto" }}
+                >
                   {/* Search Input */}
                   <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
                     <div className="relative">
@@ -586,14 +627,15 @@ function SuperadminModules() {
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                       />
-                      <Search
-                        className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-                      />
+                      <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     </div>
                   </div>
 
                   {/* Employee List */}
-                  <div className="overflow-y-auto" style={{ maxHeight: '250px' }}>
+                  <div
+                    className="overflow-y-auto"
+                    style={{ maxHeight: "250px" }}
+                  >
                     {/* Add Admin Button */}
                     <div className="sticky top-0 bg-white border-b border-gray-200">
                       <button
@@ -606,14 +648,23 @@ function SuperadminModules() {
                       </button>
                     </div>
                     {modulesLoading ? (
-                      <div key="loading" className="px-3 py-2 text-gray-500">Loading employees...</div>
+                      <div key="loading" className="px-3 py-2 text-gray-500">
+                        Loading employees...
+                      </div>
                     ) : employeeError ? (
-                      <div key="error" className="px-3 py-2 text-red-500">{employeeError}</div>
+                      <div key="error" className="px-3 py-2 text-red-500">
+                        {employeeError}
+                      </div>
                     ) : employees && employees.length > 0 ? (
                       employees
-                        .filter(employee => 
-                          employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-                          employee.employeeId.toLowerCase().includes(searchInput.toLowerCase())
+                        .filter(
+                          (employee) =>
+                            employee.name
+                              .toLowerCase()
+                              .includes(searchInput.toLowerCase()) ||
+                            employee.employeeId
+                              .toLowerCase()
+                              .includes(searchInput.toLowerCase())
                         )
                         .map((employee) => (
                           <div
@@ -629,10 +680,16 @@ function SuperadminModules() {
                               )}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedEmployees((prev) => [...prev, employee]);
+                                  setSelectedEmployees((prev) => [
+                                    ...prev,
+                                    employee,
+                                  ]);
                                 } else {
                                   setSelectedEmployees((prev) =>
-                                    prev.filter((e) => e.employeeId !== employee.employeeId)
+                                    prev.filter(
+                                      (e) =>
+                                        e.employeeId !== employee.employeeId
+                                    )
                                   );
                                 }
                               }}
@@ -643,22 +700,35 @@ function SuperadminModules() {
                             >
                               {employee.name}
                             </label>
-                            <span className="text-xs text-gray-500">{employee.employeeId}</span>
+                            <span className="text-xs text-gray-500">
+                              {employee.employeeId}
+                            </span>
                           </div>
                         ))
                     ) : (
-                      <div key="no-employees" className="px-3 py-2 text-gray-500">No employees found</div>
+                      <div
+                        key="no-employees"
+                        className="px-3 py-2 text-gray-500"
+                      >
+                        No employees found
+                      </div>
                     )}
                   </div>
 
                   {/* Results count */}
                   <div className="sticky bottom-0 bg-white px-3 py-2 border-t border-gray-200 text-xs text-gray-500">
-                    {employees && 
-                      `Showing ${employees.filter(employee => 
-                        employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-                        employee.employeeId.toLowerCase().includes(searchInput.toLowerCase())
-                      ).length} of ${employees.length} employees`
-                    }
+                    {employees &&
+                      `Showing ${
+                        employees.filter(
+                          (employee) =>
+                            employee.name
+                              .toLowerCase()
+                              .includes(searchInput.toLowerCase()) ||
+                            employee.employeeId
+                              .toLowerCase()
+                              .includes(searchInput.toLowerCase())
+                        ).length
+                      } of ${employees.length} employees`}
                   </div>
                 </div>
               )}
@@ -686,11 +756,9 @@ function SuperadminModules() {
               </div>
             ))}
           </div>
-          
+
           {employeeError && (
-            <p className="mt-2 text-sm text-red-500">
-              Error: {employeeError}
-            </p>
+            <p className="mt-2 text-sm text-red-500">Error: {employeeError}</p>
           )}
         </div>
 
@@ -714,9 +782,25 @@ function SuperadminModules() {
           >
             {isLoading ? (
               <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 {isEditMode ? "Updating..." : "Adding..."}
               </span>
@@ -736,7 +820,7 @@ function SuperadminModules() {
             name: "",
             email: "",
             phone: "",
-            companyId: ""
+            companyId: "",
           });
         }}
       >
@@ -752,17 +836,25 @@ function SuperadminModules() {
             </label>
             <Select
               onValueChange={(value) => {
-                const company = companies.find(c => c.name === value);
-                setNewAdminData(prev => ({
+                const company = companies.find((c) => c.name === value);
+                setNewAdminData((prev) => ({
                   ...prev,
-                  companyId: company?.companyId || ""
+                  companyId: company?.companyId || "",
                 }));
               }}
-              value={companies.find(c => c.companyId === newAdminData.companyId)?.name || ""}
+              value={
+                companies.find((c) => c.companyId === newAdminData.companyId)
+                  ?.name || ""
+              }
             >
               <SelectTrigger className="bg-white text-gray-900 border border-gray-300 hover:border-blue-500 cursor-pointer rounded-md px-3 py-2">
-                <span className={!newAdminData.companyId ? "text-gray-500" : "text-gray-900"}>
-                  {companies.find(c => c.companyId === newAdminData.companyId)?.name || "Select Company"}
+                <span
+                  className={
+                    !newAdminData.companyId ? "text-gray-500" : "text-gray-900"
+                  }
+                >
+                  {companies.find((c) => c.companyId === newAdminData.companyId)
+                    ?.name || "Select Company"}
                 </span>
               </SelectTrigger>
               <SelectContent>
@@ -787,7 +879,9 @@ function SuperadminModules() {
             <Input
               placeholder="Enter admin name"
               value={newAdminData.name}
-              onChange={(e) => setNewAdminData(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setNewAdminData((prev) => ({ ...prev, name: e.target.value }))
+              }
               className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
@@ -801,7 +895,9 @@ function SuperadminModules() {
               type="email"
               placeholder="Enter admin email"
               value={newAdminData.email}
-              onChange={(e) => setNewAdminData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) =>
+                setNewAdminData((prev) => ({ ...prev, email: e.target.value }))
+              }
               className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
@@ -815,7 +911,9 @@ function SuperadminModules() {
               type="tel"
               placeholder="Enter admin phone"
               value={newAdminData.phone}
-              onChange={(e) => setNewAdminData(prev => ({ ...prev, phone: e.target.value }))}
+              onChange={(e) =>
+                setNewAdminData((prev) => ({ ...prev, phone: e.target.value }))
+              }
               className="bg-white text-gray-900 border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
@@ -830,7 +928,7 @@ function SuperadminModules() {
                   name: "",
                   email: "",
                   phone: "",
-                  companyId: ""
+                  companyId: "",
                 });
               }}
               className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-200"
@@ -845,9 +943,25 @@ function SuperadminModules() {
             >
               {isLoading ? (
                 <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Adding Admin...
                 </span>
