@@ -34,7 +34,6 @@ import { Search, UserPlus, Edit, Trash } from "lucide-react";
 
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import withAuth from "@/components/withAuth";
-import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import getConfig from "next/config";
@@ -179,10 +178,6 @@ function SuperadminModules() {
     }
   };
 
-  // Update handleCompanyChange
-  const handleCompanyChange = (companyId) => {
-    setSelectedCompany(companyId);
-  };
 
   // Update handleAddOrUpdateModule
   const handleAddOrUpdateModule = async () => {
