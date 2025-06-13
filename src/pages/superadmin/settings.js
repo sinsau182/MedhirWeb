@@ -1,7 +1,12 @@
+import { useState } from "react";
+import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 
 function SuperadminSettings() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("Settings");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   return (
     <div className="bg-white text-black min-h-screen">
