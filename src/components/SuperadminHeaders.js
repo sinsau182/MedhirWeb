@@ -26,7 +26,7 @@ export default function SuperadminHeaders() {
           MEDHIR
         </h1>
         <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-          {["Companies", "Modules", "Settings"].map((item, index) => (
+          {["Companies", "Modules"].map((item, index) => (
             <Link
               key={index}
               href={`/superadmin/${item.toLowerCase()}`}
@@ -57,18 +57,6 @@ export default function SuperadminHeaders() {
                     className="inline-block w-5 h-5 text-gray-800"
                     style={{ fontSize: "16px", verticalAlign: "middle" }}
                   />
-                )}
-                {item === "Settings" && (
-                  <FaCog
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />
-                )}
-                {item === "Users" && (
-                  <FaUserCircle
-                    className="inline-block text-black opacity-80"
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                    />
                 )}
                 {item}
                 </button>
