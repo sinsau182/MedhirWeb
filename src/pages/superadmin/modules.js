@@ -336,17 +336,20 @@ function SuperadminModules() {
   // Add click outside handler for employee dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
+      if (
+        employeeDropdownRef.current &&
+        !employeeDropdownRef.current.contains(event.target)
+      ) {
         setIsEmployeeDropdownOpen(false);
       }
     };
 
     if (isEmployeeDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isEmployeeDropdownOpen]);
 
@@ -605,7 +608,9 @@ function SuperadminModules() {
               <button
                 type="button"
                 className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-left text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center"
-                onClick={() => setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)}
+                onClick={() =>
+                  setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)
+                }
               >
                 <span>
                   {selectedEmployees.length > 0
