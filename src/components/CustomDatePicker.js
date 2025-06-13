@@ -134,8 +134,10 @@ const CustomDatePicker = ({
       if (selectedDateObjects.some(selected => isSameDay(selected.date, date))) {
         newSelectedDates = [];
       } else {
+        // Create date with UTC midnight
+        const newDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
         newSelectedDates = [{ 
-          date: new Date(date),
+          date: newDate,
           shiftType: timeSlot,
           timeSlot: timeSlot
         }];
@@ -208,8 +210,10 @@ const CustomDatePicker = ({
           }
         }
         
+        // Create date with UTC midnight
+        const newDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
         newSelectedDates = [...selectedDateObjects, { 
-          date: new Date(date),
+          date: newDate,
           shiftType: timeSlot,
           timeSlot: timeSlot
         }];
