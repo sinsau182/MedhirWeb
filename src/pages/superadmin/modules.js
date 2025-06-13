@@ -8,7 +8,6 @@ import {
   updateModule,
   deleteModule,
 } from "@/redux/slices/modulesSlice";
-// import { fetchAllEmployees } from "@/redux/slices/allEmployeesSlice";
 import { fetchCompanies } from "@/redux/slices/companiesSlice";
 import { createEmployee } from "@/redux/slices/employeeSlice";
 
@@ -31,15 +30,11 @@ import {
 } from "@/components/ui/select";
 import dynamic from "next/dynamic";
 import { Search, UserPlus, Edit, Trash } from "lucide-react";
-
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import withAuth from "@/components/withAuth";
-import { useRouter } from "next/router";
 import { toast } from "sonner";
-import getConfig from "next/config";
 
 function SuperadminModules() {
-  const router = useRouter();
   const dispatch = useDispatch();
 
   const [searchInput, setSearchInput] = useState("");
@@ -50,11 +45,6 @@ function SuperadminModules() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [selectedModule, setSelectedModule] = useState(null);
-  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
-
-  const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [userPhone, setUserPhone] = useState("");
 
   const [moduleName, setModuleName] = useState("");
   const [moduleDescription, setModuleDescription] = useState("");
@@ -65,13 +55,7 @@ function SuperadminModules() {
   const employeeDropdownRef = useRef(null);
   const [employeeError, setEmployeeError] = useState(null);
 
-  // const [companyUsers, setCompanyUsers] = useState([]);
-
-  const [selectedCompanyId, setSelectedCompanyId] = useState(null);
-
   const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
-
-  const { publicRuntimeConfig } = getConfig();
 
   const {
     modules,
@@ -111,26 +95,6 @@ function SuperadminModules() {
     };
     fetchData();
   }, [dispatch]);
-
-  // Add a new state for table refresh
-  const [isTableRefreshing, setIsTableRefreshing] = useState(false);
-
-  // Create a function to refresh data
-  const refreshData = async () => {
-    setIsTableRefreshing(true);
-    try {
-      await Promise.all([
-        dispatch(fetchModules()),
-        dispatch(fetchCompanies()),
-        dispatch(fetchEmployees()),
-      ]);
-    } catch (error) {
-      toast.error("Error refreshing data:", error);
-      setError(error.message);
-    } finally {
-      setIsTableRefreshing(false);
-    }
-  };
 
   const handleOpenAddModule = () => {
     setIsEditMode(false);
@@ -178,7 +142,6 @@ function SuperadminModules() {
     }
   };
 
-
   // Update handleAddOrUpdateModule
   const handleAddOrUpdateModule = async () => {
     if (!moduleName || !moduleDescription || !selectedCompany) {
@@ -224,33 +187,6 @@ function SuperadminModules() {
   const filteredModules = modules.filter((module) =>
     module?.moduleName?.toLowerCase().includes(searchInput?.toLowerCase() || "")
   );
-
-  const handleAddUser = async () => {
-    if (!userName || !userEmail || !userPhone) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    const userData = {
-      name: userName,
-      email: userEmail,
-      phone: userPhone,
-    };
-    try {
-      await dispatch(createEmployee(userData)).unwrap(); // Use Redux slice method to add user
-      setUserName("");
-      setUserEmail("");
-      setUserPhone("");
-      setIsAddUserOpen(false);
-    } catch (err) {
-      toast.error("Error adding user:", err);
-      if (err.response?.status === 401) {
-        router.push("/login?error=Session expired. Please login again");
-      } else {
-        alert("Failed to add user");
-      }
-    }
-  };
 
   // Add new state for Add Admin modal
   const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
@@ -407,7 +343,7 @@ function SuperadminModules() {
           </div>
 
           <div className="mt-4 p-2 rounded-lg">
-            {isLoading || isTableRefreshing ? (
+            {isLoading ? (
               <div className="text-center py-4">
                 <div className="flex items-center justify-center space-x-2">
                   <svg
