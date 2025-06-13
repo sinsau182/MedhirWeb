@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
-const API_BASE_URL = publicRuntimeConfig.apiURL + "/superadmin/modules/users";
+const API_BASE_URL = publicRuntimeConfig.apiURL + "/hradmin/employees";
 
 // Fetch users
 export const fetchUsers = createAsyncThunk(
