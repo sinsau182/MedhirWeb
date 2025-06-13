@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -63,6 +63,7 @@ function SuperadminModules() {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
+  const employeeDropdownRef = useRef(null);
   const [employeeError, setEmployeeError] = useState(null);
 
   // const [companyUsers, setCompanyUsers] = useState([]);
@@ -332,6 +333,23 @@ function SuperadminModules() {
     }
   };
 
+  // Add click outside handler for employee dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
+        setIsEmployeeDropdownOpen(false);
+      }
+    };
+
+    if (isEmployeeDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEmployeeDropdownOpen]);
+
   return (
     <div className="bg-white text-[#4a4a4a] max-h-screen">
       <SuperadminHeaders />
@@ -583,13 +601,11 @@ function SuperadminModules() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Admins <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
+            <div className="relative" ref={employeeDropdownRef}>
               <button
                 type="button"
                 className="w-full bg-white border border-gray-300 rounded-md px-3 py-2 text-left text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 flex justify-between items-center"
-                onClick={() =>
-                  setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)
-                }
+                onClick={() => setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen)}
               >
                 <span>
                   {selectedEmployees.length > 0
