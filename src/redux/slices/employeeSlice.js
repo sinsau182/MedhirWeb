@@ -3,8 +3,9 @@ import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
 import getConfig from "next/config";
-const { publicRuntimeConfig } = getConfig();
-const API_BASE_URL = publicRuntimeConfig.apiURL + "/hradmin";
+const {publicRuntimeConfig} = getConfig();
+const API_BASE_URL =
+  publicRuntimeConfig.apiURL + "/hradmin";
 
 // Fetch employees
 export const fetchEmployees = createAsyncThunk(
@@ -48,7 +49,10 @@ export const createEmployee = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      toast.error("Error creating employee:", error);
+      // Safely access error message from backend
+      const message =
+        error.response?.data?.message || error.message || "Network Error";
+      return rejectWithValue(message);
     }
   }
 );

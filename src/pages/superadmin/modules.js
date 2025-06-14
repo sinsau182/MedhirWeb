@@ -255,11 +255,8 @@ function SuperadminModules() {
 
       toast.success("Admin added successfully!");
     } catch (error) {
-      console.error("Error adding admin:", error);
-      toast.error(
-        error.message ||
-          "Failed to add admin. Please check the data and try again."
-      );
+      console.log(error);
+      toast.error(error || "Failed to add admin.");
     } finally {
       setIsLoading(false);
     }
@@ -564,7 +561,7 @@ function SuperadminModules() {
               </button>
               {isEmployeeDropdownOpen && (
                 <div
-                  className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-[300px] overflow-hidden flex flex-col"
+                  className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-[200px] overflow-hidden flex flex-col"
                   style={{ bottom: "auto" }}
                 >
                   {/* Search Input */}
