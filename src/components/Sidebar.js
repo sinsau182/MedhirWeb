@@ -181,10 +181,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   
   ];
 
+  
   // Filter menu items based on currentRole and department
   const filteredMenu = menuItems.filter((item) => {
     if (item.label === "Lead Management") {
-      return item.roles.includes(currentRole) && department === "Sales";
+      return item.roles.includes(currentRole) && department?.trim().toLowerCase() === "sales";
     }
     return item.roles.includes(currentRole);
   });
