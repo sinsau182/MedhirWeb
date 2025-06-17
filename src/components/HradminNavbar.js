@@ -264,7 +264,7 @@ const Navbar = () => {
                   </svg>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="start" forceMount>
+              <DropdownMenuContent className="w-56" align="start" forceMount >
                 {companies.map((company) => (
                   <DropdownMenuItem
                     key={company.companyId}

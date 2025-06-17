@@ -22,7 +22,7 @@ const AddExpense = () => {
   const { id } = router.query;
 
   // Form validation state
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState({});  
 
   // Determine if we are in edit mode
   const isEdit = Boolean(id);
