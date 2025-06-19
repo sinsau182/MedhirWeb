@@ -649,8 +649,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
                         )}    
                       </td>
                       <td className="py-4 text-sm">
-                        {request.leaveDates.length}{" "}
-                        {request.leaveDates.length === 1 ? "day" : "days"}
+                        {request.leaveDates && request.leaveDates.length > 0 ? (
+                          <>
+                            {request.leaveDates.length}{" "}
+                            {request.leaveDates.length === 1 ? "day" : "days"}
+                          </>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-sm">
                         {(() => {

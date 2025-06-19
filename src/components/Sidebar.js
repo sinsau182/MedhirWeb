@@ -154,12 +154,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/employee/leaves",
       roles: ["EMPLOYEE"],
     },
-     {
-       label: "Reimbursement",
-       icon: <CreditCard />,
-       link: "/employee/reimbursement",
-       roles: ["EMPLOYEE"],
-     },
+    //  {
+    //    label: "Reimbursement",
+    //    icon: <CreditCard />,
+    //    link: "/employee/reimbursement",
+    //    roles: ["EMPLOYEE"],
+    //  },
 //    {
 //      label: "Expenses",
 //      icon: <ReceiptIcon />,
