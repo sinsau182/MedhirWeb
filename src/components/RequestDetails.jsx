@@ -175,7 +175,7 @@ ChangesModal.propTypes = {
 };
 // --- End Modal Component ---
 
-const RequestDetails = ({ activeTab, onTabChange }) => {
+const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
@@ -320,6 +320,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "An unknown error occurred.");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   const handleRejectProfileUpdate = async (employeeId) => {
@@ -348,6 +349,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "An unknown error occurred.");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   const handleApprove = async (leaveId) => {
@@ -372,6 +374,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "Failed to approve request");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   const handleReject = async (leaveId) => {
@@ -396,6 +399,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "Failed to reject request");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   // Handle expense approval
@@ -424,6 +428,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } finally {
       setApprovingExpenseId(null);
     }
+    if (onActionComplete) onActionComplete();
   };
 
   // Handle expense rejection
@@ -452,6 +457,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } finally {
       setRejectingExpenseId(null);
     }
+    if (onActionComplete) onActionComplete();
   };
 
   // Handle income approval
@@ -480,6 +486,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } finally {
       setApprovingIncomeId(null);
     }
+    if (onActionComplete) onActionComplete();
   };
 
   // Handle income rejection
@@ -508,6 +515,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } finally {
       setRejectingIncomeId(null);
     }
+    if (onActionComplete) onActionComplete();
   };
 
   // Updated combined loading state
@@ -565,25 +573,22 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Employee ID
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-2 text-left text-sm font-medium border-b border-gray-100">
                     Employee Name
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Department
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Type of Leave
+                  <th className="py-4 px-0 text-left text-sm font-medium border-b border-gray-100 w-1/6">
+                    Dates
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Start Date
-                  </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    End Date
+                  <th className="py-4 px-2 text-left text-sm font-medium border-b border-gray-100">
+                    Days
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Shift Type
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-0 text-left text-sm font-medium border-b border-gray-100 w-1/5">
                     Reason
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
@@ -625,12 +630,27 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       <td className="px-5 py-4 text-sm">
                         {request.department}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.leaveType}</td>
-                      <td className="px-5 py-4 text-sm">
-                        {formatDate(request.startDate)}
+                      {/* <td className="px-5 py-4 text-sm">{request.leaveType}</td> */}
+                      <td className="px-0 py-4 text-sm">
+                        {Array.isArray(request.leaveDates) && request.leaveDates.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {request.leaveDates.map((date, idx) => (
+                              <span
+                                key={date}
+                                className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs border border-blue-100"
+                              >
+                                {formatDate(date)}
+                                {idx < request.leaveDates.length - 1 }
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}    
                       </td>
-                      <td className="px-5 py-4 text-sm">
-                        {formatDate(request.endDate)}
+                      <td className="py-4 text-sm">
+                        {request.leaveDates.length}{" "}
+                        {request.leaveDates.length === 1 ? "day" : "days"}
                       </td>
                       <td className="px-5 py-4 text-sm">
                         {(() => {
@@ -646,8 +666,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                           }
                         })()}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.reason}</td>
-                      <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <td className="px-0 py-4 text-sm w-1/8">{request.reason}</td>
+                      <td className="px-2 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
@@ -747,7 +767,21 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         {request.department}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {formatDate(request.startDate)}
+                        {Array.isArray(request.leaveDates) && request.leaveDates.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {request.leaveDates.map((date, idx) => (
+                              <span
+                                key={date}
+                                className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs border border-blue-100"
+                              >
+                                {formatDate(date)}
+                                {idx < request.leaveDates.length - 1 }
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}    
                       </td>
                       <td className="px-5 py-4 text-sm">
                         {(() => {
@@ -1111,8 +1145,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
 };
 
 RequestDetails.propTypes = {
-  activeTab: PropTypes.string.isRequired,
-  onTabChange: PropTypes.func.isRequired,
+  activeTab: PropTypes.string,
+  onTabChange: PropTypes.func,
+  onActionComplete: PropTypes.func,
 };
 
 export default RequestDetails;
