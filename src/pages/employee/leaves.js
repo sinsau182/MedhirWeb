@@ -58,13 +58,13 @@ const Leaves = () => {
   const [leaveForm, setLeaveForm] = useState({
     dates: [],
     reason: "",
-    shiftType: "Full Day"
+    shiftType: "FULL_DAY"
   });
   
   const [compOffForm, setCompOffForm] = useState({
     dates: [],
     description: "",
-    shiftType: "Full Day"
+    shiftType: "FULL_DAY"
   });
   
   // Add debug log to check state structure
@@ -116,7 +116,7 @@ const Leaves = () => {
   };
   const closeModal = () => {
     setIsModalOpen(false);
-    setLeaveForm({ dates: [], reason: '', shiftType: 'Full Day' });
+    setLeaveForm({ dates: [], reason: '', shiftType: 'FULL_DAY' });
     setLeavePolicy(null);
     setWeeklyOffs([]);
   };
@@ -127,7 +127,7 @@ const Leaves = () => {
   };
   const closeCompOffModal = () => {
     setIsCompOffModalOpen(false);
-    setCompOffForm({ dates: [], description: '', shiftType: 'Full Day' });
+    setCompOffForm({ dates: [], description: '', shiftType: 'FULL_DAY' });
     setLeavePolicy(null);
     setWeeklyOffs([]);
   };
@@ -176,7 +176,7 @@ const Leaves = () => {
 
       const formData = {
         leaveDates: leaveDates,
-        shiftType: compOffForm.dates[0]?.timeSlot || compOffForm.dates[0]?.shiftType || 'Full Day',
+        shiftType: compOffForm.dates[0]?.timeSlot || compOffForm.dates[0]?.shiftType || 'FULL_DAY',
         reason: compOffForm.description,
       };
 
@@ -205,7 +205,7 @@ const Leaves = () => {
 
     const formData = {
       leaveDates: leaveDates,
-      shiftType: leaveForm.dates[0]?.timeSlot || leaveForm.dates[0]?.shiftType || 'Full Day',
+      shiftType: leaveForm.dates[0]?.timeSlot || leaveForm.dates[0]?.shiftType || 'FULL_DAY',
       reason: leaveForm.reason,
     };
 

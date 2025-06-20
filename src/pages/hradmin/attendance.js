@@ -96,7 +96,9 @@ function Attendance() {
   }, [router.query]); // Dependency on router.query
 
   useEffect(() => {
-    const month = selectedMonth.slice(0, 3); // Get first 3 letters of month
+    // Convert month name to numeric month (1-12)
+    const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
     const year = selectedYear;
 
     const today = new Date();
@@ -107,7 +109,7 @@ function Attendance() {
     const currentYearFull = today.getFullYear().toString();
 
     // Prepare API parameters
-    let apiParams = { month, year };
+    let apiParams = { month: numericMonth, year };
 
     // If no date is selected, use current date
     let dateToUse = selectedDate;
@@ -228,24 +230,59 @@ function Attendance() {
         };
       }
 
+      // Helper function to determine attendance status for a given date
+      const getAttendanceStatusForDate = (dateString) => {
+        const attendanceData = attendanceRecord.attendance;
+        if (!attendanceData) return null;
+
+        // Check present dates
+        if (attendanceData.presentDates?.includes(dateString)) {
+          return "P";
+        }
+        
+        // Check full leave dates
+        if (attendanceData.fullLeaveDates?.includes(dateString)) {
+          return "A";
+        }
+        
+        // Check half day leave dates
+        if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
+          return "P/A";
+        }
+        
+        // Check full comp-off dates
+        if (attendanceData.fullCompoffDates?.includes(dateString)) {
+          return "P";
+        }
+        
+        // Check half comp-off dates
+        if (attendanceData.halfCompoffDates?.includes(dateString)) {
+          return "P/A";
+        }
+        
+        // Check weekly off dates
+        if (attendanceData.weeklyOffDates?.includes(dateString)) {
+          return "H";
+        }
+        
+        // Check absent dates
+        if (attendanceData.absentDates?.includes(dateString)) {
+          return "A";
+        }
+        
+        return null;
+      };
+
       const attendanceArray = Array(dates.length)
         .fill(null)
         .map((_, index) => {
-          const day = (index + 1).toString();
-          const status = attendanceRecord.dailyAttendance?.[day];
+          const day = index;
+          const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+          const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          
+          const status = getAttendanceStatusForDate(dateString);
 
-          const validStatuses = [
-            "P",
-            "A",
-            "P/A",
-            "H",
-            "PH",
-            "PH/A",
-            "LOP",
-            "P/LOP",
-          ].map(status => status.toUpperCase());
-
-          if (!status || !validStatuses.includes(status.toUpperCase())) {
+          if (!status) {
             return { value: null, label: "" };
           }
 
@@ -265,16 +302,16 @@ function Attendance() {
               break;
             case "PH":
               value = "holiday";
-              break; // Assuming PH is treated as holiday for internal value
+              break;
             case "PH/A":
               value = "half";
-              break; // Assuming PH/A is also a half day
+              break;
             case "LOP":
               value = "absent";
-              break; // Assuming LOP is similar to absent for internal value
+              break;
             case "P/LOP":
               value = "present";
-              break; // Assuming P/LOP is similar to present for internal value
+              break;
             default:
               value = null;
           }
@@ -285,11 +322,11 @@ function Attendance() {
         id: employee.employeeId,
         name: employee.name,
         department: employee.departmentName,
-        p_twd: `${attendanceRecord.payableDays}/${attendanceRecord.workingDays}`,
+        p_twd: `${attendanceRecord.payableDays || 0}/${attendanceRecord.workingDays || 0}`,
         attendance: attendanceArray,
       };
     },
-    [dates.length, attendance]
+    [dates.length, attendance, selectedMonth, selectedYear]
   );
 
   const generateLeaveData = useCallback(
@@ -318,13 +355,13 @@ function Attendance() {
         name: employee.name,
         department:
           attendanceRecord.departmentName || employee.departmentName || "", // Try both sources with fallback
-        noOfPayableDays: attendanceRecord.payableDays.toString(),
-        leavesTaken: attendanceRecord.leavesTaken.toString(),
-        leavesEarned: attendanceRecord.leavesEarned.toString(),
-        leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
-        compOffEarned: attendanceRecord.compOffEarned.toString(),
-        compOffCarriedForward: "0", // Not provided in API response
-        netLeaves: attendanceRecord.netLeaveBalance.toString(),
+        // noOfPayableDays: attendanceRecord.payableDays.toString(),
+        // leavesTaken: attendanceRecord.leavesTaken.toString(),
+        // leavesEarned: attendanceRecord.leavesEarned.toString(),
+        // leavesFromPreviousYear: attendanceRecord.lastMonthBalance.toString(),
+        // compOffEarned: attendanceRecord.compOffEarned.toString(),
+        // compOffCarriedForward: "0", // Not provided in API response
+        // netLeaves: attendanceRecord.netLeaveBalance.toString(),
       };
     },
     [attendance]
@@ -622,6 +659,49 @@ function Attendance() {
     // Determine which data to use for rendering
     let dataToRender = originalFilteredEmployees;
 
+    // Helper function to get attendance status for a specific date from the new API format
+    const getAttendanceStatusForDate = (attendanceRecord, dateString) => {
+      const attendanceData = attendanceRecord?.attendance;
+      if (!attendanceData) return null;
+
+      // Check present dates
+      if (attendanceData.presentDates?.includes(dateString)) {
+        return "P";
+      }
+      
+      // Check full leave dates
+      if (attendanceData.fullLeaveDates?.includes(dateString)) {
+        return "A";
+      }
+      
+      // Check half day leave dates
+      if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
+        return "P/A";
+      }
+      
+      // Check full comp-off dates
+      if (attendanceData.fullCompoffDates?.includes(dateString)) {
+        return "P";
+      }
+      
+      // Check half comp-off dates
+      if (attendanceData.halfCompoffDates?.includes(dateString)) {
+        return "P/A";
+      }
+      
+      // Check weekly off dates
+      if (attendanceData.weeklyOffDates?.includes(dateString)) {
+        return "H";
+      }
+      
+      // Check absent dates
+      if (attendanceData.absentDates?.includes(dateString)) {
+        return "A";
+      }
+      
+      return null;
+    };
+
     // If we have attendance data from the API and status filters are applied
     if (attendance && attendance.length > 0 && selectedStatuses.length > 0) {
       // Filter originalFilteredEmployees based on the attendance status on the summaryDate
@@ -634,11 +714,14 @@ function Attendance() {
           if (!empAttendanceRecord) return false; // Employee not in fetched attendance data
 
           // Get the attendance status for the summaryDate (current date or selected date)
-          const statusForSummaryDate =
-            empAttendanceRecord.dailyAttendance?.[summaryDate?.toString()];
+          let statusForSummaryDate = null;
+          if (summaryDate) {
+            const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+            const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(summaryDate).padStart(2, '0')}`;
+            statusForSummaryDate = getAttendanceStatusForDate(empAttendanceRecord, dateString);
+          }
 
           // Check if the status for the summaryDate is included in the selected statuses
-          // If selectedStatuses is empty, this filter is skipped by the outer 'if' condition
           return selectedStatuses.map(s => s.toUpperCase()).includes(statusForSummaryDate?.toUpperCase());
         })
         .map((employee) => {
@@ -651,8 +734,11 @@ function Attendance() {
           const attendanceArray = Array(dates.length)
             .fill({ value: null, label: "" })
             .map((_, index) => {
-              const day = (index + 1).toString();
-              const status = empAttendanceRecord?.dailyAttendance?.[day];
+              const day = index + 1;
+              const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+              const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              
+              const status = getAttendanceStatusForDate(empAttendanceRecord, dateString);
 
               if (!status) {
                 return { value: null, label: "" };
@@ -715,8 +801,11 @@ function Attendance() {
           const attendanceArray = Array(dates.length)
             .fill({ value: null, label: "" })
             .map((_, index) => {
-              const day = (index + 1).toString();
-              const status = empAttendanceRecord?.dailyAttendance?.[day];
+              const day = index + 1;
+              const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+              const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              
+              const status = getAttendanceStatusForDate(empAttendanceRecord, dateString);
 
               if (!status) {
                 return { value: null, label: "" };
@@ -1140,28 +1229,15 @@ function Attendance() {
                       const fetchedAttendanceForEmployee = attendance?.find(
                         (attRec) => attRec.employeeId === employee.id
                       );
-                      if (
-                        fetchedAttendanceForEmployee?.dailyAttendance?.[
-                          day.toString()
-                        ]
-                      ) {
-                        const status =
-                          fetchedAttendanceForEmployee.dailyAttendance[
-                            day.toString()
-                          ];
-                        // Map backend status to frontend label/value if needed, or use directly
-                        // For now, just using the label from the existing logic
-                        const validStatuses = [
-                          "P",
-                          "A",
-                          "P/A",
-                          "H",
-                          "PH",
-                          "PH/A",
-                          "LOP",
-                          "P/LOP",
-                        ];
-                        if (validStatuses.includes(status.toUpperCase())) {
+                      if (fetchedAttendanceForEmployee?.attendance) {
+                        // Create date string in YYYY-MM-DD format for the current day
+                        const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+                        const currentDateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        
+                        // Use the helper function to get status for this date
+                        const status = getAttendanceStatusForDate(fetchedAttendanceForEmployee, currentDateString);
+                        
+                        if (status) {
                           let value;
                           switch (status.toUpperCase()) {
                             case "P":
@@ -1192,8 +1268,6 @@ function Attendance() {
                               value = null;
                           }
                           attendanceForDay = { value, label: status };
-                        } else {
-                          attendanceForDay = { value: null, label: "" }; // Handle invalid status
                         }
                       }
                     } else if (
@@ -1432,7 +1506,7 @@ function Attendance() {
                           : "text-gray-800"
                       }`}
                     >
-                      {leaveBalance.toFixed(1)}
+                      {0}
                     </td>
                   </tr>
                 );
@@ -1444,14 +1518,6 @@ function Attendance() {
     );
   };
 
-  // if (isLoading || employeesLoading) {
-  //   return (
-  //     <div className="flex justify-center items-center h-screen">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-  //     </div>
-  //   );
-  // }
-
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen text-red-500">
@@ -1459,14 +1525,6 @@ function Attendance() {
       </div>
     );
   }
-
-  // if (!dates.length) {
-  //   return (
-  //     <div className="flex justify-center items-center h-screen">
-  //       Loading dates...
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="flex h-screen bg-gray-100">

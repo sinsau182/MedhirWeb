@@ -103,7 +103,6 @@ const EmployeeAttendance = () => {
   // Update attendance data when Redux store changes
   useEffect(() => {
     if (attendance && !loading && !error) {
-      const data = attendance.dailyAttendance || {};
       const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
       const daysInMonth = new Date(parseInt(selectedYear), monthIndex + 1, 0).getDate();
 
@@ -121,8 +120,51 @@ const EmployeeAttendance = () => {
         "No Data": 0,
       };
 
+      // Helper function to determine attendance status for a given date
+      const getAttendanceStatusForDate = (dateString) => {
+        // Check present dates
+        if (attendance.presentDates?.includes(dateString)) {
+          return "P";
+        }
+        
+        // Check full leave dates
+        if (attendance.fullLeaveDates?.includes(dateString)) {
+          return "A";
+        }
+        
+        // Check half day leave dates
+        if (attendance.halfDayLeaveDates?.includes(dateString)) {
+          return "P/A";
+        }
+        
+        // Check full comp-off dates
+        if (attendance.fullCompoffDates?.includes(dateString)) {
+          return "P";
+        }
+        
+        // Check half comp-off dates
+        if (attendance.halfCompoffDates?.includes(dateString)) {
+          return "P/A";
+        }
+        
+        // Check weekly off dates
+        if (attendance.weeklyOffDates?.includes(dateString)) {
+          return "H";
+        }
+        
+        // Check absent dates
+        if (attendance.absentDates?.includes(dateString)) {
+          return "A";
+        }
+        
+        return null;
+      };
+
       for (let day = 1; day <= daysInMonth; day++) {
-        const status = data[day.toString()] || null;
+        // Create date string in YYYY-MM-DD format
+        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const status = getAttendanceStatusForDate(dateString);
+        
         let fullStatus = "No Data";
         let leaveType = null;
 
@@ -528,7 +570,15 @@ const EmployeeAttendance = () => {
                     <p className="text-lg font-medium">Error loading attendance data</p>
                     <p className="text-sm text-muted-foreground/80">{error}</p>
                   </div>
-                ) : !attendance?.dailyAttendance || Object.keys(attendance.dailyAttendance || {}).length === 0 ? (
+                ) : !attendance || (
+                  !attendance.presentDates && 
+                  !attendance.fullLeaveDates && 
+                  !attendance.halfDayLeaveDates && 
+                  !attendance.fullCompoffDates && 
+                  !attendance.halfCompoffDates && 
+                  !attendance.weeklyOffDates && 
+                  !attendance.absentDates
+                ) ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
                     <p className="text-lg font-medium">No attendance data available</p>
@@ -575,6 +625,10 @@ const EmployeeAttendance = () => {
                           case "Loss of Pay":
                             bgColorClass =
                               "bg-purple-100 hover:bg-purple-200 text-purple-800";
+                            break;
+                          case "Weekend":
+                            bgColorClass =
+                              "bg-gray-300 hover:bg-gray-400 text-gray-600";
                             break;
                           default:
                             bgColorClass = "hover:bg-gray-200";

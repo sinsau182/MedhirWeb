@@ -2,13 +2,24 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
-const API_BASE_URL = publicRuntimeConfig.apiURL + "/api/attendance";
+const API_BASE_URL = "http://192.168.0.200:8082" + "/attendance-summary";
 
 export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchAllEmployeeAttendanceOneMonth",
     async ({ month, year }, { rejectWithValue }) => {
+
+        let url = "";
+        const employeeId = sessionStorage.getItem("employeeId");
+        const companyId = sessionStorage.getItem("currentCompanyId");
+
+        if(sessionStorage.getItem("currentRole") === "MANAGER"){
+            url = `${API_BASE_URL}/manager/${employeeId}/${year}/${month}`;
+        }else{
+            url = `${API_BASE_URL}/hr/${companyId}/${year}/${month}`;
+        }
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}/month/${month}/year/${year}`, {
+        
+        const response = await fetch(url, {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
@@ -47,7 +58,7 @@ export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
         try {
             const token = getItemFromSessionStorage("token", null);
             const employeeId = sessionStorage.getItem("employeeId");
-        const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/month/${month}/year/${year}`, {
+        const response = await fetch(`${API_BASE_URL}/${employeeId}/${year}/6`, {
             headers: {
                 "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json"
@@ -82,7 +93,13 @@ export const attendancesSlice = createSlice({
         });
             builder.addCase(fetchAllEmployeeAttendanceOneMonth.fulfilled, (state, action) => {
             state.loading = false;
-            state.attendance = action.payload;
+            if (action.payload.teamAttendance) {
+                state.attendance = action.payload.teamAttendance;
+            } else if (action.payload.attendance) {
+                state.attendance = action.payload.attendance;
+            } else {
+                state.attendance = action.payload;
+            }
         });
         builder.addCase(fetchAllEmployeeAttendanceOneMonth.rejected, (state, action) => {
             state.loading = false;
@@ -95,7 +112,7 @@ export const attendancesSlice = createSlice({
         });
         builder.addCase(fetchOneEmployeeAttendanceAllMonth.fulfilled, (state, action) => {
             state.loading = false;
-            state.attendance = action.payload;
+            state.attendance = action.payload.attendance || action.payload;
         });
         builder.addCase(fetchOneEmployeeAttendanceAllMonth.rejected, (state, action) => {
             state.loading = false;
@@ -108,7 +125,7 @@ export const attendancesSlice = createSlice({
         });
         builder.addCase(fetchOneEmployeeAttendanceOneMonth.fulfilled, (state, action) => {
             state.loading = false;
-            state.attendance = action.payload;
+            state.attendance = action.payload.attendance || action.payload;
         });
         builder.addCase(fetchOneEmployeeAttendanceOneMonth.rejected, (state, action) => {
             state.loading = false;
