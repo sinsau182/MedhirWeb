@@ -58,24 +58,29 @@ export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
         try {
             const token = getItemFromSessionStorage("token", null);
             const employeeId = sessionStorage.getItem("employeeId");
-        const response = await fetch(`${API_BASE_URL}/${employeeId}/${year}/6`, {
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
+            
+            // Convert month name to numeric month (1-12)
+            const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+            const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
+            
+            const response = await fetch(`${API_BASE_URL}/${employeeId}/${year}/${numericMonth}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            return rejectWithValue(data.message || "Something went wrong"); // backend error
-        }
-        return data;
+            return data;
         
-    } catch (error) {
-        return rejectWithValue(error.message || "Network Error");
+        } catch (error) {
+            return rejectWithValue(error.message || "Network Error");
+        }
     }
-}
 );
 
 export const attendancesSlice = createSlice({
@@ -125,7 +130,7 @@ export const attendancesSlice = createSlice({
         });
         builder.addCase(fetchOneEmployeeAttendanceOneMonth.fulfilled, (state, action) => {
             state.loading = false;
-            state.attendance = action.payload.attendance || action.payload;
+            state.attendance = action.payload;
         });
         builder.addCase(fetchOneEmployeeAttendanceOneMonth.rejected, (state, action) => {
             state.loading = false;
