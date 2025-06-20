@@ -241,8 +241,7 @@ const Leaves = () => {
   // Helper to fetch leave policy
   const fetchLeavePolicy = async () => {
     try {
-      const baseUrl = process.env.REACT_APP_API_BASE_URL || '';
-      const response = await fetch(`http://localhost:8080/employee/${employeeId}/leave-policy`);
+      const response = await fetch(`http://192.168.0.200:8080/employee/${employeeId}/leave-policy`);
       if (!response.ok) throw new Error('Failed to fetch leave policy');
       const data = await response.json();
       setLeavePolicy(data);

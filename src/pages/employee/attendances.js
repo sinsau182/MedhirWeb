@@ -22,9 +22,7 @@ const EmployeeAttendance = () => {
   const { attendance, loading, error } = useSelector(
     (state) => state.attendances
   );
-
-  console.log('Attendance Error:', error);
-
+  
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [date, setDate] = useState(null); // State to manage selected date
   const [attendanceData, setAttendanceData] = useState([]); // State for attendance data for the calendar
@@ -281,14 +279,12 @@ const EmployeeAttendance = () => {
       }
 
       const year = selectedDate.getFullYear();
-      const day = selectedDate.getDate();
+      const day = selectedDate.toISOString().split('T')[0];
       // Get the short month name (e.g., "Apr")
-      const monthShortName = selectedDate.toLocaleDateString("en-US", {
-        month: "short",
-      });
+      const monthIndex = selectedDate.getMonth() + 1;
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
-      const url = `http://localhost:8083/api/attendance/employee/${employeeId}/month/${monthShortName}/year/${year}`;
+      const url = `http://192.168.0.200:8082/employee/daily/${employeeId}/${day}`;
 
       const response = await fetch(url, {
         method: "GET",
