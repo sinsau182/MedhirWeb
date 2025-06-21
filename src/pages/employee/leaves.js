@@ -53,6 +53,7 @@ const Leaves = () => {
   const { leaveHistory, historyLoading, historyError } = useSelector(
     (state) => state.leave
   );
+  console.log(leaveHistory);
   const {
     balance: leaveBalance,
     loading: isLoadingBalance,
@@ -92,6 +93,27 @@ const Leaves = () => {
   const [weeklyOffs, setWeeklyOffs] = useState([]);
 
   const [expandedRow, setExpandedRow] = useState(null);
+
+  // Extract all leave dates from leaveHistory to disable them in the calendar
+  const getDisabledDates = () => {
+    if (!leaveHistory || !Array.isArray(leaveHistory)) return [];
+    
+    const disabledDates = [];
+    leaveHistory.forEach(leave => {
+      if (leave.leaveDates && Array.isArray(leave.leaveDates)) {
+        leave.leaveDates.forEach(dateString => {
+          // Convert date string to Date object and add to disabled dates
+          const date = new Date(dateString);
+          if (!isNaN(date.getTime())) {
+            disabledDates.push(date);
+          }
+        });
+      }
+    });
+    
+    console.log('Disabled dates from leave history:', disabledDates.map(d => d.toISOString().split('T')[0]));
+    return disabledDates;
+  };
 
   useEffect(() => {
     dispatch(fetchLeaveHistory());
@@ -663,7 +685,14 @@ const Leaves = () => {
                       onShiftTypeChange={handleShiftTypeChange}
                       leavePolicy={leavePolicy}
                       weeklyOffs={weeklyOffs}
+                      disabledDates={getDisabledDates()}
                     />
+                    {getDisabledDates().length > 0 && (
+                      <div className="mt-2 text-xs text-gray-500 flex items-center">
+                        <span className="mr-1">ℹ️</span>
+                        Dates with existing leave requests are disabled
+                      </div>
+                    )}
                     {showLOPWarning && (
                       <div className="mt-2 text-red-500 text-sm flex items-center">
                         <span className="mr-1">⚠️</span>
@@ -761,7 +790,14 @@ const Leaves = () => {
                           shiftType: e.target.value,
                         }));
                       }}
+                      disabledDates={getDisabledDates()}
                     />
+                    {getDisabledDates().length > 0 && (
+                      <div className="mt-2 text-xs text-gray-500 flex items-center">
+                        <span className="mr-1">ℹ️</span>
+                        Dates with existing leave requests are disabled
+                      </div>
+                    )}
                   </div>
 
                   <div>

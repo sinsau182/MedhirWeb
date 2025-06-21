@@ -22,7 +22,7 @@ const EmployeeAttendance = () => {
   const { attendance, loading, error } = useSelector(
     (state) => state.attendances
   );
-  
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [date, setDate] = useState(null); // State to manage selected date
   const [attendanceData, setAttendanceData] = useState([]); // State for attendance data for the calendar
@@ -107,6 +107,7 @@ const EmployeeAttendance = () => {
       const formattedData = [];
       const summaryCounts = {
         Present: 0,
+        "Present with Leave": 0,
         "Present on Holiday": 0,
         "Half Day on Holiday": 0,
         "Half Day": 0,
@@ -127,7 +128,7 @@ const EmployeeAttendance = () => {
         
         // Check full leave dates
         if (attendance.fullLeaveDates?.includes(dateString)) {
-          return "A";
+          return "PL";
         }
         
         // Check half day leave dates
@@ -170,13 +171,16 @@ const EmployeeAttendance = () => {
           case "P":
             fullStatus = "Present";
             break;
+          case "PL":
+            fullStatus = "Present with Leave";
+            break;
           case "A":
             fullStatus = "Absent";
             break;
-          case "L":
-            fullStatus = "On Leave";
-            leaveType = "Full Day";
-            break;
+          // case "L":
+          //   fullStatus = "On Leave";
+          //   leaveType = "Full Day";
+          //   break;
           case "H":
             fullStatus = "Holiday";
             break;
@@ -278,13 +282,14 @@ const EmployeeAttendance = () => {
         return;
       }
 
+      // Fix: Format date properly without timezone conversion
       const year = selectedDate.getFullYear();
-      const day = selectedDate.toISOString().split('T')[0];
-      // Get the short month name (e.g., "Apr")
-      const monthIndex = selectedDate.getMonth() + 1;
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
-      const url = `http://192.168.0.200:8082/employee/daily/${employeeId}/${day}`;
+      const url = `http://192.168.0.200:8082/employee/daily/${employeeId}/${formattedDate}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -298,6 +303,7 @@ const EmployeeAttendance = () => {
       }
 
       const data = await response.json();
+      console.log(data)
 
       // Update state with fetched data while preserving status and color information
       setAttendanceData((prevData) => {
@@ -382,6 +388,15 @@ const EmployeeAttendance = () => {
                     </span>
                     <span className="text-2xl font-bold">
                       {monthlySummary["Present"] || 0}
+                    </span>
+                  </div>
+                  {/* Present with Leave */}
+                  <div className="flex flex-col bg-lime-100 p-3 rounded-lg">
+                    <span className="font-medium text-green-800">
+                      Present with Leave (PL)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Present with Leave"] || 0}
                     </span>
                   </div>
                   {/* Half Day */}
@@ -598,6 +613,10 @@ const EmployeeAttendance = () => {
                             bgColorClass =
                               "bg-green-100 hover:bg-green-200 text-green-800";
                             break;
+                          case "Present with Leave":
+                            bgColorClass =
+                              "bg-lime-100 hover:bg-lime-200 text-lime-800";
+                            break;
                           case "Absent":
                             bgColorClass =
                               "bg-red-200 hover:bg-red-300 text-red-900";
@@ -704,6 +723,8 @@ const EmployeeAttendance = () => {
                             className={`${
                               status === "Present"
                                 ? "bg-green-100 text-green-800"
+                                : status === "Present with Leave"
+                                ? "bg-lime-100 text-lime-800"
                                 : status === "Absent"
                                 ? "bg-red-200 text-red-900"
                                 : status === "Half Day"

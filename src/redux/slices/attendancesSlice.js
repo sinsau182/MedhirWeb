@@ -11,11 +11,13 @@ export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
         let url = "";
         const employeeId = sessionStorage.getItem("employeeId");
         const companyId = sessionStorage.getItem("currentCompanyId");
+        const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+        const numericMonth = monthIndex + 1;
 
         if(sessionStorage.getItem("currentRole") === "MANAGER"){
-            url = `${API_BASE_URL}/manager/${employeeId}/${year}/${month}`;
+            url = `${API_BASE_URL}/manager/${employeeId}/${year}/${numericMonth}`;
         }else{
-            url = `${API_BASE_URL}/hr/${companyId}/${year}/${month}`;
+            url = `${API_BASE_URL}/hr/${companyId}/${year}/${numericMonth}`;
         }
         const token = getItemFromSessionStorage("token", null);
         
@@ -33,6 +35,7 @@ export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
     }
 );
 
+// Currently not used
 const fetchOneEmployeeAttendanceAllMonth = createAsyncThunk(
     "attendances/fetchOneEmployeeAttendanceAllMonth",
     async ({ month, year }, { rejectWithValue }) => {
@@ -100,10 +103,13 @@ export const attendancesSlice = createSlice({
             state.loading = false;
             if (action.payload.teamAttendance) {
                 state.attendance = action.payload.teamAttendance;
+                console.log(state.attendance);
             } else if (action.payload.attendance) {
-                state.attendance = action.payload.attendance;
+                state.attendance = action.payload.hrAttendance;
+                console.log(state.attendance);
             } else {
                 state.attendance = action.payload;
+                console.log(state.attendance);
             }
         });
         builder.addCase(fetchAllEmployeeAttendanceOneMonth.rejected, (state, action) => {

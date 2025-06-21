@@ -411,6 +411,7 @@ const requestDetailsSlice = createSlice({
       .addCase(fetchExpenseRequests.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+        console.log("not working")
       })
 
       // Update expense request status
@@ -435,6 +436,7 @@ const requestDetailsSlice = createSlice({
       .addCase(fetchIncomeRequests.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+        console.log("income not working")
       })
 
       // Update income request status

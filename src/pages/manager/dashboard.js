@@ -62,8 +62,8 @@ const Overview = () => {
   } = useSelector((state) => state.requestDetails);
 
   useEffect(() => {
-    dispatch(fetchExpenseRequests());
-    dispatch(fetchIncomeRequests());
+    // dispatch(fetchExpenseRequests());
+    // dispatch(fetchIncomeRequests());
   }, [dispatch]);
 
   const toggleSidebar = () => {

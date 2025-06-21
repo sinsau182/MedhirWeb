@@ -97,8 +97,8 @@ const Overview = () => {
   const {publicRuntimeConfig} = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
-    dispatch(fetchExpenseRequests());
-    dispatch(fetchIncomeRequests());
+    // dispatch(fetchExpenseRequests());
+    // dispatch(fetchIncomeRequests());
   }, [dispatch, sessionStorage.getItem("currentCompanyId")]);
 
   // Add useEffect to fetch current day's attendance and calculate summary

@@ -246,14 +246,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
   }, [dispatch]);
 
   // Fetch expenses when the expense tab is active
-  useEffect(() => {
-    if (activeTab === "expenseRequests") {
-      dispatch(fetchExpenseRequests());
-    }
-    if (activeTab === "incomeRequests") {
-      dispatch(fetchIncomeRequests());
-    }
-  }, [activeTab, dispatch]);
+  // useEffect(() => {
+  //   if (activeTab === "expenseRequests") {
+  //     dispatch(fetchExpenseRequests());
+  //   }
+  //   if (activeTab === "incomeRequests") {
+  //     dispatch(fetchIncomeRequests());
+  //   }
+  // }, [activeTab, dispatch]);
 
   // Fetch employee details for expense and income requests
   useEffect(() => {
@@ -553,6 +553,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
           <TabsTrigger
             value="expenseRequests"
             className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            disabled={true}
           >
             <DollarSign className="h-4 w-4 mr-2" />
             <span>Expense Requests</span>
@@ -560,6 +561,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
           <TabsTrigger
             value="incomeRequests"
             className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            disabled={true}
           >
             <Wallet className="h-4 w-4 mr-2" />
             <span>Income Requests</span>

@@ -54,6 +54,7 @@ function Attendance() {
   // Constants/Options
   const statusOptions = [
     { value: "P", label: "Present", color: "#CCFFCC" },
+    { value: "PL", label: "Present with Leave", color: "#E5E5CC" },
     { value: "PH", label: "Present on Holiday", color: "#5cbf85" },
     { value: "P/A", label: "Half Day", color: "#FFFFCC" },
     { value: "PH/A", label: "Half Day on Holiday", color: "#ffcc80" },
@@ -125,7 +126,7 @@ function Attendance() {
       apiParams.status = selectedStatuses.join(",");
     }
 
-    console.log("Fetching attendance data with params:", apiParams);
+    // console.log("Fetching attendance data with params:", apiParams);
     dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
   }, [dispatch, selectedMonth, selectedYear, selectedDate, selectedStatuses]);
 
@@ -216,7 +217,7 @@ function Attendance() {
   // Callbacks
   const generateAttendanceData = useCallback(
     (employee) => {
-      const attendanceRecord = attendance?.find(
+      const attendanceRecord = attendance?.attendance?.find(
         (record) => record.employeeId === employee.employeeId
       );
 
@@ -242,7 +243,7 @@ function Attendance() {
         
         // Check full leave dates
         if (attendanceData.fullLeaveDates?.includes(dateString)) {
-          return "A";
+          return "PL";
         }
         
         // Check half day leave dates
@@ -276,7 +277,7 @@ function Attendance() {
       const attendanceArray = Array(dates.length)
         .fill(null)
         .map((_, index) => {
-          const day = index;
+          const day = index + 1;
           const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
           const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           
@@ -289,6 +290,9 @@ function Attendance() {
           let value;
           switch (status.toUpperCase()) {
             case "P":
+              value = true;
+              break;
+            case "PL":
               value = true;
               break;
             case "A":
@@ -371,6 +375,7 @@ function Attendance() {
     if (status === null) return "bg-gray-100"; // No Data
     const upperStatus = status.toUpperCase();
     if (upperStatus === "P") return "bg-[#CCFFCC]"; // Present (Light green)
+    if (upperStatus === "PL") return "bg-[#E5E5CC]"; // Present with Leave (Light red)
     if (upperStatus === "P/A") return "bg-[#FFFFCC]"; // Half day (Light yellow)
     if (upperStatus === "A") return "bg-[#FFCCCC]"; // Absent (Light red)
     if (upperStatus === "H") return "bg-[#E0E0E0]"; // Holiday (Gray)
@@ -501,6 +506,7 @@ function Attendance() {
       let totalHalfDayOnHoliday = 0;
       let totalLOP = 0;
       let totalPresentOnLOP = 0;
+      let totalPresentWithLeave = 0;
       // Determine which data to use for summary based on dateToSummarize
       const dataForSummary =
         dateToSummarize !== null
@@ -524,6 +530,9 @@ function Attendance() {
             switch (att.label.toUpperCase()) {
               case "P":
                 totalPresent++;
+                break;
+              case "PL":
+                totalPresentWithLeave++;
                 break;
               case "A":
                 totalAbsent++;
@@ -556,6 +565,9 @@ function Attendance() {
               switch (att.label.toUpperCase()) {
                 case "P":
                   totalPresent++;
+                  break;
+                case "PL":
+                  totalPresentWithLeave++;
                   break;
                 case "A":
                   totalAbsent++;
@@ -593,6 +605,7 @@ function Attendance() {
         totalHalfDayOnHoliday,
         totalLOP,
         totalPresentOnLOP,
+        totalPresentWithLeave,
       };
     },
     []
@@ -671,7 +684,7 @@ function Attendance() {
       
       // Check full leave dates
       if (attendanceData.fullLeaveDates?.includes(dateString)) {
-        return "A";
+        return "PL";
       }
       
       // Check half day leave dates
@@ -750,6 +763,9 @@ function Attendance() {
                 case "P":
                   value = true;
                   break;
+                case "PL":
+                  value = true;
+                  break;
                 case "A":
                   value = false;
                   break;
@@ -814,6 +830,9 @@ function Attendance() {
               let value;
               switch (status.toUpperCase()) {
                 case "P":
+                  value = true;
+                  break;
+                case "PL":
                   value = true;
                   break;
                 case "A":
@@ -907,6 +926,9 @@ function Attendance() {
               case "P":
                 summaryKey = "totalPresent";
                 break;
+              case "PL":
+                summaryKey = "totalPresentWithLeave";
+                break;
               case "A":
                 summaryKey = "totalAbsent";
                 break;
@@ -936,7 +958,7 @@ function Attendance() {
             return (
               <div
                 key={status.value}
-                className={`rounded-lg p-4 min-w-[130px] flex flex-col justify-between items-center group ${
+                className={`rounded-lg p-4 min-w-[120px] flex flex-col justify-between items-center group ${
                   showNoData
                     ? "bg-gray-100"
                     : status.value === "P/A"
@@ -1241,6 +1263,9 @@ function Attendance() {
                           let value;
                           switch (status.toUpperCase()) {
                             case "P":
+                              value = true;
+                              break;
+                            case "PL":
                               value = true;
                               break;
                             case "A":
