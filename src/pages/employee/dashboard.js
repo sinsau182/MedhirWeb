@@ -5,20 +5,24 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import withAuth from "@/components/withAuth";
-import { fetchLeaveBalance, resetLeaveBalanceState } from "@/redux/slices/leaveBalanceSlice";
+import {
+  fetchLeaveBalance,
+  resetLeaveBalanceState,
+} from "@/redux/slices/leaveBalanceSlice";
 
 const Overview = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
   const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
-  const { balance, loading, error } = useSelector((state) => state.leaveBalance);
+  const { balance, loading, error } = useSelector(
+    (state) => state.leaveBalance
+  );
   const [displayedBalance, setDisplayedBalance] = useState(0);
-  
 
   // Fetch leave balance when component mounts
   useEffect(() => {
     dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
-    
+
     // Clean up function to reset leave balance state when component unmounts
     return () => {
       dispatch(resetLeaveBalanceState());
@@ -94,7 +98,9 @@ const Overview = () => {
                   </div>
                 </div>
                 {loading ? (
-                  <div className="text-center py-4">Loading leave balance...</div>
+                  <div className="text-center py-4">
+                    Loading leave balance...
+                  </div>
                 ) : error ? (
                   (typeof error === "string" && error.includes("400")) ||
                   (typeof error === "object" && error?.status === 400) ? (

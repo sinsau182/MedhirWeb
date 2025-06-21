@@ -237,9 +237,7 @@ const AddExpense = () => {
               </div>
             </div>
             <div style={selectContainerStyle}>
-              <label style={{ fontWeight: 500 }}>
-                Client / Project Name *
-              </label>
+              <label style={{ fontWeight: 500 }}>Client / Project Name *</label>
               <div style={{ position: "relative" }}>
                 <select
                   name="expenseHead"
@@ -334,7 +332,9 @@ const AddExpense = () => {
             <label style={{ fontWeight: 500 }}>
               Receipt / Invoice Attachment *
             </label>
-            <div style={{ display: "flex", alignItems: "center", marginTop: 6 }}>
+            <div
+              style={{ display: "flex", alignItems: "center", marginTop: 6 }}
+            >
               <input
                 id="file-upload"
                 type="file"
