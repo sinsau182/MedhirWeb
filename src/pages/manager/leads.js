@@ -7,7 +7,6 @@ import withAuth from "@/components/withAuth";
 const Leads = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar
@@ -16,7 +15,7 @@ const Leads = () => {
         // currentRole={"MANAGER"}
       />
 
-    <div
+      <div
         className={`flex-1 ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
@@ -30,4 +29,4 @@ const Leads = () => {
   );
 };
 
-export default withAuth(Leads); 
+export default withAuth(Leads);
