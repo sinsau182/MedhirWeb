@@ -98,7 +98,9 @@ function Attendance() {
 
   useEffect(() => {
     // Convert month name to numeric month (1-12)
-    const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const monthIndex = new Date(
+      `${selectedMonth} 1, ${selectedYear}`
+    ).getMonth();
     const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
     const year = selectedYear;
 
@@ -218,8 +220,8 @@ function Attendance() {
   const generateAttendanceData = useCallback(
     (employee) => {
       const attendanceRecord = Array.isArray(attendance)
-      ? attendance.find(record => record.employeeId === employee.employeeId)
-      : null;
+        ? attendance.find((record) => record.employeeId === employee.employeeId)
+        : null;
 
       if (!attendanceRecord) {
         return {
@@ -240,37 +242,37 @@ function Attendance() {
         if (attendanceData.presentDates?.includes(dateString)) {
           return "P";
         }
-        
+
         // Check full leave dates
         if (attendanceData.fullLeaveDates?.includes(dateString)) {
           return "PL";
         }
-        
+
         // Check half day leave dates
         if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
           return "P/A";
         }
-        
+
         // Check full comp-off dates
         if (attendanceData.fullCompoffDates?.includes(dateString)) {
           return "P";
         }
-        
+
         // Check half comp-off dates
         if (attendanceData.halfCompoffDates?.includes(dateString)) {
           return "P/A";
         }
-        
+
         // Check weekly off dates
         if (attendanceData.weeklyOffDates?.includes(dateString)) {
           return "H";
         }
-        
+
         // Check absent dates
         if (attendanceData.absentDates?.includes(dateString)) {
           return "A";
         }
-        
+
         return null;
       };
 
@@ -278,9 +280,14 @@ function Attendance() {
         .fill(null)
         .map((_, index) => {
           const day = index + 1;
-          const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-          const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          
+          const monthIndex = new Date(
+            `${selectedMonth} 1, ${selectedYear}`
+          ).getMonth();
+          const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(
+            2,
+            "0"
+          )}-${String(day).padStart(2, "0")}`;
+
           const status = getAttendanceStatusForDate(dateString);
 
           if (!status) {
@@ -326,7 +333,9 @@ function Attendance() {
         id: employee.employeeId,
         name: employee.name,
         department: employee.departmentName,
-        p_twd: `${attendanceRecord.payableDays || 0}/${attendanceRecord.workingDays || 0}`,
+        p_twd: `${attendanceRecord.payableDays || 0}/${
+          attendanceRecord.workingDays || 0
+        }`,
         attendance: attendanceArray,
       };
     },
@@ -336,8 +345,8 @@ function Attendance() {
   const generateLeaveData = useCallback(
     (employee) => {
       const attendanceRecord = Array.isArray(attendance)
-      ? attendance.find(record => record.employeeId === employee.employeeId)
-      : null;
+        ? attendance.find((record) => record.employeeId === employee.employeeId)
+        : null;
 
       if (!attendanceRecord) {
         return {
@@ -681,37 +690,37 @@ function Attendance() {
       if (attendanceData.presentDates?.includes(dateString)) {
         return "P";
       }
-      
+
       // Check full leave dates
       if (attendanceData.fullLeaveDates?.includes(dateString)) {
         return "PL";
       }
-      
+
       // Check half day leave dates
       if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
         return "P/A";
       }
-      
+
       // Check full comp-off dates
       if (attendanceData.fullCompoffDates?.includes(dateString)) {
         return "P";
       }
-      
+
       // Check half comp-off dates
       if (attendanceData.halfCompoffDates?.includes(dateString)) {
         return "P/A";
       }
-      
+
       // Check weekly off dates
       if (attendanceData.weeklyOffDates?.includes(dateString)) {
         return "H";
       }
-      
+
       // Check absent dates
       if (attendanceData.absentDates?.includes(dateString)) {
         return "A";
       }
-      
+
       return null;
     };
 
@@ -729,13 +738,22 @@ function Attendance() {
           // Get the attendance status for the summaryDate (current date or selected date)
           let statusForSummaryDate = null;
           if (summaryDate) {
-            const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-            const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(summaryDate).padStart(2, '0')}`;
-            statusForSummaryDate = getAttendanceStatusForDate(empAttendanceRecord, dateString);
+            const monthIndex = new Date(
+              `${selectedMonth} 1, ${selectedYear}`
+            ).getMonth();
+            const dateString = `${selectedYear}-${String(
+              monthIndex + 1
+            ).padStart(2, "0")}-${String(summaryDate).padStart(2, "0")}`;
+            statusForSummaryDate = getAttendanceStatusForDate(
+              empAttendanceRecord,
+              dateString
+            );
           }
 
           // Check if the status for the summaryDate is included in the selected statuses
-          return selectedStatuses.map(s => s.toUpperCase()).includes(statusForSummaryDate?.toUpperCase());
+          return selectedStatuses
+            .map((s) => s.toUpperCase())
+            .includes(statusForSummaryDate?.toUpperCase());
         })
         .map((employee) => {
           // Map the employee data, ensuring attendance array uses fetched data
@@ -748,10 +766,17 @@ function Attendance() {
             .fill({ value: null, label: "" })
             .map((_, index) => {
               const day = index + 1;
-              const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-              const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              
-              const status = getAttendanceStatusForDate(empAttendanceRecord, dateString);
+              const monthIndex = new Date(
+                `${selectedMonth} 1, ${selectedYear}`
+              ).getMonth();
+              const dateString = `${selectedYear}-${String(
+                monthIndex + 1
+              ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+              const status = getAttendanceStatusForDate(
+                empAttendanceRecord,
+                dateString
+              );
 
               if (!status) {
                 return { value: null, label: "" };
@@ -818,10 +843,17 @@ function Attendance() {
             .fill({ value: null, label: "" })
             .map((_, index) => {
               const day = index + 1;
-              const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-              const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-              
-              const status = getAttendanceStatusForDate(empAttendanceRecord, dateString);
+              const monthIndex = new Date(
+                `${selectedMonth} 1, ${selectedYear}`
+              ).getMonth();
+              const dateString = `${selectedYear}-${String(
+                monthIndex + 1
+              ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+              const status = getAttendanceStatusForDate(
+                empAttendanceRecord,
+                dateString
+              );
 
               if (!status) {
                 return { value: null, label: "" };
@@ -1253,12 +1285,19 @@ function Attendance() {
                       );
                       if (fetchedAttendanceForEmployee?.attendance) {
                         // Create date string in YYYY-MM-DD format for the current day
-                        const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-                        const currentDateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        
+                        const monthIndex = new Date(
+                          `${selectedMonth} 1, ${selectedYear}`
+                        ).getMonth();
+                        const currentDateString = `${selectedYear}-${String(
+                          monthIndex + 1
+                        ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
                         // Use the helper function to get status for this date
-                        const status = getAttendanceStatusForDate(fetchedAttendanceForEmployee, currentDateString);
-                        
+                        const status = getAttendanceStatusForDate(
+                          fetchedAttendanceForEmployee,
+                          currentDateString
+                        );
+
                         if (status) {
                           let value;
                           switch (status.toUpperCase()) {
