@@ -219,9 +219,9 @@ function Attendance() {
   // Callbacks
   const generateAttendanceData = useCallback(
     (employee) => {
-      const attendanceRecord = attendance?.attendance?.find(
-        (record) => record.employeeId === employee.employeeId
-      );
+const attendanceRecord = Array.isArray(attendance)
+  ? attendance.find(record => record.employeeId === employee.employeeId)
+  : null;
 
       if (!attendanceRecord) {
         return {

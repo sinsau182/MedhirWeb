@@ -104,7 +104,7 @@ export const attendancesSlice = createSlice({
             if (action.payload.teamAttendance) {
                 state.attendance = action.payload.teamAttendance;
                 console.log(state.attendance);
-            } else if (action.payload.attendance) {
+            } else if (action.payload.hrAttendance) {
                 state.attendance = action.payload.hrAttendance;
                 console.log(state.attendance);
             } else {
