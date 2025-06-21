@@ -216,7 +216,7 @@ const Overview = () => {
       icon: <FaCalendar className="h-6 w-6 text-green-500" />,
       label: "Open Requests",
       count:
-        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length + expensesRequests.length + incomeRequests.length,
+        pendingLeaves.length + pendingCompOffs.length + profileUpdates.length,
     },
   ];
 

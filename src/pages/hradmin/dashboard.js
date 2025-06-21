@@ -39,7 +39,6 @@ import getConfig from "next/config";
 // Import necessary hooks and actions
 import { useRouter } from "next/router";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
-import { fetchExpenseRequests, fetchIncomeRequests } from "@/redux/slices/requestDetailsSlice";
 
 const COLORS = [
   "#0088FE",
@@ -88,11 +87,10 @@ const Overview = () => {
   );
   const { attendance, loading: attendanceLoading, err: attendanceErr } = useSelector((state) => state.attendances || {}); // Add attendance state
   // Get state from Redux
-  const {
-    expensesRequests,
-    incomeRequests,
-  } = useSelector((state) => state.requestDetails);
-  console.log(expensesRequests);
+  // const {
+  //   expensesRequests,
+  //   incomeRequests,
+  // } = useSelector((state) => state.requestDetails);
 
   const {publicRuntimeConfig} = getConfig();
   useEffect(() => {
@@ -326,13 +324,16 @@ const Overview = () => {
       count:
         (profileUpdates?.length || 0) + 
         (pendingLeaves?.length || 0) + 
-        (pendingCompOffs?.length || 0) + 
-        (expensesRequests?.length || 0) +
-        (incomeRequests?.length || 0),
+        (pendingCompOffs?.length || 0),
       onClick: handleOpenRequestsClick,
     },
     // Payroll Status card removed
   ];
+
+  const refreshRequests = useCallback(async () => {
+    await fetchPendingRequests();
+    await fetchProfileUpdates();
+  }, [fetchPendingRequests, fetchProfileUpdates]);
 
   // Decide which items to display in the overview section
   // Only Total Employees and Pending Tasks for a 2-column layout
@@ -685,6 +686,7 @@ const Overview = () => {
             <RequestDetails
               activeTab={activeTab}
               onTabChange={handleTabChange}
+              onActionComplete={refreshRequests}
             />
           )}
         </div>

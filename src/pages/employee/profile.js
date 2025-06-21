@@ -86,7 +86,6 @@ function EmployeeProfilePage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log("Employee Data:", data); // Debug log
       setEmployeeById(data);
 
       // Fetch manager name if reporting manager exists
@@ -100,7 +99,6 @@ function EmployeeProfilePage() {
             setManagerName(managerData.name);
           }
         } catch (error) {
-          console.error("Failed to fetch manager details:", error);
           setManagerName("-");
         }
       } else {
@@ -445,40 +443,67 @@ function EmployeeProfilePage() {
     if (!employeeById) return false;
 
     // Check personal info changes
-    if (formData.employee.email.personal !== employeeById.emailPersonal)
+    if (formData.employee.email.personal !== employeeById.emailPersonal) {
       return true;
-    if (formData.employee.phone1 !== employeeById.phone) return true;
-    if (formData.employee.phone2 !== employeeById.alternatePhone) return true;
-    if (formData.employee.currentAddress !== employeeById.currentAddress)
+    }
+    if (formData.employee.phone1 !== employeeById.phone) {
       return true;
-    if (formData.employee.permanentAddress !== employeeById.permanentAddress)
+    }
+    if (formData.employee.phone2 !== employeeById.alternatePhone) {
       return true;
+    }
+    if (formData.employee.currentAddress !== employeeById.currentAddress) {
+      return true;
+    }
+    if (formData.employee.permanentAddress !== employeeById.permanentAddress) {
+      return true;
+    }
 
     // Check bank info changes
     if (
       formData.bank.accountHolderName !==
       employeeById.bankDetails?.accountHolderName
-    )
+    ) {
       return true;
-    if (formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber)
+    }
+    if (formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber) {
       return true;
-    if (formData.bank.bankName !== employeeById.bankDetails?.bankName)
+    }
+    if (formData.bank.bankName !== employeeById.bankDetails?.bankName) {
       return true;
-    if (formData.bank.branchName !== employeeById.bankDetails?.branchName)
+    }
+    if (formData.bank.branchName !== employeeById.bankDetails?.branchName) {
       return true;
-    if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode)
+    }
+    if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
       return true;
-    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber)
+    }
+    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {  
       return true;
+    }
 
     // Check if any files have been uploaded
-    if (formData.employee.profileImage instanceof File) return true;
-    if (formData.bank.passbookDoc instanceof File) return true;
-    if (formData.idProofs.aadharImage instanceof File) return true;
-    if (formData.idProofs.panImage instanceof File) return true;
-    if (formData.idProofs.passportImage instanceof File) return true;
-    if (formData.idProofs.drivingLicenseImage instanceof File) return true;
-    if (formData.idProofs.voterIdImage instanceof File) return true;
+    if (formData.employee.profileImage instanceof File) {
+      return true;
+    }
+    if (formData.bank.passbookDoc instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.aadharImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.panImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.passportImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.drivingLicenseImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.voterIdImage instanceof File) {
+      return true;
+    }
 
     // No changes detected
     return false;
@@ -504,27 +529,45 @@ function EmployeeProfilePage() {
 
     setLoading(true);
     try {
-      // Create a payload with only the specified editable fields
+      // Create a payload with only the changed fields
       const payload = {
         employeeId: employeeById.employeeId,
-        // Personal info
-        emailPersonal: formData.employee.email.personal,
-        phone: formData.employee.phone1,
-        ...(formData.employee.phone2 !== employeeById.alternatePhone && {
-          alternatePhone: formData.employee.phone2,
-        }),
-        // Address info
-        currentAddress: formData.employee.currentAddress,
-        permanentAddress: formData.employee.permanentAddress,
       };
 
-      // Only include bank details if both account number and IFSC are filled
-      if (formData.bank.accountNumber && formData.bank.ifscCode) {
+      // Only include personal info fields that have changed
+      if (formData.employee.email.personal !== employeeById.emailPersonal) {
+        payload.emailPersonal = formData.employee.email.personal;
+      }
+      if (formData.employee.phone1 !== employeeById.phone) {
+        payload.phone = formData.employee.phone1;
+      }
+      if (formData.employee.phone2 !== employeeById.alternatePhone) {
+        payload.alternatePhone = formData.employee.phone2;
+      }
+      if (formData.employee.currentAddress !== employeeById.currentAddress) {
+        payload.currentAddress = formData.employee.currentAddress;
+      }
+      if (formData.employee.permanentAddress !== employeeById.permanentAddress) {
+        payload.permanentAddress = formData.employee.permanentAddress;
+      }
+
+      // Include bank details that have changed (don't require both fields to be filled)
+      if (formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber) {
         payload.accountNumber = formData.bank.accountNumber;
+      }
+      if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
         payload.ifscCode = formData.bank.ifscCode;
+      }
+      if (formData.bank.accountHolderName !== employeeById.bankDetails?.accountHolderName) {
         payload.accountHolderName = formData.bank.accountHolderName;
+      }
+      if (formData.bank.bankName !== employeeById.bankDetails?.bankName) {
         payload.bankName = formData.bank.bankName;
+      }
+      if (formData.bank.branchName !== employeeById.bankDetails?.branchName) {
         payload.branchName = formData.bank.branchName;
+      }
+      if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {
         payload.upiPhoneNumber = formData.bank.upiPhone;
       }
 
@@ -700,6 +743,14 @@ function EmployeeProfilePage() {
                             <FiSettings className="w-4 h-4 mr-2" /> Settings
                           </button>
                           <button
+                            onClick={() => {
+                              toast.info("Debug info logged to console");
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-gray-50 flex items-center"
+                          >
+                            <FiSettings className="w-4 h-4 mr-2" /> Debug Info
+                          </button>
+                          <button
                             onClick={handleLogout}
                             className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center"
                           >
@@ -817,22 +868,36 @@ function EmployeeProfilePage() {
                           )}
                         </div>
                       ) : (
-                        <div
-                          onClick={handleSaveAllClick}
-                          className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white"
-                        >
-                          <button
-                            className="flex items-center justify-center text-green-400 hover:text-green-300 disabled:opacity-50"
-                            disabled={loading || !isEditable}
+                        <>
+                          <div
+                            onClick={handleSaveAllClick}
+                            className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white cursor-pointer"
                           >
-                            {loading ? (
-                              <FiLoader className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <FiCheck className="w-4 h-4" />
-                            )}
-                          </button>
-                          <span className="text-xs mt-1">Save Changes</span>
-                        </div>
+                            <button
+                              className="flex items-center justify-center text-green-400 hover:text-green-300 disabled:opacity-50"
+                              disabled={loading || !isEditable}
+                            >
+                              {loading ? (
+                                <FiLoader className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FiCheck className="w-4 h-4" />
+                              )}
+                            </button>
+                            <span className="text-xs mt-1">Save Changes</span>
+                          </div>
+                          <div
+                            onClick={handleCancelClick}
+                            className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white cursor-pointer"
+                          >
+                            <button
+                              className="flex items-center justify-center text-red-400 hover:text-red-300 disabled:opacity-50"
+                              disabled={loading}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <span className="text-xs mt-1">Cancel</span>
+                          </div>
+                        </>
                       )}
                       <div className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white">
                         <span className="text-xs text-white/80">

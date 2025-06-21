@@ -1041,7 +1041,7 @@ function Attendance() {
         {/* Filters, Search, and Calendar Section */}
         <div className="flex items-center gap-4">
           {/* Status Filter */}
-          <div className="relative z-40" ref={statusFilterRef}>
+          <div className="relative" ref={statusFilterRef}>
             <button
               onClick={() => setIsStatusFilterOpen(!isStatusFilterOpen)}
               className="flex items-center gap-2 px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
@@ -1095,7 +1095,7 @@ function Attendance() {
             </button>
 
             {isStatusFilterOpen && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-40">
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg">
                 <div className="p-2 max-h-48 overflow-y-auto">
                   {statusOptions.map((status) => (
                     <label
@@ -1198,13 +1198,13 @@ function Attendance() {
             <thead>
               <tr className="border-b border-black">
                 {/* Fixed Columns */}
-                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black sticky left-0 bg-white z-20 shadow-sm">
+                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black left-0 bg-white shadow-sm">
                   Emp ID
                 </th>
-                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r border-black sticky left-[8%] bg-white z-20 shadow-sm">
+                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[10%] border-r border-black left-[8%] bg-white shadow-sm">
                   Name
                 </th>
-                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black sticky left-[18%] bg-white z-20 shadow-sm">
+                <th className="py-2 px-1 text-left text-xs font-semibold text-gray-700 w-[8%] border-r border-black left-[18%] bg-white shadow-sm">
                   Dept
                 </th>
 
@@ -1252,7 +1252,7 @@ function Attendance() {
                 >
                   {/* Fixed Cells */}
                   <td
-                    className={`py-1 px-1 text-sm border-r border-black sticky left-0 z-10 ${
+                    className={`py-1 px-1 text-sm border-r border-black left-0 ${
                       selectedEmployeeId === employee.id
                         ? "bg-blue-100 font-semibold text-gray-800"
                         : "bg-white text-gray-800"
@@ -1260,10 +1260,10 @@ function Attendance() {
                   >
                     {employee.id}
                   </td>
-                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] sticky left-[8%] bg-white z-10">
+                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] left-[8%] bg-white">
                     {employee.name}
                   </td>
-                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] sticky left-[18%] bg-white z-10">
+                  <td className="py-1 px-1 text-sm text-gray-800 border-r border-black whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] left-[18%] bg-white">
                     {employee.department}
                   </td>
 
