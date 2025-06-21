@@ -21,6 +21,7 @@ export const clearSession = () => {
   sessionStorage.removeItem("roles");
   sessionStorage.removeItem("employeeId");
   sessionStorage.removeItem("passwordChanged");
+  sessionStorage.removeItem("departmentName");
 };
 
 export const isTokenExpired = () => {

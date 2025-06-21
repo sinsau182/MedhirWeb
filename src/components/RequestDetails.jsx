@@ -15,6 +15,7 @@ import PropTypes from "prop-types";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 import {
   fetchPendingLeaveRequests,
@@ -22,7 +23,12 @@ import {
   updateLeaveStatus,
   updateProfileRequestStatus,
   clearErrors,
+  fetchExpenseRequests,
+  fetchIncomeRequests,
+  updateExpenseRequestStatus,
+  updateIncomeRequestStatus,
 } from "@/redux/slices/requestDetailsSlice";
+import { fetchEmployeeDetails } from "@/redux/slices/payslipSlice";
 
 // --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
 const ChangesModal = ({ isOpen, onClose, changes }) => {
@@ -49,21 +55,32 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
               <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
                 <div>
                   <p className="text-xs text-gray-500 mb-2">Old Value:</p>
-                  {change.fieldName.toLowerCase().includes('image') || change.fieldName.toLowerCase().includes('aadhar') ? (
+                  {change.fieldName.toLowerCase().includes("image") ||
+                  change.fieldName.toLowerCase().includes("aadhar") ? (
                     change.oldValue ? (
                       <div className="space-y-2">
-                        <a href={change.oldValue} target="_blank" rel="noopener noreferrer" className="block">
-                          <img 
-                            src={change.oldValue} 
-                            alt={`Old ${change.fieldName}`} 
+                        <a
+                          href={change.oldValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={change.oldValue}
+                            alt={`Old ${change.fieldName}`}
                             className="w-full h-32 object-contain rounded border bg-white p-2"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = '/placeholder-image.png';
+                              e.target.src = "/placeholder-image.png";
                             }}
                           />
                         </a>
-                        <a href={change.oldValue} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800">
+                        <a
+                          href={change.oldValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
                           View Full Image
                         </a>
                       </div>
@@ -77,38 +94,49 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
                   )}
                 </div>
                 <div className="flex items-center justify-center h-full">
-                  <svg 
-                    className="w-6 h-6 text-gray-400" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24" 
+                  <svg
+                    className="w-6 h-6 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M13 7l5 5m0 0l-5 5m5-5H6" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
                     />
                   </svg>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-2">New Value:</p>
-                  {change.fieldName.toLowerCase().includes('image') || change.fieldName.toLowerCase().includes('aadhar') ? (
+                  {change.fieldName.toLowerCase().includes("image") ||
+                  change.fieldName.toLowerCase().includes("aadhar") ? (
                     change.newValue ? (
                       <div className="space-y-2">
-                        <a href={change.newValue} target="_blank" rel="noopener noreferrer" className="block">
-                          <img 
-                            src={change.newValue} 
-                            alt={`New ${change.fieldName}`} 
+                        <a
+                          href={change.newValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block"
+                        >
+                          <img
+                            src={change.newValue}
+                            alt={`New ${change.fieldName}`}
                             className="w-full h-32 object-contain rounded border bg-white p-2"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = '/placeholder-image.png';
+                              e.target.src = "/placeholder-image.png";
                             }}
                           />
                         </a>
-                        <a href={change.newValue} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800">
+                        <a
+                          href={change.newValue}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
                           View Full Image
                         </a>
                       </div>
@@ -147,16 +175,19 @@ ChangesModal.propTypes = {
 };
 // --- End Modal Component ---
 
-const RequestDetails = ({ activeTab, onTabChange }) => {
+const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
+  const [employeeDetails, setEmployeeDetails] = useState({});
 
   // Get state from Redux
   const {
     pendingLeaves,
     pendingCompOffs,
     profileUpdates,
+    expensesRequests,
+    incomeRequests,
     loading,
     error,
     profileLoading,
@@ -166,11 +197,17 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     rejectingLeaveId,
   } = useSelector((state) => state.requestDetails);
 
+  const { employeeData } = useSelector((state) => state.payslip);
+
   // Placeholder for expense and advance requests (not implemented in the slice)
-  const [expenseRequests, setExpenseRequests] = useState([]);
+
   const [isLoadingExpense, setIsLoadingExpense] = useState(false);
-  const [advanceRequests, setAdvanceRequests] = useState([]);
-  const [isLoadingAdvance, setIsLoadingAdvance] = useState(false);
+  const [isLoadingIncome, setIsLoadingIncome] = useState(false);
+
+  const [approvingExpenseId, setApprovingExpenseId] = useState(null);
+  const [rejectingExpenseId, setRejectingExpenseId] = useState(null);
+  const [approvingIncomeId, setApprovingIncomeId] = useState(null);
+  const [rejectingIncomeId, setRejectingIncomeId] = useState(null);
 
   // Function to open the modal
   const handleViewDetails = (changes) => {
@@ -208,6 +245,54 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     };
   }, [dispatch]);
 
+  // Fetch expenses when the expense tab is active
+  // useEffect(() => {
+  //   if (activeTab === "expenseRequests") {
+  //     dispatch(fetchExpenseRequests());
+  //   }
+  //   if (activeTab === "incomeRequests") {
+  //     dispatch(fetchIncomeRequests());
+  //   }
+  // }, [activeTab, dispatch]);
+
+  // Fetch employee details for expense and income requests
+  useEffect(() => {
+    const fetchEmployeeInfo = async () => {
+      if (activeTab === "expenseRequests" && expensesRequests.length > 0) {
+        for (const request of expensesRequests) {
+          if (!employeeDetails[request.submittedBy]) {
+            try {
+              await dispatch(fetchEmployeeDetails(request.submittedBy)).unwrap();
+              setEmployeeDetails(prev => ({
+                ...prev,
+                [request.submittedBy]: employeeData
+              }));
+            } catch (error) {
+              console.error("Failed to fetch employee details:", error);
+            }
+          }
+        }
+      }
+      if (activeTab === "incomeRequests" && incomeRequests.length > 0) {
+        for (const request of incomeRequests) {
+          if (!employeeDetails[request.submittedBy]) {
+            try {
+              await dispatch(fetchEmployeeDetails(request.submittedBy)).unwrap();
+              setEmployeeDetails(prev => ({
+                ...prev,
+                [request.submittedBy]: employeeData
+              }));
+            } catch (error) {
+              console.error("Failed to fetch employee details:", error);
+            }
+          }
+        }
+      }
+    };
+
+    fetchEmployeeInfo();
+  }, [activeTab, expensesRequests, incomeRequests, dispatch, employeeData]);
+
   // --- Approve/Reject Logic for Profile Updates ---
   const handleApproveProfileUpdate = async (employeeId) => {
     if (!employeeId) {
@@ -235,6 +320,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "An unknown error occurred.");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   const handleRejectProfileUpdate = async (employeeId) => {
@@ -263,6 +349,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "An unknown error occurred.");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   const handleApprove = async (leaveId) => {
@@ -287,6 +374,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "Failed to approve request");
     }
+    if (onActionComplete) onActionComplete();
   };
 
   const handleReject = async (leaveId) => {
@@ -311,11 +399,128 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
     } catch (error) {
       toast.error(error.message || "Failed to reject request");
     }
+    if (onActionComplete) onActionComplete();
+  };
+
+  // Handle expense approval
+  const handleApproveExpense = async (expenseId) => {
+    try {
+      setApprovingExpenseId(expenseId);
+      const resultAction = await dispatch(
+        updateExpenseRequestStatus({
+          expenseId,
+          status: "Approved",
+          remarks: "Approved by Authorized Person",
+        })
+      );
+
+      if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Expense approved successfully");
+        // Refresh the expenses list
+        dispatch(fetchExpenseRequests());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to approve expense"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to approve expense");
+    } finally {
+      setApprovingExpenseId(null);
+    }
+    if (onActionComplete) onActionComplete();
+  };
+
+  // Handle expense rejection
+  const handleRejectExpense = async (expenseId) => {
+    try {
+      setRejectingExpenseId(expenseId);
+      const resultAction = await dispatch(
+        updateExpenseRequestStatus({
+          expenseId,
+          status: "Rejected",
+          remarks: "Rejected by Authorized Person",
+        })
+      );
+
+      if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Expense rejected successfully");
+        // Refresh the expenses list
+        dispatch(fetchExpenseRequests());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to reject expense"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to reject expense");
+    } finally {
+      setRejectingExpenseId(null);
+    }
+    if (onActionComplete) onActionComplete();
+  };
+
+  // Handle income approval
+  const handleApproveIncome = async (incomeId) => {
+    try {
+      setApprovingIncomeId(incomeId);
+      const resultAction = await dispatch(
+        updateIncomeRequestStatus({
+          incomeId,
+          status: "Approved",
+          remarks: "Approved by Authorized Person",
+        })
+      );
+
+      if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Income approved successfully");
+        // Refresh the income requests list
+        dispatch(fetchIncomeRequests());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to approve income"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to approve income");
+    } finally {
+      setApprovingIncomeId(null);
+    }
+    if (onActionComplete) onActionComplete();
+  };
+
+  // Handle income rejection
+  const handleRejectIncome = async (incomeId) => {
+    try {
+      setRejectingIncomeId(incomeId);
+      const resultAction = await dispatch(
+        updateIncomeRequestStatus({
+          incomeId,
+          status: "Rejected",
+          remarks: "Rejected by Authorized Person",
+        })
+      );
+
+      if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
+        toast.success("Income rejected successfully");
+        // Refresh the income requests list
+        dispatch(fetchIncomeRequests());
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to reject income"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to reject income");
+    } finally {
+      setRejectingIncomeId(null);
+    }
+    if (onActionComplete) onActionComplete();
   };
 
   // Updated combined loading state
   const isLoading =
-    loading || profileLoading || isLoadingExpense || isLoadingAdvance;
+    loading || profileLoading || isLoadingExpense || isLoadingIncome;
 
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
@@ -347,19 +552,19 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
           </TabsTrigger>
           <TabsTrigger
             value="expenseRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            disabled={true}
           >
             <DollarSign className="h-4 w-4 mr-2" />
-            <span>Reimbursement Requests</span>
+            <span>Expense Requests</span>
           </TabsTrigger>
           <TabsTrigger
-            value="advanceRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled
+            value="incomeRequests"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            disabled={true}
           >
             <Wallet className="h-4 w-4 mr-2" />
-            <span>Advance Requests</span>
+            <span>Income Requests</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="leaveRequests">
@@ -370,25 +575,22 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Employee ID
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-2 text-left text-sm font-medium border-b border-gray-100">
                     Employee Name
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Department
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Type of Leave
+                  <th className="py-4 px-0 text-left text-sm font-medium border-b border-gray-100 w-1/6">
+                    Dates
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Start Date
-                  </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    End Date
+                  <th className="py-4 px-2 text-left text-sm font-medium border-b border-gray-100">
+                    Days
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Shift Type
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-0 text-left text-sm font-medium border-b border-gray-100 w-1/5">
                     Reason
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
@@ -430,12 +632,33 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       <td className="px-5 py-4 text-sm">
                         {request.department}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.leaveType}</td>
-                      <td className="px-5 py-4 text-sm">
-                        {formatDate(request.startDate)}
+                      {/* <td className="px-5 py-4 text-sm">{request.leaveType}</td> */}
+                      <td className="px-0 py-4 text-sm">
+                        {Array.isArray(request.leaveDates) && request.leaveDates.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {request.leaveDates.map((date, idx) => (
+                              <span
+                                key={date}
+                                className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs border border-blue-100"
+                              >
+                                {formatDate(date)}
+                                {idx < request.leaveDates.length - 1 }
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}    
                       </td>
-                      <td className="px-5 py-4 text-sm">
-                        {formatDate(request.endDate)}
+                      <td className="py-4 text-sm">
+                        {request.leaveDates && request.leaveDates.length > 0 ? (
+                          <>
+                            {request.leaveDates.length}{" "}
+                            {request.leaveDates.length === 1 ? "day" : "days"}
+                          </>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}
                       </td>
                       <td className="px-5 py-4 text-sm">
                         {(() => {
@@ -451,8 +674,8 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                           }
                         })()}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.reason}</td>
-                      <td className="px-5 py-4 text-sm font-medium space-x-3">
+                      <td className="px-0 py-4 text-sm w-1/8">{request.reason}</td>
+                      <td className="px-2 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
@@ -552,7 +775,21 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                         {request.department}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {formatDate(request.startDate)}
+                        {Array.isArray(request.leaveDates) && request.leaveDates.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {request.leaveDates.map((date, idx) => (
+                              <span
+                                key={date}
+                                className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs border border-blue-100"
+                              >
+                                {formatDate(date)}
+                                {idx < request.leaveDates.length - 1 }
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic">N/A</span>
+                        )}    
                       </td>
                       <td className="px-5 py-4 text-sm">
                         {(() => {
@@ -735,9 +972,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Receipt
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -747,57 +984,57 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                       Loading...
                     </td>
                   </tr>
-                ) : expenseRequests.length === 0 ? (
+                ) : expensesRequests.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center py-5 text-gray-500">
                       No pending expense requests.
                     </td>
                   </tr>
                 ) : (
-                  expenseRequests.map((request) => (
+                  expensesRequests.map((request) => (
                     <tr
-                      key={request.id}
+                      key={request.expenseId}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                        {request.employeeId}
-                      </td>
-                      <td className="px-5 py-4 text-sm">{request.name}</td>
-                      <td className="px-5 py-4 text-sm">
-                        {request.department}
-                      </td>
-                      <td className="px-5 py-4 text-sm">{request.amount}</td>
-                      <td className="px-5 py-4 text-sm">
-                        {request.description}
+                        {request.submittedBy}
                       </td>
                       <td className="px-5 py-4 text-sm">
-                        {request.hasReceipt && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-white border border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-600 transition-colors rounded-full h-8 px-3 inline-flex items-center justify-center"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
-                        )}
+                        {employeeDetails[request.submittedBy]?.name || "Loading..."}
                       </td>
+                      <td className="px-5 py-4 text-sm">
+                        {employeeDetails[request.submittedBy]?.department || "Loading..."}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {request.totalAmount}
+                      </td>
+                      <td className="px-5 py-4 text-sm">{request.comments}</td>
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleApproveExpense(request.expenseId)}
+                          disabled={approvingExpenseId === request.expenseId}
                         >
-                          <Check className="h-4 w-4" />
+                          {approvingExpenseId === request.expenseId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleRejectExpense(request.expenseId)}
+                          disabled={rejectingExpenseId === request.expenseId}
                         >
-                          <X className="h-4 w-4" />
+                          {rejectingExpenseId === request.expenseId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                       </td>
                     </tr>
@@ -807,7 +1044,7 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
             </table>
           </div>
         </TabsContent>
-        <TabsContent value="advanceRequests">
+        <TabsContent value="incomeRequests">
           <div className="overflow-x-auto bg-white rounded-lg shadow-sm">
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
@@ -827,61 +1064,73 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Reason
                   </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Repayment Plan
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Actions
-                  </th>
+                  </th> */}
                 </tr>
               </thead>
               <tbody>
-                {isLoadingAdvance ? (
+                {isLoadingIncome ? (
                   <tr>
                     <td colSpan="7" className="text-center py-5">
                       Loading...
                     </td>
                   </tr>
-                ) : advanceRequests.length === 0 ? (
+                ) : incomeRequests.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="text-center py-5 text-gray-500">
-                      No pending advance requests.
+                      No pending income requests.
                     </td>
                   </tr>
                 ) : (
-                  advanceRequests.map((request) => (
+                  incomeRequests.map((request) => (
                     <tr
                       key={request.id}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                        {request.employeeId}
+                        {request.submittedBy}
                       </td>
-                      <td className="px-5 py-4 text-sm">{request.name}</td>
                       <td className="px-5 py-4 text-sm">
-                        {request.department}
+                        {employeeDetails[request.submittedBy]?.name || "Loading..."}
+                      </td>
+                      <td className="px-5 py-4 text-sm">
+                        {employeeDetails[request.submittedBy]?.department || "Loading..."}
                       </td>
                       <td className="px-5 py-4 text-sm">{request.amount}</td>
-                      <td className="px-5 py-4 text-sm">{request.reason}</td>
+                      {/* <td className="px-5 py-4 text-sm">{request.reason}</td>
                       <td className="px-5 py-4 text-sm">
                         {request.repaymentPlan}
-                      </td>
+                      </td> */}
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleApproveIncome(request.incomeId)}
+                          disabled={approvingIncomeId === request.incomeId}
                         >
-                          <Check className="h-4 w-4" />
+                          {approvingIncomeId === request.incomeId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="bg-white border border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors rounded-full h-8 w-8 p-0 inline-flex items-center justify-center"
-                          disabled
+                          onClick={() => handleRejectIncome(request.incomeId)}
+                          disabled={rejectingIncomeId === request.incomeId}
                         >
-                          <X className="h-4 w-4" />
+                          {rejectingIncomeId === request.incomeId ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <X className="h-4 w-4" />
+                          )}
                         </Button>
                       </td>
                     </tr>
@@ -904,8 +1153,9 @@ const RequestDetails = ({ activeTab, onTabChange }) => {
 };
 
 RequestDetails.propTypes = {
-  activeTab: PropTypes.string.isRequired,
-  onTabChange: PropTypes.func.isRequired,
+  activeTab: PropTypes.string,
+  onTabChange: PropTypes.func,
+  onActionComplete: PropTypes.func,
 };
 
 export default RequestDetails;

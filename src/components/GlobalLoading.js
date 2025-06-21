@@ -30,7 +30,7 @@ const GlobalLoading = () => {
       {/* Main Content Skeleton */}
       <div className="flex">
         {/* Sidebar Skeleton */}
-        <div className="w-64 h-[calc(100vh-64px)] bg-white shadow-md">
+        <div className="w-56 h-[calc(100vh-64px)] bg-white shadow-md">
           {/* Sidebar Toggle Button Skeleton */}
           <div className="absolute -right-4 top-3 z-50">
             <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />

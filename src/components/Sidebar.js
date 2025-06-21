@@ -8,6 +8,7 @@ import {
   FaCalendarAlt,
   FaAngleLeft,
   FaAngleRight,
+  FaTasks,
 } from "react-icons/fa";
 import {
   Briefcase,
@@ -15,19 +16,24 @@ import {
   ChartColumnIncreasing,
   Clock,
   CreditCard,
+  CreditCardIcon,
   ReceiptIcon,
   Users,
+  Wallet,
 } from "lucide-react";
 import Link from "next/link";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [department, setDepartment] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
+    const dept = sessionStorage.getItem("departmentName");
     setCurrentRole(role);
+    setDepartment(dept);
 
     // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
@@ -41,6 +47,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       ...prev,
       [menuKey]: !prev[menuKey],
     }));
+  };
+
+  // Add display mapping for roles
+  const roleDisplayLabels = {
+    EMPLOYEE: "Employee",
+    MANAGER: "Manager",
+    HRADMIN: "HR Admin",
+    SALES: "Sales Employee",
+    ACCOUNTADMIN: "Accountant",
+    PROJECTADMIN: "Project Admin",
+    ACCOUNTANT: "Accountant",
+    PROJECTMANAGER: "Project Manager"
   };
 
   // Define menu items based on the role
@@ -117,6 +135,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/manager/attendance",
       roles: ["MANAGER"],
     },
+    {
+      label: "Lead Management",
+      icon: <FaTasks />,
+      link: "/manager/leads",
+      roles: ["MANAGER"],
+    },
 
     {
       label: "Dashboard",
@@ -130,12 +154,24 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/employee/leaves",
       roles: ["EMPLOYEE"],
     },
-    {
-      label: "Reimbursement",
-      icon: <CreditCard />,
-      link: "/employee/reimbursement",
-      roles: ["EMPLOYEE"],
-    },
+    //  {
+    //    label: "Reimbursement",
+    //    icon: <CreditCard />,
+    //    link: "/employee/reimbursement",
+    //    roles: ["EMPLOYEE"],
+    //  },
+//    {
+//      label: "Expenses",
+//      icon: <ReceiptIcon />,
+//      link: "/employee/expenses",
+//      roles: ["EMPLOYEE"],
+//    },
+//    {
+//      label: "Income",
+//      icon: <Wallet />,
+//      link: "/employee/income",
+//      roles: ["EMPLOYEE"],
+//    },
     {
       label: "Attendance",
       icon: <Clock />,
@@ -148,12 +184,49 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/employee/mypayslip",
       roles: ["EMPLOYEE"],
     },
+    {
+      label: "Lead Management",
+      icon: <FaTasks />,
+      link: "/employee/leads",
+      roles: ["EMPLOYEE"],
+    },
+
+    // Add Account Admin items
+    {
+      label: "Expenses",
+      icon: <ReceiptIcon />,
+      link: "/account/accountantExpense",
+      roles: ["ACCOUNTANT"],
+    },
+    {
+      label: "Income",
+      icon: <Wallet />,
+      link: "/project_Manager/income",
+      roles: ["ACCOUNTANT"],
+    },
+
+    // Add Project Admin items
+    {
+      label: "Expenses",
+      icon: <ReceiptIcon />,
+      link: "/project_Manager/expense",
+      roles: ["PROJECTMANAGER"],
+    },
+    {
+      label: "Income",
+      icon: <Wallet />,
+      link: "/project_Manager/income",
+      roles: ["PROJECTMANAGER"],
+    },
   ];
 
-  // Filter menu items based on currentRole
-  const filteredMenu = menuItems.filter((item) =>
-    item.roles.includes(currentRole)
-  );
+  // Filter menu items based on currentRole and department
+  const filteredMenu = menuItems.filter((item) => {
+    if (item.label === "Lead Management") {
+      return item.roles.includes(currentRole) && department === "Sales";
+    }
+    return item.roles.includes(currentRole);
+  });
 
   const isActiveLink = (link) => {
     if (!link) return false;
@@ -170,7 +243,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   return (
     <aside
       className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white shadow-md transition-all duration-300 ${
-        isCollapsed ? "w-16" : "w-64"
+        isCollapsed ? "w-16" : "w-56"
       }`}
     >
       {/* Collapse/Expand Button - Moved to top left */}

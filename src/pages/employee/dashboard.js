@@ -12,6 +12,7 @@ const Overview = () => {
   const dispatch = useDispatch();
   const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
   const { balance, loading, error } = useSelector((state) => state.leaveBalance);
+  const [displayedBalance, setDisplayedBalance] = useState(0);
   
 
   // Fetch leave balance when component mounts
@@ -23,6 +24,27 @@ const Overview = () => {
       dispatch(resetLeaveBalanceState());
     };
   }, [dispatch, employeeId]);
+
+  useEffect(() => {
+    if (balance && typeof balance.totalAvailableBalance === "number") {
+      let start = 0;
+      const end = balance.totalAvailableBalance;
+      const duration = 1000; // ms
+      const startTime = performance.now();
+
+      function animate(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = start + (end - start) * progress;
+        setDisplayedBalance(value);
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+  }, [balance]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -40,7 +62,7 @@ const Overview = () => {
       {/* Main Content */}
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         {/* Navbar */}
@@ -56,7 +78,7 @@ const Overview = () => {
           </div>
 
           {/* Cards Container */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 justify-start">
             {/* Leave Balance Card */}
             <Link href="/employee/leaves">
               <div
@@ -72,17 +94,25 @@ const Overview = () => {
                   </div>
                 </div>
                 {loading ? (
-                  <div className="text-gray-500">Loading leave balance...</div>
+                  <div className="text-center py-4">Loading leave balance...</div>
                 ) : error ? (
-                  <div className="text-red-500">{error}</div>
-                ) : balance ? (
-                  <div className="space-y-2">
-                    <p className="text-5xl font-bold text-gray-900">
-                      {balance.newLeaveBalance}
-                    </p>
-                    <div className="flex items-center text-gray-600">
-                      <p className="text-sm">Days remaining</p>
+                  (typeof error === "string" && error.includes("400")) ||
+                  (typeof error === "object" && error?.status === 400) ? (
+                    <div className="text-center py-4 text-gray-500">
+                      Please add department to view Leave Balance
                     </div>
+                  ) : (
+                    <div className="text-center py-4 text-red-500">
+                      {typeof error === "string"
+                        ? error
+                        : error?.message || "Failed to load leave balance"}
+                    </div>
+                  )
+                ) : balance ? (
+                  <div className="flex flex-col items-start justify-center w-full h-full">
+                    <span className="text-5xl font-extrabold text-gray-900">
+                      {displayedBalance.toFixed(2)}
+                    </span>
                   </div>
                 ) : (
                   <div className="text-gray-500">

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Plus, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, X, CheckCircle, AlertCircle, FileText } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "sonner";
 import Select from "react-select";
-import { useRouter } from "next/router";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createDepartment,
@@ -23,7 +22,7 @@ import {
 import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
-  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("departments");
@@ -50,8 +49,7 @@ const OrganizationSettings = () => {
   });
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [showDepartmentEditModal, setShowDepartmentEditModal] = useState(false);
-  const [showDesignationEditModal, setShowDesignationEditModal] =
-    useState(false);
+  const [showDesignationEditModal, setShowDesignationEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isFormChanged, setIsFormChanged] = useState(false);
@@ -178,49 +176,6 @@ const OrganizationSettings = () => {
         show: true,
         type: "error",
         message: error || "Failed to update department. Please try again.",
-      });
-      setTimeout(() => {
-        setNotification({ show: false, type: "", message: "" });
-      }, 2000);
-    }
-  };
-
-  const handleDepartmentDelete = async () => {
-    try {
-      if (!selectedDepartment) return;
-
-      await dispatch(
-        deleteDepartment(selectedDepartment.departmentId)
-      ).unwrap();
-
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Department deleted successfully!",
-      });
-
-      setShowDepartmentEditModal(false);
-      setSelectedDepartment(null);
-      setDepartmentForm({
-        name: "",
-        description: "",
-        head: "",
-        leavePolicy: "",
-        weeklyHolidays: [],
-      });
-      setIsFormChanged(false);
-
-      // Refresh departments list
-      dispatch(fetchDepartments());
-
-      setTimeout(() => {
-        setNotification({ show: false, type: "", message: "" });
-      }, 2000);
-    } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: error || "Failed to delete department. Please try again.",
       });
       setTimeout(() => {
         setNotification({ show: false, type: "", message: "" });
@@ -358,10 +313,14 @@ const OrganizationSettings = () => {
         return;
       }
 
+      const designationDepartmentId = reduxDepartments.find(
+        (dept) => dept.name === designationForm.department.value
+      )?.departmentId;
+
       const designationData = {
         name: designationForm.name,
         description: designationForm.description || "",
-        department: designationForm.department.value,
+        department: designationDepartmentId,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
         companyId: selectedCompanyId,
@@ -401,7 +360,7 @@ const OrganizationSettings = () => {
       setNotification({
         show: true,
         type: "error",
-        message: error || "Failed to update designation. Please try again.",
+        message: error.message || "Failed to update designation. Please try again.",
       });
       setTimeout(() => {
         setNotification({ show: false, type: "", message: "" });
@@ -569,49 +528,6 @@ const OrganizationSettings = () => {
     setShowDesignationModal(true);
   };
 
-  const handleDesignationDelete = async () => {
-    try {
-      if (!selectedDesignation) return;
-
-      await dispatch(
-        deleteDesignation(selectedDesignation.designationId)
-      ).unwrap();
-
-      setNotification({
-        show: true,
-        type: "success",
-        message: "Designation deleted successfully!",
-      });
-
-      setShowDesignationModal(false);
-      setSelectedDesignation(null);
-      setDesignationForm({
-        name: "",
-        description: "",
-        department: "",
-        manager: false,
-        overtimeEligible: false,
-      });
-      setIsFormChanged(false);
-
-      // Refresh designations list
-      dispatch(fetchDesignations());
-
-      setTimeout(() => {
-        setNotification({ show: false, type: "", message: "" });
-      }, 2000);
-    } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: error || "Failed to delete designation. Please try again.",
-      });
-      setTimeout(() => {
-        setNotification({ show: false, type: "", message: "" });
-      }, 2000);
-    }
-  };
-
   const showNotification = (type, message) => {
     setNotification({
       show: true,
@@ -634,7 +550,7 @@ const OrganizationSettings = () => {
 
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         <HradminNavbar />
@@ -715,64 +631,87 @@ const OrganizationSettings = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {reduxDepartments.map((department) => (
-                        <tr
-                          key={department.id}
-                          onClick={() => {
-                            // Reset form changed state when opening new item
-                            setIsFormChanged(false);
-                            setSelectedDepartment(department);
-
-                            // Find the leave policy object from the policies array
-                            const selectedPolicy = policies.find(
-                              (p) => p.leavePolicyId === department.leavePolicy
-                            );
-
-                            // Format weekly holidays into array of objects
-                            const weeklyHolidaysArray =
-                              department.weeklyHolidays
-                                ?.split(",")
-                                .map((day) => ({
-                                  value: day.trim(),
-                                  label: day.trim(),
-                                })) || [];
-
-                            setDepartmentForm({
-                              name: department.name,
-                              description: department.description || "",
-                              head: department.departmentHead,
-                              leavePolicy: {
-                                value: department.leavePolicy,
-                                label:
-                                  selectedPolicy?.name ||
-                                  department.leavePolicy,
-                              },
-                              weeklyHolidays: weeklyHolidaysArray,
-                            });
-                            setShowDepartmentEditModal(true);
-                          }}
-                          className="hover:bg-gray-50 cursor-pointer"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {department.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            {department.description}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {department.departmentHead}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {policies.find(
-                              (policy) =>
-                                policy.leavePolicyId === department.leavePolicy
-                            )?.name || department.leavePolicy}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {department.weeklyHolidays}
+                      {reduxDepartments.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="px-6 py-8 text-center">
+                            <div className="flex flex-col items-center justify-center text-gray-500">
+                              <div className="rounded-full bg-gray-100 p-4 mb-4">
+                                <FileText className="h-10 w-10 text-gray-400" />
+                              </div>
+                              <p className="text-xl font-semibold text-gray-800 mb-1">No Departments Found</p>
+                              <p className="text-sm mb-4">You haven't added any departments yet. Click the button below to add your first department.</p>
+                              <button
+                                onClick={() => {
+                                  setSelectedDepartment(null);
+                                  setShowDepartmentModal(true);
+                                }}
+                                className="px-5 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition-colors"
+                              >
+                                Add Your First Department
+                              </button>
+                            </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        reduxDepartments.map((department) => (
+                          <tr
+                            key={department.id}
+                            onClick={() => {
+                              // Reset form changed state when opening new item
+                              setIsFormChanged(false);
+                              setSelectedDepartment(department);
+
+                              // Find the leave policy object from the policies array
+                              const selectedPolicy = policies.find(
+                                (p) => p.leavePolicyId === department.leavePolicy
+                              );
+
+                              // Format weekly holidays into array of objects
+                              const weeklyHolidaysArray =
+                                department.weeklyHolidays
+                                  ?.split(",")
+                                  .map((day) => ({
+                                    value: day.trim(),
+                                    label: day.trim(),
+                                  })) || [];
+
+                              setDepartmentForm({
+                                name: department.name,
+                                description: department.description || "",
+                                head: department.departmentHead,
+                                leavePolicy: {
+                                  value: department.leavePolicy,
+                                  label:
+                                    selectedPolicy?.name ||
+                                    department.leavePolicy,
+                                },
+                                weeklyHolidays: weeklyHolidaysArray,
+                              });
+                              setShowDepartmentEditModal(true);
+                            }}
+                            className="hover:bg-gray-50 cursor-pointer"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {department.name}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {department.description}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {department.departmentHead}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {policies.find(
+                                (policy) =>
+                                  policy.leavePolicyId === department.leavePolicy
+                              )?.name || department.leavePolicy}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {department.weeklyHolidays}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -821,8 +760,23 @@ const OrganizationSettings = () => {
                         </tr>
                       ) : fetchedDesignations.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-4 text-center">
-                            No designations found
+                          <td colSpan="5" className="px-6 py-8 text-center">
+                            <div className="flex flex-col items-center justify-center text-gray-500">
+                              <div className="rounded-full bg-gray-100 p-4 mb-4">
+                                <FileText className="h-10 w-10 text-gray-400" />
+                              </div>
+                              <p className="text-xl font-semibold text-gray-800 mb-1">No Designations Found</p>
+                              <p className="text-sm mb-4">You haven't added any designations yet. Click the button below to add your first designation.</p>
+                              <button
+                                onClick={() => {
+                                  setSelectedDesignation(null);
+                                  setShowDesignationModal(true);
+                                }}
+                                className="px-5 py-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 transition-colors"
+                              >
+                                Add Your First Designation
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ) : (
@@ -1095,10 +1049,12 @@ const OrganizationSettings = () => {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={handleDepartmentDelete}
-                className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
+                onClick={() => {
+                  handleModalClose();
+                }}
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
               >
-                Delete
+                Cancel
               </button>
               <button
                 type="submit"
@@ -1245,15 +1201,15 @@ const OrganizationSettings = () => {
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                {selectedDesignation && (
-                  <button
-                    type="button"
-                    onClick={handleDesignationDelete}
-                    className="px-4 py-2 bg-red-100 text-red-600 rounded-md hover:bg-red-200"
-                  >
-                    Delete
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleModalClose();
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

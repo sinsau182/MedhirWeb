@@ -235,7 +235,7 @@ function Employees() {
         />
         <div
           className={`flex-1 ${
-            isSidebarCollapsed ? "ml-16" : "ml-64"
+            isSidebarCollapsed ? "ml-16" : "ml-56"
           } transition-all duration-300`}
         >
           <HradminNavbar />
@@ -255,7 +255,7 @@ function Employees() {
 
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         <HradminNavbar />

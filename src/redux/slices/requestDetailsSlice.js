@@ -9,7 +9,7 @@ export const fetchPendingLeaveRequests = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const currentRole = sessionStorage.getItem("currentRole");
       const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
@@ -62,7 +62,7 @@ export const fetchProfileUpdates = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const currentRole = sessionStorage.getItem("currentRole");
       const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
@@ -180,11 +180,138 @@ export const updateProfileRequestStatus = createAsyncThunk(
   }
 );
 
+
+
+export const fetchExpenseRequests = createAsyncThunk(
+  "expenses/fetchExpenseRequests",
+  async (_, { rejectWithValue }) => {
+      try {
+        const currentRole = sessionStorage.getItem("currentRole");
+        const employeeId = sessionStorage.getItem("employeeId");
+        const companyId = sessionStorage.getItem("currentCompanyId");
+
+        let url = "";
+        if (currentRole === "MANAGER") {
+          url = `${publicRuntimeConfig.apiURL}/expenses/manager/${employeeId}/status/Pending`;
+        } else {
+          url = `${publicRuntimeConfig.apiURL}/expenses/company/${companyId}/status/Pending`;
+        }
+          const token = getItemFromSessionStorage("token", null);
+          const response = await axios.get(url, {
+              headers: {
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json"
+              }
+          });
+
+        return response.data;
+    } catch (error) {
+      // Handle Axios errors properly
+      if (error.response && error.response.data) {
+        return rejectWithValue(error.response.data.message || "Something went wrong");
+      } else {
+        return rejectWithValue(error.message || "Something went wrong");
+      }
+    }
+  }
+);
+
+export const fetchIncomeRequests = createAsyncThunk(
+  "incomes/fetchIncomeRequests",
+  async (_, { rejectWithValue }) => {
+      try {
+        const currentRole = sessionStorage.getItem("currentRole");
+        const employeeId = sessionStorage.getItem("employeeId");
+        const companyId = sessionStorage.getItem("currentCompanyId");
+
+        let url = "";
+        if (currentRole === "MANAGER") {
+          url = `${publicRuntimeConfig.apiURL}/income/manager/${employeeId}/status/Pending`;
+        } else {
+          url = `${publicRuntimeConfig.apiURL}/income/company/${companyId}/status/Pending`;
+        }
+          const token = getItemFromSessionStorage("token", null);
+          const response = await axios.get(url, {
+              headers: {
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json"
+              }
+          });
+
+        return response.data;
+    } catch (error) {
+      // Handle Axios errors properly
+      if (error.response && error.response.data) {
+        return rejectWithValue(error.response.data.message || "Something went wrong");
+      } else {
+        return rejectWithValue(error.message || "Something went wrong");
+      }
+    }
+  }
+);
+
+export const updateExpenseRequestStatus = createAsyncThunk(
+  "expenses/updateExpenseRequestStatus",
+  async ({ expenseId, status, remarks }, { rejectWithValue }) => {
+    try {
+      const currentRole = sessionStorage.getItem("currentRole");
+
+      let url = "";
+      if (currentRole === "MANAGER") {
+        url = `${publicRuntimeConfig.apiURL}/expenses/manager/updateStatus/${expenseId}`;
+      } else {
+        url = `${publicRuntimeConfig.apiURL}/expenses/updateStatus/${expenseId}`;
+      }
+
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        url,
+        { expenseId, status, remarks },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update expense request status");
+    }
+  }
+);
+
+export const updateIncomeRequestStatus = createAsyncThunk(
+  "incomes/updateIncomeRequestStatus",
+  async ({ incomeId, status, remarks }, { rejectWithValue }) => {
+    try {
+      const currentRole = sessionStorage.getItem("currentRole");
+
+      let url = "";
+      if (currentRole === "MANAGER") {
+        url = `${publicRuntimeConfig.apiURL}/income/manager/updateStatus/${incomeId}`;
+      } else {
+        url = `${publicRuntimeConfig.apiURL}/income/updateStatus/${incomeId}`;
+      }
+
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.put(
+        url,
+        { incomeId, status, remarks },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update income request status");
+    }
+  }
+);
+
+
 // Initial state
 const initialState = {
   pendingLeaves: [],
   pendingCompOffs: [],
   profileUpdates: [],
+  expensesRequests: [],
+  incomeRequests: [],
   loading: false,
   error: null,
   profileLoading: false,
@@ -270,7 +397,59 @@ const requestDetailsSlice = createSlice({
       })
       .addCase(updateProfileRequestStatus.rejected, (state) => {
         state.approvingProfileUpdateId = null;
+      })
+
+      // Fetch expenses by company id
+      .addCase(fetchExpenseRequests.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchExpenseRequests.fulfilled, (state, action) => {
+        state.loading = false;
+        state.expensesRequests = action.payload;
+      })
+      .addCase(fetchExpenseRequests.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+        console.log("not working")
+      })
+
+      // Update expense request status
+      .addCase(updateExpenseRequestStatus.pending, (state, action) => {
+        state.approvingExpenseId = action.meta.arg.expenseId;
+      })
+      .addCase(updateExpenseRequestStatus.fulfilled, (state) => {
+        state.approvingExpenseId = null;
+      })
+      .addCase(updateExpenseRequestStatus.rejected, (state) => {
+        state.approvingExpenseId = null;
+      })
+
+      .addCase(fetchIncomeRequests.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchIncomeRequests.fulfilled, (state, action) => {
+        state.loading = false;
+        state.incomeRequests = action.payload;
+      })
+      .addCase(fetchIncomeRequests.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+        console.log("income not working")
+      })
+
+      // Update income request status
+      .addCase(updateIncomeRequestStatus.pending, (state, action) => {
+        state.approvingIncomeId = action.meta.arg.incomeId;
+      })
+      .addCase(updateIncomeRequestStatus.fulfilled, (state) => {
+        state.approvingIncomeId = null;
+      })
+      .addCase(updateIncomeRequestStatus.rejected, (state) => {
+        state.approvingIncomeId = null;
       });
+      
   },
 });
 

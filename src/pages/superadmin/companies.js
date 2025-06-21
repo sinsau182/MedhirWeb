@@ -171,10 +171,12 @@ function SuperadminCompanies() {
         );
         toast.success("Company updated successfully!");
       } else {
-        // Dispatch create action with Redux
         const result = await dispatch(createCompany(companyData));
-        if (result.payload) {
+
+        if (createCompany.fulfilled.match(result)) {
           toast.success("Company created successfully!");
+        } else {
+          toast.error(result.payload || "Failed to create company.");
         }
       }
 

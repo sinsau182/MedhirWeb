@@ -13,7 +13,7 @@ export const fetchEmployees = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const response = await fetch(
         `${API_BASE_URL}/companies/${company}/employees`,
         {
@@ -49,7 +49,10 @@ export const createEmployee = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      toast.error("Error creating employee:", error);
+      // Safely access error message from backend
+      const message =
+        error.response?.data?.message || error.message || "Network Error";
+      return rejectWithValue(message);
     }
   }
 );

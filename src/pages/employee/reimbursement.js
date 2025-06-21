@@ -3,7 +3,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
-import { fetchExpenses, createExpense } from "@/redux/slices/expenseSlice";
+import { fetchExpenses, createExpense } from "@/redux/slices/expensesSlice";
 import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
 
@@ -95,7 +95,7 @@ const Expenses = () => {
       {/* Main Content */}
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         {/* Navbar */}

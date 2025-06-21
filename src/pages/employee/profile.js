@@ -86,7 +86,6 @@ function EmployeeProfilePage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      console.log("Employee Data:", data); // Debug log
       setEmployeeById(data);
 
       // Fetch manager name if reporting manager exists
@@ -100,7 +99,6 @@ function EmployeeProfilePage() {
             setManagerName(managerData.name);
           }
         } catch (error) {
-          console.error("Failed to fetch manager details:", error);
           setManagerName("-");
         }
       } else {
@@ -445,40 +443,69 @@ function EmployeeProfilePage() {
     if (!employeeById) return false;
 
     // Check personal info changes
-    if (formData.employee.email.personal !== employeeById.emailPersonal)
+    if (formData.employee.email.personal !== employeeById.emailPersonal) {
       return true;
-    if (formData.employee.phone1 !== employeeById.phone) return true;
-    if (formData.employee.phone2 !== employeeById.alternatePhone) return true;
-    if (formData.employee.currentAddress !== employeeById.currentAddress)
+    }
+    if (formData.employee.phone1 !== employeeById.phone) {
       return true;
-    if (formData.employee.permanentAddress !== employeeById.permanentAddress)
+    }
+    if (formData.employee.phone2 !== employeeById.alternatePhone) {
       return true;
+    }
+    if (formData.employee.currentAddress !== employeeById.currentAddress) {
+      return true;
+    }
+    if (formData.employee.permanentAddress !== employeeById.permanentAddress) {
+      return true;
+    }
 
     // Check bank info changes
     if (
       formData.bank.accountHolderName !==
       employeeById.bankDetails?.accountHolderName
-    )
+    ) {
       return true;
-    if (formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber)
+    }
+    if (
+      formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber
+    ) {
       return true;
-    if (formData.bank.bankName !== employeeById.bankDetails?.bankName)
+    }
+    if (formData.bank.bankName !== employeeById.bankDetails?.bankName) {
       return true;
-    if (formData.bank.branchName !== employeeById.bankDetails?.branchName)
+    }
+    if (formData.bank.branchName !== employeeById.bankDetails?.branchName) {
       return true;
-    if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode)
+    }
+    if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
       return true;
-    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber)
+    }
+    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {
       return true;
+    }
 
     // Check if any files have been uploaded
-    if (formData.employee.profileImage instanceof File) return true;
-    if (formData.bank.passbookDoc instanceof File) return true;
-    if (formData.idProofs.aadharImage instanceof File) return true;
-    if (formData.idProofs.panImage instanceof File) return true;
-    if (formData.idProofs.passportImage instanceof File) return true;
-    if (formData.idProofs.drivingLicenseImage instanceof File) return true;
-    if (formData.idProofs.voterIdImage instanceof File) return true;
+    if (formData.employee.profileImage instanceof File) {
+      return true;
+    }
+    if (formData.bank.passbookDoc instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.aadharImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.panImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.passportImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.drivingLicenseImage instanceof File) {
+      return true;
+    }
+    if (formData.idProofs.voterIdImage instanceof File) {
+      return true;
+    }
 
     // No changes detected
     return false;
@@ -504,27 +531,52 @@ function EmployeeProfilePage() {
 
     setLoading(true);
     try {
-      // Create a payload with only the specified editable fields
+      // Create a payload with only the changed fields
       const payload = {
         employeeId: employeeById.employeeId,
-        // Personal info
-        emailPersonal: formData.employee.email.personal,
-        phone: formData.employee.phone1,
-        ...(formData.employee.phone2 !== employeeById.alternatePhone && {
-          alternatePhone: formData.employee.phone2,
-        }),
-        // Address info
-        currentAddress: formData.employee.currentAddress,
-        permanentAddress: formData.employee.permanentAddress,
       };
 
-      // Only include bank details if both account number and IFSC are filled
-      if (formData.bank.accountNumber && formData.bank.ifscCode) {
+      // Only include personal info fields that have changed
+      if (formData.employee.email.personal !== employeeById.emailPersonal) {
+        payload.emailPersonal = formData.employee.email.personal;
+      }
+      if (formData.employee.phone1 !== employeeById.phone) {
+        payload.phone = formData.employee.phone1;
+      }
+      if (formData.employee.phone2 !== employeeById.alternatePhone) {
+        payload.alternatePhone = formData.employee.phone2;
+      }
+      if (formData.employee.currentAddress !== employeeById.currentAddress) {
+        payload.currentAddress = formData.employee.currentAddress;
+      }
+      if (
+        formData.employee.permanentAddress !== employeeById.permanentAddress
+      ) {
+        payload.permanentAddress = formData.employee.permanentAddress;
+      }
+
+      // Include bank details that have changed (don't require both fields to be filled)
+      if (
+        formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber
+      ) {
         payload.accountNumber = formData.bank.accountNumber;
+      }
+      if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
         payload.ifscCode = formData.bank.ifscCode;
+      }
+      if (
+        formData.bank.accountHolderName !==
+        employeeById.bankDetails?.accountHolderName
+      ) {
         payload.accountHolderName = formData.bank.accountHolderName;
+      }
+      if (formData.bank.bankName !== employeeById.bankDetails?.bankName) {
         payload.bankName = formData.bank.bankName;
+      }
+      if (formData.bank.branchName !== employeeById.bankDetails?.branchName) {
         payload.branchName = formData.bank.branchName;
+      }
+      if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {
         payload.upiPhoneNumber = formData.bank.upiPhone;
       }
 
@@ -635,7 +687,7 @@ function EmployeeProfilePage() {
 
       <div
         className={`flex-1 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-20" : "ml-64"
+          isSidebarCollapsed ? "ml-20" : "ml-56"
         }`}
       >
         <HradminNavbar />
@@ -643,9 +695,7 @@ function EmployeeProfilePage() {
         <main className="p-6 pt-24">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div
-                className="relative h-64 bg-gradient-to-r bg-[#3B6FA0]"
-              >
+              <div className="relative h-64 bg-gradient-to-r bg-[#3B6FA0]">
                 <div className="absolute inset-0 opacity-10 bg-[url('/pattern.svg')] bg-repeat"></div>
                 <div className="relative h-full px-8 py-6 flex flex-col justify-between">
                   {/* Top Row */}
@@ -794,35 +844,61 @@ function EmployeeProfilePage() {
                     <div className="flex space-x-3">
                       {/* Add Edit Profile button here, to the left of Reports to */}
                       {!isPageInEditMode ? (
-                        <button
-                          onClick={handleEditProfileClick}
-                          className={`flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white ${
-                            !isEditable
-                              ? "opacity-50 cursor-not-allowed"
-                              : "hover:bg-white/20"
-                          }`}
-                          disabled={!isEditable || loading}
-                        >
-                          <FiEdit2 className="w-4 h-4 mb-1" />
-                          <span className="text-xs">Edit Profile</span>
-                        </button>
-                      ) : (
-                        <div
-                          onClick={handleSaveAllClick}
-                          className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white"
-                        >
+                        <div className="relative group">
                           <button
-                            className="flex items-center justify-center text-green-400 hover:text-green-300 disabled:opacity-50"
-                            disabled={loading || !isEditable}
+                            onClick={handleEditProfileClick}
+                            className={`flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white ${
+                              !isEditable
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:bg-white/20"
+                            }`}
+                            disabled={!isEditable || loading}
                           >
-                            {loading ? (
-                              <FiLoader className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <FiCheck className="w-4 h-4" />
-                            )}
+                            <FiEdit2 className="w-4 h-4 mb-1" />
+                            <span className="text-xs">Edit Profile</span>
                           </button>
-                          <span className="text-xs mt-1">Save Changes</span>
+                          {!isEditable && (
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                              <div className="relative">
+                                <p>
+                                  Cannot edit while update request is pending
+                                </p>
+                                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
+                      ) : (
+                        <>
+                          <div
+                            onClick={handleSaveAllClick}
+                            className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white cursor-pointer"
+                          >
+                            <button
+                              className="flex items-center justify-center text-green-400 hover:text-green-300 disabled:opacity-50"
+                              disabled={loading || !isEditable}
+                            >
+                              {loading ? (
+                                <FiLoader className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <FiCheck className="w-4 h-4" />
+                              )}
+                            </button>
+                            <span className="text-xs mt-1">Save Changes</span>
+                          </div>
+                          <div
+                            onClick={handleCancelClick}
+                            className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white cursor-pointer"
+                          >
+                            <button
+                              className="flex items-center justify-center text-red-400 hover:text-red-300 disabled:opacity-50"
+                              disabled={loading}
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <span className="text-xs mt-1">Cancel</span>
+                          </div>
+                        </>
                       )}
                       <div className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white">
                         <span className="text-xs text-white/80">
@@ -842,13 +918,10 @@ function EmployeeProfilePage() {
                   </div>
                 </div>
               </div>
-
+              
               {/* --- Profile Info Sections --- */}
               <div className="p-6 bg-gray-50">
                 <div className="grid grid-cols-1 lg:grid-cols-11 gap-6">
-                  {/* --- Left Column --- */}
-
-                  {/* --- Middle Column --- */}
                   <div className="lg:col-span-8 space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Personal Information Card */}

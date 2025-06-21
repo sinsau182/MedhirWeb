@@ -89,23 +89,10 @@ function AdminAccess() {
         );
 
         if (response.data && Array.isArray(response.data)) {
-          setCompanies(response.data); // Store the full company objects
-
-          // Get the company from localStorage
-          const storedCompanyId = localStorage.getItem("selectedCompanyId");
-
-          // Set the prefilled company if it exists in the response
-          const prefilledCompany = response.data.find(
-            (company) => company.companyId === storedCompanyId
-          );
-
-          if (prefilledCompany) {
-            setSelectedCompany(prefilledCompany);
-            fetchUsers(prefilledCompany.companyId); // Fetch users for the prefilled company
-          } else {
-            setSelectedCompany(response.data[0]); // Default to the first company
-            fetchUsers(response.data[0].companyId);
-          }
+          setCompanies(response.data);
+          // Set the first company as default
+          setSelectedCompany(response.data[0]);
+          fetchUsers(response.data[0].companyId);
         }
       } catch (error) {
         toast.error("Error fetching companies:", error);
@@ -122,7 +109,6 @@ function AdminAccess() {
     );
     if (selected) {
       setSelectedCompany(selected);
-      localStorage.setItem("selectedCompanyId", companyId); // Save the selected company to localStorage
       setSelectedUsers([]);
       fetchUsers(companyId);
     }
@@ -144,72 +130,22 @@ function AdminAccess() {
     setIsConfirmModalOpen(true); // Open the confirmation modal
   };
 
-  const confirmUnassignAdmin = async () => {
-    if (!userToUnassign) return;
-
-    try {
-      const token = getItemFromSessionStorage("token", null);
-      const response = await axios.put(
-        `${publicRuntimeConfig.apiURL}/hradmin/employees/${userToUnassign.employeeId}/roles`,
-        {
-          roles: ["HRADMIN"],
-          operation: "Remove",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        // Update local state to reflect the role removal
-        setUsers((prevUsers) =>
-          prevUsers.map((u) =>
-            u.employeeId === userToUnassign.employeeId
-              ? { ...u, roles: u.roles.filter((role) => role !== "HRADMIN") }
-              : u
-          )
-        );
-        setSuccessMessage("HR Admin role removed successfully!");
-      }
-    } catch (error) {
-      toast.error("Error removing HR Admin role:", error);
-      setError("Failed to remove HR Admin role. Please try again.");
-    } finally {
-      setIsConfirmModalOpen(false); // Close the modal
-      setUserToUnassign(null); // Clear the user to unassign
-    }
-  };
-
-  // Handle opening the assign confirmation modal
-  const handleAssignAdmin = async () => {
-    if (selectedUsers.length === 0 || !selectedAccessType) {
-      setError("Please select at least one user and an access type");
-      return;
-    }
-
-    // Get full user info for the modal
-    const usersInfo = selectedUsers
-      .map((userId) => users.find((u) => u.userId === userId))
-      .filter((user) => user !== undefined); // Filter out potential undefined results
-
-    setUsersToAssignInfo(usersInfo);
-    setIsAssignConfirmModalOpen(true);
-  };
-
-  // New function to handle the actual assignment after confirmation
+  // Handle the actual assignment after confirmation
   const confirmAssignAdmin = async () => {
     if (usersToAssignInfo.length === 0) return;
 
-    const user = usersToAssignInfo[0]; // Get the user to assign
+    const user = usersToAssignInfo[0];
     try {
       const token = getItemFromSessionStorage("token", null);
+      // Use the selected company from local state instead of sessionStorage
+      const companyId = sessionStorage.getItem("currentCompanyId");
+
       const response = await axios.put(
         `${publicRuntimeConfig.apiURL}/hradmin/employees/${user.employeeId}/roles`,
         {
           roles: ["HRADMIN"],
           operation: "Add",
+          companyId: companyId
         },
         {
           headers: {
@@ -219,7 +155,6 @@ function AdminAccess() {
       );
 
       if (response.status === 200) {
-        // Update local state to reflect the role assignment
         setUsers((prevUsers) =>
           prevUsers.map((u) =>
             u.employeeId === user.employeeId
@@ -233,40 +168,62 @@ function AdminAccess() {
       toast.error("Error assigning HR Admin role:", error);
       setError("Failed to assign HR Admin role. Please try again.");
     } finally {
-      setIsAssignConfirmModalOpen(false); // Close the modal
+      setIsAssignConfirmModalOpen(false);
     }
   };
 
-  // Handle admin unassignment (Simulated)
-  const handleUnassignAdmin = async () => {
+  // Handle unassign admin
+  const confirmUnassignAdmin = async () => {
     if (!userToUnassign) return;
 
-    // Update local state to reflect unassignment (for UI)
-    setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        user.userId === userToUnassign.userId
-          ? { ...user, isAdmin: false }
-          : user
-      )
-    );
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      // Use the selected company from local state instead of sessionStorage
+      const companyId = sessionStorage.getItem("currentCompanyId");
 
-    setSuccessMessage("Admin access revoked successfully! (Simulated)");
-    setIsConfirmModalOpen(false);
-    setUserToUnassign(null);
-    setError("");
-    setTimeout(() => setSuccessMessage(""), 3000);
+      const response = await axios.put(
+        `${publicRuntimeConfig.apiURL}/hradmin/employees/${userToUnassign.employeeId}/roles`,
+        {
+          roles: ["HRADMIN"],
+          operation: "Remove",
+          companyId: companyId
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        setUsers((prevUsers) =>
+          prevUsers.map((u) =>
+            u.employeeId === userToUnassign.employeeId
+              ? { ...u, roles: u.roles.filter((role) => role !== "HRADMIN") }
+              : u
+          )
+        );
+        setSuccessMessage("HR Admin role removed successfully!");
+      }
+    } catch (error) {
+      toast.error("Error removing HR Admin role:", error);
+      setError("Failed to remove HR Admin role. Please try again.");
+    } finally {
+      setIsConfirmModalOpen(false);
+      setUserToUnassign(null);
+    }
   };
 
   // Filter users based on search input
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchInput.toLowerCase())
+      (user.name?.toLowerCase() || '').includes(searchInput.toLowerCase()) ||
+      (user.email?.toLowerCase() || '').includes(searchInput.toLowerCase())
   );
 
   const usersWithAdminFlag = users.map((user) => ({
     ...user,
-    isAdmin: user.roles.includes("HRADMIN"), // Dynamically determine if the user is an admin
+    isAdmin: user.roles?.includes("HRADMIN") || false,
   }));
 
   const toggleSidebar = () => {
@@ -278,7 +235,7 @@ function AdminAccess() {
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         }`}
       >
         <HradminNavbar />
@@ -408,7 +365,9 @@ function AdminAccess() {
                     </Button>
                     {selectedUsers.length > 0 && (
                       <Button
-                        onClick={handleAssignAdmin}
+                        onClick={() => {
+                          setSelectedAccessType(ACCESS_TYPES[0].id);
+                        }}
                         disabled={!selectedCompany || !selectedAccessType}
                       >
                         Assign Admin Access

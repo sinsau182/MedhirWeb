@@ -10,6 +10,7 @@ import jsPDF from "jspdf";
 import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
 import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
+import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
 const downloadPDF = () => {
   const content = document.getElementById("pdf-content");
@@ -73,6 +74,9 @@ const groupedPayrolls = { [currentYear]: monthsList };
 const PayrollPage = () => {
   const dispatch = useDispatch();
   const { payslipData, employeeData, loading, error } = useSelector((state) => state.payslip);
+  const { attendance } = useSelector((state) => state.attendances);
+
+  console.log(attendance);
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -85,7 +89,8 @@ const PayrollPage = () => {
   useEffect(() => {
     // Fetch employee details to get date of joining
     dispatch(fetchEmployeeDetails(employeeId));
-    
+
+    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
     // Fetch payslip details for the latest month
     dispatch(fetchPayslipDetails({ 
       employeeId, 
@@ -170,7 +175,7 @@ const PayrollPage = () => {
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         <HradminNavbar />
@@ -282,7 +287,7 @@ const PayrollPage = () => {
                         <div className="font-semibold py-1">Designation</div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.designation || "Software Intern"}
+                          {employeeData?.designationName || "Software Intern"}
                         </div>
                       </div>
                     </div>
@@ -326,7 +331,7 @@ const PayrollPage = () => {
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.salaryPaidForDays || "28"}
+                          {attendance?.payableDays || "28"}
                         </div>
                       </div>
                     </div>
@@ -335,7 +340,7 @@ const PayrollPage = () => {
                         <div className="font-semibold py-1">Leaves Taken</div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.leavesTaken || "0"}
+                          {attendance?.leavesTaken || "0"}
                         </div>
                       </div>
                       <div className="px-2 grid border-b-2 border-r-2 border-gray-400 grid-cols-[1fr_auto_1fr] items-center">
@@ -375,7 +380,7 @@ const PayrollPage = () => {
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.oldLeavesBalance || "1"}
+                          {attendance?.lastMonthBalance}
                         </div>
                       </div>
                       <div className="px-2 grid border-r-2 border-gray-400 grid-cols-[1fr_auto_1fr] items-center">
@@ -384,7 +389,7 @@ const PayrollPage = () => {
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.newLeavesBalance || "2.5"}
+                          {attendance?.netLeaveBalance}
                         </div>
                       </div>
                     </div>

@@ -15,13 +15,7 @@ import {
   CartesianGrid,
 } from "recharts";
 
-import {
-  FaUser,
-  FaClock,
-  FaCreditCard,
-  FaUsers,
-} from "react-icons/fa";
-
+import { FaUser, FaClock, FaCreditCard, FaUsers } from "react-icons/fa";
 
 import RequestDetails from "@/components/RequestDetails";
 
@@ -35,6 +29,11 @@ import { toast } from "sonner";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
+
+// Import necessary hooks and actions
+import { useRouter } from "next/router";
+import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+
 const COLORS = [
   "#0088FE",
   "#00C49F",
@@ -45,6 +44,8 @@ const COLORS = [
 ];
 
 const Overview = () => {
+  // Get router instance
+  const router = useRouter();
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -60,13 +61,130 @@ const Overview = () => {
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [pendingCompOffs, setPendingCompOffs] = useState([]);
 
-  const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees);
+  // Add state for current day attendance summary
+  const [currentDayAttendanceSummary, setCurrentDayAttendanceSummary] =
+    useState({
+      totalPresent: 0,
+      totalAbsent: 0,
+    });
 
-  const {publicRuntimeConfig} = getConfig();
+  // Animation state for Total Employees card
+  const [loadingNumbers, setLoadingNumbers] = useState(true);
+  const [displayedTotal, setDisplayedTotal] = useState(0);
+  const [displayedPresent, setDisplayedPresent] = useState(0);
+  const [displayedAbsent, setDisplayedAbsent] = useState(0);
+
+  const dispatch = useDispatch();
+  // Update the useSelector hook
+  const { employees, loading: employeesLoading } = useSelector(
+    (state) => state.employees || {}
+  );
+  const {
+    attendance,
+    loading: attendanceLoading,
+    err: attendanceErr,
+  } = useSelector((state) => state.attendances || {}); // Add attendance state
+  // Get state from Redux
+  // const {
+  //   expensesRequests,
+  //   incomeRequests,
+  // } = useSelector((state) => state.requestDetails);
+
+  const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
-  }, [dispatch]);
+    // dispatch(fetchExpenseRequests());
+    // dispatch(fetchIncomeRequests());
+  }, [dispatch, sessionStorage.getItem("currentCompanyId")]);
+
+  // Add useEffect to fetch current day's attendance and calculate summary
+  useEffect(() => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.toLocaleString("default", { month: "short" });
+    const currentYear = today.getFullYear().toString();
+
+    // Fetch attendance data for the current day
+    dispatch(
+      fetchAllEmployeeAttendanceOneMonth({
+        month: currentMonth,
+        year: currentYear,
+        date: currentDay, // Fetch only for the current day
+      })
+    );
+  }, [dispatch, sessionStorage.getItem("currentCompanyId")]); // Dependency on dispatch
+
+  // Calculate current day summary whenever attendance data changes
+  useEffect(() => {
+    if (attendance && attendance.length > 0) {
+      let presentCount = 0;
+      let absentCount = 0;
+      const today = new Date();
+      const currentDay = today.getDate().toString(); // Need day as string key
+
+      attendance.forEach((employeeRecord) => {
+        const status = employeeRecord.dailyAttendance?.[currentDay];
+        if (status === "P") {
+          presentCount++;
+        } else if (status === "A" || status === "LOP") {
+          // Consider LOP as Absent for this summary? Adjust if needed.
+          absentCount++;
+        }
+      });
+
+      setCurrentDayAttendanceSummary({
+        totalPresent: presentCount,
+        totalAbsent: absentCount,
+      });
+    } else {
+      // If no attendance data fetched (e.g. empty response), reset summary
+      setCurrentDayAttendanceSummary({
+        totalPresent: 0,
+        totalAbsent: 0,
+      });
+    }
+  }, [attendance]); // Dependency on attendance state
+
+  useEffect(() => {
+    setLoadingNumbers(true);
+    const timer = setTimeout(() => {
+      setLoadingNumbers(false);
+    }, 1000); // 1 second loading
+    return () => clearTimeout(timer);
+  }, [employees, currentDayAttendanceSummary]);
+
+  // Count up animation for numbers
+  useEffect(() => {
+    if (!loadingNumbers) {
+      let total = employees?.length ?? 0;
+      let present = currentDayAttendanceSummary.totalPresent;
+      let absent = currentDayAttendanceSummary.totalAbsent;
+      let duration = 500; // ms
+      let steps = 20;
+      let stepTime = duration / steps;
+      let i = 0;
+      let totalStep = total / steps;
+      let presentStep = present / steps;
+      let absentStep = absent / steps;
+      const interval = setInterval(() => {
+        i++;
+        setDisplayedTotal(Math.round(Math.min(total, i * totalStep)));
+        setDisplayedPresent(Math.round(Math.min(present, i * presentStep)));
+        setDisplayedAbsent(Math.round(Math.min(absent, i * absentStep)));
+        if (i >= steps) {
+          setDisplayedTotal(total);
+          setDisplayedPresent(present);
+          setDisplayedAbsent(absent);
+          clearInterval(interval);
+        }
+      }, stepTime);
+      return () => clearInterval(interval);
+    } else {
+      setDisplayedTotal(0);
+      setDisplayedPresent(0);
+      setDisplayedAbsent(0);
+    }
+  }, [loadingNumbers, employees, currentDayAttendanceSummary]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -82,10 +200,32 @@ const Overview = () => {
     setShowCharts(false); // Ensure Charts are hidden
   };
 
+  // Handler for clicking the attendance summary counts
+  const handleAttendanceCountClick = useCallback(
+    (status) => {
+      const today = new Date();
+      const currentDay = today.getDate();
+      const currentMonth = today.toLocaleString("default", { month: "long" }); // Use long month for consistency with attendance page state
+      const currentYear = today.getFullYear().toString();
+
+      // Navigate to attendance page with selected date and status filter
+      router.push({
+        pathname: "/hradmin/attendance",
+        query: {
+          selectedDate: currentDay,
+          selectedMonth: currentMonth,
+          selectedYear: currentYear,
+          selectedStatuses: status, // 'P' or 'A'
+        },
+      });
+    },
+    [router]
+  );
+
   const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -106,11 +246,11 @@ const Overview = () => {
       setProfileUpdates([]);
     }
   }, [publicRuntimeConfig.apiURL]); // No dependencies; update if needed
-  
+
   const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
+      const company = sessionStorage.getItem("currentCompanyId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
         {
@@ -120,7 +260,7 @@ const Overview = () => {
           },
         }
       );
-  
+
       if (response.data && Array.isArray(response.data.leaves)) {
         const regularLeaves = response.data.leaves.filter(
           (leave) => leave.leaveName !== "Comp-Off"
@@ -128,7 +268,7 @@ const Overview = () => {
         const compOffLeaves = response.data.leaves.filter(
           (leave) => leave.leaveName === "Comp-Off"
         );
-  
+
         setPendingLeaves(regularLeaves);
         setPendingCompOffs(compOffLeaves);
       } else {
@@ -140,11 +280,15 @@ const Overview = () => {
       setPendingCompOffs([]);
     }
   }, [publicRuntimeConfig.apiURL]); // No dependencies; update if needed
-  
+
   useEffect(() => {
     fetchPendingRequests();
     fetchProfileUpdates();
-  }, [fetchPendingRequests, fetchProfileUpdates]);
+  }, [
+    fetchPendingRequests,
+    fetchProfileUpdates,
+    sessionStorage.getItem("currentCompanyId"),
+  ]);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -177,21 +321,44 @@ const Overview = () => {
       icon: <FaUser className="h-6 w-6 text-blue-500" />,
       label: "Total Employees",
       count: employees?.length ?? 0,
+      onClick: null,
     },
-
     {
       icon: <FaClock className="h-6 w-6 text-yellow-500" />,
       label: "Pending Tasks",
       count:
-        (profileUpdates.length || 0) + (pendingLeaves.length || 0) + (pendingCompOffs.length || 0),
+        (profileUpdates?.length || 0) +
+        (pendingLeaves?.length || 0) +
+        (pendingCompOffs?.length || 0),
+      onClick: handleOpenRequestsClick,
     },
-
-    {
-      icon: <FaCreditCard className="h-6 w-6 text-purple-500" />,
-      label: "Payroll Status",
-      count: "Processed",
-    },
+    // Payroll Status card removed
   ];
+
+  const refreshRequests = useCallback(async () => {
+    await fetchPendingRequests();
+    await fetchProfileUpdates();
+  }, [fetchPendingRequests, fetchProfileUpdates]);
+
+  // Decide which items to display in the overview section
+  // Only Total Employees and Pending Tasks for a 2-column layout
+  const itemsToDisplayInOverview = overviewData.filter(
+    (item) => item.label === "Total Employees" || item.label === "Pending Tasks"
+  );
+
+  const onPieEnter = useCallback(
+    (_, index) => {
+      setActiveIndex(index);
+    },
+    [setActiveIndex]
+  );
+
+  const onPieLeave = useCallback(
+    (_, index) => {
+      setActiveIndex(null);
+    },
+    [setActiveIndex]
+  );
 
   return (
     <div className="min-h-screen flex bg-gray-100">
@@ -207,7 +374,7 @@ const Overview = () => {
 
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         {/* Navbar */}
@@ -226,99 +393,175 @@ const Overview = () => {
           {/* Overview Cards */}
 
           <div className="flex justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mb-6">
-              {overviewData
-
-                .filter((item) => item.label !== "Payroll Status")
-
-                .map((item, index) =>
-                  item.label === "Total Employees" ? (
-                    <div
-                      key={index}
-                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
-                    >
-                      <div className="flex justify-between items-center w-full mb-8">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {item.label}
-                        </p>
-                        <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+            {/* Updated grid layout and data source */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-12 mb-3">
+              {" "}
+              {/* Changed to lg:grid-cols-2 */}
+              {itemsToDisplayInOverview.map((item, index) =>
+                item.label === "Total Employees" ? (
+                  <div
+                    key={index}
+                    className="relative bg-white/90 shadow-xl rounded-2xl flex flex-col items-center justify-between border border-gray-100 p-8 w-full max-w-xl mx-auto transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
+                    style={{ minHeight: "220px" }}
+                  >
+                    <div className="flex justify-between items-center w-full mb-6">
+                      <h2 className="text-lg font-bold text-gray-800">
+                        Today's Attendance
+                      </h2>
+                      <div className="p-2 bg-blue-50 rounded-full">
+                        <FaUsers className="text-blue-600 text-xl" />
+                      </div>
+                    </div>
+                    <div className="flex w-full justify-center items-end gap-0 text-center mt-2">
+                      {/* Total Employees */}
+                      <div className="flex flex-col items-center justify-center flex-1">
+                        <span className="text-7xl font-extrabold text-gray-800 leading-tight">
+                          {displayedTotal}
+                        </span>
+                        <span className="text-sm text-gray-400 mt-2 tracking-wide">
+                          Total
+                        </span>
+                      </div>
+                      {/* Divider */}
+                      <div className="h-16 border-l border-gray-200 mx-4"></div>
+                      {/* Present */}
+                      <div className="flex flex-col items-center justify-center flex-1">
+                        <span
+                          className="text-7xl font-extrabold text-green-700 leading-tight cursor-pointer hover:underline transition"
+                          onClick={() => handleAttendanceCountClick("P")}
+                        >
+                          {displayedPresent}
+                        </span>
+                        <span className="text-sm text-gray-400 mt-2 tracking-wide">
+                          Present
+                        </span>
+                      </div>
+                      {/* Divider */}
+                      <div className="h-16 border-l border-gray-200 mx-4"></div>
+                      {/* Absent */}
+                      <div className="flex flex-col items-center justify-center flex-1">
+                        <span
+                          className="text-7xl font-extrabold text-red-400 leading-tight cursor-pointer hover:underline transition"
+                          onClick={() => handleAttendanceCountClick("A")}
+                        >
+                          {displayedAbsent}
+                        </span>
+                        <span className="text-sm text-gray-400 mt-2 tracking-wide">
+                          Absent
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // Rendering for other cards (Pending Tasks, Payroll Status)
+                  <div
+                    key={index}
+                    className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
+                    style={{ height: "250px", width: "350px" }} // Adjust width if needed
+                    onClick={item.onClick} // Apply click handler
+                  >
+                    <div className="flex justify-between items-center w-full mb-8">
+                      <p className="text-xl font-semibold text-gray-800">
+                        {item.label}
+                      </p>
+                      <div
+                        className={`p-3 rounded-full ${
+                          // Dynamic background color based on label
+                          item.label === "Total Employees"
+                            ? "bg-gradient-to-r from-blue-50 to-blue-100"
+                            : item.label === "Pending Tasks"
+                            ? "bg-gradient-to-r from-yellow-50 to-yellow-100"
+                            : item.label === "Present Today"
+                            ? "bg-gradient-to-r from-green-50 to-green-100"
+                            : item.label === "Absent Today"
+                            ? "bg-gradient-to-r from-red-50 to-red-100"
+                            : ""
+                        }`}
+                      >
+                        {/* Dynamic icon based on label */}
+                        {item.label === "Total Employees" && (
                           <FaUsers className="text-blue-600 text-2xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-5xl font-bold text-gray-900">
-                          {item.count}
-                        </p>
-                        <div className="flex items-center text-gray-600">
-                          <p className="text-sm">Active employees</p>
-                          <div className="ml-2 px-2 py-1 bg-blue-50 rounded-full">
-                            <span className="text-xs text-blue-600 font-medium">
-                              +12 from last month
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : item.label === "Pending Tasks" ? (
-                    <div
-                      key={index}
-                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
-                      onClick={handleOpenRequestsClick}
-                    >
-                      <div className="flex justify-between items-center w-full mb-8">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {item.label}
-                        </p>
-                        <div className="p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-full">
+                        )}
+                        {item.label === "Pending Tasks" && (
                           <FaClock className="text-yellow-600 text-2xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-5xl font-bold text-gray-900">
-                          {item.count}
-                        </p>
-                        <div className="flex items-center text-gray-600">
-                          <p className="text-sm">Tasks pending</p>
-                          <div className="ml-2 px-2 py-1 bg-yellow-50 rounded-full">
-                            <span className="text-xs text-yellow-600 font-medium">
-                              High priority
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div
-                      key={index}
-                      className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
-                    >
-                      <div className="flex justify-between items-center w-full mb-8">
-                        <p className="text-xl font-semibold text-gray-800">
-                          {item.label}
-                        </p>
-                        <div className="p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-full">
+                        )}
+                        {(item.label === "Present Today" ||
+                          item.label === "Absent Today") && (
+                          <FaUser
+                            className={`text-2xl ${
+                              item.label === "Present Today"
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          />
+                        )}
+                        {item.label === "Payroll Status" && (
                           <FaCreditCard className="text-purple-600 text-2xl" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-5xl font-bold text-gray-900">
-                          {item.count}
-                        </p>
-                        <div className="flex items-center text-gray-600">
-                          <p className="text-sm">Current status</p>
-                          <div className="ml-2 px-2 py-1 bg-purple-50 rounded-full">
-                            <span className="text-xs text-purple-600 font-medium">
-                              March 2024
-                            </span>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
-                  )
-                )}
+                    <div className="space-y-2">
+                      <p className="text-5xl font-bold text-gray-900">
+                        {item.count}
+                      </p>
+                      {/* Add descriptive text below the count */}
+                      <div className="flex items-center text-gray-600">
+                        {item.label === "Total Employees" && (
+                          <p className="text-sm">Active employees</p>
+                        )}
+                        {item.label === "Pending Tasks" && (
+                          <p className="text-sm">Tasks pending</p>
+                        )}
+                        {item.label === "Present Today" && (
+                          <p className="text-sm">Employees present</p>
+                        )}
+                        {item.label === "Absent Today" && (
+                          <p className="text-sm">Employees absent</p>
+                        )}
+                        {item.label === "Payroll Status" && (
+                          <p className="text-sm">Current status</p>
+                        )}
+                      </div>
+                      {/* Optional: add more detail/badge like last month comparison or priority */}
+                      {(item.label === "Total Employees" ||
+                        item.label === "Pending Tasks" ||
+                        item.label === "Payroll Status") && (
+                        <div
+                          className={`ml-2 px-2 py-1 rounded-full ${
+                            item.label === "Total Employees"
+                              ? "bg-blue-50"
+                              : item.label === "Pending Tasks"
+                              ? "bg-yellow-50"
+                              : item.label === "Payroll Status"
+                              ? "bg-purple-50"
+                              : ""
+                          }`}
+                        >
+                          <span
+                            className={`text-xs font-medium ${
+                              item.label === "Total Employees"
+                                ? "text-blue-600"
+                                : item.label === "Pending Tasks"
+                                ? "text-yellow-600"
+                                : item.label === "Payroll Status"
+                                ? "text-purple-600"
+                                : ""
+                            }`}
+                          >
+                            {item.label === "Total Employees"
+                              ? "+12 from last month"
+                              : item.label === "Pending Tasks"
+                              ? "High priority"
+                              : item.label === "Payroll Status"
+                              ? "March 2024"
+                              : ""}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
             </div>
           </div>
 
@@ -329,7 +572,7 @@ const Overview = () => {
                   Weekly Attendance
                 </h2>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100" height={300}>
                   <BarChart data={data}>
                     <XAxis
                       dataKey="name"
@@ -508,6 +751,7 @@ const Overview = () => {
             <RequestDetails
               activeTab={activeTab}
               onTabChange={handleTabChange}
+              onActionComplete={refreshRequests}
             />
           )}
         </div>

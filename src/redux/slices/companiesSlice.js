@@ -23,18 +23,18 @@ export const fetchCompanies = createAsyncThunk(
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
       });
-      // If token is invalid or expired (typically 401 or 403)
-      if (response.status === 401 || response.status === 403) {
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
-        return rejectWithValue("Unauthorized. Redirecting to login.");
-      }
-      return await response.json();
+
+      const data = await response.json();
+
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
+            }
+            return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || "Network Error");
     }
   }
 );
@@ -56,12 +56,12 @@ export const createCompany = createAsyncThunk(
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create company");
-      }
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+    }
 
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || "Network Error");
     }
   }
 );
@@ -83,12 +83,12 @@ export const updateCompany = createAsyncThunk(
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to update company");
-      }
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+    }
 
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || "Network Error");
     }
   }
 );
@@ -106,13 +106,14 @@ export const deleteCompany = createAsyncThunk(
         },
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to delete company");
-      }
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+    }
 
       return id; // Return deleted company's ID
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || "Network Error");
     }
   }
 );

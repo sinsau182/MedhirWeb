@@ -9,21 +9,54 @@ import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
-
+import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
 function PayrollManagement() {
-  const selectedCompanyId = localStorage.getItem("selectedCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
+  const dispatch = useDispatch();
 
-  const paidDays = 25;
-  const monthDays = 30;
+  const { attendance } = useSelector((state) => state.attendances);
+
+  console.log(attendance);
+
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "long" }));
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toLocaleString("default", { month: "long" })
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString()
+  );
 
-  const dispatch = useDispatch();
+  const monthDays =
+    selectedMonth === "Jan"
+      ? 31
+      : selectedMonth === "Feb"
+      ? 28
+      : selectedMonth === "Mar"
+      ? 31
+      : selectedMonth === "Apr"
+      ? 30
+      : selectedMonth === "May"
+      ? 31
+      : selectedMonth === "Jun"
+      ? 30
+      : selectedMonth === "Jul"
+      ? 31
+      : selectedMonth === "Aug"
+      ? 31
+      : selectedMonth === "Sep"
+      ? 30
+      : selectedMonth === "Oct"
+      ? 31
+      : selectedMonth === "Nov"
+      ? 30
+      : selectedMonth === "Dec"
+      ? 31
+      : 30;
+
   const { employees, loading, err } = useSelector((state) => state.employees);
   const [tdsData, setTdsData] = useState([]);
   const [ptaxData, setPtaxData] = useState([]);
@@ -31,7 +64,7 @@ function PayrollManagement() {
   const [overtimeValue, setOvertimeValue] = useState("");
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
-  const {publicRuntimeConfig} = getConfig();
+  const { publicRuntimeConfig } = getConfig();
 
   const handleMonthSelection = (month, year) => {
     setSelectedMonth(month);
@@ -39,12 +72,12 @@ function PayrollManagement() {
     setIsCalendarOpen(false);
   };
 
-
-
   const fetchTDS = useCallback(async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      publicRuntimeConfig.apiURL + "/professional-tax-settings/company/" + selectedCompanyId,
+      publicRuntimeConfig.apiURL +
+        "/tds-settings/company/" +
+        selectedCompanyId,
       {
         method: "GET",
         headers: {
@@ -68,10 +101,12 @@ function PayrollManagement() {
     return data;
   }, [publicRuntimeConfig.apiURL, selectedCompanyId]);
 
-  const fetchPTAX = useCallback( async () => {
+  const fetchPTAX = useCallback(async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      publicRuntimeConfig.apiURL + "/professional-tax-settings/company/" + selectedCompanyId,
+      publicRuntimeConfig.apiURL +
+        "/professional-tax-settings/company/" +
+        selectedCompanyId,
       {
         method: "GET",
         headers: {
@@ -96,6 +131,15 @@ function PayrollManagement() {
     }
     return data;
   }, [publicRuntimeConfig.apiURL, selectedCompanyId]);
+
+  useEffect(() => {
+    dispatch(
+      fetchAllEmployeeAttendanceOneMonth({
+        month: selectedMonth,
+        year: selectedYear,
+      })
+    );
+  }, [dispatch, selectedMonth, selectedYear]);
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -156,6 +200,8 @@ function PayrollManagement() {
     }
   };
 
+  console.log(tdsData.tdsRate);
+
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
@@ -212,6 +258,14 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
+                const employeeAttendance = attendance?.find(
+                  (record) => record.employeeId === employee.employeeId
+                );
+                
+                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
+                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
+                const paidDays = presentDays + fullLeaveDays || 0;
+
                 const basic = parseFloat(
                   (
                     employee.salaryDetails.basicSalary *
@@ -286,14 +340,18 @@ function PayrollManagement() {
                       ₹{employee.salaryDetails.monthlyCtc}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{parseFloat((employee.salaryDetails.monthlyCtc * (paidDays / monthDays)).toFixed(0))}
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.monthlyCtc *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      )}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{basic}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{hra}
-                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">₹{hra}</td>
                     <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{allowance}
                     </td>
@@ -304,13 +362,17 @@ function PayrollManagement() {
                             type="number"
                             value={overtimeValue}
                             onChange={(e) => setOvertimeValue(e.target.value)}
-                            onKeyPress={(e) => handleOvertimeKeyPress(e, employee.employeeId)}
+                            onKeyPress={(e) =>
+                              handleOvertimeKeyPress(e, employee.employeeId)
+                            }
                             className="w-24 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Enter amount"
                             autoFocus
                           />
                           <button
-                            onClick={() => handleOvertimeSave(employee.employeeId)}
+                            onClick={() =>
+                              handleOvertimeSave(employee.employeeId)
+                            }
                             className="p-1 text-green-600 hover:text-green-700"
                           >
                             <Check className="h-4 w-4" />
@@ -325,7 +387,9 @@ function PayrollManagement() {
                       ) : (
                         <div
                           className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
-                          onClick={() => handleOvertimeEdit(employee.employeeId, overtimePay)}
+                          onClick={() =>
+                            handleOvertimeEdit(employee.employeeId, overtimePay)
+                          }
                         >
                           ₹{overtimePay}
                           <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
@@ -396,72 +460,79 @@ function PayrollManagement() {
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
-              .map((employee, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.employeeId}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.name}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    {employee.departmentName}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹
-                    {parseFloat(
-                      (
-                        employee.salaryDetails.employeePfContribution *
-                        (paidDays / monthDays)
-                      ).toFixed(0)
-                    ) || 0}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹
-                    {parseFloat(
-                      (
-                        employee.salaryDetails.employerPfContribution *
-                        (paidDays / monthDays)
-                      ).toFixed(0)
-                    ) || 0}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹
-                    {parseFloat(
-                      (
-                        employee.salaryDetails.monthlyCtc *
-                        (tdsData.tdsRate / 100)
-                      ).toFixed(0)
-                    ) || 0}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹
-                    {employee.salaryDetails.monthlyCtc >
-                    ptaxData.monthlySalaryThreshold
-                      ? ptaxData.amountAboveThreshold
-                      : 0}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹{employee.advanceAdjusted}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    ₹
-                    {parseFloat(
-                      (
-                        (employee.salaryDetails.employerPfContribution +
-                          employee.salaryDetails.employeePfContribution +
+              .map((employee, index) => {
+                const employeeAttendance = attendance?.find(record => record.employeeId === employee.employeeId);
+                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
+                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
+                const paidDays = presentDays + fullLeaveDays || 0;
+                
+                return (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      {employee.employeeId}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      {employee.name}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      {employee.departmentName}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.employeePfContribution *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      ) || 0}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.employerPfContribution *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      ) || 0}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹
+                      {parseFloat(
+                        (
                           employee.salaryDetails.monthlyCtc *
-                            (tdsData.tdsRate / 100) +
-                          (employee.salaryDetails.monthlyCtc >
-                          ptaxData.monthlySalaryThreshold
-                            ? ptaxData.amountAboveThreshold
-                            : 0)) *
-                        (paidDays / monthDays)
-                      ).toFixed(0)
-                    ) || 0}
-                  </td>
-                </tr>
-              ))}
+                          (tdsData.tdsRate / 100)
+                        ).toFixed(0)
+                      ) || 0}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹
+                      {employee.salaryDetails.monthlyCtc >
+                      ptaxData.monthlySalaryThreshold
+                        ? ptaxData.amountAboveThreshold
+                        : 0}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{employee.advanceAdjusted}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹
+                      {parseFloat(
+                        (
+                          (employee.salaryDetails.employerPfContribution +
+                            employee.salaryDetails.employeePfContribution +
+                            employee.salaryDetails.monthlyCtc *
+                              (tdsData.tdsRate / 100) +
+                            (employee.salaryDetails.monthlyCtc >
+                            ptaxData.monthlySalaryThreshold
+                              ? ptaxData.amountAboveThreshold
+                              : 0)) *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      ) || 0}
+                    </td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
@@ -689,7 +760,7 @@ function PayrollManagement() {
 
       <div
         className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-64"
+          isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
       >
         <HradminNavbar />
@@ -744,24 +815,26 @@ function PayrollManagement() {
                         "Oct",
                         "Nov",
                         "Dec",
-                      ].slice(0, new Date().getMonth() + 1).map((month) => (
-                        <button
-                          key={month}
-                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                            month ===
-                            selectedMonth
-                              .toLocaleString("default", { month: "long" })
-                              .slice(0, 3)
-                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                              : "hover:bg-gray-50 text-gray-700"
-                          }`}
-                          onClick={() =>
-                            handleMonthSelection(month, selectedYear)
-                          }
-                        >
-                          {month}
-                        </button>
-                      ))}
+                      ]
+                        .slice(0, new Date().getMonth() + 1)
+                        .map((month) => (
+                          <button
+                            key={month}
+                            className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                              month ===
+                              selectedMonth
+                                .toLocaleString("default", { month: "long" })
+                                .slice(0, 3)
+                                ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                                : "hover:bg-gray-50 text-gray-700"
+                            }`}
+                            onClick={() =>
+                              handleMonthSelection(month, selectedYear)
+                            }
+                          >
+                            {month}
+                          </button>
+                        ))}
                     </div>
                   </div>
                 )}

@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
 import getConfig from "next/config";
-const {publicRuntimeConfig} = getConfig();
+const { publicRuntimeConfig } = getConfig();
 const API_URL = publicRuntimeConfig.apiURL;
 // Fetch departments for dropdown
 export const fetchDepartmentsForDropdown = createAsyncThunk(
@@ -31,13 +31,16 @@ export const fetchDesignations = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = localStorage.getItem("selectedCompanyId");
-      const response = await axios.get(`${API_URL}/api/designations/company/${company}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const company = sessionStorage.getItem("currentCompanyId");
+      const response = await axios.get(
+        `${API_URL}/api/designations/company/${company}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(
