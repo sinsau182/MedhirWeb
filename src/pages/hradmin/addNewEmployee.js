@@ -81,7 +81,9 @@ const DepartmentSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
+              <span className="text-gray-700">
+                {typeof value === "object" ? value.name : value}
+              </span>
             ) : (
               <span className="text-gray-500">Select department</span>
             )}
@@ -153,7 +155,9 @@ const DesignationSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
+              <span className="text-gray-700">
+                {typeof value === "object" ? value.name : value}
+              </span>
             ) : (
               <span className="text-gray-500">Select designation</span>
             )}
@@ -247,7 +251,9 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
+              <span className="text-gray-700">
+                {typeof value === "object" ? value.name : value}
+              </span>
             ) : (
               <span className="text-gray-500">Select manager</span>
             )}
@@ -280,7 +286,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                 onClick={() => {
                   onChange({
                     employeeId: manager.employeeId,
-                    name: manager.name
+                    name: manager.name,
                   });
                   setIsOpen(false);
                 }}
@@ -317,7 +323,7 @@ function EmployeeForm() {
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
-  const {publicRuntimeConfig}=getConfig();
+  const { publicRuntimeConfig } = getConfig();
 
   // Add department fetch on component mount
   useEffect(() => {
@@ -446,17 +452,19 @@ function EmployeeForm() {
             permanentAddress: parsedEmployee.permanentAddress || "",
             department: {
               departmentId: parsedEmployee.department,
-              name: parsedEmployee.departmentName
+              name: parsedEmployee.departmentName,
             },
             designation: {
               designationId: parsedEmployee.designation,
-              name: parsedEmployee.designationName
+              name: parsedEmployee.designationName,
             },
             joiningDate: parsedEmployee.joiningDate || "",
-            reportingManager: parsedEmployee.reportingManager ? {
-              employeeId: parsedEmployee.reportingManager,
-              name: parsedEmployee.reportingManagerName
-            } : "",
+            reportingManager: parsedEmployee.reportingManager
+              ? {
+                  employeeId: parsedEmployee.reportingManager,
+                  name: parsedEmployee.reportingManagerName,
+                }
+              : "",
             overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
             weeklyOffs: Array.isArray(parsedEmployee.weeklyOffs)
               ? parsedEmployee.weeklyOffs
@@ -587,7 +595,11 @@ function EmployeeForm() {
     const cleanObj = {};
     Object.entries(obj).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
-        if (typeof value === "object" && !Array.isArray(value) && !(value instanceof File)) {
+        if (
+          typeof value === "object" &&
+          !Array.isArray(value) &&
+          !(value instanceof File)
+        ) {
           // Handle nested objects (like idProofs, bankDetails, etc.)
           const nestedClean = prepareFormData(value);
           if (Object.keys(nestedClean).length > 0) {
@@ -614,7 +626,7 @@ function EmployeeForm() {
     panNo: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
     passport: /^[A-Z]{1}[0-9]{7}$/,
     drivingLicense: /^[A-Z]{2}[0-9]{2}[0-9]{11}$/,
-    voterId: /^[A-Z]{3}[0-9]{7}$/
+    voterId: /^[A-Z]{3}[0-9]{7}$/,
   };
 
   // Add validation function for ID proofs
@@ -622,17 +634,19 @@ function EmployeeForm() {
     const errors = {};
     Object.entries(idProofs).forEach(([key, value]) => {
       // Skip validation for image fields
-      if (key.toLowerCase().includes('imgurl')) {
+      if (key.toLowerCase().includes("imgurl")) {
         return;
       }
-      
+
       // Convert value to string and trim if it's not null/undefined
-      const stringValue = value ? String(value).trim() : '';
-      
-      if (stringValue !== '') {
+      const stringValue = value ? String(value).trim() : "";
+
+      if (stringValue !== "") {
         const pattern = idProofPatterns[key];
         if (pattern && !pattern.test(stringValue)) {
-          errors[key] = `Invalid ${key.replace(/([A-Z])/g, ' $1').toLowerCase()} format`;
+          errors[key] = `Invalid ${key
+            .replace(/([A-Z])/g, " $1")
+            .toLowerCase()} format`;
         }
       }
     });
@@ -656,12 +670,15 @@ function EmployeeForm() {
       if (!formData.employee.joiningDate) {
         errors.joiningDate = "Date of joining is required";
       }
-      if(!formData.employee.emailPersonal?.trim()){
+      if (!formData.employee.emailPersonal?.trim()) {
         errors.emailPersonal = "Personal email is required";
       }
 
       // Validate phone number format if provided
-      if (formData.employee.phone && !/^[0-9]{10}$/.test(formData.employee.phone)) {
+      if (
+        formData.employee.phone &&
+        !/^[0-9]{10}$/.test(formData.employee.phone)
+      ) {
         errors.phone = "Invalid phone number format";
       }
 
@@ -696,23 +713,43 @@ function EmployeeForm() {
         department: formData.employee.department?.departmentId,
         designation: formData.employee.designation?.designationId,
         // Include other fields only if they have values
-        ...(formData.employee.fathersName && { fathersName: formData.employee.fathersName.trim() }),
-        ...(formData.employee.gender && { gender: formData.employee.gender.trim() }),
-        ...(formData.employee.alternatePhone && { alternatePhone: formData.employee.alternatePhone.trim() }),
-        ...(formData.employee.emailPersonal && { emailPersonal: formData.employee.emailPersonal.trim() }),
-        ...(formData.employee.emailOfficial && { emailOfficial: formData.employee.emailOfficial.trim() }),
-        ...(formData.employee.currentAddress && { currentAddress: formData.employee.currentAddress.trim() }),
-        ...(formData.employee.permanentAddress && { permanentAddress: formData.employee.permanentAddress.trim() }),
-        ...(formData.employee.reportingManager?.employeeId && { 
+        ...(formData.employee.fathersName && {
+          fathersName: formData.employee.fathersName.trim(),
+        }),
+        ...(formData.employee.gender && {
+          gender: formData.employee.gender.trim(),
+        }),
+        ...(formData.employee.alternatePhone && {
+          alternatePhone: formData.employee.alternatePhone.trim(),
+        }),
+        ...(formData.employee.emailPersonal && {
+          emailPersonal: formData.employee.emailPersonal.trim(),
+        }),
+        ...(formData.employee.emailOfficial && {
+          emailOfficial: formData.employee.emailOfficial.trim(),
+        }),
+        ...(formData.employee.currentAddress && {
+          currentAddress: formData.employee.currentAddress.trim(),
+        }),
+        ...(formData.employee.permanentAddress && {
+          permanentAddress: formData.employee.permanentAddress.trim(),
+        }),
+        ...(formData.employee.reportingManager?.employeeId && {
           reportingManager: formData.employee.reportingManager.employeeId,
-          reportingManagerName: formData.employee.reportingManager.name
+          reportingManagerName: formData.employee.reportingManager.name,
         }),
         overtimeEligibile: Boolean(formData.employee.overtimeEligibile),
-        weeklyOffs: formData.employee.weeklyOffs?.length ? formData.employee.weeklyOffs : [],
+        weeklyOffs: formData.employee.weeklyOffs?.length
+          ? formData.employee.weeklyOffs
+          : [],
         pfEnrolled: Boolean(formData.employee.pfEnrolled),
-        ...(formData.employee.uanNumber && { uanNumber: formData.employee.uanNumber.trim() }),
+        ...(formData.employee.uanNumber && {
+          uanNumber: formData.employee.uanNumber.trim(),
+        }),
         esicEnrolled: Boolean(formData.employee.esicEnrolled),
-        ...(formData.employee.esicNumber && { esicNumber: formData.employee.esicNumber.trim() }),
+        ...(formData.employee.esicNumber && {
+          esicNumber: formData.employee.esicNumber.trim(),
+        }),
         companyId: formData.companyId,
       };
 
@@ -723,7 +760,11 @@ function EmployeeForm() {
           // Skip File objects as they'll be handled separately
           return;
         }
-        if (value && typeof value === 'string' && !key.toLowerCase().includes('imgurl')) {
+        if (
+          value &&
+          typeof value === "string" &&
+          !key.toLowerCase().includes("imgurl")
+        ) {
           idProofsData[key] = value.trim();
         }
       });
@@ -732,14 +773,22 @@ function EmployeeForm() {
       }
 
       // Handle bank details
-      if (Object.keys(formData.bankDetails).some(key => formData.bankDetails[key])) {
+      if (
+        Object.keys(formData.bankDetails).some(
+          (key) => formData.bankDetails[key]
+        )
+      ) {
         const bankDetailsData = {};
         Object.entries(formData.bankDetails).forEach(([key, value]) => {
           if (value instanceof File) {
             // Skip File objects as they'll be handled separately
             return;
           }
-          if (value && typeof value === 'string' && !key.toLowerCase().includes('imgurl')) {
+          if (
+            value &&
+            typeof value === "string" &&
+            !key.toLowerCase().includes("imgurl")
+          ) {
             bankDetailsData[key] = value.trim();
           }
         });
@@ -749,8 +798,14 @@ function EmployeeForm() {
       }
 
       // Handle salary details
-      if (Object.keys(formData.salaryDetails).some(key => formData.salaryDetails[key])) {
-        baseEmployeeData.salaryDetails = prepareFormData(formData.salaryDetails);
+      if (
+        Object.keys(formData.salaryDetails).some(
+          (key) => formData.salaryDetails[key]
+        )
+      ) {
+        baseEmployeeData.salaryDetails = prepareFormData(
+          formData.salaryDetails
+        );
       }
 
       const employeeData = prepareFormData(baseEmployeeData);
@@ -778,7 +833,10 @@ function EmployeeForm() {
       });
 
       if (formData.bankDetails.passbookImgUrl instanceof File) {
-        submitFormData.append("passbookImage", formData.bankDetails.passbookImgUrl);
+        submitFormData.append(
+          "passbookImage",
+          formData.bankDetails.passbookImgUrl
+        );
       }
 
       if (employeeId) {
@@ -984,9 +1042,10 @@ function EmployeeForm() {
     const fetchDesignations = async () => {
       try {
         // Get department ID from either object or string format
-        const deptId = typeof formData.employee.department === 'object' 
-          ? formData.employee.department.departmentId 
-          : formData.employee.department;
+        const deptId =
+          typeof formData.employee.department === "object"
+            ? formData.employee.department.departmentId
+            : formData.employee.department;
 
         if (!deptId) {
           setDesignations([]);
@@ -1846,32 +1905,47 @@ function EmployeeForm() {
                               {formData.bankDetails.passbookImgUrl && (
                                 <div className="mt-1.5 flex items-center justify-between bg-white rounded-lg p-1.5 shadow-sm">
                                   <div className="flex items-center space-x-2">
-                                    {formData.bankDetails.passbookImgUrl instanceof File ? (
+                                    {formData.bankDetails
+                                      .passbookImgUrl instanceof File ? (
                                       <img
-                                        src={URL.createObjectURL(formData.bankDetails.passbookImgUrl)}
+                                        src={URL.createObjectURL(
+                                          formData.bankDetails.passbookImgUrl
+                                        )}
                                         alt="Passbook preview"
                                         className="w-8 h-8 object-cover rounded border border-gray-200"
                                       />
-                                    ) : typeof formData.bankDetails.passbookImgUrl === 'string' ? (
+                                    ) : typeof formData.bankDetails
+                                        .passbookImgUrl === "string" ? (
                                       <img
-                                        src={formData.bankDetails.passbookImgUrl}
+                                        src={
+                                          formData.bankDetails.passbookImgUrl
+                                        }
                                         alt="Passbook preview"
                                         className="w-8 h-8 object-cover rounded border border-gray-200"
                                         onError={(e) => {
                                           e.target.onerror = null;
-                                          e.target.src = '/placeholder-image.png';
+                                          e.target.src =
+                                            "/placeholder-image.png";
                                         }}
                                       />
                                     ) : null}
                                     <div className="flex flex-col">
                                       <span className="text-xs font-medium text-gray-700 truncate max-w-[180px]">
-                                        {formData.bankDetails.passbookImgUrl instanceof File
-                                          ? formData.bankDetails.passbookImgUrl.name
+                                        {formData.bankDetails
+                                          .passbookImgUrl instanceof File
+                                          ? formData.bankDetails.passbookImgUrl
+                                              .name
                                           : "Passbook Document"}
                                       </span>
                                       <span className="text-[10px] text-gray-500">
-                                        {formData.bankDetails.passbookImgUrl instanceof File
-                                          ? `${(formData.bankDetails.passbookImgUrl.size / 1024 / 1024).toFixed(2)} MB`
+                                        {formData.bankDetails
+                                          .passbookImgUrl instanceof File
+                                          ? `${(
+                                              formData.bankDetails
+                                                .passbookImgUrl.size /
+                                              1024 /
+                                              1024
+                                            ).toFixed(2)} MB`
                                           : "Uploaded Document"}
                                       </span>
                                     </div>
@@ -2027,7 +2101,10 @@ function EmployeeForm() {
                   >
                     {loading ? (
                       <>
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
                           <circle
                             className="opacity-25"
                             cx="12"
@@ -2075,7 +2152,10 @@ function EmployeeForm() {
                   >
                     {loading ? (
                       <>
-                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
                           <circle
                             className="opacity-25"
                             cx="12"
