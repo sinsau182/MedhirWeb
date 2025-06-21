@@ -249,7 +249,6 @@ const AddIncome = () => {
                 </div>
               )}
             </div>
-            
           </div>
           <div style={{ marginBottom: 18 }}>
             <label style={{ fontWeight: 500 }}>Payment Screenshot *</label>

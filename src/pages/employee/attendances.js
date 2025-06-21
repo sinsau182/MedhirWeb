@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
-
 const EmployeeAttendance = () => {
   const dispatch = useDispatch();
   const { attendance, loading, error } = useSelector(
@@ -33,7 +32,7 @@ const EmployeeAttendance = () => {
   const [monthlySummary, setMonthlySummary] = useState({}); // State to store monthly attendance summary counts
   const calendarRef = useRef(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  
+
   // Get current date info
   const today = new Date();
   const currentMonth = today.toLocaleString("default", { month: "short" });
@@ -62,25 +61,30 @@ const EmployeeAttendance = () => {
     [isCalendarOpen]
   );
 
-  const handleMonthSelection = useCallback((month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    setIsCalendarOpen(false);
+  const handleMonthSelection = useCallback(
+    (month, year) => {
+      setSelectedMonth(month);
+      setSelectedYear(year);
+      setIsCalendarOpen(false);
 
-    // Get employee ID from session storage
-    const employeeId = sessionStorage.getItem("employeeId");
-    if (!employeeId) {
-      toast.error("Employee ID not found in session storage.");
-      return;
-    }
+      // Get employee ID from session storage
+      const employeeId = sessionStorage.getItem("employeeId");
+      if (!employeeId) {
+        toast.error("Employee ID not found in session storage.");
+        return;
+      }
 
-    // Dispatch the action to fetch attendance data
-    dispatch(fetchOneEmployeeAttendanceOneMonth({
-      employeeId,
-      month,
-      year
-    }));
-  }, [dispatch]);
+      // Dispatch the action to fetch attendance data
+      dispatch(
+        fetchOneEmployeeAttendanceOneMonth({
+          employeeId,
+          month,
+          year,
+        })
+      );
+    },
+    [dispatch]
+  );
 
   // Initial data fetch when component mounts
   useEffect(() => {
@@ -91,18 +95,26 @@ const EmployeeAttendance = () => {
     }
 
     // Fetch data for current month and year
-    dispatch(fetchOneEmployeeAttendanceOneMonth({
-      employeeId,
-      month: currentMonth,
-      year: currentYear
-    }));
+    dispatch(
+      fetchOneEmployeeAttendanceOneMonth({
+        employeeId,
+        month: currentMonth,
+        year: currentYear,
+      })
+    );
   }, [dispatch, currentMonth, currentYear]);
 
   // Update attendance data when Redux store changes
   useEffect(() => {
     if (attendance && !loading && !error) {
-      const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-      const daysInMonth = new Date(parseInt(selectedYear), monthIndex + 1, 0).getDate();
+      const monthIndex = new Date(
+        `${selectedMonth} 1, ${selectedYear}`
+      ).getMonth();
+      const daysInMonth = new Date(
+        parseInt(selectedYear),
+        monthIndex + 1,
+        0
+      ).getDate();
 
       const formattedData = [];
       const summaryCounts = {
@@ -125,45 +137,48 @@ const EmployeeAttendance = () => {
         if (attendance.presentDates?.includes(dateString)) {
           return "P";
         }
-        
+
         // Check full leave dates
         if (attendance.fullLeaveDates?.includes(dateString)) {
           return "PL";
         }
-        
+
         // Check half day leave dates
         if (attendance.halfDayLeaveDates?.includes(dateString)) {
           return "P/A";
         }
-        
+
         // Check full comp-off dates
         if (attendance.fullCompoffDates?.includes(dateString)) {
           return "P";
         }
-        
+
         // Check half comp-off dates
         if (attendance.halfCompoffDates?.includes(dateString)) {
           return "P/A";
         }
-        
+
         // Check weekly off dates
         if (attendance.weeklyOffDates?.includes(dateString)) {
           return "H";
         }
-        
+
         // Check absent dates
         if (attendance.absentDates?.includes(dateString)) {
           return "A";
         }
-        
+
         return null;
       };
 
       for (let day = 1; day <= daysInMonth; day++) {
         // Create date string in YYYY-MM-DD format
-        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(
+          2,
+          "0"
+        )}-${String(day).padStart(2, "0")}`;
         const status = getAttendanceStatusForDate(dateString);
-        
+
         let fullStatus = "No Data";
         let leaveType = null;
 
@@ -245,7 +260,9 @@ const EmployeeAttendance = () => {
   };
 
   const generateCalendarDays = () => {
-    const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const monthIndex = new Date(
+      `${selectedMonth} 1, ${selectedYear}`
+    ).getMonth();
     const year = parseInt(selectedYear);
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     let daysArray = [];
@@ -284,8 +301,8 @@ const EmployeeAttendance = () => {
 
       // Fix: Format date properly without timezone conversion
       const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
       const formattedDate = `${year}-${month}-${day}`;
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
@@ -303,7 +320,7 @@ const EmployeeAttendance = () => {
       }
 
       const data = await response.json();
-      console.log(data)
+      console.log(data);
 
       // Update state with fetched data while preserving status and color information
       setAttendanceData((prevData) => {
@@ -462,7 +479,9 @@ const EmployeeAttendance = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-xl">Attendance Calendar</CardTitle>
+                    <CardTitle className="text-xl">
+                      Attendance Calendar
+                    </CardTitle>
                     <CardDescription>
                       View and track your attendance history
                     </CardDescription>
@@ -490,29 +509,35 @@ const EmployeeAttendance = () => {
                             onChange={(e) => {
                               const newYear = e.target.value;
                               setSelectedYear(newYear);
-                              
+
                               // Set default month based on year
                               if (newYear === "2024") {
                                 setSelectedMonth("Aug");
                                 // Fetch data for August 2024
-                                const employeeId = sessionStorage.getItem("employeeId");
+                                const employeeId =
+                                  sessionStorage.getItem("employeeId");
                                 if (employeeId) {
-                                  dispatch(fetchOneEmployeeAttendanceOneMonth({
-                                    employeeId,
-                                    month: "Aug",
-                                    year: newYear
-                                  }));
+                                  dispatch(
+                                    fetchOneEmployeeAttendanceOneMonth({
+                                      employeeId,
+                                      month: "Aug",
+                                      year: newYear,
+                                    })
+                                  );
                                 }
                               } else {
                                 setSelectedMonth("Jan");
                                 // Fetch data for January 2025
-                                const employeeId = sessionStorage.getItem("employeeId");
+                                const employeeId =
+                                  sessionStorage.getItem("employeeId");
                                 if (employeeId) {
-                                  dispatch(fetchOneEmployeeAttendanceOneMonth({
-                                    employeeId,
-                                    month: "Jan",
-                                    year: newYear
-                                  }));
+                                  dispatch(
+                                    fetchOneEmployeeAttendanceOneMonth({
+                                      employeeId,
+                                      month: "Jan",
+                                      year: newYear,
+                                    })
+                                  );
                                 }
                               }
                             }}
@@ -530,22 +555,33 @@ const EmployeeAttendance = () => {
                             const currentYear = new Date().getFullYear();
                             const currentMonthIdx = new Date().getMonth(); // 0-based
                             let months = [
-                              "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                              "Jan",
+                              "Feb",
+                              "Mar",
+                              "Apr",
+                              "May",
+                              "Jun",
+                              "Jul",
+                              "Aug",
+                              "Sep",
+                              "Oct",
+                              "Nov",
+                              "Dec",
                             ];
-                            
+
                             // Determine which months to show based on year
                             let startIdx = 0;
                             let endIdx = 11;
-                            
+
                             if (parseInt(selectedYear) === 2024) {
                               startIdx = 7; // August (0-based)
                               endIdx = 11; // December
                             } else if (parseInt(selectedYear) === 2025) {
                               startIdx = 0; // January
-                              endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                              endIdx =
+                                currentYear === 2025 ? currentMonthIdx : 11;
                             }
-                            
+
                             return months
                               .slice(startIdx, endIdx + 1)
                               .map((month) => (
@@ -556,7 +592,9 @@ const EmployeeAttendance = () => {
                                       ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
                                       : "hover:bg-gray-50 text-gray-700"
                                   }`}
-                                  onClick={() => handleMonthSelection(month, selectedYear)}
+                                  onClick={() =>
+                                    handleMonthSelection(month, selectedYear)
+                                  }
                                 >
                                   {month}
                                 </button>
@@ -578,22 +616,27 @@ const EmployeeAttendance = () => {
                 ) : error ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
-                    <p className="text-lg font-medium">Error loading attendance data</p>
+                    <p className="text-lg font-medium">
+                      Error loading attendance data
+                    </p>
                     <p className="text-sm text-muted-foreground/80">{error}</p>
                   </div>
-                ) : !attendance || (
-                  !attendance.presentDates && 
-                  !attendance.fullLeaveDates && 
-                  !attendance.halfDayLeaveDates && 
-                  !attendance.fullCompoffDates && 
-                  !attendance.halfCompoffDates && 
-                  !attendance.weeklyOffDates && 
-                  !attendance.absentDates
-                ) ? (
+                ) : !attendance ||
+                  (!attendance.presentDates &&
+                    !attendance.fullLeaveDates &&
+                    !attendance.halfDayLeaveDates &&
+                    !attendance.fullCompoffDates &&
+                    !attendance.halfCompoffDates &&
+                    !attendance.weeklyOffDates &&
+                    !attendance.absentDates) ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
-                    <p className="text-lg font-medium">No attendance data available</p>
-                    <p className="text-sm text-muted-foreground/80">There is no attendance data for the selected month.</p>
+                    <p className="text-lg font-medium">
+                      No attendance data available
+                    </p>
+                    <p className="text-sm text-muted-foreground/80">
+                      There is no attendance data for the selected month.
+                    </p>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1 border rounded-md p-2">
