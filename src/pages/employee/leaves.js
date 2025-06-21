@@ -97,11 +97,11 @@ const Leaves = () => {
   // Extract all leave dates from leaveHistory to disable them in the calendar
   const getDisabledDates = () => {
     if (!leaveHistory || !Array.isArray(leaveHistory)) return [];
-    
+
     const disabledDates = [];
-    leaveHistory.forEach(leave => {
+    leaveHistory.forEach((leave) => {
       if (leave.leaveDates && Array.isArray(leave.leaveDates)) {
-        leave.leaveDates.forEach(dateString => {
+        leave.leaveDates.forEach((dateString) => {
           // Convert date string to Date object and add to disabled dates
           const date = new Date(dateString);
           if (!isNaN(date.getTime())) {
@@ -110,8 +110,11 @@ const Leaves = () => {
         });
       }
     });
-    
-    console.log('Disabled dates from leave history:', disabledDates.map(d => d.toISOString().split('T')[0]));
+
+    console.log(
+      "Disabled dates from leave history:",
+      disabledDates.map((d) => d.toISOString().split("T")[0])
+    );
     return disabledDates;
   };
 
