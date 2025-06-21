@@ -76,7 +76,7 @@ function PayrollManagement() {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
       publicRuntimeConfig.apiURL +
-        "/professional-tax-settings/company/" +
+        "/tds-settings/company/" +
         selectedCompanyId,
       {
         method: "GET",
@@ -200,6 +200,8 @@ function PayrollManagement() {
     }
   };
 
+  console.log(tdsData.tdsRate);
+
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
@@ -256,10 +258,13 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const paidDays =
-                  attendance?.find(
-                    (record) => record.employeeId === employee.employeeId
-                  )?.payableDays || 0;
+                const employeeAttendance = attendance?.find(
+                  (record) => record.employeeId === employee.employeeId
+                );
+                
+                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
+                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
+                const paidDays = presentDays + fullLeaveDays || 0;
 
                 const basic = parseFloat(
                   (
@@ -456,7 +461,10 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const paidDays = attendance?.find(record => record.employeeId === employee.employeeId)?.payableDays || 0;
+                const employeeAttendance = attendance?.find(record => record.employeeId === employee.employeeId);
+                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
+                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
+                const paidDays = presentDays + fullLeaveDays || 0;
                 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
