@@ -11,7 +11,7 @@ const roleLabels = {
   ACCOUNTADMIN: "Accountant",
   PROJECTADMIN: "Project Admin",
   ACCOUNTANT: "Accountant",
-  PROJECTMANAGER: "Project Manager"
+  PROJECTMANAGER: "Project Manager",
 };
 
 const roleColors = {
@@ -22,11 +22,17 @@ const roleColors = {
   ACCOUNTADMIN: "bg-indigo-500 text-white",
   PROJECTADMIN: "bg-orange-500 text-white",
   ACCOUNTANT: "bg-indigo-500 text-white",
-  PROJECTMANAGER: "bg-orange-500 text-white"
+  PROJECTMANAGER: "bg-orange-500 text-white",
 };
 
 // Define the desired order of roles
-const roleOrder = ["EMPLOYEE", "MANAGER", "HRADMIN", "ACCOUNTANT", "PROJECTMANAGER"];
+const roleOrder = [
+  "EMPLOYEE",
+  "MANAGER",
+  "HRADMIN",
+  "ACCOUNTANT",
+  "PROJECTMANAGER",
+];
 
 const RoleToggle = () => {
   const router = useRouter();
@@ -37,20 +43,20 @@ const RoleToggle = () => {
   useEffect(() => {
     const roles = JSON.parse(sessionStorage.getItem("roles") || "[]");
     const department = sessionStorage.getItem("departmentName");
-    
+
     if (roles.length > 0) {
       // Update role labels if department is Sales
       if (department === "Sales") {
         setRoleDisplayLabels({
           ...roleLabels,
-          EMPLOYEE: "Sales Employee"
+          EMPLOYEE: "Sales Employee",
         });
       }
-      
+
       // Sort roles according to the defined order
-      const sortedRoles = roleOrder.filter(role => roles.includes(role));
+      const sortedRoles = roleOrder.filter((role) => roles.includes(role));
       setAvailableRoles(sortedRoles);
-      
+
       const storedRole = sessionStorage.getItem("currentRole");
       if (storedRole && roles.includes(storedRole)) {
         setCurrentRole(storedRole);
@@ -87,7 +93,9 @@ const RoleToggle = () => {
           size="sm"
           className={cn(
             "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-            role === currentRole ? roleColors[role] : "bg-gray-200 text-gray-700"
+            role === currentRole
+              ? roleColors[role]
+              : "bg-gray-200 text-gray-700"
           )}
           onClick={() => switchRole(role)}
         >

@@ -466,7 +466,9 @@ function EmployeeProfilePage() {
     ) {
       return true;
     }
-    if (formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber) {
+    if (
+      formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber
+    ) {
       return true;
     }
     if (formData.bank.bankName !== employeeById.bankDetails?.bankName) {
@@ -478,7 +480,7 @@ function EmployeeProfilePage() {
     if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
       return true;
     }
-    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {  
+    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {
       return true;
     }
 
@@ -547,18 +549,25 @@ function EmployeeProfilePage() {
       if (formData.employee.currentAddress !== employeeById.currentAddress) {
         payload.currentAddress = formData.employee.currentAddress;
       }
-      if (formData.employee.permanentAddress !== employeeById.permanentAddress) {
+      if (
+        formData.employee.permanentAddress !== employeeById.permanentAddress
+      ) {
         payload.permanentAddress = formData.employee.permanentAddress;
       }
 
       // Include bank details that have changed (don't require both fields to be filled)
-      if (formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber) {
+      if (
+        formData.bank.accountNumber !== employeeById.bankDetails?.accountNumber
+      ) {
         payload.accountNumber = formData.bank.accountNumber;
       }
       if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
         payload.ifscCode = formData.bank.ifscCode;
       }
-      if (formData.bank.accountHolderName !== employeeById.bankDetails?.accountHolderName) {
+      if (
+        formData.bank.accountHolderName !==
+        employeeById.bankDetails?.accountHolderName
+      ) {
         payload.accountHolderName = formData.bank.accountHolderName;
       }
       if (formData.bank.bankName !== employeeById.bankDetails?.bankName) {
@@ -686,9 +695,7 @@ function EmployeeProfilePage() {
         <main className="p-6 pt-24">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div
-                className="relative h-64 bg-gradient-to-r bg-[#3B6FA0]"
-              >
+              <div className="relative h-64 bg-gradient-to-r bg-[#3B6FA0]">
                 <div className="absolute inset-0 opacity-10 bg-[url('/pattern.svg')] bg-repeat"></div>
                 <div className="relative h-full px-8 py-6 flex flex-col justify-between">
                   {/* Top Row */}
@@ -861,7 +868,9 @@ function EmployeeProfilePage() {
                           {!isEditable && (
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                               <div className="relative">
-                                <p>Cannot edit while update request is pending</p>
+                                <p>
+                                  Cannot edit while update request is pending
+                                </p>
                                 <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45"></div>
                               </div>
                             </div>
