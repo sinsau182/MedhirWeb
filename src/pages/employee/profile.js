@@ -922,9 +922,6 @@ function EmployeeProfilePage() {
               {/* --- Profile Info Sections --- */}
               <div className="p-6 bg-gray-50">
                 <div className="grid grid-cols-1 lg:grid-cols-11 gap-6">
-                  {/* --- Left Column --- */}
-
-                  {/* --- Middle Column --- */}
                   <div className="lg:col-span-8 space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Personal Information Card */}
