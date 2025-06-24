@@ -24,6 +24,7 @@ import dynamic from "next/dynamic";
 import DropdownArrowIcon from "@/components/DropdownArrowIcon";
 import Spinner from "@/components/Spinner";
 import useFileUpload from "@/hooks/useFileUpload";
+import ProfessionalInfo from "@/components/NewEmployee_Compo/ProfessionalInfo";
 
 
 // Add this CSS class to your global styles or component
@@ -61,128 +62,7 @@ const MultiSelect = ({ label, options, value }) => {
     </div>
   );
 };
-// const { handleFileUpload } = useFileUpload(setFormData);
-const DepartmentSelect = ({ label, options, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>{label}</label>
-      <div className="relative">
-        <div
-          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <div className="flex flex-wrap gap-1 py-1">
-            {value ? (
-              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
-            ) : (
-              <span className="text-gray-500">Select department</span>
-            )}
-          </div>
-          <DropdownArrowIcon isOpen={isOpen} />
-
-        </div>
-
-        {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
-            {options.map((department) => (
-              <div
-                key={department.departmentId}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.departmentId === department.departmentId
-                    ? "bg-blue-50"
-                    : ""
-                }`}
-                onClick={() => {
-                  onChange(department);
-                  setIsOpen(false);
-                }}
-              >
-                <span className="text-gray-700">{department.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const DesignationSelect = ({ label, options, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>{label}</label>
-      <div className="relative">
-        <div
-          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <div className="flex flex-wrap gap-1 py-1">
-            {value ? (
-              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
-            ) : (
-              <span className="text-gray-500">Select designation</span>
-            )}
-          </div>
-          <DropdownArrowIcon isOpen={isOpen} />
-        </div>
-
-        {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
-            {options.map((designation) => (
-              <div
-                key={designation.designationId}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.designationId === designation.designationId
-                    ? "bg-blue-50"
-                    : ""
-                }`}
-                onClick={() => {
-                  onChange({
-                    designationId: designation.designationId,
-                    name: designation.name,
-                    manager: designation.manager,
-                    overtimeEligible: designation.overtimeEligible,
-                  });
-                  setIsOpen(false);
-                }}
-              >
-                <span className="text-gray-700">{designation.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const removeEmptyValues = (obj) => {
   const cleanObj = {};
@@ -199,65 +79,6 @@ const removeEmptyValues = (obj) => {
     }
   });
   return cleanObj;
-};
-
-const ReportingManagerSelect = ({ label, options, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>{label}</label>
-      <div className="relative">
-        <div
-          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <div className="flex flex-wrap gap-1 py-1">
-            {value ? (
-              <span className="text-gray-700">{typeof value === 'object' ? value.name : value}</span>
-            ) : (
-              <span className="text-gray-500">Select manager</span>
-            )}
-          </div>
-          <DropdownArrowIcon isOpen={isOpen} />
-        </div>
-
-        {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
-            {options.map((manager) => (
-              <div
-                key={manager.employeeId}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
-                }`}
-                onClick={() => {
-                  onChange({
-                    employeeId: manager.employeeId,
-                    name: manager.name
-                  });
-                  setIsOpen(false);
-                }}
-              >
-                <span className="text-gray-700">{manager.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 };
 
 function EmployeeForm() {
@@ -283,6 +104,8 @@ function EmployeeForm() {
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
   const {publicRuntimeConfig}=getConfig();
+  const [validationMessage, setValidationMessage] = useState("");
+
 
   // Add department fetch on component mount
   useEffect(() => {
@@ -573,6 +396,9 @@ function EmployeeForm() {
     return cleanObj;
   };
 
+  // Use custom hook for file uploads-------useFileUpload
+const { handleFileUpload } = useFileUpload(setFormData);
+
   // Add validation patterns for ID proofs
   const idProofPatterns = {
     aadharNo: /^[0-9]{12}$/,
@@ -624,6 +450,7 @@ function EmployeeForm() {
       if(!formData.employee.emailPersonal?.trim()){
         errors.emailPersonal = "Personal email is required";
       }
+
 
       // Validate phone number format if provided
       if (formData.employee.phone && !/^[0-9]{10}$/.test(formData.employee.phone)) {
@@ -785,69 +612,79 @@ function EmployeeForm() {
     }
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   if (activeSection !== "salary") {
+  //     const currentIndex = sections.findIndex(
+  //       (section) => section.id === activeSection
+  //     );
+  //     if (currentIndex < sections.length - 1) {
+  //       setActiveSection(sections[currentIndex + 1].id);
+  //       return;
+  //     }
+  //   }
+
+  //   if (!validateForm()) return;
+
+  //   setLoading(true);
+  //   try {
+  //     // ... rest of the existing handleSubmit code ...
+  //   } catch (err) {
+  //     // ... existing error handling ...
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+ 
+  const validateForm = () => {
+  // Add your validation logic here
+  // For example, checking if required fields are filled
+  if (!formData.name || !formData.email) {
+    return false;
+  }
+  return true;
+};
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (activeSection !== "salary") {
-      const currentIndex = sections.findIndex(
-        (section) => section.id === activeSection
-      );
-      if (currentIndex < sections.length - 1) {
-        setActiveSection(sections[currentIndex + 1].id);
-        return;
-      }
+  if (activeSection !== "salary") {
+    const currentIndex = sections.findIndex(
+      (section) => section.id === activeSection
+    );
+
+    if (currentIndex < sections.length - 1) {
+      setActiveSection(sections[currentIndex + 1].id);
+      return;
     }
+  }
 
-    if (!validateForm()) return;
+  if (!validateForm()) {
+    setValidationMessage("Please press Save and Exit.");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      // ... rest of the existing handleSubmit code ...
-    } catch (err) {
-      // ... existing error handling ...
-    } finally {
-      setLoading(false);
-    }
-  };
+  setValidationMessage(""); // Clear message if valid
+  setLoading(true);
+
+  try {
+    // Your form submission logic
+    console.log("Form submitted successfully");
+  } catch (err) {
+    console.error("Error submitting form:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     if (activeMainTab) setActiveMain(activeMainTab);
     if (activeSectionParam) setActiveSection(activeSectionParam);
   }, [activeMainTab, activeSectionParam]);
 
-  const handleFileUpload = (documentType, file) => {
-    if (file) {
-      // Create a preview URL for the file
-      const previewUrl = URL.createObjectURL(file);
 
-      // Map document type to the correct field names
-      const fieldMappings = {
-        aadharNo: { imgField: "aadharImgUrl" },
-        panNo: { imgField: "pancardImgUrl" },
-        passport: { imgField: "passportImgUrl" },
-        drivingLicense: { imgField: "drivingLicenseImgUrl" },
-        voterId: { imgField: "voterIdImgUrl" },
-        passbookImgUrl: { imgField: "passbookImgUrl" },
-      };
-
-      const fields = fieldMappings[documentType];
-      if (!fields) return;
-
-      setFormData((prev) => {
-        const updatedData = {
-          ...prev,
-          [documentType === "passbookImgUrl" ? "bankDetails" : "idProofs"]: {
-            ...(documentType === "passbookImgUrl"
-              ? prev.bankDetails
-              : prev.idProofs),
-            [fields.imgField]: file, // Store the File object for upload
-          },
-        };
-
-        return updatedData;
-      });
-    }
-  };
 
   // Move these functions before the sections array definition
   const checkPersonalDetailsCompletion = () => {
@@ -1329,8 +1166,10 @@ function EmployeeForm() {
                         </h3>
 
                         <div className="grid grid-cols-2 gap-4">
-                          <DepartmentSelect
+                          <ProfessionalInfo
                             label="Department"
+                            sublabel="Select department"
+                            id="departmentId"//ask this
                             options={departments}
                             value={formData.employee.department}
                             onChange={(selectedDepartment) => {
@@ -1363,8 +1202,10 @@ function EmployeeForm() {
                               );
                             }}
                           />
-                          <DesignationSelect
+                          <ProfessionalInfo
                             label="Designation"
+                            sublabel="Select designation"
+                            id="designationId"
                             options={designations}
                             value={formData.employee.designation}
                             onChange={(selectedDesignation) =>
@@ -1414,8 +1255,10 @@ function EmployeeForm() {
                           ))}
 
                           <div className="grid grid-1 gap-4">
-                            <ReportingManagerSelect
+                            <ProfessionalInfo
                               label="Reporting Manager"
+                              sublabel="Select manager"
+                              id="employeeId"
                               options={managers}
                               value={formData.employee.reportingManager}
                               onChange={(selectedManager) =>
@@ -1654,38 +1497,12 @@ function EmployeeForm() {
                                   </label>
                                 )}
                                 <input
-                                  type="file"
-                                  id={`upload-${key}`}
-                                  className="hidden"
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                      // Add file size validation (e.g., 5MB limit)
-                                      const maxSize = 5 * 1024 * 1024; // 5MB
-                                      if (file.size > maxSize) {
-                                        toast.error(
-                                          "File size should not exceed 5MB"
-                                        );
-                                        return;
-                                      }
-                                      // Add file type validation
-                                      const allowedTypes = [
-                                        "application/pdf",
-                                        "image/jpeg",
-                                        "image/jpg",
-                                        "image/png",
-                                      ];
-                                      if (!allowedTypes.includes(file.type)) {
-                                        toast.error(
-                                          "Please upload a valid PDF or image file"
-                                        );
-                                        return;
-                                      }
-                                      handleFileUpload(key, file);
-                                    }
-                                  }}
-                                />
+                                    type="file"
+                                    id={`upload-${key}`}
+                                    className="hidden"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => handleFileUpload(key, e.target.files[0])}
+                               />
 
 
                               </div>
@@ -1750,6 +1567,7 @@ function EmployeeForm() {
                               }`}
                             >
                               <div className="flex flex-col items-center justify-center">
+
                                 <input
                                   type="file"
                                   id="passbook-upload"
@@ -1757,32 +1575,11 @@ function EmployeeForm() {
                                   accept="image/*,.pdf"
                                   onChange={(e) => {
                                     const file = e.target.files[0];
-                                    if (file) {
-                                      // Add file size validation (e.g., 5MB limit)
-                                      const maxSize = 5 * 1024 * 1024; // 5MB
-                                      if (file.size > maxSize) {
-                                        toast.error(
-                                          "File size should not exceed 5MB"
-                                        );
-                                        return;
-                                      }
-                                      // Add file type validation
-                                      const allowedTypes = [
-                                        "application/pdf",
-                                        "image/jpeg",
-                                        "image/jpg",
-                                        "image/png",
-                                      ];
-                                      if (!allowedTypes.includes(file.type)) {
-                                        toast.error(
-                                          "Please upload a valid PDF or image file"
-                                        );
-                                        return;
-                                      }
-                                      handleFileUpload("passbookImgUrl", file);
-                                    }
+                                    handleFileUpload("passbookImgUrl", file);
                                   }}
                                 />
+
+                             
                                 <label
                                   htmlFor="passbook-upload"
                                   className="cursor-pointer text-center group"
