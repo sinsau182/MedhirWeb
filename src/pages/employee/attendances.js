@@ -401,12 +401,12 @@ const EmployeeAttendance = () => {
   };
 
   // Helper function to calculate additional time since last checkout
-  const calculateAdditionalTime = (lastCheckout) => {
-    if (!lastCheckout) return 0;
-    const lastCheckoutTime = new Date(lastCheckout);
-    const timeDiff = currentTime.getTime() - lastCheckoutTime.getTime();
-    return timeDiff / (1000 * 60); // Convert to minutes
-  };
+  // const calculateAdditionalTime = (lastCheckout) => {
+  //   if (!lastCheckout) return 0;
+  //   const lastCheckoutTime = new Date(lastCheckout);
+  //   const timeDiff = currentTime.getTime() - lastCheckoutTime.getTime();
+  //   return timeDiff / (1000 * 60); // Convert to minutes
+  // };
 
   // Helper function to calculate additional time since latest checkin
   const calculateAdditionalTimeFromLatestCheckin = (latestCheckin) => {
@@ -417,14 +417,14 @@ const EmployeeAttendance = () => {
   };
 
   // Helper function to format total working hours
-  const formatWorkingHours = (workingHoursTillNow, lastCheckout) => {
-    const baseMinutes = parseTimeDuration(workingHoursTillNow);
-    const additionalMinutes = calculateAdditionalTime(lastCheckout);
-    const totalMinutes = baseMinutes + additionalMinutes;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = Math.floor(totalMinutes % 60);
-    return `${hours}h ${minutes}m`;
-  };
+  // const formatWorkingHours = (workingHoursTillNow, lastCheckout) => {
+  //   const baseMinutes = parseTimeDuration(workingHoursTillNow);
+  //   const additionalMinutes = calculateAdditionalTime(lastCheckout);
+  //   const totalMinutes = baseMinutes + additionalMinutes;
+  //   const hours = Math.floor(totalMinutes / 60);
+  //   const minutes = Math.floor(totalMinutes % 60);
+  //   return `${hours}h ${minutes}m`;
+  // };
 
   // Helper function to format live working hours (using latestCheckin)
   const formatLiveWorkingHours = (workingHoursTillNow, latestCheckin) => {
