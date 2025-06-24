@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { CheckCircle2, Clock, CalendarIcon, Calendar } from "lucide-react";
+import { CheckCircle2, Clock, CalendarIcon, Calendar, Play } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
@@ -15,7 +15,6 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
-
 
 const EmployeeAttendance = () => {
   const dispatch = useDispatch();
@@ -33,7 +32,9 @@ const EmployeeAttendance = () => {
   const [monthlySummary, setMonthlySummary] = useState({}); // State to store monthly attendance summary counts
   const calendarRef = useRef(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  
+  const [currentTime, setCurrentTime] = useState(new Date()); // State for real-time updates
+  const [dailyAttendanceData, setDailyAttendanceData] = useState(null); // State for daily attendance data
+
   // Get current date info
   const today = new Date();
   const currentMonth = today.toLocaleString("default", { month: "short" });
@@ -57,30 +58,44 @@ const EmployeeAttendance = () => {
     };
   }, []);
 
+  // Update current time every second for real-time calculations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const toggleCalendar = useCallback(
     () => setIsCalendarOpen(!isCalendarOpen),
     [isCalendarOpen]
   );
 
-  const handleMonthSelection = useCallback((month, year) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-    setIsCalendarOpen(false);
+  const handleMonthSelection = useCallback(
+    (month, year) => {
+      setSelectedMonth(month);
+      setSelectedYear(year);
+      setIsCalendarOpen(false);
 
-    // Get employee ID from session storage
-    const employeeId = sessionStorage.getItem("employeeId");
-    if (!employeeId) {
-      toast.error("Employee ID not found in session storage.");
-      return;
-    }
+      // Get employee ID from session storage
+      const employeeId = sessionStorage.getItem("employeeId");
+      if (!employeeId) {
+        toast.error("Employee ID not found in session storage.");
+        return;
+      }
 
-    // Dispatch the action to fetch attendance data
-    dispatch(fetchOneEmployeeAttendanceOneMonth({
-      employeeId,
-      month,
-      year
-    }));
-  }, [dispatch]);
+      // Dispatch the action to fetch attendance data
+      dispatch(
+        fetchOneEmployeeAttendanceOneMonth({
+          employeeId,
+          month,
+          year,
+        })
+      );
+    },
+    [dispatch]
+  );
 
   // Initial data fetch when component mounts
   useEffect(() => {
@@ -91,18 +106,26 @@ const EmployeeAttendance = () => {
     }
 
     // Fetch data for current month and year
-    dispatch(fetchOneEmployeeAttendanceOneMonth({
-      employeeId,
-      month: currentMonth,
-      year: currentYear
-    }));
+    dispatch(
+      fetchOneEmployeeAttendanceOneMonth({
+        employeeId,
+        month: currentMonth,
+        year: currentYear,
+      })
+    );
   }, [dispatch, currentMonth, currentYear]);
 
   // Update attendance data when Redux store changes
   useEffect(() => {
     if (attendance && !loading && !error) {
-      const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-      const daysInMonth = new Date(parseInt(selectedYear), monthIndex + 1, 0).getDate();
+      const monthIndex = new Date(
+        `${selectedMonth} 1, ${selectedYear}`
+      ).getMonth();
+      const daysInMonth = new Date(
+        parseInt(selectedYear),
+        monthIndex + 1,
+        0
+      ).getDate();
 
       const formattedData = [];
       const summaryCounts = {
@@ -125,45 +148,48 @@ const EmployeeAttendance = () => {
         if (attendance.presentDates?.includes(dateString)) {
           return "P";
         }
-        
+
         // Check full leave dates
         if (attendance.fullLeaveDates?.includes(dateString)) {
           return "PL";
         }
-        
+
         // Check half day leave dates
         if (attendance.halfDayLeaveDates?.includes(dateString)) {
           return "P/A";
         }
-        
+
         // Check full comp-off dates
         if (attendance.fullCompoffDates?.includes(dateString)) {
           return "P";
         }
-        
+
         // Check half comp-off dates
         if (attendance.halfCompoffDates?.includes(dateString)) {
           return "P/A";
         }
-        
+
         // Check weekly off dates
         if (attendance.weeklyOffDates?.includes(dateString)) {
           return "H";
         }
-        
+
         // Check absent dates
         if (attendance.absentDates?.includes(dateString)) {
           return "A";
         }
-        
+
         return null;
       };
 
       for (let day = 1; day <= daysInMonth; day++) {
         // Create date string in YYYY-MM-DD format
-        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(
+          2,
+          "0"
+        )}-${String(day).padStart(2, "0")}`;
         const status = getAttendanceStatusForDate(dateString);
-        
+
         let fullStatus = "No Data";
         let leaveType = null;
 
@@ -245,7 +271,9 @@ const EmployeeAttendance = () => {
   };
 
   const generateCalendarDays = () => {
-    const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const monthIndex = new Date(
+      `${selectedMonth} 1, ${selectedYear}`
+    ).getMonth();
     const year = parseInt(selectedYear);
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     let daysArray = [];
@@ -284,8 +312,8 @@ const EmployeeAttendance = () => {
 
       // Fix: Format date properly without timezone conversion
       const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
       const formattedDate = `${year}-${month}-${day}`;
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
@@ -303,7 +331,10 @@ const EmployeeAttendance = () => {
       }
 
       const data = await response.json();
-      console.log(data)
+      console.log(data);
+
+      // Store the daily attendance data
+      setDailyAttendanceData(data);
 
       // Update state with fetched data while preserving status and color information
       setAttendanceData((prevData) => {
@@ -311,10 +342,8 @@ const EmployeeAttendance = () => {
           if (d.date.toDateString() === selectedDate.toDateString()) {
             return {
               ...d,
-              checkinTimes: data.checkinTimes || d.checkinTimes,
-              checkoutTimes: data.checkoutTimes || d.checkoutTimes,
-              totalWorkingMinutes:
-                data.totalWorkingMinutes || d.totalWorkingMinutes,
+              // Store the new API response data
+              dailyAttendanceData: data,
               // Preserve the status and other display properties
               status: d.status,
               isLate: d.isLate,
@@ -333,7 +362,19 @@ const EmployeeAttendance = () => {
   // Update the onClick handler for each date
   const handleDateClick = (day) => {
     setDate(day);
-    fetchAttendanceData(day);
+    
+    // Find attendance data for the selected date
+    const selectedDayData = attendanceData.find(
+      (d) => d.date.toDateString() === day.toDateString()
+    );
+    
+    // Only fetch daily attendance data for present dates
+    if (selectedDayData && selectedDayData.status === "Present") {
+      fetchAttendanceData(day);
+    } else {
+      // Clear daily attendance data for non-present dates
+      setDailyAttendanceData(null);
+    }
   };
 
   const calendarDays = generateCalendarDays();
@@ -350,6 +391,56 @@ const EmployeeAttendance = () => {
 
   const getDayName = (dateObj) => {
     return dateObj.toLocaleDateString("en-US", { weekday: "long" });
+  };
+
+  // Helper function to parse time duration string (HH:MM:SS) to minutes
+  const parseTimeDuration = (timeString) => {
+    if (!timeString) return 0;
+    const [hours, minutes, seconds] = timeString.split(':').map(Number);
+    return hours * 60 + minutes + seconds / 60;
+  };
+
+  // Helper function to calculate additional time since last checkout
+  // const calculateAdditionalTime = (lastCheckout) => {
+  //   if (!lastCheckout) return 0;
+  //   const lastCheckoutTime = new Date(lastCheckout);
+  //   const timeDiff = currentTime.getTime() - lastCheckoutTime.getTime();
+  //   return timeDiff / (1000 * 60); // Convert to minutes
+  // };
+
+  // Helper function to calculate additional time since latest checkin
+  const calculateAdditionalTimeFromLatestCheckin = (latestCheckin) => {
+    if (!latestCheckin) return 0;
+    const latestCheckinTime = new Date(latestCheckin);
+    const timeDiff = currentTime.getTime() - latestCheckinTime.getTime();
+    return timeDiff / (1000 * 60); // Convert to minutes
+  };
+
+  // Helper function to format total working hours
+  // const formatWorkingHours = (workingHoursTillNow, lastCheckout) => {
+  //   const baseMinutes = parseTimeDuration(workingHoursTillNow);
+  //   const additionalMinutes = calculateAdditionalTime(lastCheckout);
+  //   const totalMinutes = baseMinutes + additionalMinutes;
+  //   const hours = Math.floor(totalMinutes / 60);
+  //   const minutes = Math.floor(totalMinutes % 60);
+  //   return `${hours}h ${minutes}m`;
+  // };
+
+  // Helper function to format live working hours (using latestCheckin)
+  const formatLiveWorkingHours = (workingHoursTillNow, latestCheckin) => {
+    const baseMinutes = parseTimeDuration(workingHoursTillNow);
+    const additionalMinutes = calculateAdditionalTimeFromLatestCheckin(latestCheckin);
+    const totalMinutes = baseMinutes + additionalMinutes;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.floor(totalMinutes % 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Helper function to format workingHoursTillNow string to xh ym format
+  const formatWorkingHoursString = (workingHoursString) => {
+    if (!workingHoursString) return "0h 0m";
+    const [hours, minutes, seconds] = workingHoursString.split(':').map(Number);
+    return `${hours}h ${minutes}m`;
   };
 
   return (
@@ -462,7 +553,9 @@ const EmployeeAttendance = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle className="text-xl">Attendance Calendar</CardTitle>
+                    <CardTitle className="text-xl">
+                      Attendance Calendar
+                    </CardTitle>
                     <CardDescription>
                       View and track your attendance history
                     </CardDescription>
@@ -490,29 +583,35 @@ const EmployeeAttendance = () => {
                             onChange={(e) => {
                               const newYear = e.target.value;
                               setSelectedYear(newYear);
-                              
+
                               // Set default month based on year
                               if (newYear === "2024") {
                                 setSelectedMonth("Aug");
                                 // Fetch data for August 2024
-                                const employeeId = sessionStorage.getItem("employeeId");
+                                const employeeId =
+                                  sessionStorage.getItem("employeeId");
                                 if (employeeId) {
-                                  dispatch(fetchOneEmployeeAttendanceOneMonth({
-                                    employeeId,
-                                    month: "Aug",
-                                    year: newYear
-                                  }));
+                                  dispatch(
+                                    fetchOneEmployeeAttendanceOneMonth({
+                                      employeeId,
+                                      month: "Aug",
+                                      year: newYear,
+                                    })
+                                  );
                                 }
                               } else {
                                 setSelectedMonth("Jan");
                                 // Fetch data for January 2025
-                                const employeeId = sessionStorage.getItem("employeeId");
+                                const employeeId =
+                                  sessionStorage.getItem("employeeId");
                                 if (employeeId) {
-                                  dispatch(fetchOneEmployeeAttendanceOneMonth({
-                                    employeeId,
-                                    month: "Jan",
-                                    year: newYear
-                                  }));
+                                  dispatch(
+                                    fetchOneEmployeeAttendanceOneMonth({
+                                      employeeId,
+                                      month: "Jan",
+                                      year: newYear,
+                                    })
+                                  );
                                 }
                               }
                             }}
@@ -530,22 +629,33 @@ const EmployeeAttendance = () => {
                             const currentYear = new Date().getFullYear();
                             const currentMonthIdx = new Date().getMonth(); // 0-based
                             let months = [
-                              "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+                              "Jan",
+                              "Feb",
+                              "Mar",
+                              "Apr",
+                              "May",
+                              "Jun",
+                              "Jul",
+                              "Aug",
+                              "Sep",
+                              "Oct",
+                              "Nov",
+                              "Dec",
                             ];
-                            
+
                             // Determine which months to show based on year
                             let startIdx = 0;
                             let endIdx = 11;
-                            
+
                             if (parseInt(selectedYear) === 2024) {
                               startIdx = 7; // August (0-based)
                               endIdx = 11; // December
                             } else if (parseInt(selectedYear) === 2025) {
                               startIdx = 0; // January
-                              endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                              endIdx =
+                                currentYear === 2025 ? currentMonthIdx : 11;
                             }
-                            
+
                             return months
                               .slice(startIdx, endIdx + 1)
                               .map((month) => (
@@ -556,7 +666,9 @@ const EmployeeAttendance = () => {
                                       ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
                                       : "hover:bg-gray-50 text-gray-700"
                                   }`}
-                                  onClick={() => handleMonthSelection(month, selectedYear)}
+                                  onClick={() =>
+                                    handleMonthSelection(month, selectedYear)
+                                  }
                                 >
                                   {month}
                                 </button>
@@ -578,22 +690,27 @@ const EmployeeAttendance = () => {
                 ) : error ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
-                    <p className="text-lg font-medium">Error loading attendance data</p>
+                    <p className="text-lg font-medium">
+                      Error loading attendance data
+                    </p>
                     <p className="text-sm text-muted-foreground/80">{error}</p>
                   </div>
-                ) : !attendance || (
-                  !attendance.presentDates && 
-                  !attendance.fullLeaveDates && 
-                  !attendance.halfDayLeaveDates && 
-                  !attendance.fullCompoffDates && 
-                  !attendance.halfCompoffDates && 
-                  !attendance.weeklyOffDates && 
-                  !attendance.absentDates
-                ) ? (
+                ) : !attendance ||
+                  (!attendance.presentDates &&
+                    !attendance.fullLeaveDates &&
+                    !attendance.halfDayLeaveDates &&
+                    !attendance.fullCompoffDates &&
+                    !attendance.halfCompoffDates &&
+                    !attendance.weeklyOffDates &&
+                    !attendance.absentDates) ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
-                    <p className="text-lg font-medium">No attendance data available</p>
-                    <p className="text-sm text-muted-foreground/80">There is no attendance data for the selected month.</p>
+                    <p className="text-lg font-medium">
+                      No attendance data available
+                    </p>
+                    <p className="text-sm text-muted-foreground/80">
+                      There is no attendance data for the selected month.
+                    </p>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1 border rounded-md p-2">
@@ -708,12 +825,28 @@ const EmployeeAttendance = () => {
                       checkinTimes,
                       checkoutTimes,
                       totalWorkingMinutes,
+                      dailyAttendanceData,
                     } = selectedDayData;
 
                     // Calculate total working hours
                     const totalWorkingHours = (
                       totalWorkingMinutes / 60
                     ).toFixed(1);
+
+                    // Check if this is a present date and has daily attendance data
+                    const isPresentDate = status === "Present" && (dailyAttendanceData || (date && dailyAttendanceData));
+                    
+                    // Get check-in and check-out times for present dates
+                    const attendanceDataForDate = dailyAttendanceData || selectedDayData?.dailyAttendanceData;
+                    const checkInTime = isPresentDate ? attendanceDataForDate?.firstCheckin : null;
+                    const checkOutTime = isPresentDate ? attendanceDataForDate?.lastCheckout : null;
+                    const workingHoursTillNow = isPresentDate ? attendanceDataForDate?.workingHoursTillNow : null;
+                    
+                    // Determine if employee is currently checked in (has latest check-in after last check-out)
+                    const isCurrentlyCheckedIn = isPresentDate && 
+                      attendanceDataForDate?.latestCheckin && 
+                      attendanceDataForDate?.lastCheckout &&
+                      new Date(attendanceDataForDate.latestCheckin) > new Date(attendanceDataForDate.lastCheckout);
 
                     return (
                       <div className="space-y-4">
@@ -748,7 +881,9 @@ const EmployeeAttendance = () => {
                             <Clock className="h-4 w-4 text-blue-500" /> Check In
                           </span>
                           <span>
-                            {checkinTimes?.[0]
+                            {isPresentDate && checkInTime
+                              ? formatTime(checkInTime)
+                              : checkinTimes?.[0]
                               ? formatTime(checkinTimes[0])
                               : "-"}
                           </span>
@@ -758,17 +893,37 @@ const EmployeeAttendance = () => {
                             <Clock className="h-4 w-4 text-blue-500" /> Check
                             Out
                           </span>
-                          <span>
-                            {checkoutTimes?.[0]
-                              ? formatTime(checkoutTimes[0])
-                              : "-"}
+                          <span className="flex items-center gap-1">
+                            {isPresentDate && isCurrentlyCheckedIn ? (
+                              <>
+                                <Play className="h-4 w-4 text-green-500 animate-pulse" />
+                                <span className="text-green-600 font-medium">Running</span>
+                              </>
+                            ) : isPresentDate && checkOutTime ? (
+                              formatTime(checkOutTime)
+                            ) : checkoutTimes?.[0] ? (
+                              formatTime(checkoutTimes[0])
+                            ) : (
+                              "-"
+                            )}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">
                             Total Working Hours:
                           </span>
-                          <span>{totalWorkingHours} hours</span>
+                          <span>
+                            {isPresentDate && workingHoursTillNow ? (
+                              isCurrentlyCheckedIn ? (
+                                formatLiveWorkingHours(workingHoursTillNow, attendanceDataForDate?.latestCheckin)
+                              ) : (
+                                // For past days or when not currently checked in, show workingHoursTillNow in xh ym format
+                                formatWorkingHoursString(workingHoursTillNow)
+                              )
+                            ) : (
+                              `${totalWorkingHours}h`
+                            )}
+                          </span>
                         </div>
                       </div>
                     );

@@ -639,7 +639,7 @@ const OrganizationSettings = () => {
                                 <FileText className="h-10 w-10 text-gray-400" />
                               </div>
                               <p className="text-xl font-semibold text-gray-800 mb-1">No Departments Found</p>
-                              <p className="text-sm mb-4">You haven't added any departments yet. Click the button below to add your first department.</p>
+                              <p className="text-sm mb-4">You haven&apos;t added any departments yet. Click the button below to add your first department.</p>
                               <button
                                 onClick={() => {
                                   setSelectedDepartment(null);
@@ -766,7 +766,7 @@ const OrganizationSettings = () => {
                                 <FileText className="h-10 w-10 text-gray-400" />
                               </div>
                               <p className="text-xl font-semibold text-gray-800 mb-1">No Designations Found</p>
-                              <p className="text-sm mb-4">You haven't added any designations yet. Click the button below to add your first designation.</p>
+                              <p className="text-sm mb-4">You haven&apos;t added any designations yet. Click the button below to add your first designation.</p>
                               <button
                                 onClick={() => {
                                   setSelectedDesignation(null);

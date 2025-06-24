@@ -12,7 +12,6 @@ import {
 import { toast } from "sonner";
 
 const AddExpense = () => {
-  
   const employee = sessionStorage.getItem("employeeId");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -93,7 +92,8 @@ const AddExpense = () => {
     if (!form.vendor) errors.vendor = "Vendor is required";
     if (!form.file) errors.file = "File is required";
     if (!form.totalAmount) errors.totalAmount = "Total amount is required";
-    if (!form.amountRequested) errors.amountRequested = "Amount requested is required";
+    if (!form.amountRequested)
+      errors.amountRequested = "Amount requested is required";
 
     // Validate numeric fields
     if (form.totalAmount && isNaN(form.totalAmount)) {
@@ -127,12 +127,12 @@ const AddExpense = () => {
         comments: editExpense.comments || "",
       });
     }
-  }, [isEdit, editExpense]);
+  }, [isEdit, editExpense, employee]);
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -189,12 +189,12 @@ const AddExpense = () => {
       <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
       <div
         style={{
-        maxWidth: 800,
+          maxWidth: 800,
           margin: isSidebarCollapsed ? "80px 0 0 120px" : "80px 0 0 290px",
           background: "#f8fafc",
-        borderRadius: 12,
+          borderRadius: 12,
           boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-        padding: 36,
+          padding: 36,
         }}
       >
         <h2 style={{ fontWeight: 700, fontSize: 28, marginBottom: 28 }}>
@@ -463,7 +463,9 @@ const AddExpense = () => {
           </div>
           <div style={{ marginBottom: 18 }}>
             <label style={{ fontWeight: 500 }}>Estimate or Bill Photo *</label>
-            <div style={{ display: "flex", alignItems: "center", marginTop: 6 }}>
+            <div
+              style={{ display: "flex", alignItems: "center", marginTop: 6 }}
+            >
               <input
                 id="file-upload"
                 type="file"
@@ -499,7 +501,9 @@ const AddExpense = () => {
           </div>
           <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontWeight: 500 }}>Total Amount to be Paid *</label>
+              <label style={{ fontWeight: 500 }}>
+                Total Amount to be Paid *
+              </label>
               <input
                 type="text"
                 name="totalAmount"
@@ -608,4 +612,4 @@ const AddExpense = () => {
   );
 };
 
-export default withAuth(AddExpense); 
+export default withAuth(AddExpense);

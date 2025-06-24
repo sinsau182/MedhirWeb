@@ -91,7 +91,7 @@ const AddIncome = () => {
         comments: editIncome.comments || "",
       });
     }
-  }, [isEdit, editIncome]);
+  }, [isEdit, editIncome, employee]);
 
   const validateForm = () => {
     const errors = {};
@@ -249,7 +249,6 @@ const AddIncome = () => {
                 </div>
               )}
             </div>
-            
           </div>
           <div style={{ marginBottom: 18 }}>
             <label style={{ fontWeight: 500 }}>Payment Screenshot *</label>

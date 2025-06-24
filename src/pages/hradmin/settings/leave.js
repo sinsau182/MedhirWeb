@@ -824,7 +824,6 @@ const LeaveSettings = () => {
       ...prev,
       leaveAllocations: prev.leaveAllocations.map(enrichAllocation),
     }));
-    // eslint-disable-next-line
   }, []);
 
   return (
@@ -920,7 +919,7 @@ const LeaveSettings = () => {
                               <FileText className="h-10 w-10 text-gray-400" />
                             </div>
                             <p className="text-xl font-semibold text-gray-800 mb-1">No Leave Types Found</p>
-                            <p className="text-sm mb-4">You haven't added any leave types yet. Click the button below to add your first leave type.</p>
+                            <p className="text-sm mb-4">You haven&apos;t added any leave types yet. Click the button below to add your first leave type.</p>
                             <button
                               onClick={() => {
                                 setSelectedLeaveType(null);
@@ -1041,7 +1040,7 @@ const LeaveSettings = () => {
                               <FileText className="h-10 w-10 text-gray-400" />
                             </div>
                             <p className="text-xl font-semibold text-gray-800 mb-1">No Leave Policies Found</p>
-                            <p className="text-sm mb-4">You haven't added any leave policies yet. Click the button below to add your first leave policy.</p>
+                            <p className="text-sm mb-4">You haven&apos;t added any leave policies yet. Click the button below to add your first leave policy.</p>
                             <button
                               onClick={() => {
                                 setSelectedPolicy(null);
@@ -1647,7 +1646,7 @@ const LeaveSettings = () => {
                               <FileText className="h-10 w-10 text-gray-400" />
                             </div>
                             <p className="text-xl font-semibold text-gray-800 mb-1">No Public Holidays Found</p>
-                            <p className="text-sm mb-4">You haven't added any public holidays yet. Click the button below to add your first public holiday.</p>
+                            <p className="text-sm mb-4">You haven&apos;t added any public holidays yet. Click the button below to add your first public holiday.</p>
                             <button
                               onClick={() => {
                                 setSelectedHoliday(null);

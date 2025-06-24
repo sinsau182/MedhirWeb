@@ -29,7 +29,10 @@ import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
 import getConfig from "next/config";
-import { fetchExpenseRequests, fetchIncomeRequests } from "@/redux/slices/requestDetailsSlice";
+import {
+  fetchExpenseRequests,
+  fetchIncomeRequests,
+} from "@/redux/slices/requestDetailsSlice";
 
 const COLORS = [
   "#0088FE",

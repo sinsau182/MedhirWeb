@@ -94,7 +94,7 @@ function Attendance() {
         : [query.selectedStatuses];
       setSelectedStatuses(statuses);
     }
-  }, [router.query]); // Dependency on router.query
+  }, [router.query, router]); // Dependency on router.query
 
   useEffect(() => {
     // Convert month name to numeric month (1-12)
@@ -496,13 +496,7 @@ function Attendance() {
     }
 
     return data;
-  }, [
-    searchInput,
-    selectedDepartments,
-    employees,
-    generateLeaveData,
-    attendance,
-  ]);
+  }, [searchInput, selectedDepartments, employees, generateLeaveData]);
 
   // Calculate attendance summary statistics
   const calculateAttendanceSummary = useCallback(
@@ -654,6 +648,20 @@ function Attendance() {
       ? currentDay
       : null;
 
+  // Calculate summary based on selected employee or date
+  const summary = useMemo(() => {
+    if (selectedEmployeeId) {
+      // Find the selected employee's data
+      const emp = filteredEmployees.find((e) => e.id === selectedEmployeeId);
+      if (!emp) return calculateAttendanceSummary([], null);
+      // Calculate summary for this employee across all dates
+      return calculateAttendanceSummary([emp], null);
+    } else {
+      // Calculate summary for all employees for the selected date
+      return calculateAttendanceSummary(filteredEmployees, summaryDate);
+    }
+  }, [filteredEmployees, calculateAttendanceSummary, summaryDate, selectedEmployeeId]);
+
   // Render functions
   const renderAttendanceTable = (props) => {
     const {
@@ -676,6 +684,7 @@ function Attendance() {
       calculateAttendanceSummary,
       attendance,
       summaryDate,
+      summary, // Add summary as a prop
     } = props;
 
     // Determine which data to use for rendering
@@ -911,25 +920,6 @@ function Attendance() {
       // originalFilteredEmployees already contains this via generateAttendanceData
       dataToRender = originalFilteredEmployees;
     }
-
-    // Calculate summary based on selected employee or date
-    const summary = useMemo(() => {
-      if (selectedEmployeeId) {
-        // Find the selected employee's data
-        const emp = dataToRender.find((e) => e.id === selectedEmployeeId);
-        if (!emp) return calculateAttendanceSummary([], null);
-        // Calculate summary for this employee across all dates
-        return calculateAttendanceSummary([emp], null);
-      } else {
-        // Calculate summary for all employees for the selected date
-        return calculateAttendanceSummary(dataToRender, summaryDate);
-      }
-    }, [
-      selectedEmployeeId,
-      dataToRender,
-      calculateAttendanceSummary,
-      summaryDate,
-    ]);
 
     return (
       <div className="bg-white rounded-lg shadow-md p-4 space-y-6">
@@ -1280,9 +1270,11 @@ function Attendance() {
                     // Determine the attendance data to display based on selectedDate and fetched attendance
                     if (selectedDate !== null) {
                       // If a specific date is selected, find the matching attendance record for that day in the fetched attendance
-                      const fetchedAttendanceForEmployee = attendance?.find(
-                        (attRec) => attRec.employeeId === employee.id
-                      );
+                      const fetchedAttendanceForEmployee = Array.isArray(attendance)
+                        ? attendance?.find(
+                            (attRec) => attRec.employeeId === employee.id
+                          )
+                        : attendance;
                       if (fetchedAttendanceForEmployee?.attendance) {
                         // Create date string in YYYY-MM-DD format for the current day
                         const monthIndex = new Date(
@@ -1380,23 +1372,6 @@ function Attendance() {
       selectedEmployeeId,
       setSelectedEmployeeId,
     } = props;
-
-    // If an employee is selected, show summary for that employee only
-    const leaveSummary = useMemo(() => {
-      if (selectedEmployeeId) {
-        const emp = filteredAndSearchedLeaveData.find(
-          (e) => e.id === selectedEmployeeId
-        );
-        if (!emp) return calculateLeaveSummary([]);
-        return calculateLeaveSummary([emp]);
-      } else {
-        return calculateLeaveSummary(filteredAndSearchedLeaveData);
-      }
-    }, [
-      selectedEmployeeId,
-      filteredAndSearchedLeaveData,
-      calculateLeaveSummary,
-    ]);
 
     return (
       <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
@@ -1737,6 +1712,7 @@ function Attendance() {
                 calculateAttendanceSummary,
                 attendance,
                 summaryDate,
+                summary,
               })
             : renderLeaveTable({
                 searchInput,

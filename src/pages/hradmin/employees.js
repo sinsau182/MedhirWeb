@@ -159,7 +159,7 @@ function Employees() {
       case "Basic":
         if (key === "assignTo") {
           if (Array.isArray(employee[key])) {
-            return employee[key].map(id => id).join(", ");
+            return employee[key].map((id) => id).join(", ");
           }
           return employee[key] || "";
         }
@@ -170,20 +170,17 @@ function Employees() {
           : employee[key] || "";
 
       case "ID Proofs":
-        if (key === "name" || key === "employeeId")
-          return employee[key] || "";
+        if (key === "name" || key === "employeeId") return employee[key] || "";
 
         return employee.idProofs?.[key] || "";
 
       case "Salary Details":
-        if (key === "name" || key === "employeeId")
-          return employee[key] || "";
+        if (key === "name" || key === "employeeId") return employee[key] || "";
 
         return employee.salaryDetails?.[key] || "";
 
       case "Bank Details":
-        if (key === "name" || key === "employeeId")
-          return employee[key] || "";
+        if (key === "name" || key === "employeeId") return employee[key] || "";
 
         if (key === "passbookDoc") {
           return employee.bankDetails?.passbookImgUrl ? (
@@ -207,8 +204,7 @@ function Employees() {
         if (key === "name" || key === "employeeId" || key === "departmentName")
           return employee[key] || "";
 
-        if (key === "leavePolicy")
-          return employee.leavePolicyName || "-";
+        if (key === "leavePolicy") return employee.leavePolicyName || "-";
 
         if (key === "leaveType") {
           if (Array.isArray(employee.leaveTypeNames)) {
@@ -224,7 +220,6 @@ function Employees() {
   };
 
   const headers = getTableHeaders();
-
 
   if (err) {
     return (
@@ -329,7 +324,10 @@ function Employees() {
                   </thead>
                 </table>
               </div>
-              <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 280px)" }}>
+              <div
+                className="overflow-y-auto"
+                style={{ maxHeight: "calc(100vh - 280px)" }}
+              >
                 <table className="w-full table-fixed">
                   <tbody className="divide-y divide-gray-100">
                     {loading ? (
@@ -359,11 +357,16 @@ function Employees() {
                           key={employee.employeeId}
                           className="hover:bg-gray-50 cursor-pointer"
                           onClick={() => handleRowClick(employee)}
-                          onMouseEnter={() => setHoveredEmployeeId(employee.employeeId)}
+                          onMouseEnter={() =>
+                            setHoveredEmployeeId(employee.employeeId)
+                          }
                           onMouseLeave={() => setHoveredEmployeeId(null)}
                         >
                           {headers.map((header) => {
-                            const cellValue = getCellValue(employee, header.key);
+                            const cellValue = getCellValue(
+                              employee,
+                              header.key
+                            );
                             return (
                               <td
                                 key={`${employee.employeeId}-${header.key}`}
@@ -374,7 +377,10 @@ function Employees() {
                                     {cellValue}
                                   </span>
                                 ) : (
-                                  <span className="block truncate" title={cellValue}>
+                                  <span
+                                    className="block truncate"
+                                    title={cellValue}
+                                  >
                                     {cellValue}
                                   </span>
                                 )}
