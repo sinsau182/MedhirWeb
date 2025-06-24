@@ -150,7 +150,7 @@ const AddExpense = () => {
         comments: editExpense.comments || "",
       });
     }
-  }, [isEdit, editExpense]);
+  }, [isEdit, editExpense, employee]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

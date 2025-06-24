@@ -166,7 +166,7 @@ const AccountantExpensesPage = () => {
   React.useEffect(() => {
     setStatusFilter(userPreferences.statusFilter);
     setSearchQuery(userPreferences.searchQuery);
-  }, []);
+  }, [userPreferences]);
 
   const handleCreateExpense = () => {
     setEditingExpense(null);

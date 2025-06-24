@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { CheckCircle2, Clock, CalendarIcon, Calendar } from "lucide-react";
+import { CheckCircle2, Clock, CalendarIcon, Calendar, Play } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
@@ -32,6 +32,8 @@ const EmployeeAttendance = () => {
   const [monthlySummary, setMonthlySummary] = useState({}); // State to store monthly attendance summary counts
   const calendarRef = useRef(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date()); // State for real-time updates
+  const [dailyAttendanceData, setDailyAttendanceData] = useState(null); // State for daily attendance data
 
   // Get current date info
   const today = new Date();
@@ -54,6 +56,15 @@ const EmployeeAttendance = () => {
     return () => {
       document.removeEventListener("mousedown", handleCalendarClickOutside);
     };
+  }, []);
+
+  // Update current time every second for real-time calculations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const toggleCalendar = useCallback(
@@ -322,16 +333,17 @@ const EmployeeAttendance = () => {
       const data = await response.json();
       console.log(data);
 
+      // Store the daily attendance data
+      setDailyAttendanceData(data);
+
       // Update state with fetched data while preserving status and color information
       setAttendanceData((prevData) => {
         const updatedData = prevData.map((d) => {
           if (d.date.toDateString() === selectedDate.toDateString()) {
             return {
               ...d,
-              checkinTimes: data.checkinTimes || d.checkinTimes,
-              checkoutTimes: data.checkoutTimes || d.checkoutTimes,
-              totalWorkingMinutes:
-                data.totalWorkingMinutes || d.totalWorkingMinutes,
+              // Store the new API response data
+              dailyAttendanceData: data,
               // Preserve the status and other display properties
               status: d.status,
               isLate: d.isLate,
@@ -350,7 +362,19 @@ const EmployeeAttendance = () => {
   // Update the onClick handler for each date
   const handleDateClick = (day) => {
     setDate(day);
-    fetchAttendanceData(day);
+    
+    // Find attendance data for the selected date
+    const selectedDayData = attendanceData.find(
+      (d) => d.date.toDateString() === day.toDateString()
+    );
+    
+    // Only fetch daily attendance data for present dates
+    if (selectedDayData && selectedDayData.status === "Present") {
+      fetchAttendanceData(day);
+    } else {
+      // Clear daily attendance data for non-present dates
+      setDailyAttendanceData(null);
+    }
   };
 
   const calendarDays = generateCalendarDays();
@@ -367,6 +391,56 @@ const EmployeeAttendance = () => {
 
   const getDayName = (dateObj) => {
     return dateObj.toLocaleDateString("en-US", { weekday: "long" });
+  };
+
+  // Helper function to parse time duration string (HH:MM:SS) to minutes
+  const parseTimeDuration = (timeString) => {
+    if (!timeString) return 0;
+    const [hours, minutes, seconds] = timeString.split(':').map(Number);
+    return hours * 60 + minutes + seconds / 60;
+  };
+
+  // Helper function to calculate additional time since last checkout
+  const calculateAdditionalTime = (lastCheckout) => {
+    if (!lastCheckout) return 0;
+    const lastCheckoutTime = new Date(lastCheckout);
+    const timeDiff = currentTime.getTime() - lastCheckoutTime.getTime();
+    return timeDiff / (1000 * 60); // Convert to minutes
+  };
+
+  // Helper function to calculate additional time since latest checkin
+  const calculateAdditionalTimeFromLatestCheckin = (latestCheckin) => {
+    if (!latestCheckin) return 0;
+    const latestCheckinTime = new Date(latestCheckin);
+    const timeDiff = currentTime.getTime() - latestCheckinTime.getTime();
+    return timeDiff / (1000 * 60); // Convert to minutes
+  };
+
+  // Helper function to format total working hours
+  const formatWorkingHours = (workingHoursTillNow, lastCheckout) => {
+    const baseMinutes = parseTimeDuration(workingHoursTillNow);
+    const additionalMinutes = calculateAdditionalTime(lastCheckout);
+    const totalMinutes = baseMinutes + additionalMinutes;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.floor(totalMinutes % 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Helper function to format live working hours (using latestCheckin)
+  const formatLiveWorkingHours = (workingHoursTillNow, latestCheckin) => {
+    const baseMinutes = parseTimeDuration(workingHoursTillNow);
+    const additionalMinutes = calculateAdditionalTimeFromLatestCheckin(latestCheckin);
+    const totalMinutes = baseMinutes + additionalMinutes;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.floor(totalMinutes % 60);
+    return `${hours}h ${minutes}m`;
+  };
+
+  // Helper function to format workingHoursTillNow string to xh ym format
+  const formatWorkingHoursString = (workingHoursString) => {
+    if (!workingHoursString) return "0h 0m";
+    const [hours, minutes, seconds] = workingHoursString.split(':').map(Number);
+    return `${hours}h ${minutes}m`;
   };
 
   return (
@@ -751,12 +825,28 @@ const EmployeeAttendance = () => {
                       checkinTimes,
                       checkoutTimes,
                       totalWorkingMinutes,
+                      dailyAttendanceData,
                     } = selectedDayData;
 
                     // Calculate total working hours
                     const totalWorkingHours = (
                       totalWorkingMinutes / 60
                     ).toFixed(1);
+
+                    // Check if this is a present date and has daily attendance data
+                    const isPresentDate = status === "Present" && (dailyAttendanceData || (date && dailyAttendanceData));
+                    
+                    // Get check-in and check-out times for present dates
+                    const attendanceDataForDate = dailyAttendanceData || selectedDayData?.dailyAttendanceData;
+                    const checkInTime = isPresentDate ? attendanceDataForDate?.firstCheckin : null;
+                    const checkOutTime = isPresentDate ? attendanceDataForDate?.lastCheckout : null;
+                    const workingHoursTillNow = isPresentDate ? attendanceDataForDate?.workingHoursTillNow : null;
+                    
+                    // Determine if employee is currently checked in (has latest check-in after last check-out)
+                    const isCurrentlyCheckedIn = isPresentDate && 
+                      attendanceDataForDate?.latestCheckin && 
+                      attendanceDataForDate?.lastCheckout &&
+                      new Date(attendanceDataForDate.latestCheckin) > new Date(attendanceDataForDate.lastCheckout);
 
                     return (
                       <div className="space-y-4">
@@ -791,7 +881,9 @@ const EmployeeAttendance = () => {
                             <Clock className="h-4 w-4 text-blue-500" /> Check In
                           </span>
                           <span>
-                            {checkinTimes?.[0]
+                            {isPresentDate && checkInTime
+                              ? formatTime(checkInTime)
+                              : checkinTimes?.[0]
                               ? formatTime(checkinTimes[0])
                               : "-"}
                           </span>
@@ -801,17 +893,37 @@ const EmployeeAttendance = () => {
                             <Clock className="h-4 w-4 text-blue-500" /> Check
                             Out
                           </span>
-                          <span>
-                            {checkoutTimes?.[0]
-                              ? formatTime(checkoutTimes[0])
-                              : "-"}
+                          <span className="flex items-center gap-1">
+                            {isPresentDate && isCurrentlyCheckedIn ? (
+                              <>
+                                <Play className="h-4 w-4 text-green-500 animate-pulse" />
+                                <span className="text-green-600 font-medium">Running</span>
+                              </>
+                            ) : isPresentDate && checkOutTime ? (
+                              formatTime(checkOutTime)
+                            ) : checkoutTimes?.[0] ? (
+                              formatTime(checkoutTimes[0])
+                            ) : (
+                              "-"
+                            )}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">
                             Total Working Hours:
                           </span>
-                          <span>{totalWorkingHours} hours</span>
+                          <span>
+                            {isPresentDate && workingHoursTillNow ? (
+                              isCurrentlyCheckedIn ? (
+                                formatLiveWorkingHours(workingHoursTillNow, attendanceDataForDate?.latestCheckin)
+                              ) : (
+                                // For past days or when not currently checked in, show workingHoursTillNow in xh ym format
+                                formatWorkingHoursString(workingHoursTillNow)
+                              )
+                            ) : (
+                              `${totalWorkingHours}h`
+                            )}
+                          </span>
                         </div>
                       </div>
                     );

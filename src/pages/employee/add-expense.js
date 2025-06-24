@@ -127,7 +127,7 @@ const AddExpense = () => {
         comments: editExpense.comments || "",
       });
     }
-  }, [isEdit, editExpense]);
+  }, [isEdit, editExpense, employee]);
 
   // Handle form submission
   const handleSubmit = async (e) => {

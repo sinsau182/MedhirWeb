@@ -3,7 +3,7 @@ import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
 import { useRouter } from "next/router";
-import { FiEye, FiCopy, FiDollarSign } from "react-icons/fi";
+import { FiEye, FiDollarSign } from "react-icons/fi";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchIncomeByEmployeeId } from "@/redux/slices/incomesSlice";
 
@@ -86,7 +86,7 @@ const Income = () => {
           marginBottom: 24,
         }}
       >
-        You haven't submitted any income records yet. Click the button below to
+        You haven&apos;t submitted any income records yet. Click the button below to
         add your first income record.
       </p>
       <button

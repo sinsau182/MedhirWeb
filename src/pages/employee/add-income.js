@@ -91,7 +91,7 @@ const AddIncome = () => {
         comments: editIncome.comments || "",
       });
     }
-  }, [isEdit, editIncome]);
+  }, [isEdit, editIncome, employee]);
 
   const validateForm = () => {
     const errors = {};

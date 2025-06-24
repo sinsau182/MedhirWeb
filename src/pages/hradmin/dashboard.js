@@ -44,6 +44,7 @@ const COLORS = [
 ];
 
 const Overview = () => {
+  const companyId = sessionStorage.getItem("currentCompanyId");
   // Get router instance
   const router = useRouter();
 
@@ -90,12 +91,13 @@ const Overview = () => {
   //   incomeRequests,
   // } = useSelector((state) => state.requestDetails);
 
+
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
     // dispatch(fetchExpenseRequests());
     // dispatch(fetchIncomeRequests());
-  }, [dispatch, sessionStorage.getItem("currentCompanyId")]);
+  }, [dispatch, companyId]);
 
   // Add useEffect to fetch current day's attendance and calculate summary
   useEffect(() => {
@@ -112,7 +114,7 @@ const Overview = () => {
         date: currentDay, // Fetch only for the current day
       })
     );
-  }, [dispatch, sessionStorage.getItem("currentCompanyId")]); // Dependency on dispatch
+  }, [dispatch, companyId]); // Dependency on dispatch
 
   // Calculate current day summary whenever attendance data changes
   useEffect(() => {
@@ -284,11 +286,7 @@ const Overview = () => {
   useEffect(() => {
     fetchPendingRequests();
     fetchProfileUpdates();
-  }, [
-    fetchPendingRequests,
-    fetchProfileUpdates,
-    sessionStorage.getItem("currentCompanyId"),
-  ]);
+  }, [fetchPendingRequests, fetchProfileUpdates, companyId]);
 
   const data = [
     { name: "Mon", present: 80, absent: 10, leave: 5 },
@@ -406,7 +404,7 @@ const Overview = () => {
                   >
                     <div className="flex justify-between items-center w-full mb-6">
                       <h2 className="text-lg font-bold text-gray-800">
-                        Today's Attendance
+                        Today&apos;s Attendance
                       </h2>
                       <div className="p-2 bg-blue-50 rounded-full">
                         <FaUsers className="text-blue-600 text-xl" />
