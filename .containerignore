@@ -1,0 +1,8 @@
+ode_modules
+build
+.next
+.vscode
+.gitignore
+README.md
+.containerignore
+.git
