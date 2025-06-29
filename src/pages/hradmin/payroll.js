@@ -75,9 +75,7 @@ function PayrollManagement() {
   const fetchTDS = useCallback(async () => {
     const token = getItemFromSessionStorage("token", null);
     const response = await fetch(
-      publicRuntimeConfig.apiURL +
-        "/tds-settings/company/" +
-        selectedCompanyId,
+      publicRuntimeConfig.apiURL + "/tds-settings/company/" + selectedCompanyId,
       {
         method: "GET",
         headers: {
@@ -261,9 +259,11 @@ function PayrollManagement() {
                 const employeeAttendance = attendance?.find(
                   (record) => record.employeeId === employee.employeeId
                 );
-                
-                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
-                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
+
+                const presentDays =
+                  employeeAttendance?.attendance?.presentDates?.length || 0;
+                const fullLeaveDays =
+                  employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
                 const paidDays = presentDays + fullLeaveDays || 0;
 
                 const basic = parseFloat(
@@ -461,11 +461,15 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const employeeAttendance = attendance?.find(record => record.employeeId === employee.employeeId);
-                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
-                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
+                const employeeAttendance = attendance?.find(
+                  (record) => record.employeeId === employee.employeeId
+                );
+                const presentDays =
+                  employeeAttendance?.attendance?.presentDates?.length || 0;
+                const fullLeaveDays =
+                  employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
                 const paidDays = presentDays + fullLeaveDays || 0;
-                
+
                 return (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="py-2 px-2 text-xs text-gray-600">
