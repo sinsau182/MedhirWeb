@@ -17,6 +17,12 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
   const formRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(false);
   const sentinelRef = useRef(null);
+  const [showTagsDropdown, setShowTagsDropdown] = useState(false);
+  const tagsDropdownRef = useRef(null);
+
+  const [tdsApplied, setTdsApplied] = useState(false);
+  const [tdsRate, setTdsRate] = useState(2);
+  const TDS_RATES = [1, 2, 5, 10];
 
   const [formData, setFormData] = useState({
     // Basic Information
@@ -25,9 +31,10 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
     companyType: 'Company', // Company or Individual
     vendorCategory: '',
     gstin: '',
+    tdsPercentage: '',
     pan: '',
     taxTreatment: '',
-    
+    vendorTags: [],
     // Contact Information
     contactName: '',
     email: '',
@@ -202,11 +209,11 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
       newErrors.vendorName = 'Vendor name is required';
     }
 
-    if (!formData.gstin.trim()) {
-      newErrors.gstin = 'GSTIN is required';
-    } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/.test(formData.gstin)) {
-      newErrors.gstin = 'Invalid GSTIN format';
-    }
+    // if (!formData.gstin.trim()) {
+    //   newErrors.gstin = 'GSTIN is required';
+    // } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/.test(formData.gstin)) {
+    //   newErrors.gstin = 'Invalid GSTIN format';
+    // }
 
     if (!formData.pan.trim()) {
       newErrors.pan = 'PAN is required';
@@ -215,7 +222,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
     }
 
     if (!formData.taxTreatment.trim()) {
-      newErrors.taxTreatment = 'Tax treatment is required';
+      newErrors.taxTreatment = 'GST treatment is required';
     }
 
     if (!formData.contactName.trim()) {
@@ -309,7 +316,9 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
         ...formData,
         vendorId: `V${Date.now()}`, // Generate vendor ID
         status: 'Active',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        // Convert tdsPercentage to double type
+        tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null
       };
       
       try {
@@ -381,8 +390,54 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                 />
                 {errors.vendorName && <div className="text-red-500 text-sm mt-1">{errors.vendorName}</div>}
               </div>
+                            {/* Tax Treatment */}
+                            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">GST Treatment <span className="text-red-500">*</span></label>
+                <select
+                  name="taxTreatment"
+                  value={formData.taxTreatment || ''}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value="">Select tax treatment</option>
+                  <option value="Registered">Registered</option>
+                  <option value="Unregistered">Unregistered</option>
+                  <option value="Composition">Composition</option>
+                  <option value="Consumer">Consumer</option>
+                </select>
+                {errors.taxTreatment && <div className="text-red-500 text-sm mt-1">{errors.taxTreatment}</div>}
+              </div>
+                            {/* Vendor Tags */}
+                            <div className="relative" ref={tagsDropdownRef}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vendor Tags</label>
+                <button
+                  type="button"
+                  onClick={() => setShowTagsDropdown(prev => !prev)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-left flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <span className="truncate">
+                    {formData.vendorTags.length > 0 ? formData.vendorTags.join(', ') : 'Select one or more tags'}
+                  </span>
+                  <FaChevronDown className="w-4 h-4 text-gray-400" />
+                </button>
+                {showTagsDropdown && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                    {vendorTagOptions.map(tag => (
+                      <label key={tag} className="flex items-center w-full px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-4 w-4 text-blue-600 rounded"
+                          checked={formData.vendorTags.includes(tag)}
+                          onChange={() => handleMultiSelect('vendorTags', tag)}
+                        />
+                        <span className="ml-3 text-sm text-gray-700">{tag}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
               {/* Vendor Type */}
-              <div className="flex flex-col justify-end">
+              {/* <div className="flex flex-col justify-end">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Vendor Type <span className="text-red-500">*</span></label>
                 <div className="flex items-center gap-6 h-full">
                   <label className="inline-flex items-center">
@@ -394,9 +449,9 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                     <span className="ml-2">Individual</span>
                   </label>
                 </div>
-              </div>
+              </div> */}
               {/* Vendor Category */}
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Vendor Category <span className="text-red-500">*</span></label>
                 <select
                   name="vendorCategory"
@@ -410,10 +465,10 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                   <option value="Consultant">Consultant</option>
                   <option value="Contractor">Contractor</option>
                 </select>
-              </div>
+              </div> */}
               {/* GSTIN */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">GSTIN <span className="text-gray-400 ml-1"><FaInfoCircle title="15-digit Goods and Services Tax Identification Number" /></span></label>
+                <label className={`block text-sm font-medium mb-2 flex items-center ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>GSTIN <span className="text-gray-400 ml-1"><FaInfoCircle title="15-digit Goods and Services Tax Identification Number" /></span></label>
                 <input
                   type="text"
                   name="gstin"
@@ -422,6 +477,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="Enter GSTIN"
                   maxLength={15}
+                  disabled={formData.taxTreatment !== 'Registered'}
                 />
                 <div className="text-xs text-gray-400 mt-1">15-digit Goods and Services Tax Identification Number</div>
                 {errors.gstin && <div className="text-red-500 text-sm mt-1">{errors.gstin}</div>}
@@ -441,23 +497,56 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                 <div className="text-xs text-gray-400 mt-1">10-character Permanent Account Number</div>
                 {errors.pan && <div className="text-red-500 text-sm mt-1">{errors.pan}</div>}
               </div>
-              {/* Tax Treatment */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tax Treatment <span className="text-red-500">*</span></label>
-                <select
-                  name="taxTreatment"
-                  value={formData.taxTreatment || ''}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                >
-                  <option value="">Select tax treatment</option>
-                  <option value="Registered">Registered</option>
-                  <option value="Unregistered">Unregistered</option>
-                  <option value="Composition">Composition</option>
-                  <option value="Consumer">Consumer</option>
-                </select>
-                {errors.taxTreatment && <div className="text-red-500 text-sm mt-1">{errors.taxTreatment}</div>}
-              </div>
+              {/* TDS Selection */}
+              <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
+              <label className="flex items-center">
+                <input 
+                  type="checkbox"
+                  checked={tdsApplied}
+                  onChange={e => {
+                    setTdsApplied(e.target.checked);
+                    if (!e.target.checked) {
+                      // Clear TDS percentage when unchecked
+                      setFormData(prev => ({
+                        ...prev,
+                        tdsPercentage: ''
+                      }));
+                    } else {
+                      // Set TDS percentage when checked
+                      setFormData(prev => ({
+                        ...prev,
+                        tdsPercentage: tdsRate.toString()
+                      }));
+                    }
+                  }}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  disabled={formData.taxTreatment !== 'Registered'}
+                />
+                <span className={`ml-2 text-sm font-medium ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>TDS/TCS Applied</span>
+              </label>
+              {tdsApplied && formData.taxTreatment === 'Registered' && (
+                <div>
+                  <label className="sr-only">TDS Rate</label>
+                  <select
+                    value={tdsRate}
+                    onChange={e => {
+                      const newRate = Number(e.target.value);
+                      setTdsRate(newRate);
+                      // Update formData.tdsPercentage when rate changes
+                      setFormData(prev => ({
+                        ...prev,
+                        tdsPercentage: newRate.toString()
+                      }));
+                    }}
+                    className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {TDS_RATES.map(rate => (
+                      <option key={rate} value={rate}>{rate}%</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
             </div>
           </>
         );
@@ -807,8 +896,17 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
     return () => observer.disconnect();
   }, []);
 
-  console.log(steps)
-  console.log(step)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tagsDropdownRef.current && !tagsDropdownRef.current.contains(event.target)) {
+        setShowTagsDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [tagsDropdownRef]);
 
   return (
     <form ref={formRef} className="w-full bg-white border border-gray-200 shadow-lg p-0 flex flex-col relative pb-6">

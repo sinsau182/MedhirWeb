@@ -4,21 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchVendors } from "../../redux/slices/vendorSlice";
 import { addBill } from "../../redux/slices/BillSlice";
 
-// Mock data for vendors and companies
-const mockVendors = [
-  {
-    id: 1,
-    name: "Acme Ltd.",
-    gstin: "27ABCDE1234F1Z5",
-    address: "123 Business Park, Mumbai, MH 40 dsgdsfhgfjdgfj fdhfdh fsdhgfjgfsjgfjgjfdhhd fh fdh fdhfdjfsj",
-  },
-  {
-    id: 2,
-    name: "XYZ India",
-    gstin: "29XYZE5678K9Z2",
-    address: "456 Tech Park, Pune, MH 411001",
-  },
-];
 const mockCompanies = [
   {
     id: 1,
@@ -34,7 +19,8 @@ const mockCompanies = [
   },
 ];
 
-const BillForm = () => {
+const BillForm = ({ onCancel }) => {
+  const companyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(fetchVendors());
@@ -77,10 +63,15 @@ const BillForm = () => {
   const inputRef = useRef(null);
   const mainCardRef = useRef(null);
 
+  // const [tdsApplied, setTdsApplied] = useState(false);
+  // const [tdsRate, setTdsRate] = useState(2);
+  // const TDS_RATES = [1, 2, 5, 10];
+
   // Calculate totals
   const subtotal = billLines.reduce((sum, l) => sum + l.qty * l.rate, 0);
   const totalGST = billLines.reduce((sum, l) => sum + l.qty * l.rate * (l.gst / 100), 0);
-  const total = subtotal + totalGST;
+  const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? (subtotal + totalGST) * (selectedVendor.tdsPercentage / 100) : 0;
+  const total = subtotal + totalGST - tdsAmount;
 
   // Validation helpers
   const validate = () => {
@@ -88,8 +79,6 @@ const BillForm = () => {
     if (!selectedVendor) errs.vendor = "Vendor is required";
     if (!billNumber) errs.billNumber = "Bill Number is required";
     if (!billDate) errs.billDate = "Bill Date is required";
-    if (!selectedCompany) errs.company = "Company is required";
-    if (!selectedDepartment) errs.department = "Department is required";
     if (!billLines.length) errs.billLines = "At least one line item required";
     billLines.forEach((l, i) => {
       if (!l.item) errs[`item${i}`] = "Item required";
@@ -145,6 +134,80 @@ const BillForm = () => {
   };
   const handlePreviewAttachment = (file) => {
     setPreviewFile(file);
+  };
+
+  // Handle form submission
+  const handleSubmit = () => {
+    if (!validate()) {
+      console.log("Validation failed");
+      console.log(errors);
+      return;
+    }
+
+    // Map form data to match the request body structure
+    const billData = {
+      companyId: companyId,
+      vendorId: selectedVendor?.vendorId,
+      gstin: selectedVendor?.gstin || "",
+      vendorAddress: selectedVendor?.addressLine1 || "",
+      tdsPercentage: selectedVendor?.tdsPercentage || null,
+      billNumber: billNumber,
+      billReference: reference,
+      billDate: billDate,
+      dueDate: dueDate,
+      billLineItems: billLines.map(line => {
+        const qty = Number(line.qty) || 0;
+        const rate = Number(line.rate) || 0;
+        const gst = Number(line.gst) || 0;
+        const amount = qty * rate;
+        const gstAmount = amount * (gst / 100);
+        const totalAmount = amount + gstAmount;
+        
+        return {
+          productOrService: line.item,
+          description: line.description,
+          hsnOrSac: line.hsn,
+          quantity: qty,
+          uom: line.uom,
+          rate: rate,
+          amount: amount,
+          gstPercent: gst,
+          gstAmount: gstAmount,
+          totalAmount: totalAmount
+        };
+      }),
+      totalBeforeGST: subtotal,
+      totalGST: totalGST,
+      tdsApplied: selectedVendor && selectedVendor.tdsPercentage ? tdsAmount : null,
+      finalAmount: total
+    };
+
+    // Create FormData
+    const formData = new FormData();
+    
+    // Add bill data as text
+    formData.append('bill', JSON.stringify(billData));
+    
+    // Add attachments as files
+    attachments.forEach((file, index) => {
+      formData.append('attachment', file);
+    });
+
+    // Here you would typically send the formData to your API
+    console.log('FormData to be sent:', formData);
+    
+    // Example API call (uncomment and modify as needed):
+    // dispatch(addBill(formData));
+    
+    // For now, just log the structured data
+    console.log('Structured bill data:', billData);
+
+    try {
+      dispatch(addBill(formData));
+      onCancel();
+    } catch (error) {
+      console.error('Error creating bill:', error);
+    }
   };
 
   // Render
@@ -251,6 +314,38 @@ const BillForm = () => {
                 value={reference} 
                 onChange={e => setReference(e.target.value)} 
               />
+            </div>
+            <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
+              {/* Show vendor's TDS percentage if available */}
+              {selectedVendor && selectedVendor.tdsPercentage && (
+                <div className="text-sm text-gray-600 mb-2">
+                  TDS Applied: {selectedVendor.tdsPercentage}%
+                </div>
+              )}
+              {/* <label className="flex items-center">
+                <input 
+                  type="checkbox"
+                  checked={tdsApplied}
+                  onChange={e => setTdsApplied(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  disabled={!selectedVendor}
+                />
+                <span className={`ml-2 text-sm font-medium ${!selectedVendor ? 'text-gray-400' : 'text-gray-700'}`}>TDS/TCS Applied</span>
+              </label> */}
+              {/* {tdsApplied && selectedVendor && (
+                <div>
+                  <label className="sr-only">TDS Rate</label>
+                  <select
+                    value={selectedVendor.tdsPercentage || tdsRate}
+                    onChange={e => setTdsRate(Number(e.target.value))}
+                    className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {TDS_RATES.map(rate => (
+                      <option key={rate} value={rate}>{rate}%</option>
+                    ))}
+                  </select>
+                </div>
+              )} */}
             </div>
           </div>
         </div>
@@ -440,6 +535,12 @@ const BillForm = () => {
                   <span className="text-gray-700">Total GST:</span>
                   <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
+                {selectedVendor && selectedVendor.tdsPercentage && (
+                  <div className="flex justify-between items-center mb-1 text-red-600">
+                    <span className="font-medium">TDS/TCS Deducted ({selectedVendor?.tdsPercentage}%):</span>
+                    <span className="font-medium">- ₹{tdsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
                 <hr className="my-2" />
                 <div className="flex justify-between items-center mt-2">
                   <span className="font-bold text-lg">Final Amount:</span>
@@ -542,14 +643,14 @@ const BillForm = () => {
             <button 
               type="button" 
               className="px-6 py-2 border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors" 
-              onClick={validate}
+              onClick={handleSubmit}
             >
               Save Bill
             </button>
             <button 
               type="button" 
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium" 
-              onClick={validate}
+              onClick={handleSubmit}
             >
               Confirm & Validate
             </button>

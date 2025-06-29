@@ -2,23 +2,31 @@
 import { useState, useEffect } from 'react';
 import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft } from 'react-icons/fa';
 import Modal from '../../components/Modal';
-import { AddBillForm, BulkPaymentForm, AddVendorForm } from '../../components/Forms';
+import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm } from '../../components/Forms';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
+import { fetchBills } from '../../redux/slices/BillSlice';
 import { toast } from 'sonner';
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
   const { vendors, loading, error } = useSelector((state) => state.vendors);
+  const { bills, loading: billsLoading, error: billsError } = useSelector((state) => state.bills);
+
+  // State for attachment modal
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+  const [selectedAttachments, setSelectedAttachments] = useState([]);
+  const [selectedBillVendor, setSelectedBillVendor] = useState('');
 
     useEffect(() => {
       dispatch(fetchVendors());
+      dispatch(fetchBills());
     }, [dispatch]);
 
-    console.log(vendors);
+    console.log(bills);
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -30,44 +38,47 @@ const Vendor = () => {
     if (showAddForm === null && activeTab === 'vendors') {
       dispatch(fetchVendors());
     }
+    if (showAddForm === null && activeTab === 'bills') {
+      dispatch(fetchBills());
+    }
   }, [showAddForm, activeTab, dispatch]);
 
-  const [bills, setBills] = useState([
-    {
-      id: 1,
-      billNo: 'VB-1001',
-      vendorName: 'Acme Ltd.',
-      billDate: '12-06-25',
-      dueDate: '22-06-25',
-      gstin: '29ABCDE1234F1Z5',
-      gstTreatment: 'Registered',
-      totalAmount: 12500,
-      status: 'Posted',
-      paymentStatus: 'Paid',
-      company: 'ABC Pvt Ltd',
-      journal: 'Purchases',
-      referencePo: 'PO-2025-001',
-      reverseCharge: 'No',
-      attachments: 'Yes'
-    },
-    {
-      id: 2,
-      billNo: 'VB-1002',
-      vendorName: 'XYZ India',
-      billDate: '13-06-25',
-      dueDate: '23-06-25',
-      gstin: '29XYZE5678K9Z2',
-      gstTreatment: 'Unregistered',
-      totalAmount: 8000,
-      status: 'Draft',
-      paymentStatus: 'Unpaid',
-      company: 'ABC Pvt Ltd',
-      journal: 'Purchases',
-      referencePo: '',
-      reverseCharge: 'Yes',
-      attachments: 'No'
-    }
-  ]);
+  // const [bills, setBills] = useState([
+  //   {
+  //     id: 1,
+  //     billNo: 'VB-1001',
+  //     vendorName: 'Acme Ltd.',
+  //     billDate: '12-06-25',
+  //     dueDate: '22-06-25',
+  //     gstin: '29ABCDE1234F1Z5',
+  //     gstTreatment: 'Registered',
+  //     totalAmount: 12500,
+  //     status: 'Posted',
+  //     paymentStatus: 'Paid',
+  //     company: 'ABC Pvt Ltd',
+  //     journal: 'Purchases',
+  //     referencePo: 'PO-2025-001',
+  //     reverseCharge: 'No',
+  //     attachments: 'Yes'
+  //   },
+  //   {
+  //     id: 2,
+  //     billNo: 'VB-1002',
+  //     vendorName: 'XYZ India',
+  //     billDate: '13-06-25',
+  //     dueDate: '23-06-25',
+  //     gstin: '29XYZE5678K9Z2',
+  //     gstTreatment: 'Unregistered',
+  //     totalAmount: 8000,
+  //     status: 'Draft',
+  //     paymentStatus: 'Unpaid',
+  //     company: 'ABC Pvt Ltd',
+  //     journal: 'Purchases',
+  //     referencePo: '',
+  //     reverseCharge: 'Yes',
+  //     attachments: 'No'
+  //   }
+  // ]);
 
   const [payments, setPayments] = useState([
     {
@@ -106,7 +117,30 @@ const Vendor = () => {
     }
   ]);
 
-  const [vendorsList, setVendorsList] = useState(vendors);
+  const [vendorCredits, setVendorCredits] = useState([
+    {
+      id: 'RTRN-001',
+      referencedBill: 'BILL-12345',
+      vendor: 'WoodWorks',
+      date: '2025-06-28',
+      itemsReturned: 'Oak Tabletop',
+      totalCredit: 10000,
+      type: 'Vendor Credit',
+      status: 'Open (not used yet)'
+    },
+    {
+      id: 'RTRN-002',
+      referencedBill: 'BILL-12346',
+      vendor: 'MetalCo',
+      date: '2025-06-28',
+      itemsReturned: 'Chair Legs',
+      totalCredit: 2000,
+      type: 'Refund',
+      status: 'Paid (Bank Transfer)'
+    }
+  ]);
+
+  // const [vendorsList, setVendorsList] = useState(vendors);
 
   // const handleTabClick = (tab) => {
   //   setActiveTab(tab);
@@ -116,7 +150,7 @@ const Vendor = () => {
   const handleAddClick = () => {
     if (activeTab === 'bills') {
       setShowAddForm('bill');
-    } else if (activeTab === 'refunds') {
+    } else if (activeTab === 'vendorCredits') {
       setShowAddForm('refund');
     } else if (activeTab === 'payments') {
       setShowAddForm('payment');
@@ -128,6 +162,21 @@ const Vendor = () => {
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
+  };
+
+  // Handle attachment icon click
+  const handleAttachmentClick = (bill) => {
+    const attachments = bill.attachmentUrls || [];
+    setSelectedAttachments(attachments);
+    setSelectedBillVendor(bill.vendorName);
+    setShowAttachmentModal(true);
+  };
+
+  // Close attachment modal
+  const closeAttachmentModal = () => {
+    setShowAttachmentModal(false);
+    setSelectedAttachments([]);
+    setSelectedBillVendor('');
   };
 
   const handlePaymentSubmit = (paymentData) => {
@@ -195,20 +244,37 @@ const Vendor = () => {
     console.log('Vendor added successfully:', vendorData);
   };
 
+  const handleRefundSubmit = (refundData) => {
+    const newCredit = {
+      id: `RTRN-${String(vendorCredits.length + 1).padStart(3, '0')}`,
+      referencedBill: refundData.referencedBill,
+      poReference: refundData.poReference,
+      vendor: refundData.vendorName,
+      date: refundData.refundDate,
+      itemsReturned: refundData.itemsToReturn.filter(i => i.qtyToReturn > 0).map(i => i.name).join(', ') || 'N/A',
+      totalCredit: refundData.totalCredit,
+      type: refundData.refundType === 'credit' ? 'Vendor Credit' : 'Refund',
+      status: refundData.refundType === 'credit' ? 'Open (not used yet)' : 'Pending Payment'
+    };
+    setVendorCredits(prev => [...prev, newCredit]);
+    toast.success('Refund request submitted successfully!');
+    setShowAddForm(null);
+  };
+
   const tabs = [
     { id: 'bills', label: 'Bills', icon: FaFileInvoice },
-    { id: 'refunds', label: 'Refunds', icon: FaUndoAlt },
     { id: 'payments', label: 'Payments', icon: FaCreditCard },
+    { id: 'vendorCredits', label: 'Vendor Credit', icon: FaUndoAlt },
     { id: 'vendors', label: 'Vendors List', icon: FaBuilding },
   ];
 
   // Context-aware Add button label
   const getAddButtonLabel = () => {
     switch (activeTab) {
-      case 'bills': return 'Add Bill';
-      case 'refunds': return 'Add Refund';
-      case 'payments': return 'Add Payment';
-      case 'vendors': return 'Add Vendor';
+      case 'bills': return 'New Bill';
+      case 'vendorCredits': return 'New Credit';
+      case 'payments': return 'New Payment';
+      case 'vendors': return 'New Vendor';
       default: return 'Add';
     }
   };
@@ -230,6 +296,9 @@ const Vendor = () => {
             </div>
             <AddBillForm
               onSubmit={handleBillSubmit}
+              onSuccess={() => {
+                toast.success('Bill added successfully!');
+              }}
               onCancel={handleBackFromForm}
             />
           </div>
@@ -267,21 +336,21 @@ const Vendor = () => {
             />
           </div>
         );
-      case 'refund':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
-              <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
-              </button>
-              <h2 className="text-xl font-bold text-gray-900">Add Refund</h2>
+        case 'refund':
+          return (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center mb-4">
+                <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
+                  <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                </button>
+                <h2 className="text-xl font-bold text-gray-900">Add Refund Request</h2>
+              </div>
+              <AddRefundForm
+                onSubmit={handleRefundSubmit}
+                onCancel={handleBackFromForm}
+              />
             </div>
-            <div className="text-center text-gray-500 py-12">
-              <div className="text-5xl mb-4">⏳</div>
-              <p className="text-lg font-medium">Refund form coming soon...</p>
-            </div>
-          </div>
-        );
+          );
       default:
         return null;
     }
@@ -329,7 +398,7 @@ const Vendor = () => {
                   {bills.map((bill) => (
                     <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-blue-600">{bill.billNo}</span>
+                        <span className="text-sm font-medium text-blue-600">{bill.billNumber || 'N/A'}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">{bill.vendorName}</span>
@@ -349,7 +418,7 @@ const Vendor = () => {
                         </span>
                       </td> */}
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">₹{bill.totalAmount.toLocaleString()}</span>
+                        <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString()}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
@@ -372,8 +441,8 @@ const Vendor = () => {
                         {/* <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.company}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.journal}</td> */}
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className={`text-sm ${bill.referencePo ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
-                          {bill.referencePo || '-'}
+                        <span className={`text-sm ${bill.billReference ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                          {bill.billReference || '-'}
                         </span>
                       </td>
                       {/* <td className="px-4 py-4 whitespace-nowrap">
@@ -386,12 +455,25 @@ const Vendor = () => {
                         </span>
                       </td> */}
                       <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                          bill.attachments === 'Yes' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {bill.attachments === 'Yes' ? '📎' : '-'}
+                        <span 
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                            (bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
+                            bill.attachmentUrls === 'Yes' || 
+                            bill.attachmentUrls === true
+                              ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                          onClick={() => {
+                            if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
+                                bill.attachmentUrls === 'Yes' || 
+                                bill.attachmentUrls === true) {
+                              handleAttachmentClick(bill);
+                            }
+                          }}
+                        >
+                          {(bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
+                           bill.attachmentUrls === 'Yes' || 
+                           bill.attachmentUrls === true ? '📎' : '-'}
                         </span>
                       </td>
                     </tr>
@@ -401,7 +483,7 @@ const Vendor = () => {
             </div>
           </div>
         );
-      case 'refunds':
+        case 'vendorCredits':
         return (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -559,7 +641,7 @@ const Vendor = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company/Individual</th>
+                    {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company/Individual</th> */}
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PAN</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Phone</th>
@@ -567,7 +649,7 @@ const Vendor = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Terms</th> */}
-                    {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th> */}
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th> */}
                   </tr>
                 </thead>
@@ -577,7 +659,7 @@ const Vendor = () => {
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      {/* <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           vendor.companyType === 'Company' 
                             ? 'bg-blue-100 text-blue-800' 
@@ -585,7 +667,7 @@ const Vendor = () => {
                         }`}>
                           {vendor.companyType}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{vendor.gstin}</span>
                       </td>
@@ -603,7 +685,7 @@ const Vendor = () => {
                           {vendor.paymentTerms}
                         </span>
                       </td> */}
-                      {/* <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <div className="flex flex-wrap gap-1">
                           {vendor.vendorTags?.slice(0, 2).map((tag, index) => (
                             <span key={index} className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
@@ -616,7 +698,7 @@ const Vendor = () => {
                             </span>
                           )}
                         </div>
-                      </td> */}
+                      </td>
                       {/* <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           vendor.status === 'Active' 
@@ -698,6 +780,84 @@ const Vendor = () => {
           {renderContent()}
         </div>
       </div>
+
+      {/* Attachment Modal */}
+      {showAttachmentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Attachments - {selectedBillVendor}
+              </h3>
+              <button
+                onClick={closeAttachmentModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {selectedAttachments.length > 0 ? (
+                <div className="space-y-4">
+                  {selectedAttachments.map((attachment, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          {attachment.toLowerCase().includes('.pdf') ? (
+                            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                            {typeof attachment === 'string' ? attachment.split('/').pop() || attachment : `Attachment ${index + 1}`}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {typeof attachment === 'string' ? 'File' : 'Attachment'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => window.open(attachment, '_blank')}
+                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = attachment;
+                            link.download = typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`;
+                            link.click();
+                          }}
+                          className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-6xl mb-4">📎</div>
+                  <p className="text-gray-500 text-lg">No attachments available</p>
+                  <p className="text-gray-400 text-sm mt-2">This bill doesn't have any attachments</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

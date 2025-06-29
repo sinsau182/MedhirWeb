@@ -15,6 +15,9 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.attendanceURL;
 
 const EmployeeAttendance = () => {
   const dispatch = useDispatch();
@@ -317,7 +320,7 @@ const EmployeeAttendance = () => {
       const formattedDate = `${year}-${month}-${day}`;
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
-      const url = `http://192.168.0.200:8082/employee/daily/${employeeId}/${formattedDate}`;
+      const url = `${API_BASE_URL}/employee/daily/${employeeId}/${formattedDate}`;
 
       const response = await fetch(url, {
         method: "GET",

@@ -37,9 +37,8 @@ export const addBill = createAsyncThunk(
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify(bill),
+        body: bill,
       });
       const data = await response.json();
       if (!response.ok) {
