@@ -7,9 +7,7 @@ const roleLabels = {
   EMPLOYEE: "Employee",
   MANAGER: "Manager",
   HRADMIN: "HR Admin",
-  SALES: "Sales Employee",
-  ACCOUNTADMIN: "Accountant",
-  PROJECTADMIN: "Project Admin",
+  SALES: "Sales",
   ACCOUNTANT: "Accountant",
   PROJECTMANAGER: "Project Manager",
 };
@@ -32,6 +30,7 @@ const roleOrder = [
   "HRADMIN",
   "ACCOUNTANT",
   "PROJECTMANAGER",
+  "SALES",
 ];
 
 const RoleToggle = () => {
@@ -42,17 +41,8 @@ const RoleToggle = () => {
 
   useEffect(() => {
     const roles = JSON.parse(sessionStorage.getItem("roles") || "[]");
-    const department = sessionStorage.getItem("departmentName");
 
     if (roles.length > 0) {
-      // Update role labels if department is Sales
-      if (department === "Sales") {
-        setRoleDisplayLabels({
-          ...roleLabels,
-          EMPLOYEE: "Sales Employee",
-        });
-      }
-
       // Sort roles according to the defined order
       const sortedRoles = roleOrder.filter((role) => roles.includes(role));
       setAvailableRoles(sortedRoles);
@@ -77,9 +67,11 @@ const RoleToggle = () => {
       } else if (role === "EMPLOYEE") {
         router.push("/employee/dashboard");
       } else if (role === "ACCOUNTANT") {
-        router.push("/account/accountantExpense");
+        router.push("/account/customers");
       } else if (role === "PROJECTMANAGER") {
         router.push("/project_Manager/expense");
+      } else if (role === "SALES") {
+        router.push("/Sales/LeadManagement");
       }
     }
   };

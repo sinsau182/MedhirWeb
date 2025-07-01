@@ -20,6 +20,8 @@ import managerEmployeeSlice from "./slices/managerEmployeeSlice";
 import leadsReducer from "./slices/leadsSlice";
 import incomesReducer from "./slices/incomesSlice";
 import attendancesReducer from "./slices/attendancesSlice";
+import vendorReducer from "./slices/vendorSlice";
+import billsReducer from "./slices/BillSlice";
 
 
 export const store = configureStore({
@@ -45,6 +47,8 @@ export const store = configureStore({
     leads: leadsReducer,
     incomes: incomesReducer,
     attendances: attendancesReducer,
+    vendors: vendorReducer,
+    bills: billsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

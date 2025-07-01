@@ -11,6 +11,7 @@ const nextConfig = {
   publicRuntimeConfig: {
     env: process.env.NEXT_PUBLIC_ENV,
     apiURL: process.env.NEXT_PUBLIC_API_URL,
+    attendanceURL: process.env.NEXT_PUBLIC_ATTENDANCE_URL,
   },
 };
 

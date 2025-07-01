@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import withAuth from "@/components/withAuth";
+import { fetchEmployeeLeavePolicy } from "@/redux/slices/leavePolicySlice";
 
 // Helper to format numbers: show two decimals only if not whole
 function formatNumber(num) {
@@ -94,6 +95,27 @@ const Leaves = () => {
 
   const [expandedRow, setExpandedRow] = useState(null);
 
+  // Get employee leave policy from Redux state
+  const {
+    employeeLeavePolicy,
+    employeePolicyError,
+  } = useSelector((state) => state.leavePolicy);
+
+  // Update local state when Redux state changes
+  useEffect(() => {
+    if (employeeLeavePolicy) {
+      setLeavePolicy(employeeLeavePolicy);
+      setWeeklyOffs(Array.isArray(employeeLeavePolicy.weeklyOffs) ? employeeLeavePolicy.weeklyOffs : []);
+    }
+  }, [employeeLeavePolicy]);
+
+  // Handle employee policy error
+  useEffect(() => {
+    if (employeePolicyError) {
+      toast.error("Could not fetch leave policy");
+    }
+  }, [employeePolicyError]);
+
   // Extract all leave dates from leaveHistory to disable them in the calendar
   const getDisabledDates = () => {
     if (!leaveHistory || !Array.isArray(leaveHistory)) return [];
@@ -122,6 +144,7 @@ const Leaves = () => {
     dispatch(fetchLeaveHistory());
     dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
     dispatch(fetchPublicHolidays());
+    dispatch(fetchEmployeeLeavePolicy(employeeId));
 
     return () => {
       dispatch(clearErrors());
@@ -154,7 +177,7 @@ const Leaves = () => {
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const openModal = async () => {
-    await fetchLeavePolicy();
+    await dispatch(fetchEmployeeLeavePolicy(employeeId));
     setIsModalOpen(true);
   };
   const closeModal = () => {
@@ -165,7 +188,7 @@ const Leaves = () => {
   };
 
   const openCompOffModal = async () => {
-    await fetchLeavePolicy();
+    await dispatch(fetchEmployeeLeavePolicy(employeeId));
     setIsCompOffModalOpen(true);
   };
   const closeCompOffModal = () => {
@@ -288,23 +311,6 @@ const Leaves = () => {
       }
     } catch (error) {
       toast.error(error.message || "Failed to apply for leave");
-    }
-  };
-
-  // Helper to fetch leave policy
-  const fetchLeavePolicy = async () => {
-    try {
-      const response = await fetch(
-        `http://192.168.0.200:8080/employee/${employeeId}/leave-policy`
-      );
-      if (!response.ok) throw new Error("Failed to fetch leave policy");
-      const data = await response.json();
-      setLeavePolicy(data);
-      setWeeklyOffs(Array.isArray(data.weeklyOffs) ? data.weeklyOffs : []);
-    } catch (err) {
-      setLeavePolicy(null);
-      setWeeklyOffs([]);
-      toast.error("Could not fetch leave policy");
     }
   };
 
