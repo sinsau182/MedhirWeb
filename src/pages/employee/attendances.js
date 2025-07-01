@@ -15,6 +15,9 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.attendanceURL;
 
 const EmployeeAttendance = () => {
   const dispatch = useDispatch();
@@ -34,6 +37,7 @@ const EmployeeAttendance = () => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date()); // State for real-time updates
   const [dailyAttendanceData, setDailyAttendanceData] = useState(null); // State for daily attendance data
+  const prevErrorRef = useRef();
 
   // Get current date info
   const today = new Date();
@@ -249,8 +253,9 @@ const EmployeeAttendance = () => {
       }
       setAttendanceData(formattedData);
       setMonthlySummary(summaryCounts);
-    } else if (error) {
+    } else if (error && prevErrorRef.current !== error) {
       toast.error(`Failed to fetch attendance data: ${error}`);
+      prevErrorRef.current = error;
       setAttendanceData([]);
       setMonthlySummary({});
     }
@@ -317,7 +322,7 @@ const EmployeeAttendance = () => {
       const formattedDate = `${year}-${month}-${day}`;
 
       // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
-      const url = `http://192.168.0.200:8082/employee/daily/${employeeId}/${formattedDate}`;
+      const url = `${API_BASE_URL}/employee/daily/${employeeId}/${formattedDate}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -415,16 +420,6 @@ const EmployeeAttendance = () => {
     const timeDiff = currentTime.getTime() - latestCheckinTime.getTime();
     return timeDiff / (1000 * 60); // Convert to minutes
   };
-
-  // Helper function to format total working hours
-  // const formatWorkingHours = (workingHoursTillNow, lastCheckout) => {
-  //   const baseMinutes = parseTimeDuration(workingHoursTillNow);
-  //   const additionalMinutes = calculateAdditionalTime(lastCheckout);
-  //   const totalMinutes = baseMinutes + additionalMinutes;
-  //   const hours = Math.floor(totalMinutes / 60);
-  //   const minutes = Math.floor(totalMinutes % 60);
-  //   return `${hours}h ${minutes}m`;
-  // };
 
   // Helper function to format live working hours (using latestCheckin)
   const formatLiveWorkingHours = (workingHoursTillNow, latestCheckin) => {

@@ -1,9 +1,36 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { toast } from "react-toastify";
 import getConfig from "next/config";
 const {publicRuntimeConfig} = getConfig();
 const API_URL = publicRuntimeConfig.apiURL;
+
+export const fetchEmployeeLeavePolicy = createAsyncThunk(
+  "leavePolicy/fetchEmployeeLeavePolicy",
+  async (employeeId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.get(
+        `${API_URL}/employee/${employeeId}/leave-policy`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = response.data;
+      return data;
+    } catch (error) {
+      toast.error("Could not fetch leave policy");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch leave policy"
+      );
+    }
+  }
+);
+
 
 export const fetchLeavePolicies = createAsyncThunk(
   "leavePolicy/fetchLeavePolicies",
@@ -150,6 +177,9 @@ const leavePolicySlice = createSlice({
     lastUpdated: null,
     deleteSuccess: false,
     updateSuccess: false,
+    employeeLeavePolicy: null,
+    employeePolicyLoading: false,
+    employeePolicyError: null,
   },
   reducers: {
     resetLeavePolicyState: (state) => {
@@ -158,13 +188,28 @@ const leavePolicySlice = createSlice({
       state.success = false;
       state.deleteSuccess = false;
       state.updateSuccess = false;
+      state.employeeLeavePolicy = null;
+      state.employeePolicyLoading = false;
+      state.employeePolicyError = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchEmployeeLeavePolicy.pending, (state) => {
+        state.employeePolicyLoading = true;
+        state.employeePolicyError = null;
+      })
+      .addCase(fetchEmployeeLeavePolicy.fulfilled, (state, action) => {
+        state.employeePolicyLoading = false;
+        state.employeeLeavePolicy = action.payload;
+        state.employeePolicyError = null;
+      })
+      .addCase(fetchEmployeeLeavePolicy.rejected, (state, action) => {
+        state.employeePolicyLoading = false;
+        state.employeePolicyError = action.payload;
+      })
       .addCase(fetchLeavePolicies.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchLeavePolicies.fulfilled, (state, action) => {
         state.loading = false;

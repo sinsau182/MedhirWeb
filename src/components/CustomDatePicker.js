@@ -150,8 +150,19 @@ const CustomDatePicker = ({
         const restrictedSelected = selectedDateObjects.filter(selected => 
           restrictions.restrictedDays.includes(format(selected.date, 'EEE'))
         );
-        if (restrictedSelected.length >= restrictions.allowedValue &&
-            !restrictedSelected.some(selected => isSameDay(selected.date, date))) {
+        const willDisable = restrictedSelected.length >= restrictions.allowedValue &&
+            !restrictedSelected.some(selected => isSameDay(selected.date, date));
+        
+        console.log('[CustomDatePicker] isDateDisabled check for restricted day:', {
+          date: format(date, 'dd MMM yyyy'),
+          dayName,
+          restrictedSelectedCount: restrictedSelected.length,
+          allowedValue: restrictions.allowedValue,
+          willDisable,
+          isAlreadySelected: restrictedSelected.some(selected => isSameDay(selected.date, date))
+        });
+        
+        if (willDisable) {
           return true;
         }
       }
@@ -180,7 +191,8 @@ const CustomDatePicker = ({
       restrictedDays,
       allowedValue,
       selectedDateObjects,
-      frozenDates
+      frozenDates,
+      isAlreadySelected
     });
 
     // Check if date is already selected
@@ -192,11 +204,22 @@ const CustomDatePicker = ({
       // Allow removing any selected date (not just start or end)
       newSelectedDates = selectedDateObjects.filter(selected => !isSameDay(selected.date, date));
 
-      // If a restricted day is being unselected, unfreeze all restricted days for that month
+      // If a restricted day is being unselected, check if we need to unfreeze other restricted days
       if (restrictedDays.includes(dayName)) {
-        const month = date.getMonth();
-        const year = date.getFullYear();
-        setFrozenDates(prev => prev.filter(d => d.getMonth() !== month || d.getFullYear() !== year));
+        const restrictedSelected = newSelectedDates.filter(selected => 
+          restrictions.restrictedDays.includes(format(selected.date, 'EEE'))
+        );
+        console.log('[CustomDatePicker] Removing restricted day:', {
+          restrictedSelectedCount: restrictedSelected.length,
+          allowedValue,
+          willUnfreeze: restrictedSelected.length < allowedValue
+        });
+        // Only unfreeze if we're now below the limit
+        if (restrictedSelected.length < allowedValue) {
+          const month = date.getMonth();
+          const year = date.getFullYear();
+          setFrozenDates(prev => prev.filter(d => d.getMonth() !== month || d.getFullYear() !== year));
+        }
       }
     } else {
       // Check max days limit
@@ -221,23 +244,32 @@ const CustomDatePicker = ({
             const restrictedSelected = selectedDateObjects.filter(selected => 
               restrictions.restrictedDays.includes(format(selected.date, 'EEE'))
             );
+            console.log('[CustomDatePicker] Selecting restricted day:', {
+              restrictedSelectedCount: restrictedSelected.length,
+              allowedValue,
+              willFreeze: restrictedSelected.length + 1 >= allowedValue
+            });
             if (restrictedSelected.length >= allowedValue) {
               toast.error(`You can only select up to ${allowedValue} restricted day(s)`);
               return;
             }
-            // Freeze all other restricted days in the same month
-            const month = date.getMonth();
-            const year = date.getFullYear();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const newFrozen = [];
-            for (let d = 1; d <= daysInMonth; d++) {
-              const dObj = new Date(year, month, d);
-              const dName = format(dObj, 'EEE');
-              if (restrictedDays.includes(dName) && !isSameDay(dObj, date)) {
-                newFrozen.push(dObj);
+            
+            // Only freeze other restricted days if we're at the limit
+            if (restrictedSelected.length + 1 >= allowedValue) {
+              const month = date.getMonth();
+              const year = date.getFullYear();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const newFrozen = [];
+              for (let d = 1; d <= daysInMonth; d++) {
+                const dObj = new Date(year, month, d);
+                const dName = format(dObj, 'EEE');
+                if (restrictedDays.includes(dName) && !isSameDay(dObj, date)) {
+                  newFrozen.push(dObj);
+                }
               }
+              console.log('[CustomDatePicker] Freezing restricted days:', newFrozen.map(d => format(d, 'dd MMM yyyy')));
+              setFrozenDates(prev => ([...prev, ...newFrozen]));
             }
-            setFrozenDates(prev => ([...prev, ...newFrozen]));
           }
         }
 
@@ -415,4 +447,4 @@ const CustomDatePicker = ({
   );
 };
 
-export default CustomDatePicker; 
+export default CustomDatePicker;
