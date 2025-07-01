@@ -84,7 +84,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
       setAvailableCredit(0);
       setAppliedCredit(0);
     }
-  }, [formData.vendor]);
+  }, [formData.vendor, unpaidBills, vendors]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

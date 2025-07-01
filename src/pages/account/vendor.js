@@ -851,7 +851,7 @@ const Vendor = () => {
                 <div className="text-center py-8">
                   <div className="text-gray-400 text-6xl mb-4">📎</div>
                   <p className="text-gray-500 text-lg">No attachments available</p>
-                  <p className="text-gray-400 text-sm mt-2">This bill doesn't have any attachments</p>
+                  <p className="text-gray-400 text-sm mt-2">This bill doesn&nbsp;t have any attachments</p>
                 </div>
               )}
             </div>
