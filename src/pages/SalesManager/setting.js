@@ -2157,188 +2157,188 @@ const SettingContent = ({ role }) => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Pipeline View */}
-      {mainView === 'pipeline' && (
-        <>
-          {/* Header Section */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
-            {/* Left side: New button */}
-            <div className="flex items-center gap-4">
-              {kanbanStatuses.length > 0 ? (
-                <button
-                  onClick={() => handleOpenAddLeadForm()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-all duration-200"
-                >
-                  <FaPlus /> New
-                </button>
-              ) : (
-                <Tooltip content="Please add pipeline stages first">
-                  <button
-                    disabled
-                    className="bg-gray-300 text-gray-500 px-4 py-2 rounded-md font-medium flex items-center gap-2 cursor-not-allowed"
-                  >
+        {mainView === 'pipeline' && (
+            <>
+            {/* Header Section */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-6">
+                {/* Left side: New button */}
+                <div className="flex items-center gap-4">
+                {kanbanStatuses.length > 0 ? (
+                    <button
+                    onClick={() => handleOpenAddLeadForm()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-all duration-200"
+                    >
                     <FaPlus /> New
-                  </button>
-                </Tooltip>
-              )}
-            </div>
-
-            {/* Center: Sales Manager Pipeline */}
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900">Sales Manager - Lead Pipeline</h1>
-              <div className="relative">
-                <button
-                  onClick={() => setShowPipelineDropdown(!showPipelineDropdown)}
-                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all duration-200"
-                  title="Pipeline Settings"
-                >
-                  <FaCog />
-                </button>
-                {showPipelineDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-10">
-                    <div className="py-1">
-                      <button
-                        onClick={() => handlePipelineAction('add')}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <FaPlus /> Add Stage
-                      </button>
-                      <button
-                        onClick={() => handlePipelineAction('delete')}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                        disabled={kanbanStatuses.length === 0}
-                      >
-                        <FaTrash /> Delete Stages
-                      </button>
-                    </div>
-                  </div>
+                    </button>
+                ) : (
+                    <Tooltip content="Please add pipeline stages first">
+                    <button
+                        disabled
+                        className="bg-gray-300 text-gray-500 px-4 py-2 rounded-md font-medium flex items-center gap-2 cursor-not-allowed"
+                    >
+                        <FaPlus /> New
+                    </button>
+                    </Tooltip>
                 )}
-              </div>
-            </div>
-
-            {/* Right side: Search, View toggles, and Settings */}
-            <div className="flex items-center gap-3">
-              {/* Search */}
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search leads..."
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-
-              {/* View Toggle */}
-              <div className="flex border border-gray-300 rounded-md overflow-hidden">
-                <button
-                  onClick={() => setViewMode('kanban')}
-                  className={`px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                    viewMode === 'kanban'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  title="Kanban View"
-                >
-                  <FaThLarge />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`px-3 py-2 text-sm font-medium transition-all duration-200 border-l border-gray-300 ${
-                    viewMode === 'table'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                  title="Table View"
-                >
-                  <FaListUl />
-                </button>
-              </div>
-
-              {/* Settings Button */}
-              <button
-                onClick={() => handleViewChange('settings')}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2 transition-all duration-200"
-              >
-                <FaCog /> Settings
-              </button>
-            </div>
-          </div>
-
-          {/* Add Stage Form */}
-          {isAddingStage && (
-            <div className="mb-6 p-4 bg-white rounded-lg shadow border">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Pipeline Stage</h3>
-              <div className="flex flex-col sm:flex-row gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Stage Name</label>
-                  <input
-                    type="text"
-                    value={newStageName}
-                    onChange={(e) => setNewStageName(e.target.value)}
-                    placeholder="Enter stage name"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    autoFocus
-                  />
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
-                  <input
-                    type="color"
-                    value={newStageColor}
-                    onChange={(e) => setNewStageColor(e.target.value)}
-                    className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
-                  />
+
+                {/* Center: Sales Manager Pipeline */}
+                <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-gray-900">Sales Manager - Lead Pipeline</h1>
+                <div className="relative">
+                    <button
+                    onClick={() => setShowPipelineDropdown(!showPipelineDropdown)}
+                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-all duration-200"
+                    title="Pipeline Settings"
+                    >
+                    <FaCog />
+                    </button>
+                    {showPipelineDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border z-10">
+                        <div className="py-1">
+                        <button
+                            onClick={() => handlePipelineAction('add')}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                            <FaPlus /> Add Stage
+                        </button>
+                        <button
+                            onClick={() => handlePipelineAction('delete')}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            disabled={kanbanStatuses.length === 0}
+                        >
+                            <FaTrash /> Delete Stages
+                        </button>
+                        </div>
+                    </div>
+                    )}
                 </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2">
+                </div>
+
+                {/* Right side: Search, View toggles, and Settings */}
+                <div className="flex items-center gap-3">
+                {/* Search */}
+                <div className="relative">
+                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                     <input
-                      type="checkbox"
-                      id="requireForm"
-                      checked={newStageIsForm}
-                      onChange={(e) => setNewStageIsForm(e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    type="text"
+                    placeholder="Search leads..."
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
                     />
-                    <span className="text-sm">Require form</span>
-                  </label>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddStage}
-                    disabled={!newStageName.trim()}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-md transition-all duration-200"
-                  >
-                    Add Stage
-                  </button>
-                  <button
-                    onClick={handleCancelAddStage}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md transition-all duration-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Main Content */}
-          {viewMode === 'kanban' ? (
-            <KanbanBoard
-              leadsByStatus={leadsByStatus}
-              kanbanStatuses={kanbanStatuses}
-              onDragEnd={handleDragEnd}
-              onEdit={handleEdit}
-              onConvert={handleConvert}
-              onMarkLost={handleMarkLost}
-              onMarkJunk={handleMarkJunk}
-              onScheduleActivity={handleScheduleActivity}
-              onAddLead={handleOpenAddLeadForm}
-            />
-          ) : (
-            <LeadsTable leads={dedupedLeads} />
-          )}
-        </>
-      )}
+                {/* View Toggle */}
+                <div className="flex border border-gray-300 rounded-md overflow-hidden">
+                    <button
+                    onClick={() => setViewMode('kanban')}
+                    className={`px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                        viewMode === 'kanban'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                    title="Kanban View"
+                    >
+                    <FaThLarge />
+                    </button>
+                    <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-2 text-sm font-medium transition-all duration-200 border-l border-gray-300 ${
+                        viewMode === 'table'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                    title="Table View"
+                    >
+                    <FaListUl />
+                    </button>
+                </div>
+
+                {/* Settings Button */}
+                <button
+                    onClick={() => handleViewChange('settings')}
+                    className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 flex items-center gap-2 transition-all duration-200"
+                >
+                    <FaCog /> Settings
+                </button>
+                </div>
+            </div>
+
+            {/* Add Stage Form */}
+            {isAddingStage && (
+                <div className="mb-6 p-4 bg-white rounded-lg shadow border">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Pipeline Stage</h3>
+                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                    <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Stage Name</label>
+                    <input
+                        type="text"
+                        value={newStageName}
+                        onChange={(e) => setNewStageName(e.target.value)}
+                        placeholder="Enter stage name"
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autoFocus
+                    />
+                    </div>
+                    <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+                    <input
+                        type="color"
+                        value={newStageColor}
+                        onChange={(e) => setNewStageColor(e.target.value)}
+                        className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
+                    />
+                    </div>
+                    <div className="flex items-end">
+                    <label className="flex items-center gap-2">
+                        <input
+                        type="checkbox"
+                        id="requireForm"
+                        checked={newStageIsForm}
+                        onChange={(e) => setNewStageIsForm(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm">Require form</span>
+                    </label>
+                    </div>
+                    <div className="flex gap-2">
+                    <button
+                        onClick={handleAddStage}
+                        disabled={!newStageName.trim()}
+                        className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-md transition-all duration-200"
+                    >
+                        Add Stage
+                    </button>
+                    <button
+                        onClick={handleCancelAddStage}
+                        className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md transition-all duration-200"
+                    >
+                        Cancel
+                    </button>
+                    </div>
+                </div>
+                </div>
+            )}
+
+            {/* Main Content */}
+            {viewMode === 'kanban' ? (
+                <KanbanBoard
+                leadsByStatus={leadsByStatus}
+                kanbanStatuses={kanbanStatuses}
+                onDragEnd={handleDragEnd}
+                onEdit={handleEdit}
+                onConvert={handleConvert}
+                onMarkLost={handleMarkLost}
+                onMarkJunk={handleMarkJunk}
+                onScheduleActivity={handleScheduleActivity}
+                onAddLead={handleOpenAddLeadForm}
+                />
+            ) : (
+                <LeadsTable leads={dedupedLeads} />
+            )}
+            </>
+        )}
 
       {/* Settings View */}
       {mainView === 'settings' && (
