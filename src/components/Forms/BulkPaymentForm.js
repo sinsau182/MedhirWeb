@@ -1,13 +1,22 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaPlus, FaPaperclip, FaFilePdf, FaFileImage, FaTimes } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchVendors } from '../../redux/slices/vendorSlice';
+import { fetchBillsOfVendor } from '../../redux/slices/BillSlice';
+import { addPayment } from '../../redux/slices/paymentSlice';
 
 const BulkPaymentForm = ({ onSubmit, onCancel }) => {
+  const dispatch = useDispatch();
+  const { vendors, loading: vendorsLoading, error } = useSelector((state) => state.vendors);
+  const { vendorBills: vendorBills, loading: billsLoading } = useSelector((state) => state.bills);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [vendorSearch, setVendorSearch] = useState('');
   const vendorInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('bills'); // 'bills' | 'notes' | 'attachments'
+  const [selectedVendor, setSelectedVendor] = useState(null);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -27,6 +36,19 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     notes: ''
   });
 
+    // Handlers
+    const handleVendorChange = (e) => {
+      const selectedValue = e.target.value;
+      
+      if (!vendors || vendors.length === 0) {
+        setSelectedVendor(null);
+        return;
+      }
+      
+      const v = vendors.find((v) => v.vendorId === selectedValue);
+      setSelectedVendor(v);
+    };
+
   const [selectedBills, setSelectedBills] = useState([]);
   const [availableBills, setAvailableBills] = useState([]);
   const [errors, setErrors] = useState({});
@@ -34,12 +56,14 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
   const [availableCredit, setAvailableCredit] = useState(0);
   const [appliedCredit, setAppliedCredit] = useState(0);
 
-  // Sample data
-  const vendors = [
-    { id: 1, name: 'Acme Ltd.', gstin: '27AABCU9603R1ZX', tdsApplicable: true, availableCredit: 5000 },
-    { id: 2, name: 'XYZ India', gstin: '29XYZE5678K9Z2', tdsApplicable: false, availableCredit: 0 },
-    { id: 3, name: 'Tech Solutions', gstin: '29TECH5678K9Z3', tdsApplicable: false, availableCredit: 1500 }
-  ];
+  useEffect(() => {
+    dispatch(fetchVendors());
+  }, [dispatch]);
+
+  // console.log(selectedVendor);
+
+  // console.log(availableBills);
+  // console.log(vendorBills);
 
   const companies = ['ABC Enterprises Ltd.', 'XYZ India Pvt Ltd.', 'Tech Solutions Pvt Ltd.'];
   const journals = ['Cash Payment Journal', 'Bank Payment Journal', 'Cheque Payment Journal'];
@@ -66,17 +90,18 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
   ];
 
   useEffect(() => {
-    if (formData.vendor) {
+    if (selectedVendor) {
+      // Filter only unpaid bills
+      const unpaidBills = vendorBills.filter(bill => 
+        bill.paymentStatus === 'UN_PAID' || bill.paymentStatus === 'UNPAID' || bill.paymentStatus === 'PARTIALLY_PAID'
+      );
       setAvailableBills(unpaidBills);
-      const selectedVendor = vendors.find(v => v.name === formData.vendor);
-      if (selectedVendor) {
-        setFormData(prev => ({ 
-          ...prev, 
-          gstin: selectedVendor.gstin,
-          tdsApplied: selectedVendor.tdsApplicable || false
-        }));
-        setAvailableCredit(selectedVendor.availableCredit || 0);
-      }
+      setFormData(prev => ({ 
+        ...prev, 
+        gstin: selectedVendor.gstin,
+        tdsApplied: selectedVendor.tdsApplicable || false
+      }));
+      setAvailableCredit(selectedVendor.availableCredit || 0);
     } else {
       setAvailableBills([]);
       setSelectedBills([]);
@@ -84,7 +109,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
       setAvailableCredit(0);
       setAppliedCredit(0);
     }
-  }, [formData.vendor]);
+  }, [selectedVendor, vendorBills]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -104,24 +129,69 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
   };
 
   const handleVendorSelect = (vendor) => {
-    setFormData(prev => ({ ...prev, vendor: vendor.name, gstin: vendor.gstin }));
-    setVendorSearch(vendor.name);
+    setFormData(prev => ({ ...prev, vendor: vendor.vendorName, gstin: vendor.gstin }));
+    setVendorSearch(vendor.vendorName);
     setShowVendorDropdown(false);
     setErrors(prev => ({ ...prev, vendor: undefined }));
+    setSelectedVendor(vendor);
+    dispatch(fetchBillsOfVendor(vendor.vendorId));
   };
 
   const handleBillSelection = (billId, checked) => {
     if (checked) {
-      const bill = availableBills.find(b => b.id === billId);
-      setSelectedBills(prev => [...prev, bill]);
+      const bill = availableBills.find(b => b.billId === billId);
+      const billWithPaymentAmount = {
+        ...bill,
+        paymentAmount: bill.dueAmount // Default to due amount
+      };
+      setSelectedBills(prev => [...prev, billWithPaymentAmount]);
     } else {
-      setSelectedBills(prev => prev.filter(b => b.id !== billId));
+      setSelectedBills(prev => prev.filter(b => b.billId !== billId));
     }
+  };
+
+  const handlePaymentAmountChange = (billId, amount) => {
+    // Handle empty string case - don't auto-convert to 0
+    if (amount === '') {
+      setSelectedBills(prev => 
+        prev.map(bill => 
+          bill.billId === billId 
+            ? { ...bill, paymentAmount: 0 }
+            : bill
+        )
+      );
+      return;
+    }
+
+    const numAmount = parseFloat(amount);
+    
+    // Handle invalid numbers
+    if (isNaN(numAmount)) {
+      return; // Don't update if it's not a valid number
+    }
+
+    const bill = availableBills.find(b => b.billId === billId);
+    const maxAmount = bill ? bill.dueAmount : 0;
+    
+    // Ensure amount doesn't exceed the bill's due amount or go below 0
+    const validAmount = Math.min(Math.max(0, numAmount), maxAmount);
+    
+    setSelectedBills(prev => 
+      prev.map(bill => 
+        bill.billId === billId 
+          ? { ...bill, paymentAmount: validAmount }
+          : bill
+      )
+    );
   };
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedBills(availableBills.map(bill => bill));
+      const billsWithPaymentAmount = availableBills.map(bill => ({
+        ...bill,
+        paymentAmount: bill.dueAmount // Default to due amount
+      }));
+      setSelectedBills(billsWithPaymentAmount);
     } else {
       setSelectedBills([]);
     }
@@ -135,10 +205,22 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     setAppliedCredit(amount);
   };
 
-  const totalSelectedSubtotal = selectedBills.reduce((sum, bill) => sum + (bill.subtotal || 0), 0);
-  const totalSelectedGst = selectedBills.reduce((sum, bill) => sum + (bill.gst || 0), 0);
-  const totalSelectedTds = selectedBills.reduce((sum, bill) => sum + (bill.tdsDeducted || 0), 0);
-  const totalAmountDueSelected = totalSelectedSubtotal + totalSelectedGst - totalSelectedTds;
+  const totalSelectedSubtotal = selectedBills.reduce((sum, bill) => {
+    const ratio = (bill.paymentAmount || 0) / (bill.finalAmount || 1);
+    return sum + ((bill.totalBeforeGST || 0) * ratio);
+  }, 0);
+  
+  const totalSelectedGst = selectedBills.reduce((sum, bill) => {
+    const ratio = (bill.paymentAmount || 0) / (bill.finalAmount || 1);
+    return sum + ((bill.totalGST || 0) * ratio);
+  }, 0);
+  
+  const totalSelectedTds = selectedBills.reduce((sum, bill) => {
+    const ratio = (bill.paymentAmount || 0) / (bill.finalAmount || 1);
+    return sum + ((bill.tdsApplied || 0) * ratio);
+  }, 0);
+  
+  const totalAmountDueSelected = selectedBills.reduce((sum, bill) => sum + (bill.paymentAmount || 0), 0);
   const finalPaymentAmount = totalAmountDueSelected - appliedCredit;
 
   const validateForm = () => {
@@ -146,27 +228,90 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     if (!formData.vendor) newErrors.vendor = 'Please select a vendor';
     if (!formData.company) newErrors.company = 'Please select a company';
     if (!formData.paymentDate) newErrors.paymentDate = 'Payment date is required';
-    if (!formData.journal) newErrors.journal = 'Please select a journal';
     if (!formData.paymentMethod) newErrors.paymentMethod = 'Please select a payment method';
     if (!formData.bankAccount) newErrors.bankAccount = 'Please select a bank account';
     if (selectedBills.length === 0) newErrors.bills = 'Please select at least one bill to pay';
+    
+    // Check if at least one bill has a payment amount > 0
+    const hasValidPayments = selectedBills.some(bill => (bill.paymentAmount || 0) > 0);
+    if (selectedBills.length > 0 && !hasValidPayments) {
+      newErrors.bills = 'At least one bill must have a payment amount greater than 0';
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log(finalPaymentAmount);
+    console.log(selectedVendor.totalCredit);
+    console.log(finalPaymentAmount-selectedVendor.totalCredit < 0 ? 0 : finalPaymentAmount-selectedVendor.totalCredit);
+    console.log(validateForm());
     if (validateForm()) {
+      // Format the payment data according to the API structure
       const paymentData = {
-        ...formData,
-        selectedBills,
-        totalAmount: finalPaymentAmount,
-        attachments,
-        id: Date.now(),
-        createdAt: new Date().toISOString()
+        vendorId: selectedVendor.vendorId,
+        companyId: selectedVendor.companyId || "CID101", // Use from selectedVendor or default
+        gstin: selectedVendor.gstin,
+        paymentMethod: formData.paymentMethod,
+        bankAccount: formData.bankAccount,
+        paymentTransactionId: formData.reference,
+        paymentDate: formData.paymentDate,
+        totalAmount: finalPaymentAmount-selectedVendor.totalCredit < 0 ? 0 : finalPaymentAmount-selectedVendor.totalCredit,
+        adjustedAmountFromCredits: finalPaymentAmount-selectedVendor.totalCredit < 0 ? finalPaymentAmount : selectedVendor.totalCredit,
+        tdsApplied: formData.tdsApplied,
+        notes: formData.notes,
+        paymentProofUrl: null, // Will be set after file upload if needed
+        billPayments: selectedBills.map(bill => ({
+          billId: bill.billId,
+          paidAmount: bill.paymentAmount
+        }))
       };
-      onSubmit(paymentData);
+
+      // Always use FormData since backend doesn't support JSON
+      const formDataToSend = new FormData();
+      formDataToSend.append('payment', JSON.stringify(paymentData));
+
+      // Add attachments if any
+      attachments.forEach((file, index) => {
+        formDataToSend.append(`attachments`, file);
+      });
+
+      // console.log('Dispatching addPayment with FormData');
+      // console.log('FormData entries:');
+      // for (let [key, value] of formDataToSend.entries()) {
+      //   if (value instanceof File) {
+      //     console.log(`${key}: [File] ${value.name}`);
+      //   } else {
+      //     console.log(`${key}:`, value);
+      //   }
+      // }
+
+      try {
+        dispatch(addPayment(formDataToSend));
+        
+        // console.log('Payment result:', result);
+        
+        // if (addPayment.fulfilled.match(result)) {
+        //   // Success - call the onSubmit callback if provided
+        //   console.log('Payment successful:', result.payload);
+        //   alert('Payment processed successfully!');
+        //   if (onSubmit) {
+        //     onSubmit(result.payload);
+        //   }
+        onCancel();
+        } catch (error){
+          // Handle error
+          console.error('Payment failed:', result.payload);
+          // alert(`Payment failed: ${result.payload || 'Unknown error'}`);
+        }
+      // } catch (error) {
+      //   console.error('Payment submission error:', error);
+      //   alert(`Payment submission error: ${error.message}`);
+      // }
+    } else {
+      console.log(errors);
     }
   };
 
@@ -189,10 +334,10 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
   const formatCurrency = (num) =>
     '₹' + (num || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const filteredVendors = vendors.filter(vendor =>
-    vendor.name.toLowerCase().includes((vendorSearch || '').toLowerCase()) ||
-    vendor.gstin.toLowerCase().includes((vendorSearch || '').toLowerCase())
-  );
+  // const filteredVendors = vendors.filter(vendor =>
+  //   vendor.vendorName.toLowerCase().includes((vendorSearch || '').toLowerCase()) ||
+  //   vendor.gstin.toLowerCase().includes((vendorSearch || '').toLowerCase())
+  // );
 
   // Close vendor dropdown when clicking outside
   useEffect(() => {
@@ -204,6 +349,9 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // console.log(formData);
+  // console.log(availableBills);
 
   return (
     <div className="w-full px-0">
@@ -234,24 +382,24 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
                       errors.vendor ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Select vendor"
-                    value={vendorSearch || formData.vendor}
-                    onChange={handleVendorInput}
+                    value={formData.vendor}
+                    onChange={handleVendorChange}
                     onFocus={() => setShowVendorDropdown(true)}
                     autoComplete="off"
                   />
                   {showVendorDropdown && (
                     <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
-                      {filteredVendors.map(vendor => (
+                      {vendors.map(vendor => (
                         <div
-                          key={vendor.id}
+                          key={vendor.vendorId}
                           className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                           onClick={() => handleVendorSelect(vendor)}
                         >
-                          <div className="font-medium text-gray-900">{vendor.name}</div>
+                          <div className="font-medium text-gray-900">{vendor.vendorName}</div>
                           <div className="text-xs text-gray-500">{vendor.gstin}</div>
                         </div>
                       ))}
-                      {filteredVendors.length === 0 && (
+                      {vendors.length === 0 && (
                         <div className="px-4 py-3 text-gray-400">No vendors found</div>
                       )}
                     </div>
@@ -341,19 +489,14 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
               </div>
             </div>
           </div>
-          {/* TDS/TCS Checkbox */}
-          <div className="mt-6">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="tdsApplied"
-                checked={formData.tdsApplied}
-                onChange={handleChange}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="ml-2 text-sm text-gray-700">TDS/TCS Applied</span>
-            </label>
-          </div>
+          <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
+              {/* Show vendor's TDS percentage if available */}
+              {selectedVendor && selectedVendor.tdsPercentage && (
+                <div className="text-sm text-gray-600 mb-2">
+                  TDS Applied: {selectedVendor.tdsPercentage}%
+                </div>
+              )}
+            </div>
         </div>
 
         {/* Bills & Notes Tabbed Section */}
@@ -391,15 +534,31 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
           <div className="bg-white p-6 border border-t-0 border-gray-200 min-h-[300px]">
             {activeTab === 'bills' && (
               <div>
-                <div className="flex items-center mb-6">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                  <h2 className="text-lg font-semibold text-gray-900">Select Bills to Pay</h2>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                    <h2 className="text-lg font-semibold text-gray-900">Select Bills to Pay</h2>
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    💡 Tip: You can pay partial amounts for each bill
+                  </div>
                 </div>
-                {!formData.vendor ? (
+                {!selectedVendor ? (
                   <div className="text-center py-16">
                     <div className="text-6xl mb-4">📋</div>
                     <p className="text-lg font-medium text-gray-600">Please select a vendor first</p>
                     <p className="text-sm text-gray-500 mt-2">Bills will appear here once you choose a vendor</p>
+                  </div>
+                ) : billsLoading ? (
+                  <div className="text-center py-16">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-lg font-medium text-gray-600">Loading bills...</p>
+                  </div>
+                ) : availableBills.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="text-6xl mb-4">📄</div>
+                    <p className="text-lg font-medium text-gray-600">No unpaid bills found</p>
+                    <p className="text-sm text-gray-500 mt-2">This vendor has no outstanding bills</p>
                   </div>
                 ) : (
                   <>
@@ -418,38 +577,72 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">BILL NO.</th>
                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">BILL DATE</th>
                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">DUE DATE</th>
-                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">AMOUNT DUE</th>
-                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">GST TREATMENT</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">TOTAL DUE</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">PAYMENT AMOUNT</th>
+                            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">STATUS</th>
                             <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">REFERENCE/PO</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
                           {availableBills.map((bill) => {
-                            const isSelected = selectedBills.some(sb => sb.id === bill.id);
+                            const isSelected = selectedBills.some(sb => sb.billId === bill.billId);
+                            const selectedBill = selectedBills.find(sb => sb.billId === bill.billId);
+                            // Don't fallback to bill.dueAmount if paymentAmount is 0
+                            const paymentAmount = selectedBill ? selectedBill.paymentAmount : bill.dueAmount;
+                            
                             return (
-                              <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
+                              <tr key={bill.billId} className="hover:bg-gray-50 transition-colors">
                                 <td className="py-4 px-4">
                                   <input
                                     type="checkbox"
                                     checked={isSelected}
-                                    onChange={e => handleBillSelection(bill.id, e.target.checked)}
+                                    onChange={e => handleBillSelection(bill.billId, e.target.checked)}
                                     className="w-4 h-4 text-blue-600 border-gray-300 rounded"
                                   />
                                 </td>
-                                <td className="py-4 px-4 text-sm font-medium">{bill.billNo}</td>
+                                <td className="py-4 px-4 text-sm font-medium">{bill.billNumber}</td>
                                 <td className="py-4 px-4 text-sm">{formatDate(bill.billDate)}</td>
                                 <td className="py-4 px-4 text-sm">{formatDate(bill.dueDate)}</td>
-                                <td className="py-4 px-4 text-sm font-medium">{formatCurrency(bill.amountDue)}</td>
+                                <td className="py-4 px-4 text-sm font-medium">{formatCurrency(bill.dueAmount)}</td>
+                                <td className="py-4 px-4">
+                                  {isSelected ? (
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xs text-gray-500">₹</span>
+                                      <input
+                                        type="number"
+                                        value={paymentAmount === 0 ? '' : paymentAmount}
+                                        onChange={e => handlePaymentAmountChange(bill.billId, e.target.value)}
+                                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                        min="0"
+                                        max={bill.dueAmount}
+                                        step="0.01"
+                                        placeholder="0"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handlePaymentAmountChange(bill.billId, bill.dueAmount)}
+                                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                        title="Pay full amount"
+                                      >
+                                        Full
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm text-gray-400">Select to set amount</span>
+                                  )}
+                                </td>
                                 <td className="py-4 px-4">
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    bill.gstTreatment === 'GST Registered' 
-                                      ? 'bg-green-100 text-green-800' 
+                                    bill.paymentStatus === 'UN_PAID' || bill.paymentStatus === 'UNPAID' || bill.paymentStatus === 'PARTIALLY_PAID'
+                                      ? 'bg-red-100 text-red-800' 
+                                      : bill.paymentStatus === 'PAID'
+                                      ? 'bg-green-100 text-green-800'
                                       : 'bg-yellow-100 text-yellow-800'
                                   }`}>
-                                    {bill.gstTreatment}
+                                    {bill.paymentStatus?.replace('_', ' ') || 'DRAFT'}
                                   </span>
                                 </td>
-                                <td className="py-4 px-4 text-sm">{bill.reference}</td>
+                                <td className="py-4 px-4 text-sm">{bill.billReference}</td>
                               </tr>
                             );
                           })}
@@ -459,7 +652,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
 
                     {errors.bills && <div className="text-red-500 text-sm mt-4">{errors.bills}</div>}
 
-                    {availableCredit > 0 && formData.vendor && (
+                    {/* {availableCredit > 0 && selectedVendor && (
                         <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                             <h3 className="text-md font-semibold text-yellow-800 mb-2">Vendor Credit Available</h3>
                             <div className="flex items-center justify-between">
@@ -485,40 +678,45 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     <div className="flex justify-end items-center mt-6 pt-4 border-t border-gray-200">
                       <div className="w-96 space-y-2">
-                        <p className="text-sm text-gray-500 text-left mb-2">{selectedBills.length} bills selected</p>
+                        <p className="text-sm text-gray-500 text-left mb-2">
+                          {selectedBills.length} bills selected
+                          {selectedBills.some(bill => (bill.paymentAmount || 0) < (bill.dueAmount || 0)) && (
+                            <span className="ml-2 text-blue-600">(partial payments)</span>
+                          )}
+                        </p>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-700">Subtotal</span>
+                          <span className="text-gray-700">Subtotal (Before GST)</span>
                           <span className="text-gray-900 font-medium">{formatCurrency(totalSelectedSubtotal)}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-700">GST</span>
+                          <span className="text-gray-700">Total GST</span>
                           <span className="text-gray-900 font-medium">{formatCurrency(totalSelectedGst)}</span>
                         </div>
                         {totalSelectedTds > 0 && (
                           <div className="flex justify-between items-center text-red-600">
-                            <span className="font-medium">TDS Deducted</span>
+                            <span className="font-medium">TDS Applied</span>
                             <span className="font-medium">- {formatCurrency(totalSelectedTds)}</span>
                           </div>
                         )}
                         <hr className="my-1" />
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-gray-800">Total Due</span>
+                          <span className="font-semibold text-gray-800">Total Payment Amount</span>
                           <span className="font-semibold text-gray-900">{formatCurrency(totalAmountDueSelected)}</span>
                         </div>
-                        {appliedCredit > 0 && (
+                        {selectedBills.length > 0 && selectedVendor.vendorCredits && selectedVendor.totalCredit > 0 && (
                           <div className="flex justify-between items-center text-green-600">
-                            <span className="font-medium">Credit Applied</span>
-                            <span className="font-medium">- {formatCurrency(appliedCredit)}</span>
+                            <span className="font-medium">Vendor Credit Adjusted</span>
+                            <span className="font-medium">- {finalPaymentAmount-selectedVendor.totalCredit < 0 ? formatCurrency(finalPaymentAmount) : formatCurrency(selectedVendor.totalCredit)}</span>
                           </div>
                         )}
                         <hr className="my-2 border-dashed" />
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-lg">Final Payment</span>
-                          <span className="font-bold text-lg">{formatCurrency(finalPaymentAmount)}</span>
+                          <span className="font-bold text-lg">{selectedBills.length > 0 ? (finalPaymentAmount-selectedVendor.totalCredit) < 0 ? '0' : formatCurrency(finalPaymentAmount-selectedVendor.totalCredit) : formatCurrency(finalPaymentAmount)}</span>
                         </div>
                       </div>
                     </div>

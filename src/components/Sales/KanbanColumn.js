@@ -24,6 +24,7 @@ const underlineColors = {
 
 const KanbanColumn = ({
   status,
+  stage,
   leads,
   onEdit,
   onConvert,
@@ -32,9 +33,12 @@ const KanbanColumn = ({
   onAddLead,
   onScheduleActivity
 }) => {
+  console.log(`KanbanColumn "${status}":`, { stage, stageColor: stage?.color, leadsCount: leads.length });
   const { setNodeRef, isOver } = useDroppable({
     id: status,
   });
+
+  // console.log(`KanbanColumn ${status}:`, { isOver, leadsCount: leads.length });
 
   const showAddButton = false;
 
@@ -49,8 +53,8 @@ const KanbanColumn = ({
       <div className="px-4 pt-3 pb-2 bg-white shadow-md rounded-t-lg relative mb-3">
         <div className="flex items-center gap-2">
           {/* Colored dot */}
-          <span className={`w-3 h-3 rounded-full ${statusColors[status] || 'bg-gray-400'}`}></span>
-          <span className={`text-base font-medium text-gray-700 truncate`}>{status}</span>
+          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: stage?.color || '#a3a3a3' }}></span>
+          <span className="text-base font-medium text-gray-700 truncate">{status}</span>
           <span
             className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 cursor-default"
             title="Number of leads in this stage"
@@ -59,7 +63,7 @@ const KanbanColumn = ({
           </span>
         </div>
         {/* Colored underline */}
-        <div className={`absolute left-0 right-0 bottom-0 h-1 rounded-b-lg ${underlineColors[status] || 'bg-gray-400'}`}></div>
+        <div className="absolute left-0 right-0 bottom-0 h-1 rounded-b-lg" style={{ backgroundColor: stage?.color || '#a3a3a3' }}></div>
       </div>
       <div className={`
         px-2 pb-2 space-y-2 min-h-[calc(100vh-200px)] overflow-y-auto transition-all duration-200

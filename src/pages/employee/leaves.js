@@ -19,6 +19,7 @@ import CustomDatePicker from "@/components/CustomDatePicker";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import withAuth from "@/components/withAuth";
 import { fetchEmployeeLeavePolicy } from "@/redux/slices/leavePolicySlice";
+import MainLayout from "@/components/MainLayout";
 
 // Helper to format numbers: show two decimals only if not whole
 function formatNumber(num) {

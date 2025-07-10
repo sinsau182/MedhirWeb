@@ -27,6 +27,30 @@ export const fetchBills = createAsyncThunk(
   }
 );
 
+// fetch bills of vendor
+export const fetchBillsOfVendor = createAsyncThunk(
+  "vendorBills/fetchBillsOfVendor",
+  async (vendorId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`${API_BASE_URL}/vendor/${vendorId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
+
 // add bill
 export const addBill = createAsyncThunk(
   "bills/addBill",
@@ -55,6 +79,7 @@ export const BillSlice = createSlice({
   name: "bills",
   initialState: {
     bills: [],
+    vendorBills: [],
     loading: false,
     error: null,
   },
@@ -69,6 +94,18 @@ export const BillSlice = createSlice({
       state.bills = action.payload;
     });
     builder.addCase(fetchBills.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    });
+    builder.addCase(fetchBillsOfVendor.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchBillsOfVendor.fulfilled, (state, action) => {
+      state.loading = false;
+      state.vendorBills = action.payload;
+    });
+    builder.addCase(fetchBillsOfVendor.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload;
     });

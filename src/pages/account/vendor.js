@@ -1,21 +1,26 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList } from 'react-icons/fa';
 import Modal from '../../components/Modal';
-import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm } from '../../components/Forms';
+import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBills } from '../../redux/slices/BillSlice';
+import { fetchPayments } from '../../redux/slices/paymentSlice';
+import { fetchPurchaseOrders } from '../../redux/slices/PurchaseOrderSlice';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
   const { vendors, loading, error } = useSelector((state) => state.vendors);
   const { bills, loading: billsLoading, error: billsError } = useSelector((state) => state.bills);
-
+  const { payments, loading: paymentsLoading, error: paymentsError } = useSelector((state) => state.payments);
+  const { purchaseOrders, loading: purchaseOrdersLoading, error: purchaseOrdersError } = useSelector((state) => state.purchaseOrders);
   // State for attachment modal
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [selectedAttachments, setSelectedAttachments] = useState([]);
@@ -24,6 +29,8 @@ const Vendor = () => {
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
+      dispatch(fetchPayments());
+      dispatch(fetchPurchaseOrders());
     }, [dispatch]);
 
     console.log(bills);
@@ -41,7 +48,43 @@ const Vendor = () => {
     if (showAddForm === null && activeTab === 'bills') {
       dispatch(fetchBills());
     }
+    if (showAddForm === null && activeTab === 'payments') {
+      dispatch(fetchPayments());
+    }
   }, [showAddForm, activeTab, dispatch]);
+
+  console.log(purchaseOrders);
+
+  // const [purchaseOrders, setPurchaseOrders] = useState([
+  //   {
+  //     id: 1,
+  //     poNumber: 'PO-2025-001',
+  //     vendorName: 'Acme Ltd.',
+  //     vendorGstin: '27ABCDE1234F1Z5',
+  //     orderDate: '2025-01-15',
+  //     deliveryDate: '2025-01-25',
+  //     status: 'Draft',
+  //     subtotal: 10000,
+  //     totalGst: 1800,
+  //     grandTotal: 11800,
+  //     currency: 'INR',
+  //     company: 'ABC Pvt Ltd'
+  //   },
+  //   {
+  //     id: 2,
+  //     poNumber: 'PO-2025-002',
+  //     vendorName: 'XYZ India',
+  //     vendorGstin: '29XYZE5678K9Z2',
+  //     orderDate: '2025-01-16',
+  //     deliveryDate: '2025-01-26',
+  //     status: 'Approved',
+  //     subtotal: 8000,
+  //     totalGst: 1440,
+  //     grandTotal: 9440,
+  //     currency: 'INR',
+  //     company: 'ABC Pvt Ltd'
+  //   }
+  // ]);
 
   // const [bills, setBills] = useState([
   //   {
@@ -80,65 +123,65 @@ const Vendor = () => {
   //   }
   // ]);
 
-  const [payments, setPayments] = useState([
-    {
-      id: 1,
-      paymentNo: 'PAY-1001',
-      paymentDate: '15-06-25',
-      vendorName: 'Acme Ltd.',
-      billReference: 'VB-1001, VB-1002',
-      gstin: '29ABCDE1234F1Z5',
-      paymentMethod: 'Bank Transfer',
-      journal: 'Bank',
-      amount: 20500,
-      currency: 'INR',
-      status: 'Posted',
-      tdsApplied: 'No',
-      company: 'ABC Pvt Ltd',
-      paymentReference: 'TXN123456789',
-      attachments: 'Yes'
-    },
-    {
-      id: 2,
-      paymentNo: 'PAY-1002',
-      paymentDate: '16-06-25',
-      vendorName: 'XYZ India',
-      billReference: 'VB-1003',
-      gstin: '29XYZE5678K9Z2',
-      paymentMethod: 'Cheque',
-      journal: 'Cheque',
-      amount: 8000,
-      currency: 'INR',
-      status: 'Draft',
-      tdsApplied: 'Yes',
-      company: 'ABC Pvt Ltd',
-      paymentReference: 'CHQ001234',
-      attachments: 'No'
-    }
-  ]);
+  // const [payments, setPayments] = useState([
+  //   {
+  //     id: 1,
+  //     paymentNo: 'PAY-1001',
+  //     paymentDate: '15-06-25',
+  //     vendorName: 'Acme Ltd.',
+  //     billReference: 'VB-1001, VB-1002',
+  //     gstin: '29ABCDE1234F1Z5',
+  //     paymentMethod: 'Bank Transfer',
+  //     journal: 'Bank',
+  //     amount: 20500,
+  //     currency: 'INR',
+  //     status: 'Posted',
+  //     tdsApplied: 'No',
+  //     company: 'ABC Pvt Ltd',
+  //     paymentReference: 'TXN123456789',
+  //     attachments: 'Yes'
+  //   },
+  //   {
+  //     id: 2,
+  //     paymentNo: 'PAY-1002',
+  //     paymentDate: '16-06-25',
+  //     vendorName: 'XYZ India',
+  //     billReference: 'VB-1003',
+  //     gstin: '29XYZE5678K9Z2',
+  //     paymentMethod: 'Cheque',
+  //     journal: 'Cheque',
+  //     amount: 8000,
+  //     currency: 'INR',
+  //     status: 'Draft',
+  //     tdsApplied: 'Yes',
+  //     company: 'ABC Pvt Ltd',
+  //     paymentReference: 'CHQ001234',
+  //     attachments: 'No'
+  //   }
+  // ]);
 
-  const [vendorCredits, setVendorCredits] = useState([
-    {
-      id: 'RTRN-001',
-      referencedBill: 'BILL-12345',
-      vendor: 'WoodWorks',
-      date: '2025-06-28',
-      itemsReturned: 'Oak Tabletop',
-      totalCredit: 10000,
-      type: 'Vendor Credit',
-      status: 'Open (not used yet)'
-    },
-    {
-      id: 'RTRN-002',
-      referencedBill: 'BILL-12346',
-      vendor: 'MetalCo',
-      date: '2025-06-28',
-      itemsReturned: 'Chair Legs',
-      totalCredit: 2000,
-      type: 'Refund',
-      status: 'Paid (Bank Transfer)'
-    }
-  ]);
+  // const [vendorCredits, setVendorCredits] = useState([
+  //   {
+  //     id: 'RTRN-001',
+  //     referencedBill: 'BILL-12345',
+  //     vendor: 'WoodWorks',
+  //     date: '2025-06-28',
+  //     itemsReturned: 'Oak Tabletop',
+  //     totalCredit: 10000,
+  //     type: 'Vendor Credit',
+  //     status: 'Open (not used yet)'
+  //   },
+  //   {
+  //     id: 'RTRN-002',
+  //     referencedBill: 'BILL-12346',
+  //     vendor: 'MetalCo',
+  //     date: '2025-06-28',
+  //     itemsReturned: 'Chair Legs',
+  //     totalCredit: 2000,
+  //     type: 'Refund',
+  //     status: 'Paid (Bank Transfer)'
+  //   }
+  // ]);
 
   // const [vendorsList, setVendorsList] = useState(vendors);
 
@@ -150,8 +193,8 @@ const Vendor = () => {
   const handleAddClick = () => {
     if (activeTab === 'bills') {
       setShowAddForm('bill');
-    } else if (activeTab === 'vendorCredits') {
-      setShowAddForm('refund');
+    } else if (activeTab === 'purchaseOrders') {
+      setShowAddForm('po');
     } else if (activeTab === 'payments') {
       setShowAddForm('payment');
     } else if (activeTab === 'vendors') {
@@ -159,6 +202,7 @@ const Vendor = () => {
     }
   };
 
+  console.log(payments)
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
@@ -244,27 +288,51 @@ const Vendor = () => {
     console.log('Vendor added successfully:', vendorData);
   };
 
-  const handleRefundSubmit = (refundData) => {
-    const newCredit = {
-      id: `RTRN-${String(vendorCredits.length + 1).padStart(3, '0')}`,
-      referencedBill: refundData.referencedBill,
-      poReference: refundData.poReference,
-      vendor: refundData.vendorName,
-      date: refundData.refundDate,
-      itemsReturned: refundData.itemsToReturn.filter(i => i.qtyToReturn > 0).map(i => i.name).join(', ') || 'N/A',
-      totalCredit: refundData.totalCredit,
-      type: refundData.refundType === 'credit' ? 'Vendor Credit' : 'Refund',
-      status: refundData.refundType === 'credit' ? 'Open (not used yet)' : 'Pending Payment'
+  // const handleRefundSubmit = (refundData) => {
+  //   const newCredit = {
+  //     id: `RTRN-${String(vendorCredits.length + 1).padStart(3, '0')}`,
+  //     referencedBill: refundData.referencedBill,
+  //     poReference: refundData.poReference,
+  //     vendor: refundData.vendorName,
+  //     date: refundData.refundDate,
+  //     itemsReturned: refundData.itemsToReturn.filter(i => i.qtyToReturn > 0).map(i => i.name).join(', ') || 'N/A',
+  //     totalCredit: refundData.totalCredit,
+  //     type: refundData.refundType === 'credit' ? 'Vendor Credit' : 'Refund',
+  //     status: refundData.refundType === 'credit' ? 'Open (not used yet)' : 'Pending Payment'
+  //   };
+  //   setVendorCredits(prev => [...prev, newCredit]);
+  //   toast.success('Refund request submitted successfully!');
+  //   setShowAddForm(null);
+  // };
+
+  const handlePurchaseOrderSubmit = (poData) => {
+    const newPO = {
+      id: purchaseOrders.length + 1,
+      poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
+      vendorName: poData.vendorName,
+      vendorGstin: poData.vendorGstin,
+      orderDate: poData.orderDate,
+      deliveryDate: poData.deliveryDate,
+      status: poData.status || 'Draft',
+      subtotal: poData.subtotal,
+      totalGst: poData.totalGst,
+      grandTotal: poData.grandTotal,
+      currency: poData.currency,
+      company: poData.company,
+      items: poData.items,
+      notes: poData.notes
     };
-    setVendorCredits(prev => [...prev, newCredit]);
-    toast.success('Refund request submitted successfully!');
+    
+    dispatch(fetchPurchaseOrders());
+    toast.success('Purchase Order created successfully!');
     setShowAddForm(null);
+    console.log('Purchase Order created successfully:', poData);
   };
 
   const tabs = [
     { id: 'bills', label: 'Bills', icon: FaFileInvoice },
+    { id: 'purchaseOrders', label: 'Purchase Orders', icon: FaClipboardList },
     { id: 'payments', label: 'Payments', icon: FaCreditCard },
-    { id: 'vendorCredits', label: 'Vendor Credit', icon: FaUndoAlt },
     { id: 'vendors', label: 'Vendors List', icon: FaBuilding },
   ];
 
@@ -272,7 +340,7 @@ const Vendor = () => {
   const getAddButtonLabel = () => {
     switch (activeTab) {
       case 'bills': return 'New Bill';
-      case 'vendorCredits': return 'New Credit';
+      case 'purchaseOrders': return 'New P.O';
       case 'payments': return 'New Payment';
       case 'vendors': return 'New Vendor';
       default: return 'Add';
@@ -303,6 +371,21 @@ const Vendor = () => {
             />
           </div>
         );
+        case 'po':
+          return (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center mb-4">
+                <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
+                  <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                </button>
+                <h2 className="text-xl font-bold text-gray-900">Create Purchase Order</h2>
+              </div>
+              <AddPurchaseOrderForm
+                onSubmit={handlePurchaseOrderSubmit}
+                onCancel={handleBackFromForm}
+              />
+            </div>
+          );
       case 'payment':
         return (
           <div className="bg-white rounded-lg shadow-md p-6">
@@ -336,21 +419,21 @@ const Vendor = () => {
             />
           </div>
         );
-        case 'refund':
-          return (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center mb-4">
-                <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                  <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
-                </button>
-                <h2 className="text-xl font-bold text-gray-900">Add Refund Request</h2>
-              </div>
-              <AddRefundForm
-                onSubmit={handleRefundSubmit}
-                onCancel={handleBackFromForm}
-              />
-            </div>
-          );
+        // case 'refund':
+        //   return (
+        //     <div className="bg-white rounded-lg shadow-md p-6">
+        //       <div className="flex items-center mb-4">
+        //         <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
+        //           <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+        //         </button>
+        //         <h2 className="text-xl font-bold text-gray-900">Add Refund Request</h2>
+        //       </div>
+        //       <AddRefundForm
+        //         onSubmit={handleRefundSubmit}
+        //         onCancel={handleBackFromForm}
+        //       />
+        //     </div>
+        //   );
       default:
         return null;
     }
@@ -385,7 +468,8 @@ const Vendor = () => {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN</th>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GST Treatment</th> */}
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
+                    {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th> */}
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company</th> */}
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Journal</th> */}
@@ -421,6 +505,9 @@ const Vendor = () => {
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString()}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-900">₹{(bill.dueAmount || 0).toLocaleString()}</span>
+                      </td>
+                      {/* <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           bill.status === 'Posted' 
                             ? 'bg-green-100 text-green-800' 
@@ -428,14 +515,20 @@ const Vendor = () => {
                         }`}>
                           {bill.status}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          bill.paymentStatus === 'Paid' 
+                          bill.paymentStatus === 'PAID'
                             ? 'bg-green-100 text-green-800' 
+                            : bill.paymentStatus === 'PARTIALLY_PAID'
+                            ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {bill.paymentStatus}
+                          {bill.paymentStatus === 'PAID' 
+                            ? 'Paid' 
+                            : bill.paymentStatus === 'PARTIALLY_PAID' 
+                            ? 'Partially Paid' 
+                            : 'Unpaid'}
                         </span>
                       </td>
                         {/* <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.company}</td>
@@ -483,43 +576,111 @@ const Vendor = () => {
             </div>
           </div>
         );
-        case 'vendorCredits':
-        return (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search refunds..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
+        case 'purchaseOrders':
+          return (
+            <div>
+              <div className="flex justify-between items-center mb-6">
+                <div className="relative">
+                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search purchase orders..."
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                  />
+                </div>
+              </div>
+              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PO Number</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Currency</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {purchaseOrders.map((po) => (
+                      <tr key={po.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-gray-900">
+                            {(() => {
+                              const vendor = vendors.find(v => v.vendorId === po.vendorId);
+                              return vendor ? vendor.vendorName : po.vendorId || 'N/A';
+                            })()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{po.gstin}</span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            po.status === 'Approved' 
+                              ? 'bg-green-100 text-green-800' 
+                              : po.status === 'Draft'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {po.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.currency}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refund #</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                   <tr>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">REF-001</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">ABC Supplies</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">2024-07-25</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">$500.00</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">Damaged goods</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+          );
+        // case 'vendorCredits':
+        // return (
+        //   <div>
+        //     <div className="flex justify-between items-center mb-6">
+        //       <div className="relative">
+        //         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        //         <input
+        //           type="text"
+        //           placeholder="Search refunds..."
+        //           className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+        //         />
+        //       </div>
+        //     </div>
+        //     <div className="overflow-x-auto">
+        //       <table className="min-w-full bg-white">
+        //         <thead className="bg-gray-100">
+        //           <tr>
+        //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refund #</th>
+        //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+        //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+        //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+        //             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+        //           </tr>
+        //         </thead>
+        //         <tbody className="divide-y divide-gray-200">
+        //            <tr>
+        //             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">REF-001</td>
+        //             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">ABC Supplies</td>
+        //             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">2024-07-25</td>
+        //             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">$500.00</td>
+        //             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">Damaged goods</td>
+        //           </tr>
+        //         </tbody>
+        //       </table>
+        //     </div>
+        //   </div>
+        // );
       case 'payments':
         return (
           <div>
@@ -538,19 +699,20 @@ const Vendor = () => {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment No.</th> */}
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Reference</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN (Vendor)</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Method</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Journal</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Payment Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-48">Vendor Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">Bill Reference</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-36">GSTIN (Vendor)</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Payment Method</th>
+                    {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Journal</th> */}
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Amount from Credits</th>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Currency</th> */}
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">Status</th>
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">TDS/TCS Applied</th> */}
                     {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company</th> */}
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Reference</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">Payment Reference</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">Attachments</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -559,17 +721,23 @@ const Vendor = () => {
                       {/* <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{payment.paymentNo}</span>
                       </td> */}
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{payment.paymentDate}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{payment.vendorName}</span>
+                                            <td className="px-4 py-4 text-sm text-gray-700 w-32">{payment.paymentDate}</td>
+                      <td className="px-4 py-4 w-48">
+                        <span className="text-sm font-medium text-gray-900 truncate block">{payment.vendorName}</span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm text-blue-600 font-medium">{payment.billReference}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                       <td className="px-4 py-4 w-40">
+                         <div className="flex flex-wrap gap-1">
+                           {payment?.billPayments?.map((bill) => (
+                             <span key={bill.billId} className="text-xs text-blue-600 font-medium">
+                               {bill.billId}
+                             </span>
+                           ))}
+                         </div>
+                       </td>
+                      <td className="px-4 py-4 w-36">
                         <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{payment.gstin}</span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 w-32">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           payment.paymentMethod === 'Bank Transfer' 
                             ? 'bg-blue-100 text-blue-800' 
@@ -580,12 +748,15 @@ const Vendor = () => {
                           {payment.paymentMethod}
                         </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{payment.journal}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">₹{payment.amount.toLocaleString()}</span>
+                      {/* <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{payment.journal}</td> */}
+                      <td className="px-4 py-4 w-24">
+                        <span className="text-sm font-semibold text-gray-900">₹{payment.totalAmount}</span>
+                      </td>
+                      <td className="px-4 py-4 w-24">
+                        <span className="text-sm font-semibold text-gray-900">₹{payment.adjustedAmountFromCredits}</span>
                       </td>
                       {/* <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{payment.currency}</td> */}
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 w-20">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           payment.status === 'Posted' 
                             ? 'bg-green-100 text-green-800' 
@@ -604,10 +775,10 @@ const Vendor = () => {
                         </span>
                       </td> */}
                       {/* <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{payment.company}</td> */}
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-600 font-mono">{payment.paymentReference}</span>
+                      <td className="px-4 py-4 w-40">
+                        <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <td className="px-4 py-4 w-20 text-center">
                         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
                           payment.attachments === 'Yes' 
                             ? 'bg-blue-100 text-blue-800' 

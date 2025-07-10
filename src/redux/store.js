@@ -18,11 +18,13 @@ import payslipReducer from "./slices/payslipSlice";
 import allEmployeesSlice from "./slices/allEmployeesSlice";
 import managerEmployeeSlice from "./slices/managerEmployeeSlice";
 import leadsReducer from "./slices/leadsSlice";
+import pipelineReducer from "./slices/pipelineSlice";
 import incomesReducer from "./slices/incomesSlice";
 import attendancesReducer from "./slices/attendancesSlice";
 import vendorReducer from "./slices/vendorSlice";
 import billsReducer from "./slices/BillSlice";
-
+import paymentsReducer from "./slices/paymentSlice";
+import purchaseOrderReducer from "./slices/PurchaseOrderSlice";
 
 export const store = configureStore({
   reducer: {
@@ -45,10 +47,13 @@ export const store = configureStore({
     allEmployees: allEmployeesSlice,
     managerEmployee: managerEmployeeSlice,
     leads: leadsReducer,
+    pipelines: pipelineReducer,
     incomes: incomesReducer,
     attendances: attendancesReducer,
     vendors: vendorReducer,
     bills: billsReducer,
+    payments: paymentsReducer,
+    purchaseOrders: purchaseOrderReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

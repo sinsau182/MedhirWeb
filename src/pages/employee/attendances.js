@@ -37,6 +37,7 @@ const EmployeeAttendance = () => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date()); // State for real-time updates
   const [dailyAttendanceData, setDailyAttendanceData] = useState(null); // State for daily attendance data
+  const prevErrorRef = useRef();
 
   // Get current date info
   const today = new Date();
@@ -252,8 +253,9 @@ const EmployeeAttendance = () => {
       }
       setAttendanceData(formattedData);
       setMonthlySummary(summaryCounts);
-    } else if (error) {
+    } else if (error && prevErrorRef.current !== error) {
       toast.error(`Failed to fetch attendance data: ${error}`);
+      prevErrorRef.current = error;
       setAttendanceData([]);
       setMonthlySummary({});
     }
@@ -418,16 +420,6 @@ const EmployeeAttendance = () => {
     const timeDiff = currentTime.getTime() - latestCheckinTime.getTime();
     return timeDiff / (1000 * 60); // Convert to minutes
   };
-
-  // Helper function to format total working hours
-  // const formatWorkingHours = (workingHoursTillNow, lastCheckout) => {
-  //   const baseMinutes = parseTimeDuration(workingHoursTillNow);
-  //   const additionalMinutes = calculateAdditionalTime(lastCheckout);
-  //   const totalMinutes = baseMinutes + additionalMinutes;
-  //   const hours = Math.floor(totalMinutes / 60);
-  //   const minutes = Math.floor(totalMinutes % 60);
-  //   return `${hours}h ${minutes}m`;
-  // };
 
   // Helper function to format live working hours (using latestCheckin)
   const formatLiveWorkingHours = (workingHoursTillNow, latestCheckin) => {
@@ -846,10 +838,12 @@ const EmployeeAttendance = () => {
                     const workingHoursTillNow = isPresentDate ? attendanceDataForDate?.workingHoursTillNow : null;
                     
                     // Determine if employee is currently checked in (has latest check-in after last check-out)
-                    const isCurrentlyCheckedIn = isPresentDate && 
-                      attendanceDataForDate?.latestCheckin && 
-                      attendanceDataForDate?.lastCheckout &&
-                      new Date(attendanceDataForDate.latestCheckin) > new Date(attendanceDataForDate.lastCheckout);
+                    const isCurrentlyCheckedIn = isPresentDate &&
+                    attendanceDataForDate?.latestCheckin &&
+                    (
+                      !attendanceDataForDate?.lastCheckout || // No checkout yet
+                      new Date(attendanceDataForDate.latestCheckin) > new Date(attendanceDataForDate.lastCheckout)
+                    );
 
                     return (
                       <div className="space-y-4">

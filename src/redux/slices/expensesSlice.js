@@ -6,13 +6,38 @@ const API_BASE_URL = publicRuntimeConfig.apiURL + "/expenses";
 
 
 // Fetch expenses by employee ID
-export const fetchExpenseByEmployeeId = createAsyncThunk(
-    "expenses/fetchExpenseByEmployeeId",
+// export const fetchExpenseByEmployeeId = createAsyncThunk(
+//     "expenses/fetchExpenseByEmployeeId",
+//     async (_, { rejectWithValue }) => {
+//         try {
+//             const token = getItemFromSessionStorage("token", null);
+//             const employee = sessionStorage.getItem("employeeId");
+//             const response = await fetch(`${API_BASE_URL}/employee/${employee}`, {
+//                 headers: {
+//                     "Authorization": `Bearer ${token}`,
+//                     "Content-Type": "application/json"
+//                 }
+//             });
+
+//             const data = await response.json();
+
+//             if (!response.ok) {
+//                 return rejectWithValue(data.message || "Something went wrong"); // backend error
+//             }
+//             return data;
+//         } catch (error) {
+//             return rejectWithValue(error.message || "Network Error");
+//         }
+//     }
+// );
+
+// Fetch all expenses
+export const fetchAllExpenses = createAsyncThunk(
+    "expenses/fetchAllExpenses",
     async (_, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const employee = sessionStorage.getItem("employeeId");
-            const response = await fetch(`${API_BASE_URL}/employee/${employee}`, {
+            const response = await fetch(`${API_BASE_URL}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
@@ -30,20 +55,18 @@ export const fetchExpenseByEmployeeId = createAsyncThunk(
         }
     }
 );
-    
 
 export const createExpense = createAsyncThunk(
     "expenses/createExpense",
     async (expenseData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}/employee`, {
+            const response = await fetch(`${API_BASE_URL}`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
                 },
-                body: JSON.stringify(expenseData)
+                body: expenseData
             });
 
             const data = await response.json(); // always parse the response
@@ -95,19 +118,30 @@ export const expensesSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            .addCase(fetchExpenseByEmployeeId.pending, (state) => {
+            // .addCase(fetchExpenseByEmployeeId.pending, (state) => {
+            //     state.loading = true;
+            //     state.error = null;
+            // })
+            // .addCase(fetchExpenseByEmployeeId.fulfilled, (state, action) => {
+            //     state.loading = false;
+            //     state.expenses = action.payload;
+            // })
+            // .addCase(fetchExpenseByEmployeeId.rejected, (state, action) => {
+            //     state.loading = false;
+            //     state.error = action.error.message;
+            // })
+            .addCase(fetchAllExpenses.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchExpenseByEmployeeId.fulfilled, (state, action) => {
+            .addCase(fetchAllExpenses.fulfilled, (state, action) => {
                 state.loading = false;
                 state.expenses = action.payload;
             })
-            .addCase(fetchExpenseByEmployeeId.rejected, (state, action) => {
+            .addCase(fetchAllExpenses.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.error.message;
             })
-
             .addCase(createExpense.pending, (state) => {
                 state.loading = true;
                 state.error = null;
