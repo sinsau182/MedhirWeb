@@ -1256,7 +1256,7 @@ function EmployeeProfilePage() {
                           </label>
                           <p className="text-base text-gray-900">
                             ₹
-                            {employeeById?.salaryDetails?.annualCtc?.toLocaleString() ||
+                            {employeeById?.salaryDetails?.annualCtc?.toLocaleString('en-IN') ||
                               "-"}
                           </p>
                         </div>
@@ -1266,7 +1266,7 @@ function EmployeeProfilePage() {
                           </label>
                           <p className="text-base text-gray-900">
                             ₹
-                            {employeeById?.salaryDetails?.monthlyCtc?.toLocaleString() ||
+                            {employeeById?.salaryDetails?.monthlyCtc?.toLocaleString('en-IN') ||
                               "-"}
                           </p>
                         </div>
@@ -1276,7 +1276,7 @@ function EmployeeProfilePage() {
                           </label>
                           <p className="text-base text-gray-900">
                             ₹
-                            {employeeById?.salaryDetails?.basicSalary?.toLocaleString() ||
+                            {employeeById?.salaryDetails?.basicSalary?.toLocaleString('en-IN') ||
                               "-"}
                           </p>
                         </div>
@@ -1286,7 +1286,7 @@ function EmployeeProfilePage() {
                           </label>
                           <p className="text-base text-gray-900">
                             ₹
-                            {employeeById?.salaryDetails?.hra?.toLocaleString() ||
+                            {employeeById?.salaryDetails?.hra?.toLocaleString('en-IN') ||
                               "-"}
                           </p>
                         </div>
@@ -1296,7 +1296,7 @@ function EmployeeProfilePage() {
                           </label>
                           <p className="text-base text-gray-900">
                             ₹
-                            {employeeById?.salaryDetails?.allowances?.toLocaleString() ||
+                            {employeeById?.salaryDetails?.allowances?.toLocaleString('en-IN') ||
                               "-"}
                           </p>
                         </div>
@@ -1308,7 +1308,7 @@ function EmployeeProfilePage() {
                               </label>
                               <p className="text-base text-gray-900">
                                 ₹
-                                {employeeById?.salaryDetails?.employerPfContribution?.toLocaleString() ||
+                                {employeeById?.salaryDetails?.employerPfContribution?.toLocaleString('en-IN') ||
                                   "-"}
                               </p>
                             </div>
@@ -1318,7 +1318,7 @@ function EmployeeProfilePage() {
                               </label>
                               <p className="text-base text-gray-900">
                                 ₹
-                                {employeeById?.salaryDetails?.employeePfContribution?.toLocaleString() ||
+                                {employeeById?.salaryDetails?.employeePfContribution?.toLocaleString('en-IN') ||
                                   "-"}
                               </p>
                             </div>

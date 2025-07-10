@@ -123,7 +123,7 @@ const ChartTooltipContent = ({
                 />
               )}
               <span className="text-muted-foreground">{itemConfig?.label || item.name}</span>
-              {item.value && <span className="font-mono font-medium">{item.value.toLocaleString()}</span>}
+              {item.value && <span className="font-mono font-medium">{item.value.toLocaleString('en-IN')}</span>}
             </div>
           );
         })}

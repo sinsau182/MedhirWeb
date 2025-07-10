@@ -792,7 +792,7 @@ const LeadManagement = ({ role }) => {
                       </span>
                       {entry.nextFollowUp && (
                         <span className="ml-2 font-semibold text-red-600">
-                          Next: {new Date(entry.nextFollowUp).toLocaleString()}
+                          Next: {new Date(entry.nextFollowUp).toLocaleString('en-IN')}
                         </span>
                       )}
                     </p>
@@ -822,7 +822,7 @@ const LeadManagement = ({ role }) => {
         );
       case "nextCall":
         try {
-          return value ? new Date(value).toLocaleString() : "-";
+          return value ? new Date(value).toLocaleString('en-IN') : "-";
         } catch {
           return String(value || "-");
         }
@@ -1494,7 +1494,7 @@ const LeadManagement = ({ role }) => {
                                   Next:{" "}
                                   {new Date(
                                     entry.nextFollowUp
-                                  ).toLocaleString()}
+                                  ).toLocaleString('en-IN')}
                                 </span>
                               )}
                             </p>

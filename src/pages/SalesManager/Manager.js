@@ -45,6 +45,19 @@ import {
 import AdvancedScheduleActivityModal from "@/components/Sales/AdvancedScheduleActivityModal";
 import Tooltip from "@/components/ui/ToolTip";
 
+const salesPersons = [
+  { id: "MED101", name: "Alice" },
+  { id: "MED102", name: "Bob" },
+  { id: "MED103", name: "Charlie" },
+  { id: "MED104", name: "Dana" },
+];
+const designers = [
+  { id: "MED101", name: "Bob" },
+  { id: "MED102", name: "Dana" },
+  { id: "MED103", name: "Frank" },
+  { id: "MED104", name: "Jack" },
+];
+
 const defaultLeadData = {
   name: "",
   contactNumber: "",
@@ -97,9 +110,23 @@ const DeletePipelineModal = ({ isOpen, onClose }) => {
   // Check if any selected stage has leads
   useEffect(() => {
     if (selectedStages.length > 0) {
-      const hasLeads = selectedStages.some((stageId) =>
-        leads.some((lead) => lead.stageId === stageId)
-      );
+      let hasLeads = false;
+      
+      // Check if leads is in the new grouped format
+      if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
+        // New format: check if any selected stage has leads
+        hasLeads = selectedStages.some((stageId) =>
+          leads.some((stageGroup) => 
+            stageGroup.stageId === stageId && stageGroup.leads && stageGroup.leads.length > 0
+          )
+        );
+      } else {
+        // Old format: check individual leads
+        hasLeads = selectedStages.some((stageId) =>
+          leads.some((lead) => lead.stageId === stageId)
+        );
+      }
+      
       if (hasLeads) {
         setWarning(
           "Cannot delete: One or more selected pipeline stages contain leads. Please move or delete all leads in these stages first."
@@ -274,10 +301,10 @@ const LeadsTable = ({ leads }) => (
   </div>
 );
 
-const LeadManagementContent = ({ role }) => {
+const ManagerContent = ({ role }) => {
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
-  const { leads } = useSelector((state) => state.leads);
+  const { leads, loading, error } = useSelector((state) => state.leads);
 
   // Add pipeline modal state
   const [isAddingStage, setIsAddingStage] = useState(false);
@@ -310,6 +337,23 @@ const LeadManagementContent = ({ role }) => {
   const [showLostModal, setShowLostModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
+  // Manager-specific state (retained from original)
+  const [editingLead, setEditingLead] = useState(null);
+  const [filterText, setFilterText] = useState("");
+  const [showConvertModalManager, setShowConvertModalManager] = useState(false);
+  const [leadToConvertId, setLeadToConvertId] = useState(null);
+  const [showLostReasonModal, setShowLostReasonModal] = useState(false);
+  const [leadToMarkLost, setLeadToMarkLost] = useState(null);
+  const [showJunkReasonModal, setShowJunkReasonModal] = useState(false);
+  const [leadToMarkJunkId, setLeadToMarkJunkId] = useState(null);
+  const [viewMode, setViewMode] = useState("kanban");
+  const [pendingConversion, setPendingConversion] = useState(null);
+  const [pendingLost, setPendingLost] = useState(null);
+  const [pendingJunk, setPendingJunk] = useState(null);
+  const [showScheduleActivityModal, setShowScheduleActivityModal] =
+    useState(false);
+  const [leadToScheduleActivity, setLeadToScheduleActivity] = useState(null);
+
   // Fetch pipelines and all leads on mount
   useEffect(() => {
     dispatch(fetchPipelines());
@@ -317,6 +361,18 @@ const LeadManagementContent = ({ role }) => {
   }, [dispatch]);
 
 
+
+  // Deduplicate leads by leadId (keep first occurrence) - Manager specific
+  const dedupedLeads = React.useMemo(() => {
+    const seen = new Set();
+    return (leads || []).filter((lead) => {
+      if (lead && lead.leadId && !seen.has(lead.leadId)) {
+        seen.add(lead.leadId);
+        return true;
+      }
+      return false;
+    });
+  }, [leads]);
 
   // Group leads by pipelineId for Kanban board
   const leadsByStatus = useMemo(() => {
@@ -517,6 +573,116 @@ const LeadManagementContent = ({ role }) => {
     }
   };
 
+  // Manager-specific handlers (retained from original)
+  const handleEdit = (lead) => {
+    setEditingLead(lead);
+    setShowAddLeadModal(true);
+  };
+
+  const handleConvert = (lead) => {
+    setLeadToConvertId(lead.leadId);
+    setShowConvertModalManager(true);
+  };
+
+  const handleMarkLost = (lead) => {
+    setLeadToMarkLost(lead);
+    setShowLostReasonModal(true);
+  };
+
+  const handleMarkJunk = (lead) => {
+    setLeadToMarkJunkId(lead.leadId);
+    setShowJunkReasonModal(true);
+  };
+
+  const handleOpenAddLeadForm = (status) => {
+    const newLeadData = { ...defaultLeadData };
+    if (typeof status === "string") {
+      newLeadData.status = status;
+    }
+    setEditingLead(newLeadData);
+    setShowAddLeadModal(true);
+  };
+
+  const handleAddLeadSubmit = async (formData) => {
+    if (!formData.salesRep || !formData.designer) {
+      toast.error("Please assign both Sales Person and Designer.");
+      return;
+    }
+    const leadData = {
+      ...defaultLeadData,
+      ...formData,
+      status: formData.status || "New",
+      submittedBy: role,
+    };
+
+    try {
+      if (editingLead && editingLead.leadId) {
+        await dispatch(updateLead(leadData)).unwrap();
+        toast.success("Lead updated successfully!");
+      } else {
+        // Assign a new unique leadId
+        const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
+        await dispatch(createLead({ ...leadData, leadId: newId })).unwrap();
+        toast.success("Lead created successfully!");
+      }
+
+      setShowAddLeadModal(false);
+      setEditingLead(null);
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("Error saving lead:", error);
+      toast.error("Failed to save lead. Please try again.");
+    }
+  };
+
+  const handleConvertModalClose = () => {
+    setShowConvertModalManager(false);
+    setLeadToConvertId(null);
+    setPendingConversion(null);
+  };
+  const handleConvertSuccess = (updatedLead) => {
+    dispatch(updateLead({ ...updatedLead, status: "Converted" }));
+    handleConvertModalClose();
+  };
+  const handleLostModalClose = () => {
+    setShowLostReasonModal(false);
+    setLeadToMarkLost(null);
+    setPendingLost(null);
+  };
+  const handleLostSuccess = (updatedLead) => {
+    dispatch(updateLead({ ...updatedLead, status: "Lost" }));
+    handleLostModalClose();
+  };
+  const handleJunkModalClose = () => {
+    setShowJunkReasonModal(false);
+    setLeadToMarkJunkId(null);
+    setPendingJunk(null);
+  };
+  const handleJunkSuccess = (updatedLead) => {
+    dispatch(updateLead({ ...updatedLead, status: "Junk" }));
+    handleJunkModalClose();
+  };
+
+  const handleScheduleActivitySuccess = (activity) => {
+    dispatch(
+      updateLead({
+        ...leadToScheduleActivity,
+        activities: Array.isArray(leadToScheduleActivity.activities)
+          ? [...leadToScheduleActivity.activities]
+          : [],
+        activities: [
+          ...leadToScheduleActivity.activities,
+          { ...activity, createdAt: new Date().toISOString() },
+        ],
+        updatedAt: new Date().toISOString(),
+      })
+    );
+    setShowScheduleActivityModal(false);
+    setLeadToScheduleActivity(null);
+    toast.success("Activity scheduled successfully!");
+  };
+
   // Confirmation modal for pipeline actions
   const PipelineActionConfirmModal = () =>
     pipelineAction && (
@@ -557,28 +723,23 @@ const LeadManagementContent = ({ role }) => {
       </div>
     );
 
-  // Add lead handler for AddLeadModal
-  const handleAddLead = async (leadData) => {
-    await dispatch(createLead(leadData));
-    // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
-  };
-
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-6">
           <button
-            onClick={() => setShowAddLeadModal(true)}
+            onClick={() => handleOpenAddLeadForm()}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
           >
             New
           </button>
           <div className="flex items-center space-x-1">
-            <h2 className="text-xl font-semibold text-gray-700">Pipeline</h2>
+            <h2 className="text-xl font-semibold text-gray-700">
+              Manager Pipeline
+            </h2>
             <div className="relative pipeline-dropdown">
               <button
-                onClick={() => setShowPipelineDropdown((prev) => !prev)}
+                onClick={() => setShowPipelineDropdown(!showPipelineDropdown)}
                 className="text-gray-500 hover:text-gray-700 p-1 flex items-center gap-1 transition-colors duration-200"
               >
                 <FaCog />
@@ -588,6 +749,7 @@ const LeadManagementContent = ({ role }) => {
                   }`}
                 />
               </button>
+
               {showPipelineDropdown && (
                 <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-40 transform opacity-100 scale-100 transition-all duration-200">
                   <button
@@ -615,20 +777,114 @@ const LeadManagementContent = ({ role }) => {
             </div>
           </div>
         </div>
+
+        <div className="flex items-center space-x-4">
+          <div className="relative w-72">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={filterText}
+              onChange={(e) => setFilterText(e.target.value)}
+              className="border p-2 rounded-md shadow-sm w-full pl-10 bg-white"
+            />
+          </div>
+
+          <div className="flex items-center space-x-1 bg-gray-200 p-1 rounded-md">
+            <button
+              className={`p-2 rounded-md transition-colors ${
+                viewMode === "kanban"
+                  ? "bg-blue-600 shadow text-white"
+                  : "hover:bg-blue-100 text-blue-600"
+              }`}
+              onClick={() => setViewMode("kanban")}
+              title="Kanban Board View"
+            >
+              <FaThLarge size={18} />
+            </button>
+            <button
+              className={`p-2 rounded-md transition-colors ${
+                viewMode === "table"
+                  ? "bg-white shadow text-blue-600"
+                  : "hover:bg-blue-100 text-blue-600"
+              }`}
+              onClick={() => setViewMode("table")}
+              title="Table View"
+            >
+              <FaListUl size={18} />
+            </button>
+          </div>
+        </div>
       </div>
-      <KanbanBoardClientOnly
-        leadsByStatus={leadsByStatus}
-        statuses={pipelines.map((p) => p.name)}
-        kanbanStatuses={pipelines}
-        onScheduleActivity={handleScheduleActivity}
-        onDragEnd={handleDragEnd}
-        // Debug props
-        debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+
+      {loading && <p className="text-center">Loading opportunities...</p>}
+      {error && (
+        <p className="text-center text-red-500">
+          Error: {error.message || "Could not fetch opportunities."}
+        </p>
+      )}
+
+      {viewMode === "kanban" ? (
+        <KanbanBoardClientOnly
+          leadsByStatus={leadsByStatus}
+          statuses={pipelines.map((p) => p.name)}
+          kanbanStatuses={pipelines}
+          onScheduleActivity={handleScheduleActivity}
+          onDragEnd={handleDragEnd}
+          // Debug props
+          debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+        />
+      ) : (
+        <LeadsTable leads={dedupedLeads} />
+      )}
+
+      <AddLeadModal
+        isOpen={showAddLeadModal}
+        onClose={() => setShowAddLeadModal(false)}
+        onSubmit={handleAddLeadSubmit}
+        initialData={editingLead || defaultLeadData}
+        isManagerView={true}
+        salesPersons={salesPersons}
+        designers={designers}
       />
+
+      {showConvertModalManager && (
+        <ConvertLeadModal
+          lead={pendingConversion?.lead}
+          onClose={handleConvertModalClose}
+          onSuccess={pendingConversion ? handleConvertSuccess : undefined}
+        />
+      )}
+      {showLostReasonModal && (
+        <LostLeadModal
+          lead={pendingLost?.lead}
+          onClose={handleLostModalClose}
+          onSuccess={pendingLost ? handleLostSuccess : undefined}
+        />
+      )}
+      {showJunkReasonModal && (
+        <JunkReasonModal
+          lead={pendingJunk?.lead}
+          onClose={handleJunkModalClose}
+          onSuccess={pendingJunk ? handleJunkSuccess : undefined}
+        />
+      )}
+
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}
         onClose={() => setShowDeletePipelineModal(false)}
       />
+
+      <AdvancedScheduleActivityModal
+        isOpen={showScheduleActivityModal}
+        onClose={() => {
+          setShowScheduleActivityModal(false);
+          setLeadToScheduleActivity(null);
+        }}
+        lead={leadToScheduleActivity}
+        onSuccess={handleScheduleActivitySuccess}
+      />
+
       {isAddingStage && (
         <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-30">
           <div
@@ -764,12 +1020,6 @@ const LeadManagementContent = ({ role }) => {
         </div>
       )}
       <PipelineActionConfirmModal />
-      <AddLeadModal
-        isOpen={showAddLeadModal}
-        onClose={() => setShowAddLeadModal(false)}
-        onSubmit={handleAddLead}
-        // Add other props as needed
-      />
       <AdvancedScheduleActivityModal
         isOpen={showAdvancedScheduleModal}
         onClose={() => {
@@ -812,12 +1062,12 @@ const LeadManagementContent = ({ role }) => {
   );
 };
 
-const LeadManagement = ({ role }) => {
+const Manager = ({ role }) => {
   return (
     <MainLayout>
-      <LeadManagementContent role={role} />
+      <ManagerContent role={role} />
     </MainLayout>
   );
 };
 
-export default LeadManagement;
+export default Manager;

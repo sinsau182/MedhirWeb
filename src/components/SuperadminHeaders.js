@@ -26,7 +26,7 @@ export default function SuperadminHeaders() {
         MEDHIR
       </h1>
       <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-        {["Companies", "Modules"].map((item, index) => (
+        {["Companies"].map((item, index) => (
           <Link key={index} href={`/superadmin/${item.toLowerCase()}`} passHref>
             <button
               onClick={() => setActiveTab(item)}
@@ -48,12 +48,12 @@ export default function SuperadminHeaders() {
                   style={{ fontSize: "16px", verticalAlign: "middle" }}
                 />
               )}
-              {item === "Modules" && (
+              {/* {item === "Modules" && (
                 <Grid2x2
                   className="inline-block w-5 h-5 text-gray-800"
                   style={{ fontSize: "16px", verticalAlign: "middle" }}
                 />
-              )}
+              )} */}
               {item}
             </button>
           </Link>

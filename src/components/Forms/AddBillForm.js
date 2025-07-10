@@ -539,7 +539,7 @@ const BillForm = ({ onCancel }) => {
                             {errors[`rate${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`rate${idx}`]}</div>}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-medium">
-                            ₹{amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center">
@@ -556,10 +556,10 @@ const BillForm = ({ onCancel }) => {
                             {errors[`gst${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`gst${idx}`]}</div>}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-medium">
-                            ₹{gstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-semibold">
-                            ₹{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button 
@@ -594,22 +594,22 @@ const BillForm = ({ onCancel }) => {
               <div className="bg-gray-50 rounded-lg mt-6 p-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-gray-700">Subtotal (before GST):</span>
-                  <span className="text-gray-900 font-medium">₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-gray-900 font-medium">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-gray-700">Total GST:</span>
-                  <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 {selectedVendor && selectedVendor.tdsPercentage && (
                   <div className="flex justify-between items-center mb-1 text-red-600">
                     <span className="font-medium">TDS/TCS Deducted ({selectedVendor?.tdsPercentage}%):</span>
-                    <span className="font-medium">- ₹{tdsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <span className="font-medium">- ₹{tdsAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
                 <hr className="my-2" />
                 <div className="flex justify-between items-center mt-2">
                   <span className="font-bold text-lg">Final Amount:</span>
-                  <span className="font-bold text-lg">₹{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-bold text-lg">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>
@@ -774,7 +774,7 @@ const BillForm = ({ onCancel }) => {
       <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 sticky bottom-0 z-20">
         <div className="flex justify-between items-center">
           <div className="text-lg font-bold">
-            Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString()}</span>
+            Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString('en-IN')}</span>
           </div>
           <div className="flex gap-3">
             <button 
