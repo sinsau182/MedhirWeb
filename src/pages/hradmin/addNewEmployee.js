@@ -890,7 +890,6 @@ function EmployeeForm() {
         return;
       }
     }
-
     setLoading(true);
     try {
       handleSaveAndExit(e);
