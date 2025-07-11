@@ -6,7 +6,7 @@ import {
   Building2, Mail, Phone, Hash, MapPin, Users, Settings, 
   ArrowLeft, Edit, Plus, Check, X, Search, Trash, 
   UserPlus, Shield, ChevronDown, ChevronRight, Eye, Star,
-  Database, Activity, Activity as ActivityIcon // <-- Import new icons
+  Database, Activity, Activity as ActivityIcon, Palette // <-- Import new icons
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
@@ -461,6 +461,23 @@ function CompanyDetails() {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
+  // Add this to the existing component at the top, after other useEffect hooks
+
+  useEffect(() => {
+    // Listen for the add company event from header
+    const handleAddCompany = () => {
+      router.push('/superadmin/companies');
+    };
+
+    // Store the handler reference
+    window.handleAddCompanyFromDetail = handleAddCompany;
+
+    return () => {
+      // Cleanup
+      delete window.handleAddCompanyFromDetail;
+    };
+  }, [router]);
+
   // Handle module assignment with feature selection
   const handleAssignModule = () => {
     if (!moduleAssignmentData.moduleId || moduleAssignmentData.selectedFeatures.length === 0) {
@@ -764,13 +781,40 @@ function CompanyDetails() {
     </button>
   );
 
+  // Add state for inline editing
+  const [isEditingCompanyInfo, setIsEditingCompanyInfo] = useState(false);
+  
+  // Add handler for inline editing
+  const handleToggleEditCompanyInfo = () => {
+    setIsEditingCompanyInfo(!isEditingCompanyInfo);
+  };
+
+  // Add handler for saving inline changes
+  const handleSaveInlineEdit = () => {
+    setIsEditingCompanyInfo(false);
+    toast.success("Company information updated successfully!");
+  };
+
+  // Add handler for input changes
+  const handleCompanyDataChange = (e) => {
+    const { name, value } = e.target;
+    setCompanyData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   return (
     <div className="flex h-screen bg-gray-100">
-      <SuperadminHeaders />
+      <SuperadminHeaders 
+        onAddCompany={() => router.push('/superadmin/companies')}
+        searchQuery=""
+        setSearchQuery={() => {}}
+      />
       
       <div className="flex-1 pt-16">
         <div className="p-4 mt-2">
-          {/* Compact Header */}
+          {/* Compact Header - Remove Edit Company Button */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <button
@@ -787,15 +831,18 @@ function CompanyDetails() {
                   <Building2 className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-800">{companyData.name}</h1>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-bold text-gray-800">{companyData.name}</h1>
+                    <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      Active
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-500">{companyData.email}</p>
                 </div>
               </div>
             </div>
-            <button className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm">
-              <Edit size={14} />
-              Edit Company
-            </button>
+            {/* Remove the Edit Company button from here */}
           </div>
 
           {/* Compact Tabs */}
@@ -843,8 +890,8 @@ function CompanyDetails() {
             >
               {activeTab === "overview" && (
                 <div className="space-y-4">
-                  {/* Compact Summary Statistics Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl">
+                  {/* Compact Summary Statistics Cards - Remove Company Status Card */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-4xl">
                     {/* Total Modules Card */}
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                       <div className="flex items-center justify-between">
@@ -898,77 +945,188 @@ function CompanyDetails() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Company Status Card */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
-                      <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-orange-600">Company Status</p>
-                          <p className="text-base font-bold text-orange-800">Active</p>
-                          <p className="text-[10px] text-orange-500 truncate">
-                            All systems operational
-                          </p>
-                        </div>
-                        <div className="w-8 h-8 bg-orange-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Building2 className="h-4 w-4 text-orange-600" />
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Main Content Grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Company Information */}
+                    {/* Company Information - Updated with Inline Editing */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        {/* Company Color Indicator */}
-                        <div 
-                          className="w-6 h-6 rounded-full border-2 border-gray-200"
-                          style={{ backgroundColor: companyData.colorCode }}
-                          title={`Company Color: ${companyData.colorCode}`}
-                        ></div>
-                        <h2 className="text-lg font-semibold text-gray-800">Company Information</h2>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          {/* Company Color Indicator */}
+                          <div 
+                            className="w-6 h-6 rounded-full border-2 border-gray-200"
+                            style={{ backgroundColor: companyData.colorCode }}
+                            title={`Company Color: ${companyData.colorCode}`}
+                          ></div>
+                          <h2 className="text-lg font-semibold text-gray-800">Company Information</h2>
+                        </div>
+                        {/* Edit Button in Top Right Corner */}
+                        <div className="flex items-center gap-2">
+                          {isEditingCompanyInfo ? (
+                            <>
+                              <button
+                                onClick={() => setIsEditingCompanyInfo(false)}
+                                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Cancel"
+                              >
+                                <X size={16} />
+                              </button>
+                              <button
+                                onClick={handleSaveInlineEdit}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Save Changes"
+                              >
+                                <Check size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={handleToggleEditCompanyInfo}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit Company Information"
+                            >
+                              <Edit size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-4">
+                        {/* Company Name */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <Building2 size={18} className="text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-500">Company Name</p>
+                            {isEditingCompanyInfo ? (
+                              <input
+                                type="text"
+                                name="name"
+                                value={companyData.name}
+                                onChange={handleCompanyDataChange}
+                                className="w-full font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none py-1"
+                              />
+                            ) : (
+                              <p className="font-medium text-gray-800">{companyData.name}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Email */}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
                             <Mail size={18} className="text-blue-600" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm text-gray-500">Email</p>
-                            <p className="font-medium text-gray-800">{companyData.email}</p>
+                            {isEditingCompanyInfo ? (
+                              <input
+                                type="email"
+                                name="email"
+                                value={companyData.email}
+                                onChange={handleCompanyDataChange}
+                                className="w-full font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none py-1"
+                              />
+                            ) : (
+                              <p className="font-medium text-gray-800">{companyData.email}</p>
+                            )}
                           </div>
                         </div>
+
+                        {/* Phone */}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
                             <Phone size={18} className="text-green-600" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm text-gray-500">Phone</p>
-                            <p className="font-medium text-gray-800">{companyData.phone}</p>
+                            {isEditingCompanyInfo ? (
+                              <input
+                                type="tel"
+                                name="phone"
+                                value={companyData.phone}
+                                onChange={handleCompanyDataChange}
+                                className="w-full font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none py-1"
+                              />
+                            ) : (
+                              <p className="font-medium text-gray-800">{companyData.phone}</p>
+                            )}
                           </div>
                         </div>
+
+                        {/* GST */}
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
                             <Hash size={18} className="text-purple-600" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm text-gray-500">GST Number</p>
-                            <p className="font-medium text-gray-800">{companyData.gst}</p>
+                            {isEditingCompanyInfo ? (
+                              <input
+                                type="text"
+                                name="gst"
+                                value={companyData.gst}
+                                onChange={handleCompanyDataChange}
+                                className="w-full font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none py-1"
+                              />
+                            ) : (
+                              <p className="font-medium text-gray-800">{companyData.gst}</p>
+                            )}
                           </div>
                         </div>
+
+                        {/* Address */}
                         <div className="flex items-start gap-3">
                           <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
                             <MapPin size={18} className="text-orange-600" />
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm text-gray-500">Address</p>
-                            <p className="font-medium text-gray-800">{companyData.regAdd}</p>
+                            {isEditingCompanyInfo ? (
+                              <textarea
+                                name="regAdd"
+                                value={companyData.regAdd}
+                                onChange={handleCompanyDataChange}
+                                rows={3}
+                                className="w-full font-medium text-gray-800 bg-transparent border border-gray-300 rounded focus:border-blue-500 focus:outline-none p-2 resize-none"
+                              />
+                            ) : (
+                              <p className="font-medium text-gray-800">{companyData.regAdd}</p>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Theme Color - Only show when editing */}
+                        {isEditingCompanyInfo && (
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-pink-50 rounded-lg flex items-center justify-center">
+                              <Palette size={18} className="text-pink-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm text-gray-500">Theme Color</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <input
+                                  type="color"
+                                  name="colorCode"
+                                  value={companyData.colorCode}
+                                  onChange={handleCompanyDataChange}
+                                  className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                                />
+                                <input
+                                  type="text"
+                                  name="colorCode"
+                                  value={companyData.colorCode}
+                                  onChange={handleCompanyDataChange}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded focus:border-blue-500 focus:outline-none text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
 
                     {/* Head of Company - Single Panel Layout */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
@@ -1063,7 +1221,7 @@ function CompanyDetails() {
                       </div>
 
                   {/* Compact Rectangular Module Cards Grid - Updated Design */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
                         {(() => {
                           // Create a combined list of all modules (assigned and unassigned)
                           const allModulesWithStatus = availableModules.map(availableModule => {
