@@ -890,14 +890,11 @@ function EmployeeForm() {
         return;
       }
     }
-
-    if (!validateForm()) return;
-
     setLoading(true);
     try {
-      // ... rest of the existing handleSubmit code ...
+      handleSaveAndExit(e);
     } catch (err) {
-      // ... existing error handling ...
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
