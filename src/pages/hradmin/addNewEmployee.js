@@ -891,8 +891,6 @@ function EmployeeForm() {
       }
     }
 
-    if (!validateForm()) return;
-
     setLoading(true);
     try {
       // ... rest of the existing handleSubmit code ...
