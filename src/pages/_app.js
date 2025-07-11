@@ -4,7 +4,6 @@ import { Provider } from "react-redux";
 import { store } from "../redux/store";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
 import {
   updateSessionActivity,
   isSessionExpiredDueToInactivity,
@@ -46,12 +45,10 @@ function MyApp({ Component, pageProps }) {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
-          <Toaster />
-        </ThemeProvider>
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+        <Toaster />
       </QueryClientProvider>
     </Provider>
   );
