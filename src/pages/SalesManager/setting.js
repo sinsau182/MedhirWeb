@@ -1229,7 +1229,7 @@ const AutomationSettings = () => {
                   value={a.type}
                   onChange={(e) => updateAction(a.id, "type", e.target.value)}
                   className="border p-2 rounded"
-                >
+                  >
                   <option value="">Action...</option>
                   {actionTypes.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -1411,7 +1411,7 @@ const TemplatesSettings = () => {
                 {template.subject && (
                   <p className="text-sm text-gray-600 font-medium mt-1">
                     Subject: {template.subject}
-                  </p>
+          </p>
                 )}
         </div>
               <div className="flex items-center gap-2">
@@ -1647,7 +1647,7 @@ const StageDependentFormsSettings = ({ stages }) => {
         defaultLabel: "Your detailed response"
       },
       {
-        type: "number",
+          type: "number",
         label: "Number",
         icon: "🔢",
         description: "Numeric input",
@@ -1713,16 +1713,16 @@ const StageDependentFormsSettings = ({ stages }) => {
         description: "Single selection dropdown",
         defaultLabel: "Please select",
         defaultOptions: ["Option 1", "Option 2", "Option 3"]
-      },
-      {
+        },
+        {
         type: "radio",
         label: "Radio Buttons",
         icon: "🔘",
         description: "Single selection with radio buttons",
         defaultLabel: "Choose one option",
         defaultOptions: ["Option 1", "Option 2", "Option 3"]
-      },
-      {
+        },
+        {
         type: "checkbox",
         label: "Checkbox",
         icon: "☑️",
@@ -1807,7 +1807,7 @@ const StageDependentFormsSettings = ({ stages }) => {
     const fieldType = Object.values(fieldCategories)
       .flat()
       .find(f => f.type === type);
-    
+
     const newField = {
       id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
@@ -1931,7 +1931,7 @@ const StageDependentFormsSettings = ({ stages }) => {
         case 'tel':
         case 'url':
         case 'password':
-          return (
+  return (
             <input
               type={field.type}
               placeholder={field.placeholder || `Enter your ${field.label.toLowerCase()}`}
@@ -2101,7 +2101,7 @@ const StageDependentFormsSettings = ({ stages }) => {
 
         case 'range':
           return (
-            <div>
+        <div>
               <input
                 type="range"
                 min={field.min || 0}
@@ -2114,7 +2114,7 @@ const StageDependentFormsSettings = ({ stages }) => {
               />
               <div className="text-sm text-center text-gray-600 mt-1">
                 {fieldValue || field.min || 0}
-              </div>
+        </div>
             </div>
           );
 
@@ -2133,7 +2133,7 @@ const StageDependentFormsSettings = ({ stages }) => {
           return (
             <div className="flex gap-1">
               {[...Array(field.maxRating || 5)].map((_, idx) => (
-                <button
+        <button
                   key={idx}
                   type="button"
                   onClick={() => isLive && setValue(idx + 1)}
@@ -2143,9 +2143,9 @@ const StageDependentFormsSettings = ({ stages }) => {
                   disabled={!isLive}
                 >
                   ⭐
-                </button>
+        </button>
               ))}
-            </div>
+      </div>
           );
 
         case 'separator':
@@ -2214,10 +2214,10 @@ const StageDependentFormsSettings = ({ stages }) => {
         <div className="p-4 space-y-4">
           {/* Basic Settings */}
           {!['separator'].includes(selectedField.type) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                 {selectedField.type === 'heading' ? 'Section Title' : 'Question/Label'}
-              </label>
+                </label>
               <input
                 type="text"
                 value={selectedField.label}
@@ -2225,23 +2225,23 @@ const StageDependentFormsSettings = ({ stages }) => {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your question"
               />
-            </div>
+              </div>
           )}
 
           {/* Placeholder for input fields */}
           {['text', 'textarea', 'email', 'tel', 'number', 'url', 'password'].includes(selectedField.type) && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                 Placeholder Text
-              </label>
-              <input
-                type="text"
+                </label>
+                <input
+                  type="text"
                 value={selectedField.placeholder || ''}
                 onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 placeholder="Hint text for users"
-              />
-            </div>
+                />
+              </div>
           )}
 
           {/* Required field setting */}
@@ -2264,7 +2264,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Help Text (Optional)
-              </label>
+                </label>
               <textarea
                 value={selectedField.helpText || ''}
                 onChange={(e) => updateField(selectedField.id, { helpText: e.target.value })}
@@ -2295,26 +2295,26 @@ const StageDependentFormsSettings = ({ stages }) => {
                       className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                       placeholder={`Option ${idx + 1}`}
                     />
-                    <button
+                <button
                       onClick={() => {
                         const newOptions = selectedField.options.filter((_, i) => i !== idx);
                         updateField(selectedField.id, { options: newOptions });
                       }}
                       className="text-red-600 hover:text-red-800 p-2"
-                    >
+                >
                       🗑️
-                    </button>
-                  </div>
+                </button>
+              </div>
                 ))}
-                <button
+                        <button
                   onClick={() => {
                     const newOptions = [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`];
                     updateField(selectedField.id, { options: newOptions });
                   }}
                   className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800"
-                >
+                        >
                   + Add Option
-                </button>
+                        </button>
               </div>
             </div>
           )}
@@ -2333,7 +2333,7 @@ const StageDependentFormsSettings = ({ stages }) => {
                     onChange={(e) => updateField(selectedField.id, { min: parseInt(e.target.value) })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
+                    </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Max Value
@@ -2362,45 +2362,45 @@ const StageDependentFormsSettings = ({ stages }) => {
 
           {/* Rating settings */}
           {selectedField.type === 'rating' && (
-            <div>
+                      <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Maximum Rating
-              </label>
-              <input
+                        </label>
+                        <input
                 type="number"
                 value={selectedField.maxRating || 5}
                 onChange={(e) => updateField(selectedField.id, { maxRating: parseInt(e.target.value) })}
                 min="1"
                 max="10"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                        />
+                      </div>
           )}
 
           {/* Textarea rows */}
           {selectedField.type === 'textarea' && (
-            <div>
+                      <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Number of Rows
-              </label>
-              <input
+                        </label>
+                        <input
                 type="number"
                 value={selectedField.rows || 4}
                 onChange={(e) => updateField(selectedField.id, { rows: parseInt(e.target.value) })}
                 min="2"
                 max="10"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                        />
+                      </div>
           )}
 
           {/* File upload settings */}
           {['file', 'image'].includes(selectedField.type) && (
             <>
-              <div>
+                      <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Accepted File Types
-                </label>
+                        </label>
                 <input
                   type="text"
                   value={selectedField.accept || ''}
@@ -2408,21 +2408,21 @@ const StageDependentFormsSettings = ({ stages }) => {
                   placeholder="e.g., .pdf,.doc,.docx or image/*"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 />
-              </div>
+                      </div>
               <div>
                 <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                          <input
+                            type="checkbox"
                     checked={selectedField.multiple || false}
                     onChange={(e) => updateField(selectedField.id, { multiple: e.target.checked })}
                     className="w-4 h-4 text-blue-600 rounded"
                   />
                   <span className="text-sm font-medium text-gray-700">Allow multiple files</span>
-                </label>
-              </div>
+                        </label>
+                      </div>
             </>
           )}
-        </div>
+                    </div>
       </div>
     );
   };
@@ -2437,15 +2437,15 @@ const StageDependentFormsSettings = ({ stages }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Form Title
-              </label>
-              <input
-                type="text"
+                        </label>
+                        <input
+                          type="text"
                 value={formConfig.formName}
                 onChange={(e) => setFormConfig(prev => ({ ...prev, formName: e.target.value }))}
                 placeholder="Enter your form title"
                 className="w-full text-lg font-medium border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+                        />
+                      </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Form Description (Optional)
@@ -2457,9 +2457,9 @@ const StageDependentFormsSettings = ({ stages }) => {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 rows="3"
               />
+                  </div>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Form Fields */}
         <div className="space-y-4">
@@ -2474,8 +2474,8 @@ const StageDependentFormsSettings = ({ stages }) => {
               <SimpleFieldEditor key={field.id} field={field} index={index} />
             ))
           )}
+          </div>
         </div>
-      </div>
     </div>
   );
 
@@ -2496,12 +2496,12 @@ const StageDependentFormsSettings = ({ stages }) => {
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <span className="text-lg">{fieldType?.icon}</span>
-            <div>
+                <div>
               <div className="font-medium text-gray-800">{fieldType?.label}</div>
               <div className="text-sm text-gray-600">{field.label}</div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
+                </div>
+                <div className="flex items-center gap-2">
             {/* Move buttons */}
             <button
               onClick={() => moveField(field.id, 'up')}
@@ -2511,16 +2511,16 @@ const StageDependentFormsSettings = ({ stages }) => {
             >
               ⬆️
             </button>
-            <button
+                  <button
               onClick={() => moveField(field.id, 'down')}
               disabled={index === formConfig.fields.length - 1}
               className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
               title="Move down"
             >
               ⬇️
-            </button>
+                  </button>
             {/* Edit button */}
-            <button
+                  <button
               onClick={() => setSelectedField(field)}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
                 isSelected 
@@ -2529,22 +2529,22 @@ const StageDependentFormsSettings = ({ stages }) => {
               }`}
             >
               {isSelected ? 'Editing' : 'Edit'}
-            </button>
+                  </button>
             {/* Delete button */}
-            <button
+                  <button
               onClick={() => removeField(field.id)}
               className="p-1 text-red-400 hover:text-red-600"
               title="Delete field"
-            >
+                  >
               🗑️
-            </button>
-          </div>
-        </div>
+                  </button>
+                </div>
+              </div>
 
         {/* Field Preview */}
         <div className="p-4">
           <SimpleFieldPreview field={field} />
-        </div>
+            </div>
       </div>
     );
   };
@@ -2552,7 +2552,7 @@ const StageDependentFormsSettings = ({ stages }) => {
   // Simple Form Preview
   const SimpleFormPreview = () => (
     <div className="flex-1 bg-gray-50 overflow-auto">
-      <div className="p-6">
+            <div className="p-6">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg">
           {/* Form Header */}
           <div className="p-6 border-b">
@@ -2581,8 +2581,8 @@ const StageDependentFormsSettings = ({ stages }) => {
                 Submit Form
               </button>
             </div>
-          )}
-        </div>
+                      )}
+                    </div>
       </div>
     </div>
   );
@@ -2619,23 +2619,23 @@ const StageDependentFormsSettings = ({ stages }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
+                      <div>
           <h3 className="text-lg font-bold text-gray-800">📋 Advanced Form Builder</h3>
           <p className="text-sm text-gray-600">Create professional forms with comprehensive field types - no technical knowledge required!</p>
-        </div>
+                      </div>
         <button
           onClick={() => setIsCreatingForm(true)}
           className="px-6 py-3 text-sm rounded-md flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 font-medium shadow-lg transition-all duration-200"
         >
           <FaPlus /> Create New Form
         </button>
-      </div>
+                    </div>
 
       {/* Stage availability check */}
       {availableStages.length === 0 && !isCreatingForm && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <p className="text-sm text-yellow-800">⚠️ No pipeline stages available. Please add pipeline stages first.</p>
-        </div>
+                  </div>
       )}
 
       {/* Form Builder Interface */}
@@ -2672,8 +2672,8 @@ const StageDependentFormsSettings = ({ stages }) => {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
+              </div>
             </div>
-          </div>
 
           {/* Tab Navigation */}
           <div className="border-b border-gray-200">
@@ -2712,7 +2712,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             ) : (
               <SimpleFormPreview />
             )}
-          </div>
+      </div>
 
           {/* Footer */}
           <div className="p-6 border-t bg-gray-50 flex gap-3 justify-between">
@@ -2864,37 +2864,37 @@ const SettingsPage = ({
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="flex overflow-x-auto scrollbar-hide">
-            {settingsPages.map((page) => (
-              <button
-                key={page.id}
-                onClick={() => setActiveSettingsPage(page.id)}
+          {settingsPages.map((page) => (
+            <button
+              key={page.id}
+              onClick={() => setActiveSettingsPage(page.id)}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${
-                  activeSettingsPage === page.id
+                activeSettingsPage === page.id
                     ? "border-blue-600 text-blue-600 bg-blue-50"
                     : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300"
-                }`}
-              >
+              }`}
+            >
                 <page.icon className="w-5 h-5 flex-shrink-0" />
-                <span>{page.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
+              <span>{page.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
 
         {/* Active Page Content */}
         <div className="p-8">
-          {activePage && (
+        {activePage && (
             <>
               <div className="mb-8 pb-6 border-b border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
                   <activePage.icon className="w-7 h-7 text-gray-400" />
-                  {activePage.label}
-                </h3>
+              {activePage.label}
+            </h3>
                 <p className="mt-2 text-base text-gray-600">
-                  {activePage.description}
-                </p>
-              </div>
-              {renderSettingsContent()}
+              {activePage.description}
+            </p>
+          </div>
+        {renderSettingsContent()}
             </>
           )}
         </div>
@@ -3338,7 +3338,7 @@ const SettingContent = ({ role }) => {
       stagesData.forEach((stage) => {
         dispatch(deletePipeline(stage.id)); // `id` is mapped to `stageId`
       });
-      toast.success(`Deleted ${stagesToDelete.length} stage(s) successfully`);
+    toast.success(`Deleted ${stagesToDelete.length} stage(s) successfully`);
     }
   };
 

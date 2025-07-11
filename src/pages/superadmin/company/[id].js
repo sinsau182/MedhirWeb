@@ -242,23 +242,182 @@ function CompanyDetails() {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [isEditingRole, setIsEditingRole] = useState(false);
+  const [roleViewMode, setRoleViewMode] = useState('list'); // ADD: 'list' or 'form'
   
   // States for enhanced role management UI
   const [roleSearchQuery, setRoleSearchQuery] = useState("");
   const [expandedRoleEntities, setExpandedRoleEntities] = useState(new Set());
 
-  // Constants for Roles & Permissions - Updated to include Accounting module
+  // Updated SYSTEM_ENTITIES with focused sub-categories
   const SYSTEM_ENTITIES = [
     // HR Management Entities
-    { id: "employees", label: "Employees", description: "Employee management and records", icon: "👥", module: "HR Management" },
+    { 
+      id: "employees", 
+      label: "Employees", 
+      description: "Employee management and records", 
+      icon: "👥", 
+      module: "HR Management",
+      hasSubCategories: true,
+      subCategories: [
+        {
+          id: "personal_information",
+          label: "Personal Information",
+          description: "Manage employee personal and contact details",
+          icon: "👤"
+        },
+        {
+          id: "department_assignment",
+          label: "Department",
+          description: "Assign and update employee departments",
+          icon: "🏢"
+        },
+        {
+          id: "statutory_details",
+          label: "Statuatory Details",
+          description: "Manage employee statutory and compliance information",
+          icon: "📄"
+        },
+        {
+          id: "id_proofs",
+          label: "ID Proofs",
+          description: "Manage employee identification documents",
+          icon: "💳"
+        },
+        {
+          id: "employee_docs",
+          label: "Employee Documents",
+          description: "Upload and manage employee-related documents",
+          icon: "📁"
+        },
+        {
+          id: "bank_details",
+          label: "Bank Details",
+          description: "Manage employee bank account information for payroll",
+          icon: "🏦"
+        },
+        {
+          id: "salary_details",
+          label: "Salary Details",
+          description: "Manage employee salary and compensation",
+          icon: "💰"
+        }
+      ]
+    },
     { id: "attendance", label: "Attendance", description: "Time and attendance tracking", icon: "⏰", module: "HR Management" },
     { id: "leaves", label: "Leaves", description: "Leave management and approvals", icon: "🏖️", module: "HR Management" },
     { id: "performance", label: "Performance", description: "Performance reviews and evaluations", icon: "📊", module: "HR Management" },
     
-    // Accounting Entities
-    { id: "vendors", label: "Vendors", description: "Vendor management and records", icon: "🏭", module: "Accounting" },
-    { id: "customers", label: "Customers", description: "Customer database and management", icon: "👤", module: "Accounting" },
-    { id: "accounting_employees", label: "Employees", description: "Employee financial records and payroll", icon: "👥", module: "Accounting" },
+    // Accounting Entities - Updated with focused sub-categories
+    { 
+      id: "vendors", 
+      label: "Vendors", 
+      description: "Complete vendor management system", 
+      icon: "🏭", 
+      module: "Accounting",
+      hasSubCategories: true,
+      subCategories: [
+        { 
+          id: "add_vendor", 
+          label: "Add Vendor", 
+          description: "Create and manage vendor profiles", 
+          icon: "➕",
+          activities: [
+            "create_vendor",
+            "view_vendor_list", 
+            "update_vendor",
+            "delete_vendor",
+            "approve_vendor_update",
+            "approve_vendor_delete"
+          ]
+        },
+        { 
+          id: "vendor_bills", 
+          label: "Vendor Bills", 
+          description: "Handle all vendor billing operations", 
+          icon: "📄",
+          activities: [
+            "create_vendor_bill",
+            "view_vendor_bills",
+            "update_vendor_bill", 
+            "approve_vendor_bill",
+            "delete_vendor_bill",
+            "approve_delete_vendor_bill"
+          ]
+        },
+        { 
+          id: "purchase_orders", 
+          label: "Purchase Orders", 
+          description: "Manage purchase order lifecycle", 
+          icon: "📋",
+          activities: [
+            "create_purchase_order",
+            "view_purchase_orders",
+            "update_purchase_order",
+            "approve_purchase_order_update", 
+            "delete_purchase_order",
+            "approve_purchase_order_delete"
+          ]
+        },
+        { 
+          id: "payments", 
+          label: "Payments", 
+          description: "Handle vendor payment operations", 
+          icon: "💰",
+          activities: [
+            "view_vendor_payments",
+            "add_vendor_payment",
+            "update_vendor_payment",
+            "approve_update_vendor_payments",
+            "delete_vendor_payments", 
+            "approve_delete_payment"
+          ]
+        }
+      ]
+    },
+    { 
+      id: "customers", 
+      label: "Customers", 
+      description: "Manage customers, invoices, and receipts", 
+      icon: "👤", 
+      module: "Accounting",
+      hasSubCategories: true,
+      subCategories: [
+        { 
+          id: "customer_profiles", 
+          label: "Customer Profiles", 
+          description: "Manage customer information", 
+          icon: "👤",
+        },
+        { 
+          id: "customer_invoices", 
+          label: "Invoices", 
+          description: "Create and manage customer invoices", 
+          icon: "🧾",
+        },
+        { 
+          id: "customer_receipts", 
+          label: "Receipts", 
+          description: "Manage customer payment receipts", 
+          icon: "🎟️",
+        }
+      ]
+    },
+    { 
+      id: "accounting_employees", 
+      label: "Employees", 
+      description: "Employee financial records and payroll", 
+      icon: "👥", 
+      module: "Accounting",
+      hasSubCategories: true,
+      subCategories: [
+        { 
+          id: "reimbursements", 
+          label: "Reimbursements", 
+          description: "Handle employee reimbursement requests", 
+          icon: "🧾",
+        }
+      ]
+    },
     
     // System Administration Entities
     { id: "departments", label: "Departments", description: "Department structure and management", icon: "🏢", module: "Administration" },
@@ -269,35 +428,57 @@ function CompanyDetails() {
     { id: "audit_logs", label: "Audit Logs", description: "System audit and activity logs", icon: "🔍", module: "Administration" },
   ];
 
+  // Updated SYSTEM_ACTIVITIES - Organized by the exact sub-categories
   const SYSTEM_ACTIVITIES = [
-    // Employee Activities (HR Management)
-    { id: "view_employees", label: "View Employees", entity: "employees" },
-    { id: "manage_employees", label: "Manage Employees", entity: "employees" },
-    { id: "update_employee", label: "Update Employee", entity: "employees" },
-    { id: "assign_department", label: "Assign Department", entity: "employees" },
-    { id: "update_job_detail", label: "Update Job Detail", entity: "employees" },
-    { id: "reset_password", label: "Reset Password", entity: "employees" },
-    { id: "deactivate_employee", label: "Deactivate Employee", entity: "employees" },
-    { id: "terminate_employee", label: "Terminate Employee", entity: "employees" },
-    { id: "reactivate_employee", label: "Reactivate Employee", entity: "employees" },
-    { id: "upload_employee_docs", label: "Upload Employee Docs", entity: "employees" },
-    { id: "assign_asset", label: "Assign Asset", entity: "employees" },
-    { id: "assign_role_permission", label: "Assign Role Permission", entity: "employees" },
+    // Employee Activities (HR Management) - RESTRUCTURED
+    // Personal Information
+    { id: "add_personal_info", label: "Add Personal Information", entity: "employees", subCategory: "personal_information" },
+    { id: "update_personal_info", label: "Update Personal Information", entity: "employees", subCategory: "personal_information" },
+    { id: "view_personal_info", label: "View Personal Information", entity: "employees", subCategory: "personal_information" },
+    { id: "delete_personal_info", label: "Delete Personal Information", entity: "employees", subCategory: "personal_information" },
+
+    // Department
+    { id: "assign_department", label: "Assign Department", entity: "employees", subCategory: "department_assignment" },
+    { id: "update_department_assignment", label: "Update Department", entity: "employees", subCategory: "department_assignment" },
+
+    // Statuatory Details
+    { id: "add_statutory_details", label: "Add Statuatory Details", entity: "employees", subCategory: "statutory_details" },
+    { id: "update_statutory_details", label: "Update Statuatory Details", entity: "employees", subCategory: "statutory_details" },
+    { id: "view_statutory_details", label: "View Statuatory Details", entity: "employees", subCategory: "statutory_details" },
+    { id: "delete_statutory_details", label: "Delete Statuatory Details", entity: "employees", subCategory: "statutory_details" },
+    
+    // ID Proofs
+    { id: "add_id_proof", label: "Add ID Proof", entity: "employees", subCategory: "id_proofs" },
+    { id: "update_id_proof", label: "Update ID Proof", entity: "employees", subCategory: "id_proofs" },
+    { id: "view_id_proofs", label: "View ID Proofs", entity: "employees", subCategory: "id_proofs" },
+    { id: "delete_id_proof", label: "Delete ID Proof", entity: "employees", subCategory: "id_proofs" },
+
+    // Employee Documents
+    { id: "upload_employee_doc", label: "Upload Employee Document", entity: "employees", subCategory: "employee_docs" },
+    { id: "update_employee_doc", label: "Update Employee Document", entity: "employees", subCategory: "employee_docs" },
+    { id: "view_employee_docs", label: "View Employee Documents", entity: "employees", subCategory: "employee_docs" },
+    { id: "delete_employee_doc", label: "Delete Employee Document", entity: "employees", subCategory: "employee_docs" },
+
+    // Bank Details
+    { id: "add_bank_details", label: "Add Bank Details", entity: "employees", subCategory: "bank_details" },
+    { id: "update_bank_details", label: "Update Bank Details", entity: "employees", subCategory: "bank_details" },
+    { id: "view_bank_details", label: "View Bank Details", entity: "employees", subCategory: "bank_details" },
+    { id: "delete_bank_details", label: "Delete Bank Details", entity: "employees", subCategory: "bank_details" },
+
+    // Salary Details
+    { id: "add_salary_details", label: "Add Salary Details", entity: "employees", subCategory: "salary_details" },
+    { id: "update_salary_details", label: "Update Salary Details", entity: "employees", subCategory: "salary_details" },
+    { id: "view_salary_details", label: "View Salary Details", entity: "employees", subCategory: "salary_details" },
+    { id: "delete_salary_details", label: "Delete Salary Details", entity: "employees", subCategory: "salary_details" },
     
     // Attendance Activities
     { id: "mark_attendance", label: "Mark Attendance", entity: "attendance" },
     { id: "view_attendance", label: "View Attendance", entity: "attendance" },
-    { id: "manage_attendance_policies", label: "Manage Attendance Policies", entity: "attendance" },
-    { id: "approve_attendance", label: "Approve Attendance", entity: "attendance" },
-    { id: "generate_attendance_reports", label: "Generate Attendance Reports", entity: "attendance" },
     
     // Leave Activities
-    { id: "approve_leaves", label: "Approve Leaves", entity: "leaves" },
     { id: "apply_leave", label: "Apply Leave", entity: "leaves" },
+    { id: "approve_reject_leave", label: "Approve/Reject Leave", entity: "leaves" },
     { id: "view_leave_history", label: "View Leave History", entity: "leaves" },
-    { id: "manage_leave_policies", label: "Manage Leave Policies", entity: "leaves" },
-    { id: "cancel_leave", label: "Cancel Leave", entity: "leaves" },
-    { id: "view_team_leaves", label: "View Team Leaves", entity: "leaves" },
     
     // Performance Activities
     { id: "review_performance", label: "Review Performance", entity: "performance" },
@@ -305,26 +486,73 @@ function CompanyDetails() {
     { id: "view_performance_reports", label: "View Performance Reports", entity: "performance" },
     { id: "conduct_appraisals", label: "Conduct Appraisals", entity: "performance" },
     
-    // Vendor Activities (Accounting) - Updated: Removed "view_vendor_reports"
-    { id: "create_vendor", label: "Create Vendor", entity: "vendors" },
-    { id: "update_vendor", label: "Update Vendor", entity: "vendors" },
-    { id: "view_vendor", label: "View Vendor", entity: "vendors" },
-    { id: "delete_vendor", label: "Delete Vendor", entity: "vendors" },
-    { id: "manage_vendor_payments", label: "Manage Vendor Payments", entity: "vendors" },
-    { id: "approve_vendor_bills", label: "Approve Vendor Bills", entity: "vendors" },
+    // Vendor Activities (Accounting) - Organized by focused sub-categories
     
-    // Customer Activities (Accounting) - Updated: Removed "export_customer_data"
-    { id: "create_customer", label: "Create Customer", entity: "customers" },
-    { id: "update_customer", label: "Update Customer", entity: "customers" },
-    { id: "view_customer", label: "View Customer", entity: "customers" },
-    { id: "delete_customer", label: "Delete Customer", entity: "customers" },
-    { id: "manage_customer_invoices", label: "Manage Customer Invoices", entity: "customers" },
-    { id: "view_customer_history", label: "View Customer History", entity: "customers" },
-    { id: "manage_customer_payments", label: "Manage Customer Payments", entity: "customers" },
+    // Add Vendor Sub-category Activities
+    { id: "create_vendor", label: "Create Vendor", entity: "vendors", subCategory: "add_vendor" },
+    { id: "view_vendor_list", label: "View Vendor List", entity: "vendors", subCategory: "add_vendor" },
+    { id: "update_vendor", label: "Update Vendor", entity: "vendors", subCategory: "add_vendor" },
+    { id: "delete_vendor", label: "Delete Vendor", entity: "vendors", subCategory: "add_vendor" },
+    { id: "approve_vendor_update", label: "Approve Vendor Update", entity: "vendors", subCategory: "add_vendor" },
+    { id: "approve_vendor_delete", label: "Approve Vendor Delete", entity: "vendors", subCategory: "add_vendor" },
     
-    // Accounting Employee Activities - Updated: Only keeping expense-related activities
-    { id: "manage_employee_expenses", label: "Manage Employee Expenses", entity: "accounting_employees" },
-    { id: "approve_employee_expenses", label: "Approve Employee Expenses", entity: "accounting_employees" },
+    // Vendor Bills Sub-category Activities
+    { id: "create_vendor_bill", label: "Create Vendor Bill", entity: "vendors", subCategory: "vendor_bills" },
+    { id: "view_vendor_bills", label: "View Vendor Bills", entity: "vendors", subCategory: "vendor_bills" },
+    { id: "update_vendor_bill", label: "Update Vendor Bill", entity: "vendors", subCategory: "vendor_bills" },
+    { id: "approve_vendor_bill", label: "Approve Vendor Bill", entity: "vendors", subCategory: "vendor_bills" },
+    { id: "delete_vendor_bill", label: "Delete Vendor Bill", entity: "vendors", subCategory: "vendor_bills" },
+    { id: "approve_delete_vendor_bill", label: "Approve Delete Vendor Bill", entity: "vendors", subCategory: "vendor_bills" },
+    
+    // Purchase Orders Sub-category Activities
+    { id: "create_purchase_order", label: "Create Purchase Order", entity: "vendors", subCategory: "purchase_orders" },
+    { id: "view_purchase_orders", label: "View Purchase Orders", entity: "vendors", subCategory: "purchase_orders" },
+    { id: "update_purchase_order", label: "Update Purchase Order", entity: "vendors", subCategory: "purchase_orders" },
+    { id: "approve_purchase_order_update", label: "Approve Purchase Order Update", entity: "vendors", subCategory: "purchase_orders" },
+    { id: "delete_purchase_order", label: "Delete Purchase Order", entity: "vendors", subCategory: "purchase_orders" },
+    { id: "approve_purchase_order_delete", label: "Approve Purchase Order Delete", entity: "vendors", subCategory: "purchase_orders" },
+    
+    // Payments Sub-category Activities
+    { id: "view_vendor_payments", label: "View Vendor Payments", entity: "vendors", subCategory: "payments" },
+    { id: "add_vendor_payment", label: "Add Vendor Payment", entity: "vendors", subCategory: "payments" },
+    { id: "update_vendor_payment", label: "Update Vendor Payment", entity: "vendors", subCategory: "payments" },
+    { id: "approve_update_vendor_payments", label: "Approve Update Vendor Payments", entity: "vendors", subCategory: "payments" },
+    { id: "delete_vendor_payments", label: "Delete Vendor Payments", entity: "vendors", subCategory: "payments" },
+    { id: "approve_delete_payment", label: "Approve Delete Payment", entity: "vendors", subCategory: "payments" },
+    
+    // Customer Activities (Accounting) - NEW Structure
+    // Customer Profiles
+    { id: "create_customer", label: "Create Customer", entity: "customers", subCategory: "customer_profiles" },
+    { id: "view_customers", label: "View Customer List", entity: "customers", subCategory: "customer_profiles" },
+    { id: "update_customer", label: "Update Customer", entity: "customers", subCategory: "customer_profiles" },
+    { id: "delete_customer", label: "Delete Customer", entity: "customers", subCategory: "customer_profiles" },
+    { id: "approve_customer_update", label: "Approve Customer Update", entity: "customers", subCategory: "customer_profiles" },
+    { id: "approve_customer_delete", label: "Approve Customer Delete", entity: "customers", subCategory: "customer_profiles" },
+    
+    // Customer Invoices
+    { id: "create_customer_invoice", label: "Create Invoice", entity: "customers", subCategory: "customer_invoices" },
+    { id: "view_customer_invoices", label: "View Invoices", entity: "customers", subCategory: "customer_invoices" },
+    { id: "update_customer_invoice", label: "Update Invoice", entity: "customers", subCategory: "customer_invoices" },
+    { id: "delete_customer_invoice", label: "Delete Invoice", entity: "customers", subCategory: "customer_invoices" },
+    { id: "approve_invoice_update", label: "Approve Invoice Update", entity: "customers", subCategory: "customer_invoices" },
+    { id: "approve_invoice_delete", label: "Approve Invoice Delete", entity: "customers", subCategory: "customer_invoices" },
+
+    // Customer Receipts
+    { id: "create_customer_receipt", label: "Create Receipt", entity: "customers", subCategory: "customer_receipts" },
+    { id: "view_customer_receipts", label: "View Receipts", entity: "customers", subCategory: "customer_receipts" },
+    { id: "update_customer_receipt", label: "Update Receipt", entity: "customers", subCategory: "customer_receipts" },
+    { id: "delete_customer_receipt", label: "Delete Receipt", entity: "customers", subCategory: "customer_receipts" },
+    { id: "approve_receipt_update", label: "Approve Receipt Update", entity: "customers", subCategory: "customer_receipts" },
+    { id: "approve_receipt_delete", label: "Approve Receipt Delete", entity: "customers", subCategory: "customer_receipts" },
+    
+    // Accounting Employee Activities - UPDATED with sub-categories
+    // Reimbursements
+    { id: "submit_reimbursement", label: "Submit Reimbursement", entity: "accounting_employees", subCategory: "reimbursements" },
+    { id: "view_reimbursements", label: "View Reimbursements", entity: "accounting_employees", subCategory: "reimbursements" },
+    { id: "update_reimbursement", label: "Update Reimbursement", entity: "accounting_employees", subCategory: "reimbursements" },
+    { id: "delete_reimbursement", label: "Delete Reimbursement", entity: "accounting_employees", subCategory: "reimbursements" },
+    { id: "approve_reimbursement", label: "Approve/Reject Reimbursement", entity: "accounting_employees", subCategory: "reimbursements" },
+    { id: "pay_reimbursement", label: "Pay Reimbursement", entity: "accounting_employees", subCategory: "reimbursements" },
     
     // Department Activities
     { id: "manage_departments", label: "Manage Departments", entity: "departments" },
@@ -363,7 +591,7 @@ function CompanyDetails() {
   ];
   
   // Handlers for Role Management
-  const handleOpenRoleModal = (role = null) => {
+  const handleOpenRoleForm = (role = null) => { // MODIFIED: Renamed from handleOpenRoleModal
     setRoleSearchQuery(""); // Reset search on open
     if (role) {
       setIsEditingRole(true);
@@ -380,9 +608,14 @@ function CompanyDetails() {
       setEditingRole({ id: null, name: "", description: "", assignedEntities: [], assignedActivities: [] });
       setExpandedRoleEntities(new Set());
     }
-    setIsRoleModalOpen(true);
+    setRoleViewMode('form'); // MODIFIED: Change view instead of opening modal
   };
   
+  const handleCloseRoleForm = () => { // ADD: New handler to close form view
+    setRoleViewMode('list');
+    setEditingRole(null);
+  };
+
   const handleSaveRole = () => {
     if (!editingRole.name) {
       toast.error("Role name is required.");
@@ -404,7 +637,7 @@ function CompanyDetails() {
       toast.success("Role created successfully!");
     }
     
-    setIsRoleModalOpen(false);
+    setRoleViewMode('list'); // MODIFIED: Change view back to list
     setEditingRole(null);
   };
 
@@ -455,6 +688,32 @@ function CompanyDetails() {
       newActivities = [...editingRole.assignedActivities, ...activitiesToAdd];
     }
     setEditingRole(prev => ({ ...prev, assignedActivities: newActivities }));
+  };
+
+  // ADD: Handler to select/deselect all activities for a SUB-CATEGORY
+  const handleSelectAllForSubCategory = (entityId, subCategoryId) => {
+    const activitiesForSubCategory = SYSTEM_ACTIVITIES.filter(
+      (a) => a.entity === entityId && a.subCategory === subCategoryId
+    );
+    const activityIds = activitiesForSubCategory.map((a) => a.id);
+
+    const currentlySelectedForSubCategory =
+      editingRole.assignedActivities.filter((id) => activityIds.includes(id));
+
+    let newActivities;
+    if (currentlySelectedForSubCategory.length === activityIds.length) {
+      // All are selected, so deselect all for this sub-category
+      newActivities = editingRole.assignedActivities.filter(
+        (id) => !activityIds.includes(id)
+      );
+    } else {
+      // Not all are selected, so select all for this sub-category
+      const activitiesToAdd = activityIds.filter(
+        (id) => !editingRole.assignedActivities.includes(id)
+      );
+      newActivities = [...editingRole.assignedActivities, ...activitiesToAdd];
+    }
+    setEditingRole((prev) => ({ ...prev, assignedActivities: newActivities }));
   };
 
   useEffect(() => {
@@ -1860,65 +2119,376 @@ function CompanyDetails() {
               )}
 
               {activeTab === "permissions" && (
-                <div className="space-y-6">
-                  {/* Header */}
-                  <div className="flex justify-between items-center">
-                          <div>
-                      <h2 className="text-xl font-semibold text-gray-800">Roles & Permissions</h2>
-                      <p className="text-gray-600 text-sm mt-1">Define custom roles and their access levels for this company.</p>
-                          </div>
-                    <button
-                      onClick={() => handleOpenRoleModal()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                <AnimatePresence mode="wait">
+                  {roleViewMode === 'list' ? (
+                    <motion.div
+                      key="role-list"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="space-y-6"
                     >
-                      <Plus size={16} />
-                      Create Role
-                    </button>
+                      {/* Header */}
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h2 className="text-xl font-semibold text-gray-800">Roles & Permissions</h2>
+                          <p className="text-gray-600 text-sm mt-1">Define custom roles and their access levels for this company.</p>
                         </div>
+                        <button
+                          onClick={() => handleOpenRoleForm()}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm font-medium"
+                        >
+                          <Plus size={16} />
+                          Create Role
+                        </button>
+                      </div>
                         
-                  {/* Roles Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {companyData.roles?.map(role => (
-                      <div key={role.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
-                        <div className="flex-grow">
-                          <h3 className="text-lg font-bold text-gray-800">{role.name}</h3>
-                          <p className="text-sm text-gray-500 mt-1 mb-4 h-10">{role.description}</p>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Database size={14} className="text-blue-500" />
-                              <span>{role.assignedEntities.length} Entities</span>
-                                  </div>
-                            <div className="flex items-center gap-2">
-                              <Activity size={14} className="text-green-500" />
-                              <span>{role.assignedActivities.length} Activities</span>
-                                  </div>
+                      {/* Roles Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {companyData.roles?.map(role => (
+                          <div key={role.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col">
+                            <div className="flex-grow">
+                              <h3 className="text-lg font-bold text-gray-800">{role.name}</h3>
+                              <p className="text-sm text-gray-500 mt-1 mb-4 h-10">{role.description}</p>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Database size={14} className="text-blue-500" />
+                                  <span>{role.assignedEntities.length} Entities</span>
                                 </div>
-                                  </div>
-                        <div className="mt-6 pt-4 border-t border-gray-100 flex gap-2">
-                          <button 
-                            onClick={() => handleOpenRoleModal(role)}
-                            className="flex-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                          >
-                            Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteRole(role.id)}
-                            className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100"
-                          >
-                            <Trash size={16} />
-                          </button>
+                                <div className="flex items-center gap-2">
+                                  <Activity size={14} className="text-green-500" />
+                                  <span>{role.assignedActivities.length} Activities</span>
                                 </div>
                               </div>
-                            ))}
-                    {(!companyData.roles || companyData.roles.length === 0) && (
-                      <div className="col-span-full text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-                        <Shield size={48} className="mx-auto mb-2 text-gray-300" />
-                        <p>No roles created yet.</p>
-                        <p className="text-sm">Click "Create Role" to get started.</p>
+                            </div>
+                            <div className="mt-6 pt-4 border-t border-gray-100 flex gap-2">
+                              <button 
+                                onClick={() => handleOpenRoleForm(role)}
+                                className="flex-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteRole(role.id)}
+                                className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100"
+                              >
+                                <Trash size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {(!companyData.roles || companyData.roles.length === 0) && (
+                          <div className="col-span-full text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+                            <Shield size={48} className="mx-auto mb-2 text-gray-300" />
+                            <p>No roles created yet.</p>
+                            <p className="text-sm">Click "Create Role" to get started.</p>
                           </div>
                         )}
-                  </div>
-                </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="role-form"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                    >
+                      {/* START: SIMPLIFIED Header and Actions */}
+                      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={handleCloseRoleForm}
+                            className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                          >
+                            <ArrowLeft size={18} className="text-gray-600" />
+                          </button>
+                          <div>
+                            <h2 className="text-lg font-semibold text-gray-800">
+                              {isEditingRole ? "Edit Role & Permissions" : "Create New Role"}
+                            </h2>
+                            <p className="text-sm text-gray-500">
+                              Configure role details and system access permissions.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={handleCloseRoleForm}
+                            className="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={handleSaveRole} 
+                            disabled={!editingRole?.name?.trim()}
+                            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            <Check size={16} />
+                            {isEditingRole ? "Save Changes" : "Create Role"}
+                          </button>
+                        </div>
+                      </div>
+                      {/* END: SIMPLIFIED Header and Actions */}
+
+                      {/* Main Content - REMOVED h-[70vh] */}
+                      <div className="flex" style={{ height: 'calc(100vh - 250px)' }}> 
+                        <div className="w-[320px] flex-shrink-0 bg-white border-r border-gray-200 p-6 overflow-y-auto">
+                          {/* Role Details (Left Column) */}
+                          <div className="space-y-6">
+                            <div>
+                              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                                Role Details
+                              </h3>
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Role Name *</label>
+                                  <input
+                                    type="text"
+                                    value={editingRole?.name || ""}
+                                    onChange={(e) => setEditingRole(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="e.g., HR Manager"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                  <textarea
+                                    value={editingRole?.description || ""}
+                                    onChange={(e) => setEditingRole(prev => ({ ...prev, description: e.target.value }))}
+                                    placeholder="Describe the role's purpose..."
+                                    rows={4}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                              <h4 className="text-sm font-semibold text-gray-800 mb-3">Summary</h4>
+                              <div className="space-y-3">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Entities</span>
+                                  <span className="font-medium text-blue-600">
+                                    {editingRole?.assignedEntities?.length || 0}/{SYSTEM_ENTITIES.length}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Activities</span>
+                                  <span className="font-medium text-green-600">
+                                    {editingRole?.assignedActivities?.length || 0}/{SYSTEM_ACTIVITIES.length}
+                                  </span>
+                                </div>
+                                <div className="pt-1">
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                                      style={{ width: `${((editingRole?.assignedActivities?.length || 0) / SYSTEM_ACTIVITIES.length) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">Quick Actions</h4>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleExpandCollapseAll(true)}
+                                  className="flex-1 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
+                                >
+                                  Expand All
+                                </button>
+                                <button
+                                  onClick={() => handleExpandCollapseAll(false)}
+                                  className="flex-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                                >
+                                  Collapse All
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-1 flex flex-col bg-gray-50">
+                          <div className="px-6 py-4 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="text-base font-semibold text-gray-900">System Permissions</h3>
+                                <p className="text-sm text-gray-500">Select which activities this role can perform.</p>
+                              </div>
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Filter permissions..."
+                                  value={roleSearchQuery}
+                                  onChange={(e) => setRoleSearchQuery(e.target.value)}
+                                  className="w-64 pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex-1 p-6 overflow-y-auto">
+                            <div className="space-y-6">
+                              {["HR Management", "Accounting", "Administration"].map(module => {
+                                const entitiesInModule = SYSTEM_ENTITIES
+                                  .filter(entity => entity.module === module)
+                                  .filter(entity => 
+                                    entity.label.toLowerCase().includes(roleSearchQuery.toLowerCase()) || 
+                                    entity.description.toLowerCase().includes(roleSearchQuery.toLowerCase())
+                                  );
+                                if (entitiesInModule.length === 0) return null;
+                                return (
+                                  <div key={module}>
+                                    <div className="mb-3">
+                                      <h4 className="text-base font-semibold text-gray-800">{module}</h4>
+                                    </div>
+                                    <div className="space-y-4">
+                                      {entitiesInModule.map(entity => {
+                                        const isExpanded = expandedRoleEntities.has(entity.id);
+                                        const activitiesForEntity = SYSTEM_ACTIVITIES.filter(a => a.entity === entity.id);
+                                        const selectedCount = editingRole?.assignedActivities?.filter(actId => 
+                                          activitiesForEntity.some(a => a.id === actId)
+                                        ).length || 0;
+                                        const isAllSelected = selectedCount === activitiesForEntity.length && activitiesForEntity.length > 0;
+                                        return (
+                                          <div key={entity.id} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                                            <div 
+                                              className="px-4 py-3 border-b border-gray-200 cursor-pointer hover:bg-gray-50"
+                                              onClick={() => toggleEntityExpansion(entity.id)}
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isAllSelected}
+                                                    onChange={(e) => {
+                                                      e.stopPropagation();
+                                                      handleSelectAllActivities(entity.id);
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                  />
+                                                  <span className="text-2xl">{entity.icon}</span>
+                                                  <div>
+                                                    <h4 className="font-semibold text-gray-800">{entity.label}</h4>
+                                                    <p className="text-xs text-gray-500">{entity.description}</p>
+                                                  </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    isAllSelected ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                                  }`}>
+                                                    {selectedCount}/{activitiesForEntity.length}
+                                                  </div>
+                                                  <ChevronDown
+                                                    size={16}
+                                                    className={`text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                                                  />
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <AnimatePresence>
+                                              {isExpanded && (
+                                                <motion.div
+                                                  initial={{ height: 0, opacity: 0 }}
+                                                  animate={{ height: 'auto', opacity: 1 }}
+                                                  exit={{ height: 0, opacity: 0 }}
+                                                  transition={{ duration: 0.2 }}
+                                                  className="overflow-hidden"
+                                                >
+                                                  <div className="p-4">
+                                                    {entity.hasSubCategories ? (
+                                                      <div className="space-y-3">
+                                                        {entity.subCategories.map((subCategory) => {
+                                                          const activitiesForSubCategory = SYSTEM_ACTIVITIES.filter(
+                                                            (act) => act.entity === entity.id && act.subCategory === subCategory.id
+                                                          );
+                                                          if (activitiesForSubCategory.length === 0) return null;
+                                                          const isAllSubCategorySelected = activitiesForSubCategory.every(a => editingRole.assignedActivities.includes(a.id));
+                                                          return (
+                                                            <div key={subCategory.id} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                                              <div className="flex items-center justify-between mb-2">
+                                                                <h5 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                                                  <span className="text-lg">{subCategory.icon}</span>
+                                                                  {subCategory.label}
+                                                                </h5>
+                                                                <button
+                                                                  onClick={() => handleSelectAllForSubCategory(entity.id, subCategory.id)}
+                                                                  className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                                                                    isAllSubCategorySelected
+                                                                      ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                                  }`}
+                                                                >
+                                                                  {isAllSubCategorySelected ? 'All' : 'All'}
+                                                                </button>
+                                                              </div>
+                                                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 pl-2">
+                                                                {activitiesForSubCategory.map(activity => (
+                                                                  <label key={activity.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-blue-50 cursor-pointer">
+                                                                    <input
+                                                                      type="checkbox"
+                                                                      checked={editingRole?.assignedActivities?.includes(activity.id) || false}
+                                                                      onChange={() => {
+                                                                        const newActivities = editingRole?.assignedActivities?.includes(activity.id)
+                                                                          ? (editingRole?.assignedActivities || []).filter(id => id !== activity.id)
+                                                                          : [...(editingRole?.assignedActivities || []), activity.id];
+                                                                        setEditingRole(prev => ({...prev, assignedActivities: newActivities}));
+                                                                      }}
+                                                                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                                    />
+                                                                    <span className="text-sm text-gray-700">{activity.label}</span>
+                                                                  </label>
+                                                                ))}
+                                                              </div>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    ) : activitiesForEntity.length > 0 ? (
+                                                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                                        {activitiesForEntity.map(activity => (
+                                                          <label key={activity.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-blue-50 cursor-pointer">
+                                                            <input
+                                                              type="checkbox"
+                                                              checked={editingRole?.assignedActivities?.includes(activity.id) || false}
+                                                              onChange={() => {
+                                                                const newActivities = editingRole?.assignedActivities?.includes(activity.id)
+                                                                  ? (editingRole?.assignedActivities || []).filter(id => id !== activity.id)
+                                                                  : [...(editingRole?.assignedActivities || []), activity.id];
+                                                                setEditingRole(prev => ({...prev, assignedActivities: newActivities}));
+                                                              }}
+                                                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                            />
+                                                            <span className="text-sm text-gray-700">{activity.label}</span>
+                                                          </label>
+                                                        ))}
+                                                      </div>
+                                                    ) : (
+                                                      <div className="text-center py-6 text-gray-500">
+                                                        <ActivityIcon size={20} className="mx-auto mb-1" />
+                                                        <p className="text-sm">No activities available</p>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </motion.div>
+                                              )}
+                                            </AnimatePresence>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               )}
             </motion.div>
           </AnimatePresence>
@@ -2786,7 +3356,64 @@ function CompanyDetails() {
                                           className="overflow-hidden"
                                         >
                                           <div className="bg-gray-50 px-6 py-4">
-                                            {activitiesForEntity.length > 0 ? (
+                                            {entity.hasSubCategories ? (
+                                              // NEW: Sub-category rendering logic
+                                              <div className="space-y-4">
+                                                {entity.subCategories.map((subCategory) => {
+                                                  const activitiesForSubCategory = SYSTEM_ACTIVITIES.filter(
+                                                    (act) => act.entity === entity.id && act.subCategory === subCategory.id
+                                                  );
+                                                  if (activitiesForSubCategory.length === 0) return null;
+
+                                                  const isAllSubCategorySelected = activitiesForSubCategory.every(a => editingRole.assignedActivities.includes(a.id));
+
+                                                  return (
+                                                    <div key={subCategory.id} className="bg-white p-4 rounded-lg border border-gray-200">
+                                                      <div className="flex items-center justify-between mb-3">
+                                                        <h5 className="text-base font-semibold text-gray-800 flex items-center gap-3">
+                                                          <span className="text-xl">{subCategory.icon}</span>
+                                                          {subCategory.label}
+                                                        </h5>
+                                                        <button
+                                                          onClick={() => handleSelectAllForSubCategory(entity.id, subCategory.id)}
+                                                          className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                                                            isAllSubCategorySelected
+                                                              ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                          }`}
+                                                        >
+                                                          {isAllSubCategorySelected ? 'Deselect All' : 'Select All'}
+                                                        </button>
+                                                      </div>
+                                                      <div className="grid grid-cols-2 gap-3 pl-4">
+                                                        {activitiesForSubCategory.map(activity => (
+                                                          <label 
+                                                            key={activity.id} 
+                                                            className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-blue-50 cursor-pointer transition-all group"
+                                                          >
+                                                            <input
+                                                              type="checkbox"
+                                                              checked={editingRole?.assignedActivities?.includes(activity.id) || false}
+                                                              onChange={() => {
+                                                                const newActivities = editingRole?.assignedActivities?.includes(activity.id)
+                                                                  ? (editingRole?.assignedActivities || []).filter(id => id !== activity.id)
+                                                                  : [...(editingRole?.assignedActivities || []), activity.id];
+                                                                setEditingRole(prev => ({...prev, assignedActivities: newActivities}));
+                                                              }}
+                                                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                            />
+                                                            <span className="text-sm text-gray-700 group-hover:text-blue-700">
+                                                              {activity.label}
+                                                            </span>
+                                                          </label>
+                                                        ))}
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            ) : activitiesForEntity.length > 0 ? (
+                                              // EXISTING: Logic for entities without sub-categories
                                               <div className="grid grid-cols-2 gap-3">
                                                 {activitiesForEntity.map(activity => (
                                                   <label 
@@ -2811,6 +3438,7 @@ function CompanyDetails() {
                                                 ))}
                                               </div>
                                             ) : (
+                                              // No activities message
                                               <div className="text-center py-8 text-gray-400">
                                                 <ActivityIcon size={24} className="mx-auto mb-2 opacity-50" />
                                                 <p className="text-sm">No activities available for this entity</p>
