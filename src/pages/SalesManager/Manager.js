@@ -48,6 +48,7 @@ import useFlattenedLeads from "@/hooks/useFlattenedLeads";
 import ViewToggle from "@/components/Sales/ViewToggle";
 import SearchBar from "@/components/Sales/SearchBar";
 import DeletePipelineModal from "@/components/Sales/DeletePipelineModal";
+import LeadsTable from "../../components/Sales/LeadsTable";
 
 const salesPersons = [
   { id: "MED101", name: "Alice" },
@@ -96,42 +97,6 @@ const defaultLeadData = {
   bookingFormFileName: null,
 };
 
-const LeadsTable = ({ leads }) => (
-  <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Contact</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Sales Rep</TableHead>
-          <TableHead>Designer</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {leads.map((lead) => (
-          <TableRow key={lead.leadId}>
-            <TableCell className="font-medium">{lead.name}</TableCell>
-            <TableCell>{lead.contactNumber}</TableCell>
-            <TableCell>{lead.email}</TableCell>
-            <TableCell>{lead.status}</TableCell>
-            <TableCell>
-              {lead.salesRep || (
-                <span className="text-gray-400">Unassigned</span>
-              )}
-            </TableCell>
-            <TableCell>
-              {lead.designer || (
-                <span className="text-gray-400">Unassigned</span>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  </div>
-);
 
 const ManagerContent = ({ role }) => {
   const dispatch = useDispatch();
@@ -614,19 +579,37 @@ const ManagerContent = ({ role }) => {
         </p>
       )}
 
-      {viewMode === "kanban" ? (
-        <KanbanBoardClientOnly
-          leadsByStatus={leadsByStatus}
-          statuses={pipelines.map((p) => p.name)}
-          kanbanStatuses={pipelines}
-          onScheduleActivity={handleScheduleActivity}
-          onDragEnd={handleDragEnd}
-          // Debug props
-          debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
-        />
-      ) : (
-        <LeadsTable leads={dedupedLeads} />
-      )}
+   
+{viewMode === "kanban" && (
+  <KanbanBoardClientOnly
+    leadsByStatus={Object.fromEntries(
+      Object.entries(leadsByStatus).map(([status, leads]) => [
+        status,
+        leads.filter((lead) =>
+          lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+          lead.contactNumber?.includes(filterText) ||
+          lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+        ),
+      ])
+    )}
+    statuses={pipelines.map((p) => p.name)}
+    kanbanStatuses={pipelines}
+    onScheduleActivity={handleScheduleActivity}
+    onDragEnd={handleDragEnd}
+    debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+  />
+)}
+
+{viewMode === "table" && (
+  <LeadsTable
+    leads={dedupedLeads.filter((lead) =>
+      lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+      lead.contactNumber?.includes(filterText) ||
+      lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+    )}
+  />
+)}
+
 
       <AddLeadModal
         isOpen={showAddLeadModal}
