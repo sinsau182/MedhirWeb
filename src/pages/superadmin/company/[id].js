@@ -230,7 +230,8 @@ function CompanyDetails() {
 
   // Add state for feature filtering and admin filtering
   const [featureFilter, setFeatureFilter] = useState("");  // Remove "all" default
-  const [adminFilter, setAdminFilter] = useState("");      // Keep empty for search
+  const [moduleFilter, setModuleFilter] = useState("all"); // For modules tab dropdown
+  const [adminSearchFilter, setAdminSearchFilter] = useState(""); // For admin tab search
 
   // Add state for edit features modal
   const [isEditFeaturesModalOpen, setIsEditFeaturesModalOpen] = useState(false);
@@ -752,13 +753,13 @@ function CompanyDetails() {
   const TabButton = ({ id, label, icon: Icon, isActive, onClick }) => (
     <button
       onClick={onClick}
-      className={`flex items-center gap-3 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+      className={`flex items-center gap-2 px-3 py-1.5 rounded font-medium transition-all duration-200 text-sm whitespace-nowrap ${
         isActive
-          ? "bg-white text-blue-600 shadow-md"
-          : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+          ? "bg-white text-blue-600 shadow-sm"
+          : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
       }`}
     >
-      <Icon size={20} />
+      <Icon size={16} />
       {label}
     </button>
   );
@@ -768,38 +769,38 @@ function CompanyDetails() {
       <SuperadminHeaders />
       
       <div className="flex-1 pt-16">
-        <div className="p-6 mt-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+        <div className="p-4 mt-2">
+          {/* Compact Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push("/superadmin/companies")}
-                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                <ArrowLeft size={20} className="text-gray-600" />
+                <ArrowLeft size={16} className="text-gray-600" />
               </button>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <div 
-                  className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg"
+                  className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md"
                   style={{ backgroundColor: companyData.colorCode }}
                 >
-                  <Building2 className="h-8 w-8 text-white" />
+                  <Building2 className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">{companyData.name}</h1>
-                  <p className="text-gray-600">{companyData.email}</p>
+                  <h1 className="text-lg font-bold text-gray-800">{companyData.name}</h1>
+                  <p className="text-xs text-gray-500">{companyData.email}</p>
                 </div>
               </div>
             </div>
-            <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2">
-              <Edit size={16} />
+            <button className="px-3 py-1.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm">
+              <Edit size={14} />
               Edit Company
             </button>
           </div>
 
-          {/* Tabs */}
-          <div className="bg-gray-50 rounded-xl p-2 mb-6">
-            <div className="flex gap-2">
+          {/* Compact Tabs */}
+          <div className="bg-gray-50 rounded-lg p-1.5 mb-4">
+            <div className="flex gap-1 overflow-x-auto">
               <TabButton
                 id="overview"
                 label="Overview"
@@ -841,84 +842,84 @@ function CompanyDetails() {
               transition={{ duration: 0.2 }}
             >
               {activeTab === "overview" && (
-                <div className="space-y-6">
-                  {/* Summary Statistics Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="space-y-4">
+                  {/* Compact Summary Statistics Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl">
                     {/* Total Modules Card */}
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-blue-600">Total Modules</p>
-                          <p className="text-2xl font-bold text-blue-800">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-blue-600">Total Modules</p>
+                          <p className="text-lg font-bold text-blue-800">
                             {companyData.assignedModules?.length || 0}
                           </p>
-                          <p className="text-xs text-blue-500 mt-1">
+                          <p className="text-[10px] text-blue-500 truncate">
                             Active modules assigned
                           </p>
                         </div>
-                        <div className="w-12 h-12 bg-blue-200 rounded-lg flex items-center justify-center">
-                          <Settings className="h-6 w-6 text-blue-600" />
+                        <div className="w-8 h-8 bg-blue-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Settings className="h-4 w-4 text-blue-600" />
                         </div>
                       </div>
                     </div>
 
                     {/* Total Admins Card */}
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-green-600">Total Admins</p>
-                          <p className="text-2xl font-bold text-green-800">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-green-600">Total Admins</p>
+                          <p className="text-lg font-bold text-green-800">
                             {companyData.assignedModules?.reduce((total, module) => total + (module.admins?.length || 0), 0) || 0}
                           </p>
-                          <p className="text-xs text-green-500 mt-1">
+                          <p className="text-[10px] text-green-500 truncate">
                             Across all modules
                           </p>
                         </div>
-                        <div className="w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center">
-                          <Users className="h-6 w-6 text-green-600" />
+                        <div className="w-8 h-8 bg-green-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Users className="h-4 w-4 text-green-600" />
                         </div>
                       </div>
                     </div>
 
                     {/* Total Features Card */}
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-purple-600">Active Features</p>
-                          <p className="text-2xl font-bold text-purple-800">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-purple-600">Active Features</p>
+                          <p className="text-lg font-bold text-purple-800">
                             {companyData.assignedModules?.reduce((total, module) => total + (module.enabledFeatures?.length || 0), 0) || 0}
                           </p>
-                          <p className="text-xs text-purple-500 mt-1">
+                          <p className="text-[10px] text-purple-500 truncate">
                             Features enabled
                           </p>
                         </div>
-                        <div className="w-12 h-12 bg-purple-200 rounded-lg flex items-center justify-center">
-                          <Star className="h-6 w-6 text-purple-600" />
+                        <div className="w-8 h-8 bg-purple-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Star className="h-4 w-4 text-purple-600" />
                         </div>
                       </div>
                     </div>
 
                     {/* Company Status Card */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border border-orange-200">
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-orange-600">Company Status</p>
-                          <p className="text-lg font-bold text-orange-800">Active</p>
-                          <p className="text-xs text-orange-500 mt-1">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-orange-600">Company Status</p>
+                          <p className="text-base font-bold text-orange-800">Active</p>
+                          <p className="text-[10px] text-orange-500 truncate">
                             All systems operational
                           </p>
                         </div>
-                        <div className="w-12 h-12 bg-orange-200 rounded-lg flex items-center justify-center">
-                          <Building2 className="h-6 w-6 text-orange-600" />
+                        <div className="w-8 h-8 bg-orange-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Building2 className="h-4 w-4 text-orange-600" />
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Main Content Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Company Information */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                       <div className="flex items-center gap-3 mb-4">
                         {/* Company Color Indicator */}
                         <div 
@@ -926,7 +927,7 @@ function CompanyDetails() {
                           style={{ backgroundColor: companyData.colorCode }}
                           title={`Company Color: ${companyData.colorCode}`}
                         ></div>
-                        <h2 className="text-xl font-semibold text-gray-800">Company Information</h2>
+                        <h2 className="text-lg font-semibold text-gray-800">Company Information</h2>
                       </div>
                       
                       <div className="space-y-4">
@@ -970,9 +971,9 @@ function CompanyDetails() {
                   </div>
 
                     {/* Head of Company - Single Panel Layout */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                       <div className="flex items-center gap-3 mb-4">
-                        <h3 className="text-lg font-semibold text-gray-800">Head of Company</h3>
+                        <h3 className="text-base font-semibold text-gray-800">Head of Company</h3>
                         <div className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
                           Personal Info
                         </div>
@@ -1024,43 +1025,7 @@ function CompanyDetails() {
                     </div>
                   </div>
 
-                  {/* Module Breakdown - Keep only this section */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">Active Modules Overview</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {companyData.assignedModules?.map((module) => (
-                        <div key={module.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{module.icon}</span>
-                            <div>
-                              <span className="font-medium text-gray-700">{module.name}</span>
-                              <p className="text-xs text-gray-500">{module.admins?.length || 0} admin(s)</p>
-                        </div>
-                        </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-gray-700">
-                              {module.enabledFeatures?.length || 0} features
-                        </div>
-                            <div className={`text-xs ${
-                              module.enabledFeatures && module.enabledFeatures.length > 0 
-                                ? 'text-green-600' 
-                                : 'text-gray-400'
-                            }`}>
-                              {module.enabledFeatures && module.enabledFeatures.length > 0 ? 'Active' : 'Inactive'}
-                      </div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {(!companyData.assignedModules || companyData.assignedModules.length === 0) && (
-                        <div className="col-span-full text-center py-8 text-gray-500">
-                          <Building2 size={48} className="mx-auto mb-2 text-gray-300" />
-                          <p>No modules assigned yet</p>
-                          <p className="text-sm">Go to Modules & Features to assign modules</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+
                 </div>
               )}
 
@@ -1086,190 +1051,265 @@ function CompanyDetails() {
                       </div>
                       {/* Filter Dropdown */}
                           <select
-                            value={adminFilter}
-                            onChange={(e) => setAdminFilter(e.target.value)}
+                            value={moduleFilter}
+                            onChange={(e) => setModuleFilter(e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="all">All Modules</option>
-                        <option value="with-features">With Features</option>
-                        <option value="without-features">Without Features</option>
-                            <option value="with-admins">With Admins</option>
-                            <option value="without-admins">Without Admins</option>
+                            <option value="assigned">Assigned</option>
+                            <option value="not-assigned">Not Assigned</option>
                           </select>
                         </div>
                       </div>
 
-                  {/* Compact Module Cards Grid - Updated Design */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {companyData.assignedModules
-                          ?.filter(module => {
-                        // Filter by admin/features status
-                        const statusMatch = adminFilter === "all" || 
-                          (adminFilter === "with-features" && module.enabledFeatures && module.enabledFeatures.length > 0) ||
-                          (adminFilter === "without-features" && (!module.enabledFeatures || module.enabledFeatures.length === 0)) ||
-                          (adminFilter === "with-admins" && module.admins && module.admins.length > 0) ||
-                          (adminFilter === "without-admins" && (!module.admins || module.admins.length === 0));
-                        
-                        // Filter by search term
-                        const searchMatch = !featureFilter || 
-                          module.name.toLowerCase().includes(featureFilter.toLowerCase()) ||
-                          (module.allFeatures || module.enabledFeatures)?.some(feature => 
-                            feature.toLowerCase().includes(featureFilter.toLowerCase())
-                          ) ||
-                          module.admins?.some(admin => 
-                            admin.name.toLowerCase().includes(featureFilter.toLowerCase())
-                          );
-                        
-                        return statusMatch && searchMatch;
-                      })
-                      ?.map((module) => {
-                        // Get allFeatures from availableModules for this module
-                        const moduleDefinition = availableModules.find(m => m.id === module.id);
-                        const allFeatures = moduleDefinition?.allFeatures || [];
-                        
-                        return (
-                          <motion.div
-                            key={module.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            whileHover={{ y: -2 }}
-                            className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden"
-                          >
-                            {/* Module Header - Compact */}
-                            <div className="p-5 pb-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-xl">
+                  {/* Compact Rectangular Module Cards Grid - Updated Design */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                        {(() => {
+                          // Create a combined list of all modules (assigned and unassigned)
+                          const allModulesWithStatus = availableModules.map(availableModule => {
+                            const assignedModule = companyData.assignedModules?.find(am => am.id === availableModule.id);
+                            return assignedModule || { ...availableModule, isAssigned: false, enabledFeatures: [], admins: [] };
+                          });
+
+                          return allModulesWithStatus
+                            .filter(module => {
+                              // Filter by assignment status
+                              const statusMatch = moduleFilter === "all" || 
+                                (moduleFilter === "assigned" && companyData.assignedModules?.find(am => am.id === module.id)) ||
+                                (moduleFilter === "not-assigned" && !companyData.assignedModules?.find(am => am.id === module.id));
+                              
+                              // Filter by search term
+                              const searchMatch = !featureFilter || 
+                                module.name.toLowerCase().includes(featureFilter.toLowerCase()) ||
+                                (module.allFeatures || module.enabledFeatures)?.some(feature => 
+                                  feature.toLowerCase().includes(featureFilter.toLowerCase())
+                                ) ||
+                                module.admins?.some(admin => 
+                                  admin.name.toLowerCase().includes(featureFilter.toLowerCase())
+                                );
+                              
+                              return statusMatch && searchMatch;
+                            })
+                            .map((module) => {
+                              // Get allFeatures from availableModules for this module
+                              const moduleDefinition = availableModules.find(m => m.id === module.id);
+                              const allFeatures = moduleDefinition?.allFeatures || [];
+                              const isAssigned = companyData.assignedModules?.find(am => am.id === module.id);
+                              
+                              return (
+                                <motion.div
+                                  key={module.id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  whileHover={{ y: -1 }}
+                                  className={`rounded-lg shadow-sm border transition-all duration-200 overflow-hidden min-h-[160px] ${
+                                    isAssigned 
+                                      ? 'bg-white border-gray-200 hover:shadow-md' 
+                                      : 'bg-gray-50 border-gray-300 border-dashed hover:shadow-sm hover:bg-gray-100'
+                                  }`}
+                                >
+                            {/* Module Header - Compact Rectangular */}
+                            <div className="p-3 pb-2">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <div className={`w-6 h-6 rounded flex items-center justify-center text-sm flex-shrink-0 ${
+                                    isAssigned 
+                                      ? 'bg-gradient-to-br from-blue-100 to-blue-200' 
+                                      : 'bg-gradient-to-br from-gray-100 to-gray-200'
+                                  }`}>
                                     {module.icon}
                                   </div>
-                                  <div>
-                                    <h3 className="font-semibold text-gray-800 text-lg">{module.name}</h3>
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className={`font-medium text-sm leading-tight truncate ${
+                                      isAssigned ? 'text-gray-800' : 'text-gray-600'
+                                    }`}>
+                                      {module.name}
+                                    </h3>
                                   </div>
                                 </div>
-                                <div className={`w-3 h-3 rounded-full ${
-                                  module.enabledFeatures && module.enabledFeatures.length > 0 ? 'bg-green-500' : 'bg-gray-400'
-                                }`} title={module.enabledFeatures && module.enabledFeatures.length > 0 ? 'Active' : 'Inactive'}></div>
-                              </div>
-                              </div>
-
-                            {/* Features Section with Inline Action */}
-                            <div className="px-5 pb-4 border-b border-gray-100">
-                                <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                  🧩 Features ({module.enabledFeatures?.length || 0})
-                                  </h4>
-                                <button
-                                  onClick={() => handleEditFeatures(module)}
-                                  className="px-3 py-1.5 text-xs bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors flex items-center gap-1.5"
-                                >
-                                  <Settings size={12} />
-                                  Edit Features
-                                </button>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {!isAssigned && (
+                                    <button
+                                      onClick={() => {
+                                        // Handle assigning module to company
+                                        toast.success(`${module.name} module assigned to company!`);
+                                      }}
+                                      className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                    >
+                                      <Plus size={10} />
+                                      Assign
+                                    </button>
+                                  )}
+                                  <div className={`w-2 h-2 rounded-full ${
+                                    isAssigned && module.enabledFeatures && module.enabledFeatures.length > 0 
+                                      ? 'bg-green-500' 
+                                      : isAssigned 
+                                        ? 'bg-gray-400' 
+                                        : 'bg-red-400'
+                                  }`} title={
+                                    !isAssigned 
+                                      ? 'Not assigned' 
+                                      : module.enabledFeatures && module.enabledFeatures.length > 0 
+                                        ? 'Active' 
+                                        : 'Inactive'
+                                  }></div>
                                 </div>
-                              
-                              {module.enabledFeatures && module.enabledFeatures.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                  {module.enabledFeatures.map((feature, idx) => {
-                                    const assignedAdmins = module.admins?.filter(admin => 
-                                      admin.assignedFeatures?.includes(feature)
-                                    ) || [];
-                                    
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className={`px-2.5 py-1 rounded-md text-xs font-medium border ${
-                                          assignedAdmins.length > 0
-                                            ? 'bg-green-50 text-green-700 border-green-200'
-                                            : 'bg-blue-50 text-blue-700 border-blue-200'
-                                        }`}
-                                        title={assignedAdmins.length > 0 ? 
-                                          `Assigned to: ${assignedAdmins.map(a => a.name).join(', ')}` : 
-                                          'No admin assigned'
-                                        }
-                                      >
-                                        {feature}
-                                                  </div>
-                                    );
-                                  })}
-                                              </div>
-                                            ) : (
-                                <div className="text-center py-2">
-                                  <p className="text-xs text-gray-500">No features enabled</p>
-                                              </div>
-                                            )}
                               </div>
+                              {!isAssigned && (
+                                <p className="text-[11px] text-gray-500 truncate">Not assigned to company</p>
+                              )}
+                            </div>
 
-                            {/* Admins Section with Inline Action */}
-                            <div className="p-5">
-                                <div className="flex items-center justify-between mb-3">
-                                <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                  👥 Admins ({module.admins?.length || 0})
+                            {/* Features Section - Compact */}
+                            <div className={`px-3 ${isAssigned ? 'pb-2 border-b border-gray-100' : 'pb-3'}`}>
+                              {isAssigned ? (
+                                <>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                                      🧩 Features ({module.enabledFeatures?.length || 0})
+                                    </h4>
+                                    <button
+                                      onClick={() => handleEditFeatures(module)}
+                                      className="px-2 py-1 text-[11px] bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors flex items-center gap-1"
+                                    >
+                                      <Settings size={10} />
+                                      Edit
+                                    </button>
+                                  </div>
+                                  
+                                  {module.enabledFeatures && module.enabledFeatures.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {module.enabledFeatures.slice(0, 4).map((feature, idx) => {
+                                        const assignedAdmins = module.admins?.filter(admin => 
+                                          admin.assignedFeatures?.includes(feature)
+                                        ) || [];
+                                        
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className={`px-2 py-0.5 rounded text-[11px] font-medium border ${
+                                              assignedAdmins.length > 0
+                                                ? 'bg-green-50 text-green-700 border-green-200'
+                                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                                            }`}
+                                            title={assignedAdmins.length > 0 ? 
+                                              `Assigned to: ${assignedAdmins.map(a => a.name).join(', ')}` : 
+                                              'No admin assigned'
+                                            }
+                                          >
+                                            {feature.length > 12 ? feature.substring(0, 12) + '...' : feature}
+                                          </div>
+                                        );
+                                      })}
+                                      {module.enabledFeatures.length > 4 && (
+                                        <div className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[11px] rounded border">
+                                          +{module.enabledFeatures.length - 4}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="text-center py-1">
+                                      <p className="text-[11px] text-gray-500">No features enabled</p>
+                                    </div>
+                                  )}
+                                </>
+                              ) : (
+                                <div className="text-center py-2">
+                                  <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-1">
+                                    <Settings size={12} className="text-gray-400" />
+                                  </div>
+                                  <h4 className="text-xs font-medium text-gray-600 mb-1">Available Features</h4>
+                                  <p className="text-[11px] text-gray-500 mb-2">
+                                    {allFeatures.length} features available
+                                  </p>
+                                  <div className="flex flex-wrap gap-1 justify-center">
+                                    {allFeatures.slice(0, 3).map((feature, idx) => (
+                                      <span key={idx} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[11px] rounded border">
+                                        {feature.length > 8 ? feature.substring(0, 8) + '..' : feature}
+                                      </span>
+                                    ))}
+                                    {allFeatures.length > 3 && (
+                                      <span className="text-[11px] text-gray-400">+{allFeatures.length - 3}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Admins Section - Compact - Only show for assigned modules */}
+                            {isAssigned && (
+                              <div className="p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="text-xs font-semibold text-gray-700 flex items-center gap-1">
+                                    👥 Admins ({module.admins?.length || 0})
                                   </h4>
-                                <button
-                                  onClick={() => {
-                                    setSelectedModuleForAdmin(module);
-                                    setIsAssignAdminModalOpen(true);
-                                    setIsCreateNewAdminInAssign(false);
-                                  }}
-                                  className="px-3 py-1.5 text-xs bg-green-50 text-green-600 rounded-md hover:bg-green-100 transition-colors flex items-center gap-1.5"
-                                >
-                                  <Users size={12} />
-                                  Assign Admins
-                                </button>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedModuleForAdmin(module);
+                                      setIsAssignAdminModalOpen(true);
+                                      setIsCreateNewAdminInAssign(false);
+                                    }}
+                                    className="px-2 py-1 text-[11px] bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1"
+                                  >
+                                    <Users size={10} />
+                                    Assign
+                                  </button>
                                 </div>
                                 
                                 {module.admins && module.admins.length > 0 ? (
-                                  <div className="space-y-2">
-                                    {module.admins.slice(0, 3).map((admin) => (
-                                    <div key={admin.id} className="flex items-start gap-2">
-                                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                        <span className="text-xs font-semibold text-blue-600">
-                                              {admin.name.charAt(0)}
-                                            </span>
+                                  <div className="space-y-1.5">
+                                    {module.admins.slice(0, 2).map((admin) => (
+                                      <div key={admin.id} className="flex items-start gap-2">
+                                        <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                          <span className="text-[10px] font-semibold text-blue-600">
+                                            {admin.name.charAt(0)}
+                                          </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1 mb-0.5">
+                                            <p className="text-xs font-medium text-gray-800 truncate">{admin.name}</p>
+                                            <span className="text-[10px] text-gray-500">({admin.role})</span>
                                           </div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <p className="text-sm font-medium text-gray-800 truncate">{admin.name}</p>
-                                          <span className="text-xs text-gray-500">({admin.role})</span>
-                                          </div>
-                                        <div className="flex flex-wrap gap-1">
-                                          {admin.assignedFeatures?.slice(0, 3).map((feature, idx) => (
-                                            <span
-                                              key={idx}
-                                              className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded border"
-                                            >
-                                              {feature}
-                                            </span>
-                                          ))}
-                                          {admin.assignedFeatures?.length > 3 && (
-                                            <span className="text-xs text-gray-400">
-                                              +{admin.assignedFeatures.length - 3}
-                                            </span>
-                                          )}
+                                          <div className="flex flex-wrap gap-1">
+                                            {admin.assignedFeatures?.slice(0, 2).map((feature, idx) => (
+                                              <span
+                                                key={idx}
+                                                className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border"
+                                              >
+                                                {feature.length > 8 ? feature.substring(0, 8) + '..' : feature}
+                                              </span>
+                                            ))}
+                                            {admin.assignedFeatures?.length > 2 && (
+                                              <span className="text-[10px] text-gray-400">
+                                                +{admin.assignedFeatures.length - 2}
+                                              </span>
+                                            )}
                                           </div>
                                         </div>
                                       </div>
                                     ))}
-                                    {module.admins.length > 3 && (
-                                    <div className="text-center py-1 text-xs text-gray-500 bg-gray-50 rounded">
-                                          +{module.admins.length - 3} more admin(s)
+                                    {module.admins.length > 2 && (
+                                      <div className="text-center py-0.5 text-[10px] text-gray-500 bg-gray-50 rounded">
+                                        +{module.admins.length - 2} more admin(s)
                                       </div>
                                     )}
                                   </div>
                                 ) : (
-                                <div className="text-center py-3">
-                                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                                    <UserPlus size={14} className="text-gray-500" />
+                                  <div className="text-center py-2">
+                                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-1">
+                                      <UserPlus size={12} className="text-gray-500" />
                                     </div>
-                                  <p className="text-xs text-gray-500">No admins assigned</p>
+                                    <p className="text-[11px] text-gray-500">No admins assigned</p>
                                   </div>
                                 )}
                               </div>
+                            )}
                           </motion.div>
                         );
-                      })}
-                                  </div>
-                                  </div>
+                      });
+                    })()}
+                  </div>
+                </div>
               )}
 
               {activeTab === "admins" && (
@@ -1289,8 +1329,8 @@ function CompanyDetails() {
                         <input
                           type="text"
                           placeholder="Search by name, email, role..."
-                          value={adminFilter}
-                          onChange={(e) => setAdminFilter(e.target.value)}
+                          value={adminSearchFilter}
+                          onChange={(e) => setAdminSearchFilter(e.target.value)}
                           className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
                         />
                               </div>
@@ -1460,7 +1500,7 @@ function CompanyDetails() {
                         // Apply filters - Fixed filtering logic
                         const filteredAdmins = groupedAdmins.filter(admin => {
                           // Search filter - check if search term exists and matches
-                          const searchTerm = adminFilter.toLowerCase().trim();
+                          const searchTerm = adminSearchFilter.toLowerCase().trim();
                           const searchMatch = !searchTerm || 
                             admin.name.toLowerCase().includes(searchTerm) ||
                             admin.email.toLowerCase().includes(searchTerm) ||
@@ -1590,15 +1630,15 @@ function CompanyDetails() {
                               <Users className="h-8 w-8 text-gray-400" />
                                           </div>
                             <h3 className="text-lg font-medium text-gray-800 mb-2">
-                              {adminFilter || featureFilter ? "No Admins Found" : "No Admins Yet"}
+                              {adminSearchFilter || featureFilter ? "No Admins Found" : "No Admins Yet"}
                             </h3>
                             <p className="text-gray-500 text-sm mb-4">
-                              {adminFilter || featureFilter 
+                              {adminSearchFilter || featureFilter 
                                 ? "No admins match your search criteria. Try adjusting your filters."
                                 : "No admins have been assigned to any modules yet."
                               }
                             </p>
-                            {(!adminFilter && !featureFilter) && (
+                            {(!adminSearchFilter && !featureFilter) && (
                               <button
                                 onClick={() => {
                                   setSelectedModuleForAdmin(null);
@@ -1637,7 +1677,7 @@ function CompanyDetails() {
                           }, []);
                           
                           return grouped.filter(admin => {
-                            const searchTerm = adminFilter.toLowerCase().trim();
+                            const searchTerm = adminSearchFilter.toLowerCase().trim();
                             const searchMatch = !searchTerm || 
                               admin.name.toLowerCase().includes(searchTerm) ||
                               admin.email.toLowerCase().includes(searchTerm) ||
@@ -2370,121 +2410,122 @@ function CompanyDetails() {
               {/* Main Content - 2-Column Layout */}
               <div className="h-[70vh] flex">
                 
-                {/* Left Column: Role Details (25% width) */}
-                <div className="w-1/4 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
-                  <div className="space-y-6">
+                {/* Left Column: Role Details (20% width) */}
+                <div className="w-1/5 bg-gray-50 border-r border-gray-200 p-4 overflow-y-auto">
+                  <div className="space-y-4">
                     
                     {/* Role Information */}
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <h3 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                         Role Details
                       </h3>
                       
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">Role Name *</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Role Name *</label>
                           <input
                             type="text"
                             value={editingRole?.name || ""}
                             onChange={(e) => setEditingRole(prev => ({ ...prev, name: e.target.value }))}
                             placeholder="HR Manager"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                           />
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-2">Description</label>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
                           <textarea
                             value={editingRole?.description || ""}
                             onChange={(e) => setEditingRole(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Full access to all HR-related modules and functions..."
-                            rows={4}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            placeholder="Full access to all HR-related modules..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent resize-none"
                           />
                         </div>
                       </div>
                     </div>
 
-                    {/* Permission Summary */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-4">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3">Permission Summary</h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">Entities Access</span>
-                          <span className="text-xs font-semibold text-blue-600">
-                            {editingRole?.assignedEntities?.length || 0} / {SYSTEM_ENTITIES.length}
+                    {/* Compact Permission Summary */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-3">
+                      <h4 className="text-xs font-semibold text-gray-900 mb-2">Summary</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Entities</span>
+                          <span className="font-medium text-blue-600">
+                            {editingRole?.assignedEntities?.length || 0}/{SYSTEM_ENTITIES.length}
                           </span>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-gray-600">Total Activities</span>
-                          <span className="text-xs font-semibold text-green-600">
-                            {editingRole?.assignedActivities?.length || 0} / {SYSTEM_ACTIVITIES.length}
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-600">Activities</span>
+                          <span className="font-medium text-green-600">
+                            {editingRole?.assignedActivities?.length || 0}/{SYSTEM_ACTIVITIES.length}
                           </span>
                         </div>
                         
-                        {/* Progress Bar */}
-                        <div className="pt-2">
-                          <div className="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>Configuration Progress</span>
-                            <span>{Math.round(((editingRole?.assignedActivities?.length || 0) / SYSTEM_ACTIVITIES.length) * 100)}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                        {/* Compact Progress Bar */}
+                        <div className="pt-1">
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
                             <div 
-                              className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                              className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500"
                               style={{ width: `${((editingRole?.assignedActivities?.length || 0) / SYSTEM_ACTIVITIES.length) * 100}%` }}
                             ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 text-center mt-1">
+                            {Math.round(((editingRole?.assignedActivities?.length || 0) / SYSTEM_ACTIVITIES.length) * 100)}% Complete
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="space-y-2">
+                    {/* Compact Quick Actions */}
+                    <div>
                       <h4 className="text-xs font-semibold text-gray-700 mb-2">Quick Actions</h4>
-                      <button
-                        onClick={() => handleExpandCollapseAll(true)}
-                        className="w-full px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors font-medium"
-                      >
-                        📂 Expand All Sections
-                      </button>
-                      <button
-                        onClick={() => handleExpandCollapseAll(false)}
-                        className="w-full px-3 py-2 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-                      >
-                        📁 Collapse All Sections
-                      </button>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleExpandCollapseAll(true)}
+                          className="flex-1 px-2 py-1.5 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors font-medium"
+                        >
+                          📂 Expand
+                        </button>
+                        <button
+                          onClick={() => handleExpandCollapseAll(false)}
+                          className="flex-1 px-2 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors font-medium"
+                        >
+                          📁 Collapse
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column: Permissions (75% width) */}
+                {/* Right Column: Permissions (80% width) */}
                 <div className="flex-1 flex flex-col bg-white">
                   
                   {/* Permissions Header */}
-                  <div className="px-8 py-4 border-b border-gray-200 bg-gray-50">
+                  <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-sm font-semibold text-gray-900">System Permissions</h3>
-                        <p className="text-xs text-gray-500 mt-1">Select entities and their specific activities to control access</p>
+                        <p className="text-xs text-gray-500">Select entities and their specific activities to control access</p>
                       </div>
                       
-                      {/* Search Bar */}
+                      {/* Compact Search Bar */}
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
                         <input
                           type="text"
-                          placeholder="🔍 Filter modules..."
+                          placeholder="Filter modules..."
                           value={roleSearchQuery}
                           onChange={(e) => setRoleSearchQuery(e.target.value)}
-                          className="w-80 pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-60 pl-7 pr-3 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
                     </div>
                   </div>
 
                   {/* Permissions Grid - Updated to show module grouping */}
-                  <div className="flex-1 px-8 py-6 overflow-y-auto">
+                  <div className="flex-1 px-6 py-4 overflow-y-auto">
                     <div className="space-y-6">
                       {/* Group entities by module - Updated to include Accounting */}
                       {["HR Management", "Accounting", "Administration"].map(module => {

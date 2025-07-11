@@ -1,0 +1,37 @@
+<svg width="180" height="50" viewBox="0 0 180 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cloud/Network Icon -->
+  <g id="cloud-icon">
+    <!-- Main cloud shape -->
+    <path d="M8 32C8 26.4772 12.4772 22 18 22C19.3132 22 20.5616 22.2922 21.6889 22.8194C23.4525 18.5762 27.5268 15.5 32.5 15.5C38.8513 15.5 44 20.6487 44 27C44 27.3398 43.9814 27.6747 43.9453 28.0039C46.1867 29.2086 47.5 31.4543 47.5 34C47.5 37.5899 44.5899 40.5 41 40.5H12C9.79086 40.5 8 38.7091 8 36.5C8 34.2909 9.79086 32.5 12 32.5C12 32.3336 12.0057 32.1684 12.0169 32.0045" 
+          fill="url(#cloudGradient)" 
+          stroke="none"/>
+    
+    <!-- Connection nodes -->
+    <circle cx="16" cy="28" r="2.5" fill="#22C55E"/>
+    <circle cx="25" cy="24" r="2.5" fill="#22C55E"/>
+    <circle cx="35" cy="28" r="2.5" fill="#22C55E"/>
+    <circle cx="30" cy="34" r="2.5" fill="#22C55E"/>
+    
+    <!-- Connection lines -->
+    <line x1="18.5" y1="28" x2="22.5" y2="25.5" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+    <line x1="27.5" y1="24" x2="32.5" y2="28" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+    <line x1="32.5" y1="30.5" x2="30" y2="31.5" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+    <line x1="25" y1="26.5" x2="28" y2="31.5" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- MEDHIR Text -->
+  <g id="text-logo">
+    <!-- MED in bold -->
+    <text x="60" y="32" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="700" fill="#111827">MED</text>
+    <!-- HIR in normal weight -->
+    <text x="118" y="32" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="400" fill="#6B7280">HIR</text>
+  </g>
+  
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="cloudGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34D399;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg> 

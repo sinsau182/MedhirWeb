@@ -319,130 +319,78 @@ function SuperadminCompanies() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      <SuperadminHeaders />
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+      `}</style>
+      <SuperadminHeaders 
+        viewLayout={viewLayout}
+        setViewLayout={setViewLayout}
+        onAddCompany={() => handleOpenCompanyModal()}
+        searchQuery={searchInput}
+        setSearchQuery={setSearchInput}
+      />
       
       <div className="flex-1 pt-16">
         <div className="p-6 mt-4">
-          {/* Header with Search, Layout Toggle, and Add button */}
-          <div className="flex justify-between items-center mb-6">
+          {/* Page Header */}
+          <div className="mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Companies</h1>
               <p className="text-gray-600 mt-1">Manage your organization's companies and their configurations</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search companies..."
-                  className="w-full md:w-72 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-                <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-              </div>
-              
-              {/* Layout Toggle */}
-              <div className="flex items-center bg-white border border-gray-300 rounded-lg p-1 shadow-sm">
-                <button
-                  onClick={() => setViewLayout("cards")}
-                  className={`p-2 rounded-md transition-all duration-200 flex items-center gap-2 ${
-                    viewLayout === "cards" 
-                      ? "bg-blue-600 text-white shadow-sm" 
-                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                  }`}
-                  title="Card View"
-                >
-                  <Grid3X3 size={18} />
-                  <span className="text-sm font-medium">Cards</span>
-                </button>
-                <button
-                  onClick={() => setViewLayout("table")}
-                  className={`p-2 rounded-md transition-all duration-200 flex items-center gap-2 ${
-                    viewLayout === "table" 
-                      ? "bg-blue-600 text-white shadow-sm" 
-                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                  }`}
-                  title="Table View"
-                >
-                  <LucideTable size={18} />
-                  <span className="text-sm font-medium">Table</span>
-                </button>
-              </div>
-
-              <button
-                onClick={() => handleOpenCompanyModal()}
-                className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-              >
-                <Plus className="h-5 w-5" />
-                Add Company
-              </button>
             </div>
           </div>
 
           {/* Companies Layout - Card or Table */}
           {viewLayout === "cards" ? (
-            /* Card View */
+            /* Enhanced Premium Card View */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCompanies.map((company) => (
-                <div key={company.id} className="bg-white rounded-xl shadow-md border border-gray-200 flex flex-col transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 group cursor-pointer">
-                  <div 
-                    className="p-6 flex-1"
-                    onClick={() => router.push(`/superadmin/company/${company.id}`)}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div 
-                          className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg"
-                          style={{ backgroundColor: company.colorCode || '#4F46E5' }}
-                        >
-                          <Building2 className="h-7 w-7 text-white" />
+              {filteredCompanies.map((company, index) => (
+                <div 
+                  key={company.id} 
+                  className="bg-gradient-to-tr from-[#E8F0FE] to-[#ffffff] rounded-xl shadow-sm border border-blue-100/60 flex flex-col transition-all duration-200 ease-in-out hover:shadow-md hover:-translate-y-1 hover:shadow-blue-200/40 group cursor-pointer relative overflow-hidden border-l-4 border-l-indigo-400"
+                  style={{
+                    animationDelay: `${index * 100}ms`,
+                    animation: 'fadeInUp 0.6s ease-out forwards'
+                  }}
+                >
+                  {/* Top Action Menu - 3 dots */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className="relative group/menu">
+                      <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white/90 backdrop-blur-sm">
+                        <div className="flex flex-col gap-1">
+                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
                         </div>
-                        <div>
-                          <h2 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">{company.name}</h2>
-                          <p className="text-sm text-gray-500">{company.email}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-3 text-sm text-gray-600">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                          <Phone size={16} className="text-blue-600" />
-                        </div>
-                        <span>{company.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                          <Hash size={16} className="text-green-600" />
-                        </div>
-                        <span>{company.gst}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
-                          <MapPin size={16} className="text-purple-600" />
-                        </div>
-                        <span className="truncate">{company.regAdd}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t mt-auto p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-b-xl">
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm">
-                        <p className="text-gray-600 font-medium flex items-center gap-2">
-                          <Users size={14} />
-                          Head of Company
-                        </p>
-                        <p className="text-gray-700 font-semibold">{company.headOfCompany?.name || 'Not assigned'}</p>
-                      </div>
-                      <div className="flex space-x-2">
+                      </button>
+                      
+                      {/* Dropdown Menu */}
+                      <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 z-20">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenCompanyModal(company);
                           }}
-                          className="p-2.5 text-blue-600 bg-blue-100 rounded-xl hover:bg-blue-200 transition-colors shadow-sm"
-                          title="Edit Company"
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 rounded-t-lg transition-colors"
                         >
                           <Edit className="h-4 w-4" />
+                          Edit Company
                         </button>
                         <button
                           onClick={(e) => {
@@ -450,14 +398,91 @@ function SuperadminCompanies() {
                             setSelectedCompany(company);
                             setIsDeleteConfirmationOpen(true);
                           }}
-                          className="p-2.5 text-red-600 bg-red-100 rounded-xl hover:bg-red-200 transition-colors shadow-sm"
-                          title="Delete Company"
+                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 rounded-b-lg transition-colors"
                         >
                           <Trash className="h-4 w-4" />
+                          Delete Company
                         </button>
                       </div>
                     </div>
                   </div>
+
+                  {/* Card Content */}
+                  <div 
+                    className="p-5 flex-1"
+                    onClick={() => router.push(`/superadmin/company/${company.id}`)}
+                  >
+                    {/* Company Header with Avatar */}
+                    <div className="flex items-start gap-3 mb-6">
+                      {/* Company Avatar with Initials */}
+                      <div 
+                        className="w-11 h-11 rounded-lg flex items-center justify-center shadow-sm ring-2 ring-white/50"
+                        style={{ backgroundColor: company.colorCode || '#4F46E5' }}
+                      >
+                        <span className="text-base font-bold text-white">
+                          {company.name ? company.name.substring(0, 2).toUpperCase() : 'CO'}
+                        </span>
+                      </div>
+                      
+                      {/* Company Name & Email */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between mb-1">
+                          <h2 className="text-lg font-bold text-gray-900 group-hover:text-indigo-700 transition-colors truncate">
+                            {company.name}
+                          </h2>
+                          {/* Status Badge - Top Right */}
+                          <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ml-2 flex-shrink-0">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                            Active
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-800 truncate">{company.email}</p>
+                      </div>
+                    </div>
+
+                    {/* Company Details with Clean Icons */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-start gap-2">
+                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-900 font-medium">{company.phone}</span>
+                      </div>
+                      
+                      <div className="flex items-start gap-2">
+                        <Hash className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-900 font-medium">{company.gst}</span>
+                      </div>
+                      
+                      <div className="flex items-start gap-2" title={company.regAdd}>
+                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-gray-900 line-clamp-2 leading-relaxed">{company.regAdd}</span>
+                      </div>
+                    </div>
+
+                    {/* Subtle Divider */}
+                    <div className="border-t border-white/30 my-4"></div>
+
+                    {/* Head of Company Section */}
+                    <div className="flex items-center justify-between pt-3">
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm text-gray-800 font-medium">Head of Company</span>
+                      </div>
+                      <div>
+                        {company.headOfCompany?.name ? (
+                          <span className="text-sm font-bold text-gray-900">
+                            {company.headOfCompany.name}
+                          </span>
+                        ) : (
+                          <span className="bg-gray-200 text-gray-700 text-xs font-medium px-3 py-1 rounded-full">
+                            Not Assigned
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Optional: Subtle gradient overlay on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-indigo-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
                 </div>
               ))}
             </div>
