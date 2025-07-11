@@ -899,7 +899,6 @@ function EmployeeForm() {
     } finally {
       setLoading(false);
     }
-    
   };
 
   useEffect(() => {
