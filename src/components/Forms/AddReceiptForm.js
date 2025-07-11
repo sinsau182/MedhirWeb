@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { addReceipt } from "../../redux/slices/receiptSlice";
+
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
   const [formData, setFormData] = useState({
@@ -54,16 +57,30 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     return allInvoices[customerName] || [];
   };
   
+  // useEffect(() => {
+  //   if (initialData) {
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       projectName: initialData.projectName || '',
+  //       customerName: initialData.client || '',
+  //       amount: initialData.amount || ''
+  //     }));
+  //   }
+  // }, [initialData]);
   useEffect(() => {
-    if (initialData) {
-      setFormData(prev => ({
-        ...prev,
-        projectName: initialData.projectName || '',
-        customerName: initialData.client || '',
-        amount: initialData.amount || ''
-      }));
-    }
-  }, [initialData]);
+  if (initialData) {
+    setFormData(prev => ({
+      ...prev,
+      projectName: initialData.projectName || '',
+      customerName: initialData.client || '',
+      customerId: initialData.customerId || '',
+      projectId: initialData.projectId || '',
+      amount: initialData.amount || '',
+      amountReceived: initialData.amount || ''
+    }));
+  }
+}, [initialData]);
+
 
   useEffect(() => {
     const customerInvoices = getInvoicesForCustomer(formData.customerName);
@@ -156,17 +173,55 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+const dispatch = useDispatch();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      const finalLinkedInvoices = invoicesToLink
-        .filter(inv => inv.payment > 0)
-        .map(inv => ({ id: inv.id, number: inv.number, payment: inv.payment }));
-        
-      onSubmit({ ...formData, amount: parseFloat(formData.amount), linkedInvoices: finalLinkedInvoices });
-    }
-  };
+// const handleSubmit = (e) => {
+//   e.preventDefault();
+//   if (validateForm()) {
+//     const finalLinkedInvoices = invoicesToLink
+//       .filter((inv) => inv.payment > 0)
+//       .map((inv) => ({
+//         id: inv.id,
+//         number: inv.number,
+//         payment: inv.payment,
+//       }));
+
+//     const receiptData = {
+//       ...formData,
+//       amount: parseFloat(formData.amount),
+//       linkedInvoices: finalLinkedInvoices,
+//     };
+
+//     // Call the backend via Redux slice (send plain object, not FormData)
+//     dispatch(addReceipt(receiptData));
+//   }
+// };
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+  if (validateForm()) {
+    const selectedCustomer = customers.find(c => c.name === formData.customerName);
+
+    const finalLinkedInvoices = invoicesToLink
+      .filter((inv) => inv.payment > 0)
+      .map((inv) => ({
+        id: inv.id,
+        number: inv.number,
+        payment: inv.payment,
+      }));
+
+    const receiptData = {
+      ...formData,
+      customerId: selectedCustomer?.id || "",  // Ensure customerId is added
+      projectId: "PROJECT123",                 // Replace with actual project ID logic
+      amountReceived: parseFloat(formData.amount), // Must be included
+      amount: parseFloat(formData.amount),
+      linkedInvoices: finalLinkedInvoices,
+    };
+
+    dispatch(addReceipt(receiptData));
+  }
+};
 
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 

@@ -48,6 +48,7 @@ const getItemFromSessionStorage = (key, defaultValue = null) => {
     console.error(`Error getting item ${key} from sessionStorage:`, error);
     return defaultValue;
   }
+  
 };
 
 // Helper function to safely set item in sessionStorage

@@ -31,6 +31,7 @@ import assetStatusReducer from './slices/assetStatusSlice';
 import customFieldsReducer from './slices/customFieldsSlice';
 import idFormattingReducer from './slices/idFormattingSlice';
 import assetReducer from './slices/assetSlice';
+import receiptReducer from './slices/receiptSlice'; 
 
 export const store = configureStore({
   reducer: {
@@ -67,6 +68,7 @@ export const store = configureStore({
     customFields: customFieldsReducer,
     idFormatting: idFormattingReducer,
     assets: assetReducer,
+    receipts: receiptReducer, 
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
