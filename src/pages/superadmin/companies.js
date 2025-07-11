@@ -201,7 +201,8 @@ function SuperadminCompanies() {
         name: company.name || "",
         email: company.email || "",
         phone: company.phone || "",
-        gst: company.gst || "",
+        // gst: company.gst || "",
+         gst: (company.gst || "").toUpperCase(),
         regAdd: company.regAdd || "",
         colorCode: company.colorCode || "#4F46E5",
         headOfCompanyId: company.headOfCompany?.id || null,
@@ -219,14 +220,27 @@ function SuperadminCompanies() {
     setIsCompanyModalOpen(true);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCompanyData((prevData) => {
-      const updatedData = { ...prevData, [name]: value };
-      return updatedData;
-    });
-    setError(""); // Clear error when user starts typing
-  };
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setCompanyData((prevData) => {
+  //     const updatedData = { ...prevData, [name]: value };
+  //     return updatedData;
+  //   });
+  //   setError(""); // Clear error when user starts typing
+  // };
+const handleInputChange = (e) => {
+  const { name, value } = e.target;
+
+  setCompanyData((prevData) => {
+    const updatedData = {
+      ...prevData,
+      [name]: name === "gst" ? value.toUpperCase() : value, // Convert GST to uppercase
+    };
+    return updatedData;
+  });
+
+  setError(""); // Clear error when user starts typing
+};
 
   const handleSaveCompany = async () => {
     const { prefix, name, email, phone, gst, regAdd } = companyData;
@@ -268,6 +282,7 @@ function SuperadminCompanies() {
     company.name.toLowerCase().includes(searchInput.toLowerCase()) ||
     company.email.toLowerCase().includes(searchInput.toLowerCase()) ||
     company.gst.toLowerCase().includes(searchInput.toLowerCase())
+    
   );
 
   const predefinedColors = [

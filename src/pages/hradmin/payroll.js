@@ -272,6 +272,7 @@ function PayrollManagement() {
                     (paidDays / monthDays)
                   ).toFixed(0)
                 );
+
                 const hra = parseFloat(
                   (employee.salaryDetails.hra * (paidDays / monthDays)).toFixed(
                     0
