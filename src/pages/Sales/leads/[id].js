@@ -193,7 +193,6 @@ const OdooDetailBody = ({ lead, isEditing, setIsEditing, onFieldChange, onSchedu
         URL.revokeObjectURL(blobUrl);
       };
       
-      
 
     const handleSaveContact = async () => {
       try {
