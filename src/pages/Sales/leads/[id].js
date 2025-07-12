@@ -6,7 +6,8 @@ import { fetchPipelines } from '@/redux/slices/pipelineSlice';
 import { FaStar, FaRegStar, FaUser, FaEnvelope, FaPhone, FaBuilding, FaMapMarkerAlt,
     FaRupeeSign, FaBullseye, FaUserTie, FaTasks, FaHistory, FaPaperclip, FaUserCircle,
     FaCheck, FaUsers, FaFileAlt, FaTimes, FaPencilAlt, FaRegSmile, FaExpandAlt, FaChevronDown, FaClock,
-    FaRegCheckCircle, FaRegClock } from 'react-icons/fa';
+    FaRegCheckCircle, FaRegClock, 
+    FaDownload} from 'react-icons/fa';
 import MainLayout from '@/components/MainLayout';
 import { toast } from 'sonner';
 import AdvancedScheduleActivityModal from '@/components/Sales/AdvancedScheduleActivityModal';
@@ -174,6 +175,25 @@ const OdooDetailBody = ({ lead, isEditing, setIsEditing, onFieldChange, onSchedu
     const handleContactFieldChange = (field, value) => {
       setContactFields(prev => ({ ...prev, [field]: value }));
     };
+
+    const handleDownloadFile = async (url) => {
+        const response = await fetch(url);
+        const blob = await response.blob();
+      
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = url.split('/').pop().split('?')[0];
+      
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      
+        // Clean up blob URL
+        URL.revokeObjectURL(blobUrl);
+      };
+      
+      
 
     const handleSaveContact = async () => {
       try {
@@ -410,6 +430,7 @@ const allLogs = [...(activityLogs || [])]
                             <nav className="flex space-x-6" aria-label="Tabs">
                                 <button className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'notes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`} onClick={() => setActiveTab('notes')}>Notes</button>
                                 <button className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'activity' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`} onClick={() => setActiveTab('activity')}>Activity Log</button>
+                                <button className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'file' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`} onClick={() => setActiveTab('file')}>Files</button>
                                 <button className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'status' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`} onClick={() => setActiveTab('status')}>Status Details</button>
                                 <button className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'history' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`} onClick={() => setActiveTab('history')}>Activity History</button>
                             </nav>
@@ -499,6 +520,51 @@ const allLogs = [...(activityLogs || [])]
     </ul>
   </div>
 )}
+                        {activeTab === 'file' && (
+                          <div>
+                            <h3 className="text-2xl font-bold text-gray-900 mb-2">Files</h3>
+                            {activities
+                              .filter(activity => activity.attachment)
+                              .map(activity => (
+                                <div
+                                  key={activity.id}
+                                  className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 mb-2 border"
+                                >
+                                  <div>
+                                    <a
+                                      href={activity.attachment}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-medium text-gray-800 hover:text-blue-600 flex items-center gap-2"
+                                    >
+                                      <span className="inline-block mr-2">
+                                        {/* You can use a file icon here */}
+                                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M4 4v16h16V8l-6-6H4z" /></svg>
+                                      </span>
+                                      {activity.attachmentName || activity.attachment.split('/').pop()}
+                                    </a>
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Uploaded by {activity.user || "Unknown"} {" "}
+                                      {/* {activity.createdAt
+                                        ? new Date(activity.createdAt).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "short",
+                                            year: "numeric",
+                                          })
+                                        : "Unknown date"} */}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDownloadFile(activity.attachment)}
+                                    className="text-gray-500 hover:text-blue-600 p-2"
+                                  >
+                                    <FaDownload className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            <div className="border-b border-gray-200 mb-6"></div>
+                          </div>
+                        )}  
                         {activeTab === 'status' && (
                           <>
                             {/* Show only the current stage's details */}

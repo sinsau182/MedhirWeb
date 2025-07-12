@@ -616,41 +616,15 @@ const LeadManagementContent = ({ role }) => {
           </div>
         </div>
       </div>
-      <div className="flex space-x-6 mb-6">
-        <button
-          className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'kanban' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`}
-          onClick={() => setActiveTab('kanban')}
-        >
-          Pipeline
-        </button>
-        <button
-          className={`pb-3 text-sm font-medium border-b-2 ${activeTab === 'files' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-blue-600'}`}
-          onClick={() => setActiveTab('files')}
-        >
-          Files
-        </button>
-      </div>
-      {activeTab === 'kanban' && (
-        <KanbanBoardClientOnly
-          leadsByStatus={leadsByStatus}
-          statuses={pipelines.map((p) => p.name)}
-          kanbanStatuses={pipelines}
-          onScheduleActivity={handleScheduleActivity}
-          onDragEnd={handleDragEnd}
-          // Debug props
-          debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
-        />
-      )}
-      {activeTab === 'files' && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Files</h3>
-          <input type="file" className="mb-4" />
-          <ul className="space-y-2">
-            <li className="text-gray-500">No files uploaded yet.</li>
-            {/* Map your files here */}
-          </ul>
-        </div>
-      )}
+      <KanbanBoardClientOnly
+        leadsByStatus={leadsByStatus}
+        statuses={pipelines.map((p) => p.name)}
+        kanbanStatuses={pipelines}
+        onScheduleActivity={handleScheduleActivity}
+        onDragEnd={handleDragEnd}
+        // Debug props
+        debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+      />
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}
         onClose={() => setShowDeletePipelineModal(false)}
