@@ -97,8 +97,24 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     }, [isOpen, dispatch]);
 
     useEffect(() => {
-        setShowITFields(formData.category === 'IT Equipment');
-    }, [formData.category]);
+        // Find the selected category object
+        const selectedCategory = Array.isArray(categories)
+            ? categories.find(
+                c => (c.categoryId || c.id) === formData.category
+            )
+            : null;
+
+        // Robust check for IT sector
+        const isITCategory = selectedCategory && selectedCategory.name &&
+            (
+                /it[\s_-]*sector/i.test(selectedCategory.name) || // matches "IT sector", "IT-sector", etc.
+                /it[\s_-]*equipment/i.test(selectedCategory.name) || // matches "IT Equipment"
+                /^it$/i.test(selectedCategory.name) || // matches "IT"
+                selectedCategory.name.toLowerCase().includes('it') // fallback: contains "it"
+            );
+
+        setShowITFields(!!isITCategory);
+    }, [formData.category, categories]);
 
     // Handle Redux errors with toast notifications
     useEffect(() => {
@@ -273,15 +289,13 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 type="date" 
                                 required 
                             />
-                            <SelectField 
+                            <InputField 
                                 label="Supplier / Vendor" 
                                 name="vendor"
                                 value={formData.vendor}
                                 onChange={handleChange}
-                            >
-                                <option value="">Select Vendor...</option>
-                                {MOCK_VENDORS.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
-                            </SelectField>
+                                placeholder="Enter Supplier / Vendor Name"
+                            />
                             <InputField 
                                 label="Invoice / Bill Number" 
                                 name="invoiceNumber" 
@@ -319,6 +333,13 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 onChange={handleChange}
                                 type="file" 
                                 accept=".pdf,.jpg,.jpeg,.png" 
+                            />
+                            <InputField 
+                                label="Warranty Expiry Date" 
+                                name="warrantyExpiry" 
+                                value={formData.warrantyExpiry}
+                                onChange={handleChange}
+                                type="date" 
                             />
                         </div>
                     </div>
@@ -379,48 +400,32 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                     onChange={handleChange}
                                     placeholder="e.g., Charger, Mouse" 
                                 />
-                                <SelectField 
+                                <InputField 
+                                    label="Assigned To" 
+                                    name="assignedTo"
+                                    value={formData.assignedTo}
+                                    onChange={handleChange}
+                                    placeholder="Enter Employee Name"
+                                />
+                                <InputField 
                                     label="Assigned To Team" 
                                     name="team"
                                     value={formData.team}
                                     onChange={handleChange}
-                                >
-                                    <option value="">Select Team...</option>
-                                    {MOCK_TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
-                                </SelectField>
+                                    placeholder="Enter Team Name"
+                                />
+                                <InputField 
+                                    label="Assignment Date" 
+                                    name="assignmentDate" 
+                                    value={formData.assignmentDate}
+                                    onChange={handleChange}
+                                    type="date" 
+                                />
                             </div>
                         </div>
                     )}
 
-                    {/* Assignment & Warranty */}
-                    <div className="p-4 border rounded-md">
-                        <h3 className="font-semibold text-lg mb-4">Assignment & Warranty</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <SelectField 
-                                label="Assigned To" 
-                                name="assignedTo"
-                                value={formData.assignedTo}
-                                onChange={handleChange}
-                            >
-                                <option value="">Not Assigned</option>
-                                {MOCK_EMPLOYEES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
-                            </SelectField>
-                            <InputField 
-                                label="Assignment Date" 
-                                name="assignmentDate" 
-                                value={formData.assignmentDate}
-                                onChange={handleChange}
-                                type="date" 
-                            />
-                            <InputField 
-                                label="Warranty Expiry Date" 
-                                name="warrantyExpiry" 
-                                value={formData.warrantyExpiry}
-                                onChange={handleChange}
-                                type="date" 
-                            />
-                        </div>
-                    </div>
+                    {/* Assignment & Warranty section removed */}
                 </div>
                 <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
                     <button 

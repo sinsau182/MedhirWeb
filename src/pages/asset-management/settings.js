@@ -1183,20 +1183,25 @@ const AssetSettingsPage = () => {
                 <div className="flex gap-8">
                     <aside className="w-1/4">
                         <nav className="flex flex-col gap-2 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                            {settingsTabs.map(tab => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-left transition-colors ${
-                                        activeTab === tab.id
-                                            ? 'bg-blue-600 text-white'
-                                            : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <tab.icon className="text-lg" />
-                                    <span className="font-medium">{tab.label}</span>
-                                </button>
-                            ))}
+                            {settingsTabs.map(tab => {
+                                const isActive = activeTab === tab.id;
+                                const isDisabled = tab.id === 'customFields';
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => {
+                                            if (!isDisabled) setActiveTab(tab.id);
+                                        }}
+                                        className={`flex items-center gap-3 px-4 py-3 rounded-md text-left transition-colors
+                                            ${isActive && !isDisabled ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}
+                                            ${isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400' : ''}`}
+                                        disabled={isDisabled}
+                                    >
+                                        <tab.icon className="text-lg" />
+                                        <span className="font-medium">{tab.label}</span>
+                                    </button>
+                                );
+                            })}
                         </nav>
                     </aside>
                     
@@ -1205,8 +1210,15 @@ const AssetSettingsPage = () => {
                             {(() => {
                                 const activeTabData = settingsTabs.find(tab => tab.id === activeTab);
                                 if (!activeTabData) return null;
-                                
-                                                                return (
+                                if (activeTabData.id === 'customFields') {
+                                    return (
+                                        <div className="p-8 text-center text-gray-500">
+                                            <h2 className="text-2xl font-bold mb-4">Custom Fields</h2>
+                                            <p>Coming Soon..</p>
+                                        </div>
+                                    );
+                                }
+                                return (
                                     <div>
                                         <div className="flex justify-end items-center mb-4">
                                             <div className="flex gap-3">
@@ -1226,12 +1238,12 @@ const AssetSettingsPage = () => {
                                                             <FaTimes /> Cancel
                                                         </button>
                                                         {activeTabData.onSave && (
-                            <button
+                                                            <button
                                                                 onClick={activeTabData.onSave}
                                                                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium flex items-center gap-2"
-                            >
+                                                            >
                                                                 <FaSave /> Save {activeTabData.label}
-                            </button>
+                                                            </button>
                                                         )}
                                                     </>
                                                 )}
