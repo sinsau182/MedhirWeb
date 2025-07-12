@@ -3598,12 +3598,12 @@ const SettingContent = ({ role }) => {
                 Configure your lead management system
               </p>
             </div>
-            <button
+            {/* <button
               onClick={() => handleViewChange("pipeline")}
               className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
             >
               <FaChevronLeft /> Back to Pipeline
-            </button>
+            </button> */}
           </div>
 
           <SettingsPage
