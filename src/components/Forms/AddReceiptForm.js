@@ -213,7 +213,7 @@ const handleSubmit = (e) => {
     const receiptData = {
       ...formData,
       customerId: selectedCustomer?.id || "",  // Ensure customerId is added
-      projectId: "PROJECT123",                 // Replace with actual project ID logic
+      projectId: "PROJ-001",                 // Replace with actual project ID logic
       amountReceived: parseFloat(formData.amount), // Must be included
       amount: parseFloat(formData.amount),
       linkedInvoices: finalLinkedInvoices,
