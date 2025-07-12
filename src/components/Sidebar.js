@@ -59,7 +59,8 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     ACCOUNTADMIN: "Accountant",
     PROJECTADMIN: "Project Admin",
     ACCOUNTANT: "Accountant",
-    PROJECTMANAGER: "Project Manager"
+    PROJECTMANAGER: "Project Manager",
+    ASSETMANAGER: "Asset Manager",
   };
 
   // Define menu items based on the role
@@ -136,12 +137,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/manager/attendance",
       roles: ["MANAGER"],
     },
-    {
-      label: "Lead Management",
-      icon: <FaTasks />,
-      link: "/manager/leads",
-      roles: ["MANAGER"],
-    },
+    // {
+    //   label: "Lead Management",
+    //   icon: <FaTasks />,
+    //   link: "/manager/leads",
+    //   roles: ["MANAGER"],
+    // },
 
     {
       label: "Dashboard",
@@ -185,12 +186,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/employee/mypayslip",
       roles: ["EMPLOYEE"],
     },
-    {
-      label: "Lead Management",
-      icon: <FaTasks />,
-      link: "/employee/leads",
-      roles: ["EMPLOYEE"],
-    },
+    // {
+    //   label: "Lead Management",
+    //   icon: <FaTasks />,
+    //   link: "/employee/leads",
+    //   roles: ["EMPLOYEE"],
+    // },
 
     {
       label: "Lead Management",
@@ -199,10 +200,22 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       roles: ["SALES"],
     },
     {
-      label: "Manager",
+      label: "Dashboard",
+      icon: <ChartColumnIncreasing />,
+      link: "/SalesManager/dashboard",
+      roles: ["SALESMANAGER"],
+    },
+    {
+      label: "Manager Lead Management",
       icon: <FaUsers />,
-      link: "/Sales/Manager",
-      roles: ["SALES"],
+      link: "/SalesManager/Manager",
+      roles: ["SALESMANAGER"],
+    },
+    {
+      label: "Settings",
+      icon: <FaCog />,
+      link: "/SalesManager/setting",
+      roles: ["SALESMANAGER"],
     },
     
 
@@ -225,6 +238,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       link: "/account/employee",
       roles: ["ACCOUNTANT"],
     },
+    {
+      label: "Settings",
+      icon: <FaCog />,
+      link: "/account/settings",
+      roles: ["ACCOUNTANT"],
+    },
 
     // Add Project Admin items
     {
@@ -238,6 +257,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       icon: <Wallet />,
       link: "/project_Manager/income",
       roles: ["PROJECTMANAGER"],
+    },
+    {
+      label: "Settings",
+      icon: <FaCog />,
+      link: "/asset-management/settings",
+      roles: ["ASSETMANAGER"],
     },
   ];
 
