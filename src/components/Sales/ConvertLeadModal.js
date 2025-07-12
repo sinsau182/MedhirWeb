@@ -17,6 +17,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
   const [signupAmount, setSignupAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentMode, setPaymentMode] = useState('');
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
   const [panNumber, setPanNumber] = useState('');
   const [projectTimeline, setProjectTimeline] = useState('');
   const [discount, setDiscount] = useState('');
@@ -26,12 +27,20 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
 
   const formRef = useRef(null);
 
+  const paymentModes = [
+    'UPI',
+    'Debit Card',
+    'Credit Card',
+    'IMPS/NEFT'
+  ];
+
   useEffect(() => {
     if (lead) {
       setFinalQuotation(lead.finalQuotation || '');
       setSignupAmount(lead.signupAmount || '');
       setPaymentDate(lead.paymentDate || '');
       setPaymentMode(lead.paymentMode || '');
+      setPaymentTransactionId(lead.paymentTransactionId || '');
       setPanNumber(lead.panNumber || '');
       setProjectTimeline(lead.projectTimeline || '');
       setDiscount(lead.discount || '');
@@ -86,6 +95,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
       formData.append('initialQuote', quotedAmount);
       formData.append('paymentDate', paymentDate);
       formData.append('paymentMode', paymentMode);
+      formData.append('paymentTransactionId', paymentTransactionId);
       formData.append('panNumber', panNumber);
       formData.append('projectTimeline', projectTimeline);
       formData.append('discount', discount);
@@ -100,6 +110,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
           initialQuote: quotedAmount,
           paymentDate,
           paymentMode,
+          paymentTransactionId,
           panNumber,
           projectTimeline,
           discount
@@ -205,14 +216,27 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Payment Mode</label>
-              <input
-                type="text"
+              <select
                 value={paymentMode}
                 onChange={(e) => setPaymentMode(e.target.value)}
-                className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
-                placeholder="e.g., Bank Transfer, UPI"
-              />
+                className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 transition-all py-2 px-3"
+              >
+                <option value="">Select Payment Mode</option>
+                {paymentModes.map(mode => (
+                  <option key={mode} value={mode}>{mode}</option>
+                ))}
+              </select>
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Transaction ID</label>
+            <input
+              type="text"
+              value={paymentTransactionId}
+              onChange={(e) => setPaymentTransactionId(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
+              placeholder="Enter transaction ID"
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -248,7 +272,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
           <hr className="my-6"/>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Upload Payment Details</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Upload Payment Proof</label>
               <input
                 type="file"
                 name="paymentDetailsFile"
@@ -261,7 +285,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
                   {paymentDetailsFile.type.startsWith('image/') ? (
                     <img
                       src={URL.createObjectURL(paymentDetailsFile)}
-                      alt="Payment Details Preview"
+                      alt="Payment Proof Preview"
                       className="w-full max-h-56 object-contain rounded border"
                     />
                   ) : (

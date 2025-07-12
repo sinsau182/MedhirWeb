@@ -12,26 +12,12 @@ import {
 import { FaRupeeSign } from 'react-icons/fa';
 
 const projectTypes = [
-  'Residential',
-  'Commercial',
-  'Modular Kitchen',
-  'Office Interior',
-  'Retail Space',
-  'Other'
-];
-
-const propertyTypes = [
-  'Apartment',
-  'Villa',
-  'Independent House',
-  'Duplex',
-  'Penthouse',
-  'Studio',
-  'Office',
-  'Shop',
-  'Warehouse',
-  'Plot',
-  'Other'
+  '2BHK Flat',
+  '3BHK Flat',
+  '4BHK Flat',
+  '2BHK Villa',
+  '3BHK Villa',
+  '4BHK Villa'
 ];
 
 const sources = [
@@ -58,7 +44,6 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     contactNumber: '',
     email: '',
     projectType: '',
-    propertyType: '',
     address: '',
     area: '',
     budget: '',
@@ -113,7 +98,6 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         contactNumber: '',
         email: '',
         projectType: '',
-        propertyType: '',
         address: '',
         area: '',
         budget: '',
@@ -276,60 +260,37 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
-            {/* Project Type and Property Type Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Project Type <span className="text-blue-500 font-bold">*</span>
-                </label>
-                <Select
-                  value={formData.projectType}
-                  onValueChange={value => handleInputChange('projectType', value)}
-                >
-                  <SelectTrigger className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.projectType ? 'border-red-500' : ''} hover:border-blue-400` }>
-                    <SelectValue placeholder="Select project type" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg">
-                    {projectTypes.map(type => (
-                      <SelectItem key={type} value={type} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.projectType && <p className="text-red-500 text-xs mt-1">{errors.projectType}</p>}
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Property Type
-                </label>
-                <Select
-                  value={formData.propertyType}
-                  onValueChange={value => handleInputChange('propertyType', value)}
-                >
-                  <SelectTrigger className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 hover:border-blue-400">
-                    <SelectValue placeholder="Select property type" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg">
-                    {propertyTypes.map(type => (
-                      <SelectItem key={type} value={type} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Address Field */}
+            {/* Project Type Field */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Address
+                Project Type <span className="text-blue-500 font-bold">*</span>
+              </label>
+              <Select
+                value={formData.projectType}
+                onValueChange={value => handleInputChange('projectType', value)}
+              >
+                <SelectTrigger className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.projectType ? 'border-red-500' : ''} hover:border-blue-400` }>
+                  <SelectValue placeholder="Select project type" />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg shadow-lg">
+                  {projectTypes.map(type => (
+                    <SelectItem key={type} value={type} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.projectType && <p className="text-red-500 text-xs mt-1">{errors.projectType}</p>}
+            </div>
+
+            {/* Project Address Field */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Project Address
               </label>
               <Input
                 type="text"
-                placeholder="Enter address"
+                placeholder="Enter project address"
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
