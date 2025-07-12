@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useDispatch, useSelector } from "react-redux";
@@ -34,6 +34,7 @@ import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import React from "react"; // Added for React.Fragment
 
 // Enhanced Modal Component for the 3-stage process
 const StepperModal = ({ isOpen, onClose, children, title }) => {
@@ -67,10 +68,11 @@ function SuperadminCompanies() {
   const router = useRouter();
   const deleteButtonRef = useRef(null);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
+    useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [companyData, setCompanyData] = useState({
-    prefix: "", // Add prefix field
+    prefixForEmpID: "", // FIX: Consistent prefix field
     name: "",
     email: "",
     phone: "",
@@ -85,13 +87,13 @@ function SuperadminCompanies() {
 
   const dispatch = useDispatch();
   const { companies, loading, err } = useSelector((state) => state.companies);
-  const { modules } = useSelector((state) => state.modules);
   const { employees } = useSelector((state) => state.employees);
   const [error, setError] = useState("");
+
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchInput, setSearchInput] = useState("");
 
-  // Add back head of company related state
+  // Add head of company related state
   const [isAddHeadOfCompanyModalOpen, setIsAddHeadOfCompanyModalOpen] = useState(false);
   const [newHeadOfCompanyData, setNewHeadOfCompanyData] = useState({
     name: "",
@@ -99,96 +101,7 @@ function SuperadminCompanies() {
     phone: "",
   });
 
-  // Dummy data for better UX
-  const dummyEmployees = [
-    { id: 1, name: "John Smith", email: "john@company.com", role: "CEO" },
-    { id: 2, name: "Sarah Johnson", email: "sarah@company.com", role: "CTO" },
-    { id: 3, name: "Michael Brown", email: "michael@company.com", role: "CFO" },
-    { id: 4, name: "Emily Davis", email: "emily@company.com", role: "COO" },
-    { id: 5, name: "David Wilson", email: "david@company.com", role: "VP Operations" }
-  ];
-
-  const dummyModules = [
-    { id: 1, name: "HR Management", description: "Employee lifecycle management", icon: "👥" },
-    { id: 2, name: "Accounting", description: "Financial management and reporting", icon: "📊" },
-    { id: 3, name: "Project Management", description: "Project planning and tracking", icon: "📋" },
-    { id: 4, name: "Sales CRM", description: "Customer relationship management", icon: "💼" },
-    { id: 5, name: "Inventory", description: "Stock and warehouse management", icon: "📦" },
-    { id: 6, name: "Payroll", description: "Salary and benefits processing", icon: "💰" },
-    { id: 7, name: "Asset Management", description: "Company asset tracking", icon: "🏢" },
-    { id: 8, name: "Reports & Analytics", description: "Business intelligence dashboard", icon: "📈" }
-  ];
-
-  const dummyCompanies = [
-    {
-      id: 1,
-      name: "TechCorp Solutions",
-      email: "contact@techcorp.com",
-      phone: "9876543210",
-      gst: "07AAACT2727Q1ZS",
-      regAdd: "123 Tech Street, Silicon Valley, CA 94000",
-      colorCode: "#4F46E5",
-      headOfCompany: { name: "John Smith" }
-    },
-    {
-      id: 2,
-      name: "InnovateLab Inc",
-      email: "hello@innovatelab.com",
-      phone: "8765432109",
-      gst: "09BBCDE3456F2GH",
-      regAdd: "456 Innovation Drive, Austin, TX 78701",
-      colorCode: "#059669",
-      headOfCompany: { name: "Sarah Johnson" }
-    },
-    {
-      id: 3,
-      name: "GlobalTech Enterprises",
-      email: "info@globaltech.com",
-      phone: "7654321098",
-      gst: "27CDEFG4567H3IJ",
-      regAdd: "789 Global Plaza, New York, NY 10001",
-      colorCode: "#DC2626",
-      headOfCompany: { name: "Michael Brown" }
-    }
-  ];
-
-  // Use dummy data if no real data is available
-  const availableEmployees = employees && employees.length > 0 ? employees : dummyEmployees;
-  const availableModules = modules && modules.length > 0 ? modules : dummyModules;
-  const allCompanies = companies && companies.length > 0 ? companies : dummyCompanies;
-
-  useEffect(() => {
-    const token = getItemFromSessionStorage("token");
-    if (!token) {
-      toast.error("Please login to continue");
-      router.push("/login");
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        await dispatch(fetchCompanies()).unwrap();
-        await dispatch(fetchModules()).unwrap();
-        await dispatch(fetchEmployees()).unwrap();
-      } catch (error) {
-        const errorMessage = error.message || "Failed to fetch data";
-        toast.error(errorMessage);
-        if (String(errorMessage).includes("Authentication")) {
-          router.push("/login");
-        }
-      }
-    };
-
-    fetchData();
-  }, [dispatch, router]);
-
-  // --- Form Navigation ---
-  const nextStep = () => {
-    setError(""); // Clear any existing errors
-    setCurrentStep(prev => Math.min(prev + 1, 2)); // Changed from 3 to 2
-  };
-  
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+  const ClientOnlyTable = dynamic(() => Promise.resolve(Table), { ssr: false });
   
   const handleOpenCompanyModal = (company = null) => {
     setCurrentStep(1);
@@ -196,8 +109,9 @@ function SuperadminCompanies() {
     setError("");
     if (company) {
       setIsEditing(true);
+      setSelectedCompany(company);
       setCompanyData({
-        prefix: company.prefix || "", // Add prefix field
+        prefixForEmpID: company.prefixForEmpID || "", // FIX: Consistent prefix field
         name: company.name || "",
         email: company.email || "",
         phone: company.phone || "",
@@ -210,8 +124,9 @@ function SuperadminCompanies() {
       if (company.logo) setLogoPreview(company.logo);
     } else {
       setIsEditing(false);
+      setSelectedCompany(null);
       setCompanyData({
-        prefix: "", // Add prefix field
+        prefixForEmpID: "", // FIX: Consistent prefix field
         name: "", email: "", phone: "", gst: "", regAdd: "",
         colorCode: "#4F46E5", headOfCompanyId: null, logo: null
       });
@@ -219,67 +134,162 @@ function SuperadminCompanies() {
     setIsCompanyModalOpen(true);
   };
 
+  // const handleInputChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setCompanyData((prevData) => {
+  //     const updatedData = { ...prevData, [name]: value };
+
+  //     // Auto-generate prefix if the company name is being updated
+  //     if (name === "name" && value.length >= 3) {
+  //       updatedData.prefixForEmpID = value.substring(0, 3).toUpperCase();
+  //     }
+  //     // Ensure prefix is always uppercase
+  //     if (name === "prefixForEmpID") {
+  //       updatedData.prefixForEmpID = value.toUpperCase();
+  //     }
+
+  //     return updatedData;
+  //   });
+  // };
+
+  // Email validation function
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCompanyData((prevData) => {
       const updatedData = { ...prevData, [name]: value };
+
+    // Auto-generate prefix if the company name is being updated
+    if (name === "name" && value.length >= 3) {
+      updatedData.prefixForEmpID = value.substring(0, 3).toUpperCase();
+    }
+
+    // Ensure prefixForEmpID is always uppercase
+    if (name === "prefixForEmpID") {
+      updatedData.prefixForEmpID = value.toUpperCase();
+    }
+
+    // Ensure GST is always uppercase
+    if (name === "gst") {
+      updatedData.gst = value.toUpperCase();
+    }
+
       return updatedData;
     });
-    setError(""); // Clear error when user starts typing
+};
+
+  const validateEmail = (email) => {
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return regex.test(email);
   };
 
-  const handleSaveCompany = async () => {
-    const { prefix, name, email, phone, gst, regAdd } = companyData;
+  const validatePhone = (phone) => {
+    const regex = /^[0-9]{10}$/;
+    return regex.test(phone);
+  };
 
-    if (!prefix || !name || !email || !phone || !gst || !regAdd) {
+  const validateGST = (gst) => {
+    const regex =
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+    return regex.test(gst);
+  };
+
+  const handleCreateAndNext = async () => {
+    const { name, email, phone, gst, regAdd } = companyData;
+
+    // Validate required fields
+    if (!name || !email || !phone || !gst || !regAdd) {
       setError("All fields are required!");
       return;
     }
     setError("");
 
+    // Validate phone number
+    if (!validatePhone(phone)) {
+      setError("Please enter a valid phone number.");
+      return;
+    }
+    setError("");
+
+    // Validate email
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+
+    // Validate GST
+    if (!validateGST(gst)) {
+      setError("Please enter a valid GST number.");
+      return;
+    }
+    setError("");
+
+    try {
     if (isEditing) {
+        await dispatch(
+          updateCompany({ 
+            id: selectedCompany.companyId,
+            updatedData: companyData 
+          })
+        );
       toast.success("Company updated successfully!");
+        setCurrentStep(2);
     } else {
+        const result = await dispatch(createCompany(companyData));
+        if (createCompany.fulfilled.match(result)) {
       toast.success("Company created successfully!");
+          setSelectedCompany(result.payload); // Store newly created company for step 2
+          setCurrentStep(2);
+        } else {
+          toast.error(result.payload || "Failed to create company.");
+        }
+      }
+      dispatch(fetchCompanies());
+    } catch (error) {
+      toast.error("Failed to save company data.");
     }
-    
+  };
+
+  const handleFinishSetup = async () => {
+    if (companyData.headOfCompanyId) {
+      await dispatch(updateCompany({
+        id: selectedCompany._id,
+        updatedData: { headOfCompany: companyData.headOfCompanyId }
+      }));
+      toast.success("Head of Company assigned successfully!");
+    } else {
+      toast.info("No Head of Company was assigned. You can add one later.");
+    }
     setIsCompanyModalOpen(false);
-    setCurrentStep(1);
-    setSelectedCompany(null);
   };
 
-  const handleLogoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCompanyData(prev => ({ ...prev, logo: file }));
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+  const handleDeleteCompany = async () => {
+    if (!selectedCompany) return;
+
+    try {
+      await dispatch(deleteCompany(selectedCompany.id)); // Delete from backend & Redux store
+      dispatch(fetchCompanies()); // Refetch the updated list
+      setIsDeleteConfirmationOpen(false);
+      setSelectedCompany(null);
+    } catch (error) {
+      toast.error("Failed to delete company.");
     }
   };
 
-  // Add layout toggle state
-  const [viewLayout, setViewLayout] = useState("cards"); // "cards" or "table"
-
-  // Filter companies based on search
-  const filteredCompanies = allCompanies.filter(company =>
-    company.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-    company.email.toLowerCase().includes(searchInput.toLowerCase()) ||
-    company.gst.toLowerCase().includes(searchInput.toLowerCase())
+  const filteredCompanies = companies.filter((company) =>
+    company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
 
+
   const predefinedColors = [
-    "#4F46E5", "#059669", "#DC2626", "#7C2D12", "#1E40AF",
-    "#9333EA", "#C2410C", "#BE123C", "#0F766E", "#4338CA"
+    "#B0E0E6", "#FFE4E1", "#F0E68C", "#E6E6FA", "#D1D5DB"
   ];
 
   const handleColorChange = (color) => {
     setCompanyData((prevData) => ({ ...prevData, colorCode: color }));
   };
 
-  // Add back the head of company change handlers
   const handleHeadOfCompanyChange = (value) => {
     if (value === "add_new") {
       setIsAddHeadOfCompanyModalOpen(true);
@@ -299,12 +309,11 @@ function SuperadminCompanies() {
       return;
     }
 
-    const newHead = {
-      id: Date.now(),
-      name: newHeadOfCompanyData.name,
-      email: newHeadOfCompanyData.email,
-      phone: newHeadOfCompanyData.phone
-    };
+    // You would dispatch an action to create the employee
+    const newHead = { id: Date.now(), ...newHeadOfCompanyData };
+    // For demo, just add to a local list and select it.
+    // In a real app, you'd dispatch(createEmployee(newHeadOfCompanyData)) and then
+    // on success, fetch the new list of employees.
     
     toast.success("Head of Company created successfully!");
     setCompanyData((prev) => ({ ...prev, headOfCompanyId: newHead.id }));
@@ -312,312 +321,147 @@ function SuperadminCompanies() {
     setNewHeadOfCompanyData({ name: "", email: "", phone: "" });
   };
 
-  // Function to skip head of company assignment and create company
-  const handleSkipHeadOfCompany = () => {
-    handleSaveCompany();
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCompanyData(prev => ({ ...prev, logo: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
-
+  
   return (
-    <div className="flex h-screen bg-gray-100">
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      `}</style>
-      <SuperadminHeaders 
-        viewLayout={viewLayout}
-        setViewLayout={setViewLayout}
-        onAddCompany={() => handleOpenCompanyModal()}
-        searchQuery={searchInput}
-        setSearchQuery={setSearchInput}
-      />
-      
-      <div className="flex-1 pt-16">
-        <div className="p-6 mt-4">
-          {/* Page Header */}
-          <div className="mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Companies</h1>
-              <p className="text-gray-600 mt-1">Manage your organization's companies and their configurations</p>
+    <div className="bg-white text-[#4a4a4a] max-h-screen">
+      <SuperadminHeaders />
+      <div className="p-5">
+        <div className="mt-6 p-4 rounded-lg bg-white">
+          <div className="mt-4 p-4 rounded-lg flex justify-between items-center">
+            <div className="relative w-96">
+              <input
+                type="text"
+                placeholder="Search..."
+                className="w-full pl-10 pr-4 py-1.5 text-gray-800 border border-gray-500 rounded-lg bg-white"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
+              />
             </div>
-          </div>
-
-          {/* Companies Layout - Card or Table */}
-          {viewLayout === "cards" ? (
-            /* Enhanced Premium Card View */
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredCompanies.map((company, index) => (
-                <div 
-                  key={company.id} 
-                  className="bg-gradient-to-tr from-[#E8F0FE] to-[#ffffff] rounded-xl shadow-sm border border-blue-100/60 flex flex-col transition-all duration-200 ease-in-out hover:shadow-md hover:-translate-y-1 hover:shadow-blue-200/40 group cursor-pointer relative overflow-hidden border-l-4 border-l-indigo-400"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animation: 'fadeInUp 0.6s ease-out forwards'
-                  }}
-                >
-                  {/* Top Action Menu - 3 dots */}
-                  <div className="absolute top-4 right-4 z-10">
-                    <div className="relative group/menu">
-                      <button className="p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white/90 backdrop-blur-sm">
-                        <div className="flex flex-col gap-1">
-                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                          <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                        </div>
-                      </button>
-                      
-                      {/* Dropdown Menu */}
-                      <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 z-20">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenCompanyModal(company);
-                          }}
-                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 rounded-t-lg transition-colors"
-                        >
-                          <Edit className="h-4 w-4" />
-                          Edit Company
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCompany(company);
-                            setIsDeleteConfirmationOpen(true);
-                          }}
-                          className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 rounded-b-lg transition-colors"
-                        >
-                          <Trash className="h-4 w-4" />
-                          Delete Company
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div 
-                    className="p-5 flex-1"
-                    onClick={() => router.push(`/superadmin/company/${company.id}`)}
-                  >
-                    {/* Company Header with Avatar */}
-                    <div className="flex items-start gap-3 mb-6">
-                      {/* Company Avatar with Initials */}
-                      <div 
-                        className="w-11 h-11 rounded-lg flex items-center justify-center shadow-sm ring-2 ring-white/50"
-                        style={{ backgroundColor: company.colorCode || '#4F46E5' }}
-                      >
-                        <span className="text-base font-bold text-white">
-                          {company.name ? company.name.substring(0, 2).toUpperCase() : 'CO'}
-                        </span>
-                      </div>
-                      
-                      {/* Company Name & Email */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <h2 className="text-lg font-bold text-gray-900 group-hover:text-indigo-700 transition-colors truncate">
-                            {company.name}
-                          </h2>
-                          {/* Status Badge - Top Right */}
-                          <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ml-2 flex-shrink-0">
-                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                            Active
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-800 truncate">{company.email}</p>
-                      </div>
-                    </div>
-
-                    {/* Company Details with Clean Icons */}
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-start gap-2">
-                        <Phone className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-900 font-medium">{company.phone}</span>
-                      </div>
-                      
-                      <div className="flex items-start gap-2">
-                        <Hash className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-900 font-medium">{company.gst}</span>
-                      </div>
-                      
-                      <div className="flex items-start gap-2" title={company.regAdd}>
-                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-900 line-clamp-2 leading-relaxed">{company.regAdd}</span>
-                      </div>
-                    </div>
-
-                    {/* Subtle Divider */}
-                    <div className="border-t border-white/30 my-4"></div>
-
-                    {/* Head of Company Section */}
-                    <div className="flex items-center justify-between pt-3">
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-800 font-medium">Head of Company</span>
-                      </div>
-                      <div>
-                        {company.headOfCompany?.name ? (
-                          <span className="text-sm font-bold text-gray-900">
-                            {company.headOfCompany.name}
-                          </span>
-                        ) : (
-                          <span className="bg-gray-200 text-gray-700 text-xs font-medium px-3 py-1 rounded-full">
-                            Not Assigned
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Optional: Subtle gradient overlay on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-indigo-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Table View */
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="py-4 px-6">Company</TableHead>
-                      <TableHead className="py-4 px-6">Contact</TableHead>
-                      <TableHead className="py-4 px-6">GST Number</TableHead>
-                      <TableHead className="py-4 px-6">Head of Company</TableHead>
-                      <TableHead className="py-4 px-6">Address</TableHead>
-                      <TableHead className="py-4 px-6 text-center">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredCompanies.map((company) => (
-                      <TableRow 
-                        key={company.id} 
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => router.push(`/superadmin/company/${company.id}`)}
-                      >
-                        <TableCell className="py-4 px-6">
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md"
-                              style={{ backgroundColor: company.colorCode || '#4F46E5' }}
-                            >
-                              <Building2 className="h-5 w-5 text-white" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-800">{company.name}</p>
-                              <p className="text-sm text-gray-500">{company.email}</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-800 flex items-center gap-2">
-                              <Phone size={14} className="text-blue-600" />
-                              {company.phone}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-800 flex items-center gap-2">
-                              <Hash size={14} className="text-green-600" />
-                              {company.gst}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-800 flex items-center gap-2">
-                              <Users size={14} className="text-purple-600" />
-                              {company.headOfCompany?.name || 'Not assigned'}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-4 px-6 max-w-xs">
-                          <p className="text-sm text-gray-600 truncate" title={company.regAdd}>
-                            {company.regAdd}
-                          </p>
-                        </TableCell>
-                        <TableCell className="py-4 px-6">
-                          <div className="flex justify-center space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenCompanyModal(company);
-                              }}
-                              className="p-2 text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 transition-colors"
-                              title="Edit Company"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCompany(company);
-                                setIsDeleteConfirmationOpen(true);
-                              }}
-                              className="p-2 text-red-600 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
-                              title="Delete Company"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              {/* Table Footer */}
-              {filteredCompanies.length === 0 && (
-                <div className="text-center py-12">
-                  <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
-                  <p className="text-gray-500">
-                    {searchInput ? "Try adjusting your search criteria" : "Get started by adding your first company"}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Empty State for Card View */}
-          {viewLayout === "cards" && filteredCompanies.length === 0 && (
-            <div className="text-center py-12">
-              <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
-              <p className="text-gray-500 mb-6">
-                {searchInput ? "Try adjusting your search criteria" : "Get started by adding your first company"}
-              </p>
-              {!searchInput && (
-                <button
+            <div className="flex space-x-10 mr-16">
+              <div className="flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105">
+                <UserPlus
+                  size={32}
+                  className="text-[#4a4a4a] p-1 rounded-md"
                   onClick={() => handleOpenCompanyModal()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add Your First Company
-                </button>
+                />
+                <span className="text-xs text-[#4a4a4a]">Add</span>
+          </div>
+              <div
+                ref={deleteButtonRef}
+                className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
+                  selectedCompany ? "" : "opacity-20 pointer-events-none"
+                }`}
+              >
+                <Edit
+                  size={32}
+                  className="text-[#4a4a4a] p-1 rounded-md"
+                  onClick={() => handleOpenCompanyModal(selectedCompany)}
+                />
+                <span className="text-xs text-[#4a4a4a]">Edit</span>
+                        </div>
+              <div
+                ref={deleteButtonRef}
+                className={`flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105 ${
+                  selectedCompany ? "" : "opacity-20 pointer-events-none"
+                }`}
+              >
+                <Trash
+                  size={32}
+                  className="text-[#4a4a4a] p-1 rounded-md"
+                  onClick={() => setIsDeleteConfirmationOpen(true)}
+                />
+                <span className="text-xs text-[#4a4a4a]">Delete</span>
+                      </div>
+                        </div>
+                      </div>
+          <div className="mt-4 p-2 rounded-lg">
+            {loading ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : err ? (
+              <div className="text-center text-red-500 py-4">{err}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-[#E2E8F0]">
+                    <tr>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Name
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Email
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Phone
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        GST
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Register Add.
+                      </th>
+                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                        Company Prefix
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredCompanies.map((company) => (
+                      <tr 
+                        key={company._id}
+                        className={`hover:bg-gray-50 cursor-pointer ${
+                          selectedCompany?._id === company._id ? 'bg-gray-100' : ''
+                        }`}
+                        onClick={() => setSelectedCompany(company)}
+                      >
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                              {company.phone}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                              {company.gst}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                            {company.regAdd}
+                        </td>
+                        <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
+                          {company.prefixForEmpID}
+                        </td>
+                      </tr>
+                    ))}
+              {filteredCompanies.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No companies found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+            </div>
               )}
             </div>
-          )}
         </div>
       </div>
 
-      {/* Enhanced Centered 2-Stage Company Modal */}
       <StepperModal isOpen={isCompanyModalOpen} onClose={() => setIsCompanyModalOpen(false)}>
         <div className="flex flex-col h-full">
           {/* Modal Header */}
@@ -677,7 +521,7 @@ function SuperadminCompanies() {
             </div>
           </div>
 
-          {/* Form Content - Wider and Less Tall */}
+          {/* Form Content */}
           <div className="flex-1 px-8 py-6 overflow-y-auto">
             <AnimatePresence mode="wait">
               <motion.div
@@ -686,247 +530,136 @@ function SuperadminCompanies() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="h-full"
               >
-                {/* Step 1: Company Details */}
                 {currentStep === 1 && (
-                  <div className="grid grid-cols-2 gap-6 h-full">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <Building2 size={20} className="text-blue-600" />
-                        Company Information
-                      </h3>
-                      
-                      {/* Add Prefix Field */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    {/* Column 1 */}
+                    <div className="space-y-6">
+                      {/* Company Name */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Company Prefix *</label>
-                        <div className="relative">
-                          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input
-                            type="text"
-                            name="prefix"
-                            placeholder="e.g., TECH, CORP, INC"
-                            value={companyData.prefix}
-                            onChange={handleInputChange}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">Short identifier for the company (3-5 characters)</p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
-                        <div className="relative">
+                        <label className="text-sm font-medium text-gray-700">Company Name</label>
+                        <div className="mt-1 relative">
                           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input
-                            type="text"
-                            name="name"
-                            placeholder="Enter company name"
-                            value={companyData.name}
-                            onChange={handleInputChange}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          />
+                          <Input name="name" value={companyData.name} onChange={handleInputChange} placeholder="e.g., Innovate Inc." className="pl-10" />
                         </div>
                       </div>
-
+                      {/* Company Email */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                        <div className="relative">
+                        <label className="text-sm font-medium text-gray-700">Company Email</label>
+                        <div className="mt-1 relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input
-                            type="email"
-                            name="email"
-                            placeholder="contact@company.com"
-                            value={companyData.email}
-                            onChange={handleInputChange}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          />
+                          <Input name="email" type="email" value={companyData.email} onChange={handleInputChange} placeholder="e.g., contact@innovate.com" className="pl-10" />
                         </div>
                       </div>
-
+                      {/* Phone Number */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                        <div className="relative">
+                        <label className="text-sm font-medium text-gray-700">Phone Number</label>
+                        <div className="mt-1 relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input
-                            type="tel"
-                            name="phone"
-                            placeholder="9876543210"
-                            value={companyData.phone}
-                            onChange={handleInputChange}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          />
+                          <Input name="phone" value={companyData.phone} onChange={handleInputChange} placeholder="e.g., 9876543210" className="pl-10" />
                         </div>
                       </div>
                     </div>
-
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <Hash size={20} className="text-green-600" />
-                        Legal Information
-                      </h3>
-
+                    {/* Column 2 */}
+                    <div className="space-y-6">
+                      {/* GST Number */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">GST Number *</label>
-                        <div className="relative">
+                        <label className="text-sm font-medium text-gray-700">GST Number</label>
+                        <div className="mt-1 relative">
                           <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input
-                            type="text"
-                            name="gst"
-                            placeholder="22AAAAA0000A1Z5"
-                            value={companyData.gst}
-                            onChange={handleInputChange}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                          />
+                          <Input name="gst" value={companyData.gst} onChange={handleInputChange} placeholder="e.g., 22AAAAA0000A1Z5" className="pl-10 uppercase" />
                         </div>
                       </div>
-
+                      {/* Registered Address */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Registered Address *</label>
-                        <div className="relative">
+                        <label className="text-sm font-medium text-gray-700">Registered Address</label>
+                        <div className="mt-1 relative">
                           <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                          <textarea
-                            name="regAdd"
-                            placeholder="Enter complete registered address..."
-                            value={companyData.regAdd}
-                            onChange={handleInputChange}
-                            rows={4}
-                            className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                          />
+                          <textarea name="regAdd" value={companyData.regAdd} onChange={handleInputChange} placeholder="Company's full registered address" rows="3" className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-blue-500 focus:border-blue-500 transition resize-none"></textarea>
                         </div>
+                      </div>
+                      {/* Employee ID Prefix */}
+                      <div>
+                        <label className="text-sm font-medium text-gray-700">Employee ID Prefix</label>
+                        <div className="mt-1 relative">
+                          <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                          <Input name="prefixForEmpID" value={companyData.prefixForEmpID} onChange={handleInputChange} placeholder="Auto-generated or custom" className="pl-10 uppercase" />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">First 3 letters of company name. Customize if needed.</p>
                       </div>
                     </div>
                   </div>
                 )}
-
-                {/* Step 2: Leadership & Branding */}
                 {currentStep === 2 && (
-                  <div className="space-y-8 h-full">
-                    <div className="grid grid-cols-2 gap-8">
-                      {/* Head of Company Section */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                     {/* Column 1: Leadership */}
                       <div className="space-y-6">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                          <Users size={20} className="text-blue-600" />
-                          Head of Company
+                       <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex items-center gap-2">
+                         <Users size={20} />
+                         Leadership
                         </h3>
-                        <Select onValueChange={handleHeadOfCompanyChange} value={companyData.headOfCompanyId || ""}>
-                          <SelectTrigger className="w-full h-12">
-                            <SelectValue placeholder="Select Head of Company" />
+                       <div>
+                         <label className="text-sm font-medium text-gray-700">Head of Company</label>
+                         <p className="text-xs text-gray-500 mb-2">Assign an employee as the main point of contact.</p>
+                         <Select onValueChange={handleHeadOfCompanyChange} value={companyData.headOfCompanyId}>
+                           <SelectTrigger className="w-full">
+                             <SelectValue placeholder="Select an employee..." />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="add_new">
-                              <span className="flex items-center gap-2 text-blue-600">
-                                <UserPlus size={16} />
+                               <div className="flex items-center gap-2">
+                                 <Plus size={16} />
                                 Add New Head of Company
-                              </span>
-                            </SelectItem>
-                            {availableEmployees?.map((employee) => (
-                              <SelectItem key={employee.id} value={employee.id}>
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                                    <span className="text-xs font-semibold">
-                                      {employee.name && employee.name.length > 0 ? employee.name.charAt(0).toUpperCase() : '?'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <p className="font-medium">{employee.name || 'Unknown Employee'}</p>
-                                    <p className="text-xs text-gray-500">{employee.email || 'No email'}</p>
-                                  </div>
                                 </div>
                               </SelectItem>
+                             {employees.map(emp => (
+                               <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                       </div>
+                     </div>
 
-                        {/* Company Logo Section */}
-                        <div className="space-y-4">
-                          <h4 className="text-md font-medium text-gray-700 flex items-center gap-2">
-                            <Upload size={18} className="text-purple-600" />
-                            Company Logo
-                          </h4>
-                          <div className="flex items-center gap-6">
-                            <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                     {/* Column 2: Branding */}
+                     <div className="space-y-6">
+                       <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 flex items-center gap-2">
+                         <Sparkles size={20} />
+                         Branding
+                       </h3>
+                       {/* Logo Upload */}
+                       <div>
+                         <label className="text-sm font-medium text-gray-700">Company Logo</label>
+                         <div className="mt-2 flex items-center gap-6">
+                           <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border">
                               {logoPreview ? (
-                                <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover rounded-2xl" />
+                               <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover" />
                               ) : (
-                                <Upload size={24} className="text-gray-400" />
+                               <Upload size={32} className="text-gray-400" />
                               )}
                             </div>
-                            <div className="flex-1">
-                              <label htmlFor="logo-upload" className="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                                Upload Logo
+                           <label htmlFor="logo-upload" className="cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50">
+                             <span>Upload a file</span>
+                             <input id="logo-upload" name="logo" type="file" className="sr-only" onChange={handleLogoChange} accept="image/*" />
                               </label>
-                              <input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
-                              <p className="text-xs text-gray-500 mt-2">PNG, JPG, SVG up to 5MB</p>
                             </div>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Theme Color Section */}
-                      <div className="space-y-6">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                          <Palette size={20} className="text-pink-600" />
-                          Theme Color
-                        </h3>
-                        
-                        <div className="p-4 border border-gray-200 rounded-xl bg-white">
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="font-medium">Live Preview</span>
-                            <button 
-                              className="px-4 py-2 text-white text-sm rounded-lg shadow-sm"
-                              style={{ backgroundColor: companyData.colorCode }}
-                            >
-                              Sample Button
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-3">
-                            {predefinedColors.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                className={`w-10 h-10 rounded-xl border-2 transition-all duration-200 ${
-                                  companyData.colorCode === color
-                                    ? "border-gray-800 ring-2 ring-gray-300 scale-110"
-                                    : "border-gray-300 hover:border-gray-400"
-                                }`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => handleColorChange(color)}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-2 mt-4">
-                            <span className="text-sm text-gray-600">Custom:</span>
+                       {/* Theme Color */}
+                       <div>
+                         <label className="text-sm font-medium text-gray-700">Theme Color</label>
+                         <div className="mt-2 flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full border-2 border-white shadow" style={{ backgroundColor: companyData.colorCode }} />
+                           <div className="flex gap-2">
+                             {predefinedColors.map(color => (
+                               <button key={color} type="button" onClick={() => handleColorChange(color)} className={`w-8 h-8 rounded-full transition-transform hover:scale-110 ${companyData.colorCode === color ? 'ring-2 ring-offset-2 ring-blue-600' : ''}`} style={{ backgroundColor: color }} />
+                             ))}
                             <input
                               type="color"
-                              value={companyData.colorCode || "#4F46E5"}
+                               value={companyData.colorCode}
                               onChange={(e) => handleColorChange(e.target.value)}
-                              className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
-                            />
-                            <input
-                              type="text"
-                              placeholder="#4F46E5"
-                              value={companyData.colorCode || ""}
-                              onChange={(e) => handleColorChange(e.target.value)}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                               className="w-8 h-8 p-0 border-none rounded-full cursor-pointer"
+                               style={{ backgroundColor: 'transparent' }}
                             />
                           </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Info box about modules and admins */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Settings size={16} className="text-blue-600" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-blue-800 mb-1">What's Next?</h4>
-                          <p className="text-sm text-blue-700">
-                            After creating the company, you can click on the company card to assign modules, 
-                            configure features, and manage additional admins from the detailed company page.
-                          </p>
                         </div>
                       </div>
                     </div>
@@ -934,185 +667,71 @@ function SuperadminCompanies() {
                 )}
               </motion.div>
             </AnimatePresence>
-
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-lg"
-              >
-                <div className="flex">
-                  <X className="h-5 w-5 text-red-400" />
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+            {error && <p className="text-red-600 mt-4 text-center">{error}</p>}
           </div>
 
-          {/* Modal Footer - Updated Navigation */}
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
-            <div className="flex justify-between items-center">
+          {/* Modal Footer */}
+          <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-between">
               <div>
-                {currentStep > 1 && (
-                  <button
-                    onClick={prevStep}
-                    className="flex items-center gap-2 px-4 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <ArrowLeft size={16} />
-                    Previous
-                  </button>
-                )}
+              {currentStep === 2 && <Button variant="outline" onClick={() => setCurrentStep(1)}>Back</Button>}
               </div>
-              
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setIsCompanyModalOpen(false)}
-                  className="px-4 py-2.5 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Cancel
-                </button>
-                
-                {currentStep === 1 ? (
-                  // Step 1: Create Company button (moves to step 2 without validation)
-                  <button
-                    onClick={() => {
-                      setError(""); // Clear any existing errors
-                      nextStep(); // Move to Leadership & Branding without validation
-                    }}
-                    className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-lg hover:shadow-xl"
-                  >
-                    <Sparkles size={16} />
-                    Create Company
-                  </button>
-                ) : (
-                  // Step 2: Leadership & Branding - Skip or Add Head options
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleSkipHeadOfCompany}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                    >
-                      Skip
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (companyData.headOfCompanyId) {
-                          toast.success("Head of Company assigned successfully!");
-                          setIsCompanyModalOpen(false);
-                          setCurrentStep(1);
-                        } else {
-                          toast.error("Please select or add a Head of Company, or click Skip to continue without assignment.");
-                        }
-                      }}
-                      className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      <Users size={16} />
-                      Add Head of Company
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div className="flex gap-3">
+              <Button variant="ghost" onClick={() => setIsCompanyModalOpen(false)}>Cancel</Button>
+              {currentStep === 1 && <Button onClick={handleCreateAndNext}>{isEditing ? "Save & Next" : "Create & Next"}</Button>}
+              {currentStep === 2 && <Button onClick={handleFinishSetup}>Finish Setup</Button>}
             </div>
           </div>
         </div>
       </StepperModal>
 
-      {/* Add Head of Company Modal */}
-      <Modal
-        isOpen={isAddHeadOfCompanyModalOpen}
-        onClose={() => setIsAddHeadOfCompanyModalOpen(false)}
-        title=""
-      >
-        <div className="space-y-6">
-          <div className="text-center pb-4 border-b border-gray-200">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-              <UserPlus className="h-6 w-6 text-white" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800">Add Head of Company</h2>
-            <p className="text-gray-600 text-sm">Create a new head of company profile</p>
-          </div>
-
-          <div className="space-y-4">
+      <Modal isOpen={isAddHeadOfCompanyModalOpen} onClose={() => setIsAddHeadOfCompanyModalOpen(false)} title="Add New Head of Company">
+        <div className="p-6 space-y-4">
+           <p className="text-sm text-gray-600">Quickly add a new employee who will be assigned as the Head of Company.</p>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-              <input
-                type="text"
-                name="name"
-                placeholder="Enter full name"
-                value={newHeadOfCompanyData.name}
-                onChange={handleNewHeadOfCompanyInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              />
+             <label className="text-sm font-medium text-gray-700">Full Name</label>
+             <Input name="name" value={newHeadOfCompanyData.name} onChange={handleNewHeadOfCompanyInputChange} placeholder="e.g., John Doe" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-              <input
-                type="email"
-                name="email"
-                placeholder="Enter email address"
-                value={newHeadOfCompanyData.email}
-                onChange={handleNewHeadOfCompanyInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              />
+             <label className="text-sm font-medium text-gray-700">Email Address</label>
+             <Input name="email" type="email" value={newHeadOfCompanyData.email} onChange={handleNewHeadOfCompanyInputChange} placeholder="e.g., john.doe@company.com" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Enter phone number"
-                value={newHeadOfCompanyData.phone}
-                onChange={handleNewHeadOfCompanyInputChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-              />
+             <label className="text-sm font-medium text-gray-700">Phone Number</label>
+             <Input name="phone" value={newHeadOfCompanyData.phone} onChange={handleNewHeadOfCompanyInputChange} placeholder="e.g., 9876543210" />
             </div>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button
-              onClick={() => setIsAddHeadOfCompanyModalOpen(false)}
-              className="px-4 py-2 text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddHeadOfCompany}
-              className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 flex items-center gap-2"
-            >
-              <Check size={16} />
-              Add Head
-            </button>
+           <div className="pt-4 flex justify-end">
+             <Button onClick={handleAddHeadOfCompany}>Add & Assign</Button>
           </div>
         </div>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={isDeleteConfirmationOpen}
-        onClose={() => setIsDeleteConfirmationOpen(false)}
-        title="Confirm Deletion"
+        onClose={() => {
+          setIsDeleteConfirmationOpen(false);
+          setSelectedCompany(null);
+        }}
       >
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Are you sure you want to delete this company? This action cannot be undone.
-          </p>
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              onClick={() => setIsDeleteConfirmationOpen(false)}
-              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+        <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
+          <h3 className="text-xl font-semibold">
+            Are you sure you want to delete this company?
+          </h3>
+          <div className="mt-4">
+            <Button
+              onClick={handleDeleteCompany}
+              className="bg-red-600 text-white"
+            >
+              Yes, Delete
+            </Button>
+            <Button
+              onClick={() => {
+                setIsDeleteConfirmationOpen(false);
+                setSelectedCompany(null);
+              }}
+              className="ml-4 bg-gray-600 text-white"
             >
               Cancel
-            </button>
-            <button
-              onClick={() => {
-                toast.success("Company deleted successfully!");
-                setIsDeleteConfirmationOpen(false);
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Delete
-            </button>
+            </Button>
           </div>
         </div>
       </Modal>
@@ -1120,4 +739,4 @@ function SuperadminCompanies() {
   );
 }
 
-export default withAuth(SuperadminCompanies, ["Superadmin"]);
+export default withAuth(SuperadminCompanies);

@@ -355,13 +355,6 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
               <input type="time" value={tabData.dueTime} onChange={e => setTabData({ ...tabData, dueTime: e.target.value })} className="w-full p-2 mt-1 border rounded-md text-xs focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 border-gray-300" />
             </div>
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-700">Assigned to</label>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">H</div>
-              <span className="text-xs">hjhjj</span>
-            </div>
-          </div>
 
           {/* Call Fields */}
           {activeType === 'Call' && (
