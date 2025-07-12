@@ -27,7 +27,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
-import { Search, UserPlus, Trash, Edit, Plus, Building2, Mail, Phone, Hash, MapPin, Briefcase, Users, Check, X, ArrowRight, ArrowLeft, Palette, Upload, Sparkles, Settings, Grid3X3, Table as LucideTable } from "lucide-react";
+import {
+  Search,
+  UserPlus,
+  Trash,
+  Edit,
+  Plus,
+  Building2,
+  Mail,
+  Phone,
+  Hash,
+  MapPin,
+  Briefcase,
+  Users,
+  Check,
+  X,
+  ArrowRight,
+  ArrowLeft,
+  Palette,
+  Upload,
+  Sparkles,
+  Settings,
+  Grid3X3,
+  Table as LucideTable,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
@@ -67,7 +90,8 @@ function SuperadminCompanies() {
   const router = useRouter();
   const deleteButtonRef = useRef(null);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
+    useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [companyData, setCompanyData] = useState({
     prefix: "", // Add prefix field
@@ -92,7 +116,8 @@ function SuperadminCompanies() {
   const [searchInput, setSearchInput] = useState("");
 
   // Add back head of company related state
-  const [isAddHeadOfCompanyModalOpen, setIsAddHeadOfCompanyModalOpen] = useState(false);
+  const [isAddHeadOfCompanyModalOpen, setIsAddHeadOfCompanyModalOpen] =
+    useState(false);
   const [newHeadOfCompanyData, setNewHeadOfCompanyData] = useState({
     name: "",
     email: "",
@@ -105,18 +130,63 @@ function SuperadminCompanies() {
     { id: 2, name: "Sarah Johnson", email: "sarah@company.com", role: "CTO" },
     { id: 3, name: "Michael Brown", email: "michael@company.com", role: "CFO" },
     { id: 4, name: "Emily Davis", email: "emily@company.com", role: "COO" },
-    { id: 5, name: "David Wilson", email: "david@company.com", role: "VP Operations" }
+    {
+      id: 5,
+      name: "David Wilson",
+      email: "david@company.com",
+      role: "VP Operations",
+    },
   ];
 
   const dummyModules = [
-    { id: 1, name: "HR Management", description: "Employee lifecycle management", icon: "👥" },
-    { id: 2, name: "Accounting", description: "Financial management and reporting", icon: "📊" },
-    { id: 3, name: "Project Management", description: "Project planning and tracking", icon: "📋" },
-    { id: 4, name: "Sales CRM", description: "Customer relationship management", icon: "💼" },
-    { id: 5, name: "Inventory", description: "Stock and warehouse management", icon: "📦" },
-    { id: 6, name: "Payroll", description: "Salary and benefits processing", icon: "💰" },
-    { id: 7, name: "Asset Management", description: "Company asset tracking", icon: "🏢" },
-    { id: 8, name: "Reports & Analytics", description: "Business intelligence dashboard", icon: "📈" }
+    {
+      id: 1,
+      name: "HR Management",
+      description: "Employee lifecycle management",
+      icon: "👥",
+    },
+    {
+      id: 2,
+      name: "Accounting",
+      description: "Financial management and reporting",
+      icon: "📊",
+    },
+    {
+      id: 3,
+      name: "Project Management",
+      description: "Project planning and tracking",
+      icon: "📋",
+    },
+    {
+      id: 4,
+      name: "Sales CRM",
+      description: "Customer relationship management",
+      icon: "💼",
+    },
+    {
+      id: 5,
+      name: "Inventory",
+      description: "Stock and warehouse management",
+      icon: "📦",
+    },
+    {
+      id: 6,
+      name: "Payroll",
+      description: "Salary and benefits processing",
+      icon: "💰",
+    },
+    {
+      id: 7,
+      name: "Asset Management",
+      description: "Company asset tracking",
+      icon: "🏢",
+    },
+    {
+      id: 8,
+      name: "Reports & Analytics",
+      description: "Business intelligence dashboard",
+      icon: "📈",
+    },
   ];
 
   const dummyCompanies = [
@@ -128,7 +198,7 @@ function SuperadminCompanies() {
       gst: "07AAACT2727Q1ZS",
       regAdd: "123 Tech Street, Silicon Valley, CA 94000",
       colorCode: "#4F46E5",
-      headOfCompany: { name: "John Smith" }
+      headOfCompany: { name: "John Smith" },
     },
     {
       id: 2,
@@ -138,7 +208,7 @@ function SuperadminCompanies() {
       gst: "09BBCDE3456F2GH",
       regAdd: "456 Innovation Drive, Austin, TX 78701",
       colorCode: "#059669",
-      headOfCompany: { name: "Sarah Johnson" }
+      headOfCompany: { name: "Sarah Johnson" },
     },
     {
       id: 3,
@@ -148,14 +218,17 @@ function SuperadminCompanies() {
       gst: "27CDEFG4567H3IJ",
       regAdd: "789 Global Plaza, New York, NY 10001",
       colorCode: "#DC2626",
-      headOfCompany: { name: "Michael Brown" }
-    }
+      headOfCompany: { name: "Michael Brown" },
+    },
   ];
 
   // Use dummy data if no real data is available
-  const availableEmployees = employees && employees.length > 0 ? employees : dummyEmployees;
-  const availableModules = modules && modules.length > 0 ? modules : dummyModules;
-  const allCompanies = companies && companies.length > 0 ? companies : dummyCompanies;
+  const availableEmployees =
+    employees && employees.length > 0 ? employees : dummyEmployees;
+  const availableModules =
+    modules && modules.length > 0 ? modules : dummyModules;
+  const allCompanies =
+    companies && companies.length > 0 ? companies : dummyCompanies;
 
   useEffect(() => {
     const token = getItemFromSessionStorage("token");
@@ -185,11 +258,11 @@ function SuperadminCompanies() {
   // --- Form Navigation ---
   const nextStep = () => {
     setError(""); // Clear any existing errors
-    setCurrentStep(prev => Math.min(prev + 1, 2)); // Changed from 3 to 2
+    setCurrentStep((prev) => Math.min(prev + 1, 2)); // Changed from 3 to 2
   };
-  
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
-  
+
+  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
+
   const handleOpenCompanyModal = (company = null) => {
     setCurrentStep(1);
     setLogoPreview(null);
@@ -201,46 +274,38 @@ function SuperadminCompanies() {
         name: company.name || "",
         email: company.email || "",
         phone: company.phone || "",
-        // gst: company.gst || "",
-         gst: (company.gst || "").toUpperCase(),
+        gst: company.gst || "",
         regAdd: company.regAdd || "",
         colorCode: company.colorCode || "#4F46E5",
         headOfCompanyId: company.headOfCompany?.id || null,
-        logo: company.logo || null
+        logo: company.logo || null,
       });
       if (company.logo) setLogoPreview(company.logo);
     } else {
       setIsEditing(false);
       setCompanyData({
         prefix: "", // Add prefix field
-        name: "", email: "", phone: "", gst: "", regAdd: "",
-        colorCode: "#4F46E5", headOfCompanyId: null, logo: null
+        name: "",
+        email: "",
+        phone: "",
+        gst: "",
+        regAdd: "",
+        colorCode: "#4F46E5",
+        headOfCompanyId: null,
+        logo: null,
       });
     }
     setIsCompanyModalOpen(true);
   };
 
-  // const handleInputChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setCompanyData((prevData) => {
-  //     const updatedData = { ...prevData, [name]: value };
-  //     return updatedData;
-  //   });
-  //   setError(""); // Clear error when user starts typing
-  // };
-const handleInputChange = (e) => {
-  const { name, value } = e.target;
-
-  setCompanyData((prevData) => {
-    const updatedData = {
-      ...prevData,
-      [name]: name === "gst" ? value.toUpperCase() : value, // Convert GST to uppercase
-    };
-    return updatedData;
-  });
-
-  setError(""); // Clear error when user starts typing
-};
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setCompanyData((prevData) => {
+      const updatedData = { ...prevData, [name]: value };
+      return updatedData;
+    });
+    setError(""); // Clear error when user starts typing
+  };
 
   const handleSaveCompany = async () => {
     const { prefix, name, email, phone, gst, regAdd } = companyData;
@@ -256,7 +321,7 @@ const handleInputChange = (e) => {
     } else {
       toast.success("Company created successfully!");
     }
-    
+
     setIsCompanyModalOpen(false);
     setCurrentStep(1);
     setSelectedCompany(null);
@@ -265,7 +330,7 @@ const handleInputChange = (e) => {
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setCompanyData(prev => ({ ...prev, logo: file }));
+      setCompanyData((prev) => ({ ...prev, logo: file }));
       const reader = new FileReader();
       reader.onloadend = () => {
         setLogoPreview(reader.result);
@@ -278,16 +343,24 @@ const handleInputChange = (e) => {
   const [viewLayout, setViewLayout] = useState("cards"); // "cards" or "table"
 
   // Filter companies based on search
-  const filteredCompanies = allCompanies.filter(company =>
-    company.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-    company.email.toLowerCase().includes(searchInput.toLowerCase()) ||
-    company.gst.toLowerCase().includes(searchInput.toLowerCase())
-    
+  const filteredCompanies = allCompanies.filter(
+    (company) =>
+      company.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+      company.email.toLowerCase().includes(searchInput.toLowerCase()) ||
+      company.gst.toLowerCase().includes(searchInput.toLowerCase())
   );
 
   const predefinedColors = [
-    "#4F46E5", "#059669", "#DC2626", "#7C2D12", "#1E40AF",
-    "#9333EA", "#C2410C", "#BE123C", "#0F766E", "#4338CA"
+    "#4F46E5",
+    "#059669",
+    "#DC2626",
+    "#7C2D12",
+    "#1E40AF",
+    "#9333EA",
+    "#C2410C",
+    "#BE123C",
+    "#0F766E",
+    "#4338CA",
   ];
 
   const handleColorChange = (color) => {
@@ -309,7 +382,11 @@ const handleInputChange = (e) => {
   };
 
   const handleAddHeadOfCompany = async () => {
-    if (!newHeadOfCompanyData.name || !newHeadOfCompanyData.email || !newHeadOfCompanyData.phone) {
+    if (
+      !newHeadOfCompanyData.name ||
+      !newHeadOfCompanyData.email ||
+      !newHeadOfCompanyData.phone
+    ) {
       toast.error("All fields are required.");
       return;
     }
@@ -318,9 +395,9 @@ const handleInputChange = (e) => {
       id: Date.now(),
       name: newHeadOfCompanyData.name,
       email: newHeadOfCompanyData.email,
-      phone: newHeadOfCompanyData.phone
+      phone: newHeadOfCompanyData.phone,
     };
-    
+
     toast.success("Head of Company created successfully!");
     setCompanyData((prev) => ({ ...prev, headOfCompanyId: newHead.id }));
     setIsAddHeadOfCompanyModalOpen(false);
@@ -345,7 +422,7 @@ const handleInputChange = (e) => {
             transform: translateY(0);
           }
         }
-        
+
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -353,21 +430,23 @@ const handleInputChange = (e) => {
           overflow: hidden;
         }
       `}</style>
-      <SuperadminHeaders 
+      <SuperadminHeaders
         viewLayout={viewLayout}
         setViewLayout={setViewLayout}
         onAddCompany={() => handleOpenCompanyModal()}
         searchQuery={searchInput}
         setSearchQuery={setSearchInput}
       />
-      
+
       <div className="flex-1 pt-16">
         <div className="p-6 mt-4">
           {/* Page Header */}
           <div className="mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Companies</h1>
-              <p className="text-gray-600 mt-1">Manage your organization's companies and their configurations</p>
+              <p className="text-gray-600 mt-1">
+                Manage your organization's companies and their configurations
+              </p>
             </div>
           </div>
 
@@ -376,12 +455,12 @@ const handleInputChange = (e) => {
             /* Enhanced Premium Card View */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredCompanies.map((company, index) => (
-                <div 
-                  key={company.id} 
+                <div
+                  key={company.id}
                   className="bg-gradient-to-tr from-[#E8F0FE] to-[#ffffff] rounded-xl shadow-sm border border-blue-100/60 flex flex-col transition-all duration-200 ease-in-out hover:shadow-md hover:-translate-y-1 hover:shadow-blue-200/40 group cursor-pointer relative overflow-hidden border-l-4 border-l-indigo-400"
                   style={{
                     animationDelay: `${index * 100}ms`,
-                    animation: 'fadeInUp 0.6s ease-out forwards'
+                    animation: "fadeInUp 0.6s ease-out forwards",
                   }}
                 >
                   {/* Top Action Menu - 3 dots */}
@@ -394,7 +473,7 @@ const handleInputChange = (e) => {
                           <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
                         </div>
                       </button>
-                      
+
                       {/* Dropdown Menu */}
                       <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all duration-200 z-20">
                         <button
@@ -423,22 +502,28 @@ const handleInputChange = (e) => {
                   </div>
 
                   {/* Card Content */}
-                  <div 
+                  <div
                     className="p-5 flex-1"
-                    onClick={() => router.push(`/superadmin/company/${company.id}`)}
+                    onClick={() =>
+                      router.push(`/superadmin/company/${company.id}`)
+                    }
                   >
                     {/* Company Header with Avatar */}
                     <div className="flex items-start gap-3 mb-6">
                       {/* Company Avatar with Initials */}
-                      <div 
+                      <div
                         className="w-11 h-11 rounded-lg flex items-center justify-center shadow-sm ring-2 ring-white/50"
-                        style={{ backgroundColor: company.colorCode || '#4F46E5' }}
+                        style={{
+                          backgroundColor: company.colorCode || "#4F46E5",
+                        }}
                       >
                         <span className="text-base font-bold text-white">
-                          {company.name ? company.name.substring(0, 2).toUpperCase() : 'CO'}
+                          {company.name
+                            ? company.name.substring(0, 2).toUpperCase()
+                            : "CO"}
                         </span>
                       </div>
-                      
+
                       {/* Company Name & Email */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-1">
@@ -451,7 +536,9 @@ const handleInputChange = (e) => {
                             Active
                           </span>
                         </div>
-                        <p className="text-sm text-gray-800 truncate">{company.email}</p>
+                        <p className="text-sm text-gray-800 truncate">
+                          {company.email}
+                        </p>
                       </div>
                     </div>
 
@@ -459,17 +546,26 @@ const handleInputChange = (e) => {
                     <div className="space-y-3 mb-6">
                       <div className="flex items-start gap-2">
                         <Phone className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-900 font-medium">{company.phone}</span>
+                        <span className="text-sm text-gray-900 font-medium">
+                          {company.phone}
+                        </span>
                       </div>
-                      
+
                       <div className="flex items-start gap-2">
                         <Hash className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-900 font-medium">{company.gst}</span>
+                        <span className="text-sm text-gray-900 font-medium">
+                          {company.gst}
+                        </span>
                       </div>
-                      
-                      <div className="flex items-start gap-2" title={company.regAdd}>
+
+                      <div
+                        className="flex items-start gap-2"
+                        title={company.regAdd}
+                      >
                         <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-900 line-clamp-2 leading-relaxed">{company.regAdd}</span>
+                        <span className="text-sm text-gray-900 line-clamp-2 leading-relaxed">
+                          {company.regAdd}
+                        </span>
                       </div>
                     </div>
 
@@ -480,7 +576,9 @@ const handleInputChange = (e) => {
                     <div className="flex items-center justify-between pt-3">
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm text-gray-800 font-medium">Head of Company</span>
+                        <span className="text-sm text-gray-800 font-medium">
+                          Head of Company
+                        </span>
                       </div>
                       <div>
                         {company.headOfCompany?.name ? (
@@ -511,29 +609,41 @@ const handleInputChange = (e) => {
                       <TableHead className="py-4 px-6">Company</TableHead>
                       <TableHead className="py-4 px-6">Contact</TableHead>
                       <TableHead className="py-4 px-6">GST Number</TableHead>
-                      <TableHead className="py-4 px-6">Head of Company</TableHead>
+                      <TableHead className="py-4 px-6">
+                        Head of Company
+                      </TableHead>
                       <TableHead className="py-4 px-6">Address</TableHead>
-                      <TableHead className="py-4 px-6 text-center">Actions</TableHead>
+                      <TableHead className="py-4 px-6 text-center">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredCompanies.map((company) => (
-                      <TableRow 
-                        key={company.id} 
+                      <TableRow
+                        key={company.id}
                         className="hover:bg-gray-50 cursor-pointer transition-colors"
-                        onClick={() => router.push(`/superadmin/company/${company.id}`)}
+                        onClick={() =>
+                          router.push(`/superadmin/company/${company.id}`)
+                        }
                       >
                         <TableCell className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div 
+                            <div
                               className="w-10 h-10 rounded-lg flex items-center justify-center shadow-md"
-                              style={{ backgroundColor: company.colorCode || '#4F46E5' }}
+                              style={{
+                                backgroundColor: company.colorCode || "#4F46E5",
+                              }}
                             >
                               <Building2 className="h-5 w-5 text-white" />
                             </div>
                             <div>
-                              <p className="font-semibold text-gray-800">{company.name}</p>
-                              <p className="text-sm text-gray-500">{company.email}</p>
+                              <p className="font-semibold text-gray-800">
+                                {company.name}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {company.email}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
@@ -557,12 +667,15 @@ const handleInputChange = (e) => {
                           <div className="text-sm">
                             <p className="font-medium text-gray-800 flex items-center gap-2">
                               <Users size={14} className="text-purple-600" />
-                              {company.headOfCompany?.name || 'Not assigned'}
+                              {company.headOfCompany?.name || "Not assigned"}
                             </p>
                           </div>
                         </TableCell>
                         <TableCell className="py-4 px-6 max-w-xs">
-                          <p className="text-sm text-gray-600 truncate" title={company.regAdd}>
+                          <p
+                            className="text-sm text-gray-600 truncate"
+                            title={company.regAdd}
+                          >
                             {company.regAdd}
                           </p>
                         </TableCell>
@@ -596,14 +709,18 @@ const handleInputChange = (e) => {
                   </TableBody>
                 </Table>
               </div>
-              
+
               {/* Table Footer */}
               {filteredCompanies.length === 0 && (
                 <div className="text-center py-12">
                   <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No companies found
+                  </h3>
                   <p className="text-gray-500">
-                    {searchInput ? "Try adjusting your search criteria" : "Get started by adding your first company"}
+                    {searchInput
+                      ? "Try adjusting your search criteria"
+                      : "Get started by adding your first company"}
                   </p>
                 </div>
               )}
@@ -614,9 +731,13 @@ const handleInputChange = (e) => {
           {viewLayout === "cards" && filteredCompanies.length === 0 && (
             <div className="text-center py-12">
               <Building2 size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No companies found</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No companies found
+              </h3>
               <p className="text-gray-500 mb-6">
-                {searchInput ? "Try adjusting your search criteria" : "Get started by adding your first company"}
+                {searchInput
+                  ? "Try adjusting your search criteria"
+                  : "Get started by adding your first company"}
               </p>
               {!searchInput && (
                 <button
@@ -633,7 +754,10 @@ const handleInputChange = (e) => {
       </div>
 
       {/* Enhanced Centered 2-Stage Company Modal */}
-      <StepperModal isOpen={isCompanyModalOpen} onClose={() => setIsCompanyModalOpen(false)}>
+      <StepperModal
+        isOpen={isCompanyModalOpen}
+        onClose={() => setIsCompanyModalOpen(false)}
+      >
         <div className="flex flex-col h-full">
           {/* Modal Header */}
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -646,7 +770,9 @@ const handleInputChange = (e) => {
                   <h2 className="text-xl font-bold text-gray-800">
                     {isEditing ? "Update Company" : "Create New Company"}
                   </h2>
-                  <p className="text-gray-600 text-sm">Step {currentStep} of 2 - Complete all steps to finish</p>
+                  <p className="text-gray-600 text-sm">
+                    Step {currentStep} of 2 - Complete all steps to finish
+                  </p>
                 </div>
               </div>
               <button
@@ -663,15 +789,25 @@ const handleInputChange = (e) => {
                 {[1, 2].map((step, index) => (
                   <React.Fragment key={step}>
                     <div className="flex items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
-                        currentStep > step ? 'bg-green-500 text-white' : 
-                        currentStep === step ? 'bg-blue-600 text-white' : 
-                        'bg-gray-300 text-gray-600'
-                      }`}>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                          currentStep > step
+                            ? "bg-green-500 text-white"
+                            : currentStep === step
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-300 text-gray-600"
+                        }`}
+                      >
                         {currentStep > step ? <Check size={16} /> : step}
                       </div>
                       <div className="ml-3 text-sm">
-                        <p className={`font-medium ${currentStep >= step ? 'text-blue-600' : 'text-gray-500'}`}>
+                        <p
+                          className={`font-medium ${
+                            currentStep >= step
+                              ? "text-blue-600"
+                              : "text-gray-500"
+                          }`}
+                        >
                           {step === 1 && "Company Details"}
                           {step === 2 && "Leadership & Branding"}
                         </p>
@@ -682,9 +818,11 @@ const handleInputChange = (e) => {
                       </div>
                     </div>
                     {index < 1 && (
-                      <div className={`flex-1 h-0.5 mx-4 transition-colors ${
-                        currentStep > step ? 'bg-green-500' : 'bg-gray-300'
-                      }`} />
+                      <div
+                        className={`flex-1 h-0.5 mx-4 transition-colors ${
+                          currentStep > step ? "bg-green-500" : "bg-gray-300"
+                        }`}
+                      />
                     )}
                   </React.Fragment>
                 ))}
@@ -711,10 +849,12 @@ const handleInputChange = (e) => {
                         <Building2 size={20} className="text-blue-600" />
                         Company Information
                       </h3>
-                      
+
                       {/* Add Prefix Field */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Company Prefix *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Company Prefix *
+                        </label>
                         <div className="relative">
                           <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                           <input
@@ -726,11 +866,15 @@ const handleInputChange = (e) => {
                             className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           />
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Short identifier for the company (3-5 characters)</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Short identifier for the company (3-5 characters)
+                        </p>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Company Name *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Company Name *
+                        </label>
                         <div className="relative">
                           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                           <input
@@ -745,7 +889,9 @@ const handleInputChange = (e) => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Address *
+                        </label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                           <input
@@ -760,7 +906,9 @@ const handleInputChange = (e) => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number *
+                        </label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                           <input
@@ -782,7 +930,9 @@ const handleInputChange = (e) => {
                       </h3>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">GST Number *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          GST Number *
+                        </label>
                         <div className="relative">
                           <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                           <input
@@ -797,7 +947,9 @@ const handleInputChange = (e) => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Registered Address *</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Registered Address *
+                        </label>
                         <div className="relative">
                           <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                           <textarea
@@ -824,7 +976,10 @@ const handleInputChange = (e) => {
                           <Users size={20} className="text-blue-600" />
                           Head of Company
                         </h3>
-                        <Select onValueChange={handleHeadOfCompanyChange} value={companyData.headOfCompanyId || ""}>
+                        <Select
+                          onValueChange={handleHeadOfCompanyChange}
+                          value={companyData.headOfCompanyId || ""}
+                        >
                           <SelectTrigger className="w-full h-12">
                             <SelectValue placeholder="Select Head of Company" />
                           </SelectTrigger>
@@ -840,12 +995,18 @@ const handleInputChange = (e) => {
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
                                     <span className="text-xs font-semibold">
-                                      {employee.name && employee.name.length > 0 ? employee.name.charAt(0).toUpperCase() : '?'}
+                                      {employee.name && employee.name.length > 0
+                                        ? employee.name.charAt(0).toUpperCase()
+                                        : "?"}
                                     </span>
                                   </div>
                                   <div>
-                                    <p className="font-medium">{employee.name || 'Unknown Employee'}</p>
-                                    <p className="text-xs text-gray-500">{employee.email || 'No email'}</p>
+                                    <p className="font-medium">
+                                      {employee.name || "Unknown Employee"}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {employee.email || "No email"}
+                                    </p>
                                   </div>
                                 </div>
                               </SelectItem>
@@ -862,17 +1023,32 @@ const handleInputChange = (e) => {
                           <div className="flex items-center gap-6">
                             <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
                               {logoPreview ? (
-                                <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover rounded-2xl" />
+                                <img
+                                  src={logoPreview}
+                                  alt="Logo Preview"
+                                  className="w-full h-full object-cover rounded-2xl"
+                                />
                               ) : (
                                 <Upload size={24} className="text-gray-400" />
                               )}
                             </div>
                             <div className="flex-1">
-                              <label htmlFor="logo-upload" className="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                              <label
+                                htmlFor="logo-upload"
+                                className="cursor-pointer px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                              >
                                 Upload Logo
                               </label>
-                              <input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
-                              <p className="text-xs text-gray-500 mt-2">PNG, JPG, SVG up to 5MB</p>
+                              <input
+                                id="logo-upload"
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleLogoChange}
+                              />
+                              <p className="text-xs text-gray-500 mt-2">
+                                PNG, JPG, SVG up to 5MB
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -884,11 +1060,11 @@ const handleInputChange = (e) => {
                           <Palette size={20} className="text-pink-600" />
                           Theme Color
                         </h3>
-                        
+
                         <div className="p-4 border border-gray-200 rounded-xl bg-white">
                           <div className="flex items-center justify-between mb-4">
                             <span className="font-medium">Live Preview</span>
-                            <button 
+                            <button
                               className="px-4 py-2 text-white text-sm rounded-lg shadow-sm"
                               style={{ backgroundColor: companyData.colorCode }}
                             >
@@ -911,18 +1087,24 @@ const handleInputChange = (e) => {
                             ))}
                           </div>
                           <div className="flex items-center gap-2 mt-4">
-                            <span className="text-sm text-gray-600">Custom:</span>
+                            <span className="text-sm text-gray-600">
+                              Custom:
+                            </span>
                             <input
                               type="color"
                               value={companyData.colorCode || "#4F46E5"}
-                              onChange={(e) => handleColorChange(e.target.value)}
+                              onChange={(e) =>
+                                handleColorChange(e.target.value)
+                              }
                               className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
                             />
                             <input
                               type="text"
                               placeholder="#4F46E5"
                               value={companyData.colorCode || ""}
-                              onChange={(e) => handleColorChange(e.target.value)}
+                              onChange={(e) =>
+                                handleColorChange(e.target.value)
+                              }
                               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             />
                           </div>
@@ -937,10 +1119,14 @@ const handleInputChange = (e) => {
                           <Settings size={16} className="text-blue-600" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-blue-800 mb-1">What's Next?</h4>
+                          <h4 className="font-medium text-blue-800 mb-1">
+                            What's Next?
+                          </h4>
                           <p className="text-sm text-blue-700">
-                            After creating the company, you can click on the company card to assign modules, 
-                            configure features, and manage additional admins from the detailed company page.
+                            After creating the company, you can click on the
+                            company card to assign modules, configure features,
+                            and manage additional admins from the detailed
+                            company page.
                           </p>
                         </div>
                       </div>
@@ -980,7 +1166,7 @@ const handleInputChange = (e) => {
                   </button>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setIsCompanyModalOpen(false)}
@@ -988,7 +1174,7 @@ const handleInputChange = (e) => {
                 >
                   Cancel
                 </button>
-                
+
                 {currentStep === 1 ? (
                   // Step 1: Create Company button (moves to step 2 without validation)
                   <button
@@ -1013,11 +1199,15 @@ const handleInputChange = (e) => {
                     <button
                       onClick={() => {
                         if (companyData.headOfCompanyId) {
-                          toast.success("Head of Company assigned successfully!");
+                          toast.success(
+                            "Head of Company assigned successfully!"
+                          );
                           setIsCompanyModalOpen(false);
                           setCurrentStep(1);
                         } else {
-                          toast.error("Please select or add a Head of Company, or click Skip to continue without assignment.");
+                          toast.error(
+                            "Please select or add a Head of Company, or click Skip to continue without assignment."
+                          );
                         }
                       }}
                       className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -1044,13 +1234,19 @@ const handleInputChange = (e) => {
             <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-3">
               <UserPlus className="h-6 w-6 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800">Add Head of Company</h2>
-            <p className="text-gray-600 text-sm">Create a new head of company profile</p>
+            <h2 className="text-xl font-bold text-gray-800">
+              Add Head of Company
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Create a new head of company profile
+            </p>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name *
+              </label>
               <input
                 type="text"
                 name="name"
@@ -1061,7 +1257,9 @@ const handleInputChange = (e) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address *
+              </label>
               <input
                 type="email"
                 name="email"
@@ -1072,7 +1270,9 @@ const handleInputChange = (e) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number *
+              </label>
               <input
                 type="tel"
                 name="phone"
@@ -1110,7 +1310,8 @@ const handleInputChange = (e) => {
       >
         <div className="space-y-4">
           <p className="text-gray-600">
-            Are you sure you want to delete this company? This action cannot be undone.
+            Are you sure you want to delete this company? This action cannot be
+            undone.
           </p>
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <button
