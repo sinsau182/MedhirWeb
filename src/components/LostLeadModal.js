@@ -105,4 +105,4 @@ const LostLeadModal = ({ isOpen, onClose, onSubmit, leadId }) => {
   );
 };
 
-export default LostLeadModal;
+export default LostLeadModal; 
