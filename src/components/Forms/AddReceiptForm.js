@@ -225,7 +225,7 @@ const handleSubmit = (e) => {
 
     const receiptData = {
       ...formData,
-      customerId: selectedCustomer?.id || "",  // Ensure customerId is added
+      customerId: selectedCustomer?.cutomerId || "",  // Ensure customerId is added
       projectId: "LEAD-1944055877149528064",                 // Replace with actual project ID logic
       amountReceived: parseFloat(formData.amount), // Must be included
       amount: parseFloat(formData.amount),
@@ -239,8 +239,9 @@ const handleSubmit = (e) => {
 
     dispatch(addReceipt(receiptData));
   }
-};
+console.log(selectedCustomer)
 
+};
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
   const totalAllocatedInModal = invoicesToLink.reduce((sum, inv) => sum + (inv.payment || 0), 0);
@@ -268,7 +269,7 @@ const handleSubmit = (e) => {
                     className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Office Renovation"
                      />
                 </div> */}
-                <div className="relative inline-block w-full mb-4">
+                {/* <div className="relative inline-block w-full mb-4">
   <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
   <button
     type="button"
@@ -311,14 +312,66 @@ const handleSubmit = (e) => {
       ))}
     </ul>
   )}
+                </div> */}
+                
+                <div className="relative inline-block w-full">
+  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+  <button
+    type="button"
+    onClick={() => setIsOpen(!isOpen)}
+    className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+  >
+    {selectedOption?.projectName || "Select Project"}
+    <span className="float-right">
+      <svg className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </span>
+  </button>
+
+  {isOpen && (
+    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
+      {projectCustomerList.map((project) => (
+        <li
+          key={project.projectId}
+          onClick={() => {
+            setSelectedOption(project);
+            setFormData(prev => ({
+              ...prev,
+              projectName: project.projectName,
+              customerName: project.customerName,
+              customerId: project.customerId,
+              leadId: project.projectId,
+            }));
+            setIsOpen(false);
+          }}
+          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+        >
+          {project.projectName}
+        </li>
+      ))}
+    </ul>
+  )}
                 </div>
+
+
+
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
-                  <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>
+                  {/* <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>
                     <option value="">Select customer</option>
                     {customers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
+                  </select> */}
+                  <input
+  type="text"
+  name="customerName"
+  value={formData.customerName}
+  readOnly
+  className={`w-full px-4 py-3 text-base border rounded-lg bg-gray-100 cursor-not-allowed ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}
+  placeholder="Auto-filled from Project"
+/>
+
                   {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
                 </div>
                 <div>
