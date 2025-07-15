@@ -34,6 +34,8 @@ import {
   FaRegCheckCircle,
   FaRegClock,
   FaDownload,
+  FaInfo,
+  FaArrowRight,
 } from "react-icons/fa";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -475,6 +477,19 @@ const OdooDetailBody = ({
     (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
   );
 
+  // Move the helper function here so it's in scope
+  const getActivityTypeColor = (type) => {
+    if (!type) return "text-gray-500";
+    const t = type.toUpperCase();
+    if (t === "STATUS_CHANGE") return "text-blue-500";
+    if (t === "ACTIVITY_COMPLETION") return "text-green-600";
+    if (t === "TO-DO" || t === "TODO") return "text-purple-500";
+    if (t === "ACTIVITY_DELETION" || t === "DELETED") return "text-red-500";
+    return "text-gray-500";
+  };
+
+  const HISTORY_LIMIT = 5;
+
   return (
     <div className="flex-grow bg-gray-50 p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -727,7 +742,9 @@ const OdooDetailBody = ({
               )}
               {activeTab === "activity" && (
                 <div className="relative">
-                  <ul className="space-y-6">
+                  {/* Single vertical line for the whole timeline, connecting all circles */}
+                  <div className="absolute left-5 top-0 w-1 h-full bg-gray-200 z-0" style={{ borderRadius: '1px' }} />
+                  <ul className="">
                     {activities.length === 0 && (
                       <li className="text-center text-gray-400 py-4">
                         No completed activities yet.
@@ -758,47 +775,28 @@ const OdooDetailBody = ({
                             />
                           </svg>
                         );
+
+                        // Activity type label for success only
+                        let activityTypeLabel = activity.type || "";
+                        if (activity.status === "done" && activity.type) {
+                          activityTypeLabel = `Activity_Completed : ${activity.type}`;
+                        }
+
                         return (
-                          <li key={activity.id} className="relative pl-14">
-                            {/* Vertical line (except last item) */}
-                            {idx < arr.length - 1 && (
-                              <span
-                                className="absolute left-4 top-9 w-1 h-[calc(100%_-_2.25rem)] bg-gray-200 z-0"
-                                style={{ borderRadius: "1px" }}
-                              ></span>
-                            )}
-                            {/* Timeline dot and line */}
-                            <span
-                              className={`absolute left-0 top-2 w-9 h-9 flex items-center justify-center rounded-full border-4 ${dotClass} z-10`}
-                            >
-                              {icon}
-                            </span>
-                            {/* Main content */}
-                            <div className="bg-white rounded-lg shadow-sm border p-4">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-200 text-gray-700 capitalize">
-                                  {activity.type || "Activity"}
-                                </span>
-                                <span className="font-semibold text-gray-900">
+                          <li key={activity.id} className="flex items-start mb-8 relative" style={{ minHeight: '48px' }}>
+                            {/* Marker column: line and dot perfectly aligned */}
+                            <div className="relative flex flex-col items-center" style={{ width: '40px', minWidth: '40px' }}>
+                              <span className={`z-10 flex items-center justify-center rounded-full border-2 w-7 h-7 ${dotClass}`} style={{ left: '0px' }}>{icon}</span>
+                            </div>
+                            {/* Timeline content */}
+                            <div className="flex-1 pl-2">
+                              {/* Activity type label for success only */}
+                              {activityTypeLabel && (
+                                <span className="text-xs font-semibold text-green-600 mb-0.5 block">{activityTypeLabel}</span>
+                              )}
+                              <span className="font-semibold text-gray-900 ml-2">
                                   {activity.title}
                                 </span>
-                                <span className="flex items-center gap-1 ml-2 text-green-600 text-xs font-semibold">
-                                  <svg
-                                    className="inline w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="3"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      d="M5 13l4 4L19 7"
-                                    />
-                                  </svg>
-                                  Done
-                                </span>
-                              </div>
                               <div className="text-xs text-gray-500 mb-2">
                                 {activity.dueDate
                                   ? new Date(
@@ -812,8 +810,7 @@ const OdooDetailBody = ({
                               </div>
                               {activity.notes && (
                                 <div className="text-sm">
-                                  <span className="font-semibold">Notes:</span>{" "}
-                                  {activity.notes}
+                                  <span className="font-semibold">Notes:</span> {activity.notes}
                                 </div>
                               )}
                             </div>
@@ -1158,22 +1155,12 @@ const OdooDetailBody = ({
               )}
               {activeTab === "history" && (
                 <div className="relative">
-                  <ul className="space-y-6 relative">
-                    {/* Single vertical line for the whole timeline */}
-                    <span
-                      className="absolute left-8 top-0 w-1 h-full bg-gray-200 z-0"
-                      style={{ borderRadius: "1px" }}
-                    ></span>
                     {(() => {
-                      // Group activity logs by activity id, but keep stage/pipeline changes and deletions as separate
                       const activityMap = new Map();
                       const specialEvents = [];
                       activityLogs
                         .slice()
-                        .sort(
-                          (a, b) =>
-                            new Date(b.timestamp) - new Date(a.timestamp)
-                        )
+                      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                         .forEach((log) => {
                           const action = (log.action || "").toLowerCase();
                           if (
@@ -1183,11 +1170,9 @@ const OdooDetailBody = ({
                           ) {
                             specialEvents.push(log);
                           } else if (log.activityId) {
-                            // Only keep the most recent event for each activityId
                             if (!activityMap.has(log.activityId)) {
                               activityMap.set(log.activityId, log);
                             } else {
-                              // If already present, prefer 'Activity completed' over 'Activity created'
                               const existing = activityMap.get(log.activityId);
                               if (
                                 existing.action !== "Activity completed" &&
@@ -1197,261 +1182,132 @@ const OdooDetailBody = ({
                               }
                             }
                           } else {
-                            // If no activityId, treat as special event
                             specialEvents.push(log);
                           }
                         });
-                      // Merge and sort all events
                       const merged = [
                         ...specialEvents,
                         ...Array.from(activityMap.values()),
-                      ].sort(
-                        (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
-                      );
-                      return merged.map((log, idx, arr) => {
-                        // Determine style and icon
-                        let dotClass = "";
-                        let icon = null;
-                        let statusLabel = "";
-                        let statusColor = "";
-                        const action = (log.action || "").toLowerCase();
-                        if (action === "activity completed") {
-                          dotClass = "border-green-200 bg-green-50";
-                          icon = (
-                            <svg
-                              className="w-6 h-6 text-green-600"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          );
-                          statusLabel = "Done";
-                          statusColor = "text-green-600";
-                        } else if (action === "activity deleted") {
-                          dotClass = "border-red-200 bg-red-50";
-                          icon = (
-                            <svg
-                              className="w-6 h-6 text-red-500"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          );
-                          statusLabel = "Deleted";
-                          statusColor = "text-red-500";
-                        } else if (action === "stage changed") {
-                          dotClass = "border-orange-200 bg-orange-50";
-                          icon = (
-                            <svg
-                              className="w-6 h-6 text-orange-500"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M17 8l4 4m0 0l-4 4m4-4H3"
-                              />
-                            </svg>
-                          );
-                          statusLabel = "Status Change";
-                          statusColor = "text-orange-500";
-                        } else if (action === "pipeline changed") {
-                          dotClass = "border-purple-200 bg-purple-50";
-                          icon = (
-                            <svg
-                              className="w-6 h-6 text-purple-500"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M17 8l4 4m0 0l-4 4m4-4H3"
-                              />
-                            </svg>
-                          );
-                          statusLabel = "Pipeline Change";
-                          statusColor = "text-purple-500";
+                    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    const visibleHistory = showAllHistory ? merged : merged.slice(0, HISTORY_LIMIT);
+                    return (
+                      <div className="">
+                        {/* Timeline vertical line, absolutely positioned in marker column */}
+                        <div className="absolute top-0 left-5 w-1 h-full bg-gray-200 z-0" style={{ borderRadius: '1px' }} />
+                        {visibleHistory.map((log, idx) => {
+                          // Activity type label logic
+                          let activityTypeLabel = log.activityType || "";
+                          if (
+                            ((log.action && log.action.toLowerCase().includes("created")) ||
+                              (log.activityType && log.activityType.toLowerCase().includes("created"))) &&
+                            log.activityType &&
+                            log.activityType.toLowerCase() !== "created"
+                          ) {
+                            activityTypeLabel = `Activity_Created : ${log.activityType}`;
+                          }
+
+                          // Main text is always the activity title or fallback
+                          let mainText = log.metadata?.activityTitle || log.details || log.action || "Activity";
+                          if (log.action && log.action.toLowerCase() === "stage changed") {
+                            if (log.metadata && log.metadata.oldStage && log.metadata.newStage) {
+                              mainText = `${log.metadata.oldStage} → ${log.metadata.newStage}`;
                         } else {
-                          dotClass = "border-blue-200 bg-blue-50";
-                          icon = (
-                            <svg
-                              className="w-6 h-6 text-blue-500"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                            </svg>
-                          );
-                          statusLabel = "Activity Created";
-                          statusColor = "text-blue-500";
-                        }
+                              mainText = log.details || "Stage Changed";
+                            }
+                          } else if (log.action && log.action.toLowerCase() === "pipeline changed") {
+                            if (log.metadata && log.metadata.oldPipeline && log.metadata.newPipeline) {
+                              mainText = `${log.metadata.oldPipeline} → ${log.metadata.newPipeline}`;
+                            } else {
+                              mainText = log.details || "Pipeline Changed";
+                            }
+                          } else if (log.action && log.action.toLowerCase() === "activity completed") {
+                            mainText = log.metadata?.activityTitle || log.details || "Activity Completed";
+                          } else if (log.action && log.action.toLowerCase() === "activity deleted") {
+                            mainText = log.metadata?.activityTitle || log.details || "Activity Deleted";
+                          }
+
+                          // Dot color and icon logic
+                          let dotColor = "bg-blue-100 border-blue-500";
+                          let icon = <FaInfo className="text-blue-500 w-3.5 h-3.5" />;
+                          if (log.action && log.action.toLowerCase() === "activity completed") {
+                            dotColor = "bg-green-100 border-green-500";
+                            icon = <FaCheck className="text-green-500 w-3.5 h-3.5" />;
+                          } else if (log.action && log.action.toLowerCase() === "activity deleted") {
+                            dotColor = "bg-red-100 border-red-500";
+                            icon = <FaTimes className="text-red-500 w-3.5 h-3.5" />;
+                          } else if (
+                            log.action &&
+                            (log.action.toLowerCase() === "stage changed" ||
+                              log.action.toLowerCase() === "pipeline changed")
+                          ) {
+                            dotColor = "bg-blue-100 border-blue-500";
+                            icon = <FaArrowRight className="text-blue-500 w-3.5 h-3.5" />;
+                          } else if (
+                            (log.action && log.action.toLowerCase().includes("created")) ||
+                            (log.activityType && log.activityType.toLowerCase().includes("created"))
+                          ) {
+                            dotColor = "bg-blue-100 border-blue-500";
+                            icon = <FaRegClock className="text-blue-500 w-3.5 h-3.5" />;
+                          }
+
                         return (
-                          <li key={log.id} className="relative pl-14">
-                            {/* Timeline dot and line (no per-li vertical line) */}
-                            <span
-                              className={`absolute left-0 top-2 w-9 h-9 flex items-center justify-center rounded-full border-4 ${dotClass} z-10`}
-                            >
-                              {icon}
-                            </span>
-                            {/* Main content */}
-                            <div className="bg-white rounded-lg shadow-sm border p-4">
-                              <div className="flex items-center gap-2 mb-1">
-                                {statusLabel && (
-                                  <span
-                                    className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor} bg-gray-100 uppercase tracking-wide`}
-                                  >
-                                    {statusLabel}
-                                  </span>
-                                )}
-                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-200 text-gray-700 capitalize">
-                                  {log.metadata?.activityType ||
-                                    log.activityType ||
-                                    log.action ||
-                                    "Activity"}
-                                </span>
-                                <span className="font-semibold text-gray-900">
-                                  {log.metadata?.activityTitle ||
-                                    log.details ||
-                                    ""}
-                                </span>
-                                {log.action === "Activity completed" && (
-                                  <span className="flex items-center gap-1 ml-2 text-green-600 text-xs font-semibold">
-                                    <svg
-                                      className="inline w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="3"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                    Done
-                                  </span>
-                                )}
-                                {log.action === "Activity deleted" && (
-                                  <span className="flex items-center gap-1 ml-2 text-red-500 text-xs font-semibold">
-                                    <svg
-                                      className="inline w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="3"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M6 18L18 6M6 6l12 12"
-                                      />
-                                    </svg>
-                                    Deleted
-                                  </span>
-                                )}
-                                {log.action === "Stage changed" && (
-                                  <span className="flex items-center gap-1 ml-2 text-orange-500 text-xs font-semibold">
-                                    <svg
-                                      className="inline w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="3"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M17 8l4 4m0 0l-4 4m4-4H3"
-                                      />
-                                    </svg>
-                                    Stage Changed
-                                  </span>
-                                )}
-                                {log.action === "Pipeline changed" && (
-                                  <span className="flex items-center gap-1 ml-2 text-purple-500 text-xs font-semibold">
-                                    <svg
-                                      className="inline w-4 h-4"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="3"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M17 8l4 4m0 0l-4 4m4-4H3"
-                                      />
-                                    </svg>
-                                    Pipeline Changed
-                                  </span>
-                                )}
+                            <div key={log.id} className="flex items-start mb-8 relative" style={{ minHeight: '48px' }}>
+                              {/* Marker column: line and dot perfectly aligned */}
+                              <div className="relative flex flex-col items-center" style={{ width: '40px', minWidth: '40px' }}>
+                                <span className={`z-10 flex items-center justify-center rounded-full border-2 w-7 h-7 ${dotColor}`} style={{ left: '0px' }}>{icon}</span>
                               </div>
-                              <div className="text-xs text-gray-500 mb-2">
-                                {new Date(log.timestamp).toLocaleDateString(
-                                  "en-GB",
-                                  {
-                                    day: "numeric",
+                              {/* Timeline content */}
+                              <div className="flex-1 pl-2">
+                                {/* Activity type label if present */}
+                                {activityTypeLabel && (
+                                  <span className={`text-xs font-semibold mb-0.5 block ${getActivityTypeColor(log.activityType)}`}>{activityTypeLabel}</span>
+                                )}
+                                <span className="font-semibold text-gray-800 text-base">{mainText}</span>
+                                <span className="text-xs text-gray-400 mt-1 block">
+                                  {new Date(log.timestamp).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
                                     month: "short",
                                     year: "numeric",
-                                  }
-                                )}{" "}
+                                  })}
+                                  {" "}
                                 {log.timestamp &&
-                                  new Date(log.timestamp).toLocaleTimeString(
-                                    [],
-                                    { hour: "2-digit", minute: "2-digit" }
+                                    new Date(log.timestamp).toLocaleTimeString([], {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                </span>
+                                {/* Optional: show notes/content if present */}
+                                {log.metadata?.notes && (
+                                  <span className="text-sm text-gray-600 mt-1">{log.metadata.notes}</span>
                                   )}
                               </div>
-                              {log.metadata?.callPurpose && (
-                                <div className="text-sm">
-                                  <span className="font-semibold">
-                                    Purpose:
-                                  </span>{" "}
-                                  {log.metadata.callPurpose}
+                                </div>
+                          );
+                        })}
+                        {/* View More / View Less button */}
+                        {merged.length > HISTORY_LIMIT && !showAllHistory && (
+                          <div className="flex justify-center mt-2">
+                            <button
+                              className="px-4 py-2 rounded bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition"
+                              onClick={() => setShowAllHistory(true)}
+                            >
+                              View More
+                            </button>
                                 </div>
                               )}
-                              {log.metadata?.callOutcome && (
-                                <div className="text-sm">
-                                  <span className="font-semibold">
-                                    Outcome:
-                                  </span>{" "}
-                                  {log.metadata.callOutcome}
-                                </div>
-                              )}
-                              {log.metadata?.notes && (
-                                <div className="text-sm">
-                                  <span className="font-semibold">Notes:</span>{" "}
-                                  {log.metadata.notes}
+                        {showAllHistory && merged.length > HISTORY_LIMIT && (
+                          <div className="flex justify-center mt-2">
+                            <button
+                              className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+                              onClick={() => setShowAllHistory(false)}
+                            >
+                              View Less
+                            </button>
                                 </div>
                               )}
                             </div>
-                          </li>
                         );
-                      });
                     })()}
-                  </ul>
                 </div>
               )}
             </div>
