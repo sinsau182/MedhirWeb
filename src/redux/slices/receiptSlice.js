@@ -129,10 +129,33 @@ export const addReceipt = createAsyncThunk(
   }
 );
 
+// Fetch all project-customer info (projectName, leadId, customerName)
+export const fetchProjectCustomerList = createAsyncThunk(
+  "receipts/fetchProjectCustomerList",
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = getTokenOrThrow();
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/leads/project-customer/all`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return rejectWithValue(data.message);
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
 const receiptSlice = createSlice({
   name: "receipts",
   initialState: {
     receipts: [],
+    projectCustomerList: [],
     loading: false,
     error: null,
   },
@@ -163,9 +186,21 @@ const receiptSlice = createSlice({
       .addCase(addReceipt.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+       .addCase(fetchProjectCustomerList.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchProjectCustomerList.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projectCustomerList = action.payload;
+      })
+      .addCase(fetchProjectCustomerList.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
-    // Add other cases for fetchReceiptByNumber, fetchReceiptsByProject, fetchUnallocatedReceipts as needed
+    
   },
 });
-
+// export { fetchProjectCustomerList };
 export default receiptSlice.reducer;

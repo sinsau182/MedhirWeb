@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { addReceipt } from "../../redux/slices/receiptSlice";
+import { fetchProjectCustomerList } from "@/redux/slices/receiptSlice";
 
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
@@ -19,7 +20,7 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     attachment: null,
     linkedInvoices: [],
   });
-
+const dispatch = useDispatch();
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
@@ -77,9 +78,15 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
       projectId: initialData.projectId || '',
       amount: initialData.amount || '',
       amountReceived: initialData.amount || ''
+
     }));
   }
 }, [initialData]);
+
+useEffect(() => {
+  dispatch(fetchProjectCustomerList());
+}, [dispatch]);
+
 
 
   useEffect(() => {
@@ -173,7 +180,13 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-const dispatch = useDispatch();
+
+
+const { projectCustomerList } = useSelector((state) => state.receipts);
+
+const [selectedOption, setSelectedOption] = useState(null);
+const [isOpen, setIsOpen] = useState(false);
+
 
 // const handleSubmit = (e) => {
 //   e.preventDefault();
@@ -213,10 +226,15 @@ const handleSubmit = (e) => {
     const receiptData = {
       ...formData,
       customerId: selectedCustomer?.id || "",  // Ensure customerId is added
-      projectId: "PROJ-001",                 // Replace with actual project ID logic
+      projectId: "LEAD-1944055877149528064",                 // Replace with actual project ID logic
       amountReceived: parseFloat(formData.amount), // Must be included
       amount: parseFloat(formData.amount),
       linkedInvoices: finalLinkedInvoices,
+      attachment: formData.attachment ? formData.attachment.name : null, // Only send name, not file
+      receiptDate: formData.receiptDate ,//? new Date(formData.receiptDate).toISOString() : null,
+      paymentMethod: formData.paymentMethod,
+      receiptNumber: formData.receiptNumber,
+      paymentTransactionId: formData.reference || formData.chequeNumber || formData.upiTransactionId || '',
     };
 
     dispatch(addReceipt(receiptData));
@@ -241,10 +259,60 @@ const handleSubmit = (e) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Panel */}
               <div className="space-y-6">
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                  <input type="text" name="projectName" value={formData.projectName} onChange={handleChange} className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Office Renovation" />
+                  <input type="text"
+                   name="projectName"
+                    value={formData.projectName} 
+                    onChange={handleChange} 
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Office Renovation"
+                     />
+                </div> */}
+                <div className="relative inline-block w-full mb-4">
+  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+  <button
+    type="button"
+    onClick={() => setIsOpen(!isOpen)}
+    className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+  >
+    {selectedOption?.projectName || "Select Project"}
+    <span className="float-right">
+      <svg
+        className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </span>
+  </button>
+
+  {isOpen && (
+    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
+      {projectCustomerList.map((project) => (
+        <li
+          key={project.projectId}
+          onClick={() => {
+            setSelectedOption(project);
+            setIsOpen(false);
+            setFormData((prev) => ({
+              ...prev,
+              projectName: project.projectName,
+              projectId: project.projectId,
+              customerId: project.customerId,
+              customerName: project.customerName,
+            }));
+          }}
+          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+        >
+          {project.projectName}
+        </li>
+      ))}
+    </ul>
+  )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
                   <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>

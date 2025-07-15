@@ -1,10 +1,12 @@
 // Updated customers page with PRD implementation
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
 import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchReceipts } from '@/redux/slices/receiptSlice';
 
 const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
   if (!invoice) return null;
@@ -103,7 +105,8 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
             <div><strong>Customer:</strong> {receipt.client}</div>
             <div><strong>Receipt Date:</strong> {receipt.date}</div>
             <div><strong>Payment Method:</strong> {receipt.method}</div>
-            <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransId}</span></div>
+            <div><strong>Receipt No.:</strong> {receipt.receiptNumber}</div>
+            <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransactionId}</span></div>
             <div className="flex items-center">
               <strong>Status:</strong> 
               <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${
@@ -151,6 +154,9 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
 };
 
 const Customers = () => {
+  const dispatch = useDispatch();
+  const { receipts, loading, error } = useSelector(state => state.receipts);
+  console.log("Receipts from Redux:", receipts);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
@@ -158,15 +164,19 @@ const Customers = () => {
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
   const [selectedReceiptForPreview, setSelectedReceiptForPreview] = useState(null);
 
+  useEffect(() => {
+    dispatch(fetchReceipts());
+  }, [dispatch]);
+
   const [invoices, setInvoices] = useState([
     { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
     { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
     { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
   ]);
-  const [receipts, setReceipts] = useState([
-    { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
-    { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
-  ]);
+  // const [receipts, setReceipts] = useState([
+  //   { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
+  //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
+  // ]);
   const [clients, setClients] = useState([
     { id: 1, name: 'Client A', company: 'Tech Corp', email: 'client.a@example.com', phone: '555-1234', status: 'Active' }
   ]);
@@ -346,11 +356,11 @@ const Customers = () => {
                 <tr key={r.id}>
                   <td className="px-6 py-4 text-sm font-medium text-blue-600">{r.id}</td>
                   <td className="px-6 py-4 text-sm">{r.projectName}</td>
-                  <td className="px-6 py-4 text-sm">{r.client}</td>
-                  <td className="px-6 py-4 text-sm">{r.date}</td>
-                  <td className="px-6 py-4 text-sm font-semibold">${r.amount.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-sm">{r.method}</td>
-                  <td className="px-6 py-4 text-sm font-mono">{r.paymentTransId}</td>
+                  <td className="px-6 py-4 text-sm">{r.customerName}</td>
+                  <td className="px-6 py-4 text-sm">{r.receiptDate}</td>
+                  <td className="px-6 py-4 text-sm font-semibold">${r.amountReceived}</td>
+                  <td className="px-6 py-4 text-sm">{r.paymentMethod}</td>
+                  <td className="px-6 py-4 text-sm font-mono">{r.paymentTransactionId}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       r.status === 'Received' ? 'bg-green-100 text-green-800' :
