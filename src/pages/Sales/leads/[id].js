@@ -894,209 +894,39 @@ const OdooDetailBody = ({
                     lead.initialQuote ||
                     lead.projectTimeline ? (
                       <>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                        {/* <h3 className="text-2xl font-bold text-gray-900 mb-2">
                           Status Details
-                        </h3>
-                        <div className="border-b border-gray-200 mb-6"></div>
+                        </h3> */}
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                            {lead.stageName}
+                          </h3>
 
-                        {/* Conversion Details Form - Hardcoded Display */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Initial Quoted Amount
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                  ₹
-                                </span>
-                                <input
-                                  type="text"
-                                  value={
-                                    lead.initialQuote || lead.quotedAmount || ""
-                                  }
-                                  readOnly
-                                  className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800"
-                                  placeholder="Enter initial quoted amount"
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Final Quotation (₹) *
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                  ₹
-                                </span>
-                                <input
-                                  type="text"
-                                  value={lead.finalQuotation || ""}
-                                  readOnly
-                                  className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800"
-                                  required
-                                />
-                              </div>
-                            </div>
+                        </div>
+                        <div style={{marginBottom: '1.5rem'}} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                          <div>
+                            <div><strong>Initial Quoted Amount:</strong> ₹ {lead.initialQuote || lead.quotedAmount || "N/A"}</div>
+                            <div><strong>Final Quotation:</strong> ₹ {lead.finalQuotation || "N/A"}</div>
+                            <div><strong>Sign-up Amount:</strong> ₹ {lead.signupAmount || "N/A"}</div>
+                            <div><strong>PAN Number:</strong> {lead.panNumber || "N/A"}</div>
+                            <div><strong>Discount:</strong> {lead.discount || "N/A"}</div>
+                            <div><strong>Payment Proof:</strong> {lead.paymentDetailsFileName ? (
+                              <a href={lead.paymentDetailsFileName} target="_blank" rel="noopener noreferrer">
+                                <span style={{ wordBreak: 'break-all' }}>{(() => { const name = lead.paymentDetailsFileName.split('/').pop(); return name.split('_').slice(2).join('_') || name; })()}</span>
+                              </a>
+                            ) : "No file uploaded"}</div>
                           </div>
-
-                          <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Sign-up Amount (₹) *
-                            </label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                ₹
-                              </span>
-                              <input
-                                type="text"
-                                value={lead.signupAmount || ""}
-                                readOnly
-                                className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Payment Date
-                              </label>
-                              <input
-                                type="text"
-                                value={lead.paymentDate || ""}
-                                readOnly
-                                className="block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 py-2 px-3"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Payment Mode
-                              </label>
-                              <select
-                                value={lead.paymentMode || ""}
-                                disabled
-                                className="block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 py-2 px-3"
-                              >
-                                <option value="">Select Payment Mode</option>
-                                <option value="UPI">UPI</option>
-                                <option value="Debit Card">Debit Card</option>
-                                <option value="Credit Card">Credit Card</option>
-                                <option value="IMPS/NEFT">IMPS/NEFT</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Payment Transaction ID
-                            </label>
-                            <input
-                              type="text"
-                              value={lead.paymentTransactionId || ""}
-                              readOnly
-                              className="block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 py-2 px-3"
-                              placeholder="Enter transaction ID"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                PAN Number
-                              </label>
-                              <input
-                                type="text"
-                                value={lead.panNumber || ""}
-                                readOnly
-                                className="block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 py-2 px-3"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Project Timeline
-                              </label>
-                              <input
-                                type="text"
-                                value={lead.projectTimeline || ""}
-                                readOnly
-                                className="block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 py-2 px-3"
-                                placeholder="e.g., 6 Months, Jan-Mar 2025"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Discount (Optional)
-                            </label>
-                            <input
-                              type="text"
-                              value={lead.discount || ""}
-                              readOnly
-                              className="block w-full rounded-md border border-gray-300 bg-gray-50 text-gray-800 py-2 px-3"
-                              placeholder="e.g., 10% or 5000"
-                            />
-                          </div>
-
-                          <hr className="my-6" />
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Upload Payment Proof
-                              </label>
-                              {lead.paymentDetailsFileName ? (
-                                <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
-                                  <svg
-                                    className="text-red-600 text-2xl"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span className="truncate">
-                                    {lead.paymentDetailsFileName}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="text-gray-400 text-sm">
-                                  No file uploaded
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Upload Booking Form
-                              </label>
-                              {lead.bookingFormFileName ? (
-                                <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
-                                  <svg
-                                    className="text-red-600 text-2xl"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  <span className="truncate">
-                                    {lead.bookingFormFileName}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="text-gray-400 text-sm">
-                                  No file uploaded
-                                </div>
-                              )}
-                            </div>
+                          <div>
+                            <div><strong>Payment Date:</strong> {lead.paymentDate || "N/A"}</div>
+                            <div><strong>Payment Mode:</strong> {lead.paymentMode || "N/A"}</div>
+                            <div><strong>Payment Transaction ID:</strong> {lead.paymentTransactionId || "N/A"}</div>
+                            <div><strong>Project Timeline:</strong> {lead.projectTimeline || "N/A"}</div>
+                            <div><strong>Booking Form:</strong> {lead.bookingFormFileName ? (
+                              <a href={lead.bookingFormFileName} target="_blank" rel="noopener noreferrer">
+                                <span style={{ wordBreak: 'break-all' }}>{(() => { const name = lead.bookingFormFileName.split('/').pop(); return name.split('_').slice(2).join('_') || name; })()}</span>
+                              </a>
+                            ) : "No file uploaded"}</div>
                           </div>
                         </div>
                       </>
