@@ -150,12 +150,36 @@ export const fetchProjectCustomerList = createAsyncThunk(
   }
 );
 
+// Fetch invoices by project
+export const fetchInvoicesByProject = createAsyncThunk(
+  "receipts/fetchInvoicesByProject",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const token = getTokenOrThrow();
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/invoices/project/${projectId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Failed to fetch invoices by project");
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 
 const receiptSlice = createSlice({
   name: "receipts",
   initialState: {
     receipts: [],
     projectCustomerList: [],
+    invoicesByProject: {}, // Add this to store invoices by projectId
     loading: false,
     error: null,
   },
@@ -196,6 +220,20 @@ const receiptSlice = createSlice({
         state.projectCustomerList = action.payload;
       })
       .addCase(fetchProjectCustomerList.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchInvoicesByProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchInvoicesByProject.fulfilled, (state, action) => {
+        state.loading = false;
+        if (action.meta && action.meta.arg) {
+          state.invoicesByProject[action.meta.arg] = action.payload;
+        }
+      })
+      .addCase(fetchInvoicesByProject.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

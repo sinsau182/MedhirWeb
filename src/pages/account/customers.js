@@ -225,25 +225,11 @@ const Customers = () => {
   };
   const handleReceiptSubmit = (data) => {
     const allocations = data.linkedInvoices.map(i => ({ invoiceId: i.number, allocatedAmount: i.payment }));
-    setReceipts(prev => [...prev, { 
-      id: data.receiptNumber, 
-      projectName: data.projectName,
-      client: data.customerName, 
-      date: data.receiptDate, 
-      amount: data.amount, 
-      method: data.paymentMethod,
-      paymentTransId: data.reference,
-      status: 'Received', // Placeholder status
-      allocations: allocations,
-      invoiceGenerated: allocations.length > 0 ? 'Yes' : 'No',
-    }]
-   
-  );
+    dispatch(fetchReceipts()); // Refresh receipts list
     toast.success('Receipt added!');
     setShowAddForm(null);
     setInvoiceForReceipt(null);
     setActiveTab('receipts'); // Switch to Receipts tab
-    dispatch(fetchReceipts()); // Refresh receipts list
   };
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);

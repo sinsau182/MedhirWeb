@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { addReceipt } from "../../redux/slices/receiptSlice";
-import { fetchProjectCustomerList } from "@/redux/slices/receiptSlice";
+import { fetchProjectCustomerList, fetchInvoicesByProject } from "@/redux/slices/receiptSlice";
 
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
@@ -21,6 +21,7 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     linkedInvoices: [],
   });
 const dispatch = useDispatch();
+  const { projectCustomerList, invoicesByProject } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
@@ -96,17 +97,12 @@ useEffect(() => {
 
 
   useEffect(() => {
-    const customerInvoices = getInvoicesForCustomer(formData.customerName);
-    let invoicesWithPayments = customerInvoices.map(inv => ({ ...inv, payment: 0 }));
-
-    if (initialData && initialData.client === formData.customerName) {
-      invoicesWithPayments = invoicesWithPayments.map(inv => 
-        inv.id === initialData.id ? { ...inv, payment: initialData.amount } : inv
-      );
+    if (formData.leadId && invoicesByProject[formData.leadId]) {
+      const apiInvoices = invoicesByProject[formData.leadId];
+      let invoicesWithPayments = apiInvoices.map(inv => ({ ...inv, payment: 0 }));
+      setInvoicesToLink(invoicesWithPayments);
     }
-    
-    setInvoicesToLink(invoicesWithPayments);
-  }, [formData.customerName, initialData]);
+  }, [formData.leadId, invoicesByProject]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -189,9 +185,6 @@ useEffect(() => {
     return Object.keys(newErrors).length === 0;
   };
 
-
-const { projectCustomerList } = useSelector((state) => state.receipts);
-console.log("Project-Customer List:", projectCustomerList);
 
 const [selectedOption, setSelectedOption] = useState(null);
 const [isOpen, setIsOpen] = useState(false);
@@ -338,14 +331,8 @@ const handleSubmit = (e) => {
       {projectCustomerList.map((project) => (
         <li
           key={project.projectId}
-          onClick={() => {
+          onClick={async () => {
             setSelectedOption(project);
-            // Get all invoices for this customer/project
-            const customerInvoices = getInvoicesForCustomer(project.customerName);
-            // Calculate total outstanding
-            const totalOutstanding = customerInvoices.reduce(
-              (sum, inv) => sum + (inv.totalAmount - inv.amountReceived), 0
-            );
             setFormData(prev => ({
               ...prev,
               projectName: project.projectName,
@@ -353,10 +340,11 @@ const handleSubmit = (e) => {
               customerId: project.customerId,
               leadId: project.projectId,
               linkedInvoices: [],
-              amount: totalOutstanding > 0 ? totalOutstanding : '', // auto-fill if > 0
             }));
-            setInvoicesToLink([]); // Also reset invoicesToLink for a clean modal
+            setInvoicesToLink([]);
             setIsOpen(false);
+            // Fetch invoices for this project
+            dispatch(fetchInvoicesByProject(project.projectId));
           }}
           className="px-4 py-2 cursor-pointer hover:bg-gray-100"
         >
@@ -478,7 +466,7 @@ const handleSubmit = (e) => {
                           const amountRemaining = inv.totalAmount - inv.amountReceived;
                           return (
                             <tr key={inv.id} className="border-b">
-                              <td className="py-3">{inv.number}</td>
+                              <td className="py-3">{inv.invoiceNumber}</td>
                               <td className="text-right py-3">{formatCurrency(inv.totalAmount)}</td>
                               <td className="text-right py-3">{formatCurrency(inv.amountReceived)}</td>
                               <td className="text-right py-3 font-semibold">{formatCurrency(amountRemaining)}</td>
