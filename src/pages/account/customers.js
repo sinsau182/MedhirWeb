@@ -131,7 +131,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex justify-between items-center mb-4">
                 <span className="text-lg font-semibold">Total Amount Received:</span>
-                <span className="text-2xl font-bold text-green-600">${receipt.amountReceived}</span>
+                <span className="text-2xl font-bold text-green-600">₹{receipt.amountReceived}</span>
             </div>
 
             <h4 className="text-md font-semibold text-gray-700 mb-2">Invoice Allocations</h4>
@@ -147,7 +147,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
                   {invoiceLinks.map((alloc, index) => (
                     <tr key={index}>
                       <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceNumber}</td>
-                      <td className="text-right py-2 px-3 font-semibold">${alloc.amountAllocated}</td>
+                      <td className="text-right py-2 px-3 font-semibold">₹{alloc.amountAllocated}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -174,6 +174,7 @@ const Customers = () => {
   const [invoiceForReceipt, setInvoiceForReceipt] = useState(null);
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
   const [selectedReceiptForPreview, setSelectedReceiptForPreview] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     dispatch(fetchReceipts());
@@ -224,12 +225,11 @@ const Customers = () => {
     setShowAddForm(null);
   };
   const handleReceiptSubmit = (data) => {
-    const allocations = data.linkedInvoices.map(i => ({ invoiceId: i.number, allocatedAmount: i.payment }));
+    setActiveTab('receipts'); // Switch to Receipts tab FIRST
+    setShowAddForm(null);     // Then close the form
+    setInvoiceForReceipt(null);
     dispatch(fetchReceipts()); // Refresh receipts list
     toast.success('Receipt added!');
-    setShowAddForm(null);
-    setInvoiceForReceipt(null);
-    setActiveTab('receipts'); // Switch to Receipts tab
   };
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
@@ -336,11 +336,18 @@ const Customers = () => {
         );
         break;
       case 'receipts':
+        const filteredReceipts = receipts.filter(r =>
+          (r.receiptNumber && r.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.project?.projectName && r.project.projectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.customer?.customerName && r.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.paymentMethod && r.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.paymentTransactionId && r.paymentTransactionId.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
         table = (
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
                   <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt No.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Receipt No.</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -353,15 +360,15 @@ const Customers = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-              {receipts.map(r => (
+              {filteredReceipts.map(r => (
                 <tr key={r.id}>
-                  <td className="px-6 py-4 text-sm font-medium text-blue-600">{r.receiptNumber}</td>
-                  <td className="px-6 py-4 text-sm">{r.project?.projectName}</td>
-                  <td className="px-6 py-4 text-sm">{r.customer?.customerName}</td>
-                  <td className="px-6 py-4 text-sm">{r.receiptDate}</td>
-                  <td className="px-6 py-4 text-sm font-semibold">${r.amountReceived}</td>
-                  <td className="px-6 py-4 text-sm">{r.paymentMethod}</td>
-                  <td className="px-6 py-4 text-sm font-mono">{r.paymentTransactionId}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-blue-600 whitespace-nowrap max-w-xs truncate">{r.receiptNumber}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.project?.projectName}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.customer?.customerName}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.receiptDate}</td>
+                  <td className="px-6 py-4 text-sm font-semibold">₹{r.amountReceived}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.paymentMethod}</td>
+                  <td className="px-6 py-4 text-sm font-mono whitespace-nowrap max-w-xs truncate">{r.paymentTransactionId}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       r.status === 'Received' ? 'bg-green-100 text-green-800' :
@@ -447,7 +454,7 @@ const Customers = () => {
             ))}
           </nav>
         </div>
-          <SearchBarWithFilter />
+          <SearchBarWithFilter value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
       </div>
         {renderContent()}
         {selectedInvoiceForPreview && (
