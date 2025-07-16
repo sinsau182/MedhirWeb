@@ -183,6 +183,7 @@ useEffect(() => {
 
 
 const { projectCustomerList } = useSelector((state) => state.receipts);
+console.log("Project-Customer List:", projectCustomerList);
 
 const [selectedOption, setSelectedOption] = useState(null);
 const [isOpen, setIsOpen] = useState(false);
@@ -224,22 +225,29 @@ const handleSubmit = (e) => {
       }));
 
     const receiptData = {
-      ...formData,
-      customerId: selectedCustomer?.cutomerId || "",  // Ensure customerId is added
-      projectId: "LEAD-1944055877149528064",                 // Replace with actual project ID logic
-      amountReceived: parseFloat(formData.amount), // Must be included
-      amount: parseFloat(formData.amount),
-      linkedInvoices: finalLinkedInvoices,
-      attachment: formData.attachment ? formData.attachment.name : null, // Only send name, not file
-      receiptDate: formData.receiptDate ,//? new Date(formData.receiptDate).toISOString() : null,
-      paymentMethod: formData.paymentMethod,
-      receiptNumber: formData.receiptNumber,
-      paymentTransactionId: formData.reference || formData.chequeNumber || formData.upiTransactionId || '',
-    };
+  ...formData,
+  customerId: formData.customerId, // ✅ directly use the one already set from dropdown
+  projectId: formData.leadId,      // ✅ use leadId as projectId
+  customerName: formData.customerName,
+  projectName: formData.projectName,
+  amountReceived: parseFloat(formData.amount),
+  amount: parseFloat(formData.amount),
+  linkedInvoices: finalLinkedInvoices,
+  attachment: formData.attachment ? formData.attachment.name : null,
+  receiptDate: formData.receiptDate,
+  paymentMethod: formData.paymentMethod,
+  receiptNumber: formData.receiptNumber,
+  paymentTransactionId:
+    formData.reference ||
+    formData.chequeNumber ||
+    formData.upiTransactionId ||
+    '',
+};
+
 
     dispatch(addReceipt(receiptData));
   }
-console.log(selectedCustomer)
+
 
 };
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);

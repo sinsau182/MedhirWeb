@@ -94,17 +94,19 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
         <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-800">Receipt Preview: {receipt.id}</h2>
+          <h2 className="text-xl font-bold text-gray-800">Receipt Preview: {receipt.receiptNumber}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
             <FaTimes />
           </button>
         </div>
         <div className="p-6 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
-            <div><strong>Project:</strong> {receipt.projectName}</div>
-            <div><strong>Customer:</strong> {receipt.client}</div>
-            <div><strong>Receipt Date:</strong> {receipt.date}</div>
-            <div><strong>Payment Method:</strong> {receipt.method}</div>
+            {/* <div><strong>Project:</strong> {receipt.projectName}</div>
+            <div><strong>Customer:</strong> {receipt.customerName}</div> */}
+            <div><strong>Customer:</strong> {receipt.customer.customerName || receipt.client}</div>
+            <div><strong>Project:</strong> {receipt.project.projectName || receipt.project}</div>
+            <div><strong>Receipt Date:</strong> {receipt.receiptDate}</div>
+            <div><strong>Payment Method:</strong> {receipt.paymentMethod}</div>
             <div><strong>Receipt No.:</strong> {receipt.receiptNumber}</div>
             <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransactionId}</span></div>
             <div className="flex items-center">
@@ -120,7 +122,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex justify-between items-center mb-4">
                 <span className="text-lg font-semibold">Total Amount Received:</span>
-                <span className="text-2xl font-bold text-green-600">${receipt.amount.toFixed(2)}</span>
+                <span className="text-2xl font-bold text-green-600">${receipt.amountReceived}</span>
             </div>
 
             <h4 className="text-md font-semibold text-gray-700 mb-2">Invoice Allocations</h4>
@@ -136,7 +138,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
                   {receipt.allocations.map((alloc, index) => (
                     <tr key={index}>
                       <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceId}</td>
-                      <td className="text-right py-2 px-3 font-semibold">${alloc.allocatedAmount.toFixed(2)}</td>
+                      <td className="text-right py-2 px-3 font-semibold">${alloc.allocatedAmount}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -156,7 +158,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
 const Customers = () => {
   const dispatch = useDispatch();
   const { receipts, loading, error } = useSelector(state => state.receipts);
-  console.log("Receipts from Redux:", receipts);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
@@ -225,7 +227,9 @@ const Customers = () => {
       status: 'Received', // Placeholder status
       allocations: allocations,
       invoiceGenerated: allocations.length > 0 ? 'Yes' : 'No',
-    }]);
+    }]
+   
+  );
     toast.success('Receipt added!');
     setShowAddForm(null);
     setInvoiceForReceipt(null);
@@ -354,9 +358,9 @@ const Customers = () => {
                 <tbody className="divide-y divide-gray-200">
               {receipts.map(r => (
                 <tr key={r.id}>
-                  <td className="px-6 py-4 text-sm font-medium text-blue-600">{r.id}</td>
-                  <td className="px-6 py-4 text-sm">{r.projectName}</td>
-                  <td className="px-6 py-4 text-sm">{r.customerName}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-blue-600">{r.receiptNumber}</td>
+                  <td className="px-6 py-4 text-sm">{r.project?.projectName}</td>
+                  <td className="px-6 py-4 text-sm">{r.customer?.customerName}</td>
                   <td className="px-6 py-4 text-sm">{r.receiptDate}</td>
                   <td className="px-6 py-4 text-sm font-semibold">${r.amountReceived}</td>
                   <td className="px-6 py-4 text-sm">{r.paymentMethod}</td>
