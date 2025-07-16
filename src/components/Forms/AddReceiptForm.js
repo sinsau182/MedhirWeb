@@ -77,8 +77,14 @@ const dispatch = useDispatch();
       customerId: initialData.customerId || '',
       projectId: initialData.projectId || '',
       amount: initialData.amount || '',
-      amountReceived: initialData.amount || ''
-
+      amountReceived: initialData.amount || '',
+      // If initialData.linkedInvoices exists, map to formData.linkedInvoices
+      linkedInvoices: initialData.linkedInvoices
+        ? initialData.linkedInvoices.map(li => ({
+            invoiceNumber: li.invoiceNumber || li.invoiceId || li.number,
+            amountAllocated: li.amountAllocated || li.allocatedAmount || li.payment,
+          }))
+        : [],
     }));
   }
 }, [initialData]);
@@ -138,8 +144,8 @@ useEffect(() => {
     }
     const customerInvoices = getInvoicesForCustomer(formData.customerName);
     const initialInvoices = customerInvoices.map(inv => {
-      const linked = formData.linkedInvoices.find(li => li.id === inv.id);
-      return { ...inv, payment: linked ? linked.payment : 0 };
+      const linked = formData.linkedInvoices.find(li => li.invoiceNumber === inv.number);
+      return { ...inv, payment: linked ? linked.amountAllocated : 0 };
     });
     setInvoicesToLink(initialInvoices);
     setIsInvoiceLinkModalOpen(true);
@@ -165,8 +171,10 @@ useEffect(() => {
   };
   
   const handleSaveInvoiceLinks = () => {
+    // Save as per backend structure: { invoiceNumber, amountAllocated }
     const linked = invoicesToLink.filter(inv => inv.payment > 0).map(inv => ({
-      id: inv.id, number: inv.number, payment: inv.payment,
+      invoiceNumber: inv.number,
+      amountAllocated: inv.payment,
     }));
     setFormData(prev => ({ ...prev, linkedInvoices: linked }));
     setIsInvoiceLinkModalOpen(false);
@@ -215,40 +223,28 @@ const handleSubmit = (e) => {
   e.preventDefault();
   if (validateForm()) {
     const selectedCustomer = customers.find(c => c.name === formData.customerName);
-
-    const finalLinkedInvoices = invoicesToLink
-      .filter((inv) => inv.payment > 0)
-      .map((inv) => ({
-        id: inv.id,
-        number: inv.number,
-        payment: inv.payment,
-      }));
-
+    // Use linkedInvoices as per backend structure
     const receiptData = {
-  ...formData,
-  customerId: formData.customerId, // ✅ directly use the one already set from dropdown
-  projectId: formData.leadId,      // ✅ use leadId as projectId
-  customerName: formData.customerName,
-  projectName: formData.projectName,
-  amountReceived: parseFloat(formData.amount),
-  amount: parseFloat(formData.amount),
-  linkedInvoices: finalLinkedInvoices,
-  attachment: formData.attachment ? formData.attachment.name : null,
-  receiptDate: formData.receiptDate,
-  paymentMethod: formData.paymentMethod,
-  receiptNumber: formData.receiptNumber,
-  paymentTransactionId:
-    formData.reference ||
-    formData.chequeNumber ||
-    formData.upiTransactionId ||
-    '',
-};
-
-
+      ...formData,
+      customerId: formData.customerId, // ✅ directly use the one already set from dropdown
+      projectId: formData.leadId,      // ✅ use leadId as projectId
+      customerName: formData.customerName,
+      projectName: formData.projectName,
+      amountReceived: parseFloat(formData.amount),
+      amount: parseFloat(formData.amount),
+      linkedInvoices: formData.linkedInvoices, // Already in correct structure
+      attachment: formData.attachment ? formData.attachment.name : null,
+      receiptDate: formData.receiptDate,
+      paymentMethod: formData.paymentMethod,
+      receiptNumber: formData.receiptNumber,
+      paymentTransactionId:
+        formData.reference ||
+        formData.chequeNumber ||
+        formData.upiTransactionId ||
+        '',
+    };
     dispatch(addReceipt(receiptData));
   }
-
-
 };
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
@@ -344,13 +340,22 @@ const handleSubmit = (e) => {
           key={project.projectId}
           onClick={() => {
             setSelectedOption(project);
+            // Get all invoices for this customer/project
+            const customerInvoices = getInvoicesForCustomer(project.customerName);
+            // Calculate total outstanding
+            const totalOutstanding = customerInvoices.reduce(
+              (sum, inv) => sum + (inv.totalAmount - inv.amountReceived), 0
+            );
             setFormData(prev => ({
               ...prev,
               projectName: project.projectName,
               customerName: project.customerName,
               customerId: project.customerId,
               leadId: project.projectId,
+              linkedInvoices: [],
+              amount: totalOutstanding > 0 ? totalOutstanding : '', // auto-fill if > 0
             }));
+            setInvoicesToLink([]); // Also reset invoicesToLink for a clean modal
             setIsOpen(false);
           }}
           className="px-4 py-2 cursor-pointer hover:bg-gray-100"
@@ -461,7 +466,7 @@ const handleSubmit = (e) => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-2">Invoice #</th>
+                          <th className="text-left py-2">Invoice </th>
                           <th className="text-right py-2">Amount</th>
                           <th className="text-right py-2">Amount Received</th>
                           <th className="text-right py-2">Amount Remaining</th>

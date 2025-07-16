@@ -90,6 +90,17 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
 const ReceiptPreviewModal = ({ receipt, onClose }) => {
   if (!receipt) return null;
 
+  // Prefer linkedInvoices if present, else fallback to allocations for backward compatibility
+  const invoiceLinks = receipt.linkedInvoices && receipt.linkedInvoices.length > 0
+    ? receipt.linkedInvoices.map(link => ({
+        invoiceNumber: link.invoiceNumber || link.invoiceId || link.number,
+        amountAllocated: link.amountAllocated || link.allocatedAmount || link.payment,
+      }))
+    : (receipt.allocations || []).map(link => ({
+        invoiceNumber: link.invoiceId || link.number,
+        amountAllocated: link.allocatedAmount || link.payment,
+      }));
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
@@ -101,10 +112,8 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
         </div>
         <div className="p-6 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
-            {/* <div><strong>Project:</strong> {receipt.projectName}</div>
-            <div><strong>Customer:</strong> {receipt.customerName}</div> */}
-            <div><strong>Customer:</strong> {receipt.customer.customerName || receipt.client}</div>
-            <div><strong>Project:</strong> {receipt.project.projectName || receipt.project}</div>
+            <div><strong>Customer:</strong> {receipt.customer?.customerName || receipt.client}</div>
+            <div><strong>Project:</strong> {receipt.project?.projectName || receipt.project}</div>
             <div><strong>Receipt Date:</strong> {receipt.receiptDate}</div>
             <div><strong>Payment Method:</strong> {receipt.paymentMethod}</div>
             <div><strong>Receipt No.:</strong> {receipt.receiptNumber}</div>
@@ -126,7 +135,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
             </div>
 
             <h4 className="text-md font-semibold text-gray-700 mb-2">Invoice Allocations</h4>
-            {receipt.allocations && receipt.allocations.length > 0 ? (
+            {invoiceLinks.length > 0 ? (
               <table className="w-full text-sm">
                 <thead className="bg-gray-200">
                   <tr>
@@ -135,10 +144,10 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {receipt.allocations.map((alloc, index) => (
+                  {invoiceLinks.map((alloc, index) => (
                     <tr key={index}>
-                      <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceId}</td>
-                      <td className="text-right py-2 px-3 font-semibold">${alloc.allocatedAmount}</td>
+                      <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceNumber}</td>
+                      <td className="text-right py-2 px-3 font-semibold">${alloc.amountAllocated}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -233,6 +242,8 @@ const Customers = () => {
     toast.success('Receipt added!');
     setShowAddForm(null);
     setInvoiceForReceipt(null);
+    setActiveTab('receipts'); // Switch to Receipts tab
+    dispatch(fetchReceipts()); // Refresh receipts list
   };
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
