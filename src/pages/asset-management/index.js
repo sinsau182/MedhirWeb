@@ -9,6 +9,7 @@ import { fetchAssetCategories } from '@/redux/slices/assetCategorySlice';
 import { fetchAssetLocations } from '@/redux/slices/assetLocationSlice';
 import { fetchAssetStatuses } from '@/redux/slices/assetStatusSlice';
 import { addAsset, fetchAssets } from '@/redux/slices/assetSlice';
+import { fetchVendors } from '@/redux/slices/vendorSlice';
 
 // Mock Data for existing assets display - REMOVED since we now use Redux
 // const MOCK_ASSETS = [
@@ -57,6 +58,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     const { locations, loading: locationsLoading, error: locationsError } = useSelector(state => state.assetLocations);
     const { statuses, loading: statusesLoading, error: statusesError } = useSelector(state => state.assetStatuses);
     const { addingAsset, addAssetError } = useSelector(state => state.assets);
+    const { vendors, loading: vendorsLoading, error: vendorsError } = useSelector(state => state.vendors);
     
     const [formData, setFormData] = useState({
         assetName: '', 
@@ -69,7 +71,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         purchaseCost: '',
         gstRate: '', 
         itcEligible: 'Yes', 
-        invoiceScan: null,
+        invoiceScan: '',
         assignedTo: '', 
         assignmentDate: '', 
         warrantyExpiry: '',
@@ -127,10 +129,13 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         if (statusesError) {
             toast.error(`Failed to fetch statuses: ${statusesError}`);
         }
+        if (vendorsError) {
+            toast.error(`Failed to fetch vendors: ${vendorsError}`);
+        }
         if (addAssetError) {
             toast.error(`Failed to add asset: ${addAssetError}`);
         }
-    }, [categoriesError, locationsError, statusesError, addAssetError]);
+    }, [categoriesError, locationsError, statusesError, vendorsError, addAssetError]);
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
@@ -138,6 +143,13 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             setFormData(prev => ({ ...prev, [name]: files[0] }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
+    // Handler to fetch vendors when dropdown is focused
+    const handleVendorDropdownFocus = () => {
+        if (!vendors || vendors.length === 0) {
+            dispatch(fetchVendors());
         }
     };
 
@@ -158,7 +170,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 serialNumber: formData.serialNumber || '',
                 locationId: formData.location,               // Backend expects 'locationId' not 'location'
                 purchaseDate: formData.purchaseDate,
-                vendorId: null, // TODO: Map vendor name to vendorId when vendor management is implemented
+                vendorId: formData.vendor || null, // This is the vendor ID from the dropdown
                 invoiceNumber: formData.invoiceNumber || '',
                 purchaseCost: parseFloat(formData.purchaseCost),
                 gstRate: parseFloat(formData.gstRate || '0'),
@@ -289,13 +301,23 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 type="date" 
                                 required 
                             />
-                            <InputField 
-                                label="Supplier / Vendor" 
+                            <SelectField
+                                label="Supplier / Vendor"
                                 name="vendor"
                                 value={formData.vendor}
                                 onChange={handleChange}
-                                placeholder="Enter Supplier / Vendor Name"
-                            />
+                                onFocus={handleVendorDropdownFocus}
+                                required
+                            >
+                                <option value="">
+                                    {vendorsLoading ? 'Loading vendors...' : 'Select Vendor...'}
+                                </option>
+                                {Array.isArray(vendors) && vendors.map(vendor => (
+                                    <option key={vendor.id || vendor.vendorId} value={vendor.id || vendor.vendorId}>
+                                        {vendor.name || vendor.vendorName}
+                                    </option>
+                                ))}
+                            </SelectField>
                             <InputField 
                                 label="Invoice / Bill Number" 
                                 name="invoiceNumber" 
@@ -327,13 +349,39 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 <option value="Yes">Yes</option>
                                 <option value="No">No</option>
                             </SelectField>
-                            <InputField 
-                                label="Invoice Scan" 
-                                name="invoiceScan" 
-                                onChange={handleChange}
-                                type="file" 
-                                accept=".pdf,.jpg,.jpeg,.png" 
-                            />
+                           {/* Custom file input for Invoice Scan */}
+                        <div className="w-full">
+    <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Scan</label>
+    <div className="w-full border border-gray-300 rounded-md bg-white flex items-center px-3 py-2 h-[42px]">
+        <input
+            type="file"
+            name="invoiceScan"
+            id="invoiceScan"
+            style={{ display: 'none' }}
+            onChange={handleChange}
+            accept=".pdf,.jpg,.jpeg,.png"
+        />
+        <button
+            type="button"
+            className="px-3 py-1 bg-blue-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 active:bg-blue-700 transition text-sm h-[30px]"
+            onClick={() => document.getElementById('invoiceScan').click()}
+            style={{ minWidth: 90 }}
+        >
+            Choose File
+        </button>
+        <span
+            className="ml-3 text-gray-700 truncate max-w-[180px] text-sm leading-tight h-[30px] flex items-center overflow-hidden"
+            title={formData.invoiceScan?.name || ''}
+        >
+            {formData.invoiceScan?.name
+                ? (formData.invoiceScan.name.length > 10
+                    ? formData.invoiceScan.name.slice(0, 5) + '...' + formData.invoiceScan.name.slice(-5)
+                    : formData.invoiceScan.name)
+                : "No file chosen"}
+        </span>
+    </div>
+</div>
+
                             <InputField 
                                 label="Warranty Expiry Date" 
                                 name="warrantyExpiry" 
