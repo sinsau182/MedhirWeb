@@ -35,6 +35,7 @@ function SuperadminCompanies() {
     phone: "",
     gst: "",
     regAdd: "",
+    companyHeads: [] // Changed from companyHead to companyHeads array
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
@@ -92,16 +93,17 @@ function SuperadminCompanies() {
       setCompanyData({
         ...company,
         colorCode: company.colorCode || "", // Ensure colorCode is included
-        companyHead: company.companyHead || null, // Include company head data
+        companyHeads: company.companyHeads || [], // Include company heads data as array
       });
-      // Pre-fill companyHeadData for editing
-      if (company.companyHead) {
+      // Pre-fill companyHeadData for editing (take first company head if exists)
+      if (company.companyHeads && company.companyHeads.length > 0) {
+        const firstHead = company.companyHeads[0];
         setCompanyHeadData({
-          firstName: company.companyHead.firstName || "",
-          middleName: company.companyHead.middleName || "",
-          lastName: company.companyHead.lastName || "",
-          email: company.companyHead.email || "",
-          phone: company.companyHead.phone || "",
+          firstName: firstHead.firstName || "",
+          middleName: firstHead.middleName || "",
+          lastName: firstHead.lastName || "",
+          email: firstHead.email || "",
+          phone: firstHead.phone || "",
         });
       } else {
         setCompanyHeadData({
@@ -121,7 +123,7 @@ function SuperadminCompanies() {
         gst: "",
         regAdd: "",
         colorCode: "", // Initialize colorCode for new companies
-        companyHead: null, // Initialize company head
+        companyHeads: [], // Initialize company heads as empty array
       });
       setCompanyHeadData({
         firstName: "",
@@ -212,13 +214,7 @@ function SuperadminCompanies() {
           prefixForEmpID: companyData.prefixForEmpID,
           colorCode: companyData.colorCode
         },
-        companyHead: companyData.companyHead ? {
-          firstName: companyData.companyHead.firstName,
-          middleName: companyData.companyHead.middleName,
-          lastName: companyData.companyHead.lastName,
-          email: companyData.companyHead.email,
-          phone: companyData.companyHead.phone,
-        } : null
+        companyHeads: companyData.companyHeads && companyData.companyHeads.length > 0 ? companyData.companyHeads : []
       };
 
       if (isEditing) {
@@ -279,13 +275,14 @@ function SuperadminCompanies() {
 
   // Company Head related functions
   const handleOpenCompanyHeadModal = () => {
-    if (companyData.companyHead) {
+    if (companyData.companyHeads && companyData.companyHeads.length > 0) {
+      const firstHead = companyData.companyHeads[0];
       setCompanyHeadData({
-        firstName: companyData.companyHead.firstName || "",
-        middleName: companyData.companyHead.middleName || "",
-        lastName: companyData.companyHead.lastName || "",
-        email: companyData.companyHead.email || "",
-        phone: companyData.companyHead.phone || "",
+        firstName: firstHead.firstName || "",
+        middleName: firstHead.middleName || "",
+        lastName: firstHead.lastName || "",
+        email: firstHead.email || "",
+        phone: firstHead.phone || "",
       });
     } else {
       setCompanyHeadData({
@@ -348,13 +345,13 @@ function SuperadminCompanies() {
     if (validateCompanyHeadData()) {
       setCompanyData((prevData) => ({
         ...prevData,
-        companyHead: {
+        companyHeads: [{
           firstName: companyHeadData.firstName.trim(),
           middleName: companyHeadData.middleName.trim(),
           lastName: companyHeadData.lastName.trim(),
           email: companyHeadData.email,
           phone: companyHeadData.phone,
-        },
+        }],
       }));
       setIsCompanyHeadModalOpen(false);
       setIsDropdownOpen(false);
@@ -477,8 +474,12 @@ function SuperadminCompanies() {
                           {company.name}
                         </td>
                         <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
-                          {company.companyHead ? (
-                            [company.companyHead.name]
+                          {company.companyHeads && company.companyHeads.length > 0 ? (
+                            company.companyHeads.map((head, index) => (
+                              <div key={index}>
+                                {[head.firstName, head.middleName, head.lastName].filter(Boolean).join(" ")}
+                              </div>
+                            ))
                           ) : (
                             "No Company Head"
                           )}
@@ -591,8 +592,8 @@ function SuperadminCompanies() {
                   <div className="flex items-center space-x-2">
                     <User size={16} className="text-gray-500" />
                     <span>
-                      {companyData.companyHead 
-                        ? [companyData.companyHead.firstName, companyData.companyHead.middleName, companyData.companyHead.lastName].filter(Boolean).join(" ")
+                      {companyData.companyHeads && companyData.companyHeads.length > 0
+                        ? [companyData.companyHeads[0].firstName, companyData.companyHeads[0].middleName, companyData.companyHeads[0].lastName].filter(Boolean).join(" ")
                         : "Select Company Head"
                       }
                     </span>
@@ -611,14 +612,14 @@ function SuperadminCompanies() {
                     >
                       <div className="flex items-center space-x-2">
                         <UserPlus size={16} className="text-blue-600" />
-                        <span className="text-blue-600 font-medium">{companyData.companyHead ? "Edit Company Head" : "Add Company Head"}</span>
+                        <span className="text-blue-600 font-medium">{companyData.companyHeads && companyData.companyHeads.length > 0 ? "Edit Company Head" : "Add Company Head"}</span>
                       </div>
                     </div>
-                    {companyData.companyHead && (
+                    {companyData.companyHeads && companyData.companyHeads.length > 0 && (
                       <div
                         className="p-3 hover:bg-gray-100 cursor-pointer"
                         onClick={() => {
-                          setCompanyData((prevData) => ({ ...prevData, companyHead: null }));
+                          setCompanyData((prevData) => ({ ...prevData, companyHeads: [] }));
                           setIsDropdownOpen(false);
                         }}
                       >
@@ -771,7 +772,7 @@ function SuperadminCompanies() {
         <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
           <div className="relative w-full flex justify-center -mt-4">
             <h2 className="text-2xl font-thin tracking-wide">
-              {companyData.companyHead ? "Edit Company Head" : "Add Company Head"}
+              {companyData.companyHeads && companyData.companyHeads.length > 0 ? "Edit Company Head" : "Add Company Head"}
             </h2>
             <button
               onClick={() => {
