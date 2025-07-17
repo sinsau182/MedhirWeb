@@ -7,7 +7,7 @@ import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
-import { fetchInvoices } from '@/redux/slices/invoiceSlice';
+import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
 
 const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
   if (!invoice) return null;

@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaFileInvoiceDollar, FaChevronDown, FaChevronRight, FaInfoCircle } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProjectCustomerList } from '../../redux/slices/invoiceSlice';
 
 const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
         projectName: '',
+        projectId: '', // NEW
         customerName: '',
+        customerId: '', // NEW
         siteAddress: '',
         invoiceNumber: '',
         invoiceDate: new Date().toISOString().split('T')[0],
@@ -18,18 +22,42 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [errors, setErrors] = useState({});
     const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
 
-    // Static data - in a real app, these would come from APIs
-    const customers = [
-        { id: 1, name: 'Customer A' },
-        { id: 2, name: 'Customer B' },
-        { id: 3, name: 'Customer C' }
-    ];
+    // Remove static customers and projects arrays
+    // const customers = [...];
+    // const projects = [...];
 
-    const projects = [
-        { id: 1, name: 'Project Medhit' },
-        { id: 2, name: 'Internal HRMS' },
-        { id: 3, name: 'Marketing Website' }
-    ];
+    const dispatch = useDispatch();
+    const { projectCustomerList, loading } = useSelector(state => state.invoices);
+
+    // Extract unique projects from projectCustomerList
+    const projects = projectCustomerList?.map(p => ({
+        projectId: p.projectId,
+        projectName: p.projectName,
+        customerId: p.customerId,
+        customerName: p.customerName
+    })) || [];
+
+    useEffect(() => {
+        if (!projectCustomerList || projectCustomerList.length === 0) {
+            dispatch(fetchProjectCustomerList());
+        }
+    }, [dispatch, projectCustomerList]);
+
+    // When project changes, auto-set customer and store IDs
+    const handleProjectChange = (e) => {
+        const selectedProjectName = e.target.value;
+        setFormData(prev => {
+            const selected = projects.find(p => p.projectName === selectedProjectName);
+            return {
+                ...prev,
+                projectName: selectedProjectName,
+                projectId: selected ? selected.projectId : '', // set projectId
+                customerName: selected ? selected.customerName : '',
+                customerId: selected ? selected.customerId : '', // set customerId
+            };
+        });
+        if (errors.projectName) setErrors(prev => ({ ...prev, projectName: '' }));
+    };
 
     const uomOptions = ['NOS', 'PCS', 'KG', 'MTR', 'LTR', 'BAGS', 'BOX'];
 
@@ -98,12 +126,31 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (validateForm()) {
-            onSubmit({
+            // Calculate totals
+            const subtotal = calculateSubtotal();
+            const totalGst = calculateTotalGST();
+            const totalAmount = calculateTotal();
+            // Map invoiceLines to items
+            const items = formData.invoiceLines.map(line => ({
+                item: line.item,
+                hsn: line.hsn,
+                quantity: line.quantity,
+                uom: line.uom,
+                rate: line.rate,
+                gst: line.gst
+            }));
+            // Prepare payload for backend
+            const payload = {
                 ...formData,
-                subtotal: calculateSubtotal(),
-                totalGST: calculateTotalGST(),
-                totalAmount: calculateTotal(),
-            });
+                projectId: formData.projectId,
+                customerId: formData.customerId,
+                subtotal, // backend expects subtotal
+                totalGst, // backend expects totalGst
+                totalAmount,
+                items, // backend expects items
+            };
+            delete payload.invoiceLines; // remove invoiceLines from payload
+            onSubmit(payload);
         }
     };
 
@@ -125,17 +172,21 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                            <select name="projectName" value={formData.projectName} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg border-gray-300">
+                            <select name="projectName" value={formData.projectName} onChange={handleProjectChange} className="w-full px-4 py-3 text-base border rounded-lg border-gray-300">
                                 <option value="">Select project</option>
-                                {projects.map(p => (<option key={p.id} value={p.name}>{p.name}</option>))}
+                                {projects.map(p => (<option key={p.projectId} value={p.projectName}>{p.projectName}</option>))}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Customer name <span className="text-red-500">*</span></label>
-                            <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>
-                                <option value="">Select customer</option>
-                                {customers.map(c => (<option key={c.id} value={c.name}>{c.name}</option>))}
-                            </select>
+                            <input
+                                type="text"
+                                name="customerName"
+                                value={formData.customerName}
+                                readOnly
+                                className={`w-full px-4 py-3 text-base border rounded-lg ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}
+                                placeholder="Customer will be auto-filled"
+                            />
                             {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
                         </div>
                         <div className="md:col-span-2">
