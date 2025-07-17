@@ -13,7 +13,7 @@ export const addAsset = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch('http://localhost:8080/api/assets', {
+            const response = await fetch('/api/assets', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -216,7 +216,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             setFormData({
                 assetName: '', category: '', serialNumber: '', location: '',
                 purchaseDate: '', vendor: '', invoiceNumber: '', purchaseCost: '',
-                gstRate: '', itcEligible: 'Yes', invoiceScan: null,
+                gstRate: '', itcEligible: 'Yes', invoiceScan: '',
                 assignedTo: '', assignmentDate: '', warrantyExpiry: '',
                 team: '', laptopCompany: '', processor: '', ram: '', memory: '', 
                 condition: 'New', accessories: '', graphicsCard: ''
