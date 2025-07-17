@@ -112,6 +112,7 @@ const Overview = () => {
         month: currentMonth,
         year: currentYear,
         date: currentDay, // Fetch only for the current day
+        role: "HRADMIN",
       })
     );
   }, [dispatch, companyId]); // Dependency on dispatch
@@ -750,6 +751,7 @@ const Overview = () => {
               activeTab={activeTab}
               onTabChange={handleTabChange}
               onActionComplete={refreshRequests}
+              role="HRADMIN"
             />
           )}
         </div>

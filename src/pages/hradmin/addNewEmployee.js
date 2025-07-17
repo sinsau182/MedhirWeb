@@ -737,6 +737,9 @@ function EmployeeForm() {
 
       // Prepare form data with only filled fields
       const baseEmployeeData = {
+        ...(formData.employee.employeeId && {
+          employeeId: formData.employee.employeeId,
+        }),
         firstName: formData.employee.firstName?.trim(),
         middleName: formData.employee.middleName?.trim(),
         lastName: formData.employee.lastName?.trim(),

@@ -12,7 +12,7 @@ import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSl
 import AttendanceTable from "./AttendanceTable";
 import LeaveTable from "./LeaveTable";
 
-function AttendanceTracker({ employees = [], employeesLoading = false }) {
+function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   const dispatch = useDispatch();
 
   const { attendance, loading, err } = useSelector(
@@ -130,7 +130,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false }) {
     const currentDay = today.getDate();
 
     // Prepare API parameters
-    let apiParams = { month: numericMonth, year };
+    let apiParams = { month: numericMonth, year, role };
 
     // If no date is selected, use current date
     let dateToUse = selectedDate;
@@ -147,7 +147,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false }) {
     }
 
     dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
-  }, [dispatch, selectedMonth, selectedYear, selectedDate, selectedStatuses]);
+  }, [dispatch, selectedMonth, selectedYear, selectedDate, selectedStatuses, role]);
 
   // Callbacks
   const generateAttendanceData = useCallback(

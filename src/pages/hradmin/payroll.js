@@ -137,6 +137,7 @@ function PayrollManagement() {
       fetchAllEmployeeAttendanceOneMonth({
         month: selectedMonth,
         year: selectedYear,
+        role: "HRADMIN",
       })
     );
   }, [dispatch, selectedMonth, selectedYear]);

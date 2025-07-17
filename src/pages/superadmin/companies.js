@@ -610,8 +610,8 @@ function SuperadminCompanies() {
                       onClick={handleOpenCompanyHeadModal}
                     >
                       <div className="flex items-center space-x-2">
-                        <UserPlus size={16} className="text-green-600" />
-                        <span className="text-green-600 font-medium">{companyData.companyHead ? "Edit Company Head" : "Add Company Head"}</span>
+                        <UserPlus size={16} className="text-blue-600" />
+                        <span className="text-blue-600 font-medium">{companyData.companyHead ? "Edit Company Head" : "Add Company Head"}</span>
                       </div>
                     </div>
                     {companyData.companyHead && (
@@ -861,6 +861,7 @@ function SuperadminCompanies() {
                 placeholder="Enter email address"
                 className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
               />
+              <p className="text-xs text-gray-500 mt-1">Email will be used as login ID</p>
             </div>
             
             <div>
@@ -875,6 +876,7 @@ function SuperadminCompanies() {
                 placeholder="Enter phone number"
                 className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
               />
+              <p className="text-xs text-gray-500 mt-1">Phone number will be used as password</p>
             </div>
           </div>
           
@@ -882,7 +884,7 @@ function SuperadminCompanies() {
           
           <Button
             onClick={handleSaveCompanyHead}
-            className="mt-6 bg-green-600 text-white"
+            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white"
           >
             Add Company Head
           </Button>

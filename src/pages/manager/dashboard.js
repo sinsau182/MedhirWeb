@@ -552,6 +552,7 @@ const Overview = () => {
               activeTab={activeTab}
               onTabChange={handleTabChange}
               onActionComplete={refreshRequests}
+              role="MANAGER"
             />
           )}
         </div>

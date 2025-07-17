@@ -175,7 +175,7 @@ ChangesModal.propTypes = {
 };
 // --- End Modal Component ---
 
-const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
+const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
@@ -236,24 +236,24 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
 
   // Fetch data on component mount
   useEffect(() => {
-    dispatch(fetchPendingLeaveRequests());
-    dispatch(fetchProfileUpdates());
+    dispatch(fetchPendingLeaveRequests({ role }));
+    dispatch(fetchProfileUpdates({ role }));
 
     // Cleanup function
     return () => {
       dispatch(clearErrors());
     };
-  }, [dispatch]);
+  }, [dispatch, role]);
 
   // Fetch expenses when the expense tab is active
   // useEffect(() => {
   //   if (activeTab === "expenseRequests") {
-  //     dispatch(fetchExpenseRequests());
+  //     dispatch(fetchExpenseRequests({ role }));
   //   }
   //   if (activeTab === "incomeRequests") {
-  //     dispatch(fetchIncomeRequests());
+  //     dispatch(fetchIncomeRequests({ role }));
   //   }
-  // }, [activeTab, dispatch]);
+  // }, [activeTab, dispatch, role]);
 
   // Fetch employee details for expense and income requests
   useEffect(() => {
@@ -305,13 +305,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
         updateProfileRequestStatus({
           employeeId,
           status: "Approved",
+          role,
         })
       );
 
       if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
         toast.success(`Profile update for ${employeeId} approved.`);
         // Re-fetch the list to remove the approved item
-        dispatch(fetchProfileUpdates());
+        dispatch(fetchProfileUpdates({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to approve profile update"
@@ -334,13 +335,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
         updateProfileRequestStatus({
           employeeId,
           status: "Rejected",
+          role,
         })
       );
 
       if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
         toast.success(`Profile update for ${employeeId} rejected.`);
         // Re-fetch the list to remove the rejected item
-        dispatch(fetchProfileUpdates());
+        dispatch(fetchProfileUpdates({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to reject profile update"
@@ -365,7 +367,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
       if (updateLeaveStatus.fulfilled.match(resultAction)) {
         toast.success("Request approved successfully");
         // Refresh the list after successful approval
-        dispatch(fetchPendingLeaveRequests());
+        dispatch(fetchPendingLeaveRequests({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to approve request"
@@ -390,7 +392,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
       if (updateLeaveStatus.fulfilled.match(resultAction)) {
         toast.success("Request rejected successfully");
         // Refresh the list after successful rejection
-        dispatch(fetchPendingLeaveRequests());
+        dispatch(fetchPendingLeaveRequests({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to reject request"
@@ -411,13 +413,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
           expenseId,
           status: "Approved",
           remarks: "Approved by Authorized Person",
+          role,
         })
       );
 
       if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Expense approved successfully");
-        // Refresh the expenses list
-        dispatch(fetchExpenseRequests());
+        // Refresh the expense requests list
+        dispatch(fetchExpenseRequests({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to approve expense"
@@ -440,13 +443,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
           expenseId,
           status: "Rejected",
           remarks: "Rejected by Authorized Person",
+          role,
         })
       );
 
       if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Expense rejected successfully");
-        // Refresh the expenses list
-        dispatch(fetchExpenseRequests());
+        // Refresh the expense requests list
+        dispatch(fetchExpenseRequests({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to reject expense"
@@ -469,13 +473,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
           incomeId,
           status: "Approved",
           remarks: "Approved by Authorized Person",
+          role,
         })
       );
 
       if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Income approved successfully");
         // Refresh the income requests list
-        dispatch(fetchIncomeRequests());
+        dispatch(fetchIncomeRequests({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to approve income"
@@ -498,13 +503,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete }) => {
           incomeId,
           status: "Rejected",
           remarks: "Rejected by Authorized Person",
+          role,
         })
       );
 
       if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Income rejected successfully");
         // Refresh the income requests list
-        dispatch(fetchIncomeRequests());
+        dispatch(fetchIncomeRequests({ role }));
       } else {
         throw new Error(
           resultAction.error.message || "Failed to reject income"
@@ -1156,6 +1162,7 @@ RequestDetails.propTypes = {
   activeTab: PropTypes.string,
   onTabChange: PropTypes.func,
   onActionComplete: PropTypes.func,
+  role: PropTypes.string.isRequired,
 };
 
 export default RequestDetails;

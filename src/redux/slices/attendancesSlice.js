@@ -6,7 +6,7 @@ const API_BASE_URL = publicRuntimeConfig.attendanceURL + "/attendance-summary";
 
 export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchAllEmployeeAttendanceOneMonth",
-    async ({ month, year }, { rejectWithValue }) => {
+    async ({ month, year, role }, { rejectWithValue }) => {
 
         let url = "";
         const employeeId = sessionStorage.getItem("employeeId");
@@ -14,7 +14,7 @@ export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
         const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
         const numericMonth = monthIndex + 1;
 
-        if(sessionStorage.getItem("currentRole") === "MANAGER"){
+        if(role === "MANAGER"){
             url = `${API_BASE_URL}/manager/${employeeId}/${year}/${numericMonth}`;
         }else{
             url = `${API_BASE_URL}/hr/${companyId}/${year}/${numericMonth}`;

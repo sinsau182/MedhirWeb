@@ -64,9 +64,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       const decodedToken = jwtDecode(token);
       if (decodedToken) {
         setUserRoles(decodedToken.roles || []);
-        setUserModules(decodedToken.moduleIds || []);
+        setUserModules(decodedToken.module_ids || []);
         console.log('Decoded token roles:', decodedToken.roles);
-        console.log('Decoded token moduleIds:', decodedToken.moduleIds);
+        console.log('Decoded token moduleIds:', decodedToken.module_ids);
       }
     }
 
@@ -251,6 +251,15 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   };
 
   // Get available modules based on roles and moduleIds
+  const hasAdminRole = () => {
+    return userRoles.some(role => 
+      role === "ADMIN" || 
+      role === "COMPANY_HEAD" || 
+      role === "HR_ADMIN" ||
+      role.includes("ADMIN")
+    );
+  };
+
   const getAvailableModules = () => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
@@ -262,7 +271,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       // Show all modules for COMPANY_HEAD with empty moduleIds
       Object.entries(modularMenus).forEach(([key, module]) => {
         if (!addedModules.has(key)) {
-          modules.push({ key, ...module });
+          // Filter out Settings menu if user doesn't have admin role
+          if (key === "MOD_HR") {
+            const filteredModule = {
+              ...module,
+              items: module.items.filter(item => 
+                item.label !== "Settings" || hasAdminRole()
+              )
+            };
+            modules.push({ key, ...filteredModule });
+          } else {
+            modules.push({ key, ...module });
+          }
           addedModules.add(key);
         }
       });
@@ -270,7 +290,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       // Show modules based on moduleIds array
       userModules.forEach((moduleId) => {
         if (modularMenus[moduleId] && !addedModules.has(moduleId)) {
-          modules.push({ key: moduleId, ...modularMenus[moduleId] });
+          // Filter out Settings menu if user doesn't have admin role
+          if (moduleId === "MOD_HR") {
+            const filteredModule = {
+              ...modularMenus[moduleId],
+              items: modularMenus[moduleId].items.filter(item => 
+                item.label !== "Settings" || hasAdminRole()
+              )
+            };
+            modules.push({ key: moduleId, ...filteredModule });
+          } else {
+            modules.push({ key: moduleId, ...modularMenus[moduleId] });
+          }
           addedModules.add(moduleId);
         }
       });

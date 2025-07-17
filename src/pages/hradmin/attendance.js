@@ -61,6 +61,7 @@ function Attendance() {
         <AttendanceTracker 
           employees={employees} 
           employeesLoading={employeesLoading} 
+          role="HRADMIN"
         />
       </div>
     </div>
