@@ -40,18 +40,35 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { jwtDecode } from "jwt-decode";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
   const [department, setDepartment] = useState("");
+  const [userRoles, setUserRoles] = useState([]);
+  const [userModules, setUserModules] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
     const dept = sessionStorage.getItem("departmentName");
+    const token = getItemFromSessionStorage("token");
+    
     setCurrentRole(role);
     setDepartment(dept);
+
+    // Decode JWT token to get roles and moduleIds
+    if (token) {
+      const decodedToken = jwtDecode(token);
+      if (decodedToken) {
+        setUserRoles(decodedToken.roles || []);
+        setUserModules(decodedToken.moduleIds || []);
+        console.log('Decoded token roles:', decodedToken.roles);
+        console.log('Decoded token moduleIds:', decodedToken.moduleIds);
+      }
+    }
 
     // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
@@ -67,20 +84,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     }));
   };
 
-  // Role display labels
-  // const roleDisplayLabels = {
-  //   EMPLOYEE: "Employee",
-  //   MANAGER: "Manager",
-  //   MODULEADMIN: "Module Admin",
-  //   SALES: "Sales Employee",
-  //   HOC: "Head of Company",
-  //   SUPERADMIN: "Super Admin",
-  // };
-
   // Define modular menu structure
   const modularMenus = {
     // HR Module
-    HR: {
+    MOD_HR: {
       label: "Human Resources",
       icon: <Users className="w-5 h-5" />,
       items: [
@@ -125,18 +132,18 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
               icon: <FaCalendarAlt className="w-4 h-4" />,
               link: "/hradmin/settings/leave",
             },
-            {
-              label: "Admin Access",
-              icon: <FaUsers className="w-4 h-4" />,
-              link: "/hradmin/settings/admin-access",
-            },
+            // {
+            //   label: "Admin Access",
+            //   icon: <FaUsers className="w-4 h-4" />,
+            //   link: "/hradmin/settings/admin-access",
+            // },
           ],
         },
       ],
     },
 
     // Sales Module
-    SALES: {
+    MOD_SALES: {
       label: "Sales & Marketing",
       icon: <FaHandshake className="w-5 h-5" />,
       items: [
@@ -145,11 +152,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           icon: <FaTasks className="w-4 h-4" />,
           link: "/Sales/LeadManagement",
         },
-        // {
-        //   label: "Sales Dashboard",
-        //   icon: <ChartColumnIncreasing className="w-4 h-4" />,
-        //   link: "/SalesManager/dashboard",
-        // },
         {
           label: "Team Management",
           icon: <FaUsers className="w-4 h-4" />,
@@ -164,7 +166,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     },
 
     // Accounting Module
-    ACCOUNTING: {
+    MOD_ACCOUNTANT: {
       label: "Accounting & Finance",
       icon: <FaFileInvoiceDollar className="w-5 h-5" />,
       items: [
@@ -183,11 +185,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           icon: <FaUserTie className="w-4 h-4" />,
           link: "/account/employee",
         },
-        // {
-        //   label: "Financial Reports",
-        //   icon: <BarChart3 className="w-4 h-4" />,
-        //   link: "/account/reports",
-        // },
         {
           label: "Account Settings",
           icon: <Settings className="w-4 h-4" />,
@@ -195,62 +192,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         },
       ],
     },
-
-    // Project Management Module
-    // PROJECT: {
-    //   label: "Project Management",
-    //   icon: <FaClipboardList className="w-5 h-5" />,
-    //   items: [
-    //     {
-    //       label: "Expenses",
-    //       icon: <ReceiptIcon className="w-4 h-4" />,
-    //       link: "/project_Manager/expense",
-    //     },
-    //     {
-    //       label: "Income",
-    //       icon: <Wallet className="w-4 h-4" />,
-    //       link: "/project_Manager/income",
-    //     },
-        // {
-        //   label: "Project Dashboard",
-        //   icon: <ChartColumnIncreasing className="w-4 h-4" />,
-        //   link: "/project_Manager/dashboard",
-        // },
-        // {
-        //   label: "Team Management",
-        //   icon: <Users className="w-4 h-4" />,
-        //   link: "/project_Manager/team",
-        // },
-    //   ],
-    // },
-
-    // Asset Management Module
-    // ASSET: {
-    //   label: "Asset Management",
-    //   icon: <FaBoxes className="w-5 h-5" />,
-    //   items: [
-    //     {
-    //       label: "Asset Dashboard",
-    //       icon: <ChartColumnIncreasing className="w-4 h-4" />,
-    //       link: "/asset-management",
-    //     },
-    //     {
-    //       label: "Asset Inventory",
-    //       icon: <Database className="w-4 h-4" />,
-    //       link: "/asset-management/inventory",
-    //     },
-    //     {
-    //       label: "Asset Tracking",
-    //       icon: <Layers className="w-4 h-4" />,
-    //       link: "/asset-management/tracking",
-    //     },
-    //     {
-    //       label: "Asset Settings",
-    //       icon: <Settings className="w-4 h-4" />,
-    //       link: "/asset-management/settings",
-    //     },
-    //   ],
-    // },
 
     // Employee Module
     EMPLOYEE: {
@@ -305,27 +246,43 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           icon: <Clock className="w-4 h-4" />,
           link: "/manager/attendance",
         },
-        // {
-        //   label: "Performance Reports",
-        //   icon: <BarChart3 className="w-4 h-4" />,
-        //   link: "/manager/reports",
-        // },
       ],
     },
   };
 
-  // Get available modules - show all modules regardless of role
+  // Get available modules based on roles and moduleIds
   const getAvailableModules = () => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
     
-    // Show all modules regardless of role or current page
-    Object.entries(modularMenus).forEach(([key, module]) => {
-      if (!addedModules.has(key)) {
-        modules.push({ key, ...module });
-        addedModules.add(key);
-      }
-    });
+    // Check if user has COMPANY_HEAD role with empty moduleIds
+    const isCompanyHead = userRoles.includes("COMPANY_HEAD") && userModules.length === 0;
+    
+    if (isCompanyHead) {
+      // Show all modules for COMPANY_HEAD with empty moduleIds
+      Object.entries(modularMenus).forEach(([key, module]) => {
+        if (!addedModules.has(key)) {
+          modules.push({ key, ...module });
+          addedModules.add(key);
+        }
+      });
+    } else {
+      // Show modules based on moduleIds array
+      userModules.forEach((moduleId) => {
+        if (modularMenus[moduleId] && !addedModules.has(moduleId)) {
+          modules.push({ key: moduleId, ...modularMenus[moduleId] });
+          addedModules.add(moduleId);
+        }
+      });
+      
+      // Also show role-specific modules (EMPLOYEE, MANAGER) if user has those roles
+      userRoles.forEach((role) => {
+        if (modularMenus[role] && !addedModules.has(role)) {
+          modules.push({ key: role, ...modularMenus[role] });
+          addedModules.add(role);
+        }
+      });
+    }
 
     return modules;
   };
@@ -335,9 +292,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   // Debug logging to see what modules are available
   useEffect(() => {
     console.log('Current Role:', currentRole);
+    console.log('User Roles:', userRoles);
+    console.log('User Modules:', userModules);
     console.log('Current Path:', router.pathname);
     console.log('Available Modules:', availableModules.map(m => m.key));
-  }, [currentRole, availableModules, router.pathname]);
+  }, [currentRole, userRoles, userModules, availableModules, router.pathname]);
 
   const isActiveLink = (link) => {
     if (!link) return false;
@@ -393,7 +352,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         <div className="px-4 mb-4">
           {!isCollapsed && (
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              All Modules
+              {userRoles.includes("COMPANY_HEAD") && userModules.length === 0 
+                ? "All Modules" 
+                : "Available Modules"}
             </div>
           )}
         </div>

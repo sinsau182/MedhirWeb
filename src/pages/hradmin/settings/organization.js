@@ -23,7 +23,7 @@ import { fetchMasterModules } from "@/redux/slices/masterModulesSlice";
 import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
-  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("departments");

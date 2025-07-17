@@ -43,7 +43,7 @@ const Navbar = () => {
       // If no current company in session, use last selected from localStorage
       setSelectedCompany(lastSelectedCompany);
       sessionStorage.setItem("currentCompany", lastSelectedCompany);
-      sessionStorage.setItem("currentCompanyId", lastSelectedCompanyId);
+      sessionStorage.setItem("employeeCompanyId", lastSelectedCompanyId);
     }
 
     if (storedColor) {
@@ -113,7 +113,7 @@ const Navbar = () => {
   //           ) {
   //             setSelectedCompany(response.data[0].companyName);
   //             sessionStorage.setItem("currentCompany", response.data[0].companyName);
-  //             sessionStorage.setItem("currentCompanyId", response.data[0].companyId);
+  //             sessionStorage.setItem("employeeCompanyId", response.data[0].companyId);
   //             sessionStorage.setItem("currentCompanyColor", response.data[0].colorCode);
               
   //             // Also set in localStorage for future reference
@@ -200,7 +200,7 @@ const Navbar = () => {
         // Store current company in sessionStorage
         sessionStorage.setItem("currentCompany", companyName);
         sessionStorage.setItem("currentCompanyColor", selectedCompanyData.colorCode);
-        sessionStorage.setItem("currentCompanyId", selectedCompanyData.companyId);
+        sessionStorage.setItem("employeeCompanyId", selectedCompanyData.companyId);
 
         // Store last selected company in localStorage
         localStorage.setItem("lastSelectedCompany", companyName);

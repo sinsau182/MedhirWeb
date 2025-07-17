@@ -93,7 +93,26 @@ const Customers = () => {
     let table;
     switch (activeTab) {
       case 'invoice':
-        table = (
+        table = invoices.length === 0 ? (
+          <div className="bg-white rounded-lg shadow border border-gray-200">
+            <div className="flex flex-col items-center justify-center py-16 px-8">
+              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                <FaFileInvoiceDollar className="w-10 h-10 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Invoices Found</h3>
+              <p className="text-gray-600 text-center max-w-md mb-6">
+                You haven&apos;t created any invoices yet. Start by adding your first invoice to bill your clients and track payments.
+              </p>
+              <button
+                onClick={() => setShowAddForm('invoice')}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
+              >
+                <FaPlus className="w-4 h-4" />
+                Create Your First Invoice
+              </button>
+            </div>
+          </div>
+        ) : (
           <table className="min-w-full bg-white">
             <thead className="bg-gray-100">
               <tr>
@@ -119,7 +138,26 @@ const Customers = () => {
         );
         break;
       case 'receipts':
-        table = (
+        table = receipts.length === 0 ? (
+          <div className="bg-white rounded-lg shadow border border-gray-200">
+            <div className="flex flex-col items-center justify-center py-16 px-8">
+              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6">
+                <FaReceipt className="w-10 h-10 text-green-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Receipts Found</h3>
+              <p className="text-gray-600 text-center max-w-md mb-6">
+                You haven&apos;t recorded any receipts yet. Start by adding your first receipt to track customer payments and maintain payment history.
+              </p>
+              <button
+                onClick={() => setShowAddForm('receipt')}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
+              >
+                <FaPlus className="w-4 h-4" />
+                Record Your First Receipt
+              </button>
+            </div>
+          </div>
+        ) : (
           <table className="min-w-full bg-white">
             <thead className="bg-gray-100">
               <tr>
@@ -145,7 +183,26 @@ const Customers = () => {
         );
         break;
       case 'clients':
-        table = (
+        table = clients.length === 0 ? (
+          <div className="bg-white rounded-lg shadow border border-gray-200">
+            <div className="flex flex-col items-center justify-center py-16 px-8">
+              <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6">
+                <FaUsers className="w-10 h-10 text-purple-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Clients Found</h3>
+              <p className="text-gray-600 text-center max-w-md mb-6">
+                You haven&apos;t added any clients yet. Start by adding your first client to manage customer relationships and track business transactions.
+              </p>
+              <button
+                onClick={() => setShowAddForm('client')}
+                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center gap-2"
+              >
+                <FaPlus className="w-4 h-4" />
+                Add Your First Client
+              </button>
+            </div>
+          </div>
+        ) : (
           <table className="min-w-full bg-white">
              <thead className="bg-gray-100">
               <tr>

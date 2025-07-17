@@ -10,7 +10,7 @@ export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
 
         let url = "";
         const employeeId = sessionStorage.getItem("employeeId");
-        const companyId = sessionStorage.getItem("currentCompanyId");
+        const companyId = sessionStorage.getItem("employeeCompanyId");
         const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
         const numericMonth = monthIndex + 1;
 

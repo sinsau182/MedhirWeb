@@ -252,7 +252,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
       // Format the payment data according to the API structure
       const paymentData = {
         vendorId: selectedVendor.vendorId,
-        companyId: selectedVendor.companyId || "CID101", // Use from selectedVendor or default
+        companyId: selectedVendor.companyId, // Use from selectedVendor or default
         gstin: selectedVendor.gstin,
         paymentMethod: formData.paymentMethod,
         bankAccount: formData.bankAccount,

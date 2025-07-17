@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Search, UserPlus, Calendar } from "lucide-react";
+import { Search, UserPlus, Calendar, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
 import withAuth from "@/components/withAuth";
@@ -344,11 +344,41 @@ function Employees() {
                       </tr>
                     ) : filteredEmployees.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={headers.length}
-                          className="text-center py-3 text-sm text-gray-500"
-                        >
-                          No employees found
+                        <td colSpan={headers.length} className="text-center py-16">
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+                              <Users className="w-10 h-10 text-indigo-500" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Employees Found</h3>
+                            <p className="text-gray-600 text-center max-w-md mb-6">
+                              {searchInput ? (
+                                `No employees found matching "${searchInput}". Try adjusting your search terms.`
+                              ) : (
+                                "You haven't added any employees yet. Start by adding your first employee to manage your workforce and track their information."
+                              )}
+                            </p>
+                            {searchInput ? (
+                              <button
+                                onClick={() => setSearchInput("")}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
+                              >
+                                Clear Search
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  router.push({
+                                    pathname: "/hradmin/addNewEmployee",
+                                    query: { activeMainTab: activeTab },
+                                  })
+                                }
+                                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 flex items-center gap-2"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                Add Your First Employee
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ) : (

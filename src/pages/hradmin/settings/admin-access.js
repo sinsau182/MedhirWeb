@@ -138,7 +138,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       // Use the selected company from local state instead of sessionStorage
-      const companyId = sessionStorage.getItem("currentCompanyId");
+      const companyId = sessionStorage.getItem("employeeCompanyId");
 
       const response = await axios.put(
         `${publicRuntimeConfig.apiURL}/hradmin/employees/${user.employeeId}/roles`,
@@ -179,7 +179,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       // Use the selected company from local state instead of sessionStorage
-      const companyId = sessionStorage.getItem("currentCompanyId");
+      const companyId = sessionStorage.getItem("employeeCompanyId");
 
       const response = await axios.put(
         `${publicRuntimeConfig.apiURL}/hradmin/employees/${userToUnassign.employeeId}/roles`,

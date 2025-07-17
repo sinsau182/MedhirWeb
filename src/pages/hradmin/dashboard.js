@@ -44,7 +44,7 @@ const COLORS = [
 ];
 
 const Overview = () => {
-  const companyId = sessionStorage.getItem("currentCompanyId");
+  const companyId = sessionStorage.getItem("employeeCompanyId");
   // Get router instance
   const router = useRouter();
 
@@ -227,7 +227,7 @@ const Overview = () => {
   const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -252,7 +252,7 @@ const Overview = () => {
   const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
         {

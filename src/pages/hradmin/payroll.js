@@ -12,7 +12,7 @@ import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
 function PayrollManagement() {
-  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
 
   const { attendance } = useSelector((state) => state.attendances);
@@ -253,7 +253,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {(employees?.data || [])
+            {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -456,7 +456,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {(employees?.data || [])
+            {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -569,7 +569,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {(employees?.data || [])
+            {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -640,7 +640,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {(employees?.data || [])
+            {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -716,7 +716,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {(employees?.data || [])
+            {employees
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )

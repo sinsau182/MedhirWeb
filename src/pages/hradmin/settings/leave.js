@@ -26,7 +26,7 @@ import { toast } from "react-toastify";
 import withAuth from "@/components/withAuth";
 
 const LeaveSettings = () => {
-  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Leave Types");

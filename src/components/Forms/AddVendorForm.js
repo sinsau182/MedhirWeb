@@ -27,7 +27,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
     // Basic Information
     vendorName: '',
-    companyId: 'CID101',
+    companyId: sessionStorage.getItem("employeeCompanyId"),
     companyType: 'Company', // Company or Individual
     vendorCategory: '',
     gstin: '',

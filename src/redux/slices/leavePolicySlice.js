@@ -37,7 +37,7 @@ export const fetchLeavePolicies = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const response = await axios.get(`${API_URL}/leave-policies/company/${company}`, {
         headers: {
           Authorization: `Bearer ${token}`,

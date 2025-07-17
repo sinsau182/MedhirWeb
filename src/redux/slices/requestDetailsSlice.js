@@ -9,7 +9,7 @@ export const fetchPendingLeaveRequests = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const currentRole = sessionStorage.getItem("currentRole");
       const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
@@ -62,7 +62,7 @@ export const fetchProfileUpdates = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const currentRole = sessionStorage.getItem("currentRole");
       const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
@@ -188,7 +188,7 @@ export const fetchExpenseRequests = createAsyncThunk(
       try {
         const currentRole = sessionStorage.getItem("currentRole");
         const employeeId = sessionStorage.getItem("employeeId");
-        const companyId = sessionStorage.getItem("currentCompanyId");
+        const companyId = sessionStorage.getItem("employeeCompanyId");
 
         let url = "";
         if (currentRole === "MANAGER") {
@@ -222,7 +222,7 @@ export const fetchIncomeRequests = createAsyncThunk(
       try {
         const currentRole = sessionStorage.getItem("currentRole");
         const employeeId = sessionStorage.getItem("employeeId");
-        const companyId = sessionStorage.getItem("currentCompanyId");
+        const companyId = sessionStorage.getItem("employeeCompanyId");
 
         let url = "";
         if (currentRole === "MANAGER") {

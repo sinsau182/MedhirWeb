@@ -10,7 +10,7 @@ export const fetchTDS = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/tds-settings/company/${company}`,
         {
@@ -35,7 +35,7 @@ export const fetchPTAX = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/professional-tax-settings/company/${company}`,
         {
@@ -60,7 +60,7 @@ export const saveTDS = createAsyncThunk(
   async (tdsData, { getState, rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const companyId = sessionStorage.getItem("currentCompanyId");
+      const companyId = sessionStorage.getItem("employeeCompanyId");
       const { isTdsConfigured } = getState().payrollSettings;
       
       const url = isTdsConfigured 
@@ -95,7 +95,7 @@ export const savePTAX = createAsyncThunk(
   async (ptaxData, { getState, rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const companyId = sessionStorage.getItem("currentCompanyId");
+      const companyId = sessionStorage.getItem("employeeCompanyId");
       const { isPtaxConfigured } = getState().payrollSettings;
       
       const url = isPtaxConfigured 
