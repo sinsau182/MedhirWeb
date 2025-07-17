@@ -366,7 +366,7 @@ const Customers = () => {
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.project?.projectName}</td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.customer?.customerName}</td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.receiptDate}</td>
-                  <td className="px-6 py-4 text-sm font-semibold">₹{r.amountReceived}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-green-600">₹{r.amountReceived}</td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.paymentMethod}</td>
                   <td className="px-6 py-4 text-sm font-mono whitespace-nowrap max-w-xs truncate">{r.paymentTransactionId}</td>
                   <td className="px-6 py-4">
@@ -454,7 +454,7 @@ const Customers = () => {
             ))}
           </nav>
         </div>
-          <SearchBarWithFilter value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+          <SearchBarWithFilter onSearch={setSearchTerm} />
       </div>
         {renderContent()}
         {selectedInvoiceForPreview && (
