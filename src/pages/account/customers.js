@@ -1,5 +1,5 @@
 // Updated customers page with PRD implementation
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
@@ -7,6 +7,7 @@ import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
+import { fetchInvoices } from '@/redux/slices/invoiceSlice';
 
 const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
   if (!invoice) return null;
@@ -167,7 +168,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
 const Customers = () => {
   const dispatch = useDispatch();
   const { receipts, loading, error } = useSelector(state => state.receipts);
-
+  const { invoices } = useSelector(state => state.invoices);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
@@ -179,12 +180,16 @@ const Customers = () => {
   useEffect(() => {
     dispatch(fetchReceipts());
   }, [dispatch]);
+  
+  useEffect(() => {
+    dispatch(fetchInvoices());
+  }, [dispatch]);
 
-  const [invoices, setInvoices] = useState([
-    { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
-    { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
-    { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
-  ]);
+  // const [invoices, setInvoices] = useState([
+  //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
+  //   { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
+  //   { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
+  // ]);
   // const [receipts, setReceipts] = useState([
   //   { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
   //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
@@ -210,20 +215,35 @@ const Customers = () => {
     setShowAddForm('receipt');
   };
 
-  const handleInvoiceSubmit = (data) => {
-    setInvoices(prev => [...prev, { 
-      id: data.invoiceNumber, 
-      projectName: data.projectName,
-      client: data.customerName, 
-      date: data.invoiceDate, 
-      totalAmount: data.totalAmount, 
-      amountReceived: 0,
-      status: 'Due',
-      receiptGenerated: 'No'
-    }]);
-    toast.success('Invoice added!');
-    setShowAddForm(null);
-  };
+  // const handleInvoiceSubmit = (data) => {
+  //   setInvoices(prev => [...prev, { 
+  //     id: data.invoiceNumber, 
+  //     projectName: data.projectName,
+  //     client: data.customerName, 
+  //     date: data.invoiceDate, 
+  //     totalAmount: data.totalAmount, 
+  //     amountReceived: 0,
+  //     status: 'Due',
+  //     receiptGenerated: 'No'
+  //   }]);
+  //   toast.success('Invoice added!');
+  //   setShowAddForm(null);
+  // };
+
+const handleInvoiceSubmit = (data) => {
+  dispatch(createInvoice(data))
+    .unwrap()
+    .then(() => {
+      toast.success('Invoice added!');
+      dispatch(fetchInvoices());
+      setShowAddForm(null);
+    })
+    .catch((err) => {
+      toast.error('Failed to add invoice: ' + (err?.message || 'Unknown error'));
+    });
+};
+
+
   const handleReceiptSubmit = (data) => {
     setActiveTab('receipts'); // Switch to Receipts tab FIRST
     setShowAddForm(null);     // Then close the form
@@ -303,9 +323,9 @@ const Customers = () => {
                 const amountRemaining = invoice.totalAmount - invoice.amountReceived;
                 return (
                   <tr key={invoice.id}>
-                    <td className="px-6 py-4 text-sm font-medium text-blue-600">{invoice.id}</td>
-                    <td className="px-6 py-4 text-sm">{invoice.projectName}</td>
-                    <td className="px-6 py-4 text-sm">{invoice.client}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-blue-600">{invoice.invoiceNumber}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.project?.projectName}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.customer?.customerName}</td>
                     <td className="px-6 py-4 text-sm">${invoice.totalAmount.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm text-green-600">${invoice.amountReceived.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-red-600">${amountRemaining.toFixed(2)}</td>
