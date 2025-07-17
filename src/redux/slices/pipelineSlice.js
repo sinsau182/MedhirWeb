@@ -87,7 +87,7 @@ const pipelineSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(deletePipeline.fulfilled, (state, action) => {
-        state.pipelines = state.pipelines.filter(p => p.pipelineId !== action.payload);
+        state.pipelines = state.pipelines.filter(p => p.stageId !== action.payload);
         state.status = 'succeeded';
       })
       .addCase(deletePipeline.rejected, (state, action) => {

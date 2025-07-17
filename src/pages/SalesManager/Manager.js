@@ -26,11 +26,7 @@ import {
   moveLeadToPipeline,
 } from "@/redux/slices/leadsSlice";
 import {
-  addStage,
-  removeStage,
   fetchPipelines,
-  createPipeline,
-  deletePipeline,
 } from "@/redux/slices/pipelineSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -47,7 +43,7 @@ import Tooltip from "@/components/ui/ToolTip";
 import useFlattenedLeads from "@/hooks/useFlattenedLeads";
 import ViewToggle from "@/components/Sales/ViewToggle";
 import SearchBar from "@/components/Sales/SearchBar";
-import DeletePipelineModal from "@/components/Sales/DeletePipelineModal";
+// DeletePipelineModal import removed - pipeline management moved to settings
 import LeadsTable from "../../components/Sales/LeadsTable";
 
 const salesPersons = [
@@ -103,25 +99,10 @@ const ManagerContent = ({ role }) => {
   const { pipelines } = useSelector((state) => state.pipelines);
   const { leads, loading, error } = useSelector((state) => state.leads);
 
-  // Add pipeline modal state
-  const [isAddingStage, setIsAddingStage] = useState(false);
-  const [newStageName, setNewStageName] = useState("");
-  const [newStageColor, setNewStageColor] = useState("#3b82f6");
-  const [newStageIsForm, setNewStageIsForm] = useState(false);
-  const [newStageFormType, setNewStageFormType] = useState("");
-
-  // Delete pipeline modal state
-  const [showDeletePipelineModal, setShowDeletePipelineModal] = useState(false);
-  const [selectedPipelinesToDelete, setSelectedPipelinesToDelete] = useState(
-    []
-  );
-
   // Add lead modal state
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
-  const [showPipelineDropdown, setShowPipelineDropdown] = useState(false);
 
-  // Pipeline action confirmation modal state
-  const [pipelineAction, setPipelineAction] = useState(null); // 'add' or 'delete' or null
+  // Pipeline management removed - moved to settings
 
   // Advanced Schedule Activity Modal state
   const [showAdvancedScheduleModal, setShowAdvancedScheduleModal] =
@@ -234,44 +215,7 @@ const ManagerContent = ({ role }) => {
 
 
 
-  // Add pipeline handler
-  const handleAddStage = () => {
-    if (!newStageName) {
-      toast.error("Stage name is required");
-      return;
-    }
-    if (newStageIsForm && !newStageFormType) {
-      toast.error("Form type is required when 'Is Form' is enabled");
-      return;
-    }
-    dispatch(
-      createPipeline({
-        name: newStageName,
-        color: newStageColor,
-        isFormRequired: newStageIsForm,
-        formType: newStageIsForm ? newStageFormType : null,
-      })
-    );
-    setNewStageName("");
-    setNewStageColor("#3b82f6");
-    setNewStageIsForm(false);
-    setNewStageFormType("");
-    setIsAddingStage(false);
-    // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
-  };
-
-  // Delete pipeline handler
-  const handleDeleteStages = (pipelineIds) => {
-    pipelineIds.forEach((id) => {
-      dispatch(deletePipeline(id));
-    });
-    dispatch(fetchPipelines());
-    // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
-    setShowDeletePipelineModal(false);
-    setSelectedPipelinesToDelete([]);
-  };
+  // Pipeline management handlers removed - moved to settings
 
   // Handle schedule activity
   const handleScheduleActivity = (lead) => {
@@ -472,44 +416,7 @@ const ManagerContent = ({ role }) => {
   };
 
   // Confirmation modal for pipeline actions
-  const PipelineActionConfirmModal = () =>
-    pipelineAction && (
-      <div className="fixed inset-0 bg-black bg-opacity-30 z-50 flex justify-center items-center p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            {pipelineAction === "add" ? "Add Pipeline" : "Delete Pipeline"}
-          </h3>
-          <p className="mb-6 text-gray-700">
-            {pipelineAction === "add"
-              ? "Do you want to add a new pipeline stage?"
-              : "Do you want to delete pipeline stages?"}
-          </p>
-          <div className="flex gap-3 justify-end">
-            <button
-              onClick={() => setPipelineAction(null)}
-              className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                if (pipelineAction === "add") setIsAddingStage(true);
-                if (pipelineAction === "delete")
-                  setShowDeletePipelineModal(true);
-                setPipelineAction(null);
-              }}
-              className={`px-4 py-2 text-sm rounded-md ${
-                pipelineAction === "add"
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-red-600 text-white hover:bg-red-700"
-              } font-semibold shadow`}
-            >
-              {pipelineAction === "add" ? "Add Pipeline" : "Delete Pipeline"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  // PipelineActionConfirmModal component removed - pipeline management moved to settings
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -525,44 +432,6 @@ const ManagerContent = ({ role }) => {
             <h2 className="text-xl font-semibold text-gray-700">
               Manager Pipeline
             </h2>
-            <div className="relative pipeline-dropdown">
-              <button
-                onClick={() => setShowPipelineDropdown(!showPipelineDropdown)}
-                className="text-gray-500 hover:text-gray-700 p-1 flex items-center gap-1 transition-colors duration-200"
-              >
-                <FaCog />
-                <FaChevronDown
-                  className={`text-xs transition-transform duration-200 ${
-                    showPipelineDropdown ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {showPipelineDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-40 transform opacity-100 scale-100 transition-all duration-200">
-                  <button
-                    onClick={() => {
-                      setIsAddingStage(true);
-                      setShowPipelineDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors duration-150"
-                  >
-                    <FaPlus className="text-xs" />
-                    Add Pipeline
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowDeletePipelineModal(true);
-                      setShowPipelineDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 transition-colors duration-150"
-                  >
-                    <FaTrash className="text-xs" />
-                    Delete Pipeline
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
@@ -643,11 +512,6 @@ const ManagerContent = ({ role }) => {
         />
       )}
 
-      <DeletePipelineModal
-        isOpen={showDeletePipelineModal}
-        onClose={() => setShowDeletePipelineModal(false)}
-      />
-
       <AdvancedScheduleActivityModal
         isOpen={showScheduleActivityModal}
         onClose={() => {
@@ -658,141 +522,7 @@ const ManagerContent = ({ role }) => {
         onSuccess={handleScheduleActivitySuccess}
       />
 
-      {isAddingStage && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-30">
-          <div
-            className="w-full max-w-md bg-gray-50 rounded-xl shadow-xl p-6 m-8 flex flex-col"
-            style={{ minHeight: "auto", maxHeight: "90vh" }}
-          >
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Add Pipeline
-              </h3>
-              <div className="flex flex-col gap-3">
-                <label className="text-xs font-medium text-gray-700">
-                  Pipeline Name
-                </label>
-                <input
-                  type="text"
-                  value={newStageName}
-                  onChange={(e) => setNewStageName(e.target.value)}
-                  placeholder="Enter pipeline name..."
-                  className="p-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-                {newStageName === "" && (
-                  <span className="text-xs text-red-500 mt-1">
-                    Pipeline name is required.
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-col gap-3 mt-3">
-                <label className="text-xs font-medium text-gray-700">
-                  Pipeline Color
-                </label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {[
-                    "#3b82f6",
-                    "#6366f1",
-                    "#10b981",
-                    "#f59e42",
-                    "#22d3ee",
-                    "#ef4444",
-                    "#a3a3a3",
-                  ].map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => setNewStageColor(color)}
-                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
-                        newStageColor === color
-                          ? "border-blue-600 ring-2 ring-blue-200"
-                          : "border-gray-200"
-                      }`}
-                      style={{ background: color }}
-                      aria-label={`Select color ${color}`}
-                    >
-                      {newStageColor === color && (
-                        <span className="w-3 h-3 bg-white rounded-full border border-blue-600"></span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mt-3">
-                <label className="text-xs font-medium text-gray-700">
-                  Is Form
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setNewStageIsForm((prev) => !prev)}
-                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
-                    newStageIsForm ? "bg-blue-600" : "bg-gray-300"
-                  }`}
-                  aria-pressed={newStageIsForm}
-                >
-                  <span
-                    className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ${
-                      newStageIsForm ? "translate-x-6" : ""
-                    }`}
-                  ></span>
-                </button>
-                <span className="text-xs text-gray-500">
-                  {newStageIsForm ? "Yes" : "No"}
-                </span>
-              </div>
-              {newStageIsForm && (
-                <div className="flex flex-col gap-3 mt-3">
-                  <label className="text-xs font-medium text-gray-700">
-                    Form Type
-                  </label>
-                  <select
-                    value={newStageFormType}
-                    onChange={(e) => setNewStageFormType(e.target.value)}
-                    className="p-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  >
-                    <option value="">Select form type...</option>
-                    <option value="CONVERTED">Converted</option>
-                    <option value="JUNK">Junk</option>
-                    <option value="LOST">Lost</option>
-                    <option value="ONBOARDING">Onboarding</option>
-                    <option value="APPROVAL">Approval</option>
-                    <option value="CUSTOM">Custom</option>
-                  </select>
-                  {newStageFormType === "" && (
-                    <span className="text-xs text-red-500 mt-1">
-                      Form type is required.
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-3 mt-6 justify-end">
-              <button
-                onClick={() => {
-                  setNewStageName("");
-                  setNewStageIsForm(false);
-                  setNewStageColor("#3b82f6");
-                  setNewStageFormType("");
-                  setIsAddingStage(false);
-                }}
-                className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddStage}
-                disabled={
-                  !newStageName || (newStageIsForm && !newStageFormType)
-                }
-                className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Add Pipeline
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      <PipelineActionConfirmModal />
+      {/* Pipeline management modals removed - moved to settings */}
       <AdvancedScheduleActivityModal
         isOpen={showAdvancedScheduleModal}
         onClose={() => {
