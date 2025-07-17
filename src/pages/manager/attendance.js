@@ -19,18 +19,8 @@ function Attendance() {
   );
 
   useEffect(() => {
-    try {
-      const role = sessionStorage.getItem("currentRole");
-      if (!role || role !== "MANAGER") {
-        router.push("/login");
-        return;
-      }
-      setIsLoading(false);
-    } catch (err) {
-      setError("Authentication error");
-      setIsLoading(false);
-    }
-  }, [router]);
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchManagerEmployees()).catch((err) => {

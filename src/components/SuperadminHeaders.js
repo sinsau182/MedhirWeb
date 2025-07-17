@@ -26,7 +26,7 @@ export default function SuperadminHeaders() {
         MEDHIR
       </h1>
       <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-        {["Companies", "Modules"].map((item, index) => (
+        {[].map((item, index) => (
           <Link key={index} href={`/superadmin/${item.toLowerCase()}`} passHref>
             <button
               onClick={() => setActiveTab(item)}

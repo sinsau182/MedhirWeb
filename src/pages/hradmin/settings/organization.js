@@ -19,6 +19,7 @@ import {
   updateDesignation,
   deleteDesignation,
 } from "@/redux/slices/designationSlice";
+import { fetchMasterModules } from "@/redux/slices/masterModulesSlice";
 import withAuth from "@/components/withAuth";
 
 const OrganizationSettings = () => {
@@ -33,6 +34,7 @@ const OrganizationSettings = () => {
     head: "",
     leavePolicy: "",
     weeklyHolidays: [],
+    assignedModules: [],
   });
   const [designationForm, setDesignationForm] = useState({
     name: "",
@@ -40,6 +42,7 @@ const OrganizationSettings = () => {
     department: "",
     manager: false,
     overtimeEligible: false,
+    admin: false,
   });
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState({
@@ -67,13 +70,23 @@ const OrganizationSettings = () => {
   const { policies } = useSelector((state) => state.leavePolicy);
   const { designations: fetchedDesignations, loading: designationLoading } =
     useSelector((state) => state.designation);
+  const { modules: masterModules, loading: masterModulesLoading } = useSelector(
+    (state) => state.masterModules
+  );
 
-  // Fetch departments, leave policies, and designations when component mounts
+  // Debug logging
+  console.log('masterModules:', masterModules);
+  console.log('masterModules type:', typeof masterModules);
+  console.log('masterModules isArray:', Array.isArray(masterModules));
+  console.log('designations:', fetchedDesignations);
+
+  // Fetch departments, leave policies, designations, and master modules when component mounts
   useEffect(() => {
     dispatch(fetchDepartments());
     dispatch(fetchLeavePolicies());
     dispatch(fetchDepartmentsForDropdown());
     dispatch(fetchDesignations());
+    dispatch(fetchMasterModules());
   }, [dispatch]);
 
   // Sample data for dropdowns
@@ -91,6 +104,16 @@ const OrganizationSettings = () => {
     { value: "Friday", label: "Friday" },
     { value: "Saturday", label: "Saturday" },
   ];
+
+  // Master modules options for dropdown
+  const masterModulesOptions = Array.isArray(masterModules) && masterModules.length > 0
+    ? masterModules
+        .filter(module => module && module.moduleId && module.moduleName) // Filter out invalid modules
+        .map((module) => ({
+          value: module.moduleId,
+          label: module.moduleName,
+        }))
+    : [];
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -138,6 +161,12 @@ const OrganizationSettings = () => {
         weeklyHolidays: departmentForm.weeklyHolidays
           .map((day) => day.value)
           .join(","),
+        assignedModules: Array.isArray(departmentForm.assignedModules) 
+          ? departmentForm.assignedModules.map((module) => ({
+              moduleId: module.value,
+              moduleName: module.label,
+            }))
+          : [],
         companyId: selectedCompanyId,
       };
 
@@ -162,6 +191,7 @@ const OrganizationSettings = () => {
         head: "",
         leavePolicy: "",
         weeklyHolidays: [],
+        assignedModules: [],
       });
       setIsFormChanged(false);
 
@@ -224,11 +254,19 @@ const OrganizationSettings = () => {
         weeklyHolidays: departmentForm.weeklyHolidays
           .map((day) => day.value)
           .join(","),
+        assignedModules: Array.isArray(departmentForm.assignedModules) 
+          ? departmentForm.assignedModules.map((module) => ({
+              moduleId: module.value,
+              moduleName: module.label,
+            }))
+          : [],
       };
 
       await dispatch(
         createDepartment({ ...departmentData, companyId: selectedCompanyId })
       ).unwrap();
+
+      console.log('departmentData:', departmentData);
 
       setNotification({
         show: true,
@@ -243,6 +281,7 @@ const OrganizationSettings = () => {
         head: "",
         leavePolicy: "",
         weeklyHolidays: [],
+        assignedModules: [],
       });
       setIsFormChanged(false);
 
@@ -323,6 +362,7 @@ const OrganizationSettings = () => {
         department: designationDepartmentId,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
+        admin: designationForm.admin,
         companyId: selectedCompanyId,
       };
 
@@ -347,6 +387,7 @@ const OrganizationSettings = () => {
         department: "",
         manager: false,
         overtimeEligible: false,
+        admin: false,
       });
       setIsFormChanged(false);
 
@@ -392,6 +433,7 @@ const OrganizationSettings = () => {
         department: designationForm.department.value,
         manager: designationForm.manager,
         overtimeEligible: designationForm.overtimeEligible,
+        admin: designationForm.admin,
       };
 
       await dispatch(createDesignation(designationData)).unwrap();
@@ -404,6 +446,7 @@ const OrganizationSettings = () => {
         department: "",
         manager: false,
         overtimeEligible: false,
+        admin: false,
       });
       setIsFormChanged(false);
       setErrors({});
@@ -468,6 +511,11 @@ const OrganizationSettings = () => {
         ...departmentForm,
         weeklyHolidays: selectedOption,
       });
+    } else if (name === "assignedModules") {
+      setDepartmentForm({
+        ...departmentForm,
+        assignedModules: selectedOption || [],
+      });
     } else if (name === "department") {
       setDesignationForm({
         ...designationForm,
@@ -493,6 +541,7 @@ const OrganizationSettings = () => {
       head: "",
       leavePolicy: "",
       weeklyHolidays: [],
+      assignedModules: [],
     });
     setDesignationForm({
       name: "",
@@ -500,6 +549,7 @@ const OrganizationSettings = () => {
       department: "",
       manager: false,
       overtimeEligible: false,
+      admin: false,
     });
     setErrors({});
   };
@@ -524,6 +574,7 @@ const OrganizationSettings = () => {
       description: designation.description || "",
       manager: designation.manager || false,
       overtimeEligible: designation.overtimeEligible || false,
+      admin: designation.admin || false,
     });
     setShowDesignationModal(true);
   };
@@ -628,12 +679,15 @@ const OrganizationSettings = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                           Weekly Holidays
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Modules
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {reduxDepartments.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center">
+                          <td colSpan="6" className="px-6 py-8 text-center">
                             <div className="flex flex-col items-center justify-center text-gray-500">
                               <div className="rounded-full bg-gray-100 p-4 mb-4">
                                 <FileText className="h-10 w-10 text-gray-400" />
@@ -675,6 +729,16 @@ const OrganizationSettings = () => {
                                     label: day.trim(),
                                   })) || [];
 
+                              // Format modules into array of objects if they exist
+                              const modulesArray = department.assignedModules && Array.isArray(department.assignedModules)
+                                ? department.assignedModules
+                                    .filter(module => module && module.moduleId && module.moduleName)
+                                    .map((module) => ({
+                                      value: module.moduleId,
+                                      label: module.moduleName,
+                                    }))
+                                : [];
+
                               setDepartmentForm({
                                 name: department.name,
                                 description: department.description || "",
@@ -686,6 +750,7 @@ const OrganizationSettings = () => {
                                     department.leavePolicy,
                                 },
                                 weeklyHolidays: weeklyHolidaysArray,
+                                assignedModules: modulesArray,
                               });
                               setShowDepartmentEditModal(true);
                             }}
@@ -708,6 +773,11 @@ const OrganizationSettings = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {department.weeklyHolidays}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {department.assignedModules && department.assignedModules.length > 0
+                                ? department.assignedModules.map((module) => module.moduleName).join(", ")
+                                : "-"}
                             </td>
                           </tr>
                         ))
@@ -740,19 +810,22 @@ const OrganizationSettings = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                           Overtime Eligible
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
+                          Is Admin
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {designationLoading ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-4 text-center">
+                          <td colSpan="6" className="px-6 py-4 text-center">
                             Loading...
                           </td>
                         </tr>
                       ) : error ? (
                         <tr>
                           <td
-                            colSpan="5"
+                            colSpan="6"
                             className="px-6 py-4 text-center text-red-500"
                           >
                             {error}
@@ -760,7 +833,7 @@ const OrganizationSettings = () => {
                         </tr>
                       ) : fetchedDesignations.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="px-6 py-8 text-center">
+                          <td colSpan="6" className="px-6 py-8 text-center">
                             <div className="flex flex-col items-center justify-center text-gray-500">
                               <div className="rounded-full bg-gray-100 p-4 mb-4">
                                 <FileText className="h-10 w-10 text-gray-400" />
@@ -805,6 +878,9 @@ const OrganizationSettings = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {designation.overtimeEligible ? "Yes" : "No"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {designation.admin ? "Yes" : "No"}
                             </td>
                           </tr>
                         ))
@@ -914,6 +990,27 @@ const OrganizationSettings = () => {
                     placeholder="Select weekly holidays"
                     onChange={handleSelectChange}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Modules
+                  </label>
+                  {masterModulesLoading ? (
+                    <div className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-500">
+                      Loading modules...
+                    </div>
+                  ) : (
+                    <Select
+                      name="assignedModules"
+                      isMulti
+                      options={masterModulesOptions}
+                      className="react-select"
+                      classNamePrefix="select"
+                      placeholder="Select modules"
+                      onChange={handleSelectChange}
+                    />
+                  )}
                 </div>
               </form>
             </div>
@@ -1042,6 +1139,28 @@ const OrganizationSettings = () => {
                     placeholder="Select weekly holidays"
                     onChange={handleSelectChange}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Modules
+                  </label>
+                  {masterModulesLoading ? (
+                    <div className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-500">
+                      Loading modules...
+                    </div>
+                  ) : (
+                    <Select
+                      name="assignedModules"
+                      isMulti
+                      options={masterModulesOptions}
+                      value={departmentForm.assignedModules}
+                      className="react-select"
+                      classNamePrefix="select"
+                      placeholder="Select modules"
+                      onChange={handleSelectChange}
+                    />
+                  )}
                 </div>
               </form>
             </div>
@@ -1196,6 +1315,30 @@ const OrganizationSettings = () => {
                     className="ml-2 block text-sm text-gray-700"
                   >
                     Overtime Eligible
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="admin"
+                    name="admin"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={designationForm.admin}
+                    onChange={(e) => {
+                      setDesignationForm({
+                        ...designationForm,
+                        admin: e.target.checked,
+                      });
+                    }}
+                  />
+                  <label
+                    htmlFor="admin"
+                    className="ml-2 block text-sm text-gray-700"
+                  >
+                    Is Admin
                   </label>
                 </div>
               </div>

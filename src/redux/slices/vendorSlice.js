@@ -77,6 +77,31 @@ export const addVendorBills = createAsyncThunk(
   }
 );
 
+// update vendor credit for vendor
+export const updateVendorCredit = createAsyncThunk(
+  "vendors/updateVendorCredit",
+  async (vendorCredit, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`${API_BASE_URL}/${vendorCredit.vendorId}/credits`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(vendorCredit),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 export const vendorSlice = createSlice({
   name: "vendor",
   initialState: {

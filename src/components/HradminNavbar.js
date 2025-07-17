@@ -130,9 +130,7 @@ const Navbar = () => {
       }
     };
 
-    if (currentRole === "HRADMIN") {
-      fetchCompanies();
-    }
+    fetchCompanies();
   }, [selectedCompany, currentRole, publicRuntimeConfig.apiURL]);
 
   useEffect(() => {
@@ -232,13 +230,13 @@ const Navbar = () => {
               MEDHIR
             </span>
           </div>
-          <RoleToggle />
+          {/* <RoleToggle /> */}
         </div>
 
         {/* Right Section: Profile */}
         <div className="flex items-center gap-2 relative">
           {/* Company Dropdown */}
-          {currentRole === "HRADMIN" && (
+          {/* {(
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -280,10 +278,10 @@ const Navbar = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          )} */}
 
-          {/* Company Name - Only for manager role */}
-          {(currentRole === "MANAGER" || currentRole === "EMPLOYEE") && employeeData && (
+          {/* Company Name - For all roles */}
+          {employeeData && (
             <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 mr-4">
               <span className="text-base font-semibold text-blue-900">
                 {employeeData.companyName}
