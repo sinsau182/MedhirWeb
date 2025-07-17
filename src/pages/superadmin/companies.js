@@ -522,7 +522,7 @@ function SuperadminCompanies() {
           setSelectedCompany(null);
         }}
       >
-        <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
+        <div className="p-100  bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
           <div className="relative w-full flex justify-center -mt-4">
             <h2 className="text-2xl font-thin tracking-wide">
               {isEditing ? "Update" : "Add"} Company
@@ -715,7 +715,7 @@ function SuperadminCompanies() {
               handleSaveCompany();
               setSelectedCompany(null);
             }}
-            className="mt-6 bg-green-600 text-white"
+            className="mt-1 bg-green-600 text-white"
           >
             {isEditing ? "Update" : "Add"} Company
           </Button>
