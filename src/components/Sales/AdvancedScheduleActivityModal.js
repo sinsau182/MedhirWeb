@@ -51,7 +51,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
       setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '' });
       setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '' });
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, todo, email, call, meeting]);
 
   useEffect(() => {
     if (initialData) {

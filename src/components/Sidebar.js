@@ -254,7 +254,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
     // Employee Module
     EMPLOYEE: {
-      label: "Employee Portal",
+      label: "My Portal",
       icon: <FaUserCog className="w-5 h-5" />,
       items: [
         {
@@ -287,7 +287,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
 
     // Manager Module
     MANAGER: {
-      label: "Team Management",
+      label: "My Team",
       icon: <Briefcase className="w-5 h-5" />,
       items: [
         {

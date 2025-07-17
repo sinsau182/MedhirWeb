@@ -1110,7 +1110,7 @@ const AutomationSettings = () => {
                   {actionTypes.find((t) => t.id === a.type)?.name}
                 </span>
                 <span className="text-gray-500">{a.target}</span>
-                <span className="italic text-gray-600">"{a.message}"</span>
+                <span className="italic text-gray-600">&quot;{a.message}&quot;</span>
               </div>
             ))
           )}
@@ -1630,7 +1630,7 @@ const StageDependentFormsSettings = ({ stages }) => {
   const availableStages = stages;
 
   // Simplified field types - removed technical fields
-  const fieldCategories = {
+  const fieldCategories = useMemo(() => ({
     "Basic Fields": [
       {
         type: "text",
@@ -1800,7 +1800,7 @@ const StageDependentFormsSettings = ({ stages }) => {
         defaultLabel: ""
       }
     ]
-  };
+  }), []);
 
   // Simple field creation
   const createField = useCallback((type) => {
@@ -2190,7 +2190,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             <div className="text-left space-y-2 text-sm">
               <p>💡 <strong>Quick Tips:</strong></p>
               <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Click "Edit" on any field to change its settings</li>
+                <li>Click &quot;Edit&quot; on any field to change its settings</li>
                 <li>Use ⬆️⬇️ arrows to reorder fields</li>
                 <li>Switch to Preview to see how your form looks</li>
               </ul>
@@ -2717,7 +2717,7 @@ const StageDependentFormsSettings = ({ stages }) => {
           {/* Footer */}
           <div className="p-6 border-t bg-gray-50 flex gap-3 justify-between">
             <div className="text-sm text-gray-600">
-              ✨ Click field types to add them • Click "Edit" to customize • Use ⬆️⬇️ to reorder
+              ✨ Click field types to add them • Click &quot;Edit&quot; to customize • Use ⬆️⬇️ to reorder
             </div>
             <div className="flex gap-3">
               <button

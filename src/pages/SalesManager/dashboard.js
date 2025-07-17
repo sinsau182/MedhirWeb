@@ -1,4 +1,3 @@
-/* eslint-disable react/jsx-key */
 import React, { useState } from 'react';
 import {
   FaUsers,
@@ -537,7 +536,7 @@ function MainDashboard() {
                 <header className="flex justify-between items-center mb-6">
                         <div>
                         <h1 className="text-3xl font-bold text-gray-800">Sales Command Center</h1>
-                        <p className="text-gray-600">Welcome back, Manager. Here's your sales overview for today.</p>
+                        <p className="text-gray-600">Welcome back, Manager. Here&apos;s your sales overview for today.</p>
                             </div>
                     <div className="flex items-center gap-4">
                         <button className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2">

@@ -11,27 +11,11 @@ export const fetchMasterModules = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
 
-      // If no token, redirect to login
-      if (!token) {
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
-        return rejectWithValue("Token missing. Redirecting to login.");
-      }
-
       const response = await fetch(API_BASE_URL, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      // If token is invalid or expired (typically 401 or 403)
-      if (response.status === 401 || response.status === 403) {
-        if (typeof window !== "undefined") {
-          window.location.href = "/login";
-        }
-        return rejectWithValue("Unauthorized. Redirecting to login.");
-      }
 
       const data = await response.json();
       return data.modules || data || []; // Handle both {modules: [...]} and direct array, fallback to empty array

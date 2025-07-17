@@ -253,7 +253,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
+            {(employees?.data || [])
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -456,7 +456,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
+            {(employees?.data || [])
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -569,7 +569,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
+            {(employees?.data || [])
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -640,7 +640,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
+            {(employees?.data || [])
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
@@ -716,7 +716,7 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
+            {(employees?.data || [])
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )

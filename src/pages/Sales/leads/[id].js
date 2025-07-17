@@ -1953,7 +1953,7 @@ const LeadDetailContent = () => {
           </div>
           <p className="text-gray-600">Lead not found</p>
           <p className="text-sm text-gray-500 mt-1">
-            The lead you're looking for doesn't exist.
+            The lead you&apos;re looking for doesn&apos;t exist.
           </p>
         </div>
       </div>

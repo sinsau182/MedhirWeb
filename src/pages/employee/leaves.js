@@ -360,7 +360,7 @@ const Leaves = () => {
                 (typeof balanceError === "object" &&
                   balanceError?.status === 400) ? (
                   <div className="text-center py-4 text-gray-500">
-                    Please add department to view Leave Balance
+                    Your leave balance will be available once your profile is configured.
                   </div>
                 ) : (
                   <div className="text-center py-4 text-red-500">

@@ -87,51 +87,51 @@ const Navbar = () => {
     router.push("/employee/profile");
   };
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const token = getItemFromSessionStorage("token", null);
-        const employeeId = sessionStorage.getItem("employeeId");
-        const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.data && Array.isArray(response.data)) {
-          setCompanies(response.data); // Store the full company objects
+  // useEffect(() => {
+  //   const fetchCompanies = async () => {
+  //     try {
+  //       const token = getItemFromSessionStorage("token", null);
+  //       const employeeId = sessionStorage.getItem("employeeId");
+  //       const response = await axios.get(
+  //         `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+  //       if (response.data && Array.isArray(response.data)) {
+  //         setCompanies(response.data); // Store the full company objects
           
-          // Only set default company if no lastSelectedCompany exists in localStorage
-          const lastSelectedCompany = localStorage.getItem("lastSelectedCompany");
-          if (!lastSelectedCompany) {
-            if (
-              !response.data.some(
-                (company) => company.companyName === selectedCompany
-              )
-            ) {
-              setSelectedCompany(response.data[0].companyName);
-              sessionStorage.setItem("currentCompany", response.data[0].companyName);
-              sessionStorage.setItem("currentCompanyId", response.data[0].companyId);
-              sessionStorage.setItem("currentCompanyColor", response.data[0].colorCode);
+  //         // Only set default company if no lastSelectedCompany exists in localStorage
+  //         const lastSelectedCompany = localStorage.getItem("lastSelectedCompany");
+  //         if (!lastSelectedCompany) {
+  //           if (
+  //             !response.data.some(
+  //               (company) => company.companyName === selectedCompany
+  //             )
+  //           ) {
+  //             setSelectedCompany(response.data[0].companyName);
+  //             sessionStorage.setItem("currentCompany", response.data[0].companyName);
+  //             sessionStorage.setItem("currentCompanyId", response.data[0].companyId);
+  //             sessionStorage.setItem("currentCompanyColor", response.data[0].colorCode);
               
-              // Also set in localStorage for future reference
-              localStorage.setItem("lastSelectedCompany", response.data[0].companyName);
-              localStorage.setItem("lastSelectedCompanyId", response.data[0].companyId);
-              localStorage.setItem("lastSelectedCompanyColor", response.data[0].colorCode);
-            }
-          }
-        }
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Error fetching companies"
-        );
-      }
-    };
+  //             // Also set in localStorage for future reference
+  //             localStorage.setItem("lastSelectedCompany", response.data[0].companyName);
+  //             localStorage.setItem("lastSelectedCompanyId", response.data[0].companyId);
+  //             localStorage.setItem("lastSelectedCompanyColor", response.data[0].colorCode);
+  //           }
+  //         }
+  //       }
+  //     } catch (error) {
+  //       toast.error(
+  //         error.response?.data?.message || "Error fetching companies"
+  //       );
+  //     }
+  //   };
 
-    fetchCompanies();
-  }, [selectedCompany, currentRole, publicRuntimeConfig.apiURL]);
+  //   fetchCompanies();
+  // }, [selectedCompany, currentRole, publicRuntimeConfig.apiURL]);
 
   useEffect(() => {
     const fetchEmployeeDataFromToken = () => {

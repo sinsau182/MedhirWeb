@@ -105,7 +105,7 @@ const Overview = () => {
                   (typeof error === "string" && error.includes("400")) ||
                   (typeof error === "object" && error?.status === 400) ? (
                     <div className="text-center py-4 text-gray-500">
-                      Please add department to view Leave Balance
+                      Your leave balance will be available once your profile is configured.
                     </div>
                   ) : (
                     <div className="text-center py-4 text-red-500">
