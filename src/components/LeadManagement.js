@@ -13,7 +13,7 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { jwtDecode } from "jwt-decode";
 import ConvertLeadModal from "./ConvertLeadModal";
-import LostLeadModal from "./LostLeadModal";
+import LostLeadModal from "./Sales/LostLeadModal";
 import JunkReasonModal from "./JunkReasonModal";
 import {
   fetchLeads,

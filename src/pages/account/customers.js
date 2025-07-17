@@ -1,10 +1,14 @@
 // Updated customers page with PRD implementation
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
 import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
+import { useDispatch, useSelector } from 'react-redux';
+
+import { fetchInvoice  } from '@/redux/slices/invoiceSlice';
 
 const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
   if (!invoice) return null;
@@ -33,7 +37,7 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
               <div><strong>Status:</strong> <span className={`font-semibold ${invoice.status === 'Received' ? 'text-green-600' : invoice.status === 'Partial received' ? 'text-yellow-600' : 'text-red-600'}`}>{invoice.status}</span></div>
             </div>
           </div>
-          
+
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Amount Summary</h3>
             <div className="flex justify-around text-center">
@@ -64,7 +68,7 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {relatedReceipts.map(r => (
+                  {relatedReceipts.map(receipt => (
                     <tr key={r.id} className="border-b">
                       <td className="py-2 px-3 font-medium text-blue-600">{r.id}</td>
                       <td className="py-2 px-3">{r.date}</td>
@@ -105,19 +109,18 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
             <div><strong>Payment Method:</strong> {receipt.method}</div>
             <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransId}</span></div>
             <div className="flex items-center">
-              <strong>Status:</strong> 
-              <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${
-                receipt.status === 'Received' ? 'bg-green-100 text-green-800' :
-                receipt.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-              }`}>{receipt.status}</span>
+              <strong>Status:</strong>
+              <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${receipt.status === 'Received' ? 'bg-green-100 text-green-800' :
+                  receipt.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                }`}>{receipt.status}</span>
             </div>
           </div>
-          
+
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold">Total Amount Received:</span>
-                <span className="text-2xl font-bold text-green-600">${receipt.amount.toFixed(2)}</span>
+              <span className="text-lg font-semibold">Total Amount Received:</span>
+              <span className="text-2xl font-bold text-green-600">${receipt.amount.toFixed(2)}</span>
             </div>
 
             <h4 className="text-md font-semibold text-gray-700 mb-2">Invoice Allocations</h4>
@@ -151,18 +154,33 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
 };
 
 const Customers = () => {
+
+const { invoices = [], loading = false, error = null } = useSelector((state) => state.invoice || {});
+
+useEffect(() => {
+  dispatch(fetchInvoice()); // Make sure this function is correctly imported
+}, []);
+
+
+
+
+ 
+
+
+
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
-  const [invoiceForReceipt, setInvoiceForReceipt] = useState(null);
+  const [invoiceForReceipt, setInvoiceForReceipt] = useState('receipt');
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
   const [selectedReceiptForPreview, setSelectedReceiptForPreview] = useState(null);
 
-  const [invoices, setInvoices] = useState([
-    { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
-    { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
-    { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
-  ]);
+  //  const [invoices, setInvoices] = useState([
+  //    { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
+  //    { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
+  //    { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
+  //  ]);
   const [receipts, setReceipts] = useState([
     { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
     { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
@@ -188,28 +206,40 @@ const Customers = () => {
     setShowAddForm('receipt');
   };
 
-  const handleInvoiceSubmit = (data) => {
-    setInvoices(prev => [...prev, { 
-      id: data.invoiceNumber, 
-      projectName: data.projectName,
-      client: data.customerName, 
-      date: data.invoiceDate, 
-      totalAmount: data.totalAmount, 
-      amountReceived: 0,
-      status: 'Due',
-      receiptGenerated: 'No'
-    }]);
-    toast.success('Invoice added!');
-    setShowAddForm(null);
-  };
+  //  const handleInvoiceSubmit = (invoiceDTO, file) => {
+  //  dispatch(createInvoice({ invoiceData: invoiceDTO, invoiceScan: file }))
+  //    .unwrap()
+  //    .then(() => {
+  //      toast.success('Invoice added!');
+  //      setShowAddForm(null);
+  //    })
+  //    .catch((error) => {
+  //      toast.error(`Failed to add invoice: ${error}`);
+  //    });
+  //};
+
+  //const handleInvoiceSubmit = (invoiceData) => {
+  //  dispatch(createInvoice({ invoiceData }))
+  //    .unwrap()
+  //    .then(() => {
+  //      toast.success("Invoice created successfully!");
+  //      setShowAddForm(null);
+  //    })
+  //    .catch((err) => {
+  //      toast.error(`Failed to create invoice: ${err}`);
+  //    });
+  //};
+
+
+
   const handleReceiptSubmit = (data) => {
     const allocations = data.linkedInvoices.map(i => ({ invoiceId: i.number, allocatedAmount: i.payment }));
-    setReceipts(prev => [...prev, { 
-      id: data.receiptNumber, 
+    setReceipts(prev => [...prev, {
+      id: data.receiptNumber,
       projectName: data.projectName,
-      client: data.customerName, 
-      date: data.receiptDate, 
-      amount: data.amount, 
+      client: data.customerName,
+      date: data.receiptDate,
+      amount: data.amount,
       method: data.paymentMethod,
       paymentTransId: data.reference,
       status: 'Received', // Placeholder status
@@ -231,7 +261,7 @@ const Customers = () => {
     { id: 'receipts', label: 'Receipts', icon: FaReceipt },
     { id: 'clients', label: 'Clients', icon: FaUsers },
   ];
-  
+
   const getAddButtonLabel = () => {
     switch (activeTab) {
       case 'invoice': return 'Add Invoice';
@@ -244,7 +274,7 @@ const Customers = () => {
   const renderAddForm = () => {
     const commonProps = { onCancel: handleBackFromForm };
     const formTitle = `Add New ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1, -1)}`;
-
+    //const formTitle = `Add New ${tabTitles[activeTab] || 'Item'}`;
     let formComponent;
     switch (showAddForm) {
       case 'invoice': formComponent = <AddInvoiceForm {...commonProps} onSubmit={handleInvoiceSubmit} />; break;
@@ -273,10 +303,10 @@ const Customers = () => {
     switch (activeTab) {
       case 'invoice':
         table = (
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice no.</th>
+          <table className="min-w-full bg-white">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice no</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
@@ -285,25 +315,24 @@ const Customers = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Receipt Generated</th> */}
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
               {invoices.map(invoice => {
                 const amountRemaining = invoice.totalAmount - invoice.amountReceived;
                 return (
                   <tr key={invoice.id}>
-                    <td className="px-6 py-4 text-sm font-medium text-blue-600">{invoice.id}</td>
-                    <td className="px-6 py-4 text-sm">{invoice.projectName}</td>
-                    <td className="px-6 py-4 text-sm">{invoice.client}</td>
-                    <td className="px-6 py-4 text-sm">${invoice.totalAmount.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-blue-600">${invoice.invoiceId}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.project.projectName}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.customer.customerName}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.totalAmount.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm text-green-600">${invoice.amountReceived.toFixed(2)}</td>
                     <td className="px-6 py-4 text-sm font-semibold text-red-600">${amountRemaining.toFixed(2)}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        invoice.status === 'Received' ? 'bg-green-100 text-green-800' :
-                        invoice.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'Received' ? 'bg-green-100 text-green-800' :
+                          invoice.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }`}>
                         {invoice.status}
                       </span>
                     </td>
@@ -320,15 +349,15 @@ const Customers = () => {
                   </tr>
                 )
               })}
-                </tbody>
-              </table>
+            </tbody>
+          </table>
         );
         break;
       case 'receipts':
         table = (
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
+          <table className="min-w-full bg-white">
+            <thead className="bg-gray-100">
+              <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt No.</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer name</th>
@@ -339,9 +368,9 @@ const Customers = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Invoice Generated</th> */}
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
               {receipts.map(r => (
                 <tr key={r.id}>
                   <td className="px-6 py-4 text-sm font-medium text-blue-600">{r.id}</td>
@@ -352,11 +381,10 @@ const Customers = () => {
                   <td className="px-6 py-4 text-sm">{r.method}</td>
                   <td className="px-6 py-4 text-sm font-mono">{r.paymentTransId}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      r.status === 'Received' ? 'bg-green-100 text-green-800' :
-                      r.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${r.status === 'Received' ? 'bg-green-100 text-green-800' :
+                        r.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                      }`}>
                       {r.status}
                     </span>
                   </td>
@@ -370,39 +398,39 @@ const Customers = () => {
                       <FaEye />
                     </button>
                   </td>
-                  </tr>
+                </tr>
               ))}
-                </tbody>
-              </table>
+            </tbody>
+          </table>
         );
         break;
       case 'clients':
         table = (
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
-                  <tr>
+          <table className="min-w-full bg-white">
+            <thead className="bg-gray-100">
+              <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
               {clients.map(c => (
                 <tr key={c.id}>
                   <td className="px-6 py-4 text-sm">{c.name}</td>
                   <td className="px-6 py-4 text-sm">{c.company}</td>
                   <td className="px-6 py-4 text-sm">{c.email}</td>
                   <td className="px-6 py-4"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{c.status}</span></td>
-                  </tr>
+                </tr>
               ))}
-                </tbody>
-              </table>
+            </tbody>
+          </table>
         );
         break;
       default: return null;
     }
-    
+
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="overflow-x-auto">{table}</div>
@@ -413,37 +441,37 @@ const Customers = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
           <p className="text-gray-600">Manage customer relationships and transactions</p>
-      </div>
+        </div>
         <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
           <div className="flex items-center">
             <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm mr-6 text-sm" style={{ minWidth: 120 }}>
               <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
             </button>
             <nav className="flex space-x-6">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
                   className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                   style={{ minWidth: 110 }}
-              >
-                <tab.icon className="w-5 h-5" />
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
+                >
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
           <SearchBarWithFilter />
-      </div>
+        </div>
         {renderContent()}
         {selectedInvoiceForPreview && (
-          <InvoicePreviewModal 
-            invoice={selectedInvoiceForPreview} 
-            receipts={receipts}
-            onClose={() => setSelectedInvoiceForPreview(null)} 
+          <InvoicePreviewModal
+            invoice={selectedInvoiceForPreview}
+            receipts={selectedReceiptForPreview}
+            onClose={() => setSelectedInvoiceForPreview(null)}
           />
         )}
         {selectedReceiptForPreview && (

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaFileInvoiceDollar, FaChevronDown, FaChevronRight, FaInfoCircle } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchProjectCustomerList, fetchInvoice } from '@/redux/slices/invoiceSlice'; // adjust path as needed
 
 const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
@@ -18,18 +20,27 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [errors, setErrors] = useState({});
     const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
 
-    // Static data - in a real app, these would come from APIs
-    const customers = [
-        { id: 1, name: 'Customer A' },
-        { id: 2, name: 'Customer B' },
-        { id: 3, name: 'Customer C' }
-    ];
+    const dispatch = useDispatch();
+    //const { projectCustomerList, loading, error } = useSelector(state => state.invoice);
+    //const { projectCustomerList, loading, error } = useSelector(state => state.invoices);
+    useEffect(() => {
+        dispatch(fetchProjectCustomerList());
+    }, [dispatch]);
+    const { projectCustomerList = [], loading = false, error = null } =
+        useSelector(state => state.invoice || {});
 
-    const projects = [
-        { id: 1, name: 'Project Medhit' },
-        { id: 2, name: 'Internal HRMS' },
-        { id: 3, name: 'Marketing Website' }
-    ];
+
+    useEffect(() => {
+        dispatch(fetchInvoice());
+    }, [dispatch]);
+
+
+    const { invoices = [], loading: invoiceLoading = false, error: invoiceError = null } =
+        useSelector(state => state.invoice || {});
+
+
+    const uniqueProjects = Array.from(new Set(projectCustomerList.map(pc => pc.projectName)));
+    const uniqueCustomers = Array.from(new Set(projectCustomerList.map(pc => pc.customerName)));
 
     const uomOptions = ['NOS', 'PCS', 'KG', 'MTR', 'LTR', 'BAGS', 'BOX'];
 
@@ -43,10 +54,14 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        let updatedForm = { ...formData, [name]: value };
+        if (name === 'projectName') {
+            const found = projectCustomerList.find(pc => pc.projectName === value);
+            if (found) {
+                updatedForm.customerName = found.customerName;
+            }
+        }
+        setFormData(updatedForm);
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
@@ -127,14 +142,18 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
                             <select name="projectName" value={formData.projectName} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg border-gray-300">
                                 <option value="">Select project</option>
-                                {projects.map(p => (<option key={p.id} value={p.name}>{p.name}</option>))}
+                                {uniqueProjects.map((name, idx) => (
+                                    <option key={idx} value={name}>{name}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Customer name <span className="text-red-500">*</span></label>
                             <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>
                                 <option value="">Select customer</option>
-                                {customers.map(c => (<option key={c.id} value={c.name}>{c.name}</option>))}
+                                {uniqueCustomers.map((name, idx) => (
+                                    <option key={idx} value={name}>{name}</option>
+                                ))}
                             </select>
                             {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
                         </div>
