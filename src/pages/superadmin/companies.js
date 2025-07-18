@@ -523,200 +523,198 @@ function SuperadminCompanies() {
           setSelectedCompany(null);
         }}
       >
-        <div className="p-100  bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
-          <div className="relative w-full flex justify-center -mt-4">
-            <h2 className="text-2xl font-thin tracking-wide">
-              {isEditing ? "Update" : "Add"} Company
-            </h2>
-            <button
-              onClick={() => {
-                setIsCompanyModalOpen(false);
-                setSelectedCompany(null);
-              }}
-              className="absolute right-0 text-gray-500 hover:text-gray-800 mt-1"
+        <div className="relative w-full flex justify-center -mt-4">
+          <h2 className="text-2xl font-thin tracking-wide">
+            {isEditing ? "Update" : "Add"} Company
+          </h2>
+          <button
+            onClick={() => {
+              setIsCompanyModalOpen(false);
+              setSelectedCompany(null);
+            }}
+            className="absolute right-0 text-gray-500 hover:text-gray-800 mt-1"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="name"
+              name="name"
+              value={companyData.name}
+              onChange={handleInputChange}
+              placeholder="Enter company name"
+              className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+            />
           </div>
-          <div className="w-full space-y-4 mt-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Company Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="name"
-                name="name"
-                value={companyData.name}
-                onChange={handleInputChange}
-                placeholder="Enter company name"
-                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="prefixForEmpID" className="block text-sm font-medium text-gray-700 mb-1">
-                Company Prefix <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="prefixForEmpID"
-                name="prefixForEmpID"
-                value={companyData.prefixForEmpID || ""}
-                onChange={handleInputChange}
-                placeholder="Enter company prefix"
-                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company Head
-              </label>
-              <div className="relative dropdown-container">
-                <div
-                  className="flex items-center justify-between w-full p-3 bg-gray-100 text-[#4a4a4a] border border-gray-300 rounded-md cursor-pointer hover:bg-gray-200"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <User size={16} className="text-gray-500" />
-                    <span>
-                      {companyData.companyHeads && companyData.companyHeads.length > 0
-                        ? [companyData.companyHeads[0].firstName, companyData.companyHeads[0].middleName, companyData.companyHeads[0].lastName].filter(Boolean).join(" ")
-                        : "Select Company Head"
-                      }
-                    </span>
-                  </div>
-                  <ChevronDown 
-                    size={16} 
-                    className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                  />
+          
+          <div>
+            <label htmlFor="prefixForEmpID" className="block text-sm font-medium text-gray-700 mb-1">
+              Company Prefix <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="prefixForEmpID"
+              name="prefixForEmpID"
+              value={companyData.prefixForEmpID || ""}
+              onChange={handleInputChange}
+              placeholder="Enter company prefix"
+              className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Head
+            </label>
+            <div className="relative dropdown-container">
+              <div
+                className="flex items-center justify-between w-full p-3 bg-gray-100 text-[#4a4a4a] border border-gray-300 rounded-md cursor-pointer hover:bg-gray-200"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <div className="flex items-center space-x-2">
+                  <User size={16} className="text-gray-500" />
+                  <span>
+                    {companyData.companyHeads && companyData.companyHeads.length > 0
+                      ? [companyData.companyHeads[0].firstName, companyData.companyHeads[0].middleName, companyData.companyHeads[0].lastName].filter(Boolean).join(" ")
+                      : "Select Company Head"
+                    }
+                  </span>
                 </div>
-                
-                {isDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10">
+                <ChevronDown 
+                  size={16} 
+                  className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                />
+              </div>
+              
+              {isDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10">
+                  <div
+                    className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200"
+                    onClick={handleOpenCompanyHeadModal}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <UserPlus size={16} className="text-blue-600" />
+                      <span className="text-blue-600 font-medium">{companyData.companyHeads && companyData.companyHeads.length > 0 ? "Edit Company Head" : "Add Company Head"}</span>
+                    </div>
+                  </div>
+                  {companyData.companyHeads && companyData.companyHeads.length > 0 && (
                     <div
-                      className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200"
-                      onClick={handleOpenCompanyHeadModal}
+                      className="p-3 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setCompanyData((prevData) => ({ ...prevData, companyHeads: [] }));
+                        setIsDropdownOpen(false);
+                      }}
                     >
                       <div className="flex items-center space-x-2">
-                        <UserPlus size={16} className="text-blue-600" />
-                        <span className="text-blue-600 font-medium">{companyData.companyHeads && companyData.companyHeads.length > 0 ? "Edit Company Head" : "Add Company Head"}</span>
+                        <Trash size={16} className="text-red-600" />
+                        <span className="text-red-600">Remove Company Head</span>
                       </div>
                     </div>
-                    {companyData.companyHeads && companyData.companyHeads.length > 0 && (
-                      <div
-                        className="p-3 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setCompanyData((prevData) => ({ ...prevData, companyHeads: [] }));
-                          setIsDropdownOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <Trash size={16} className="text-red-600" />
-                          <span className="text-red-600">Remove Company Head</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Choose Company Color <span className="text-red-500">*</span>
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {predefinedColors.map((color) => (
-                  <div
-                    key={color}
-                    className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
-                      companyData.colorCode === color ? "border-black" : "border-gray-300"
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => handleColorChange(color)}
-                  ></div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="email"
-                name="email"
-                value={companyData.email}
-                onChange={handleInputChange}
-                placeholder="Enter email address"
-                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="phone"
-                name="phone"
-                value={companyData.phone}
-                onChange={handleInputChange}
-                placeholder="Enter phone number"
-                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
-                GST Number <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="gst"
-                name="gst"
-                value={companyData.gst}
-                onChange={handleInputChange}
-                placeholder="Enter GST number"
-                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="regAdd" className="block text-sm font-medium text-gray-700 mb-1">
-                Registered Address <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="regAdd"
-                name="regAdd"
-                value={companyData.regAdd}
-                onChange={handleInputChange}
-                placeholder="Enter registered address"
-                className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
-              />
+                  )}
+                </div>
+              )}
             </div>
           </div>
           
-          {error && <p className="text-red-600 mt-2">{error}</p>}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Choose Company Color <span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {predefinedColors.map((color) => (
+                <div
+                  key={color}
+                  className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
+                    companyData.colorCode === color ? "border-black" : "border-gray-300"
+                  }`}
+                  style={{ backgroundColor: color }}
+                  onClick={() => handleColorChange(color)}
+                ></div>
+              ))}
+            </div>
+          </div>
           
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              Email Address <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="email"
+              name="email"
+              value={companyData.email}
+              onChange={handleInputChange}
+              placeholder="Enter email address"
+              className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="phone"
+              name="phone"
+              value={companyData.phone}
+              onChange={handleInputChange}
+              placeholder="Enter phone number"
+              className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
+              GST Number <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="gst"
+              name="gst"
+              value={companyData.gst}
+              onChange={handleInputChange}
+              placeholder="Enter GST number"
+              className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="regAdd" className="block text-sm font-medium text-gray-700 mb-1">
+              Registered Address <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="regAdd"
+              name="regAdd"
+              value={companyData.regAdd}
+              onChange={handleInputChange}
+              placeholder="Enter registered address"
+              className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
+            />
+          </div>
+        </div>
+        {error && <p className="text-red-600 mt-2">{error}</p>}
+        <div className="flex justify-center">
           <Button
             onClick={() => {
               handleSaveCompany();
               setSelectedCompany(null);
             }}
-            className="mt-1 bg-green-600 text-white"
+            className="mt-1 bg-blue-600 text-white"
           >
             {isEditing ? "Update" : "Add"} Company
           </Button>
