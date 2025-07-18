@@ -762,9 +762,9 @@ const OrganizationSettings = () => {
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {department.description}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {department.departmentHead}
-                            </td>
+                            </td> */}
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {policies.find(
                                 (policy) =>
