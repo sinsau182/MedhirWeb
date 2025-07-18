@@ -55,6 +55,21 @@ export const deletePipeline = createAsyncThunk(
   }
 );
 
+// Initialize default pipeline stages
+export const initializePipelineStages = createAsyncThunk(
+  'pipelines/initialize',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/pipeline-stages/initialize`, {}, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const pipelineSlice = createSlice({
   name: 'pipelines',
   initialState: { pipelines: [], status: 'idle', error: null },
@@ -91,6 +106,19 @@ const pipelineSlice = createSlice({
         state.status = 'succeeded';
       })
       .addCase(deletePipeline.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(initializePipelineStages.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(initializePipelineStages.fulfilled, (state, action) => {
+        state.pipelines = action.payload;
+        state.status = 'succeeded';
+        state.error = null;
+      })
+      .addCase(initializePipelineStages.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload || action.error.message;
       });

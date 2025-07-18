@@ -232,6 +232,7 @@ const OdooDetailBody = ({
   const [noteContent, setNoteContent] = useState("");
   const [expandedActivities, setExpandedActivities] = useState({});
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [showAllActivityLogs, setShowAllActivityLogs] = useState(false);
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
 
@@ -499,6 +500,7 @@ const OdooDetailBody = ({
   };
 
   const HISTORY_LIMIT = 5;
+  const ACTIVITY_LOG_LIMIT = 5;
 
   return (
     <div className="flex-grow bg-gray-50 p-6">
@@ -764,14 +766,22 @@ const OdooDetailBody = ({
                         No completed activities yet.
                       </li>
                     )}
-                    {activities
-                      .filter((a) => a.status === "done")
-                      .sort(
-                        (a, b) =>
-                          new Date(b.dueDate || b.updatedAt || b.createdAt) -
-                          new Date(a.dueDate || a.updatedAt || a.createdAt)
-                      )
-                      .map((activity, idx, arr) => {
+                    {(() => {
+                      const completedActivities = activities
+                        .filter((a) => a.status === "done")
+                        .sort(
+                          (a, b) =>
+                            new Date(b.dueDate || b.updatedAt || b.createdAt) -
+                            new Date(a.dueDate || a.updatedAt || a.createdAt)
+                        );
+                      
+                      const visibleActivities = showAllActivityLogs
+                        ? completedActivities
+                        : completedActivities.slice(0, ACTIVITY_LOG_LIMIT);
+                      
+                      return (
+                        <>
+                          {visibleActivities.map((activity, idx, arr) => {
                         // Timeline dot and icon
                         const dotClass = "border-green-200 bg-green-50";
                         const icon = (
@@ -846,6 +856,30 @@ const OdooDetailBody = ({
                           </li>
                         );
                       })}
+                          {/* View More / View Less button */}
+                          {completedActivities.length > ACTIVITY_LOG_LIMIT && !showAllActivityLogs && (
+                            <div className="flex justify-center mt-4">
+                              <button
+                                className="px-4 py-2 rounded bg-blue-100 text-blue-700 font-semibold hover:bg-blue-200 transition"
+                                onClick={() => setShowAllActivityLogs(true)}
+                              >
+                                View More
+                              </button>
+                            </div>
+                          )}
+                          {showAllActivityLogs && completedActivities.length > ACTIVITY_LOG_LIMIT && (
+                            <div className="flex justify-center mt-4">
+                              <button
+                                className="px-4 py-2 rounded bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition"
+                                onClick={() => setShowAllActivityLogs(false)}
+                              >
+                                View Less
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </ul>
                 </div>
               )}
@@ -2126,17 +2160,14 @@ const LeadDetailContent = () => {
         prev.map((a) => (a.id === activity.id ? activityWithTimestamp : a))
       );
     } else {
-      // For new activities, replace the temporary activity with the real one from backend
-      // The backend response includes the real id
-      setActivities((prev) => {
-        // Remove any temporary activities (those without id or with temporary id)
-        const filtered = prev.filter((a) => a.id && !a.id.startsWith("ACT-"));
-        return [...filtered, activityWithTimestamp];
-      });
+      // For new activities, add it immediately to the state
+      setActivities((prev) => [...prev, activityWithTimestamp]);
     }
-    // Refresh activities from backend
+    
+    // Refresh activities and activity logs from backend to ensure consistency
     if (lead && lead.leadId) {
       fetchActivities(lead.leadId);
+      fetchActivityLogs(lead.leadId);
     }
   };
 

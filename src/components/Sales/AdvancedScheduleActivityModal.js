@@ -6,7 +6,7 @@ import getConfig from 'next/config';
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
-const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onSuccess, onActivityChange }) => {
+const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onSuccess, onActivityChange, onActivityLogsChange }) => {
   const [activeType, setActiveType] = useState('To-Do');
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueTime, setDueTime] = useState('');
@@ -251,6 +251,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
         }
         if (onSuccess) onSuccess(activityToSend);
         if (onActivityChange) onActivityChange(lead.leadId);
+        if (onActivityLogsChange) onActivityLogsChange(lead.leadId);
         onClose();
         return;
       }
@@ -359,11 +360,17 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
       } else if (onSuccess && activities.length) {
         onSuccess(activities[0]);
       }
+      if (onActivityChange) {
+        onActivityChange(lead.leadId);
+      }
+      if (onActivityLogsChange) {
+        onActivityLogsChange(lead.leadId);
+      }
       onClose();
     } catch (e) {
       console.error('Failed to save activity:', e);
     }
-  }, [isEditingActivity, editingType, todo, email, call, meeting, emailOutcome, callOutcome, meetingOutcome, lead, onSuccess, onActivityChange, onClose]);
+  }, [isEditingActivity, editingType, todo, email, call, meeting, emailOutcome, callOutcome, meetingOutcome, lead, onSuccess, onActivityChange, onActivityLogsChange, onClose]);
 
   const activityTypes = useMemo(() => [
     { name: 'To-Do', icon: <FaCheck /> },
