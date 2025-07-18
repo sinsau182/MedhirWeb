@@ -30,9 +30,9 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Invoice Details</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><strong>Project:</strong> {invoice.projectName}</div>
-              <div><strong>Customer:</strong> {invoice.client}</div>
-              <div><strong>Invoice Date:</strong> {invoice.date}</div>
+              <div><strong>Project:</strong> {invoice.project?.projectName}</div>
+              <div><strong>Customer:</strong> {invoice.customer?.customerName}</div>
+              <div><strong>Invoice Date:</strong> {invoice.invoiceDate}</div>
               <div><strong>Status:</strong> <span className={`font-semibold ${invoice.status === 'Received' ? 'text-green-600' : invoice.status === 'Partial received' ? 'text-yellow-600' : 'text-red-600'}`}>{invoice.status}</span></div>
             </div>
           </div>
@@ -42,15 +42,15 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
             <div className="flex justify-around text-center">
               <div>
                 <div className="text-gray-500">Total Amount</div>
-                <div className="text-xl font-bold text-gray-800">${invoice.totalAmount.toFixed(2)}</div>
+                <div className="text-xl font-bold text-gray-800">₹{invoice.totalAmount.toFixed(2)}</div>
               </div>
               <div>
                 <div className="text-gray-500">Amount Received</div>
-                <div className="text-xl font-bold text-green-600">${invoice.amountReceived.toFixed(2)}</div>
+                <div className="text-xl font-bold text-green-600">₹{invoice.amountReceived.toFixed(2)}</div>
               </div>
               <div>
                 <div className="text-gray-500">Amount Remaining</div>
-                <div className="text-xl font-bold text-red-600">${amountRemaining.toFixed(2)}</div>
+                <div className="text-xl font-bold text-red-600">₹{amountRemaining.toFixed(2)}</div>
               </div>
             </div>
           </div>
@@ -69,9 +69,9 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
                 <tbody>
                   {relatedReceipts.map(r => (
                     <tr key={r.id} className="border-b">
-                      <td className="py-2 px-3 font-medium text-blue-600">{r.id}</td>
+                      <td className="py-2 px-3 font-medium text-blue-600">{r.receiptNumber}</td>
                       <td className="py-2 px-3">{r.date}</td>
-                      <td className="text-right py-2 px-3 font-semibold">${r.amount.toFixed(2)}</td>
+                      <td className="text-right py-2 px-3 font-semibold">₹{r.amountReceived.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
