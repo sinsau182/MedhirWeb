@@ -43,7 +43,7 @@ import Link from "next/link";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { jwtDecode } from "jwt-decode";
 
-const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
   const [department, setDepartment] = useState("");
@@ -77,12 +77,50 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     }));
   }, []);
 
-  const toggleMenu = (menuKey) => {
-    setExpandedMenus((prev) => ({
-      ...prev,
-      [menuKey]: !prev[menuKey],
-    }));
-  };
+  // Auto-expand sidebar and select correct module based on current route
+  useEffect(() => {
+    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
+      // Calculate available modules here
+      const availableModules = getAvailableModules();
+      
+      const currentPath = router.pathname;
+      
+      // Find which module contains the current route
+      const activeModule = availableModules.find(module => 
+        module.items.some(item => {
+          if (item.hasSubmenu) {
+            return item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+          }
+          return currentPath.startsWith(item.link);
+        })
+      );
+
+      if (activeModule) {
+        // Expand the active module
+        setExpandedMenus(prev => ({
+          ...prev,
+          [activeModule.key]: true
+        }));
+
+        // Also expand any submenus that contain the current route
+        activeModule.items.forEach(item => {
+          if (item.hasSubmenu) {
+            const hasActiveSubItem = item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+            if (hasActiveSubItem) {
+              setExpandedMenus(prev => ({
+                ...prev,
+                [item.menuKey]: true
+              }));
+            }
+          }
+        });
+      }
+    }
+  }, [userRoles, userModules, router.pathname]);
 
   // Define modular menu structure
   const modularMenus = {
@@ -318,16 +356,42 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     return modules;
   };
 
-  const availableModules = getAvailableModules();
-  
+  // Auto-expand modules when sidebar is collapsed
+  useEffect(() => {
+    if (isCollapsed && userRoles.length > 0) {
+      const availableModules = getAvailableModules();
+      const expandedModules = {};
+      availableModules.forEach((module) => {
+        expandedModules[module.key] = true;
+        // Also expand submenus if they exist
+        module.items.forEach((item) => {
+          if (item.menuKey) {
+            expandedModules[item.menuKey] = true;
+          }
+        });
+      });
+      setExpandedMenus(expandedModules);
+    }
+  }, [isCollapsed, userRoles, userModules]);
+
+  const toggleMenu = (menuKey) => {
+    setExpandedMenus((prev) => ({
+      ...prev,
+      [menuKey]: true, // Always keep sections expanded when clicked
+    }));
+  };
+
   // Debug logging to see what modules are available
   useEffect(() => {
-    console.log('Current Role:', currentRole);
-    console.log('User Roles:', userRoles);
-    console.log('User Modules:', userModules);
-    console.log('Current Path:', router.pathname);
-    console.log('Available Modules:', availableModules.map(m => m.key));
-  }, [currentRole, userRoles, userModules, availableModules, router.pathname]);
+    if (userRoles.length > 0) {
+      const availableModules = getAvailableModules();
+      console.log('Current Role:', currentRole);
+      console.log('User Roles:', userRoles);
+      console.log('User Modules:', userModules);
+      console.log('Current Path:', router.pathname);
+      console.log('Available Modules:', availableModules.map(m => m.key));
+    }
+  }, [currentRole, userRoles, userModules, router.pathname]);
 
   const isActiveLink = (link) => {
     if (!link) return false;
@@ -391,7 +455,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         </div>
 
         <ul className="space-y-1">
-          {availableModules.map((module, moduleIndex) => {
+          {getAvailableModules().map((module, moduleIndex) => {
             const isModuleExpanded = expandedMenus[module.key] || false;
             const isActive = isModuleActive(module);
 
