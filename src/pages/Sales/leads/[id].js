@@ -68,6 +68,18 @@ const projectTypes = [
   "4BHK Villa",
 ];
 
+const sources = [
+  'Website',
+  'Facebook',
+  'Instagram',
+  'Google Ads',
+  'Referral',
+  'Walk-in',
+  'Phone Call',
+  'Email',
+  'Other'
+];
+
 // Utility function for date/time formatting
 function formatDateTime(dateStr) {
   if (!dateStr) return "";
@@ -249,6 +261,7 @@ const OdooDetailBody = ({
     setProjectFields({
       projectType: lead.projectType || "",
       address: lead.address || "",
+      area: lead.area || "",
       budget: lead.budget || "",
       leadSource: lead.leadSource || "",
       designStyle: lead.designStyle || "",
@@ -547,7 +560,8 @@ const OdooDetailBody = ({
                 {
                   label: "Lead Source",
                   field: "leadSource",
-                  type: "text",
+                  type: "select",
+                  options: sources,
                   required: true,
                 },
                 { label: "Design Style", field: "designStyle", type: "text" },
