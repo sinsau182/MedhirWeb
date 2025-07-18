@@ -13,8 +13,15 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-COPY .container/.env .env
+# Accept build-time arguments
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_ATTENDANCE_API_URL
+
+# Inject as environment variables for build step
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_ATTENDANCE_API_URL=${NEXT_PUBLIC_ATTENDANCE_API_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
+# COPY .container/.env .env
 RUN npm run build --omit=dev
 
 # Runner
