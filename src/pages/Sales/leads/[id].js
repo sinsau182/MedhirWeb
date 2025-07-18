@@ -69,15 +69,15 @@ const projectTypes = [
 ];
 
 const sources = [
-  'Website',
-  'Facebook',
-  'Instagram',
-  'Google Ads',
-  'Referral',
-  'Walk-in',
-  'Phone Call',
-  'Email',
-  'Other'
+  "Website",
+  "Facebook",
+  "Instagram",
+  "Google Ads",
+  "Referral",
+  "Walk-in",
+  "Phone Call",
+  "Email",
+  "Other",
 ];
 
 // Utility function for date/time formatting
@@ -225,7 +225,8 @@ const OdooDetailBody = ({
   activityLogs,
 }) => {
   const dispatch = useDispatch();
-  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } =
+    useSelector((state) => state.managerEmployee);
   const [activeTab, setActiveTab] = useState("activity");
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [noteContent, setNoteContent] = useState("");
@@ -246,9 +247,13 @@ const OdooDetailBody = ({
   const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [assignedSalesRep, setAssignedSalesRep] = useState(lead.salesRep || "");
   const [assignedDesigner, setAssignedDesigner] = useState(lead.designer || "");
-  const [assignedSalesRepId, setAssignedSalesRepId] = useState(lead.salesRepId || "");
-  const [assignedDesignerId, setAssignedDesignerId] = useState(lead.designerId || "");
-  
+  const [assignedSalesRepId, setAssignedSalesRepId] = useState(
+    lead.salesRepId || ""
+  );
+  const [assignedDesignerId, setAssignedDesignerId] = useState(
+    lead.designerId || ""
+  );
+
   useEffect(() => {
     setAssignedSalesRep(lead.salesRep || "");
     setAssignedDesigner(lead.designer || "");
@@ -345,15 +350,11 @@ const OdooDetailBody = ({
       const body = {};
       if (assignedSalesRepId) body.salesRep = assignedSalesRepId;
       if (assignedDesignerId) body.designer = assignedDesignerId;
-      await axios.put(
-        `${API_BASE_URL}/leads/${lead.leadId}`,
-        body,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-          },
-        }
-      );
+      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, body, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
       setIsEditingTeam(false);
       await dispatch(fetchLeadById(lead.leadId));
       toast.success("Assigned team updated!");
@@ -1445,7 +1446,9 @@ const OdooDetailBody = ({
                         setAssignedSalesRep("");
                         setAssignedSalesRepId("");
                       } else {
-                        const selectedEmployee = managerEmployees.find(emp => emp.employeeId === val);
+                        const selectedEmployee = managerEmployees.find(
+                          (emp) => emp.employeeId === val
+                        );
                         setAssignedSalesRep(selectedEmployee?.name || "");
                         setAssignedSalesRepId(val);
                       }
@@ -1457,10 +1460,15 @@ const OdooDetailBody = ({
                     <SelectContent className="rounded-md shadow-lg">
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {managerEmployeesLoading ? (
-                        <SelectItem value="" disabled>Loading...</SelectItem>
+                        <SelectItem value="" disabled>
+                          Loading...
+                        </SelectItem>
                       ) : (
                         managerEmployees.map((employee) => (
-                          <SelectItem key={employee.employeeId} value={employee.employeeId}>
+                          <SelectItem
+                            key={employee.employeeId}
+                            value={employee.employeeId}
+                          >
                             {employee.name}
                           </SelectItem>
                         ))
@@ -1479,7 +1487,9 @@ const OdooDetailBody = ({
                         setAssignedDesigner("");
                         setAssignedDesignerId("");
                       } else {
-                        const selectedEmployee = managerEmployees.find(emp => emp.employeeId === val);
+                        const selectedEmployee = managerEmployees.find(
+                          (emp) => emp.employeeId === val
+                        );
                         setAssignedDesigner(selectedEmployee?.name || "");
                         setAssignedDesignerId(val);
                       }
@@ -1491,7 +1501,10 @@ const OdooDetailBody = ({
                     <SelectContent className="rounded-md shadow-lg">
                       <SelectItem value="unassigned">Unassigned</SelectItem>
                       {managerEmployees.map((employee) => (
-                        <SelectItem key={employee.employeeId} value={employee.employeeId}>
+                        <SelectItem
+                          key={employee.employeeId}
+                          value={employee.employeeId}
+                        >
                           {employee.name}
                         </SelectItem>
                       ))}
