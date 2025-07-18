@@ -388,9 +388,9 @@ function PayrollManagement() {
                       ) : (
                         <div
                           className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
-                          onClick={() =>
-                            handleOvertimeEdit(employee.employeeId, overtimePay)
-                          }
+                          // onClick={() =>
+                          //   handleOvertimeEdit(employee.employeeId, overtimePay)
+                          // }
                         >
                           ₹{overtimePay}
                           <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
