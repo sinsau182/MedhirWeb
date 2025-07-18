@@ -421,7 +421,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                   <FaChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
                 {showTagsDropdown && (
-                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
+                  <div className="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto mb-3">
                     {vendorTagOptions.map(tag => (
                       <label key={tag} className="flex items-center w-full px-4 py-2 hover:bg-gray-100 cursor-pointer">
                         <input
@@ -915,7 +915,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
         {renderProgressBar()}
       </div>
       {/* Step Content */}
-      <div className="w-full px-8 pb-8 pt-2 flex-1">
+      <div className="w-full px-8 pb-24 pt-2 flex-1">
         {renderStepContent()}
       </div>
       {/* Sentinel for IntersectionObserver */}
