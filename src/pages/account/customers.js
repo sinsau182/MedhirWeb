@@ -249,6 +249,7 @@ const handleInvoiceSubmit = (data) => {
     setShowAddForm(null);     // Then close the form
     setInvoiceForReceipt(null);
     dispatch(fetchReceipts()); // Refresh receipts list
+    dispatch(fetchInvoices()); // Refresh invoices list so amountReceived is updated
     toast.success('Receipt added!');
   };
   const handleClientSubmit = (data) => {

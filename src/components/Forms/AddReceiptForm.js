@@ -237,7 +237,7 @@ const handleSubmit = async (e) => {
         '',
     };
     try {
-    
+      await dispatch(addReceipt(receiptData)).unwrap();
       if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
     } catch (error) {
       setErrors({ submit: error?.message || 'Failed to add receipt' });
@@ -473,7 +473,7 @@ const handleSubmit = async (e) => {
                             <tr key={inv.id} className="border-b">
                               <td className="py-3">{inv.invoiceNumber}</td>
                               <td className="text-right py-3">{formatCurrency(inv.totalAmount)}</td>
-                              <td className="text-right py-3">{formatCurrency((inv.amountReceived || 0) + (inv.payment || 0))}</td>
+                              <td className="text-right py-3">{formatCurrency(inv.amountReceived || 0)}</td>
                               <td className="text-right py-3 font-semibold">{formatCurrency(amountRemaining)}</td>
                               <td className="py-2 pl-4">
                                 <div className="relative">
