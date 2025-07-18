@@ -296,6 +296,13 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     );
   };
 
+  const hasManagerRole = () => {
+    return userRoles.some(role => 
+      role === "MANAGER" || 
+      role.includes("MANAGER")
+    );
+  };
+
   const getAvailableModules = () => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
@@ -342,11 +349,20 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         }
       });
       
-      // Also show role-specific modules (EMPLOYEE, MANAGER) if user has those roles
+      // Show role-specific modules based on user roles
       userRoles.forEach((role) => {
         if (modularMenus[role] && !addedModules.has(role)) {
-          modules.push({ key: role, ...modularMenus[role] });
-          addedModules.add(role);
+          // Only show MANAGER module if user has MANAGER role
+          if (role === "MANAGER" || role.includes("MANAGER")) {
+            if (hasManagerRole()) {
+              modules.push({ key: role, ...modularMenus[role] });
+              addedModules.add(role);
+            }
+          } else {
+            // Show other role-specific modules (like EMPLOYEE)
+            modules.push({ key: role, ...modularMenus[role] });
+            addedModules.add(role);
+          }
         }
       });
     }
@@ -597,9 +613,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             </div>
                           </div>
                         ) : (
-                          <Link
-                            href={item.link}
-                            prefetch={true}
+                          <div
                             className={`
                               group flex items-center px-2 py-2 
                               transition-all duration-300 ease-in-out
@@ -610,8 +624,19 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
+                              ${item.label === "Customers" || item.label === "Sales Settings" || item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
                             `}
                             aria-label={item.label}
+                            title={item.label === "Customers" || item.label === "Sales Settings" || item.label === "Account Settings" ? "This feature is in progress" : ""}
+                            onClick={(e) => {
+                              if (item.label === "Customers" || item.label === "Sales Settings" || item.label === "Account Settings") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                              }
+                              // For other items, navigate to the link
+                              router.push(item.link);
+                            }}
                           >
                             <span
                               className={`text-base flex-shrink-0 ${
@@ -625,7 +650,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             {!isCollapsed && (
                               <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                          </Link>
+                            {item.label === "Customers" || item.label === "Sales Settings" || item.label === "Account Settings" ? (
+                              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                                This feature is in progress
+                              </div>
+                            ) : null}
+                          </div>
                         )}
                       </div>
                     );
