@@ -750,20 +750,20 @@ function PayrollManagement() {
   );
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300`}
+        } transition-all duration-300 overflow-hidden`}
       >
         <HradminNavbar />
 
-        <div className="p-6 mt-16">
+        <div className="p-6 mt-16 h-[calc(100vh-64px)] overflow-y-auto">
           {/* Header with Search and Title */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-xl font-semibold text-gray-800">

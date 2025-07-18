@@ -229,7 +229,7 @@ const Overview = () => {
   }, [fetchPendingRequests, fetchProfileUpdates]);
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
 
       <Sidebar
@@ -241,9 +241,9 @@ const Overview = () => {
       {/* Main Content */}
 
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300`}
+        } transition-all duration-300 overflow-hidden`}
       >
         {/* Navbar */}
 
@@ -251,7 +251,7 @@ const Overview = () => {
 
         {/* Page Content */}
 
-        <div className="pt-24 px-6">
+        <div className="pt-24 px-6 h-[calc(100vh-64px)] overflow-y-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
               Manager Dashboard

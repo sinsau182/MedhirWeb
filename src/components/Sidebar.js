@@ -411,7 +411,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
 
   return (
     <aside
-      className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white shadow-md transition-all duration-300 ease-in-out flex flex-col ${
+      className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white shadow-md transition-all duration-300 ease-in-out flex flex-col z-40 ${
         isCollapsed ? "w-16" : "w-56"
       }`}
     >
@@ -424,7 +424,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             rounded-full bg-white text-gray-600
             hover:text-blue-600 hover:bg-blue-50 shadow-md 
             transition-all duration-300 ease-in-out
-            border border-gray-200 sticky top-16
+            border border-gray-200
             transform hover:scale-105 active:scale-95
           `}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -435,8 +435,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         </button>
       </div>
 
-      <nav className="flex-1 pt-4 pb-8 sidebar-nav overflow-y-auto">
-        <div className="px-4 mb-4">
+      {/* Sidebar Header */}
+      <div className="flex-shrink-0 pt-4 pb-2">
+        <div className="px-4">
           {!isCollapsed && (
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
               {userRoles.includes("COMPANY_HEAD") && userModules.length === 0 
@@ -445,8 +446,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             </div>
           )}
         </div>
+      </div>
 
-        <ul className="space-y-1">
+      {/* Scrollable Navigation */}
+      <nav className="flex-1 overflow-y-auto sidebar-nav min-h-0">
+        <ul className="space-y-1 px-2 pb-4">
           {getAvailableModules().map((module, moduleIndex) => {
             const isModuleExpanded = expandedMenus[module.key] || false;
             const isActive = isModuleActive(module);
@@ -456,7 +460,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                 {/* Module Header */}
                 <div
                   onClick={() => toggleMenu(module.key)}
-                  className={`group flex items-center px-4 py-3 cursor-pointer transition-all duration-300 ease-in-out ${
+                  className={`group flex items-center px-2 py-3 cursor-pointer transition-all duration-300 ease-in-out rounded-md ${
                     isCollapsed ? "justify-center" : "gap-3"
                   } ${
                     isActive
@@ -465,7 +469,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                   }`}
                 >
                   <span
-                    className={`text-lg ${
+                    className={`text-lg flex-shrink-0 ${
                       isActive
                         ? "text-blue-600"
                         : "group-hover:text-blue-600"
@@ -475,10 +479,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                   </span>
                   {!isCollapsed && (
                     <>
-                      <span className="text-sm font-medium flex-1">
+                      <span className="text-sm font-medium flex-1 min-w-0 truncate">
                         {module.label}
                       </span>
-                      <span className="transform transition-transform duration-200">
+                      <span className="transform transition-transform duration-200 flex-shrink-0">
                         {isModuleExpanded ? (
                           <FaAngleLeft className="w-3 h-3" />
                         ) : (
@@ -512,7 +516,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                           <div>
                             <div
                               onClick={() => toggleMenu(item.menuKey)}
-                              className={`group flex items-center px-4 py-2 cursor-pointer transition-all duration-300 ease-in-out ${
+                              className={`group flex items-center px-2 py-2 cursor-pointer transition-all duration-300 ease-in-out rounded-md ${
                                 isCollapsed ? "justify-center" : "gap-3"
                               } ${
                                 isParentActive
@@ -521,7 +525,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                               }`}
                             >
                               <span
-                                className={`text-base ${
+                                className={`text-base flex-shrink-0 ${
                                   isParentActive
                                     ? "text-blue-600"
                                     : "group-hover:text-blue-600"
@@ -531,10 +535,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                               </span>
                               {!isCollapsed && (
                                 <>
-                                  <span className="text-sm flex-1">
+                                  <span className="text-sm flex-1 min-w-0 truncate">
                                     {item.label}
                                   </span>
-                                  <span className="transform transition-transform duration-200">
+                                  <span className="transform transition-transform duration-200 flex-shrink-0">
                                     {isExpanded ? (
                                       <FaAngleLeft className="w-3 h-3" />
                                     ) : (
@@ -564,8 +568,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                     href={subItem.link}
                                     prefetch={true}
                                     className={`
-                                      flex items-center px-4 py-2 
+                                      flex items-center px-2 py-2 
                                       transition-all duration-200 
+                                      rounded-md
                                       ${isCollapsed ? "justify-center" : "gap-3"}
                                       ${
                                         isSubActive
@@ -575,14 +580,14 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                     `}
                                   >
                                     <span
-                                      className={`text-sm ${
+                                      className={`text-sm flex-shrink-0 ${
                                         isSubActive ? "text-blue-600" : ""
                                       }`}
                                     >
                                       {subItem.icon}
                                     </span>
                                     {!isCollapsed && (
-                                      <span className="text-xs">
+                                      <span className="text-xs min-w-0 truncate">
                                         {subItem.label}
                                       </span>
                                     )}
@@ -596,8 +601,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             href={item.link}
                             prefetch={true}
                             className={`
-                              group flex items-center px-4 py-2 
+                              group flex items-center px-2 py-2 
                               transition-all duration-300 ease-in-out
+                              rounded-md
                               ${isCollapsed ? "justify-center" : "gap-3"}
                               ${
                                 isActive
@@ -608,7 +614,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             aria-label={item.label}
                           >
                             <span
-                              className={`text-base ${
+                              className={`text-base flex-shrink-0 ${
                                 isActive
                                   ? "text-blue-600"
                                   : "group-hover:text-blue-600"
@@ -617,7 +623,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                               {item.icon}
                             </span>
                             {!isCollapsed && (
-                              <span className="text-sm">{item.label}</span>
+                              <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
                           </Link>
                         )}
