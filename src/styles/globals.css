@@ -231,7 +231,9 @@ body {
   -ms-overflow-style: none !important; /* Internet Explorer 10+ */
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  max-height: calc(100vh - 120px) !important; /* Ensure it doesn't exceed viewport height */
+  max-height: calc(
+    100vh - 120px
+  ) !important; /* Ensure it doesn't exceed viewport height */
 }
 
 .sidebar-nav::-webkit-scrollbar {
