@@ -85,18 +85,11 @@ const Overview = () => {
     loading: attendanceLoading,
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
-  // Get state from Redux
-  // const {
-  //   expensesRequests,
-  //   incomeRequests,
-  // } = useSelector((state) => state.requestDetails);
 
 
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
-    // dispatch(fetchExpenseRequests());
-    // dispatch(fetchIncomeRequests());
   }, [dispatch, companyId]);
 
   // Add useEffect to fetch current day's attendance and calculate summary
@@ -289,31 +282,9 @@ const Overview = () => {
     fetchProfileUpdates();
   }, [fetchPendingRequests, fetchProfileUpdates, companyId]);
 
-  const data = [
-    { name: "Mon", present: 80, absent: 10, leave: 5 },
+  const data = [];
 
-    { name: "Tue", present: 85, absent: 8, leave: 4 },
-
-    { name: "Wed", present: 82, absent: 12, leave: 3 },
-
-    { name: "Thu", present: 84, absent: 9, leave: 5 },
-
-    { name: "Fri", present: 78, absent: 15, leave: 6 },
-  ];
-
-  const departmentData = [
-    { name: "Engineering", value: 25 },
-
-    { name: "Sales", value: 18 },
-
-    { name: "Marketing", value: 12 },
-
-    { name: "HR", value: 8 },
-
-    { name: "Finance", value: 10 },
-
-    { name: "Product", value: 15 },
-  ];
+  const departmentData = [];
 
   const overviewData = [
     {
@@ -360,7 +331,7 @@ const Overview = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
 
       <Sidebar
@@ -372,9 +343,9 @@ const Overview = () => {
       {/* Main Content */}
 
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300`}
+        } transition-all duration-300 overflow-hidden`}
       >
         {/* Navbar */}
 
@@ -382,7 +353,7 @@ const Overview = () => {
 
         {/* Page Content */}
 
-        <div className="pt-24 px-6">
+        <div className="pt-24 px-6 h-[calc(100vh-64px)] overflow-y-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
               Company Overview Dashboard

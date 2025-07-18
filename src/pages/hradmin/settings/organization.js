@@ -74,12 +74,6 @@ const OrganizationSettings = () => {
     (state) => state.masterModules
   );
 
-  // Debug logging
-  console.log('masterModules:', masterModules);
-  console.log('masterModules type:', typeof masterModules);
-  console.log('masterModules isArray:', Array.isArray(masterModules));
-  console.log('designations:', fetchedDesignations);
-
   // Fetch departments, leave policies, designations, and master modules when component mounts
   useEffect(() => {
     dispatch(fetchDepartments());
@@ -265,8 +259,6 @@ const OrganizationSettings = () => {
       await dispatch(
         createDepartment({ ...departmentData, companyId: selectedCompanyId })
       ).unwrap();
-
-      console.log('departmentData:', departmentData);
 
       setNotification({
         show: true,
