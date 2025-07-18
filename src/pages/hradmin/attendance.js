@@ -58,9 +58,9 @@ function Attendance() {
         } transition-all duration-300`}
       >
         <HradminNavbar />
-        <AttendanceTracker 
-          employees={employees} 
-          employeesLoading={employeesLoading} 
+        <AttendanceTracker
+          employees={employees}
+          employeesLoading={employeesLoading}
           role="HRADMIN"
         />
       </div>

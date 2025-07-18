@@ -344,18 +344,21 @@ function Employees() {
                       </tr>
                     ) : filteredEmployees.length === 0 ? (
                       <tr>
-                        <td colSpan={headers.length} className="text-center py-16">
+                        <td
+                          colSpan={headers.length}
+                          className="text-center py-16"
+                        >
                           <div className="flex flex-col items-center justify-center">
                             <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
                               <Users className="w-10 h-10 text-indigo-500" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Employees Found</h3>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                              No Employees Found
+                            </h3>
                             <p className="text-gray-600 text-center max-w-md mb-6">
-                              {searchInput ? (
-                                `No employees found matching "${searchInput}". Try adjusting your search terms.`
-                              ) : (
-                                "You haven't added any employees yet. Start by adding your first employee to manage your workforce and track their information."
-                              )}
+                              {searchInput
+                                ? `No employees found matching "${searchInput}". Try adjusting your search terms.`
+                                : "You haven't added any employees yet. Start by adding your first employee to manage your workforce and track their information."}
                             </p>
                             {searchInput ? (
                               <button

@@ -59,14 +59,8 @@ const Overview = () => {
 
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
-  // const {
-  //   expensesRequests,
-  //   incomeRequests,
-  // } = useSelector((state) => state.requestDetails);
 
   useEffect(() => {
-    // dispatch(fetchExpenseRequests());
-    // dispatch(fetchIncomeRequests());
   }, [dispatch]);
 
   const toggleSidebar = () => {

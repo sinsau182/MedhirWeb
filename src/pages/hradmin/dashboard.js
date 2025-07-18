@@ -86,7 +86,6 @@ const Overview = () => {
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
 
-
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
