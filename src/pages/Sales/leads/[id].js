@@ -53,6 +53,8 @@ import axios from "axios";
 import getConfig from "next/config";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
+import { jwtDecode } from "jwt-decode";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -105,6 +107,7 @@ function formatRelativeTime(date) {
 // --- Sub-components for the new UI ---
 
 const OdooHeader = ({ lead, pipelines, onStatusChange }) => {
+
   // Find the index of the current stage
   const currentIndex = pipelines.findIndex(
     (stage) => stage.stageId === lead.stageId
@@ -235,6 +238,10 @@ const OdooDetailBody = ({
   const [showAllActivityLogs, setShowAllActivityLogs] = useState(false);
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
+
+  const token = getItemFromSessionStorage("token");
+  const isManager = jwtDecode(token).roles.includes("MANAGER");
+  console.log(isManager);
 
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
@@ -1458,6 +1465,7 @@ const OdooDetailBody = ({
                   </button>
                 </div>
               ) : (
+                isManager &&
                 <button
                   onClick={() => setIsEditingTeam(true)}
                   className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold hover:bg-gray-50"
