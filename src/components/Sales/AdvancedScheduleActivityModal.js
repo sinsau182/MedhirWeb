@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FaCheck, FaEnvelope, FaPhone, FaUsers, FaPaperclip, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 import getConfig from 'next/config';
@@ -39,22 +39,26 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
 
   // Reset all tab states on open/close
   useEffect(() => {
-    if (isOpen && initialData && (initialData.id || initialData._id)) {
-      setActiveType(initialData.type || 'To-Do');
-      if (initialData.type === 'To-Do') setTodo({ ...todo, ...initialData });
-      if (initialData.type === 'Email') setEmail({ ...email, ...initialData });
-      if (initialData.type === 'Call') setCall({ ...call, ...initialData });
-      if (initialData.type === 'Meeting') setMeeting({ ...meeting, ...initialData });
-    } else if (isOpen && !initialData) {
-      setTodo({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null });
-      setEmail({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '' });
-      setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '' });
-      setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '' });
+    if (isOpen) {
+      if (initialData && (initialData.id || initialData._id)) {
+        setActiveType(initialData.type || 'To-Do');
+        if (initialData.type === 'To-Do') setTodo({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, ...initialData });
+        if (initialData.type === 'Email') setEmail({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '', ...initialData });
+        if (initialData.type === 'Call') setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '', ...initialData });
+        if (initialData.type === 'Meeting') setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '', ...initialData });
+      } else {
+        // Reset to default values when creating new activity
+        setActiveType('To-Do');
+        setTodo({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null });
+        setEmail({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '' });
+        setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '' });
+        setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '' });
+      }
     }
-  }, [isOpen, initialData, todo, email, call, meeting]);
+  }, [isOpen, initialData]);
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && isOpen) {
       setActiveType(initialData.type || 'To-Do');
       setTitle(initialData.title || '');
       setDueDate(initialData.dueDate || new Date().toISOString().split('T')[0]);
@@ -73,24 +77,45 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
     }
   }, [initialData, isOpen]);
 
-  if (!isOpen) return null;
+  // Cleanup effect when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset all state when modal closes
+      setActiveType('To-Do');
+      setTitle('');
+      setDueDate(new Date().toISOString().split('T')[0]);
+      setDueTime('');
+      setMeetingLink('');
+      setAttendees([{ id: 1, name: '' }]);
+      setCallPurpose('');
+      setCallOutcome('');
+      setNextFollowUpDate('');
+      setNextFollowUpTime('');
+      setMeetingVenue('In Office');
+      setNote('');
+      setAttachment(null);
+      setMeetingOutcome('');
+      setEmailOutcome('');
+      setShowAttachmentPreview(false);
+      setAttachmentPreviewTab(null);
+    }
+  }, [isOpen]);
 
   // Per-tab field/handler mapping
-  const tabState = {
+  const tabState = useMemo(() => ({
     'To-Do': [todo, setTodo],
     'Email': [email, setEmail],
     'Call': [call, setCall],
     'Meeting': [meeting, setMeeting],
-  };
-  const [tabData, setTabData] = tabState[activeType];
+  }), [todo, email, call, meeting]);
 
   // Per-tab attendee handlers for Meeting
-  const handleAddAttendee = () => setMeeting(m => ({ ...m, attendees: [...m.attendees, { id: Date.now(), name: '' }] }));
-  const handleAttendeeChange = (id, name) => setMeeting(m => ({ ...m, attendees: m.attendees.map(att => att.id === id ? { ...att, name } : att) }));
-  const handleRemoveAttendee = (id) => setMeeting(m => ({ ...m, attendees: m.attendees.filter(att => att.id !== id) }));
+  const handleAddAttendee = useCallback(() => setMeeting(m => ({ ...m, attendees: [...m.attendees, { id: Date.now(), name: '' }] })), []);
+  const handleAttendeeChange = useCallback((id, name) => setMeeting(m => ({ ...m, attendees: m.attendees.map(att => att.id === id ? { ...att, name } : att) })), []);
+  const handleRemoveAttendee = useCallback((id) => setMeeting(m => ({ ...m, attendees: m.attendees.filter(att => att.id !== id) })), []);
 
   // Save: if editing, only update the selected activity; if creating, create all filled tabs
-  const handleSave = async (statusOverride) => {
+  const handleSave = useCallback(async (statusOverride) => {
     try {
       const token = localStorage.getItem('token') || '';
       let formData = new FormData();
@@ -293,21 +318,21 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
         onSuccess(activities[0]);
       }
       onClose();
-      setTodo({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null });
-      setEmail({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '' });
-      setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '' });
-      setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '' });
     } catch (e) {
       console.error('Failed to save activity:', e);
     }
-  };
+  }, [isEditingActivity, editingType, todo, email, call, meeting, emailOutcome, callOutcome, meetingOutcome, lead, onSuccess, onActivityChange, onClose]);
 
-  const activityTypes = [
+  const activityTypes = useMemo(() => [
     { name: 'To-Do', icon: <FaCheck /> },
     { name: 'Email', icon: <FaEnvelope /> },
     { name: 'Call', icon: <FaPhone /> },
     { name: 'Meeting', icon: <FaUsers /> },
-  ];
+  ], []);
+
+  if (!isOpen) return null;
+
+  const [tabData, setTabData] = tabState[activeType];
 
   const summary = activeType === 'Call' ? 'Call Information' : activeType;
 
