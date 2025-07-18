@@ -12,6 +12,7 @@ import {
   FaChevronDown,
   FaTrash,
   FaTimes,
+  FaMagic,
 } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
@@ -31,6 +32,7 @@ import {
   fetchPipelines,
   createPipeline,
   deletePipeline,
+  initializePipelineStages,
 } from "@/redux/slices/pipelineSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -310,6 +312,9 @@ const LeadManagementContent = ({ role }) => {
   const [showLostModal, setShowLostModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
+  // Initialize pipeline state
+  const [isInitializing, setIsInitializing] = useState(false);
+
   // Fetch pipelines and all leads on mount
   useEffect(() => {
     dispatch(fetchPipelines());
@@ -433,6 +438,21 @@ const LeadManagementContent = ({ role }) => {
   const handleScheduleActivity = (lead) => {
     setSelectedLeadForActivity(lead);
     setShowAdvancedScheduleModal(true);
+  };
+
+  // Handle initialize pipeline stages
+  const handleInitializePipeline = async () => {
+    setIsInitializing(true);
+    try {
+      await dispatch(initializePipelineStages());
+      toast.success("Default pipeline stages initialized successfully!");
+      dispatch(fetchPipelines());
+      dispatch(fetchLeads());
+    } catch (error) {
+      toast.error("Failed to initialize pipeline stages");
+    } finally {
+      setIsInitializing(false);
+    }
   };
 
   // Drag-and-drop handler for Kanban board
@@ -568,12 +588,24 @@ const LeadManagementContent = ({ role }) => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-6">
-          <button
-            onClick={() => setShowAddLeadModal(true)}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
-          >
-            New
-          </button>
+          <Tooltip content="Add a new lead to the pipeline">
+            <button
+              onClick={() => setShowAddLeadModal(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
+            >
+              New
+            </button>
+          </Tooltip>
+          <Tooltip content={pipelines.length > 0 ? "Pipeline stages already exist" : "Initialize default pipeline stages (New, Qualified, Proposal, Negotiation, Closed Won, Closed Lost)"}>
+            <button
+              onClick={handleInitializePipeline}
+              disabled={isInitializing || pipelines.length > 0}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition-colors duration-200 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              <FaMagic className="w-4 h-4" />
+              {isInitializing ? "Initializing..." : "Initialize"}
+            </button>
+          </Tooltip>
           <div className="flex items-center space-x-1">
             <h2 className="text-xl font-semibold text-gray-700">Pipeline</h2>
             <div className="relative pipeline-dropdown">

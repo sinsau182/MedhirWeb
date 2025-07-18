@@ -245,7 +245,7 @@ const Overview = () => {
 
         {/* Page Content */}
 
-        <div className="pt-24 px-6 h-[calc(100vh-64px)] overflow-y-auto">
+        <div className="pt-24 px-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
               Manager Dashboard
