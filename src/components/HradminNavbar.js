@@ -87,6 +87,38 @@ const Navbar = () => {
     router.push("/employee/profile");
   };
 
+  const handleLogoClick = () => {
+    const currentRole = sessionStorage.getItem("currentRole");
+    
+    // Navigate to appropriate dashboard based on role
+    switch (currentRole) {
+      case "HRADMIN":
+        router.push("/hradmin/dashboard");
+        break;
+      case "MANAGER":
+        router.push("/manager/dashboard");
+        break;
+      case "EMPLOYEE":
+        router.push("/employee/dashboard");
+        break;
+      case "ACCOUNTANT":
+        router.push("/account/customers");
+        break;
+      case "PROJECTMANAGER":
+        router.push("/project_Manager/expense");
+        break;
+      case "SALES":
+        router.push("/Sales/LeadManagement");
+        break;
+      case "SALESMANAGER":
+        router.push("/SalesManager/dashboard");
+        break;
+      default:
+        router.push("/employee/dashboard");
+        break;
+    }
+  };
+
   // useEffect(() => {
   //   const fetchCompanies = async () => {
   //     try {
@@ -220,15 +252,16 @@ const Navbar = () => {
       <nav className="flex justify-between items-center p-3 shadow-md w-full">
         {/* Logo and Role Badges */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center">
-            <div className="relative w-8 h-8 mr-2">
-              <div className="absolute w-2 h-6 bg-black transform -skew-x-12 left-0"></div>
-              <div className="absolute w-2 h-6 bg-black transform skew-x-12 right-0"></div>
-              <div className="absolute w-2 h-6 bg-black left-1/2 transform -translate-x-1/2"></div>
+          <div 
+            className="cursor-pointer"
+            onClick={handleLogoClick}
+            title="Go to Dashboard"
+          >
+            <div className="flex flex-col">
+              <span className="text-4xl font-black text-gray-900 tracking-[0.2em] uppercase">
+                MEDHIR
+              </span>
             </div>
-            <span className="text-2xl font-bold text-black tracking-wide">
-              MEDHIR
-            </span>
           </div>
           {/* <RoleToggle /> */}
         </div>

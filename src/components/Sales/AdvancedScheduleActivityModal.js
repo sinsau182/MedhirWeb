@@ -141,7 +141,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             nextFollowUpTime: '',
             meetingVenue: '',
             note: '',
-            attachment: ''
+            attachment: todo.attachment ? todo.attachment.name : ''
           };
         } else if (editingType === 'Email') {
           activityToSend = {
@@ -160,7 +160,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             nextFollowUpTime: '',
             meetingVenue: '',
             note: '',
-            attachment: ''
+            attachment: email.attachment ? email.attachment.name : ''
           };
         } else if (editingType === 'Call') {
           activityToSend = {
@@ -179,7 +179,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             nextFollowUpTime: call.nextFollowUpTime || '',
             meetingVenue: call.meetingVenue || '',
             note: '',
-            attachment: ''
+            attachment: call.attachment ? call.attachment.name : ''
           };
         } else if (editingType === 'Meeting') {
           let attendeesArr = Array.isArray(meeting.attendees)
@@ -201,14 +201,54 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             nextFollowUpTime: '',
             meetingVenue: meeting.meetingVenue || '',
             note: '',
-            attachment: ''
+            attachment: meeting.attachment ? meeting.attachment.name : ''
           };
         }
-        await axios.put(
-          `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
-          activityToSend,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
+        
+        // Handle file upload for editing
+        if (editingType === 'To-Do' && todo.attachment instanceof File) {
+          let editFormData = new FormData();
+          editFormData.append('activity', JSON.stringify(activityToSend));
+          editFormData.append('files', todo.attachment);
+          await axios.put(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
+            editFormData,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+        } else if (editingType === 'Email' && email.attachment instanceof File) {
+          let editFormData = new FormData();
+          editFormData.append('activity', JSON.stringify(activityToSend));
+          editFormData.append('files', email.attachment);
+          await axios.put(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
+            editFormData,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+        } else if (editingType === 'Call' && call.attachment instanceof File) {
+          let editFormData = new FormData();
+          editFormData.append('activity', JSON.stringify(activityToSend));
+          editFormData.append('files', call.attachment);
+          await axios.put(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
+            editFormData,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+        } else if (editingType === 'Meeting' && meeting.attachment instanceof File) {
+          let editFormData = new FormData();
+          editFormData.append('activity', JSON.stringify(activityToSend));
+          editFormData.append('files', meeting.attachment);
+          await axios.put(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
+            editFormData,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+        } else {
+          await axios.put(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
+            activityToSend,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+        }
         if (onSuccess) onSuccess(activityToSend);
         if (onActivityChange) onActivityChange(lead.leadId);
         onClose();
@@ -232,7 +272,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
           nextFollowUpTime: '',
           meetingVenue: '',
           note: '',
-          attachment: ''
+          attachment: todo.attachment ? todo.attachment.name : ''
         });
       }
       // Email
@@ -253,7 +293,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
           nextFollowUpTime: '',
           meetingVenue: '',
           note: '',
-          attachment: ''
+          attachment: email.attachment ? email.attachment.name : ''
         });
       }
       // Call
@@ -274,7 +314,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
           nextFollowUpTime: call.nextFollowUpTime || '',
           meetingVenue: call.meetingVenue || '',
           note: '',
-          attachment: ''
+          attachment: call.attachment ? call.attachment.name : ''
         });
       }
       // Meeting
@@ -298,15 +338,17 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
           nextFollowUpTime: '',
           meetingVenue: meeting.meetingVenue || '',
           note: '',
-          attachment: ''
+          attachment: meeting.attachment ? meeting.attachment.name : ''
         });
       }
       formData.append('activities', JSON.stringify(activities));
-      // Only one file supported per request, so send the first activity with a file
-      const firstWithFile = [todo, email, call, meeting].find(a => a.attachment instanceof File);
-      if (firstWithFile && firstWithFile.attachment) {
-        formData.append('files', firstWithFile.attachment);
-      }
+      // Handle attachments for each activity
+      activities.forEach((activity, index) => {
+        const activityData = [todo, email, call, meeting].find(a => a.title === activity.title);
+        if (activityData && activityData.attachment instanceof File) {
+          formData.append('files', activityData.attachment);
+        }
+      });
       const response = await axios.post(
         `${API_BASE_URL}/leads/${lead.leadId}/activities/bulk-with-files`,
         formData,
