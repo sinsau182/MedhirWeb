@@ -497,7 +497,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
       <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
-                <div className="text-lg font-bold">
+                <div className="text-lg font-bold ml-32">
                     Grand Total: <span className="text-blue-600">₹{grandTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-2">
