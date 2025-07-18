@@ -421,7 +421,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                   <FaChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
                 {showTagsDropdown && (
-                  <div className="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto mb-3">
+                  <div className="absolute z-30 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto mb-3" style={{maxHeight: '12.5rem'}}>
                     {vendorTagOptions.map(tag => (
                       <label key={tag} className="flex items-center w-full px-4 py-2 hover:bg-gray-100 cursor-pointer">
                         <input

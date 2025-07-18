@@ -25,13 +25,13 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
     shippingAddress: '',
     items: [{
       id: 1,
-      itemName: 'Sample Item',
-      description: 'A sample item for this PO.',
-      hsnCode: '998877',
-      gstRate: 18,
-      quantity: 2,
-      rate: 150,
-      unit: 'PCS'
+      itemName: '',
+      description: '',
+      hsnCode: '',
+      gstRate: '',
+      quantity: '',
+      rate: '',
+      unit: ''
     }],
     attachments: []
   });
