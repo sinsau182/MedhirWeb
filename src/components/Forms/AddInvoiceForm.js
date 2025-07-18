@@ -144,10 +144,10 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                 ...formData,
                 projectId: formData.projectId,
                 customerId: formData.customerId,
-                subtotal, // backend expects subtotal
-                totalGst, // backend expects totalGst
+                subtotal, 
+                totalGst, 
                 totalAmount,
-                items, // backend expects items
+                items, 
             };
             delete payload.invoiceLines; // remove invoiceLines from payload
             onSubmit(payload);

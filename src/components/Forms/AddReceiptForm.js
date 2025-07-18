@@ -212,7 +212,7 @@ const [isOpen, setIsOpen] = useState(false);
 //   }
 // };
 
-const handleSubmit = (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   if (validateForm()) {
     const selectedCustomer = customers.find(c => c.name === formData.customerName);
@@ -236,7 +236,12 @@ const handleSubmit = (e) => {
         formData.upiTransactionId ||
         '',
     };
-    dispatch(addReceipt(receiptData));
+    try {
+    
+      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+    } catch (error) {
+      setErrors({ submit: error?.message || 'Failed to add receipt' });
+    }
   }
 };
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
@@ -468,7 +473,7 @@ const handleSubmit = (e) => {
                             <tr key={inv.id} className="border-b">
                               <td className="py-3">{inv.invoiceNumber}</td>
                               <td className="text-right py-3">{formatCurrency(inv.totalAmount)}</td>
-                              <td className="text-right py-3">{formatCurrency(inv.amountReceived)}</td>
+                              <td className="text-right py-3">{formatCurrency((inv.amountReceived || 0) + (inv.payment || 0))}</td>
                               <td className="text-right py-3 font-semibold">{formatCurrency(amountRemaining)}</td>
                               <td className="py-2 pl-4">
                                 <div className="relative">
