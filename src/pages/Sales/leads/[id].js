@@ -399,7 +399,11 @@ const OdooDetailBody = ({
   useEffect(() => {
     // Combine notes string and notesList array into a single array for display
     let combinedNotes = [];
-    if (lead.notes) {
+    if (
+      typeof lead.notes === "string" &&
+      lead.notes.trim() !== "" &&
+      lead.notes.trim() !== (typeof lead.name === "string" ? lead.name.trim() : "")
+    ) {
       combinedNotes.push({
         user: lead.name || "User",
         content: lead.notes,
