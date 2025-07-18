@@ -333,14 +333,24 @@ const Leaves = () => {
             </h1>
             <div className="flex gap-4">
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                className={`px-4 py-2 rounded-lg transition ${
+                  balanceError 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
                 onClick={openCompOffModal}
+                disabled={!!balanceError}
               >
                 Apply for Comp-off
               </button>
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                className={`px-4 py-2 rounded-lg transition ${
+                  balanceError 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
                 onClick={openModal}
+                disabled={!!balanceError}
               >
                 Apply for Leave
               </button>

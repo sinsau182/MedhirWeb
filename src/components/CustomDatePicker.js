@@ -184,6 +184,11 @@ const CustomDatePicker = ({
     const allowedValue = restrictions?.allowedValue;
     const dayName = format(date, 'EEE');
 
+    // Check if date is already selected
+    const isAlreadySelected = selectedDateObjects.some(selected => 
+      isSameDay(selected.date, date)
+    );
+
     // Debug log for click
     console.log('[CustomDatePicker] handleDateClick:', {
       date,
@@ -194,11 +199,6 @@ const CustomDatePicker = ({
       frozenDates,
       isAlreadySelected
     });
-
-    // Check if date is already selected
-    const isAlreadySelected = selectedDateObjects.some(selected => 
-      isSameDay(selected.date, date)
-    );
 
     if (isAlreadySelected) {
       // Allow removing any selected date (not just start or end)
