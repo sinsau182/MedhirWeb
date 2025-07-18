@@ -17,8 +17,6 @@ function PayrollManagement() {
 
   const { attendance } = useSelector((state) => state.attendances);
 
-  console.log(attendance);
-
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -200,14 +198,13 @@ function PayrollManagement() {
       handleOvertimeSave(employeeId);
     }
   };
-
-  console.log(tdsData.tdsRate);
+  
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
+          <thead className="top-0 bg-gray-50">
             <tr>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 EMPLOYEE ID
@@ -844,8 +841,8 @@ function PayrollManagement() {
           </div>
 
           {/* Tabs */}
-          <div className="bg-gray-50">
-            <div className="flex">
+          <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
+            <div className="flex min-w-max">
               {[
                 "Salary Statement",
                 "Deductions",
@@ -857,7 +854,7 @@ function PayrollManagement() {
                   key={section}
                   className={`px-8 py-4 text-sm font-medium transition-colors relative ${
                     selectedSection === section
-                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg z-10"
+                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg"
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                   onClick={() => setSelectedSection(section)}

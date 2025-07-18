@@ -65,8 +65,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       if (decodedToken) {
         setUserRoles(decodedToken.roles || []);
         setUserModules(decodedToken.module_ids || []);
-        console.log('Decoded token roles:', decodedToken.roles);
-        console.log('Decoded token moduleIds:', decodedToken.module_ids);
       }
     }
 
@@ -385,11 +383,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   useEffect(() => {
     if (userRoles.length > 0) {
       const availableModules = getAvailableModules();
-      console.log('Current Role:', currentRole);
-      console.log('User Roles:', userRoles);
-      console.log('User Modules:', userModules);
-      console.log('Current Path:', router.pathname);
-      console.log('Available Modules:', availableModules.map(m => m.key));
     }
   }, [currentRole, userRoles, userModules, router.pathname]);
 
