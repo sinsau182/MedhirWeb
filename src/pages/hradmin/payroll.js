@@ -357,45 +357,7 @@ function PayrollManagement() {
                       ₹{allowance}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {editingOvertime === employee.employeeId ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            value={overtimeValue}
-                            onChange={(e) => setOvertimeValue(e.target.value)}
-                            onKeyPress={(e) =>
-                              handleOvertimeKeyPress(e, employee.employeeId)
-                            }
-                            className="w-24 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter amount"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() =>
-                              handleOvertimeSave(employee.employeeId)
-                            }
-                            className="p-1 text-green-600 hover:text-green-700"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={handleOvertimeCancel}
-                            className="p-1 text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
-                          onClick={() =>
-                            handleOvertimeEdit(employee.employeeId, overtimePay)
-                          }
-                        >
-                          ₹{overtimePay}
-                          <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
-                        </div>
-                      )}
+                      ₹{overtimePay}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
                       ₹{reimbursement}

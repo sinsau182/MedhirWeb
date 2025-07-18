@@ -126,12 +126,7 @@ const OrganizationSettings = () => {
       if (!departmentForm.name) {
         newErrors.name = "Department name is required";
       }
-      // if (!departmentForm.leavePolicy) {
-      //   newErrors.leavePolicy = "Leave policy is required";
-      // }
-      // if (!departmentForm.head) {
-      //   newErrors.head = "Department head is required";
-      // }
+    
       if (
         !departmentForm.weeklyHolidays ||
         departmentForm.weeklyHolidays.length === 0
@@ -220,9 +215,7 @@ const OrganizationSettings = () => {
     if (!departmentForm.name) {
       newErrors.name = "Department name is required";
     }
-    // if (!departmentForm.leavePolicy) {
-    //   newErrors.leavePolicy = "Leave policy is required";
-    // }
+ 
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -762,9 +755,9 @@ const OrganizationSettings = () => {
                             <td className="px-6 py-4 text-sm text-gray-500">
                               {department.description}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {department.departmentHead}
-                            </td>
+                            </td> */}
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {policies.find(
                                 (policy) =>
@@ -949,19 +942,6 @@ const OrganizationSettings = () => {
                   />
                 </div>
 
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department Head <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="head"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter department head name"
-                    onChange={handleDepartmentFormChange}
-                    required
-                  />
-                </div> */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1095,20 +1075,6 @@ const OrganizationSettings = () => {
                   />
                 </div>
 
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department Head <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="head"
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter department head name"
-                    value={departmentForm.head}
-                    onChange={handleDepartmentFormChange}
-                    required
-                  />
-                </div> */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

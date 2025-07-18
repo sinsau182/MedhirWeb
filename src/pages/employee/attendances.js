@@ -207,10 +207,7 @@ const EmployeeAttendance = () => {
           case "A":
             fullStatus = "Absent";
             break;
-          // case "L":
-          //   fullStatus = "On Leave";
-          //   leaveType = "Full Day";
-          //   break;
+         
           case "H":
             fullStatus = "Holiday";
             break;
@@ -405,13 +402,6 @@ const EmployeeAttendance = () => {
     return hours * 60 + minutes + seconds / 60;
   };
 
-  // Helper function to calculate additional time since last checkout
-  // const calculateAdditionalTime = (lastCheckout) => {
-  //   if (!lastCheckout) return 0;
-  //   const lastCheckoutTime = new Date(lastCheckout);
-  //   const timeDiff = currentTime.getTime() - lastCheckoutTime.getTime();
-  //   return timeDiff / (1000 * 60); // Convert to minutes
-  // };
 
   // Helper function to calculate additional time since latest checkin
   const calculateAdditionalTimeFromLatestCheckin = (latestCheckin) => {

@@ -23,16 +23,11 @@ import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 
 import { useSelector, useDispatch } from "react-redux";
-// import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { fetchManagerDashboardData } from "@/redux/slices/managerDashboardSlice";
+
 import withAuth from "@/components/withAuth";
-import axios from "axios";
-import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
-import getConfig from "next/config";
-import {
-  fetchExpenseRequests,
-  fetchIncomeRequests,
-} from "@/redux/slices/requestDetailsSlice";
+
 
 const COLORS = [
   "#0088FE",
@@ -52,22 +47,31 @@ const Overview = () => {
   const [showRequestDetails, setShowRequestDetails] = useState(false); // New state
   const [activeTab, setActiveTab] = useState("leaveRequests");
 
-  const [profileUpdates, setProfileUpdates] = useState([]);
-  const [pendingLeaves, setPendingLeaves] = useState([]);
-  const [pendingCompOffs, setPendingCompOffs] = useState([]);
-  const [employeeCount, setEmployeeCount] = useState(0);
-
   const dispatch = useDispatch();
-  const { employees, loading } = useSelector((state) => state.employees);
-  // const {
-  //   expensesRequests,
-  //   incomeRequests,
-  // } = useSelector((state) => state.requestDetails);
+  
+  // Get data from Redux store
+  const { 
+    employeeCount, 
+    pendingLeaves, 
+    pendingCompOffs, 
+    profileUpdates,
+    loading: dashboardLoading,
+    error: dashboardError
+  } = useSelector((state) => state.managerDashboard);
+  
+
 
   useEffect(() => {
-    // dispatch(fetchExpenseRequests());
-    // dispatch(fetchIncomeRequests());
+    // Fetch all dashboard data on component mount
+    dispatch(fetchManagerDashboardData());
   }, [dispatch]);
+
+  // Handle dashboard errors
+  useEffect(() => {
+    if (dashboardError) {
+      toast.error(dashboardError);
+    }
+  }, [dashboardError]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -79,134 +83,18 @@ const Overview = () => {
 
   const handleOpenRequestsClick = () => {
     setShowRequestDetails((prevShowRequestDetails) => !prevShowRequestDetails); // Toggle Request Details
-
     setShowCharts(false); // Ensure Charts are hidden
   };
 
-  const publicRuntimeConfig = getConfig().publicRuntimeConfig;
+  // Function to refresh dashboard data
+  const refreshDashboardData = useCallback(() => {
+    dispatch(fetchManagerDashboardData());
+  }, [dispatch]);
 
-  const fetchProfileUpdates = useCallback(async () => {
-    try {
-      const token = getItemFromSessionStorage("token", null);
-      const employeeId = sessionStorage.getItem("employeeId");
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-      const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/manager/${employeeId}/members/update-requests`,
-        { headers }
-      );
-      if (!response.ok) {
-        throw new Error(
-          `HTTP error! status: ${response.status} ${response.statusText}`
-        );
-      }
-      const data = await response.json();
-      setProfileUpdates(data);
-    } catch (error) {
-      toast.error("Error fetching profile updates:", error);
-      setProfileUpdates([]);
-    }
-  }, [publicRuntimeConfig.apiURL]);
+  // Sample data - should be replaced with actual API data
+  const data = [];
 
-  const fetchPendingRequests = useCallback(async () => {
-    try {
-      const token = getItemFromSessionStorage("token", null);
-      const employeeId = sessionStorage.getItem("employeeId");
-      const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/manager/leave/status/Pending/${employeeId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (response.data && Array.isArray(response.data.leaves)) {
-        const regularLeaves = response.data.leaves.filter(
-          (leave) => leave.leaveName !== "Comp-Off"
-        );
-        const compOffLeaves = response.data.leaves.filter(
-          (leave) => leave.leaveName === "Comp-Off"
-        );
-
-        setPendingLeaves(regularLeaves);
-        setPendingCompOffs(compOffLeaves);
-      } else {
-        setPendingLeaves([]);
-        setPendingCompOffs([]);
-      }
-    } catch (error) {
-      setPendingLeaves([]);
-      setPendingCompOffs([]);
-    }
-  }, [publicRuntimeConfig.apiURL]);
-
-  useEffect(() => {
-    fetchPendingRequests();
-    fetchProfileUpdates();
-  }, [fetchPendingRequests, fetchProfileUpdates]);
-
-  const data = [
-    { name: "Mon", present: 80, absent: 10, leave: 5 },
-
-    { name: "Tue", present: 85, absent: 8, leave: 4 },
-
-    { name: "Wed", present: 82, absent: 12, leave: 3 },
-
-    { name: "Thu", present: 84, absent: 9, leave: 5 },
-
-    { name: "Fri", present: 78, absent: 15, leave: 6 },
-  ];
-
-  const departmentData = [
-    { name: "Engineering", value: 25 },
-
-    { name: "Sales", value: 18 },
-
-    { name: "Marketing", value: 12 },
-
-    { name: "HR", value: 8 },
-
-    { name: "Finance", value: 10 },
-
-    { name: "Product", value: 15 },
-  ];
-
-  useEffect(() => {
-    const fetchEmployeeCount = async () => {
-      try {
-        const token = getItemFromSessionStorage("token", null); // Retrieve the token from sessionStorage
-        const employeeId = sessionStorage.getItem("employeeId");
-        if (!token) {
-          throw new Error("Authentication token is missing");
-        }
-
-        const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/employees/manager/${employeeId}`, // Replace with your actual API endpoint
-          {
-            headers: {
-              Authorization: `Bearer ${token}`, // Include the token in the Authorization header
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.data && Array.isArray(response.data)) {
-          setEmployeeCount(response.data.length); // Set the total number of employees
-        } else {
-          setEmployeeCount(0);
-        }
-      } catch (error) {
-        toast.error("Error fetching employee count:", error);
-        setEmployeeCount(0);
-      }
-    };
-
-    fetchEmployeeCount();
-  }, [publicRuntimeConfig.apiURL]);
+  const departmentData = [];
 
   const overviewData = [
     {
@@ -224,9 +112,8 @@ const Overview = () => {
   ];
 
   const refreshRequests = useCallback(async () => {
-    await fetchPendingRequests();
-    await fetchProfileUpdates();
-  }, [fetchPendingRequests, fetchProfileUpdates]);
+    dispatch(fetchManagerDashboardData());
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen flex bg-gray-100">
@@ -260,8 +147,14 @@ const Overview = () => {
 
           {/* Overview Cards */}
 
-          <div className="flex justify-center">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
+          {dashboardLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading dashboard data...</span>
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-6">
               {overviewData
 
                 .filter((item) => item.label !== "Payroll Status")
@@ -271,7 +164,7 @@ const Overview = () => {
                     <div
                       key={index}
                       className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
+                      style={{ height: "250px", width: "100%" }}
                       onClick={() => (window.location.href = "/manager/team")}
                     >
                       <div className="flex justify-between items-center w-full mb-8">
@@ -300,7 +193,7 @@ const Overview = () => {
                     <div
                       key={index}
                       className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                      style={{ height: "250px", width: "350px" }}
+                      style={{ height: "250px", width: "100%" }}
                       onClick={handleOpenRequestsClick}
                     >
                       <div className="flex justify-between items-center w-full mb-8">
@@ -329,7 +222,7 @@ const Overview = () => {
                     <div
                       key={index}
                       className="p-6 bg-white shadow-md rounded-lg flex flex-col justify-between items-center hover:shadow-xl hover:scale-105 transition-transform duration-300"
-                      style={{ height: "250px", width: "400px" }}
+                      style={{ height: "250px", width: "100%" }}
                     >
                       <div className="flex flex-col justify-center items-center">
                         <p className="text-gray-600 text-lg">{item.label}</p>
@@ -364,6 +257,7 @@ const Overview = () => {
                 )}
             </div>
           </div>
+          )}
 
           {showCharts && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -393,7 +287,7 @@ const Overview = () => {
                         fill: "#374151",
                         fontWeight: "bold",
                       }}
-                      tickFormatter={(value) => `${value}%`}
+                      tickFormatter={(value) => `${value}`}
                       tickLine={false}
                       axisLine={false}
                     />
@@ -414,7 +308,7 @@ const Overview = () => {
 
                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
 
-                        width: "200px",
+                        width: "auto",
 
                         padding: "10px",
                       }}
@@ -459,7 +353,7 @@ const Overview = () => {
                               </span>
                             </span>,
 
-                            <span className="font-bold">{value}%</span>,
+                            <span className="font-bold">{value}</span>,
                           ];
                         }
 
@@ -467,26 +361,7 @@ const Overview = () => {
                       }}
                     />
 
-                    <Bar
-                      dataKey="present"
-                      fill="rgb(74, 222, 128)"
-                      barSize={40}
-                      radius={[4, 4, 0, 0]}
-                    />
-
-                    <Bar
-                      dataKey="absent"
-                      fill="rgb(248, 113, 113)"
-                      barSize={40}
-                      radius={[4, 4, 0, 0]}
-                    />
-
-                    <Bar
-                      dataKey="leave"
-                      fill="#FFBB28"
-                      barSize={40}
-                      radius={[4, 4, 0, 0]}
-                    />
+                    {/* Chart bars will be rendered when data is available */}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -498,47 +373,9 @@ const Overview = () => {
 
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
-                    <Pie
-                      data={departmentData}
-                      cx="35%"
-                      cy="50%"
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      // onMouseEnter={(data, index) => setActiveIndex(index)}
+                    {/* Pie chart will be rendered when department data is available */}
 
-                      onMouseLeave={() => setActiveIndex(null)}
-                    >
-                      {departmentData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                          stroke="none"
-                        />
-                      ))}
-                    </Pie>
-
-                    <Legend
-                      layout="vertical"
-                      align="right"
-                      verticalAlign="middle"
-                      wrapperStyle={{ paddingLeft: "20px" }}
-                      content={() => (
-                        <div>
-                          {departmentData.map((entry, index) => (
-                            <div key={index} className="flex items-center mb-3">
-                              <span
-                                className="w-3 h-3 rounded-full mr-2"
-                                style={{
-                                  backgroundColor:
-                                    COLORS[index % COLORS.length],
-                                }}
-                              ></span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    />
+                    {/* Legend will be rendered when department data is available */}
 
                     <Tooltip />
                   </PieChart>

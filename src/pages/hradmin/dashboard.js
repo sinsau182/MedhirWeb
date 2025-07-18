@@ -85,18 +85,12 @@ const Overview = () => {
     loading: attendanceLoading,
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
-  // Get state from Redux
-  // const {
-  //   expensesRequests,
-  //   incomeRequests,
-  // } = useSelector((state) => state.requestDetails);
-
+ 
 
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
-    // dispatch(fetchExpenseRequests());
-    // dispatch(fetchIncomeRequests());
+  
   }, [dispatch, companyId]);
 
   // Add useEffect to fetch current day's attendance and calculate summary
@@ -289,31 +283,10 @@ const Overview = () => {
     fetchProfileUpdates();
   }, [fetchPendingRequests, fetchProfileUpdates, companyId]);
 
-  const data = [
-    { name: "Mon", present: 80, absent: 10, leave: 5 },
+  // Sample data - should be replaced with actual API data
+  const data = [];
 
-    { name: "Tue", present: 85, absent: 8, leave: 4 },
-
-    { name: "Wed", present: 82, absent: 12, leave: 3 },
-
-    { name: "Thu", present: 84, absent: 9, leave: 5 },
-
-    { name: "Fri", present: 78, absent: 15, leave: 6 },
-  ];
-
-  const departmentData = [
-    { name: "Engineering", value: 25 },
-
-    { name: "Sales", value: 18 },
-
-    { name: "Marketing", value: 12 },
-
-    { name: "HR", value: 8 },
-
-    { name: "Finance", value: 10 },
-
-    { name: "Product", value: 15 },
-  ];
+  const departmentData = [];
 
   const overviewData = [
     {
@@ -456,7 +429,7 @@ const Overview = () => {
                   <div
                     key={index}
                     className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                    style={{ height: "250px", width: "350px" }} // Adjust width if needed
+                    style={{ height: "250px", width: "100%" }}
                     onClick={item.onClick} // Apply click handler
                   >
                     <div className="flex justify-between items-center w-full mb-8">
@@ -548,11 +521,11 @@ const Overview = () => {
                             }`}
                           >
                             {item.label === "Total Employees"
-                              ? "+12 from last month"
+                              ? "Active employees"
                               : item.label === "Pending Tasks"
-                              ? "High priority"
+                              ? "Requires attention"
                               : item.label === "Payroll Status"
-                              ? "March 2024"
+                              ? "Current period"
                               : ""}
                           </span>
                         </div>
@@ -571,7 +544,7 @@ const Overview = () => {
                   Weekly Attendance
                 </h2>
 
-                <ResponsiveContainer width="100" height={300}>
+                <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={data}>
                     <XAxis
                       dataKey="name"
@@ -592,7 +565,7 @@ const Overview = () => {
                         fill: "#374151",
                         fontWeight: "bold",
                       }}
-                      tickFormatter={(value) => `${value}%`}
+                      tickFormatter={(value) => `${value}`}
                       tickLine={false}
                       axisLine={false}
                     />
@@ -613,7 +586,7 @@ const Overview = () => {
 
                         boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
 
-                        width: "200px",
+                        width: "auto",
 
                         padding: "10px",
                       }}
@@ -658,7 +631,7 @@ const Overview = () => {
                               </span>
                             </span>,
 
-                            <span className="font-bold">{value}%</span>,
+                            <span className="font-bold">{value}</span>,
                           ];
                         }
 
@@ -666,26 +639,7 @@ const Overview = () => {
                       }}
                     />
 
-                    <Bar
-                      dataKey="present"
-                      fill="rgb(74, 222, 128)"
-                      barSize={40}
-                      radius={[4, 4, 0, 0]}
-                    />
-
-                    <Bar
-                      dataKey="absent"
-                      fill="rgb(248, 113, 113)"
-                      barSize={40}
-                      radius={[4, 4, 0, 0]}
-                    />
-
-                    <Bar
-                      dataKey="leave"
-                      fill="#FFBB28"
-                      barSize={40}
-                      radius={[4, 4, 0, 0]}
-                    />
+                    {/* Chart bars will be rendered when data is available */}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -697,47 +651,7 @@ const Overview = () => {
 
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
-                    <Pie
-                      data={departmentData}
-                      cx="35%"
-                      cy="50%"
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      // onMouseEnter={(data, index) => setActiveIndex(index)}
-
-                      onMouseLeave={() => setActiveIndex(null)}
-                    >
-                      {departmentData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                          stroke="none"
-                        />
-                      ))}
-                    </Pie>
-
-                    <Legend
-                      layout="vertical"
-                      align="right"
-                      verticalAlign="middle"
-                      wrapperStyle={{ paddingLeft: "20px" }}
-                      content={() => (
-                        <div>
-                          {departmentData.map((entry, index) => (
-                            <div key={index} className="flex items-center mb-3">
-                              <span
-                                className="w-3 h-3 rounded-full mr-2"
-                                style={{
-                                  backgroundColor:
-                                    COLORS[index % COLORS.length],
-                                }}
-                              ></span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    />
+                    
 
                     <Tooltip />
                   </PieChart>

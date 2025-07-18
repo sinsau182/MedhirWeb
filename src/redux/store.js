@@ -17,6 +17,7 @@ import payrollSettingsReducer from "./slices/payrollSettingsSlice";
 import payslipReducer from "./slices/payslipSlice";
 import allEmployeesSlice from "./slices/allEmployeesSlice";
 import managerEmployeeSlice from "./slices/managerEmployeeSlice";
+import managerDashboardSlice from "./slices/managerDashboardSlice";
 import leadsReducer from "./slices/leadsSlice";
 import incomesReducer from "./slices/incomesSlice";
 import attendancesReducer from "./slices/attendancesSlice";
@@ -25,6 +26,8 @@ import billsReducer from "./slices/BillSlice";
 import paymentsReducer from "./slices/paymentSlice";
 import purchaseOrderReducer from "./slices/PurchaseOrderSlice";
 import pipelineReducer from "./slices/pipelineSlice";
+
+import notesReducer from "./slices/notesSlice";
 import masterModulesReducer from "./slices/masterModulesSlice";
 // import assetCategoryReducer from './slices/assetCategorySlice';
 // import assetLocationReducer from './slices/assetLocationSlice';
@@ -54,6 +57,7 @@ export const store = configureStore({
     payslip: payslipReducer,
     allEmployees: allEmployeesSlice,
     managerEmployee: managerEmployeeSlice,
+    managerDashboard: managerDashboardSlice,
     leads: leadsReducer,
     pipelines: pipelineReducer,
     incomes: incomesReducer,
@@ -63,6 +67,8 @@ export const store = configureStore({
     payments: paymentsReducer,
     purchaseOrders: purchaseOrderReducer,
     pipelines: pipelineReducer,
+
+    notes: notesReducer,
     // assetCategories: assetCategoryReducer,
     // assetLocations: assetLocationReducer,
     // assetStatuses: assetStatusReducer,

@@ -7,6 +7,13 @@ import {
   updateLead,
 } from "@/redux/slices/leadsSlice";
 import { fetchPipelines } from "@/redux/slices/pipelineSlice";
+
+// Temporarily disabled notes API calls until backend is implemented
+// import {
+//   createNote,
+//   updateNote,
+//   deleteNote,
+// } from "@/redux/slices/notesSlice";
 import {
   FaStar,
   FaRegStar,
@@ -57,8 +64,8 @@ import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
-// Add these lists for dropdowns/selects
-// Note: salesPersons and designers will be populated from Redux managerEmployees
+// Project types - this should come from a configuration slice or API
+// For now, keeping as a constant but should be moved to Redux state
 const projectTypes = [
   "2BHK Flat",
   "3BHK Flat",
@@ -214,12 +221,12 @@ const OdooDetailBody = ({
 }) => {
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  const { notes, loading: notesLoading, error: notesError } = useSelector((state) => state.notes);
   const [activeTab, setActiveTab] = useState("activity");
   const [isEditingContact, setIsEditingContact] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [expandedActivities, setExpandedActivities] = useState({});
   const [showAllHistory, setShowAllHistory] = useState(false);
-  const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
 
   const [contactFields, setContactFields] = useState({
@@ -379,31 +386,8 @@ const OdooDetailBody = ({
 
   const [editingNoteIdx, setEditingNoteIdx] = useState(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
-  const [notesLoading, setNotesLoading] = useState(false);
 
-  useEffect(() => {
-    // Combine notes string and notesList array into a single array for display
-    let combinedNotes = [];
-    if (lead.notes) {
-      combinedNotes.push({
-        user: lead.name || "User",
-        content: lead.notes,
-        time: lead.dateOfCreation || new Date(),
-      });
-    }
-    if (Array.isArray(lead.notesList)) {
-      combinedNotes = [
-        ...combinedNotes,
-        ...lead.notesList.map((n) => ({
-          user: n.user || lead.name || "User",
-          content: n.content,
-          time: n.time || n.createdAt || new Date(),
-          noteId: n.noteId || n.id,
-        })),
-      ];
-    }
-    setNotes(combinedNotes);
-  }, [lead]);
+
 
   const handleEditNoteClick = (note, idx) => {
     setNoteContent(note.content);
@@ -416,53 +400,33 @@ const OdooDetailBody = ({
       "Save Note button pressed. Attempting to post note:",
       noteContent
     );
-    setNotesLoading(true);
     try {
-      let newNote;
-      if (editingNoteId) {
-        // Edit note
-        await axios.put(
-          `${API_BASE_URL}/leads/${lead.leadId}/notes/${editingNoteId}`,
-          { content: noteContent },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-            },
-          }
-        );
-        // Update note in local state
-        setNotes((prev) =>
-          prev.map((n) =>
-            n.noteId === editingNoteId ? { ...n, content: noteContent } : n
-          )
-        );
-      } else {
-        // Add note
-        const res = await axios.post(
-          `${API_BASE_URL}/leads/${lead.leadId}/notes`,
-          { content: noteContent },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-            },
-          }
-        );
-        // Add new note to local state
-        newNote = {
-          user: lead.name || "User",
-          content: noteContent,
-          time: new Date(),
-          noteId: res.data?.noteId || undefined,
-        };
-        setNotes((prev) => [newNote, ...prev]);
-      }
+      // Temporarily disable notes API calls until backend is implemented
+      // if (editingNoteId) {
+      //   // Edit note
+      //   await dispatch(updateNote({ 
+      //     leadId: lead.leadId, 
+      //     noteId: editingNoteId, 
+      //     noteData: { content: noteContent } 
+      //   }));
+      // } else {
+      //   // Add note
+      //   await dispatch(createNote({ 
+      //     leadId: lead.leadId, 
+      //     noteData: { content: noteContent } 
+      //   }));
+      // }
+      
+      // For now, just clear the form
       setNoteContent("");
       setEditingNoteIdx(null);
       setEditingNoteId(null);
+      
+      // Show a temporary message
+      toast.info("Notes functionality temporarily disabled - backend API not implemented");
     } catch (e) {
       console.error("Failed to save note:", e);
     }
-    setNotesLoading(false);
   };
 
   const completionLogs = [...(activityLogs || [])]
@@ -697,10 +661,11 @@ const OdooDetailBody = ({
                   <div className="text-right mt-2 flex gap-2 justify-end items-center">
                     <button
                       onClick={handleAddOrEditNote}
-                      className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold"
-                      disabled={notesLoading || !noteContent.trim()}
+                      className="px-4 py-1.5 bg-gray-400 text-white rounded-md text-sm font-semibold cursor-not-allowed"
+                      disabled={true}
+                      title="Notes functionality temporarily disabled"
                     >
-                      {editingNoteId ? "Edit Note" : "Save Note"}
+                      {editingNoteId ? "Edit Note" : "Save Note"} (Disabled)
                     </button>
                     {editingNoteId && (
                       <button
@@ -716,7 +681,12 @@ const OdooDetailBody = ({
                     )}
                   </div>
                   <div className="mt-4 space-y-4">
-                    {notes.map((note, idx) => (
+                    {/* Temporarily disabled notes display until backend is implemented */}
+                    <div className="text-center text-gray-500 py-8">
+                      <p className="text-sm">Notes functionality temporarily disabled</p>
+                      <p className="text-xs text-gray-400 mt-1">Backend API not implemented</p>
+                    </div>
+                    {/* {notes.map((note, idx) => (
                       <div
                         key={note.noteId || note.id || idx}
                         className="cursor-pointer group"
@@ -732,7 +702,7 @@ const OdooDetailBody = ({
                           {note.content}
                         </p>
                       </div>
-                    ))}
+                    ))} */}
                   </div>
                 </div>
               )}
@@ -1816,6 +1786,9 @@ const LeadDetailContent = () => {
   const { pipelines, status: pipelinesStatus } = useSelector(
     (state) => state.pipelines
   );
+  const { notes, loading: notesLoading, error: notesError } = useSelector(
+    (state) => state.notes
+  );
 
   // All state hooks - MUST be called before any conditional returns
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -1824,7 +1797,6 @@ const LeadDetailContent = () => {
   const [isConversionModalOpen, setIsConversionModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingActivity, setEditingActivity] = useState(null);
-  const [activities, setActivities] = useState([]);
   const [timelineEvents, setTimelineEvents] = useState([]);
   const [deletedActivityIds, setDeletedActivityIds] = useState(new Set());
   const [conversionData, setConversionData] = useState(null);
@@ -1832,10 +1804,13 @@ const LeadDetailContent = () => {
   const [showJunkModal, setShowJunkModal] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
-  const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+  const [loadingActivityLogs, setLoadingActivityLogs] = useState(false);
 
   // Fetch pipelines on mount if not loaded
   useEffect(() => {
@@ -1856,6 +1831,51 @@ const LeadDetailContent = () => {
     }
   }, [dispatch, id]);
 
+  // API functions for activities and activity logs
+  const fetchActivities = useCallback(async (leadId) => {
+    if (!leadId) return;
+    setLoadingActivities(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/leads/${leadId}/activities`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+      setActivities(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch activities:", error);
+      setActivities([]);
+    } finally {
+      setLoadingActivities(false);
+    }
+  }, []);
+
+  const fetchActivityLogs = useCallback(async (leadId) => {
+    if (!leadId) return;
+    setLoadingActivityLogs(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/leads/${leadId}/activity-logs`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+      setActivityLogs(response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch activity logs:", error);
+      setActivityLogs([]);
+    } finally {
+      setLoadingActivityLogs(false);
+    }
+  }, []);
+
+  // Fetch activities and activity logs when lead is available
+  useEffect(() => {
+    if (lead && lead.leadId) {
+      fetchActivities(lead.leadId);
+      fetchActivityLogs(lead.leadId);
+    }
+  }, [lead, fetchActivities, fetchActivityLogs]);
+
   // Set currentRole from sessionStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1866,53 +1886,18 @@ const LeadDetailContent = () => {
   // Use dynamic stages from Redux
   const stages = pipelines.map((p) => p.name);
 
-  // Initialize activities and notes when lead is available
+  // Initialize notes when lead is available
   useEffect(() => {
     if (lead && lead.leadId) {
-      const fetchActivities = async () => {
-        try {
-          const token = localStorage.getItem("token") || "";
-          const response = await axios.get(
-            `${API_BASE_URL}/leads/${lead.leadId}/activities`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          setActivities(response.data);
-        } catch (err) {
-          console.error("Failed to fetch activities:", err);
-          setActivities([]);
-        }
-      };
-      fetchActivities();
+      // Temporarily disable notes API call until backend is implemented
+      // dispatch(fetchNotes(lead.leadId));
       setConversionData(lead.stageName === "Converted" ? lead : null);
     }
-  }, [lead]);
+  }, [lead, dispatch]);
 
-  // Add state for activity logs
-  const [activityLogs, setActivityLogs] = useState([]);
 
-  // Add fetchActivityLogs function
-  const fetchActivityLogs = async (leadId) => {
-    try {
-      const token = localStorage.getItem("token") || "";
-      const response = await axios.get(
-        `${API_BASE_URL}/leads/${leadId}/activity-logs`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setActivityLogs(response.data);
-    } catch (err) {
-      console.error("Failed to fetch activity logs:", err);
-    }
-  };
 
-  useEffect(() => {
-    if (lead && lead.leadId) {
-      fetchActivityLogs(lead.leadId);
-    }
-  }, [lead]);
+
 
   // Only after all hooks, do conditional returns
   if (loading) {
@@ -2069,47 +2054,42 @@ const LeadDetailContent = () => {
     }
   };
 
-  const fetchActivities = async (leadId) => {
-    try {
-      const token = localStorage.getItem("token") || "";
-      const response = await axios.get(
-        `${API_BASE_URL}/leads/${leadId}/activities`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setActivities(response.data);
-    } catch (err) {
-      console.error("Failed to fetch activities:", err);
-      setActivities([]);
-    }
-  };
 
-  const handleAddOrEditActivity = (activity) => {
-    const now = new Date().toISOString();
-    const activityWithTimestamp = {
-      ...activity,
-      createdAt: activity.createdAt || now,
-      updatedAt: now,
-    };
 
-    // If it's an existing activity (has id), update it
-    if (activity.id) {
-      setActivities((prev) =>
-        prev.map((a) => (a.id === activity.id ? activityWithTimestamp : a))
-      );
-    } else {
-      // For new activities, replace the temporary activity with the real one from backend
-      // The backend response includes the real id
-      setActivities((prev) => {
-        // Remove any temporary activities (those without id or with temporary id)
-        const filtered = prev.filter((a) => a.id && !a.id.startsWith("ACT-"));
-        return [...filtered, activityWithTimestamp];
-      });
-    }
-    // Refresh activities from backend
+  const handleAddOrEditActivity = async (activity) => {
     if (lead && lead.leadId) {
-      fetchActivities(lead.leadId);
+      try {
+        if (activity.id) {
+          // Update existing activity
+          await axios.put(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities/${activity.id}`,
+            activity,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              },
+            }
+          );
+        } else {
+          // Create new activity
+          await axios.post(
+            `${API_BASE_URL}/leads/${lead.leadId}/activities`,
+            activity,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              },
+            }
+          );
+        }
+        // Refresh activities and activity logs
+        await fetchActivities(lead.leadId);
+        await fetchActivityLogs(lead.leadId);
+        toast.success(activity.id ? "Activity updated!" : "Activity created!");
+      } catch (error) {
+        console.error("Failed to save activity:", error);
+        toast.error("Failed to save activity");
+      }
     }
   };
 
@@ -2176,7 +2156,7 @@ const LeadDetailContent = () => {
       toast.error("Failed to mark activity as done");
     }
   };
-  const handleAddNote = (note) => setNotes((prev) => [note, ...prev]);
+
 
   if (!lead) return <div className="p-6 text-center">Lead not found.</div>;
 
@@ -2273,7 +2253,7 @@ const LeadDetailContent = () => {
         onFieldChange={handleFieldChange}
         onScheduleActivity={() => setIsActivityModalOpen(true)}
         activities={activities}
-        notes={notes}
+        activityLogs={activityLogs}
         conversionData={conversionData}
         timelineEvents={timelineEvents}
         deletedActivityIds={deletedActivityIds}
@@ -2283,7 +2263,6 @@ const LeadDetailContent = () => {
         onEditActivity={handleEditActivity}
         onDeleteActivity={handleDeleteActivity}
         onMarkDone={handleMarkDone}
-        activityLogs={activityLogs}
       />
       <AdvancedScheduleActivityModal
         isOpen={isActivityModalOpen}

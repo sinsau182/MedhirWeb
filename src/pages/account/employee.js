@@ -31,60 +31,6 @@ const Employee = () => {
 
   console.log(expenses);
 
-  // const [expensesList, setExpensesList] = useState([
-  //   {
-  //     id: 1,
-  //     date: '22-06-25',
-  //     expenseType: 'Travel',
-  //     category: 'Business',
-  //     amount: 2500,
-  //     vendor: 'Uber India',
-  //     projectJob: 'Project A',
-  //     description: 'Airport taxi from airport to office',
-  //     status: 'Paid',
-  //     receipt: 'Yes',
-  //     paymentProof: 'Yes',
-  //   },
-  //   {
-  //     id: 2,
-  //     date: '21-06-25',
-  //     expenseType: 'Meals',
-  //     category: 'Client',
-  //     amount: 1200,
-  //     vendor: 'Café Coffee Day',
-  //     projectJob: 'Project B',
-  //     description: 'Client lunch meeting',
-  //     status: 'Pending',
-  //     receipt: 'No',
-  //     paymentProof: 'No',
-  //   },
-  //   {
-  //     id: 3,
-  //     date: '20-06-25',
-  //     expenseType: 'Office Supplies',
-  //     category: 'Admin',
-  //     amount: 850,
-  //     vendor: 'Amazon India',
-  //     projectJob: 'Internal Development',
-  //     description: 'Printer cartridges and paper',
-  //     status: 'Paid',
-  //     receipt: 'Yes',
-  //     paymentProof: 'No',
-  //   },
-  //   {
-  //     id: 4,
-  //     date: '19-06-25',
-  //     expenseType: 'Software',
-  //     category: 'Business',
-  //     amount: 5000,
-  //     vendor: 'Adobe Systems',
-  //     projectJob: 'Marketing Campaign',
-  //     description: 'Adobe Creative Suite license',
-  //     status: 'Paid',
-  //     receipt: 'Yes',
-  //       paymentProof: 'Yes',
-  //     }
-  //   ]);
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const handleTabClick = (tab) => setActiveTab(tab);
@@ -92,19 +38,7 @@ const Employee = () => {
   const handleBackFromForm = () => setShowAddForm(null);
 
   const handleExpenseSubmit = (expenseData) => {
-    // setExpensesList(prev => [...prev, {
-    //   id: prev.length + 1, // Simple ID generation for demo purposes
-    //   date: expenseData.date,
-    //   expenseType: expenseData.expenseType,
-    //   category: expenseData.category,
-    //   amount: expenseData.amount,
-    //   vendor: expenseData.vendor || '-',
-    //   projectJob: expenseData.projectJob || '-',
-    //   description: expenseData.description,
-    //   status: 'Pending',
-    //   receipt: expenseData.receipt ? 'Yes' : 'No',
-    //   paymentProof: expenseData.paymentProof ? 'Yes' : 'No',
-    // }]);
+
     toast.success('Expense added successfully!');
     setShowAddForm(null);
     dispatch(fetchAllExpenses()); // Refresh expenses list after adding a new expense
