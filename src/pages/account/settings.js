@@ -267,4 +267,11 @@ const AccountSettingsPage = () => {
   );
 };
 
+// Disable static generation to prevent build issues
+export const getServerSideProps = async () => {
+  return {
+    props: {},
+  };
+};
+
 export default AccountSettingsPage; 
