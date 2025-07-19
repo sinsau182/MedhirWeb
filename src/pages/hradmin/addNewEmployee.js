@@ -1814,120 +1814,7 @@ function EmployeeForm() {
                             </div>
                           </div>
                         </div>
-                        {/* Action Buttons - now below ESIC section */}
-                        <div className="flex gap-4 justify-end mt-8">
-                          <motion.button
-                            type="button"
-                            className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg"
-                            onClick={() => router.push("/hradmin/employees")}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            Cancel
-                          </motion.button>
 
-                          <motion.button
-                            type="button"
-                            className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                            onClick={handleSubmit}
-                            disabled={loading}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            {loading ? (
-                              <>
-                                <svg
-                                  className="animate-spin h-4 w-4"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="none"
-                                  />
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  />
-                                </svg>
-                                <span>Saving...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>Save and Continue</span>
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                                  />
-                                </svg>
-                              </>
-                            )}
-                          </motion.button>
-
-                          <motion.button
-                            type="button"
-                            className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                            onClick={handleSaveAndExit}
-                            disabled={loading}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                          >
-                            {loading ? (
-                              <>
-                                <svg
-                                  className="animate-spin h-4 w-4"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    fill="none"
-                                  />
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  />
-                                </svg>
-                                <span>Saving...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>Save and Exit</span>
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              </>
-                            )}
-                          </motion.button>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -2366,6 +2253,121 @@ function EmployeeForm() {
                       </div>
                     </div>
                   )}
+
+                  {/* Action Buttons - visible on all sections */}
+                  <div className="flex gap-4 justify-end mt-8 pt-6 border-t border-gray-100">
+                    <motion.button
+                      type="button"
+                      className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg"
+                      onClick={() => router.push("/hradmin/employees")}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Cancel
+                    </motion.button>
+
+                    <motion.button
+                      type="button"
+                      className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {loading ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Save and Continue</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                          </svg>
+                        </>
+                      )}
+                    </motion.button>
+
+                    <motion.button
+                      type="button"
+                      className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                      onClick={handleSaveAndExit}
+                      disabled={loading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {loading ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Save and Exit</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
                 </motion.div>
               </div>
             </form>
