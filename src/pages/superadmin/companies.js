@@ -686,7 +686,7 @@ function SuperadminCompanies() {
           
           <div>
             <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
-              GST Number <span className="text-red-500">*</span>
+              GST Number
             </label>
             <Input
               id="gst"

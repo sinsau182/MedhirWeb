@@ -280,7 +280,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         });
       }
     }
-  }, [userRoles, userModules, router.pathname, getAvailableModules]);
+  }, [userRoles, userModules, router.pathname]);
 
   // Get available modules based on roles and moduleIds
   const hasAdminRole = () => {
@@ -435,7 +435,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       });
       setExpandedMenus(expandedModules);
     }
-  }, [isCollapsed, userRoles, userModules, getAvailableModules, isActiveParent]);
+  }, [isCollapsed, userRoles, userModules, getAvailableModules]);
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
