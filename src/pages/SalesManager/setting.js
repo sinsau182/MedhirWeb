@@ -2785,16 +2785,17 @@ const SettingsPage = ({
   const settingsPages = [
     {
       id: "pipelineStages",
-      label: "Pipeline Stages",
+      label: "Sales Settings",
       icon: FaStream,
       description:
-        "Add, remove, and reorder the stages in your sales pipeline.",
+        "Pipelines configuration",
     },
     {
       id: "stageForms",
       label: "Stage Dependent Forms",
       icon: FaTasks,
       description: "Create custom forms required for specific pipeline stages.",
+      frozen: true,
     },
     {
       id: "permissions",
@@ -2802,6 +2803,7 @@ const SettingsPage = ({
       icon: FaUserShield,
       description:
         "Define what each user role can see and do within this module.",
+      frozen: true,
     },
     {
       id: "workflow",
@@ -2809,6 +2811,7 @@ const SettingsPage = ({
       icon: FaSitemap,
       description:
         "Set up a sequence of roles that must approve a lead to proceed.",
+      frozen: true,
     },
     {
       id: "automation",
@@ -2816,6 +2819,7 @@ const SettingsPage = ({
       icon: FaRobot,
       description:
         "Create IF-THEN rules to automate tasks like alerts and notifications.",
+      frozen: true,
     },
     {
       id: "templates",
@@ -2823,6 +2827,7 @@ const SettingsPage = ({
       icon: FaEnvelopeOpenText,
       description:
         "Create and manage standardized templates for your team to use.",
+      frozen: true,
     },
   ];
 
@@ -2834,6 +2839,7 @@ const SettingsPage = ({
         return (
           <PipelineSettings
             stages={kanbanStatuses}
+            leads={leads}
             onAddStage={onAddStage}
             onReorderStages={onReorderStages}
             onDeleteStages={onDeleteStages}
@@ -2867,15 +2873,24 @@ const SettingsPage = ({
             {settingsPages.map((page) => (
               <button
                 key={page.id}
-                onClick={() => setActiveSettingsPage(page.id)}
+                onClick={() => !page.frozen && setActiveSettingsPage(page.id)}
+                disabled={page.frozen}
                 className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${
-                  activeSettingsPage === page.id
+                  page.frozen
+                    ? "border-transparent text-gray-400 cursor-not-allowed opacity-60"
+                    : activeSettingsPage === page.id
                     ? "border-blue-600 text-blue-600 bg-blue-50"
                     : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300"
                 }`}
+                title={page.frozen ? "This feature is coming soon" : ""}
               >
                 <page.icon className="w-5 h-5 flex-shrink-0" />
                 <span>{page.label}</span>
+                {page.frozen && (
+                  <span className="ml-1 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">
+                    Soon
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -2905,101 +2920,127 @@ const SettingsPage = ({
 
 const PipelineSettings = ({
   stages,
+  leads,
   onAddStage,
   onReorderStages,
   onDeleteStages,
 }) => {
+  const dispatch = useDispatch();
   const [newStageName, setNewStageName] = useState("");
   const [newStageIsForm, setNewStageIsForm] = useState(false);
   const [newStageColor, setNewStageColor] = useState("#3b82f6");
+  const [newStageFormType, setNewStageFormType] = useState("");
   const [isAddingStage, setIsAddingStage] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [stageToDelete, setStageToDelete] = useState(null);
+  const [showWarningModal, setShowWarningModal] = useState(false);
+  const [warningMessage, setWarningMessage] = useState("");
 
-  const availableColors = [
-    "#3b82f6",
-    "#6366f1",
-    "#10b981",
-    "#f59e42",
-    "#22d3ee",
-    "#ef4444",
-    "#a3a3a3",
-    "#8b5cf6",
-    "#f97316",
-    "#06b6d4",
-  ];
+  // Refresh data when component mounts
+  useEffect(() => {
+    dispatch(fetchPipelines());
+  }, [dispatch]);
 
   const handleAddStage = () => {
-    if (newStageName && !stages.some((s) => s.name === newStageName)) {
-      const newStage = {
-        name: newStageName,
-        isForm: newStageIsForm,
-        color: newStageColor,
-      };
-      onAddStage(newStage);
-      setNewStageName("");
-      setNewStageIsForm(false);
-      setNewStageColor("#3b82f6");
-      setIsAddingStage(false);
-      toast.success("Stage added successfully");
+    if (!newStageName) {
+      toast.error("Stage name is required");
+      return;
     }
-  };
-
-  const handleDeleteStage = (stageToDelete) => {
-    onDeleteStages([stageToDelete.name]);
-  };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    if (active.id !== over?.id) {
-      const oldIndex = stages.findIndex((item) => item.id === active.id);
-      const newIndex = stages.findIndex((item) => item.id === over.id);
-      const reordered = arrayMove(stages, oldIndex, newIndex);
-      onReorderStages(reordered);
+    if (newStageIsForm && !newStageFormType) {
+      toast.error("Form type is required when 'Is Form' is enabled");
+      return;
     }
-  };
-
-  const SortableStageItem = ({ stage }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } =
-      useSortable({ id: stage.id });
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
+    
+    const newStage = {
+      name: newStageName,
+      color: newStageColor,
+      isFormRequired: newStageIsForm,
+      formType: newStageIsForm ? newStageFormType : null,
     };
+    
+    onAddStage(newStage);
+    setNewStageName("");
+    setNewStageColor("#3b82f6");
+    setNewStageIsForm(false);
+    setNewStageFormType("");
+    setIsAddingStage(false);
+    toast.success("Stage added successfully");
+    
+    // Auto-refresh after adding stage
+    setTimeout(() => {
+      dispatch(fetchPipelines());
+    }, 100);
+  };
 
+  const handleDeleteStage = (stage) => {
+    // Check if the stage has any leads
+    const stageHasLeads = leads.some((lead) => lead.status === stage.name);
+    
+    console.log('Checking stage for leads:', {
+      stageName: stage.name,
+      totalLeads: leads.length,
+      stageLeads: leads.filter(lead => lead.status === stage.name),
+      stageHasLeads
+    });
+    
+    if (stageHasLeads) {
+      setWarningMessage(`Cannot delete: The pipeline stage "${stage.name}" contains leads. Please move the leads to other pipeline stages and try again.`);
+      setShowWarningModal(true);
+    } else {
+      setStageToDelete(stage);
+      setShowDeleteModal(true);
+    }
+  };
+
+  const confirmDeleteStage = async () => {
+    if (stageToDelete) {
+      try {
+        await onDeleteStages([stageToDelete.name]);
+        setStageToDelete(null);
+        setShowDeleteModal(false);
+        toast.success("Pipeline stage deleted successfully");
+        
+        // Auto-refresh after deleting stage
+        setTimeout(() => {
+          dispatch(fetchPipelines());
+        }, 100);
+      } catch (error) {
+        console.log('Error caught in confirmDeleteStage:', error);
+        // Check if it's the specific backend error about leads in the stage
+        if (error.message && error.message.includes("lead(s) are currently in this stage")) {
+          setWarningMessage(error.message);
+          setShowWarningModal(true);
+          setStageToDelete(null);
+          setShowDeleteModal(false);
+        } else {
+          toast.error("Failed to delete pipeline stage");
+        }
+      }
+    }
+  };
+
+  const StageItem = ({ stage }) => {
     return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="bg-white border rounded-lg p-4 shadow-sm"
-        {...attributes}
-        {...listeners}
-      >
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
+      <div className="relative group bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 min-w-[200px]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
             <div
-              className="w-4 h-4 rounded-full"
+              className="w-5 h-5 rounded-full shadow-sm"
               style={{ backgroundColor: stage.color }}
             />
-            <span className="font-medium">{stage.name}</span>
-            {stage.isForm && (
-              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">
-                Form Required
-              </span>
-            )}
+            <div className="flex flex-col">
+              <span className="font-semibold text-gray-800 text-sm">{stage.name}</span>
+              {stage.isFormRequired && (
+                <span className="text-xs text-blue-600 font-medium">Form Required</span>
+              )}
+            </div>
           </div>
           <button
             onClick={() => handleDeleteStage(stage)}
-            className="text-red-600 hover:text-red-800 p-1"
+            className="ml-2 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors duration-200"
             title="Delete Stage"
           >
-            <FaTrash />
+            <FaTrash className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -3009,99 +3050,238 @@ const PipelineSettings = ({
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-bold text-gray-800">Pipeline Stages</h3>
-          <p className="text-sm text-gray-600">
-            Add, remove, and reorder the stages in your sales pipeline.
-          </p>
-        </div>
         <button
           onClick={() => setIsAddingStage(true)}
           className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
         >
-          <FaPlus /> Add Stage
+          <FaPlus /> Add Pipeline
         </button>
       </div>
 
       {isAddingStage && (
-        <div className="p-4 bg-gray-50 rounded-lg border">
-          <h4 className="font-medium mb-4">Add New Stage</h4>
-          <div className="grid md:grid-cols-3 gap-4">
+        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-30">
+          <div
+            className="w-full max-w-md bg-gray-50 rounded-xl shadow-xl p-6 m-8 flex flex-col"
+            style={{ minHeight: "auto", maxHeight: "90vh" }}
+          >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stage Name
-              </label>
-              <input
-                type="text"
-                value={newStageName}
-                onChange={(e) => setNewStageName(e.target.value)}
-                placeholder="Enter stage name"
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Color
-              </label>
-              <input
-                type="color"
-                value={newStageColor}
-                onChange={(e) => setNewStageColor(e.target.value)}
-                className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
-              />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Add Pipeline
+              </h3>
+              <div className="flex flex-col gap-3">
+                <label className="text-xs font-medium text-gray-700">
+                  Pipeline Name
+                </label>
                 <input
-                  type="checkbox"
-                  checked={newStageIsForm}
-                  onChange={(e) => setNewStageIsForm(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  type="text"
+                  value={newStageName}
+                  onChange={(e) => setNewStageName(e.target.value)}
+                  placeholder="Enter pipeline name..."
+                  className="p-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
-                <span className="text-sm">Require form</span>
-              </label>
+                {newStageName === "" && (
+                  <span className="text-xs text-red-500 mt-1">
+                    Pipeline name is required.
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-3 mt-3">
+                <label className="text-xs font-medium text-gray-700">
+                  Pipeline Color
+                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {[
+                    "#3b82f6",
+                    "#6366f1",
+                    "#10b981",
+                    "#f59e42",
+                    "#22d3ee",
+                    "#ef4444",
+                    "#a3a3a3",
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewStageColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
+                        newStageColor === color
+                          ? "border-blue-600 ring-2 ring-blue-200"
+                          : "border-gray-200"
+                      }`}
+                      style={{ background: color }}
+                      aria-label={`Select color ${color}`}
+                    >
+                      {newStageColor === color && (
+                        <span className="w-3 h-3 bg-white rounded-full border border-blue-600"></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-3">
+                <label className="text-xs font-medium text-gray-700">
+                  Is Form
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setNewStageIsForm((prev) => !prev)}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                    newStageIsForm ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                  aria-pressed={newStageIsForm}
+                >
+                  <span
+                    className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ${
+                      newStageIsForm ? "translate-x-6" : ""
+                    }`}
+                  ></span>
+                </button>
+                <span className="text-xs text-gray-500">
+                  {newStageIsForm ? "Yes" : "No"}
+                </span>
+              </div>
+              {newStageIsForm && (
+                <div className="flex flex-col gap-3 mt-3">
+                  <label className="text-xs font-medium text-gray-700">
+                    Form Type
+                  </label>
+                  <select
+                    value={newStageFormType}
+                    onChange={(e) => setNewStageFormType(e.target.value)}
+                    className="p-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select form type...</option>
+                    <option value="CONVERTED">Converted</option>
+                    <option value="JUNK">Junk</option>
+                    <option value="LOST">Lost</option>
+                  </select>
+                  {newStageFormType === "" && (
+                    <span className="text-xs text-red-500 mt-1">
+                      Form type is required.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="flex gap-2">
-            <button
-                onClick={() => handleAddStage({ name: newStageName, isForm: newStageIsForm, color: newStageColor })}
-              disabled={!newStageName.trim()}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-md transition-all duration-200"
-            >
-              Add Stage
-            </button>
-            <button
-              onClick={() => setIsAddingStage(false)}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md transition-all duration-200"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-3 mt-6 justify-end">
+              <button
+                onClick={() => {
+                  setNewStageName("");
+                  setNewStageIsForm(false);
+                  setNewStageColor("#3b82f6");
+                  setNewStageFormType("");
+                  setIsAddingStage(false);
+                }}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddStage}
+                disabled={
+                  !newStageName || (newStageIsForm && !newStageFormType)
+                }
+                className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Add Pipeline
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={stages.map((s) => s.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-3">
-            {stages.map((stage) => (
-              <SortableStageItem key={stage.id} stage={stage} />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {stages.map((stage) => (
+          <StageItem key={stage.id} stage={stage} />
+        ))}
+      </div>
 
       {stages.length === 0 && (
         <div className="text-center py-8 text-gray-500">
           <FaStream className="mx-auto text-3xl mb-2" />
           <p>No pipeline stages configured</p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">
+                Delete Pipeline Stage
+              </h2>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setStageToDelete(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Are you sure you want to delete the pipeline stage "{stageToDelete?.name}"? This action cannot be undone.
+              </p>
+            </div>
+            <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setStageToDelete(null);
+                }}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteStage}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Warning Modal */}
+      {showWarningModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-800">
+                Cannot Delete Pipeline Stage
+              </h2>
+              <button
+                onClick={() => {
+                  setShowWarningModal(false);
+                  setWarningMessage("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4 p-3 rounded bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
+                {warningMessage}
+              </div>
+            </div>
+            <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
+              <button
+                onClick={() => {
+                  setShowWarningModal(false);
+                  setWarningMessage("");
+                }}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -3294,10 +3474,14 @@ const SettingContent = ({ role }) => {
       createPipeline({
         name: newStage.name,
         color: newStage.color,
-        isFormRequired: newStage.isForm,
-        formType: newStage.isForm ? "CUSTOM" : null,
+        isFormRequired: newStage.isFormRequired,
+        formType: newStage.isFormRequired ? newStage.formType : null,
       })
-    );
+    ).then(() => {
+      // Auto-refresh after adding stage
+      dispatch(fetchPipelines());
+      dispatch(fetchLeads());
+    });
   };
 
   const handleReorderStages = (reorderedStages) => {
@@ -3319,26 +3503,50 @@ const SettingContent = ({ role }) => {
     }
   };
 
-  const handleDeleteStages = (stagesToDelete) => {
-    const leadsInStages = dedupedLeads.filter((lead) =>
-      stagesToDelete.includes(lead.status)
-    );
-    if (leadsInStages.length > 0) {
-      toast.error(
-        `Cannot delete stages with existing leads. Move ${leadsInStages.length} leads to other stages first.`
-      );
-      return;
-    }
-
+  const handleDeleteStages = async (stagesToDelete) => {
     const stagesData = stagesToDelete
       .map((name) => kanbanStatuses.find((s) => s.name === name))
       .filter(Boolean);
 
     if (stagesData.length > 0) {
-      stagesData.forEach((stage) => {
-        dispatch(deletePipeline(stage.id)); // `id` is mapped to `stageId`
-      });
-      toast.success(`Deleted ${stagesToDelete.length} stage(s) successfully`);
+      try {
+        console.log('Attempting to delete stages:', stagesToDelete);
+        
+        // Try to delete each stage and check for errors
+        for (const stage of stagesData) {
+          const result = await dispatch(deletePipeline(stage.id));
+          
+          // Check if the action was rejected
+          if (deletePipeline.rejected.match(result)) {
+            console.log('Delete pipeline rejected:', result.payload);
+            
+            // Check if it's the specific backend error about leads
+            if (result.payload && result.payload.message && 
+                result.payload.message.includes("lead(s) are currently in this stage")) {
+              throw new Error(result.payload.message);
+            }
+            
+            // If it's a different error, show toast and return
+            toast.error("Failed to delete pipeline stage");
+            return;
+          }
+        }
+        
+        // Auto-refresh after deleting stages
+        dispatch(fetchPipelines());
+        dispatch(fetchLeads());
+        toast.success(`Deleted ${stagesToDelete.length} stage(s) successfully`);
+      } catch (error) {
+        console.log('Error in handleDeleteStages:', error);
+        // Check if it's the specific backend error about leads in the stage
+        if (error.message && error.message.includes("lead(s) are currently in this stage")) {
+          console.log('Throwing backend error about leads');
+          // This will be handled by the calling component
+          throw error;
+        } else {
+          toast.error("Failed to delete pipeline stage");
+        }
+      }
     }
   };
 
@@ -3595,7 +3803,7 @@ const SettingContent = ({ role }) => {
                 Sales Manager Settings
               </h1>
               <p className="text-sm text-gray-600">
-                Configure your lead management system
+                Customize your sales pipeline, workflows, and team permissions
               </p>
       </div>
             {/* <button
