@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchVendors, updateVendorCredit } from "../../redux/slices/vendorSlice";
 import { addBill } from "../../redux/slices/BillSlice";
 import { useRouter } from 'next/router';
+import { toast } from 'react-toastify';
 
 const AutoGrowTextarea = ({ className, ...props }) => {
   const textareaRef = useRef(null);
@@ -163,7 +164,76 @@ const BillForm = ({ onCancel }) => {
   };
 
   // Handle form submission
-  const handleSubmit = () => {
+  // const handleSubmit = async () => {
+  //   if (!validate()) {
+  //     console.log("Validation failed");
+  //     console.log(errors);
+  //     return;
+  //   }
+
+  //   // Map form data to match the request body structure
+  //   const billData = {
+  //     companyId: companyId,
+  //     vendorId: selectedVendor?.vendorId,
+  //     gstin: selectedVendor?.gstin || "",
+  //     vendorAddress: selectedVendor?.addressLine1 || "",
+  //     tdsPercentage: selectedVendor?.tdsPercentage || null,
+  //     billNumber: billNumber,
+  //     billReference: reference,
+  //     billDate: billDate,
+  //     dueDate: dueDate,
+  //     billLineItems: billLines.map(line => {
+  //       const qty = Number(line.qty) || 0;
+  //       const rate = Number(line.rate) || 0;
+  //       const gst = Number(line.gst) || 0;
+  //       const amount = qty * rate;
+  //       const gstAmount = amount * (gst / 100);
+  //       const totalAmount = amount + gstAmount;
+        
+  //       return {
+  //         productOrService: line.item,
+  //         description: line.description,
+  //         hsnOrSac: line.hsn,
+  //         quantity: qty,
+  //         uom: line.uom,
+  //         rate: rate,
+  //         amount: amount,
+  //         gstPercent: gst,
+  //         gstAmount: gstAmount,
+  //         totalAmount: totalAmount
+  //       };
+  //     }),
+  //     totalBeforeGST: subtotal,
+  //     totalGST: totalGST,
+  //     tdsApplied: selectedVendor && selectedVendor.tdsPercentage ? tdsAmount : null,
+  //     finalAmount: total
+  //   };
+
+  //   // Create FormData
+  //   const formData = new FormData();
+    
+  //   // Add bill data as text
+  //   formData.append('bill', JSON.stringify(billData));
+    
+  //   // Add attachments as files
+  //   attachments.forEach((file, index) => {
+  //     formData.append('attachment', file);
+  //   });
+
+
+
+  //   try {
+  //     await dispatch(addBill(formData));
+  //     toast.success('Bill saved');
+  //     setVendorCredits([]);
+  //     onCancel();
+  //   } catch (error) {
+  //     console.error('Error creating bill:', error);
+  //   }
+  // };
+      
+
+    const handleSubmit = async () => {
     if (!validate()) {
       console.log("Validation failed");
       console.log(errors);
@@ -219,27 +289,23 @@ const BillForm = ({ onCancel }) => {
       formData.append('attachment', file);
     });
 
-    // Here you would typically send the formData to your API
-    console.log('FormData to be sent:', formData);
-    
-    // Example API call (uncomment and modify as needed):
-    // dispatch(addBill(formData));
-    
-    // For now, just log the structured data
-    console.log('Structured bill data:', billData);
-
     try {
-      dispatch(addBill(formData));
+      // Make sure to pass formData here — it is defined above
+      await dispatch(addBill(formData)).unwrap();
+      toast.success('Bill saved');
+      setVendorCredits([]);
       onCancel();
     } catch (error) {
+      toast.error('Error saving bill: ' + (error.message || 'Unknown error'));
       console.error('Error creating bill:', error);
     }
-  };
+};
+
 
 
 
   const handleVendorCreditSubmit = () => {
-    console.log(vendorCredits);
+    
 
     // vendorCredits.forEach(credit => {
     //   const vendorCreditData = {
@@ -252,7 +318,7 @@ const BillForm = ({ onCancel }) => {
     // }); 
   }
 
-  console.log(selectedVendor);
+  
 
   // Render
   return (
