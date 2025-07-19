@@ -14,10 +14,11 @@ const PasswordChangeAlert = () => {
   const { publicRuntimeConfig } = getConfig();
 
   useEffect(() => {
-      const passwordChanged = sessionStorage.getItem('passwordChanged');
-      if (passwordChanged === 'false') {
-        setShowModal(true);
-      }
+    const token = getItemFromSessionStorage('token');
+    const passwordChanged = sessionStorage.getItem('passwordChanged');
+    if (passwordChanged === 'false' && token) {
+      setShowModal(true);
+    }
   }, []);
 
   const handlePasswordChange = async (e) => {
@@ -115,13 +116,6 @@ const PasswordChangeAlert = () => {
           )}
 
           <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            >
-              Cancel
-            </button>
             <button
               type="submit"
               disabled={loading}

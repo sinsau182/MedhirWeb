@@ -292,7 +292,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     return userRoles.some(role => 
       role === "ADMIN" || 
       role === "COMPANY_HEAD" || 
-      role === "HR_ADMIN" ||
       role.includes("ADMIN")
     );
   };
@@ -300,6 +299,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const hasManagerRole = () => {
     return userRoles.some(role => 
       role === "MANAGER" || 
+      role === "COMPANY_HEAD" ||
       role.includes("MANAGER")
     );
   };
@@ -324,6 +324,32 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key, ...filteredModule });
+          } else if (key === "MOD_SALES") {
+            const filteredItems = module.items.filter(item => {
+              if (item.label === "Sales Settings") {
+                return hasAdminRole(); // Only Admins can see Sales Settings
+              }
+              if (item.label === "Team Management") {
+                return hasManagerRole(); // Only Managers can see Team Management
+              }
+              return true; // Keep other items if any
+            });
+          
+            const filteredModule = {
+              ...module,
+              items: filteredItems
+            };
+          
+            modules.push({ key, ...filteredModule });
+          } else if (key === "MOD_ACCOUNTANT") {
+            // Filter out Account Settings menu if user doesn't have admin role
+            const filteredModule = {
+              ...module,
+              items: module.items.filter(item => 
+                item.label !== "Account Settings" || hasAdminRole()
+              )
+            };
+            modules.push({ key, ...filteredModule });
           } else {
             modules.push({ key, ...module });
           }
@@ -340,6 +366,33 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               ...modularMenus[moduleId],
               items: modularMenus[moduleId].items.filter(item => 
                 item.label !== "Settings" || hasAdminRole()
+              )
+            };
+            modules.push({ key: moduleId, ...filteredModule });
+          } else if (moduleId === "MOD_SALES") {
+            // Filter out Sales Settings menu if user doesn't have admin role
+            const filteredItems = modularMenus[moduleId].items.filter(item => {
+              if (item.label === "Sales Settings") {
+                return hasAdminRole(); // Only Admins can see Sales Settings
+              }
+              if (item.label === "Team Management") {
+                return hasManagerRole(); // Only Managers can see Team Management
+              }
+              return true; // Keep other items if any
+            });
+          
+            const filteredModule = {
+              ...modularMenus[moduleId],
+              items: filteredItems
+            };
+          
+            modules.push({ key: moduleId, ...filteredModule });
+          } else if (moduleId === "MOD_ACCOUNTANT") {
+            // Filter out Account Settings menu if user doesn't have admin role
+            const filteredModule = {
+              ...modularMenus[moduleId],
+              items: modularMenus[moduleId].items.filter(item => 
+                item.label !== "Account Settings" || hasAdminRole()
               )
             };
             modules.push({ key: moduleId, ...filteredModule });

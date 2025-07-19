@@ -210,7 +210,7 @@ export default function DesignationFormModal({
                 onChange={handleChange}
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
               />
-              Admin
+              Is Module Admin
             </label>
           </div>
           <div className="flex justify-end gap-3 pt-2">

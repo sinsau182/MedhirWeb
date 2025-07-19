@@ -21,6 +21,7 @@ import {
 } from "@/redux/slices/designationSlice";
 import { fetchMasterModules } from "@/redux/slices/masterModulesSlice";
 import withAuth from "@/components/withAuth";
+import { initializePipelineStages } from "@/redux/slices/pipelineSlice";
 
 const OrganizationSettings = () => {
   const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
@@ -787,7 +788,7 @@ const OrganizationSettings = () => {
                           Overtime Eligible
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
-                          Is Admin
+                          Is Module Admin
                         </th>
                       </tr>
                     </thead>
@@ -1285,7 +1286,7 @@ const OrganizationSettings = () => {
                     htmlFor="admin"
                     className="ml-2 block text-sm text-gray-700"
                   >
-                    Is Admin
+                    Is Module Admin
                   </label>
                 </div>
               </div>

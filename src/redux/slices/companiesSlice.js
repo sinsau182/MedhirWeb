@@ -55,13 +55,27 @@ export const createCompany = createAsyncThunk(
       });
 
       const data = await response.json();
-      if (!response.ok) {
-        return rejectWithValue(data.message || "Something went wrong"); // backend error
-    }
+      
+      // Explicitly check for 200 status code
+      if (response.status !== 200) {
+        return rejectWithValue({
+          message: data.message || "Something went wrong",
+          status: response.status,
+          data: data
+        });
+      }
 
-      return data;
+      // Return success response with status code
+      return {
+        data: data,
+        status: response.status
+      };
     } catch (error) {
-      return rejectWithValue(error.message || "Network Error");
+      return rejectWithValue({
+        message: error.message || "Network Error",
+        status: 0,
+        data: null
+      });
     }
   }
 );
@@ -82,13 +96,27 @@ export const updateCompany = createAsyncThunk(
       });
 
       const data = await response.json();
-      if (!response.ok) {
-        return rejectWithValue(data.message || "Something went wrong"); // backend error
-    }
+      
+      // Explicitly check for 200 status code
+      if (response.status !== 200) {
+        return rejectWithValue({
+          message: data.message || "Something went wrong",
+          status: response.status,
+          data: data
+        });
+      }
 
-      return data;
+      // Return success response with status code
+      return {
+        data: data,
+        status: response.status
+      };
     } catch (error) {
-      return rejectWithValue(error.message || "Network Error");
+      return rejectWithValue({
+        message: error.message || "Network Error",
+        status: 0,
+        data: null
+      });
     }
   }
 );
@@ -124,8 +152,19 @@ const companiesSlice = createSlice({
     companies: [],
     loading: false,
     err: null,
+    createLoading: false,
+    updateLoading: false,
+    deleteLoading: false,
+    lastOperationStatus: null, // Track the last operation status
   },
-  reducers: {},
+  reducers: {
+    clearError: (state) => {
+      state.err = null;
+    },
+    clearOperationStatus: (state) => {
+      state.lastOperationStatus = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchCompanies.pending, (state) => {
@@ -140,16 +179,58 @@ const companiesSlice = createSlice({
         state.loading = false;
         state.err = action.payload; // Use `action.payload` for custom error messages
       })
+      .addCase(createCompany.pending, (state) => {
+        state.createLoading = true;
+        state.err = null;
+        state.lastOperationStatus = null;
+      })
       .addCase(createCompany.fulfilled, (state, action) => {
-        state.companies.push(action.payload);
+        state.createLoading = false;
+        state.lastOperationStatus = {
+          success: true,
+          status: action.payload.status,
+          message: "Company created successfully"
+        };
+        // Add the new company to the list
+        state.companies.push(action.payload.data);
+      })
+      .addCase(createCompany.rejected, (state, action) => {
+        state.createLoading = false;
+        state.lastOperationStatus = {
+          success: false,
+          status: action.payload?.status || 0,
+          message: action.payload?.message || "Failed to create company"
+        };
+        state.err = action.payload?.message || "Something went wrong";
+      })
+      .addCase(updateCompany.pending, (state) => {
+        state.updateLoading = true;
+        state.err = null;
+        state.lastOperationStatus = null;
       })
       .addCase(updateCompany.fulfilled, (state, action) => {
+        state.updateLoading = false;
+        state.lastOperationStatus = {
+          success: true,
+          status: action.payload.status,
+          message: "Company updated successfully"
+        };
+        // Update the company in the list
         const index = state.companies.findIndex(
-          (c) => c._id === action.payload._id
+          (c) => c._id === action.payload.data._id
         );
         if (index !== -1) {
-          state.companies[index] = action.payload;
+          state.companies[index] = action.payload.data;
         }
+      })
+      .addCase(updateCompany.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.lastOperationStatus = {
+          success: false,
+          status: action.payload?.status || 0,
+          message: action.payload?.message || "Failed to update company"
+        };
+        state.err = action.payload?.message || "Something went wrong";
       })
       .addCase(deleteCompany.fulfilled, (state, action) => {
         state.companies = state.companies.filter(
@@ -160,10 +241,11 @@ const companiesSlice = createSlice({
         (action) => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
-          state.err = action.payload || "Something went wrong";
+          state.err = action.payload?.message || action.payload || "Something went wrong";
         }
       );
   },
 });
 
+export const { clearError, clearOperationStatus } = companiesSlice.actions;
 export default companiesSlice.reducer;
