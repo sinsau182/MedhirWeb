@@ -9,9 +9,7 @@ import {
   deleteCompany,
 } from "@/redux/slices/companiesSlice";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-} from "@/components/ui/table";
+import { Table } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
 import { Search, UserPlus, Trash, Edit, ChevronDown, User } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -19,7 +17,6 @@ import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
-
 
 function SuperadminCompanies() {
   const router = useRouter();
@@ -35,10 +32,10 @@ function SuperadminCompanies() {
     phone: "",
     gst: "",
     regAdd: "",
-    companyHeads: [] // Changed from companyHead to companyHeads array
+    companyHeads: [], // Changed from companyHead to companyHeads array
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   // Company Head related states
   const [isCompanyHeadModalOpen, setIsCompanyHeadModalOpen] = useState(false);
   const [companyHeadData, setCompanyHeadData] = useState({
@@ -80,7 +77,6 @@ function SuperadminCompanies() {
         }
       });
   }, [dispatch, router]);
-
 
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [searchInput, setSearchInput] = useState("");
@@ -151,11 +147,14 @@ function SuperadminCompanies() {
       }
       // Ensure prefix is always uppercase
       if (name === "prefixForEmpID") {
-        const cleanedPrefix = value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
-  updatedData.prefixForEmpID = cleanedPrefix;
+        const cleanedPrefix = value
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "")
+          .slice(0, 3);
+        updatedData.prefixForEmpID = cleanedPrefix;
       }
 
-      if(name === "gst"){
+      if (name === "gst") {
         updatedData.gst = value.toUpperCase();
       }
 
@@ -221,9 +220,12 @@ function SuperadminCompanies() {
           gst: companyData.gst,
           regAdd: companyData.regAdd,
           prefixForEmpID: companyData.prefixForEmpID,
-          colorCode: companyData.colorCode
+          colorCode: companyData.colorCode,
         },
-        companyHeads: companyData.companyHeads && companyData.companyHeads.length > 0 ? companyData.companyHeads : []
+        companyHeads:
+          companyData.companyHeads && companyData.companyHeads.length > 0
+            ? companyData.companyHeads
+            : [],
       };
 
       if (isEditing) {
@@ -236,16 +238,19 @@ function SuperadminCompanies() {
           regAdd: companyData.regAdd,
           prefixForEmpID: companyData.prefixForEmpID,
           colorCode: companyData.colorCode,
-          companyHeadIds: companyData.companyHeads && companyData.companyHeads.length > 0 
-            ? companyData.companyHeads.map(head => head.employeeId).filter(Boolean)
-            : []
+          companyHeadIds:
+            companyData.companyHeads && companyData.companyHeads.length > 0
+              ? companyData.companyHeads
+                  .map((head) => head.employeeId)
+                  .filter(Boolean)
+              : [],
         };
 
         // Dispatch update action with Redux
         await dispatch(
-          updateCompany({ 
+          updateCompany({
             id: selectedCompany.companyId, // Handle both id formats
-            updatedData: updateRequestBody 
+            updatedData: updateRequestBody,
           })
         );
         toast.success("Company updated successfully!");
@@ -287,9 +292,12 @@ function SuperadminCompanies() {
     company?.name?.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-
   const predefinedColors = [
-    "#B0E0E6", "#FFE4E1", "#F0E68C", "#E6E6FA", "#D1D5DB"
+    "#B0E0E6",
+    "#FFE4E1",
+    "#F0E68C",
+    "#E6E6FA",
+    "#D1D5DB",
   ];
 
   const handleColorChange = (color) => {
@@ -347,21 +355,21 @@ function SuperadminCompanies() {
       setCompanyHeadError("Phone is required");
       return false;
     }
-    
+
     // Validate email format
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(companyHeadData.email)) {
       setCompanyHeadError("Please enter a valid email address");
       return false;
     }
-    
+
     // Validate phone format (10 digits)
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(companyHeadData.phone)) {
       setCompanyHeadError("Please enter a valid 10-digit phone number");
       return false;
     }
-    
+
     setCompanyHeadError("");
     return true;
   };
@@ -370,15 +378,19 @@ function SuperadminCompanies() {
     if (validateCompanyHeadData()) {
       setCompanyData((prevData) => ({
         ...prevData,
-        companyHeads: [{
-          firstName: companyHeadData.firstName.trim(),
-          middleName: companyHeadData.middleName.trim(),
-          lastName: companyHeadData.lastName.trim(),
-          email: companyHeadData.email,
-          phone: companyHeadData.phone,
-          // Include employeeId if it exists (for editing)
-          ...(companyHeadData.employeeId && { employeeId: companyHeadData.employeeId })
-        }],
+        companyHeads: [
+          {
+            firstName: companyHeadData.firstName.trim(),
+            middleName: companyHeadData.middleName.trim(),
+            lastName: companyHeadData.lastName.trim(),
+            email: companyHeadData.email,
+            phone: companyHeadData.phone,
+            // Include employeeId if it exists (for editing)
+            ...(companyHeadData.employeeId && {
+              employeeId: companyHeadData.employeeId,
+            }),
+          },
+        ],
       }));
       setIsCompanyHeadModalOpen(false);
       setIsDropdownOpen(false);
@@ -389,14 +401,14 @@ function SuperadminCompanies() {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
+      if (isDropdownOpen && !event.target.closest(".dropdown-container")) {
         setIsDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isDropdownOpen]);
 
@@ -414,9 +426,7 @@ function SuperadminCompanies() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500"
-              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
             </div>
             <div className="flex space-x-10 mr-16">
               <div className="flex flex-col items-center cursor-pointer transition duration-300 ease-in-out transform hover:scale-105">
@@ -465,35 +475,58 @@ function SuperadminCompanies() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-[#E2E8F0]">
                     <tr>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
                         Name
                       </th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
                         Company Head
                       </th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
                         Email
                       </th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
                         Phone
                       </th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
-                        GST 
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
+                        GST
                       </th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
                         Register Add.
                       </th>
-                      <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
+                      <th
+                        scope="col"
+                        className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5"
+                      >
                         Company Prefix
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredCompanies.map((company) => (
-                      <tr 
+                      <tr
                         key={company._id}
                         className={`hover:bg-gray-50 cursor-pointer ${
-                          selectedCompany?._id === company._id ? 'bg-gray-100' : ''
+                          selectedCompany?._id === company._id
+                            ? "bg-gray-100"
+                            : ""
                         }`}
                         onClick={() => setSelectedCompany(company)}
                       >
@@ -501,15 +534,20 @@ function SuperadminCompanies() {
                           {company.name}
                         </td>
                         <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
-                          {company.companyHeads && company.companyHeads.length > 0 ? (
-                            company.companyHeads.map((head, index) => (
-                              <div key={index}>
-                                {[head.firstName, head.middleName, head.lastName].filter(Boolean).join(" ")}
-                              </div>
-                            ))
-                          ) : (
-                            "No Company Head"
-                          )}
+                          {company.companyHeads &&
+                          company.companyHeads.length > 0
+                            ? company.companyHeads.map((head, index) => (
+                                <div key={index}>
+                                  {[
+                                    head.firstName,
+                                    head.middleName,
+                                    head.lastName,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                </div>
+                              ))
+                            : "No Company Head"}
                         </td>
                         <td className="px-6 py-4 whitespace-normal text-sm text-gray-900">
                           {company.email}
@@ -530,7 +568,10 @@ function SuperadminCompanies() {
                     ))}
                     {filteredCompanies.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <td
+                          colSpan={7}
+                          className="px-6 py-4 text-center text-sm text-gray-500"
+                        >
                           No companies found
                         </td>
                       </tr>
@@ -579,7 +620,10 @@ function SuperadminCompanies() {
         </div>
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Company Name <span className="text-red-500">*</span>
             </label>
             <Input
@@ -591,9 +635,12 @@ function SuperadminCompanies() {
               className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="prefixForEmpID" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="prefixForEmpID"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Company Prefix <span className="text-red-500">*</span>
             </label>
             <Input
@@ -605,7 +652,7 @@ function SuperadminCompanies() {
               className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Company Head
@@ -618,18 +665,26 @@ function SuperadminCompanies() {
                 <div className="flex items-center space-x-2">
                   <User size={16} className="text-gray-500" />
                   <span>
-                    {companyData.companyHeads && companyData.companyHeads.length > 0
-                      ? [companyData.companyHeads[0].firstName, companyData.companyHeads[0].middleName, companyData.companyHeads[0].lastName].filter(Boolean).join(" ")
-                      : "Select Company Head"
-                    }
+                    {companyData.companyHeads &&
+                    companyData.companyHeads.length > 0
+                      ? [
+                          companyData.companyHeads[0].firstName,
+                          companyData.companyHeads[0].middleName,
+                          companyData.companyHeads[0].lastName,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                      : "Select Company Head"}
                   </span>
                 </div>
-                <ChevronDown 
-                  size={16} 
-                  className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                <ChevronDown
+                  size={16}
+                  className={`text-gray-500 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
                 />
               </div>
-              
+
               {isDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10">
                   <div
@@ -638,28 +693,39 @@ function SuperadminCompanies() {
                   >
                     <div className="flex items-center space-x-2">
                       <UserPlus size={16} className="text-blue-600" />
-                      <span className="text-blue-600 font-medium">{companyData.companyHeads && companyData.companyHeads.length > 0 ? "Edit Company Head" : "Add Company Head"}</span>
+                      <span className="text-blue-600 font-medium">
+                        {companyData.companyHeads &&
+                        companyData.companyHeads.length > 0
+                          ? "Edit Company Head"
+                          : "Add Company Head"}
+                      </span>
                     </div>
                   </div>
-                  {companyData.companyHeads && companyData.companyHeads.length > 0 && (
-                    <div
-                      className="p-3 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setCompanyData((prevData) => ({ ...prevData, companyHeads: [] }));
-                        setIsDropdownOpen(false);
-                      }}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Trash size={16} className="text-red-600" />
-                        <span className="text-red-600">Remove Company Head</span>
+                  {companyData.companyHeads &&
+                    companyData.companyHeads.length > 0 && (
+                      <div
+                        className="p-3 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          setCompanyData((prevData) => ({
+                            ...prevData,
+                            companyHeads: [],
+                          }));
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <Trash size={16} className="text-red-600" />
+                          <span className="text-red-600">
+                            Remove Company Head
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               )}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Choose Company Color <span className="text-red-500">*</span>
@@ -669,7 +735,9 @@ function SuperadminCompanies() {
                 <div
                   key={color}
                   className={`w-8 h-8 rounded-full cursor-pointer border-2 ${
-                    companyData.colorCode === color ? "border-black" : "border-gray-300"
+                    companyData.colorCode === color
+                      ? "border-black"
+                      : "border-gray-300"
                   }`}
                   style={{ backgroundColor: color }}
                   onClick={() => handleColorChange(color)}
@@ -677,9 +745,12 @@ function SuperadminCompanies() {
               ))}
             </div>
           </div>
-          
+
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Email Address <span className="text-red-500">*</span>
             </label>
             <Input
@@ -691,9 +762,12 @@ function SuperadminCompanies() {
               className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Phone Number <span className="text-red-500">*</span>
             </label>
             <Input
@@ -705,9 +779,12 @@ function SuperadminCompanies() {
               className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="gst"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               GST Number <span className="text-red-500">*</span>
             </label>
             <Input
@@ -719,9 +796,12 @@ function SuperadminCompanies() {
               className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="regAdd" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="regAdd"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Registered Address <span className="text-red-500">*</span>
             </label>
             <Input
@@ -798,7 +878,9 @@ function SuperadminCompanies() {
         <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
           <div className="relative w-full flex justify-center -mt-4">
             <h2 className="text-2xl font-thin tracking-wide">
-              {companyData.companyHeads && companyData.companyHeads.length > 0 ? "Edit Company Head" : "Add Company Head"}
+              {companyData.companyHeads && companyData.companyHeads.length > 0
+                ? "Edit Company Head"
+                : "Add Company Head"}
             </h2>
             <button
               onClick={() => {
@@ -875,9 +957,12 @@ function SuperadminCompanies() {
                 </div>
               </div>
             </div>
-            
+
             <div>
-              <label htmlFor="headEmail" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="headEmail"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Email <span className="text-red-500">*</span>
               </label>
               <Input
@@ -889,11 +974,16 @@ function SuperadminCompanies() {
                 placeholder="Enter email address"
                 className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
               />
-              <p className="text-xs text-gray-500 mt-1">Email will be used as login ID</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Email will be used as login ID
+              </p>
             </div>
-            
+
             <div>
-              <label htmlFor="headPhone" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="headPhone"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Phone <span className="text-red-500">*</span>
               </label>
               <Input
@@ -904,17 +994,23 @@ function SuperadminCompanies() {
                 placeholder="Enter phone number"
                 className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
               />
-              <p className="text-xs text-gray-500 mt-1">Phone number will be used as password</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Phone number will be used as password
+              </p>
             </div>
           </div>
-          
-          {companyHeadError && <p className="text-red-600 mt-2">{companyHeadError}</p>}
-          
+
+          {companyHeadError && (
+            <p className="text-red-600 mt-2">{companyHeadError}</p>
+          )}
+
           <Button
             onClick={handleSaveCompanyHead}
             className="mt-6 bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {companyData.companyHeads && companyData.companyHeads.length > 0 ? "Update Company Head" : "Add Company Head"}
+            {companyData.companyHeads && companyData.companyHeads.length > 0
+              ? "Update Company Head"
+              : "Add Company Head"}
           </Button>
         </div>
       </Modal>
