@@ -540,62 +540,9 @@ const ManagerContent = ({ role }) => {
               onClick={() => handleOpenAddLeadForm()}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
             >
-              New
+              New Lead
             </button>
           </Tooltip>
-          <Tooltip content={pipelines.length > 0 ? "Pipeline stages already exist" : "Initialize default pipeline stages (New, Qualified, Proposal, Negotiation, Closed Won, Closed Lost)"}>
-            <button
-              onClick={handleInitializePipeline}
-              disabled={isInitializing || pipelines.length > 0}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition-colors duration-200 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              <FaMagic className="w-4 h-4" />
-              {isInitializing ? "Initializing..." : "Initialize"}
-            </button>
-          </Tooltip>
-          <div className="flex items-center space-x-1">
-            <h2 className="text-xl font-semibold text-gray-700">
-              Manager Pipeline
-            </h2>
-            <div className="relative pipeline-dropdown">
-              <button
-                onClick={() => setShowPipelineDropdown(!showPipelineDropdown)}
-                className="text-gray-500 hover:text-gray-700 p-1 flex items-center gap-1 transition-colors duration-200"
-              >
-                <FaCog />
-                <FaChevronDown
-                  className={`text-xs transition-transform duration-200 ${
-                    showPipelineDropdown ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {showPipelineDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-40 transform opacity-100 scale-100 transition-all duration-200">
-                  <button
-                    onClick={() => {
-                      setIsAddingStage(true);
-                      setShowPipelineDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors duration-150"
-                  >
-                    <FaPlus className="text-xs" />
-                    Add Pipeline
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowDeletePipelineModal(true);
-                      setShowPipelineDropdown(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 transition-colors duration-150"
-                  >
-                    <FaTrash className="text-xs" />
-                    Delete Pipeline
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center space-x-4">
