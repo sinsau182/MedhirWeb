@@ -3223,7 +3223,7 @@ const PipelineSettings = ({
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-600 mb-4">
-                Are you sure you want to delete the pipeline stage "{stageToDelete?.name}"? This action cannot be undone.
+                Are you sure you want to delete the pipeline stage &quot;{stageToDelete?.name}&quot;? This action cannot be undone.
               </p>
             </div>
             <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">

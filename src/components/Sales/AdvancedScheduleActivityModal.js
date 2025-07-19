@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { FaCheck, FaEnvelope, FaPhone, FaUsers, FaPaperclip, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 import getConfig from 'next/config';
@@ -36,6 +36,8 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
   const [call, setCall] = useState({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '' });
   const [meeting, setMeeting] = useState({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '' });
   const [attachmentPreviewTab, setAttachmentPreviewTab] = useState(null);
+
+  const fileInputRef = useRef(null);
 
   // Reset all tab states on open/close
   useEffect(() => {
@@ -363,7 +365,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
     } catch (e) {
       console.error('Failed to save activity:', e);
     }
-  }, [isEditingActivity, editingType, todo, email, call, meeting, emailOutcome, callOutcome, meetingOutcome, lead, onSuccess, onActivityChange, onClose]);
+  }, [isEditingActivity, editingType, todo, email, call, meeting, emailOutcome, callOutcome, meetingOutcome, lead, onSuccess, onActivityChange, onClose, initialData]);
 
   const activityTypes = useMemo(() => [
     { name: 'To-Do', icon: <FaCheck /> },
@@ -510,7 +512,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                   <label className="text-xs font-medium text-gray-700">Meeting Link</label>
                   <input
                     type="text"
-                    value={meetingLink}
+                    value={meeting.meetingLink}
                     onChange={e => setMeeting(m => ({ ...m, meetingLink: e.target.value }))}
                     placeholder="https://..."
                     className="w-full p-2 mt-1 border rounded-md text-xs focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 border-gray-300"
@@ -562,8 +564,13 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                 <input
                   type="file"
                   className="hidden"
+                  ref={fileInputRef}
                   onChange={e => {
-                    if (e.target.files && e.target.files[0]) setTabData({ ...tabData, attachment: e.target.files[0] });
+                    if (e.target.files && e.target.files[0]) {
+                      setTabData({ ...tabData, attachment: e.target.files[0] });
+                      // Reset the input so the same file can be selected again
+                      e.target.value = "";
+                    }
                   }}
                 />
                 <span className="text-xs font-medium">Attach</span>

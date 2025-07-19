@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import {
   FaUsers,
@@ -119,7 +119,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         });
       }
     }
-  }, [userRoles, userModules, router.pathname]);
+  }, [userRoles, userModules, router.pathname, getAvailableModules]);
 
   // Define modular menu structure
   const modularMenus = {
@@ -304,7 +304,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     );
   };
 
-  const getAvailableModules = () => {
+  const getAvailableModules = useCallback(() => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
     
@@ -422,7 +422,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     }
 
     return modules;
-  };
+  }, [userRoles, userModules, hasAdminRole, hasManagerRole]);
 
   // Auto-expand modules when sidebar is collapsed
   useEffect(() => {
@@ -440,7 +440,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       });
       setExpandedMenus(expandedModules);
     }
-  }, [isCollapsed, userRoles, userModules]);
+  }, [isCollapsed, userRoles, userModules, getAvailableModules, isActiveParent]);
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
@@ -454,7 +454,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     if (userRoles.length > 0) {
       const availableModules = getAvailableModules();
     }
-  }, [currentRole, userRoles, userModules, router.pathname]);
+  }, [currentRole, userRoles, userModules, router.pathname, getAvailableModules]);
 
   const isActiveLink = (link) => {
     if (!link) return false;
