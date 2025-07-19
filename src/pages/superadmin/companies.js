@@ -478,7 +478,7 @@ function SuperadminCompanies() {
                         Phone
                       </th>
                       <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
-                        GST
+                        GST 
                       </th>
                       <th scope="col" className="px-6 py-4 text-left text-sm font-semibold text-gray-700 tracking-wider w-1/5">
                         Register Add.
@@ -708,7 +708,7 @@ function SuperadminCompanies() {
           
           <div>
             <label htmlFor="gst" className="block text-sm font-medium text-gray-700 mb-1">
-              GST Number
+              GST Number <span className="text-red-500">*</span>
             </label>
             <Input
               id="gst"
