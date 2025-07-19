@@ -3,6 +3,7 @@ import { FaBuilding, FaUser, FaPlus, FaTrash, FaPaperclip, FaFilePdf, FaFileImag
 import { useDispatch, useSelector } from "react-redux";
 import { fetchVendors, updateVendorCredit } from "../../redux/slices/vendorSlice";
 import { addBill } from "../../redux/slices/BillSlice";
+import { useRouter } from 'next/router';
 
 const AutoGrowTextarea = ({ className, ...props }) => {
   const textareaRef = useRef(null);
@@ -42,6 +43,7 @@ const mockCompanies = [
 const BillForm = ({ onCancel }) => {
   const companyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
+  const router = useRouter();
   useEffect(() => {
     dispatch(fetchVendors());
   }, [dispatch]);
@@ -59,6 +61,7 @@ const BillForm = ({ onCancel }) => {
   const [showDeleteIdx, setShowDeleteIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
+  const [showNoVendorsModal, setShowNoVendorsModal] = useState(false);
 
   // Set activeTab to 'billLines' if no vendor is selected
   useEffect(() => {
@@ -254,6 +257,24 @@ const BillForm = ({ onCancel }) => {
   // Render
   return (
     <div className="w-full px-0">
+      {/* Modal for no vendors */}
+      {showNoVendorsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm w-full text-center">
+            <div className="text-lg font-semibold mb-4">No vendor exists</div>
+            <div className="mb-6">Please add a vendor first.</div>
+            <button
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              onClick={() => {
+                setShowNoVendorsModal(false);
+                router.push('/account/vendor?add=vendor');
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
       {/* Form Content */}
       <div className="space-y-6" ref={mainCardRef}>
         {/* Top Section - Vendor, Bill, and Company Details */}
@@ -273,12 +294,27 @@ const BillForm = ({ onCancel }) => {
               <select 
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
                 value={selectedVendor?.vendorId || ""} 
-                onChange={handleVendorChange}
+                onChange={e => {
+                  if (vendors.length === 0 && e.target.value === 'add_new_vendor') {
+                    router.push('/account/vendor?add=vendor');
+                    return;
+                  }
+                  handleVendorChange(e);
+                }}
               >
-                <option value="">Select Vendor</option>
-                {vendors.map((v) => (
-                  <option key={v.vendorId} value={v.vendorId}>{v.vendorName}</option>
-                ))}
+                {vendors.length === 0 ? (
+                  <>
+                    <option value="">Select Vendor</option>
+                    <option value="add_new_vendor">Click here to add new vendor</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="">Select Vendor</option>
+                    {vendors.map((v) => (
+                      <option key={v.vendorId} value={v.vendorId}>{v.vendorName}</option>
+                    ))}
+                  </>
+                )}
               </select>
               {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
             </div>
@@ -455,7 +491,7 @@ const BillForm = ({ onCancel }) => {
               
               {errors.billLines && <div className="text-xs text-red-500">{errors.billLines}</div>}
               
-              <div className="overflow-x-auto">
+              <div>
                 <table className="min-w-full">
                   <thead>
                   <tr className="border-b border-gray-200">
@@ -484,7 +520,7 @@ const BillForm = ({ onCancel }) => {
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
                             <AutoGrowTextarea 
-                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`item${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`} 
+                              className={`w-full min-w-[140px] border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`item${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`} 
                               value={line.item} 
                               onChange={e => handleLineChange(idx, 'item', e.target.value)} 
                               placeholder="Enter item"
@@ -493,7 +529,7 @@ const BillForm = ({ onCancel }) => {
                           </td>
                           <td className="px-4 py-3">
                             <AutoGrowTextarea 
-                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
+                              className="w-full min-w-[160px] border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
                               value={line.description} 
                               onChange={e => handleLineChange(idx, 'description', e.target.value)} 
                               placeholder="Description"
@@ -501,7 +537,7 @@ const BillForm = ({ onCancel }) => {
                           </td>
                           <td className="px-4 py-3">
                             <input
-                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
+                              className="w-full min-w-[80px] border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
                               value={line.hsn}
                               onChange={e => handleLineChange(idx, 'hsn', e.target.value)}
                               placeholder="HSN Code"
@@ -511,7 +547,7 @@ const BillForm = ({ onCancel }) => {
                             <input 
                               type="number" 
                               min="1" 
-                              className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`qty${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`} 
+                              className={`w-full min-w-[60px] text-right border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`qty${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`} 
                               value={line.qty} 
                               onChange={e => handleLineChange(idx, 'qty', e.target.value)} 
                             />
@@ -519,7 +555,7 @@ const BillForm = ({ onCancel }) => {
                           </td>
                           <td className="px-4 py-3">
                             <input
-                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
+                              className="w-full min-w-[60px] border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
                               value={line.uom}
                               onChange={e => handleLineChange(idx, 'uom', e.target.value)}
                               placeholder="e.g., PCS"
@@ -531,7 +567,7 @@ const BillForm = ({ onCancel }) => {
                               <input 
                                 type="number" 
                                 min="0" 
-                                className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`rate${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`}
+                                className={`w-full min-w-[80px] text-right border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`rate${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`}
                                 value={line.rate} 
                                 onChange={e => handleLineChange(idx, 'rate', e.target.value)} 
                               />
@@ -547,7 +583,7 @@ const BillForm = ({ onCancel }) => {
                                 type="number" 
                                 min="0" 
                                 max="100" 
-                                className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`gst${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`}
+                                className={`w-full min-w-[60px] text-right border border-gray-300 bg-white p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`gst${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`}
                                 value={line.gst} 
                                 onChange={e => handleLineChange(idx, 'gst', e.target.value)} 
                               />

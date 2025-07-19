@@ -13,6 +13,7 @@ import { fetchPurchaseOrders } from '../../redux/slices/PurchaseOrderSlice';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { useRouter } from 'next/router';
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -32,6 +33,14 @@ const Vendor = () => {
       dispatch(fetchPayments());
       dispatch(fetchPurchaseOrders());
     }, [dispatch]);
+
+    const router = useRouter();
+    useEffect(() => {
+      if (router.isReady && router.query.add === 'vendor') {
+        setActiveTab('vendors');
+        setShowAddForm('vendor');
+      }
+    }, [router.isReady, router.query]);
 
     console.log(bills);
   const toggleSidebar = () => {
