@@ -404,26 +404,15 @@ const OdooDetailBody = ({
   const [notesLoading, setNotesLoading] = useState(false);
 
   useEffect(() => {
-    // Combine notes string and notesList array into a single array for display
     let combinedNotes = [];
-    if (lead.notes) {
-      combinedNotes.push({
-        user: lead.name || "User",
-        content: lead.notes,
-        time: lead.dateOfCreation || new Date(),
-      });
-    }
-    if (Array.isArray(lead.notesList)) {
-      combinedNotes = [
-        ...combinedNotes,
-        ...lead.notesList.map((n) => ({
+          if (Array.isArray(lead.notesList)) {
+        combinedNotes = lead.notesList.map((n) => ({
           user: n.user || lead.name || "User",
           content: n.content,
           time: n.time || n.createdAt || new Date(),
           noteId: n.noteId || n.id,
-        })),
-      ];
-    }
+        }));
+      }
     setNotes(combinedNotes);
   }, [lead]);
 
@@ -559,7 +548,6 @@ const OdooDetailBody = ({
                   label: "Area (sq. ft.)",
                   field: "area",
                   type: "number",
-                  optional: true,
                 },
                 { label: "Budget", field: "budget", type: "number" },
                 {
@@ -722,7 +710,7 @@ const OdooDetailBody = ({
                     <button
                       onClick={handleAddOrEditNote}
                       className="px-4 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold"
-                      disabled={notesLoading || !noteContent.trim()}
+                      disabled={notesLoading || !(noteContent || "").trim()}
                     >
                       {editingNoteId ? "Edit Note" : "Save Note"}
                     </button>

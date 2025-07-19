@@ -2869,13 +2869,13 @@ const SettingsPage = ({
       {/* Horizontal Tab Navigation */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
-          <nav className="flex overflow-x-auto scrollbar-hide">
+          <nav className="flex flex-wrap">
             {settingsPages.map((page) => (
               <button
                 key={page.id}
                 onClick={() => !page.frozen && setActiveSettingsPage(page.id)}
                 disabled={page.frozen}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-200 ${
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
                   page.frozen
                     ? "border-transparent text-gray-400 cursor-not-allowed opacity-60"
                     : activeSettingsPage === page.id
@@ -2884,8 +2884,8 @@ const SettingsPage = ({
                 }`}
                 title={page.frozen ? "This feature is coming soon" : ""}
               >
-                <page.icon className="w-5 h-5 flex-shrink-0" />
-                <span>{page.label}</span>
+                <page.icon className="w-4 h-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">{page.label}</span>
                 {page.frozen && (
                   <span className="ml-1 text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded">
                     Soon
