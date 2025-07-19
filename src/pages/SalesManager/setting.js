@@ -1,4 +1,10 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from "react";
 import {
   FaPlus,
   FaCog,
@@ -445,7 +451,7 @@ const PermissionsSettings = () => {
 
   const [newRoleName, setNewRoleName] = useState("");
   const [isAddingRole, setIsAddingRole] = useState(false);
-  
+
   const allPermissions = [
     { id: "view_all_leads", name: "View All Leads", category: "Leads" },
     { id: "view_own_leads", name: "View Own Leads", category: "Leads" },
@@ -503,16 +509,16 @@ const PermissionsSettings = () => {
   const handlePermissionToggle = (roleId, permissionId) => {
     setRoles((prev) =>
       prev.map((role) => {
-      if (role.id === roleId) {
-        const hasPermission = role.permissions.includes(permissionId);
-        return {
-          ...role,
-          permissions: hasPermission
+        if (role.id === roleId) {
+          const hasPermission = role.permissions.includes(permissionId);
+          return {
+            ...role,
+            permissions: hasPermission
               ? role.permissions.filter((p) => p !== permissionId)
               : [...role.permissions, permissionId],
-        };
-      }
-      return role;
+          };
+        }
+        return role;
       })
     );
   };
@@ -582,51 +588,47 @@ const PermissionsSettings = () => {
           >
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-center">
-                <h4 className="text-xl font-bold text-gray-800">
-                {role.name}
-              </h4>
-              <button
-                onClick={() => handleDeleteRole(role.id)}
+                <h4 className="text-xl font-bold text-gray-800">{role.name}</h4>
+                <button
+                  onClick={() => handleDeleteRole(role.id)}
                   className="text-gray-400 hover:text-red-600 p-2 rounded-full transition-colors duration-200"
-                title="Delete Role"
-              >
-                <FaTrash />
-              </button>
-            </div>
+                  title="Delete Role"
+                >
+                  <FaTrash />
+                </button>
+              </div>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-              {Object.entries(permissionsByCategory).map(
-                ([category, permissions]) => (
+                {Object.entries(permissionsByCategory).map(
+                  ([category, permissions]) => (
                     <div key={category} className="space-y-4">
                       <h5 className="font-semibold text-gray-700 text-base">
-                      {category}
-                    </h5>
+                        {category}
+                      </h5>
                       <div className="space-y-3">
-                      {permissions.map((permission) => (
-                        <label
-                          key={permission.id}
+                        {permissions.map((permission) => (
+                          <label
+                            key={permission.id}
                             className="flex items-center gap-3 cursor-pointer group"
-                        >
-                        <input
-                          type="checkbox"
-                              checked={role.permissions.includes(
-                                permission.id
-                              )}
-                            onChange={() =>
-                              handlePermissionToggle(role.id, permission.id)
-                            }
+                          >
+                            <input
+                              type="checkbox"
+                              checked={role.permissions.includes(permission.id)}
+                              onChange={() =>
+                                handlePermissionToggle(role.id, permission.id)
+                              }
                               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
+                            />
                             <span className="text-sm text-gray-600 group-hover:text-gray-900">
                               {permission.name}
                             </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                )
-              )}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -767,7 +769,7 @@ const WorkflowSettings = () => {
                 placeholder="Briefly describe what this workflow is for"
               />
             </div>
-            
+
             <div>
               <div className="flex justify-between items-center mb-3">
                 <label className="block text-sm font-medium text-gray-700">
@@ -780,7 +782,7 @@ const WorkflowSettings = () => {
                   Add Stage
                 </button>
               </div>
-              
+
               <div className="space-y-3">
                 {newWorkflow.stages.map((stage, index) => (
                   <div
@@ -829,7 +831,7 @@ const WorkflowSettings = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={handleAddWorkflow}
@@ -856,37 +858,37 @@ const WorkflowSettings = () => {
           >
             <div className="p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
-              <div>
+                <div>
                   <h4 className="text-xl font-bold text-gray-800">
-                  {workflow.name}
-                </h4>
+                    {workflow.name}
+                  </h4>
                   <p className="text-sm text-gray-600 mt-1">
                     {workflow.description}
                   </p>
-              </div>
+                </div>
                 <div className="flex items-center gap-4">
-                <span
+                  <span
                     className={`px-3 py-1 text-xs font-medium rounded-full ${
-                    workflow.isActive
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {workflow.isActive ? "Active" : "Inactive"}
-                </span>
-                <button
-                  onClick={() => toggleWorkflowStatus(workflow.id)}
+                      workflow.isActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {workflow.isActive ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    onClick={() => toggleWorkflowStatus(workflow.id)}
                     className="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
-                >
-                  {workflow.isActive ? "Deactivate" : "Activate"}
-                </button>
+                  >
+                    {workflow.isActive ? "Deactivate" : "Activate"}
+                  </button>
                 </div>
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {workflow.stages.map((stage, index) => (
+                {workflow.stages.map((stage, index) => (
                   <React.Fragment key={stage.id}>
                     <div className="flex-shrink-0">
                       <div className="bg-gray-100 border text-gray-800 px-4 py-3 rounded-lg text-center">
@@ -895,12 +897,12 @@ const WorkflowSettings = () => {
                           {stage.action}
                         </div>
                       </div>
-                  </div>
-                  {index < workflow.stages.length - 1 && (
+                    </div>
+                    {index < workflow.stages.length - 1 && (
                       <FaChevronRight className="text-gray-300 flex-shrink-0" />
-                  )}
+                    )}
                   </React.Fragment>
-              ))}
+                ))}
               </div>
             </div>
           </div>
@@ -961,10 +963,10 @@ const AutomationSettings = () => {
       { id: "contains", name: "Contains" },
     ],
     number: [
-    { id: "equals", name: "Equals" },
-    { id: "not_equals", name: "Not Equals" },
-    { id: "greater_than", name: "Greater Than" },
-    { id: "less_than", name: "Less Than" },
+      { id: "equals", name: "Equals" },
+      { id: "not_equals", name: "Not Equals" },
+      { id: "greater_than", name: "Greater Than" },
+      { id: "less_than", name: "Less Than" },
     ],
   };
 
@@ -976,10 +978,10 @@ const AutomationSettings = () => {
   ];
 
   const handleCreateRule = () => {
-      setNewRule({
+    setNewRule({
       id: `new_${Date.now()}`,
-        name: "",
-        trigger: "",
+      name: "",
+      trigger: "",
       conditions: [],
       actions: [],
       isActive: true,
@@ -993,9 +995,9 @@ const AutomationSettings = () => {
       return;
     }
     setRules((prev) => [...prev, { ...newRule, id: Date.now() }]);
-      setIsAddingRule(false);
+    setIsAddingRule(false);
     setNewRule(null);
-      toast.success("Automation rule created successfully");
+    toast.success("Automation rule created successfully");
   };
 
   const updateNewRule = (field, value) => {
@@ -1012,7 +1014,9 @@ const AutomationSettings = () => {
   const updateCondition = (id, field, value) => {
     updateNewRule(
       "conditions",
-      newRule.conditions.map((c) => (c.id === id ? { ...c, [field]: value } : c))
+      newRule.conditions.map((c) =>
+        c.id === id ? { ...c, [field]: value } : c
+      )
     );
   };
 
@@ -1047,7 +1051,7 @@ const AutomationSettings = () => {
   const toggleRuleStatus = (ruleId) => {
     setRules((prev) =>
       prev.map((rule) =>
-      rule.id === ruleId ? { ...rule, isActive: !rule.isActive } : rule
+        rule.id === ruleId ? { ...rule, isActive: !rule.isActive } : rule
       )
     );
   };
@@ -1065,7 +1069,7 @@ const AutomationSettings = () => {
 
   const renderRule = (rule) => {
     const trigger = triggers.find((t) => t.id === rule.trigger);
-  return (
+    return (
       <div className="space-y-4">
         <RuleBlock title="WHEN" icon={<FaPlay className="text-gray-400" />}>
           <p className="text-sm font-medium">
@@ -1087,15 +1091,17 @@ const AutomationSettings = () => {
                 </span>
                 <span className="text-gray-500">
                   {
-                    (operators[conditionFields.find((f) => f.id === c.field)?.type] || []).find(
-                      (o) => o.id === c.operator
-                    )?.name
+                    (
+                      operators[
+                        conditionFields.find((f) => f.id === c.field)?.type
+                      ] || []
+                    ).find((o) => o.id === c.operator)?.name
                   }
                 </span>
                 <span className="font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded">
                   {c.value}
                 </span>
-        </div>
+              </div>
             ))
           )}
         </RuleBlock>
@@ -1110,7 +1116,9 @@ const AutomationSettings = () => {
                   {actionTypes.find((t) => t.id === a.type)?.name}
                 </span>
                 <span className="text-gray-500">{a.target}</span>
-                <span className="italic text-gray-600">&quot;{a.message}&quot;</span>
+                <span className="italic text-gray-600">
+                  &quot;{a.message}&quot;
+                </span>
               </div>
             ))
           )}
@@ -1133,27 +1141,27 @@ const AutomationSettings = () => {
 
       {isAddingRule && newRule && (
         <div className="bg-gray-50 border-2 border-blue-200 rounded-xl p-6 shadow-lg space-y-6">
-              <input
-                type="text"
-                value={newRule.name}
+          <input
+            type="text"
+            value={newRule.name}
             onChange={(e) => updateNewRule("name", e.target.value)}
             placeholder="Enter Rule Name"
             className="w-full text-xl font-bold p-2 border-b-2 focus:outline-none focus:border-blue-500"
           />
 
           <RuleBlock title="WHEN" icon={<FaPlay className="text-gray-400" />}>
-              <select
-                value={newRule.trigger}
+            <select
+              value={newRule.trigger}
               onChange={(e) => updateNewRule("trigger", e.target.value)}
-                className="border p-2 rounded-md w-full"
-              >
+              className="border p-2 rounded-md w-full"
+            >
               <option value="">Select a trigger...</option>
               {triggers.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
-                  </option>
-                ))}
-              </select>
+                </option>
+              ))}
+            </select>
           </RuleBlock>
 
           <RuleBlock
@@ -1193,8 +1201,8 @@ const AutomationSettings = () => {
                       operators[selectedField.type].map((o) => (
                         <option key={o.id} value={o.id}>
                           {o.name}
-                      </option>
-                    ))}
+                        </option>
+                      ))}
                   </select>
                   <input
                     type={selectedField?.type || "text"}
@@ -1205,13 +1213,13 @@ const AutomationSettings = () => {
                     placeholder="Value"
                     className="border p-2 rounded flex-1"
                   />
-                <button
+                  <button
                     onClick={() => removeCondition(c.id)}
                     className="text-red-500 hover:text-red-700 p-2"
-                >
+                  >
                     <FaTrash />
-                </button>
-              </div>
+                  </button>
+                </div>
               );
             })}
             <button
@@ -1225,7 +1233,7 @@ const AutomationSettings = () => {
           <RuleBlock title="THEN" icon={<FaRocket className="text-gray-400" />}>
             {newRule.actions.map((a) => (
               <div key={a.id} className="flex items-center gap-2">
-                  <select
+                <select
                   value={a.type}
                   onChange={(e) => updateAction(a.id, "type", e.target.value)}
                   className="border p-2 rounded"
@@ -1234,35 +1242,33 @@ const AutomationSettings = () => {
                   {actionTypes.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
                   value={a.target}
-                    onChange={(e) =>
-                    updateAction(a.id, "target", e.target.value)
-                    }
+                  onChange={(e) => updateAction(a.id, "target", e.target.value)}
                   placeholder="Target (e.g., role, email)"
-                    className="border p-2 rounded flex-1"
-                  />
-                  <input
-                    type="text"
+                  className="border p-2 rounded flex-1"
+                />
+                <input
+                  type="text"
                   value={a.message}
-                    onChange={(e) =>
+                  onChange={(e) =>
                     updateAction(a.id, "message", e.target.value)
-                    }
-                    placeholder="Message"
-                    className="border p-2 rounded flex-1"
-                  />
+                  }
+                  placeholder="Message"
+                  className="border p-2 rounded flex-1"
+                />
                 <button
                   onClick={() => removeAction(a.id)}
                   className="text-red-500 hover:text-red-700 p-2"
                 >
                   <FaTrash />
                 </button>
-                </div>
-              ))}
+              </div>
+            ))}
             <button
               onClick={addAction}
               className="text-sm text-blue-600 hover:text-blue-800"
@@ -1271,19 +1277,19 @@ const AutomationSettings = () => {
             </button>
           </RuleBlock>
 
-            <div className="flex gap-3">
-              <button
+          <div className="flex gap-3">
+            <button
               onClick={handleSaveRule}
-                className="px-4 py-2 bg-green-600 text-white rounded"
-              >
-                Save Rule
-              </button>
-              <button
-                onClick={() => setIsAddingRule(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
+              className="px-4 py-2 bg-green-600 text-white rounded"
+            >
+              Save Rule
+            </button>
+            <button
+              onClick={() => setIsAddingRule(false)}
+              className="px-4 py-2 border rounded"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
@@ -1298,24 +1304,24 @@ const AutomationSettings = () => {
               <div className="flex justify-between items-center">
                 <h4 className="text-xl font-bold text-gray-800">{rule.name}</h4>
                 <div className="flex items-center gap-4">
-                <span
+                  <span
                     className={`px-3 py-1 text-xs font-medium rounded-full ${
-                    rule.isActive
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {rule.isActive ? "Active" : "Inactive"}
-                </span>
-                <button
-                  onClick={() => toggleRuleStatus(rule.id)}
+                      rule.isActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {rule.isActive ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    onClick={() => toggleRuleStatus(rule.id)}
                     className="px-4 py-2 text-sm border rounded-md hover:bg-gray-100"
-                >
-                  {rule.isActive ? "Disable" : "Enable"}
-                </button>
+                  >
+                    {rule.isActive ? "Disable" : "Enable"}
+                  </button>
+                </div>
               </div>
             </div>
-                  </div>
             <div className="p-6 bg-gray-50/30">{renderRule(rule)}</div>
           </div>
         ))}
@@ -1406,14 +1412,14 @@ const TemplatesSettings = () => {
         <div key={template.id} className="border rounded-lg">
           <div className="p-4 border-b">
             <div className="flex justify-between items-start">
-        <div>
+              <div>
                 <h4 className="font-semibold text-gray-800">{template.name}</h4>
                 {template.subject && (
                   <p className="text-sm text-gray-600 font-medium mt-1">
                     Subject: {template.subject}
                   </p>
                 )}
-        </div>
+              </div>
               <div className="flex items-center gap-2">
                 <span
                   className={`px-2 py-1 text-xs rounded-full ${
@@ -1560,27 +1566,27 @@ const TemplatesSettings = () => {
             </div>
 
             <div className="flex gap-3">
-            <button
+              <button
                 onClick={handleAddTemplate}
                 className="px-4 py-2 bg-green-600 text-white rounded"
-            >
+              >
                 Save Template
-            </button>
-            <button
+              </button>
+              <button
                 onClick={() => setIsAddingTemplate(false)}
                 className="px-4 py-2 border rounded"
-            >
+              >
                 Cancel
-            </button>
-        </div>
-                    </div>
+              </button>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px">
-                      <button
+            <button
               onClick={() => setActiveTab("email")}
               className={`px-6 py-3 text-sm font-medium border-b-2 ${
                 activeTab === "email"
@@ -1589,8 +1595,8 @@ const TemplatesSettings = () => {
               }`}
             >
               Email Templates ({emailTemplates.length})
-                      </button>
-                      <button
+            </button>
+            <button
               onClick={() => setActiveTab("sms")}
               className={`px-6 py-3 text-sm font-medium border-b-2 ${
                 activeTab === "sms"
@@ -1599,14 +1605,14 @@ const TemplatesSettings = () => {
               }`}
             >
               SMS Templates ({smsTemplates.length})
-                      </button>
+            </button>
           </nav>
-                    </div>
+        </div>
 
         <div className="pt-6">
           {activeTab === "email" && renderTemplateList(emailTemplates)}
           {activeTab === "sms" && renderTemplateList(smsTemplates)}
-                  </div>
+        </div>
       </div>
     </div>
   );
@@ -1622,7 +1628,7 @@ const StageDependentFormsSettings = ({ stages }) => {
   const [formConfig, setFormConfig] = useState({
     formName: "",
     description: "",
-    fields: []
+    fields: [],
   });
   const [selectedField, setSelectedField] = useState(null);
   const [previewData, setPreviewData] = useState({});
@@ -1630,243 +1636,258 @@ const StageDependentFormsSettings = ({ stages }) => {
   const availableStages = stages;
 
   // Simplified field types - removed technical fields
-  const fieldCategories = useMemo(() => ({
-    "Basic Fields": [
-      {
-        type: "text",
-        label: "Text Input",
-        icon: "📝",
-        description: "Single-line text field",
-        defaultLabel: "Your answer"
-      },
-      {
-        type: "textarea",
-        label: "Textarea",
-        icon: "📄",
-        description: "Multi-line text area",
-        defaultLabel: "Your detailed response"
-      },
-      {
-        type: "number",
-        label: "Number",
-        icon: "🔢",
-        description: "Numeric input",
-        defaultLabel: "Enter number"
-      },
-      {
-        type: "email",
-        label: "Email",
-        icon: "📧",
-        description: "Email address field",
-        defaultLabel: "Email address"
-      },
-      {
-        type: "tel",
-        label: "Phone",
-        icon: "📞",
-        description: "Phone number input",
-        defaultLabel: "Phone number"
-      },
-      {
-        type: "url",
-        label: "Website URL",
-        icon: "🔗",
-        description: "Website address field",
-        defaultLabel: "Website URL"
-      },
-      {
-        type: "password",
-        label: "Password",
-        icon: "🔒",
-        description: "Password input field",
-        defaultLabel: "Password"
-      }
-    ],
-    "Date/Time Fields": [
-      {
-        type: "date",
-        label: "Date",
-        icon: "📅",
-        description: "Date picker",
-        defaultLabel: "Select date"
-      },
-      {
-        type: "datetime-local",
-        label: "Date & Time",
-        icon: "🕒",
-        description: "Date and time picker",
-        defaultLabel: "Select date and time"
-      },
-      {
-        type: "time",
-        label: "Time",
-        icon: "⏰",
-        description: "Time picker",
-        defaultLabel: "Select time"
-      }
-    ],
-    "Selection Fields": [
-      {
-        type: "select",
-        label: "Dropdown",
-        icon: "📋",
-        description: "Single selection dropdown",
-        defaultLabel: "Please select",
-        defaultOptions: ["Option 1", "Option 2", "Option 3"]
-      },
-      {
-        type: "radio",
-        label: "Radio Buttons",
-        icon: "🔘",
-        description: "Single selection with radio buttons",
-        defaultLabel: "Choose one option",
-        defaultOptions: ["Option 1", "Option 2", "Option 3"]
-      },
-      {
-        type: "checkbox",
-        label: "Checkbox",
-        icon: "☑️",
-        description: "Yes/No checkbox",
-        defaultLabel: "Check if applicable"
-      },
-      {
-        type: "multiselect",
-        label: "Multiple Choice",
-        icon: "📑",
-        description: "Select multiple options",
-        defaultLabel: "Select all that apply",
-        defaultOptions: ["Option 1", "Option 2", "Option 3"]
-      },
-      {
-        type: "toggle",
-        label: "Toggle Switch",
-        icon: "🔄",
-        description: "On/Off toggle switch",
-        defaultLabel: "Enable option"
-      }
-    ],
-    "File & Media": [
-      {
-        type: "file",
-        label: "File Upload",
-        icon: "📎",
-        description: "Upload documents or files",
-        defaultLabel: "Choose file"
-      },
-      {
-        type: "image",
-        label: "Image Upload",
-        icon: "🖼️",
-        description: "Upload images or photos",
-        defaultLabel: "Upload image"
-      }
-    ],
-    "Interactive Fields": [
-      {
-        type: "range",
-        label: "Range Slider",
-        icon: "🎚️",
-        description: "Select value from a range",
-        defaultLabel: "Select value"
-      },
-      {
-        type: "color",
-        label: "Color Picker",
-        icon: "🎨",
-        description: "Pick a color",
-        defaultLabel: "Pick a color"
-      },
-      {
-        type: "rating",
-        label: "Star Rating",
-        icon: "⭐",
-        description: "Rate with stars (1-5)",
-        defaultLabel: "Rate this"
-      }
-    ],
-    "Layout Elements": [
-      {
-        type: "heading",
-        label: "Section Heading",
-        icon: "📖",
-        description: "Add section titles to organize your form",
-        defaultLabel: "Section Title"
-      },
-      {
-        type: "separator",
-        label: "Divider Line",
-        icon: "➖",
-        description: "Add a line to separate sections",
-        defaultLabel: ""
-      }
-    ]
-  }), []);
+  const fieldCategories = useMemo(
+    () => ({
+      "Basic Fields": [
+        {
+          type: "text",
+          label: "Text Input",
+          icon: "📝",
+          description: "Single-line text field",
+          defaultLabel: "Your answer",
+        },
+        {
+          type: "textarea",
+          label: "Textarea",
+          icon: "📄",
+          description: "Multi-line text area",
+          defaultLabel: "Your detailed response",
+        },
+        {
+          type: "number",
+          label: "Number",
+          icon: "🔢",
+          description: "Numeric input",
+          defaultLabel: "Enter number",
+        },
+        {
+          type: "email",
+          label: "Email",
+          icon: "📧",
+          description: "Email address field",
+          defaultLabel: "Email address",
+        },
+        {
+          type: "tel",
+          label: "Phone",
+          icon: "📞",
+          description: "Phone number input",
+          defaultLabel: "Phone number",
+        },
+        {
+          type: "url",
+          label: "Website URL",
+          icon: "🔗",
+          description: "Website address field",
+          defaultLabel: "Website URL",
+        },
+        {
+          type: "password",
+          label: "Password",
+          icon: "🔒",
+          description: "Password input field",
+          defaultLabel: "Password",
+        },
+      ],
+      "Date/Time Fields": [
+        {
+          type: "date",
+          label: "Date",
+          icon: "📅",
+          description: "Date picker",
+          defaultLabel: "Select date",
+        },
+        {
+          type: "datetime-local",
+          label: "Date & Time",
+          icon: "🕒",
+          description: "Date and time picker",
+          defaultLabel: "Select date and time",
+        },
+        {
+          type: "time",
+          label: "Time",
+          icon: "⏰",
+          description: "Time picker",
+          defaultLabel: "Select time",
+        },
+      ],
+      "Selection Fields": [
+        {
+          type: "select",
+          label: "Dropdown",
+          icon: "📋",
+          description: "Single selection dropdown",
+          defaultLabel: "Please select",
+          defaultOptions: ["Option 1", "Option 2", "Option 3"],
+        },
+        {
+          type: "radio",
+          label: "Radio Buttons",
+          icon: "🔘",
+          description: "Single selection with radio buttons",
+          defaultLabel: "Choose one option",
+          defaultOptions: ["Option 1", "Option 2", "Option 3"],
+        },
+        {
+          type: "checkbox",
+          label: "Checkbox",
+          icon: "☑️",
+          description: "Yes/No checkbox",
+          defaultLabel: "Check if applicable",
+        },
+        {
+          type: "multiselect",
+          label: "Multiple Choice",
+          icon: "📑",
+          description: "Select multiple options",
+          defaultLabel: "Select all that apply",
+          defaultOptions: ["Option 1", "Option 2", "Option 3"],
+        },
+        {
+          type: "toggle",
+          label: "Toggle Switch",
+          icon: "🔄",
+          description: "On/Off toggle switch",
+          defaultLabel: "Enable option",
+        },
+      ],
+      "File & Media": [
+        {
+          type: "file",
+          label: "File Upload",
+          icon: "📎",
+          description: "Upload documents or files",
+          defaultLabel: "Choose file",
+        },
+        {
+          type: "image",
+          label: "Image Upload",
+          icon: "🖼️",
+          description: "Upload images or photos",
+          defaultLabel: "Upload image",
+        },
+      ],
+      "Interactive Fields": [
+        {
+          type: "range",
+          label: "Range Slider",
+          icon: "🎚️",
+          description: "Select value from a range",
+          defaultLabel: "Select value",
+        },
+        {
+          type: "color",
+          label: "Color Picker",
+          icon: "🎨",
+          description: "Pick a color",
+          defaultLabel: "Pick a color",
+        },
+        {
+          type: "rating",
+          label: "Star Rating",
+          icon: "⭐",
+          description: "Rate with stars (1-5)",
+          defaultLabel: "Rate this",
+        },
+      ],
+      "Layout Elements": [
+        {
+          type: "heading",
+          label: "Section Heading",
+          icon: "📖",
+          description: "Add section titles to organize your form",
+          defaultLabel: "Section Title",
+        },
+        {
+          type: "separator",
+          label: "Divider Line",
+          icon: "➖",
+          description: "Add a line to separate sections",
+          defaultLabel: "",
+        },
+      ],
+    }),
+    []
+  );
 
   // Simple field creation
-  const createField = useCallback((type) => {
-    const fieldType = Object.values(fieldCategories)
-      .flat()
-      .find(f => f.type === type);
-    
-    const newField = {
-      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      label: fieldType.defaultLabel,
-      placeholder: "",
-      required: false,
-      helpText: "",
-      options: fieldType.defaultOptions || [],
-      // Additional properties for specific field types
-      min: type === 'range' ? 0 : undefined,
-      max: type === 'range' ? 100 : undefined,
-      step: type === 'range' ? 1 : undefined,
-      accept: type === 'image' ? 'image/*' : undefined,
-      multiple: false,
-      rows: type === 'textarea' ? 4 : undefined,
-      maxRating: type === 'rating' ? 5 : undefined
-    };
+  const createField = useCallback(
+    (type) => {
+      const fieldType = Object.values(fieldCategories)
+        .flat()
+        .find((f) => f.type === type);
 
-    setFormConfig(prev => ({
-      ...prev,
-      fields: [...prev.fields, newField]
-    }));
-    setSelectedField(newField);
-  }, [fieldCategories]);
-  
+      const newField = {
+        id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type,
+        label: fieldType.defaultLabel,
+        placeholder: "",
+        required: false,
+        helpText: "",
+        options: fieldType.defaultOptions || [],
+        // Additional properties for specific field types
+        min: type === "range" ? 0 : undefined,
+        max: type === "range" ? 100 : undefined,
+        step: type === "range" ? 1 : undefined,
+        accept: type === "image" ? "image/*" : undefined,
+        multiple: false,
+        rows: type === "textarea" ? 4 : undefined,
+        maxRating: type === "rating" ? 5 : undefined,
+      };
+
+      setFormConfig((prev) => ({
+        ...prev,
+        fields: [...prev.fields, newField],
+      }));
+      setSelectedField(newField);
+    },
+    [fieldCategories]
+  );
+
   // Simple field operations
-  const updateField = useCallback((fieldId, updates) => {
-    setFormConfig(prev => ({
-      ...prev,
-      fields: prev.fields.map(field =>
-        field.id === fieldId ? { ...field, ...updates } : field
-      )
-    }));
-    
-    if (selectedField?.id === fieldId) {
-      setSelectedField(prev => ({ ...prev, ...updates }));
-    }
-  }, [selectedField]);
+  const updateField = useCallback(
+    (fieldId, updates) => {
+      setFormConfig((prev) => ({
+        ...prev,
+        fields: prev.fields.map((field) =>
+          field.id === fieldId ? { ...field, ...updates } : field
+        ),
+      }));
 
-  const removeField = useCallback((fieldId) => {
-    setFormConfig(prev => ({
-      ...prev,
-      fields: prev.fields.filter(field => field.id !== fieldId)
-    }));
-    if (selectedField?.id === fieldId) {
-      setSelectedField(null);
-    }
-  }, [selectedField]);
+      if (selectedField?.id === fieldId) {
+        setSelectedField((prev) => ({ ...prev, ...updates }));
+      }
+    },
+    [selectedField]
+  );
+
+  const removeField = useCallback(
+    (fieldId) => {
+      setFormConfig((prev) => ({
+        ...prev,
+        fields: prev.fields.filter((field) => field.id !== fieldId),
+      }));
+      if (selectedField?.id === fieldId) {
+        setSelectedField(null);
+      }
+    },
+    [selectedField]
+  );
 
   const moveField = useCallback((fieldId, direction) => {
-    setFormConfig(prev => {
+    setFormConfig((prev) => {
       const fields = [...prev.fields];
-      const currentIndex = fields.findIndex(f => f.id === fieldId);
-      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      
+      const currentIndex = fields.findIndex((f) => f.id === fieldId);
+      const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
       if (newIndex >= 0 && newIndex < fields.length) {
-        [fields[currentIndex], fields[newIndex]] = [fields[newIndex], fields[currentIndex]];
+        [fields[currentIndex], fields[newIndex]] = [
+          fields[newIndex],
+          fields[currentIndex],
+        ];
       }
-      
+
       return { ...prev, fields };
     });
   }, []);
@@ -1876,9 +1897,11 @@ const StageDependentFormsSettings = ({ stages }) => {
     <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
       <div className="p-4 border-b">
         <h3 className="font-semibold text-gray-800 mb-1">📋 Add Fields</h3>
-        <p className="text-sm text-gray-600">Click on any field type to add it to your form</p>
+        <p className="text-sm text-gray-600">
+          Click on any field type to add it to your form
+        </p>
       </div>
-      
+
       <div className="p-4 space-y-6">
         {Object.entries(fieldCategories).map(([category, fields]) => (
           <div key={category}>
@@ -1920,21 +1943,23 @@ const StageDependentFormsSettings = ({ stages }) => {
     const fieldValue = isLive ? previewData[field.id] : "";
     const setValue = (value) => {
       if (isLive) {
-        setPreviewData(prev => ({ ...prev, [field.id]: value }));
+        setPreviewData((prev) => ({ ...prev, [field.id]: value }));
       }
     };
 
     const renderField = () => {
       switch (field.type) {
-        case 'text':
-        case 'email':
-        case 'tel':
-        case 'url':
-        case 'password':
-  return (
+        case "text":
+        case "email":
+        case "tel":
+        case "url":
+        case "password":
+          return (
             <input
               type={field.type}
-              placeholder={field.placeholder || `Enter your ${field.label.toLowerCase()}`}
+              placeholder={
+                field.placeholder || `Enter your ${field.label.toLowerCase()}`
+              }
               value={fieldValue}
               onChange={(e) => setValue(e.target.value)}
               required={field.required}
@@ -1943,7 +1968,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             />
           );
 
-        case 'number':
+        case "number":
           return (
             <input
               type="number"
@@ -1959,10 +1984,12 @@ const StageDependentFormsSettings = ({ stages }) => {
             />
           );
 
-        case 'textarea':
+        case "textarea":
           return (
             <textarea
-              placeholder={field.placeholder || `Enter your ${field.label.toLowerCase()}`}
+              placeholder={
+                field.placeholder || `Enter your ${field.label.toLowerCase()}`
+              }
               value={fieldValue}
               onChange={(e) => setValue(e.target.value)}
               required={field.required}
@@ -1972,9 +1999,9 @@ const StageDependentFormsSettings = ({ stages }) => {
             />
           );
 
-        case 'date':
-        case 'datetime-local':
-        case 'time':
+        case "date":
+        case "datetime-local":
+        case "time":
           return (
             <input
               type={field.type}
@@ -1986,7 +2013,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             />
           );
 
-        case 'radio':
+        case "radio":
           return (
             <div className="space-y-2">
               {(field.options || []).map((option, idx) => (
@@ -2006,7 +2033,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             </div>
           );
 
-        case 'checkbox':
+        case "checkbox":
           return (
             <label className="flex items-center gap-2">
               <input
@@ -2020,7 +2047,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             </label>
           );
 
-        case 'multiselect':
+        case "multiselect":
           return (
             <div className="space-y-2">
               {(field.options || []).map((option, idx) => (
@@ -2028,14 +2055,20 @@ const StageDependentFormsSettings = ({ stages }) => {
                   <input
                     type="checkbox"
                     value={option}
-                    checked={Array.isArray(fieldValue) ? fieldValue.includes(option) : false}
+                    checked={
+                      Array.isArray(fieldValue)
+                        ? fieldValue.includes(option)
+                        : false
+                    }
                     onChange={(e) => {
                       if (isLive) {
-                        const currentValues = Array.isArray(fieldValue) ? fieldValue : [];
+                        const currentValues = Array.isArray(fieldValue)
+                          ? fieldValue
+                          : [];
                         if (e.target.checked) {
                           setValue([...currentValues, option]);
                         } else {
-                          setValue(currentValues.filter(v => v !== option));
+                          setValue(currentValues.filter((v) => v !== option));
                         }
                       }
                     }}
@@ -2048,7 +2081,7 @@ const StageDependentFormsSettings = ({ stages }) => {
             </div>
           );
 
-        case 'select':
+        case "select":
           return (
             <select
               value={fieldValue}
@@ -2059,12 +2092,14 @@ const StageDependentFormsSettings = ({ stages }) => {
             >
               <option value="">Please select...</option>
               {(field.options || []).map((option, idx) => (
-                <option key={idx} value={option}>{option}</option>
+                <option key={idx} value={option}>
+                  {option}
+                </option>
               ))}
             </select>
           );
 
-        case 'toggle':
+        case "toggle":
           return (
             <label className="flex items-center gap-3">
               <div className="relative">
@@ -2075,20 +2110,24 @@ const StageDependentFormsSettings = ({ stages }) => {
                   disabled={!isLive}
                   className="sr-only"
                 />
-                <div className={`w-11 h-6 rounded-full transition-colors ${
-                  fieldValue ? 'bg-blue-600' : 'bg-gray-300'
-                }`}>
-                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform m-0.5 ${
-                    fieldValue ? 'translate-x-5' : 'translate-x-0'
-                  }`}></div>
+                <div
+                  className={`w-11 h-6 rounded-full transition-colors ${
+                    fieldValue ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow transition-transform m-0.5 ${
+                      fieldValue ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  ></div>
                 </div>
               </div>
               <span>{field.label}</span>
             </label>
           );
 
-        case 'file':
-        case 'image':
+        case "file":
+        case "image":
           return (
             <input
               type="file"
@@ -2099,9 +2138,9 @@ const StageDependentFormsSettings = ({ stages }) => {
             />
           );
 
-        case 'range':
+        case "range":
           return (
-        <div>
+            <div>
               <input
                 type="range"
                 min={field.min || 0}
@@ -2114,44 +2153,46 @@ const StageDependentFormsSettings = ({ stages }) => {
               />
               <div className="text-sm text-center text-gray-600 mt-1">
                 {fieldValue || field.min || 0}
-        </div>
+              </div>
             </div>
           );
 
-        case 'color':
+        case "color":
           return (
             <input
               type="color"
-              value={fieldValue || '#000000'}
+              value={fieldValue || "#000000"}
               onChange={(e) => setValue(e.target.value)}
               className="w-full h-10 border border-gray-300 rounded-md"
               disabled={!isLive}
             />
           );
 
-        case 'rating':
+        case "rating":
           return (
             <div className="flex gap-1">
               {[...Array(field.maxRating || 5)].map((_, idx) => (
-        <button 
+                <button
                   key={idx}
                   type="button"
                   onClick={() => isLive && setValue(idx + 1)}
                   className={`text-2xl ${
-                    idx < (fieldValue || 0) ? 'text-yellow-400' : 'text-gray-300'
+                    idx < (fieldValue || 0)
+                      ? "text-yellow-400"
+                      : "text-gray-300"
                   }`}
                   disabled={!isLive}
                 >
                   ⭐
-        </button>
+                </button>
               ))}
-      </div>
+            </div>
           );
 
-        case 'separator':
+        case "separator":
           return <hr className="border-gray-300 w-full my-4" />;
 
-        case 'heading':
+        case "heading":
           return (
             <h3 className="text-lg font-semibold text-gray-800">
               {field.label}
@@ -2165,7 +2206,7 @@ const StageDependentFormsSettings = ({ stages }) => {
 
     return (
       <div className="space-y-2">
-        {!['separator', 'heading'].includes(field.type) && (
+        {!["separator", "heading"].includes(field.type) && (
           <label className="block text-sm font-medium text-gray-700">
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -2188,9 +2229,13 @@ const StageDependentFormsSettings = ({ stages }) => {
             <div className="text-3xl mb-2">⚙️</div>
             <p className="mb-4">Select a field to edit its settings</p>
             <div className="text-left space-y-2 text-sm">
-              <p>💡 <strong>Quick Tips:</strong></p>
+              <p>
+                💡 <strong>Quick Tips:</strong>
+              </p>
               <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Click &quot;Edit&quot; on any field to change its settings</li>
+                <li>
+                  Click &quot;Edit&quot; on any field to change its settings
+                </li>
                 <li>Use ⬆️⬇️ arrows to reorder fields</li>
                 <li>Switch to Preview to see how your form looks</li>
               </ul>
@@ -2202,7 +2247,7 @@ const StageDependentFormsSettings = ({ stages }) => {
 
     const fieldType = Object.values(fieldCategories)
       .flat()
-      .find(f => f.type === selectedField.type);
+      .find((f) => f.type === selectedField.type);
 
     return (
       <div className="w-80 bg-white border-l border-gray-200 overflow-y-auto">
@@ -2213,61 +2258,85 @@ const StageDependentFormsSettings = ({ stages }) => {
 
         <div className="p-4 space-y-4">
           {/* Basic Settings */}
-          {!['separator'].includes(selectedField.type) && (
-              <div>
+          {!["separator"].includes(selectedField.type) && (
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {selectedField.type === 'heading' ? 'Section Title' : 'Question/Label'}
+                {selectedField.type === "heading"
+                  ? "Section Title"
+                  : "Question/Label"}
               </label>
               <input
                 type="text"
                 value={selectedField.label}
-                onChange={(e) => updateField(selectedField.id, { label: e.target.value })}
+                onChange={(e) =>
+                  updateField(selectedField.id, { label: e.target.value })
+                }
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your question"
               />
-              </div>
+            </div>
           )}
 
           {/* Placeholder for input fields */}
-          {['text', 'textarea', 'email', 'tel', 'number', 'url', 'password'].includes(selectedField.type) && (
-              <div>
+          {[
+            "text",
+            "textarea",
+            "email",
+            "tel",
+            "number",
+            "url",
+            "password",
+          ].includes(selectedField.type) && (
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Placeholder Text
               </label>
-                <input
-                  type="text"
-                value={selectedField.placeholder || ''}
-                onChange={(e) => updateField(selectedField.id, { placeholder: e.target.value })}
+              <input
+                type="text"
+                value={selectedField.placeholder || ""}
+                onChange={(e) =>
+                  updateField(selectedField.id, { placeholder: e.target.value })
+                }
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 placeholder="Hint text for users"
-                />
-              </div>
+              />
+            </div>
           )}
 
           {/* Required field setting */}
-          {!['separator', 'heading', 'progress', 'computed'].includes(selectedField.type) && (
+          {!["separator", "heading", "progress", "computed"].includes(
+            selectedField.type
+          ) && (
             <div>
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={selectedField.required || false}
-                  onChange={(e) => updateField(selectedField.id, { required: e.target.checked })}
+                  onChange={(e) =>
+                    updateField(selectedField.id, {
+                      required: e.target.checked,
+                    })
+                  }
                   className="w-4 h-4 text-blue-600 rounded"
                 />
-                <span className="text-sm font-medium text-gray-700">Required field</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Required field
+                </span>
               </label>
             </div>
           )}
 
           {/* Help text */}
-          {!['separator', 'heading'].includes(selectedField.type) && (
+          {!["separator", "heading"].includes(selectedField.type) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Help Text (Optional)
               </label>
               <textarea
-                value={selectedField.helpText || ''}
-                onChange={(e) => updateField(selectedField.id, { helpText: e.target.value })}
+                value={selectedField.helpText || ""}
+                onChange={(e) =>
+                  updateField(selectedField.id, { helpText: e.target.value })
+                }
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 rows="2"
                 placeholder="Additional instructions for users"
@@ -2276,7 +2345,7 @@ const StageDependentFormsSettings = ({ stages }) => {
           )}
 
           {/* Options for choice fields */}
-          {['radio', 'multiselect', 'select'].includes(selectedField.type) && (
+          {["radio", "multiselect", "select"].includes(selectedField.type) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Options
@@ -2295,32 +2364,37 @@ const StageDependentFormsSettings = ({ stages }) => {
                       className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                       placeholder={`Option ${idx + 1}`}
                     />
-                <button
+                    <button
                       onClick={() => {
-                        const newOptions = selectedField.options.filter((_, i) => i !== idx);
+                        const newOptions = selectedField.options.filter(
+                          (_, i) => i !== idx
+                        );
                         updateField(selectedField.id, { options: newOptions });
                       }}
                       className="text-red-600 hover:text-red-800 p-2"
                     >
                       🗑️
-                </button>
-              </div>
+                    </button>
+                  </div>
                 ))}
-                        <button
+                <button
                   onClick={() => {
-                    const newOptions = [...(selectedField.options || []), `Option ${(selectedField.options?.length || 0) + 1}`];
+                    const newOptions = [
+                      ...(selectedField.options || []),
+                      `Option ${(selectedField.options?.length || 0) + 1}`,
+                    ];
                     updateField(selectedField.id, { options: newOptions });
                   }}
                   className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-gray-400 hover:text-gray-800"
                 >
                   + Add Option
-                        </button>
+                </button>
               </div>
             </div>
           )}
 
           {/* Range settings */}
-          {selectedField.type === 'range' && (
+          {selectedField.type === "range" && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -2330,10 +2404,14 @@ const StageDependentFormsSettings = ({ stages }) => {
                   <input
                     type="number"
                     value={selectedField.min || 0}
-                    onChange={(e) => updateField(selectedField.id, { min: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      updateField(selectedField.id, {
+                        min: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   />
-                    </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Max Value
@@ -2341,7 +2419,11 @@ const StageDependentFormsSettings = ({ stages }) => {
                   <input
                     type="number"
                     value={selectedField.max || 100}
-                    onChange={(e) => updateField(selectedField.id, { max: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      updateField(selectedField.id, {
+                        max: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -2353,7 +2435,11 @@ const StageDependentFormsSettings = ({ stages }) => {
                 <input
                   type="number"
                   value={selectedField.step || 1}
-                  onChange={(e) => updateField(selectedField.id, { step: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    updateField(selectedField.id, {
+                      step: parseInt(e.target.value),
+                    })
+                  }
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -2361,68 +2447,84 @@ const StageDependentFormsSettings = ({ stages }) => {
           )}
 
           {/* Rating settings */}
-          {selectedField.type === 'rating' && (
-                      <div>
+          {selectedField.type === "rating" && (
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Maximum Rating
               </label>
-                        <input
+              <input
                 type="number"
                 value={selectedField.maxRating || 5}
-                onChange={(e) => updateField(selectedField.id, { maxRating: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  updateField(selectedField.id, {
+                    maxRating: parseInt(e.target.value),
+                  })
+                }
                 min="1"
                 max="10"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+              />
+            </div>
           )}
 
           {/* Textarea rows */}
-          {selectedField.type === 'textarea' && (
-                      <div>
+          {selectedField.type === "textarea" && (
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Number of Rows
               </label>
-                        <input
+              <input
                 type="number"
                 value={selectedField.rows || 4}
-                onChange={(e) => updateField(selectedField.id, { rows: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  updateField(selectedField.id, {
+                    rows: parseInt(e.target.value),
+                  })
+                }
                 min="2"
                 max="10"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+              />
+            </div>
           )}
 
           {/* File upload settings */}
-          {['file', 'image'].includes(selectedField.type) && (
+          {["file", "image"].includes(selectedField.type) && (
             <>
-                      <div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Accepted File Types
                 </label>
                 <input
                   type="text"
-                  value={selectedField.accept || ''}
-                  onChange={(e) => updateField(selectedField.id, { accept: e.target.value })}
+                  value={selectedField.accept || ""}
+                  onChange={(e) =>
+                    updateField(selectedField.id, { accept: e.target.value })
+                  }
                   placeholder="e.g., .pdf,.doc,.docx or image/*"
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 />
-                      </div>
+              </div>
               <div>
                 <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
+                  <input
+                    type="checkbox"
                     checked={selectedField.multiple || false}
-                    onChange={(e) => updateField(selectedField.id, { multiple: e.target.checked })}
+                    onChange={(e) =>
+                      updateField(selectedField.id, {
+                        multiple: e.target.checked,
+                      })
+                    }
                     className="w-4 h-4 text-blue-600 rounded"
                   />
-                  <span className="text-sm font-medium text-gray-700">Allow multiple files</span>
-                        </label>
-                      </div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Allow multiple files
+                  </span>
+                </label>
+              </div>
             </>
           )}
-                    </div>
+        </div>
       </div>
     );
   };
@@ -2438,97 +2540,118 @@ const StageDependentFormsSettings = ({ stages }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Form Title
               </label>
-                        <input
-                          type="text"
+              <input
+                type="text"
                 value={formConfig.formName}
-                onChange={(e) => setFormConfig(prev => ({ ...prev, formName: e.target.value }))}
+                onChange={(e) =>
+                  setFormConfig((prev) => ({
+                    ...prev,
+                    formName: e.target.value,
+                  }))
+                }
                 placeholder="Enter your form title"
                 className="w-full text-lg font-medium border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Form Description (Optional)
               </label>
               <textarea
                 value={formConfig.description}
-                onChange={(e) => setFormConfig(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setFormConfig((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Add a description to help people understand your form"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 rows="3"
               />
-                  </div>
-              </div>
             </div>
+          </div>
+        </div>
 
         {/* Form Fields */}
         <div className="space-y-4">
           {formConfig.fields.length === 0 ? (
             <div className="bg-white rounded-lg shadow-sm border-2 border-dashed border-gray-300 p-12 text-center">
               <div className="text-4xl mb-4">🚀</div>
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Start Building Your Form</h3>
-              <p className="text-gray-600">Click on any field type from the left panel to add it to your form</p>
+              <h3 className="text-lg font-medium text-gray-700 mb-2">
+                Start Building Your Form
+              </h3>
+              <p className="text-gray-600">
+                Click on any field type from the left panel to add it to your
+                form
+              </p>
             </div>
           ) : (
             formConfig.fields.map((field, index) => (
               <SimpleFieldEditor key={field.id} field={field} index={index} />
             ))
           )}
-          </div>
         </div>
+      </div>
     </div>
   );
 
   // Simple Field Editor
   const SimpleFieldEditor = ({ field, index }) => {
     const isSelected = selectedField?.id === field.id;
-    
+
     // FIX: Properly find field type from nested fieldCategories object
     const fieldType = Object.values(fieldCategories)
       .flat()
-      .find(f => f.type === field.type);
+      .find((f) => f.type === field.type);
 
     return (
-      <div className={`bg-white rounded-lg shadow-sm border-2 transition-all duration-200 ${
-        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'
-      }`}>
+      <div
+        className={`bg-white rounded-lg shadow-sm border-2 transition-all duration-200 ${
+          isSelected
+            ? "border-blue-500 ring-2 ring-blue-200"
+            : "border-gray-200 hover:border-gray-300"
+        }`}
+      >
         {/* Field Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <span className="text-lg">{fieldType?.icon}</span>
-                <div>
-              <div className="font-medium text-gray-800">{fieldType?.label}</div>
+            <div>
+              <div className="font-medium text-gray-800">
+                {fieldType?.label}
+              </div>
               <div className="text-sm text-gray-600">{field.label}</div>
             </div>
-                </div>
-                <div className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-2">
             {/* Move buttons */}
-                  <button
-              onClick={() => moveField(field.id, 'up')}
+            <button
+              onClick={() => moveField(field.id, "up")}
               disabled={index === 0}
               className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
               title="Move up"
             >
               ⬆️
-                  </button>
-                  <button
-              onClick={() => moveField(field.id, 'down')}
+            </button>
+            <button
+              onClick={() => moveField(field.id, "down")}
               disabled={index === formConfig.fields.length - 1}
               className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
               title="Move down"
             >
               ⬇️
-                  </button>
+            </button>
             {/* Edit button */}
-                  <button
+            <button
               onClick={() => setSelectedField(field)}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                isSelected 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                isSelected
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {isSelected ? 'Editing' : 'Edit'}
+              {isSelected ? "Editing" : "Edit"}
             </button>
             {/* Delete button */}
             <button
@@ -2537,14 +2660,14 @@ const StageDependentFormsSettings = ({ stages }) => {
               title="Delete field"
             >
               🗑️
-                  </button>
-                </div>
-              </div>
+            </button>
+          </div>
+        </div>
 
         {/* Field Preview */}
         <div className="p-4">
           <SimpleFieldPreview field={field} />
-            </div>
+        </div>
       </div>
     );
   };
@@ -2552,17 +2675,17 @@ const StageDependentFormsSettings = ({ stages }) => {
   // Simple Form Preview
   const SimpleFormPreview = () => (
     <div className="flex-1 bg-gray-50 overflow-auto">
-            <div className="p-6">
+      <div className="p-6">
         <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg">
           {/* Form Header */}
           <div className="p-6 border-b">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {formConfig.formName || 'Untitled Form'}
+              {formConfig.formName || "Untitled Form"}
             </h1>
             {formConfig.description && (
               <p className="text-gray-600">{formConfig.description}</p>
-                      )}
-                    </div>
+            )}
+          </div>
 
           {/* Form Fields */}
           <div className="p-6 space-y-6">
@@ -2581,10 +2704,10 @@ const StageDependentFormsSettings = ({ stages }) => {
                 Submit Form
               </button>
             </div>
-                      )}
-                    </div>
-                  </div>
-              </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 
   // Handle create form
@@ -2601,7 +2724,7 @@ const StageDependentFormsSettings = ({ stages }) => {
 
     console.log("Simple Form Configuration:", {
       stageId: selectedStage,
-      formConfig
+      formConfig,
     });
 
     toast.success("Form created successfully!");
@@ -2609,7 +2732,7 @@ const StageDependentFormsSettings = ({ stages }) => {
     setFormConfig({
       formName: "",
       description: "",
-      fields: []
+      fields: [],
     });
     setSelectedField(null);
     setPreviewData({});
@@ -2620,21 +2743,28 @@ const StageDependentFormsSettings = ({ stages }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-bold text-gray-800">📋 Advanced Form Builder</h3>
-          <p className="text-sm text-gray-600">Create professional forms with comprehensive field types - no technical knowledge required!</p>
-            </div>
+          <h3 className="text-lg font-bold text-gray-800">
+            📋 Advanced Form Builder
+          </h3>
+          <p className="text-sm text-gray-600">
+            Create professional forms with comprehensive field types - no
+            technical knowledge required!
+          </p>
+        </div>
         <button
           onClick={() => setIsCreatingForm(true)}
           className="px-6 py-3 text-sm rounded-md flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 font-medium shadow-lg transition-all duration-200"
         >
           <FaPlus /> Create New Form
         </button>
-          </div>
+      </div>
 
       {/* Stage availability check */}
       {availableStages.length === 0 && !isCreatingForm && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-800">⚠️ No pipeline stages available. Please add pipeline stages first.</p>
+          <p className="text-sm text-yellow-800">
+            ⚠️ No pipeline stages available. Please add pipeline stages first.
+          </p>
         </div>
       )}
 
@@ -2644,7 +2774,9 @@ const StageDependentFormsSettings = ({ stages }) => {
           {/* Header */}
           <div className="p-6 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
             <div className="flex justify-between items-center mb-4">
-              <h4 className="font-bold text-xl text-gray-800">📋 Build Your Form</h4>
+              <h4 className="font-bold text-xl text-gray-800">
+                📋 Build Your Form
+              </h4>
               <button
                 onClick={() => {
                   setIsCreatingForm(false);
@@ -2657,23 +2789,25 @@ const StageDependentFormsSettings = ({ stages }) => {
                 <FaTimes />
               </button>
             </div>
-            
+
             <div className="max-w-md">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Which stage will use this form?
               </label>
-              <select 
-                value={selectedStage} 
-                onChange={(e) => setSelectedStage(e.target.value)} 
+              <select
+                value={selectedStage}
+                onChange={(e) => setSelectedStage(e.target.value)}
                 className="border border-gray-300 p-3 rounded-md w-full focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Choose a stage</option>
                 {availableStages.map((stage) => (
-                  <option key={stage.id} value={stage.id}>{stage.name}</option>
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
                 ))}
               </select>
             </div>
-      </div>
+          </div>
 
           {/* Tab Navigation */}
           <div className="border-b border-gray-200">
@@ -2717,7 +2851,8 @@ const StageDependentFormsSettings = ({ stages }) => {
           {/* Footer */}
           <div className="p-6 border-t bg-gray-50 flex gap-3 justify-between">
             <div className="text-sm text-gray-600">
-              ✨ Click field types to add them • Click &quot;Edit&quot; to customize • Use ⬆️⬇️ to reorder
+              ✨ Click field types to add them • Click &quot;Edit&quot; to
+              customize • Use ⬆️⬇️ to reorder
             </div>
             <div className="flex gap-3">
               <button
@@ -2746,23 +2881,39 @@ const StageDependentFormsSettings = ({ stages }) => {
       {!isCreatingForm && (
         <div className="text-center py-12 text-gray-500">
           <div className="text-6xl mb-4">📋</div>
-          <h3 className="text-xl font-medium text-gray-700 mb-2">Advanced Form Builder</h3>
-          <p className="text-gray-600 mb-6">Create professional forms with comprehensive field types - no technical knowledge required!</p>
+          <h3 className="text-xl font-medium text-gray-700 mb-2">
+            Advanced Form Builder
+          </h3>
+          <p className="text-gray-600 mb-6">
+            Create professional forms with comprehensive field types - no
+            technical knowledge required!
+          </p>
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto text-left">
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <div className="text-2xl mb-3">🎯</div>
-              <h4 className="font-semibold text-gray-800 mb-2">Comprehensive Field Types</h4>
-              <p className="text-sm text-gray-600">Text, email, phone, multiple choice, checkboxes, and more, all organized into clear categories</p>
+              <h4 className="font-semibold text-gray-800 mb-2">
+                Comprehensive Field Types
+              </h4>
+              <p className="text-sm text-gray-600">
+                Text, email, phone, multiple choice, checkboxes, and more, all
+                organized into clear categories
+              </p>
             </div>
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <div className="text-2xl mb-3">📝</div>
               <h4 className="font-semibold text-gray-800 mb-2">Live Preview</h4>
-              <p className="text-sm text-gray-600">See exactly how your form will look as you build it</p>
+              <p className="text-sm text-gray-600">
+                See exactly how your form will look as you build it
+              </p>
             </div>
             <div className="bg-white p-6 rounded-lg border border-gray-200">
               <div className="text-2xl mb-3">👁️</div>
-              <h4 className="font-semibold text-gray-800 mb-2">Customizable Settings</h4>
-              <p className="text-sm text-gray-600">Add, remove, or reorder fields, set validation rules, and more</p>
+              <h4 className="font-semibold text-gray-800 mb-2">
+                Customizable Settings
+              </h4>
+              <p className="text-sm text-gray-600">
+                Add, remove, or reorder fields, set validation rules, and more
+              </p>
             </div>
           </div>
         </div>
@@ -2787,8 +2938,7 @@ const SettingsPage = ({
       id: "pipelineStages",
       label: "Sales Settings",
       icon: FaStream,
-      description:
-        "Pipelines configuration",
+      description: "Pipelines configuration",
     },
     {
       id: "stageForms",
@@ -2950,14 +3100,14 @@ const PipelineSettings = ({
       toast.error("Form type is required when 'Is Form' is enabled");
       return;
     }
-    
+
     const newStage = {
       name: newStageName,
       color: newStageColor,
       isFormRequired: newStageIsForm,
       formType: newStageIsForm ? newStageFormType : null,
     };
-    
+
     onAddStage(newStage);
     setNewStageName("");
     setNewStageColor("#3b82f6");
@@ -2965,7 +3115,7 @@ const PipelineSettings = ({
     setNewStageFormType("");
     setIsAddingStage(false);
     toast.success("Stage added successfully");
-    
+
     // Auto-refresh after adding stage
     setTimeout(() => {
       dispatch(fetchPipelines());
@@ -2975,16 +3125,18 @@ const PipelineSettings = ({
   const handleDeleteStage = (stage) => {
     // Check if the stage has any leads
     const stageHasLeads = leads.some((lead) => lead.status === stage.name);
-    
-    console.log('Checking stage for leads:', {
+
+    console.log("Checking stage for leads:", {
       stageName: stage.name,
       totalLeads: leads.length,
-      stageLeads: leads.filter(lead => lead.status === stage.name),
-      stageHasLeads
+      stageLeads: leads.filter((lead) => lead.status === stage.name),
+      stageHasLeads,
     });
-    
+
     if (stageHasLeads) {
-      setWarningMessage(`Cannot delete: The pipeline stage "${stage.name}" contains leads. Please move the leads to other pipeline stages and try again.`);
+      setWarningMessage(
+        `Cannot delete: The pipeline stage "${stage.name}" contains leads. Please move the leads to other pipeline stages and try again.`
+      );
       setShowWarningModal(true);
     } else {
       setStageToDelete(stage);
@@ -2999,15 +3151,18 @@ const PipelineSettings = ({
         setStageToDelete(null);
         setShowDeleteModal(false);
         toast.success("Pipeline stage deleted successfully");
-        
+
         // Auto-refresh after deleting stage
         setTimeout(() => {
           dispatch(fetchPipelines());
         }, 100);
       } catch (error) {
-        console.log('Error caught in confirmDeleteStage:', error);
+        console.log("Error caught in confirmDeleteStage:", error);
         // Check if it's the specific backend error about leads in the stage
-        if (error.message && error.message.includes("lead(s) are currently in this stage")) {
+        if (
+          error.message &&
+          error.message.includes("lead(s) are currently in this stage")
+        ) {
           setWarningMessage(error.message);
           setShowWarningModal(true);
           setStageToDelete(null);
@@ -3029,9 +3184,13 @@ const PipelineSettings = ({
               style={{ backgroundColor: stage.color }}
             />
             <div className="flex flex-col">
-              <span className="font-semibold text-gray-800 text-sm">{stage.name}</span>
+              <span className="font-semibold text-gray-800 text-sm">
+                {stage.name}
+              </span>
               {stage.isFormRequired && (
-                <span className="text-xs text-blue-600 font-medium">Form Required</span>
+                <span className="text-xs text-blue-600 font-medium">
+                  Form Required
+                </span>
               )}
             </div>
           </div>
@@ -3223,7 +3382,8 @@ const PipelineSettings = ({
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-600 mb-4">
-                Are you sure you want to delete the pipeline stage &quot;{stageToDelete?.name}&quot;? This action cannot be undone.
+                Are you sure you want to delete the pipeline stage &quot;
+                {stageToDelete?.name}&quot;? This action cannot be undone.
               </p>
             </div>
             <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
@@ -3510,37 +3670,45 @@ const SettingContent = ({ role }) => {
 
     if (stagesData.length > 0) {
       try {
-        console.log('Attempting to delete stages:', stagesToDelete);
-        
+        console.log("Attempting to delete stages:", stagesToDelete);
+
         // Try to delete each stage and check for errors
         for (const stage of stagesData) {
           const result = await dispatch(deletePipeline(stage.id));
-          
+
           // Check if the action was rejected
           if (deletePipeline.rejected.match(result)) {
-            console.log('Delete pipeline rejected:', result.payload);
-            
+            console.log("Delete pipeline rejected:", result.payload);
+
             // Check if it's the specific backend error about leads
-            if (result.payload && result.payload.message && 
-                result.payload.message.includes("lead(s) are currently in this stage")) {
+            if (
+              result.payload &&
+              result.payload.message &&
+              result.payload.message.includes(
+                "lead(s) are currently in this stage"
+              )
+            ) {
               throw new Error(result.payload.message);
             }
-            
+
             // If it's a different error, show toast and return
             toast.error("Failed to delete pipeline stage");
             return;
           }
         }
-        
+
         // Auto-refresh after deleting stages
         dispatch(fetchPipelines());
         dispatch(fetchLeads());
         toast.success(`Deleted ${stagesToDelete.length} stage(s) successfully`);
       } catch (error) {
-        console.log('Error in handleDeleteStages:', error);
+        console.log("Error in handleDeleteStages:", error);
         // Check if it's the specific backend error about leads in the stage
-        if (error.message && error.message.includes("lead(s) are currently in this stage")) {
-          console.log('Throwing backend error about leads');
+        if (
+          error.message &&
+          error.message.includes("lead(s) are currently in this stage")
+        ) {
+          console.log("Throwing backend error about leads");
           // This will be handled by the calling component
           throw error;
         } else {
@@ -3593,7 +3761,15 @@ const SettingContent = ({ role }) => {
 
   const handleScheduleActivitySuccess = (activity) => {
     const leadId = activity.leadId;
-    dispatch(updateLead({ ...dedupedLeads.find((l) => l.leadId === leadId), activities: [...(dedupedLeads.find((l) => l.leadId === leadId)?.activities || []), activity] }));
+    dispatch(
+      updateLead({
+        ...dedupedLeads.find((l) => l.leadId === leadId),
+        activities: [
+          ...(dedupedLeads.find((l) => l.leadId === leadId)?.activities || []),
+          activity,
+        ],
+      })
+    );
     setShowScheduleActivityModal(false);
     setLeadToScheduleActivity(null);
     toast.success("Activity scheduled successfully");
@@ -3609,7 +3785,7 @@ const SettingContent = ({ role }) => {
             {/* Left side: New button */}
             <div className="flex items-center gap-4">
               {kanbanStatuses.length > 0 ? (
-            <button
+                <button
                   onClick={() => handleOpenAddLeadForm()}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-all duration-200"
                 >
@@ -3688,7 +3864,7 @@ const SettingContent = ({ role }) => {
                   title="Kanban View"
                 >
                   <FaThLarge />
-            </button>
+                </button>
                 <button
                   onClick={() => setViewMode("table")}
                   className={`px-3 py-2 text-sm font-medium transition-all duration-200 border-l border-gray-300 ${
@@ -3700,7 +3876,7 @@ const SettingContent = ({ role }) => {
                 >
                   <FaListUl />
                 </button>
-      </div>
+              </div>
 
               {/* Settings Button */}
               <button
@@ -3717,7 +3893,7 @@ const SettingContent = ({ role }) => {
             <div className="mb-6 p-4 bg-white rounded-lg shadow border">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Add New Pipeline Stage
-            </h3>
+              </h3>
               <div className="flex flex-col sm:flex-row gap-4 items-end">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -3757,7 +3933,13 @@ const SettingContent = ({ role }) => {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => handleAddStage({ name: newStageName, isForm: newStageIsForm, color: newStageColor })}
+                    onClick={() =>
+                      handleAddStage({
+                        name: newStageName,
+                        isForm: newStageIsForm,
+                        color: newStageColor,
+                      })
+                    }
                     disabled={!newStageName.trim()}
                     className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-md transition-all duration-200"
                   >
@@ -3771,8 +3953,8 @@ const SettingContent = ({ role }) => {
                   </button>
                 </div>
               </div>
-          </div>
-        )}
+            </div>
+          )}
 
           {/* Main Content */}
           {viewMode === "kanban" ? (
@@ -3805,7 +3987,7 @@ const SettingContent = ({ role }) => {
               <p className="text-sm text-gray-600">
                 Customize your sales pipeline, workflows, and team permissions
               </p>
-      </div>
+            </div>
             {/* <button
               onClick={() => handleViewChange("pipeline")}
               className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
