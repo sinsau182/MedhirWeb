@@ -217,7 +217,7 @@ function SuperadminCompanies() {
           regAdd: companyData.regAdd,
           prefixForEmpID: companyData.prefixForEmpID,
           colorCode: companyData.colorCode,
-          companyHeads: companyData.companyHeads && companyData.companyHeads.length > 0 ? companyData.companyHeads : []
+          companyHeadId: companyData.companyHeadId
       };
 
       if (isEditing) {
