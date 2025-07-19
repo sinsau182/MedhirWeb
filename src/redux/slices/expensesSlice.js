@@ -6,30 +6,30 @@ const API_BASE_URL = publicRuntimeConfig.apiURL + "/expenses";
 
 
 // Fetch expenses by employee ID
-// export const fetchExpenseByEmployeeId = createAsyncThunk(
-//     "expenses/fetchExpenseByEmployeeId",
-//     async (_, { rejectWithValue }) => {
-//         try {
-//             const token = getItemFromSessionStorage("token", null);
-//             const employee = sessionStorage.getItem("employeeId");
-//             const response = await fetch(`${API_BASE_URL}/employee/${employee}`, {
-//                 headers: {
-//                     "Authorization": `Bearer ${token}`,
-//                     "Content-Type": "application/json"
-//                 }
-//             });
+export const fetchExpenseByEmployeeId = createAsyncThunk(
+    "expenses/fetchExpenseByEmployeeId",
+    async (_, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const employee = sessionStorage.getItem("employeeId");
+            const response = await fetch(`${API_BASE_URL}/employee/${employee}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
 
-//             const data = await response.json();
+            const data = await response.json();
 
-//             if (!response.ok) {
-//                 return rejectWithValue(data.message || "Something went wrong"); // backend error
-//             }
-//             return data;
-//         } catch (error) {
-//             return rejectWithValue(error.message || "Network Error");
-//         }
-//     }
-// );
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
+            }
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Network Error");
+        }
+    }
+);
 
 // Fetch all expenses
 export const fetchAllExpenses = createAsyncThunk(
@@ -118,18 +118,18 @@ export const expensesSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            // .addCase(fetchExpenseByEmployeeId.pending, (state) => {
-            //     state.loading = true;
-            //     state.error = null;
-            // })
-            // .addCase(fetchExpenseByEmployeeId.fulfilled, (state, action) => {
-            //     state.loading = false;
-            //     state.expenses = action.payload;
-            // })
-            // .addCase(fetchExpenseByEmployeeId.rejected, (state, action) => {
-            //     state.loading = false;
-            //     state.error = action.error.message;
-            // })
+            .addCase(fetchExpenseByEmployeeId.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchExpenseByEmployeeId.fulfilled, (state, action) => {
+                state.loading = false;
+                state.expenses = action.payload;
+            })
+            .addCase(fetchExpenseByEmployeeId.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            })
             .addCase(fetchAllExpenses.pending, (state) => {
                 state.loading = true;
                 state.error = null;

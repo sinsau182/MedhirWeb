@@ -70,6 +70,20 @@ export const initializePipelineStages = createAsyncThunk(
   }
 );
 
+export const reorderPipelines = createAsyncThunk(
+  'pipelines/reorder',
+  async (reorderData, { rejectWithValue }) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/pipeline-stages/reorder`, reorderData, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const pipelineSlice = createSlice({
   name: 'pipelines',
   initialState: { pipelines: [], status: 'idle', error: null },
@@ -119,6 +133,17 @@ const pipelineSlice = createSlice({
         state.error = null;
       })
       .addCase(initializePipelineStages.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload || action.error.message;
+      })
+      .addCase(reorderPipelines.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(reorderPipelines.fulfilled, (state, action) => {
+        state.pipelines = action.payload;
+        state.status = 'succeeded';
+      })
+      .addCase(reorderPipelines.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload || action.error.message;
       });

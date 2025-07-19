@@ -44,6 +44,167 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { jwtDecode } from "jwt-decode";
 import version from "../version";
 
+// Define modular menu structure outside component to avoid recreation
+const modularMenus = {
+  // HR Module
+  MOD_HR: {
+    label: "Human Resources",
+    icon: <Users className="w-5 h-5" />,
+    items: [
+      {
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/hradmin/dashboard",
+      },
+      {
+        label: "Employees",
+        icon: <Users className="w-4 h-4" />,
+        link: "/hradmin/employees",
+      },
+      {
+        label: "Attendance",
+        icon: <Clock className="w-4 h-4" />,
+        link: "/hradmin/attendance",
+      },
+      {
+        label: "Payroll",
+        icon: <ReceiptIcon className="w-4 h-4" />,
+        link: "/hradmin/payroll",
+      },
+      {
+        label: "Settings",
+        icon: <Settings className="w-4 h-4" />,
+        hasSubmenu: true,
+        menuKey: "hr-settings",
+        subItems: [
+          {
+            label: "Organization",
+            icon: <FaBuilding className="w-4 h-4" />,
+            link: "/hradmin/settings/organization",
+          },
+          {
+            label: "Payroll Settings",
+            icon: <FaMoneyCheckAlt className="w-4 h-4" />,
+            link: "/hradmin/settings/payrollsettings",
+          },
+          {
+            label: "Leave Management",
+            icon: <FaCalendarAlt className="w-4 h-4" />,
+            link: "/hradmin/settings/leave",
+          },
+        ],
+      },
+    ],
+  },
+
+  // Sales Module
+  MOD_SALES: {
+    label: "Sales & Marketing",
+    icon: <FaHandshake className="w-5 h-5" />,
+    items: [
+      {
+        label: "Lead Management",
+        icon: <FaTasks className="w-4 h-4" />,
+        link: "/Sales/LeadManagement",
+      },
+      {
+        label: "Team Management",
+        icon: <FaUsers className="w-4 h-4" />,
+        link: "/SalesManager/Manager",
+      },
+      {
+        label: "Sales Settings",
+        icon: <Settings className="w-4 h-4" />,
+        link: "/SalesManager/setting",
+      },
+    ],
+  },
+
+  // Accounting Module
+  MOD_ACCOUNTANT: {
+    label: "Accounting & Finance",
+    icon: <FaFileInvoiceDollar className="w-5 h-5" />,
+    items: [
+      {
+        label: "Customers",
+        icon: <FaUsers className="w-4 h-4" />,
+        link: "/account/customers",
+      },
+      {
+        label: "Vendors",
+        icon: <FaBuilding className="w-4 h-4" />,
+        link: "/account/vendor",
+      },
+      {
+        label: "Employees",
+        icon: <FaUserTie className="w-4 h-4" />,
+        link: "/account/employee",
+      },
+      {
+        label: "Account Settings",
+        icon: <Settings className="w-4 h-4" />,
+        link: "/account/settings",
+      },
+    ],
+  },
+
+  // Employee Module
+  EMPLOYEE: {
+    label: "My Portal",
+    icon: <FaUserCog className="w-5 h-5" />,
+    items: [
+      {
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/employee/dashboard",
+      },
+      {
+        label: "Leave Management",
+        icon: <Calendar className="w-4 h-4" />,
+        link: "/employee/leaves",
+      },
+      {
+        label: "Attendance",
+        icon: <Clock className="w-4 h-4" />,
+        link: "/employee/attendances",
+      },
+      {
+        label: "My Payslips",
+        icon: <ReceiptIcon className="w-4 h-4" />,
+        link: "/employee/mypayslip",
+      },
+      {
+        label: "Profile",
+        icon: <FaUserTie className="w-4 h-4" />,
+        link: "/employee/profile",
+      },
+    ],
+  },
+
+  // Manager Module
+  MANAGER: {
+    label: "My Team",
+    icon: <Briefcase className="w-5 h-5" />,
+    items: [
+      {
+        label: "Manager Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/manager/dashboard",
+      },
+      {
+        label: "Team Overview",
+        icon: <Users className="w-4 h-4" />,
+        link: "/manager/team",
+      },
+      {
+        label: "Team Attendance",
+        icon: <Clock className="w-4 h-4" />,
+        link: "/manager/attendance",
+      },
+    ],
+  },
+};
+
 const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
@@ -120,172 +281,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       }
     }
   }, [userRoles, userModules, router.pathname, getAvailableModules]);
-
-  // Define modular menu structure
-  const modularMenus = {
-    // HR Module
-    MOD_HR: {
-      label: "Human Resources",
-      icon: <Users className="w-5 h-5" />,
-      items: [
-        {
-          label: "Dashboard",
-          icon: <ChartColumnIncreasing className="w-4 h-4" />,
-          link: "/hradmin/dashboard",
-        },
-        {
-          label: "Employees",
-          icon: <Users className="w-4 h-4" />,
-          link: "/hradmin/employees",
-        },
-        {
-          label: "Attendance",
-          icon: <Clock className="w-4 h-4" />,
-          link: "/hradmin/attendance",
-        },
-        {
-          label: "Payroll",
-          icon: <ReceiptIcon className="w-4 h-4" />,
-          link: "/hradmin/payroll",
-        },
-        {
-          label: "Settings",
-          icon: <Settings className="w-4 h-4" />,
-          hasSubmenu: true,
-          menuKey: "hr-settings",
-          subItems: [
-            {
-              label: "Organization",
-              icon: <FaBuilding className="w-4 h-4" />,
-              link: "/hradmin/settings/organization",
-            },
-            {
-              label: "Payroll Settings",
-              icon: <FaMoneyCheckAlt className="w-4 h-4" />,
-              link: "/hradmin/settings/payrollsettings",
-            },
-            {
-              label: "Leave Management",
-              icon: <FaCalendarAlt className="w-4 h-4" />,
-              link: "/hradmin/settings/leave",
-            },
-            // {
-            //   label: "Admin Access",
-            //   icon: <FaUsers className="w-4 h-4" />,
-            //   link: "/hradmin/settings/admin-access",
-            // },
-          ],
-        },
-      ],
-    },
-
-    // Sales Module
-    MOD_SALES: {
-      label: "Sales & Marketing",
-      icon: <FaHandshake className="w-5 h-5" />,
-      items: [
-        {
-          label: "Lead Management",
-          icon: <FaTasks className="w-4 h-4" />,
-          link: "/Sales/LeadManagement",
-        },
-        {
-          label: "Team Management",
-          icon: <FaUsers className="w-4 h-4" />,
-          link: "/SalesManager/Manager",
-        },
-        {
-          label: "Sales Settings",
-          icon: <Settings className="w-4 h-4" />,
-          link: "/SalesManager/setting",
-        },
-      ],
-    },
-
-    // Accounting Module
-    MOD_ACCOUNTANT: {
-      label: "Accounting & Finance",
-      icon: <FaFileInvoiceDollar className="w-5 h-5" />,
-      items: [
-        {
-          label: "Customers",
-          icon: <FaUsers className="w-4 h-4" />,
-          link: "/account/customers",
-        },
-        {
-          label: "Vendors",
-          icon: <FaBuilding className="w-4 h-4" />,
-          link: "/account/vendor",
-        },
-        {
-          label: "Employees",
-          icon: <FaUserTie className="w-4 h-4" />,
-          link: "/account/employee",
-        },
-        {
-          label: "Account Settings",
-          icon: <Settings className="w-4 h-4" />,
-          link: "/account/settings",
-        },
-      ],
-    },
-
-    // Employee Module
-    EMPLOYEE: {
-      label: "My Portal",
-      icon: <FaUserCog className="w-5 h-5" />,
-      items: [
-        {
-          label: "Dashboard",
-          icon: <ChartColumnIncreasing className="w-4 h-4" />,
-          link: "/employee/dashboard",
-        },
-        {
-          label: "Leave Management",
-          icon: <Calendar className="w-4 h-4" />,
-          link: "/employee/leaves",
-        },
-        {
-          label: "Attendance",
-          icon: <Clock className="w-4 h-4" />,
-          link: "/employee/attendances",
-        },
-        {
-          label: "My Payslips",
-          icon: <ReceiptIcon className="w-4 h-4" />,
-          link: "/employee/mypayslip",
-        },
-        {
-          label: "Profile",
-          icon: <FaUserTie className="w-4 h-4" />,
-          link: "/employee/profile",
-        },
-      ],
-    },
-
-    // Manager Module
-    MANAGER: {
-      label: "My Team",
-      icon: <Briefcase className="w-5 h-5" />,
-      items: [
-        {
-          label: "Manager Dashboard",
-          icon: <ChartColumnIncreasing className="w-4 h-4" />,
-          link: "/manager/dashboard",
-        },
-        {
-          label: "Team Overview",
-          icon: <Users className="w-4 h-4" />,
-          link: "/manager/team",
-        },
-        {
-          label: "Team Attendance",
-          icon: <Clock className="w-4 h-4" />,
-          link: "/manager/attendance",
-        },
-      ],
-    },
-  };
 
   // Get available modules based on roles and moduleIds
   const hasAdminRole = () => {
@@ -456,17 +451,17 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     }
   }, [currentRole, userRoles, userModules, router.pathname, getAvailableModules]);
 
-  const isActiveLink = (link) => {
+  const isActiveLink = useCallback((link) => {
     if (!link) return false;
     return router.pathname === link || router.pathname.startsWith(link);
-  };
+  }, [router.pathname]);
 
-  const isActiveParent = (item) => {
+  const isActiveParent = useCallback((item) => {
     if (!item.hasSubmenu) return false;
     return item.subItems.some((subItem) =>
       router.pathname.startsWith(subItem.link)
     );
-  };
+  }, [router.pathname]);
 
   const isModuleActive = (module) => {
     return module.items.some((item) => {
