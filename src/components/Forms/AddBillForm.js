@@ -294,7 +294,9 @@ const BillForm = ({ onCancel }) => {
       await dispatch(addBill(formData)).unwrap();
       toast.success('Bill saved');
       setVendorCredits([]);
-      onCancel();
+      setTimeout(() => {
+        onCancel();
+      }, 500);
     } catch (error) {
       toast.error('Error saving bill: ' + (error.message || 'Unknown error'));
       console.error('Error creating bill:', error);

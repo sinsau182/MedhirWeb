@@ -150,6 +150,10 @@ function SuperadminCompanies() {
         updatedData.prefixForEmpID = value.toUpperCase();
       }
 
+      //  if (name === "gst") {
+      //   updatedData.gst = value.toUpperCase();
+      // }
+
       return updatedData;
     });
   };
