@@ -47,6 +47,7 @@ function SuperadminCompanies() {
     lastName: "",
     email: "",
     phone: "",
+    employeeId: "", // Add employeeId to track when editing
   });
   const [companyHeadError, setCompanyHeadError] = useState("");
 
@@ -104,6 +105,7 @@ function SuperadminCompanies() {
           lastName: firstHead.lastName || "",
           email: firstHead.email || "",
           phone: firstHead.phone || "",
+          employeeId: firstHead.employeeId || "",
         });
       } else {
         setCompanyHeadData({
@@ -112,6 +114,7 @@ function SuperadminCompanies() {
           lastName: "",
           email: "",
           phone: "",
+          employeeId: "",
         });
       }
     } else {
@@ -131,6 +134,7 @@ function SuperadminCompanies() {
         lastName: "",
         email: "",
         phone: "",
+        employeeId: "",
       });
     }
     setIsCompanyModalOpen(true);
@@ -223,11 +227,25 @@ function SuperadminCompanies() {
       };
 
       if (isEditing) {
+        // For update, use different payload structure with companyHeadIds
+        const updateRequestBody = {
+          name: companyData.name,
+          email: companyData.email,
+          phone: companyData.phone,
+          gst: companyData.gst,
+          regAdd: companyData.regAdd,
+          prefixForEmpID: companyData.prefixForEmpID,
+          colorCode: companyData.colorCode,
+          companyHeadIds: companyData.companyHeads && companyData.companyHeads.length > 0 
+            ? companyData.companyHeads.map(head => head.employeeId).filter(Boolean)
+            : []
+        };
+
         // Dispatch update action with Redux
         await dispatch(
           updateCompany({ 
             id: selectedCompany.companyId, // Handle both id formats
-            updatedData: requestBody 
+            updatedData: updateRequestBody 
           })
         );
         toast.success("Company updated successfully!");
@@ -288,6 +306,7 @@ function SuperadminCompanies() {
         lastName: firstHead.lastName || "",
         email: firstHead.email || "",
         phone: firstHead.phone || "",
+        employeeId: firstHead.employeeId || "", // Preserve employeeId when editing
       });
     } else {
       setCompanyHeadData({
@@ -296,6 +315,7 @@ function SuperadminCompanies() {
         lastName: "",
         email: "",
         phone: "",
+        employeeId: "", // Reset employeeId for new company head
       });
     }
     setCompanyHeadError("");
@@ -356,6 +376,8 @@ function SuperadminCompanies() {
           lastName: companyHeadData.lastName.trim(),
           email: companyHeadData.email,
           phone: companyHeadData.phone,
+          // Include employeeId if it exists (for editing)
+          ...(companyHeadData.employeeId && { employeeId: companyHeadData.employeeId })
         }],
       }));
       setIsCompanyHeadModalOpen(false);
@@ -769,6 +791,7 @@ function SuperadminCompanies() {
             lastName: "",
             email: "",
             phone: "",
+            employeeId: "",
           });
         }}
       >
@@ -787,6 +810,7 @@ function SuperadminCompanies() {
                   lastName: "",
                   email: "",
                   phone: "",
+                  employeeId: "",
                 });
               }}
               className="absolute right-0 text-gray-500 hover:text-gray-800 mt-1"
@@ -890,7 +914,7 @@ function SuperadminCompanies() {
             onClick={handleSaveCompanyHead}
             className="mt-6 bg-blue-600 hover:bg-blue-700 text-white"
           >
-            Add Company Head
+            {companyData.companyHeads && companyData.companyHeads.length > 0 ? "Update Company Head" : "Add Company Head"}
           </Button>
         </div>
       </Modal>
