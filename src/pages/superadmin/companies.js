@@ -19,7 +19,6 @@ import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
-import { initializePipelineStages } from "@/redux/slices/pipelineSlice";
 
 
 function SuperadminCompanies() {
@@ -52,14 +51,7 @@ function SuperadminCompanies() {
   const [companyHeadError, setCompanyHeadError] = useState("");
 
   const dispatch = useDispatch();
-  const { 
-    companies, 
-    loading, 
-    createLoading, 
-    updateLoading, 
-    err, 
-    lastOperationStatus 
-  } = useSelector((state) => state.companies);
+  const { companies, loading, err } = useSelector((state) => state.companies);
   const [error, setError] = useState("");
 
   console.log("Companies:", companies);
@@ -157,10 +149,6 @@ function SuperadminCompanies() {
       if (name === "prefixForEmpID") {
         updatedData.prefixForEmpID = value.toUpperCase();
       }
-      // Auto-capitalize GST number
-      if (name === "gst") {
-        updatedData.gst = value.toUpperCase();
-      }
 
       return updatedData;
     });
@@ -217,70 +205,42 @@ function SuperadminCompanies() {
     try {
       // Prepare company data in the required format
       const requestBody = {
-        company: {
           name: companyData.name,
           email: companyData.email,
           phone: companyData.phone,
           gst: companyData.gst,
           regAdd: companyData.regAdd,
           prefixForEmpID: companyData.prefixForEmpID,
-          colorCode: companyData.colorCode
-        },
-        companyHeads: companyData.companyHeads && companyData.companyHeads.length > 0 ? companyData.companyHeads : []
+          colorCode: companyData.colorCode,
+          companyHeadIds: companyData.companyHeads.map(head => head.employeeId)
       };
 
       if (isEditing) {
         // Dispatch update action with Redux
-        const updateResult = await dispatch(
+        await dispatch(
           updateCompany({ 
-            id: selectedCompany.companyId,
+            id: selectedCompany.companyId, // Handle both id formats
             updatedData: requestBody 
           })
         );
-        
-        // Check if the operation was successful (status 200)
-        if (updateCompany.fulfilled.match(updateResult)) {
-          const { status } = updateResult.payload;
-          if (status === 200) {
-            toast.success("Company updated successfully!");
-            // Refetch updated list
-            dispatch(fetchCompanies());
-            // Close modal and reset selection
-            setIsCompanyModalOpen(false);
-            setSelectedCompany(null);
-          } else {
-            toast.error(`Update failed with status: ${status}`);
-          }
-        } else {
-          // If update failed, don't close the modal
-          const errorMessage = updateResult.payload?.message || "Failed to update company.";
-          toast.error(errorMessage);
-        }
+        toast.success("Company updated successfully!");
       } else {
         const result = await dispatch(createCompany(requestBody));
-        
-        // Check if the operation was successful (status 200)
+
         if (createCompany.fulfilled.match(result)) {
-          const { status } = result.payload;
-          if (status === 200) {
-            dispatch(initializePipelineStages());
-            toast.success("Company created successfully!");
-            // Refetch updated list
-            dispatch(fetchCompanies());
-            // Close modal and reset selection
-            setIsCompanyModalOpen(false);
-            setSelectedCompany(null);
-          } else {
-            toast.error(`Creation failed with status: ${status}`);
-          }
+          toast.success("Company created successfully!");
         } else {
-          // If creation failed, don't close the modal
-          const errorMessage = result.payload?.message || "Failed to create company.";
-          toast.error(errorMessage);
+          toast.error(result.payload || "Failed to create company.");
         }
       }
+
+      // Refetch updated list
+      dispatch(fetchCompanies());
+
+      // Close modal and reset selection
+      setIsCompanyModalOpen(false);
+      setSelectedCompany(null);
     } catch (error) {
-      // If any error occurs, don't close the modal
       toast.error("Failed to save company data.");
     }
   };
@@ -750,18 +710,11 @@ function SuperadminCompanies() {
           <Button
             onClick={() => {
               handleSaveCompany();
+              setSelectedCompany(null);
             }}
-            disabled={createLoading || updateLoading}
-            className="mt-1 bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="mt-1 bg-blue-600 text-white"
           >
-            {createLoading || updateLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                {isEditing ? "Updating..." : "Creating..."}
-              </div>
-            ) : (
-              `${isEditing ? "Update" : "Add"} Company`
-            )}
+            {isEditing ? "Update" : "Add"} Company
           </Button>
         </div>
       </Modal>

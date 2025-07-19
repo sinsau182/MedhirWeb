@@ -85,6 +85,7 @@ export const updateCompany = createAsyncThunk(
   "companies/updateCompany",
   async ({ id, updatedData }, { rejectWithValue }) => {
     try {
+      console.log(updatedData);
       const token = getItemFromSessionStorage("token", null);
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: "PUT",
