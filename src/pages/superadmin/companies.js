@@ -157,6 +157,10 @@ function SuperadminCompanies() {
       if (name === "prefixForEmpID") {
         updatedData.prefixForEmpID = value.toUpperCase();
       }
+      // Auto-capitalize GST number
+      if (name === "gst") {
+        updatedData.gst = value.toUpperCase();
+      }
 
       return updatedData;
     });
