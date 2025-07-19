@@ -210,14 +210,16 @@ function SuperadminCompanies() {
     try {
       // Prepare company data in the required format
       const requestBody = {
+        company: {
           name: companyData.name,
           email: companyData.email,
           phone: companyData.phone,
           gst: companyData.gst,
           regAdd: companyData.regAdd,
           prefixForEmpID: companyData.prefixForEmpID,
-          colorCode: companyData.colorCode,
-          companyHeadId: companyData.companyHeadId
+          colorCode: companyData.colorCode
+        },
+        companyHeads: companyData.companyHeads && companyData.companyHeads.length > 0 ? companyData.companyHeads : []
       };
 
       if (isEditing) {

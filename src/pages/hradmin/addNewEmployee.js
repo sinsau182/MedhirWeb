@@ -338,7 +338,7 @@ function EmployeeForm() {
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Keep sidebar expanded for HR pages
   const [previewModal, setPreviewModal] = useState({ show: false });
   const [activeSection, setActiveSection] = useState("personal");
   const [departments, setDepartments] = useState([]);

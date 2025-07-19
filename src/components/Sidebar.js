@@ -238,6 +238,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   }, []);
 
   // Auto-expand sidebar and select correct module based on current route
+  // This includes pages that don't have direct menu items but belong to a module (e.g., /hradmin/addNewEmployee)
   useEffect(() => {
     if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
       // Calculate available modules here
@@ -246,16 +247,36 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       const currentPath = router.pathname;
       
       // Find which module contains the current route
-      const activeModule = availableModules.find(module => 
-        module.items.some(item => {
+      const activeModule = availableModules.find(module => {
+        // Check if any item in the module matches the current route
+        const hasMatchingItem = module.items.some(item => {
           if (item.hasSubmenu) {
             return item.subItems.some(subItem => 
               currentPath.startsWith(subItem.link)
             );
           }
           return currentPath.startsWith(item.link);
-        })
-      );
+        });
+        
+        // If no direct item match, check if the current path starts with the module's base path
+        if (!hasMatchingItem) {
+          // Define module base paths
+          const moduleBasePaths = {
+            'MOD_HR': '/hradmin/',
+            'MOD_SALES': '/Sales/',
+            'MOD_ACCOUNTANT': '/account/',
+            'EMPLOYEE': '/employee/',
+            'MANAGER': '/manager/',
+          };
+          
+          const moduleBasePath = moduleBasePaths[module.key];
+          if (moduleBasePath && currentPath.startsWith(moduleBasePath)) {
+            return true;
+          }
+        }
+        
+        return hasMatchingItem;
+      });
 
       if (activeModule) {
         // Expand the active module
@@ -453,6 +474,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
 
   const isActiveLink = useCallback((link) => {
     if (!link) return false;
+    
+    // Special case: addNewEmployee page should be considered active for Employees link
+    if (link === "/hradmin/employees" && router.pathname === "/hradmin/addNewEmployee") {
+      return true;
+    }
+    
     return router.pathname === link || router.pathname.startsWith(link);
   }, [router.pathname]);
 
