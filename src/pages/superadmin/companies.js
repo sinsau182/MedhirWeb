@@ -796,7 +796,6 @@ function SuperadminCompanies() {
               className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
             />
           </div>
-
           <div>
             <label
               htmlFor="regAdd"
