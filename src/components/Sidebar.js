@@ -205,84 +205,51 @@ const modularMenus = {
   },
 };
 
-const SIDEBAR_COLLAPSE_KEY = "sidebar_isCollapsed";
-const SIDEBAR_EXPANDED_MENUS_KEY = "sidebar_expandedMenus";
-
-const Sidebar = ({
-  isCollapsed: propIsCollapsed,
-  toggleSidebar: propToggleSidebar,
-  autoExpand = true,
-}) => {
-  // Read from localStorage on mount
-  const getInitialCollapsed = () => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
-      return stored === null ? false : stored === "true";
-    }
-    return false;
-  };
-  const getInitialExpandedMenus = () => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(SIDEBAR_EXPANDED_MENUS_KEY);
-      return stored ? JSON.parse(stored) : {};
-    }
-    return {};
-  };
-
-  const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed);
-  const [expandedMenus, setExpandedMenus] = useState(getInitialExpandedMenus);
+const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const [currentRole, setCurrentRole] = useState("");
+  const [expandedMenus, setExpandedMenus] = useState({});
   const [department, setDepartment] = useState("");
   const [userRoles, setUserRoles] = useState([]);
   const [userModules, setUserModules] = useState([]);
   const router = useRouter();
 
-  // Get available modules based on roles and moduleIds
+  // Helper functions defined as regular functions instead of useCallback
   const hasAdminRole = () => {
-    return userRoles.some(
-      (role) =>
-        role === "ADMIN" || role === "COMPANY_HEAD" || role.includes("ADMIN")
+    return userRoles.some(role => 
+      role === "ADMIN" || 
+      role === "COMPANY_HEAD" || 
+      role.includes("ADMIN")
     );
   };
 
   const hasManagerRole = () => {
-    return userRoles.some(
-      (role) =>
-        role === "MANAGER" ||
-        role === "COMPANY_HEAD" ||
-        role.includes("MANAGER")
+    return userRoles.some(role => 
+      role === "MANAGER" || 
+      role === "COMPANY_HEAD" ||
+      role.includes("MANAGER")
     );
   };
 
-  const isActiveParent = useCallback(
-    (item) => {
-      if (!item.hasSubmenu) return false;
-      return item.subItems.some((subItem) =>
-        router.pathname.startsWith(subItem.link)
-      );
-    },
-    [router.pathname]
-  );
-
-  const isModuleActive = (module) => {
-    return module.items.some((item) => {
-      if (item.hasSubmenu) {
-        return item.subItems.some((subItem) =>
-          router.pathname.startsWith(subItem.link)
-        );
-      }
-      return isActiveLink(item.link);
-    });
+  const isActiveLink = (link) => {
+    if (!link) return false;
+    return router.pathname === link || router.pathname.startsWith(link);
   };
 
-  const getAvailableModules = useCallback(() => {
+  const isActiveParent = (item) => {
+    if (!item.hasSubmenu) return false;
+    return item.subItems.some((subItem) =>
+      router.pathname.startsWith(subItem.link)
+    );
+  };
+
+  // Get available modules based on roles and moduleIds
+  const getAvailableModules = () => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
-
+    
     // Check if user has COMPANY_HEAD role with empty moduleIds
-    const isCompanyHead =
-      userRoles.includes("COMPANY_HEAD") && userModules.length === 0;
-
+    const isCompanyHead = userRoles.includes("COMPANY_HEAD") && userModules.length === 0;
+    
     if (isCompanyHead) {
       // Show all modules for COMPANY_HEAD with empty moduleIds
       Object.entries(modularMenus).forEach(([key, module]) => {
@@ -291,13 +258,13 @@ const Sidebar = ({
           if (key === "MOD_HR") {
             const filteredModule = {
               ...module,
-              items: module.items.filter(
-                (item) => item.label !== "Settings" || hasAdminRole()
-              ),
+              items: module.items.filter(item => 
+                item.label !== "Settings" || hasAdminRole()
+              )
             };
             modules.push({ key, ...filteredModule });
           } else if (key === "MOD_SALES") {
-            const filteredItems = module.items.filter((item) => {
+            const filteredItems = module.items.filter(item => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole(); // Only Admins can see Sales Settings
               }
@@ -306,20 +273,20 @@ const Sidebar = ({
               }
               return true; // Keep other items if any
             });
-
+          
             const filteredModule = {
               ...module,
-              items: filteredItems,
+              items: filteredItems
             };
-
+          
             modules.push({ key, ...filteredModule });
           } else if (key === "MOD_ACCOUNTANT") {
             // Filter out Account Settings menu if user doesn't have admin role
             const filteredModule = {
               ...module,
-              items: module.items.filter(
-                (item) => item.label !== "Account Settings" || hasAdminRole()
-              ),
+              items: module.items.filter(item => 
+                item.label !== "Account Settings" || hasAdminRole()
+              )
             };
             modules.push({ key, ...filteredModule });
           } else {
@@ -336,38 +303,36 @@ const Sidebar = ({
           if (moduleId === "MOD_HR") {
             const filteredModule = {
               ...modularMenus[moduleId],
-              items: modularMenus[moduleId].items.filter(
-                (item) => item.label !== "Settings" || hasAdminRole()
-              ),
+              items: modularMenus[moduleId].items.filter(item => 
+                item.label !== "Settings" || hasAdminRole()
+              )
             };
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_SALES") {
             // Filter out Sales Settings menu if user doesn't have admin role
-            const filteredItems = modularMenus[moduleId].items.filter(
-              (item) => {
-                if (item.label === "Sales Settings") {
-                  return hasAdminRole(); // Only Admins can see Sales Settings
-                }
-                if (item.label === "Team Management") {
-                  return hasManagerRole(); // Only Managers can see Team Management
-                }
-                return true; // Keep other items if any
+            const filteredItems = modularMenus[moduleId].items.filter(item => {
+              if (item.label === "Sales Settings") {
+                return hasAdminRole(); // Only Admins can see Sales Settings
               }
-            );
-
+              if (item.label === "Team Management") {
+                return hasManagerRole(); // Only Managers can see Team Management
+              }
+              return true; // Keep other items if any
+            });
+          
             const filteredModule = {
               ...modularMenus[moduleId],
-              items: filteredItems,
+              items: filteredItems
             };
-
+          
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_ACCOUNTANT") {
             // Filter out Account Settings menu if user doesn't have admin role
             const filteredModule = {
               ...modularMenus[moduleId],
-              items: modularMenus[moduleId].items.filter(
-                (item) => item.label !== "Account Settings" || hasAdminRole()
-              ),
+              items: modularMenus[moduleId].items.filter(item => 
+                item.label !== "Account Settings" || hasAdminRole()
+              )
             };
             modules.push({ key: moduleId, ...filteredModule });
           } else {
@@ -376,7 +341,7 @@ const Sidebar = ({
           addedModules.add(moduleId);
         }
       });
-
+      
       // Show role-specific modules based on user roles
       userRoles.forEach((role) => {
         if (modularMenus[role] && !addedModules.has(role)) {
@@ -396,22 +361,37 @@ const Sidebar = ({
     }
 
     return modules;
-  }, [userRoles, userModules, hasAdminRole, hasManagerRole]);
+  };
+
+  const isModuleActive = (module) => {
+    return module.items.some((item) => {
+      if (item.hasSubmenu) {
+        return item.subItems.some((subItem) =>
+          router.pathname.startsWith(subItem.link)
+        );
+      }
+      return isActiveLink(item.link);
+    });
+  };
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
     const dept = sessionStorage.getItem("departmentName");
     const token = getItemFromSessionStorage("token");
-
+    
     setCurrentRole(role);
     setDepartment(dept);
 
     // Decode JWT token to get roles and moduleIds
     if (token) {
-      const decodedToken = jwtDecode(token);
-      if (decodedToken) {
-        setUserRoles(decodedToken.roles || []);
-        setUserModules(decodedToken.module_ids || []);
+      try {
+        const decodedToken = jwtDecode(token);
+        if (decodedToken) {
+          setUserRoles(decodedToken.roles || []);
+          setUserModules(decodedToken.module_ids || []);
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
       }
     }
 
@@ -422,63 +402,79 @@ const Sidebar = ({
     }));
   }, []);
 
-  // Persist isCollapsed to localStorage
+  // Auto-expand sidebar and select correct module based on current route
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, isCollapsed);
-    }
-  }, [isCollapsed]);
-
-  // Persist expandedMenus to localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        SIDEBAR_EXPANDED_MENUS_KEY,
-        JSON.stringify(expandedMenus)
+    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
+      // Special case: if on /hradmin/addNewEmployee, force expand MOD_HR and select Employees
+      if (router.pathname === "/hradmin/addNewEmployee") {
+        setExpandedMenus((prev) => ({
+          ...prev,
+          MOD_HR: true,
+        }));
+        return;
+      }
+      // Calculate available modules here
+      const availableModules = getAvailableModules();
+      const currentPath = router.pathname;
+      // Find which module contains the current route
+      const activeModule = availableModules.find(module => 
+        module.items.some(item => {
+          if (item.hasSubmenu) {
+            return item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+          }
+          return currentPath.startsWith(item.link);
+        })
       );
+      if (activeModule) {
+        // Expand the active module
+        setExpandedMenus(prev => ({
+          ...prev,
+          [activeModule.key]: true
+        }));
+        // Also expand any submenus that contain the current route
+        activeModule.items.forEach(item => {
+          if (item.hasSubmenu) {
+            const hasActiveSubItem = item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+            if (hasActiveSubItem) {
+              setExpandedMenus(prev => ({
+                ...prev,
+                [item.menuKey]: true
+              }));
+            }
+          }
+        });
+      }
     }
-  }, [expandedMenus]);
+  }, [userRoles, userModules, router.pathname]);
 
-  const toggleSidebar = () => {
-    setIsCollapsed((prev) => !prev);
-  };
+  // Auto-expand modules when sidebar is collapsed
+  useEffect(() => {
+    if (isCollapsed && userRoles.length > 0) {
+      const availableModules = getAvailableModules();
+      const expandedModules = {};
+      availableModules.forEach((module) => {
+        expandedModules[module.key] = true;
+        // Only expand submenus if they contain the active route
+        module.items.forEach((item) => {
+          if (item.menuKey && isActiveParent(item)) {
+            expandedModules[item.menuKey] = true;
+          }
+        });
+      });
+      setExpandedMenus(expandedModules);
+    }
+  }, [isCollapsed, userRoles, userModules]);
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
       ...prev,
-      [menuKey]: !prev[menuKey],
+      [menuKey]: !prev[menuKey], // Toggle between true and false
     }));
   };
-
-  // Debug logging to see what modules are available
-  useEffect(() => {
-    if (userRoles.length > 0) {
-      const availableModules = getAvailableModules();
-    }
-  }, [
-    currentRole,
-    userRoles,
-    userModules,
-    router.pathname,
-    getAvailableModules,
-  ]);
-
-  const isActiveLink = useCallback(
-    (link) => {
-      if (!link) return false;
-
-      // Special case: addNewEmployee page should be considered active for Employees link
-      if (
-        link === "/hradmin/employees" &&
-        router.pathname === "/hradmin/addNewEmployee"
-      ) {
-        return true;
-      }
-
-      return router.pathname === link || router.pathname.startsWith(link);
-    },
-    [router.pathname]
-  );
 
   return (
     <aside
@@ -500,11 +496,7 @@ const Sidebar = ({
           `}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <div
-            className={`transform transition-transform duration-300 ease-in-out ${
-              isCollapsed ? "rotate-0" : "rotate-180"
-            }`}
-          >
+          <div className={`transform transition-transform duration-300 ease-in-out ${isCollapsed ? 'rotate-0' : 'rotate-180'}`}>
             <FaAngleRight className="w-5 h-5" />
           </div>
         </button>
@@ -515,8 +507,8 @@ const Sidebar = ({
         <div className="px-4">
           {!isCollapsed && (
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              {userRoles.includes("COMPANY_HEAD") && userModules.length === 0
-                ? "All Modules"
+              {userRoles.includes("COMPANY_HEAD") && userModules.length === 0 
+                ? "All Modules" 
                 : "Available Modules"}
             </div>
           )}
@@ -545,7 +537,9 @@ const Sidebar = ({
                 >
                   <span
                     className={`text-lg flex-shrink-0 ${
-                      isActive ? "text-blue-600" : "group-hover:text-blue-600"
+                      isActive
+                        ? "text-blue-600"
+                        : "group-hover:text-blue-600"
                     }`}
                   >
                     {module.icon}
@@ -573,11 +567,7 @@ const Sidebar = ({
                     mt-1 
                     transition-all duration-300 ease-in-out
                     overflow-hidden
-                    ${
-                      isModuleExpanded
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                    }
+                    ${isModuleExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}
                   `}
                 >
                   {module.items.map((item, itemIndex) => {
@@ -633,11 +623,7 @@ const Sidebar = ({
                                 mt-1 
                                 transition-all duration-300 ease-in-out
                                 overflow-hidden
-                                ${
-                                  isExpanded
-                                    ? "max-h-screen opacity-100"
-                                    : "max-h-0 opacity-0"
-                                }
+                                ${isExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}
                               `}
                             >
                               {item.subItems.map((subItem, subIndex) => {
@@ -652,9 +638,7 @@ const Sidebar = ({
                                       flex items-center px-2 py-2 
                                       transition-all duration-200 
                                       rounded-md
-                                      ${
-                                        isCollapsed ? "justify-center" : "gap-3"
-                                      }
+                                      ${isCollapsed ? "justify-center" : "gap-3"}
                                       ${
                                         isSubActive
                                           ? "text-blue-600 bg-blue-50"
@@ -691,25 +675,12 @@ const Sidebar = ({
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              ${
-                                item.label === "Customers" ||
-                                item.label === "Account Settings"
-                                  ? "cursor-not-allowed opacity-60"
-                                  : "cursor-pointer"
-                              }
+                              ${item.label === "Customers" || item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
                             `}
                             aria-label={item.label}
-                            title={
-                              item.label === "Customers" ||
-                              item.label === "Account Settings"
-                                ? "This feature is in progress"
-                                : ""
-                            }
+                            title={item.label === "Customers" || item.label === "Account Settings" ? "This feature is in progress" : ""}
                             onClick={(e) => {
-                              if (
-                                item.label === "Customers" ||
-                                item.label === "Account Settings"
-                              ) {
+                              if (item.label === "Customers" || item.label === "Account Settings") {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 return;
@@ -728,12 +699,9 @@ const Sidebar = ({
                               {item.icon}
                             </span>
                             {!isCollapsed && (
-                              <span className="text-sm min-w-0 truncate">
-                                {item.label}
-                              </span>
+                              <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                            {item.label === "Customers" ||
-                            item.label === "Account Settings" ? (
+                            {item.label === "Customers" || item.label === "Account Settings" ? (
                               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                                 This feature is in progress
                               </div>
@@ -751,9 +719,7 @@ const Sidebar = ({
       </nav>
       {/* App Version at the bottom */}
       <div className="absolute bottom-4 right-0 w-full px-4 text-right">
-        <span className="text-xs text-gray-400 font-mono select-none">
-          v{version.version}
-        </span>
+        <span className="text-xs text-gray-400 font-mono select-none">v{version.version}</span>
       </div>
     </aside>
   );

@@ -27,6 +27,9 @@ import SuperadminHeaders from "@/components/SuperadminHeaders";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
 import { updateEmployee } from "@/redux/slices/employeeSlice";
+import getConfig from "next/config";
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.apiURL;
 
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -405,10 +408,10 @@ function SuperadminCompanies() {
     }
     setCompanyData((prevData) => {
       const updatedData = { ...prevData, [name]: processedValue };
-      if (name === "name") {
+      if (name === "name" && !isEditing) {
         // Remove all spaces for prefix logic
         const nameNoSpaces = processedValue.replace(/\s+/g, "");
-        if (nameNoSpaces.length >= 3) {
+        if (nameNoSpaces.length > 0) {
           updatedData.prefixForEmpID = nameNoSpaces
             .substring(0, 3)
             .toUpperCase();
@@ -416,7 +419,7 @@ function SuperadminCompanies() {
           updatedData.prefixForEmpID = "";
         }
       }
-      if (name === "prefixForEmpID") {
+      if (name === "prefixForEmpID" && !isEditing) {
         const cleanedPrefix = processedValue
           .toUpperCase()
           .replace(/[^A-Z]/g, "")
@@ -472,7 +475,7 @@ function SuperadminCompanies() {
     try {
       const token = getItemFromSessionStorage("token"); // or your token getter
       const response = await axios.get(
-        `http://localhost:8083/employees/existence-check`,
+        `${API_BASE_URL}/employees/existence-check`,
         {
           params: { email, phone },
           headers: {
@@ -495,7 +498,7 @@ function SuperadminCompanies() {
     try {
       const token = getItemFromSessionStorage("token");
       const response = await axios.get(
-        `http://localhost:8083/superadmin/companies/check-unique`,
+        `${API_BASE_URL}/superadmin/companies/check-unique`,
         {
           params: { email, phone, prefixForEmpID },
           headers: {
@@ -687,7 +690,8 @@ function SuperadminCompanies() {
           phone: companyData.phone,
           gst: companyData.gst,
           regAdd: companyData.regAdd,
-          prefixForEmpID: companyData.prefixForEmpID,
+          // Do NOT include prefixForEmpID if editing, or just send the existing value
+          prefixForEmpID: companyData.prefixForEmpID, // This should be the original, uneditable value
           colorCode: companyData.colorCode,
           companyHeadIds:
             companyData.companyHeads && companyData.companyHeads.length > 0
@@ -1283,9 +1287,10 @@ function SuperadminCompanies() {
               id="prefixForEmpID"
               name="prefixForEmpID"
               value={companyData.prefixForEmpID || ""}
-              onChange={handleInputChange}
+              {...(isEditing
+                ? { readOnly: true, tabIndex: -1, style: { backgroundColor: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' } }
+                : { onChange: handleInputChange })}
               placeholder="Enter company prefix"
-              readOnly={isEditing}
               className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.prefixForEmpID ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
             />
             {isEditing && (
