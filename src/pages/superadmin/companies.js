@@ -208,18 +208,16 @@ function SuperadminCompanies() {
 
   const validateCompanyHeadField = (name, value) => {
     let error = "";
-    // Only allow letters and single spaces between words, no leading/trailing spaces
-    const nameRegex = /^[A-Za-z]+( [A-Za-z]+)?$/;
+    // Only allow single word (no spaces) for name fields
+    const singleWordRegex = /^[A-Za-z]+$/;
     switch (name) {
       case "firstName":
       case "middleName":
       case "lastName":
         if (!value.trim()) {
           error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name is required`;
-        } else if (value[0] === ' ') {
-          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name cannot start with a space`;
-        } else if (!nameRegex.test(value)) {
-          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name can only have one space between two words, and only letters`;
+        } else if (!singleWordRegex.test(value)) {
+          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name must be a single word with only letters (no spaces)`;
         } else if (value.trim().length < 2 && name !== "middleName") {
           error = `${name === "firstName" ? "First" : "Last"} name must be at least 2 characters`;
         }
@@ -358,7 +356,7 @@ function SuperadminCompanies() {
     // Company Name logic: eliminate all spaces except allow at most one trailing space
     if (name === "name") {
       processedValue = value
-        .replace(/\s+/g, "") // Remove all spaces
+        .replace(/^ +/, "") // Remove leading spaces
         .replace(/ +$/, " "); // Allow at most one trailing space
     }
     // Email logic: eliminate all spaces
@@ -404,13 +402,9 @@ function SuperadminCompanies() {
   const handleCompanyHeadInputChange = (e) => {
     const { name, value } = e.target;
     let processedValue = value;
-    // For name fields, allow only letters, one space between words, no leading space, at most one trailing space
+    // For name fields, allow only letters, no spaces at all
     if (["firstName", "middleName", "lastName"].includes(name)) {
-      processedValue = value
-        .replace(/[^A-Za-z ]/g, "") // Only letters and spaces
-        .replace(/^ +/, "") // No leading spaces
-        .replace(/ {2,}/g, " ") // Only one space between words
-        .replace(/ +$/, match => match.length > 1 ? " " : match); // At most one trailing space
+      processedValue = value.replace(/[^A-Za-z]/g, ""); // Only letters, no spaces
     }
     if (name === "phone") {
       processedValue = value.replace(/\D/g, "").slice(0, 10);
