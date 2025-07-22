@@ -2439,11 +2439,4 @@ const LeadDetailPage = () => {
   );
 };
 
-// Disable static generation to prevent build issues
-export const getServerSideProps = async () => {
-  return {
-    props: {},
-  };
-};
-
 export default LeadDetailPage;

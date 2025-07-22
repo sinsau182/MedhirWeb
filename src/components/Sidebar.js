@@ -213,97 +213,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const [userModules, setUserModules] = useState([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const role = sessionStorage.getItem("currentRole");
-    const dept = sessionStorage.getItem("departmentName");
-    const token = getItemFromSessionStorage("token");
-    
-    setCurrentRole(role);
-    setDepartment(dept);
-
-    // Decode JWT token to get roles and moduleIds
-    if (token) {
-      const decodedToken = jwtDecode(token);
-      if (decodedToken) {
-        setUserRoles(decodedToken.roles || []);
-        setUserModules(decodedToken.module_ids || []);
-      }
-    }
-
-    // Initialize Settings menu as expanded
-    setExpandedMenus((prev) => ({
-      ...prev,
-      settings: true,
-    }));
-  }, []);
-
-  // Auto-expand sidebar and select correct module based on current route
-  // This includes pages that don't have direct menu items but belong to a module (e.g., /hradmin/addNewEmployee)
-  useEffect(() => {
-    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
-      // Calculate available modules here
-      const availableModules = getAvailableModules();
-      
-      const currentPath = router.pathname;
-      
-      // Find which module contains the current route
-      const activeModule = availableModules.find(module => {
-        // Check if any item in the module matches the current route
-        const hasMatchingItem = module.items.some(item => {
-          if (item.hasSubmenu) {
-            return item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
-            );
-          }
-          return currentPath.startsWith(item.link);
-        });
-        
-        // If no direct item match, check if the current path starts with the module's base path
-        if (!hasMatchingItem) {
-          // Define module base paths
-          const moduleBasePaths = {
-            'MOD_HR': '/hradmin/',
-            'MOD_SALES': '/Sales/',
-            'MOD_ACCOUNTANT': '/account/',
-            'EMPLOYEE': '/employee/',
-            'MANAGER': '/manager/',
-          };
-          
-          const moduleBasePath = moduleBasePaths[module.key];
-          if (moduleBasePath && currentPath.startsWith(moduleBasePath)) {
-            return true;
-          }
-        }
-        
-        return hasMatchingItem;
-      });
-
-      if (activeModule) {
-        // Expand the active module
-        setExpandedMenus(prev => ({
-          ...prev,
-          [activeModule.key]: true
-        }));
-
-        // Also expand any submenus that contain the current route
-        activeModule.items.forEach(item => {
-          if (item.hasSubmenu) {
-            const hasActiveSubItem = item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
-            );
-            if (hasActiveSubItem) {
-              setExpandedMenus(prev => ({
-                ...prev,
-                [item.menuKey]: true
-              }));
-            }
-          }
-        });
-      }
-    }
-  }, [userRoles, userModules, router.pathname, getAvailableModules]);
-
-  // Get available modules based on roles and moduleIds
+  // Helper functions defined as regular functions instead of useCallback
   const hasAdminRole = () => {
     return userRoles.some(role => 
       role === "ADMIN" || 
@@ -320,7 +230,20 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     );
   };
 
-  const getAvailableModules = useCallback(() => {
+  const isActiveLink = (link) => {
+    if (!link) return false;
+    return router.pathname === link || router.pathname.startsWith(link);
+  };
+
+  const isActiveParent = (item) => {
+    if (!item.hasSubmenu) return false;
+    return item.subItems.some((subItem) =>
+      router.pathname.startsWith(subItem.link)
+    );
+  };
+
+  // Get available modules based on roles and moduleIds
+  const getAvailableModules = () => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
     
@@ -438,7 +361,91 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     }
 
     return modules;
-  }, [userRoles, userModules, hasAdminRole, hasManagerRole]);
+  };
+
+  const isModuleActive = (module) => {
+    return module.items.some((item) => {
+      if (item.hasSubmenu) {
+        return item.subItems.some((subItem) =>
+          router.pathname.startsWith(subItem.link)
+        );
+      }
+      return isActiveLink(item.link);
+    });
+  };
+
+  useEffect(() => {
+    const role = sessionStorage.getItem("currentRole");
+    const dept = sessionStorage.getItem("departmentName");
+    const token = getItemFromSessionStorage("token");
+    
+    setCurrentRole(role);
+    setDepartment(dept);
+
+    // Decode JWT token to get roles and moduleIds
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        if (decodedToken) {
+          setUserRoles(decodedToken.roles || []);
+          setUserModules(decodedToken.module_ids || []);
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+
+    // Initialize Settings menu as expanded
+    setExpandedMenus((prev) => ({
+      ...prev,
+      settings: true,
+    }));
+  }, []);
+
+  // Auto-expand sidebar and select correct module based on current route
+  useEffect(() => {
+    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
+      // Calculate available modules here
+      const availableModules = getAvailableModules();
+      
+      const currentPath = router.pathname;
+      
+      // Find which module contains the current route
+      const activeModule = availableModules.find(module => 
+        module.items.some(item => {
+          if (item.hasSubmenu) {
+            return item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+          }
+          return currentPath.startsWith(item.link);
+        })
+      );
+
+      if (activeModule) {
+        // Expand the active module
+        setExpandedMenus(prev => ({
+          ...prev,
+          [activeModule.key]: true
+        }));
+
+        // Also expand any submenus that contain the current route
+        activeModule.items.forEach(item => {
+          if (item.hasSubmenu) {
+            const hasActiveSubItem = item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+            if (hasActiveSubItem) {
+              setExpandedMenus(prev => ({
+                ...prev,
+                [item.menuKey]: true
+              }));
+            }
+          }
+        });
+      }
+    }
+  }, [userRoles, userModules, router.pathname]);
 
   // Auto-expand modules when sidebar is collapsed
   useEffect(() => {
@@ -456,49 +463,13 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       });
       setExpandedMenus(expandedModules);
     }
-  }, [isCollapsed, userRoles, userModules, getAvailableModules, isActiveParent]);
+  }, [isCollapsed, userRoles, userModules]);
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
       ...prev,
       [menuKey]: !prev[menuKey], // Toggle between true and false
     }));
-  };
-
-  // Debug logging to see what modules are available
-  useEffect(() => {
-    if (userRoles.length > 0) {
-      const availableModules = getAvailableModules();
-    }
-  }, [currentRole, userRoles, userModules, router.pathname, getAvailableModules]);
-
-  const isActiveLink = useCallback((link) => {
-    if (!link) return false;
-    
-    // Special case: addNewEmployee page should be considered active for Employees link
-    if (link === "/hradmin/employees" && router.pathname === "/hradmin/addNewEmployee") {
-      return true;
-    }
-    
-    return router.pathname === link || router.pathname.startsWith(link);
-  }, [router.pathname]);
-
-  const isActiveParent = useCallback((item) => {
-    if (!item.hasSubmenu) return false;
-    return item.subItems.some((subItem) =>
-      router.pathname.startsWith(subItem.link)
-    );
-  }, [router.pathname]);
-
-  const isModuleActive = (module) => {
-    return module.items.some((item) => {
-      if (item.hasSubmenu) {
-        return item.subItems.some((subItem) =>
-          router.pathname.startsWith(subItem.link)
-        );
-      }
-      return isActiveLink(item.link);
-    });
   };
 
   return (
@@ -742,8 +713,8 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
           })}
         </ul>
       </nav>
-            {/* App Version at the bottom */}
-            <div className="absolute bottom-4 right-0 w-full px-4 text-right">
+      {/* App Version at the bottom */}
+      <div className="absolute bottom-4 right-0 w-full px-4 text-right">
         <span className="text-xs text-gray-400 font-mono select-none">v{version.version}</span>
       </div>
     </aside>

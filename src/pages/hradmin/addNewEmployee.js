@@ -22,19 +22,24 @@ import getConfig from "next/config";
 import axios from "axios";
 import DepartmentFormModal from "@/components/Forms/DepartmentFormModal";
 import DesignationFormModal from "@/components/Forms/DesignationFormModal";
+import { Listbox } from '@headlessui/react';
+import { CheckIcon } from '@heroicons/react/20/solid';
 
 // Add this CSS class to your global styles or component
 const inputGroupClass =
-  "relative border border-gray-200 rounded-lg focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 bg-gray-50 transition-all duration-200";
+  "flex flex-col gap-1 mb-2";
+const inputLabelClass =
+  "block text-sm font-medium text-gray-700 mb-1";
 const inputClass =
-  "w-full px-3 py-2 bg-transparent outline-none text-gray-700 text-sm";
-const floatingLabelClass =
-  "absolute -top-2.5 left-2 bg-white px-1 text-sm font-medium text-gray-700 transition-all duration-200";
+  "w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 outline-none text-gray-700 text-sm truncate overflow-hidden transition-all duration-200";
+
+// Add a new class for modern select styling
+const modernSelectClass = "bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 appearance-none transition-all duration-200 w-full h-[42px]";
 
 const MultiSelect = ({ label, options, value }) => {
   return (
     <div className={inputGroupClass}>
-      <label className={floatingLabelClass}>{label}</label>
+      <label className={inputLabelClass}>{label}</label>
       <div className="relative">
         <div
           className={`${inputClass} flex items-center justify-between cursor-not-allowed min-h-[42px] bg-gray-100`}
@@ -75,17 +80,20 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
 
   return (
     <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>{label}</label>
+      <label className={inputLabelClass}>{label}</label>
       <div className="relative">
         <div
-          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
+          className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px] overflow-hidden`}
           onClick={() => setIsOpen(!isOpen)}
         >
-          <div className="flex flex-wrap gap-1 py-1">
+          <div className="flex flex-wrap gap-1 py-1 overflow-hidden">
             {value ? (
-              <span className="text-gray-700">
-                {typeof value === "object" ? value.name : value}
-              </span>
+              <TruncatedText 
+                text={typeof value === "object" ? value.name : value}
+                maxWidth="max-w-[200px]"
+                className="text-gray-700"
+                maxLength={20}
+              />
             ) : (
               <span className="text-gray-500">Select department</span>
             )}
@@ -105,7 +113,7 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
           </svg>
         </div>
         {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto min-w-[250px]">
             <div
               className="px-4 py-2.5 cursor-pointer hover:bg-blue-100 text-blue-600 border-b border-gray-100 font-semibold"
               onClick={() => {
@@ -126,7 +134,12 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
                   setIsOpen(false);
                 }}
               >
-                <span className="text-gray-700">{department.name}</span>
+                <TruncatedText 
+                  text={department.name}
+                  maxWidth="max-w-full"
+                  className="text-gray-700"
+                  maxLength={35}
+                />
               </div>
             ))}
           </div>
@@ -157,7 +170,7 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
 
   return (
     <div className={inputGroupClass + (disabled || loading ? ' opacity-60 pointer-events-none' : '')} ref={dropdownRef}>
-      <label className={floatingLabelClass}>{label}</label>
+      <label className={inputLabelClass}>{label}</label>
       <div className="relative">
         <div
           className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
@@ -172,9 +185,12 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
                 Loading...
               </span>
             ) : value ? (
-              <span className="text-gray-700">
-                {typeof value === "object" ? value.name : value}
-              </span>
+              <TruncatedText 
+                text={typeof value === "object" ? value.name : value}
+                maxWidth="max-w-[200px]"
+                className="text-gray-700"
+                maxLength={20}
+              />
             ) : (
               <span className="text-gray-500">{placeholder || 'Select designation'}</span>
             )}
@@ -194,7 +210,7 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
           </svg>
         </div>
         {isOpen && !disabled && !loading && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto min-w-[250px]">
             <div
               className="px-4 py-2.5 cursor-pointer hover:bg-blue-100 text-blue-600 border-b border-gray-100 font-semibold"
               onClick={() => {
@@ -220,7 +236,12 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
                   setIsOpen(false);
                 }}
               >
-                <span className="text-gray-700">{designation.name}</span>
+                <TruncatedText 
+                  text={designation.name}
+                  maxWidth="max-w-full"
+                  className="text-gray-700"
+                  maxLength={35}
+                />
               </div>
             ))}
           </div>
@@ -247,6 +268,42 @@ const removeEmptyValues = (obj) => {
   return cleanObj;
 };
 
+// Helper function to truncate text and show tooltip
+const TruncatedText = ({ text, maxWidth, className = "", maxLength = 25 }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  if (!text) return null;
+  
+  // Clean debug text first
+  const cleanText = text
+    .replace(/[bedjw]{5,}/g, '') // Remove 5+ consecutive debug chars
+    .replace(/\|.*$/, '') // Remove everything after pipe
+    .replace(/\s+/g, ' ') // Normalize spaces
+    .trim();
+  const isLongText = cleanText.length > maxLength;
+  
+  return (
+    <div 
+      className={`${maxWidth} ${className} relative group`}
+      onMouseEnter={() => isLongText && setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <span 
+        className={isLongText ? "truncate block" : ""}
+        title={isLongText ? cleanText : ""}
+      >
+        {isLongText ? `${cleanText.substring(0, maxLength)}...` : cleanText}
+      </span>
+      {showTooltip && isLongText && (
+        <div className="absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg -top-2 left-0 transform -translate-y-full max-w-xs break-words">
+          {cleanText}
+          <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ReportingManagerSelect = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -264,7 +321,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
 
   return (
     <div className={inputGroupClass} ref={dropdownRef}>
-      <label className={floatingLabelClass}>{label}</label>
+      <label className={inputLabelClass}>{label}</label>
       <div className="relative">
         <div
           className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
@@ -272,9 +329,12 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <span className="text-gray-700">
-                {typeof value === "object" ? value.name : value}
-              </span>
+              <TruncatedText 
+                text={typeof value === "object" ? value.name : value}
+                maxWidth="max-w-[200px]"
+                className="text-gray-700"
+                maxLength={20}
+              />
             ) : (
               <span className="text-gray-500">Select manager</span>
             )}
@@ -297,7 +357,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
         </div>
 
         {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1">
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 min-w-[250px]">
             {options.map((manager) => (
               <div
                 key={manager.employeeId}
@@ -312,7 +372,12 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                   setIsOpen(false);
                 }}
               >
-                <span className="text-gray-700">{manager.name}</span>
+                <TruncatedText 
+                  text={manager.name}
+                  maxWidth="max-w-full"
+                  className="text-gray-700"
+                  maxLength={35}
+                />
               </div>
             ))}
           </div>
@@ -321,6 +386,25 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
     </div>
   );
 };
+
+// Add a reusable confirmation modal component
+function ConfirmationModal({ open, onClose, onConfirm, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmColor = 'bg-blue-600', icon }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+      <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
+        <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={onClose}><X className="w-5 h-5" /></button>
+        {icon && <div className="flex justify-center mb-2">{icon}</div>}
+        <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center">{title}</h2>
+        <p className="text-gray-600 mb-6 text-center">{message}</p>
+        <div className="flex justify-center gap-4">
+          <button className="px-5 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200" onClick={onClose}>{cancelText}</button>
+          <button className={`px-5 py-2 rounded-lg text-white ${confirmColor} hover:brightness-90`} onClick={onConfirm}>{confirmText}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function EmployeeForm() {
   const company = sessionStorage.getItem("employeeCompanyId");
@@ -348,6 +432,17 @@ function EmployeeForm() {
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [showDesignationModal, setShowDesignationModal] = useState(false);
   const [isDesignationLoading, setIsDesignationLoading] = useState(false);
+  const [modal, setModal] = useState({ open: false, type: '', onConfirm: null });
+  // Add state for preview modal for Aadhar
+  const [aadharPreview, setAadharPreview] = useState({ open: false, imgUrl: '', number: '' });
+  // Add state for preview modal for ID Proofs (generalized)
+  const [docPreview, setDocPreview] = useState({ open: false, imgUrl: '', number: '', label: '' });
+  // Add state to track touched/blurred fields for instant validation
+  const [idProofsTouched, setIdProofsTouched] = useState({});
+  // Add state for PDF preview controls
+  const [pdfControls, setPdfControls] = useState({ rotate: 0, zoom: 1 });
+  // Add state for bank preview modal
+  const [bankPreview, setBankPreview] = useState({ open: false, imgUrl: '', file: null });
 
   // Add department fetch on component mount
   useEffect(() => {
@@ -372,7 +467,16 @@ function EmployeeForm() {
         );
 
         if (response.data && Array.isArray(response.data)) {
-          setDepartments(response.data);
+          // Clean debug text from department names
+          const cleanedDepartments = response.data.map(dept => ({
+            ...dept,
+            name: dept.name ? dept.name
+              .replace(/[bedjw]{5,}/g, '') // Remove 5+ consecutive debug chars
+              .replace(/\|.*$/, '') // Remove everything after pipe
+              .replace(/\s+/g, ' ') // Normalize spaces
+              .trim() : dept.name
+          }));
+          setDepartments(cleanedDepartments);
           if (response.data.length === 0) {
             toast.warning("No departments found for this company");
           }
@@ -388,6 +492,29 @@ function EmployeeForm() {
 
     fetchDepartments();
   }, [publicRuntimeConfig.apiURL]);
+
+  // Clean any existing debug text in form data on component mount
+  useEffect(() => {
+    setFormData(prev => {
+      const cleaned = { ...prev };
+      
+      // Clean employee data
+      if (cleaned.employee) {
+        Object.keys(cleaned.employee).forEach(key => {
+          if (typeof cleaned.employee[key] === 'string') {
+            cleaned.employee[key] = cleanDebugText(cleaned.employee[key]);
+          } else if (cleaned.employee[key] && typeof cleaned.employee[key] === 'object' && cleaned.employee[key].name) {
+            cleaned.employee[key] = {
+              ...cleaned.employee[key],
+              name: cleanDebugText(cleaned.employee[key].name)
+            };
+          }
+        });
+      }
+      
+      return cleaned;
+    });
+  }, []);
 
   const weekDayOptions = [
     { value: "SUNDAY", label: "Sunday" },
@@ -587,13 +714,27 @@ function EmployeeForm() {
     };
   };
 
+  // Function to clean debug text from any string value
+  const cleanDebugText = (text) => {
+    if (typeof text !== 'string') return text;
+    // More aggressive cleaning - remove any repetitive patterns
+    return text
+      .replace(/[bedjw]{5,}/g, '') // Remove 5+ consecutive debug chars
+      .replace(/\|.*$/, '') // Remove everything after pipe
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim();
+  };
+
   const handleInputChange = (section, field, value) => {
+    // Clean debug text from string values
+    const cleanedValue = typeof value === 'string' ? cleanDebugText(value) : value;
+    
     setFormData((prev) => {
       const updatedData = {
         ...prev,
         [section]: {
           ...prev[section],
-          [field]: value,
+          [field]: cleanedValue,
         },
       };
 
@@ -913,29 +1054,135 @@ function EmployeeForm() {
     }
   };
 
+  const formRefs = {
+    firstName: useRef(),
+    middleName: useRef(),
+    lastName: useRef(),
+    fathersName: useRef(),
+    gender: useRef(),
+    phone: useRef(),
+    alternatePhone: useRef(),
+    emailPersonal: useRef(),
+    emailOfficial: useRef(),
+    currentAddress: useRef(),
+    permanentAddress: useRef(),
+    joiningDate: useRef(),
+  };
+
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState({});
+  const [fieldTouched, setFieldTouched] = useState({});
+
+  // Validation functions
+  const validateName = (value, required = true, maxLength = 30) => {
+    if (!value || value.trim() === "") return required ? "This field is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (value.trim().length < 2) return "Must be at least 2 characters.";
+    if (value.trim().length > maxLength) return `Maximum ${maxLength} characters allowed.`;
+    return "";
+  };
+
+  const validatePhone = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "Phone number is required." : "";
+    if (!/^[0-9]+$/.test(value)) return "Only numbers allowed.";
+    if (value.length !== 10) return "Phone number must be exactly 10 digits.";
+    return "";
+  };
+
+  const validateEmail = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "Email is required." : "";
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!regex.test(value)) return "Enter a valid email address.";
+    if (value.length > 50) return "Email must be less than 50 characters.";
+    return "";
+  };
+
+  const validateAddress = (value, required = false, maxLength = 200) => {
+    if (!value || value.trim() === "") return required ? "Address is required." : "";
+    if (value.trim().length < 10) return "Address must be at least 10 characters.";
+    if (value.trim().length > maxLength) return `Maximum ${maxLength} characters allowed.`;
+    return "";
+  };
+
+  const validateDate = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "Date is required." : "";
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return "Please enter a valid date.";
+    return "";
+  };
+
+  const validateUAN = (value, required = false) => {
+    if (!value || value.trim() === "") return required ? "UAN number is required." : "";
+    if (!/^[0-9]+$/.test(value)) return "Only numbers allowed.";
+    if (value.length !== 12) return "UAN number must be exactly 12 digits.";
+    return "";
+  };
+
+  // Smart email suggestion function
+  const getEmailSuggestion = (value) => {
+    if (!value || value.includes('@')) return null;
+    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    if (cleanValue.length < 2) return null;
+    return `${cleanValue}@gmail.com`;
+  };
+
+  // Input filtering functions
+  const filterNameInput = (value) => {
+    return value.replace(/[^A-Za-z ]/g, '').slice(0, 30);
+  };
+
+  const filterPhoneInput = (value) => {
+    return value.replace(/[^0-9]/g, '').slice(0, 10);
+  };
+
+  const filterEmailInput = (value) => {
+    return value.replace(/[^a-zA-Z0-9@._%+-]/g, '').slice(0, 50);
+  };
+
+  const filterUANInput = (value) => {
+    return value.replace(/[^0-9]/g, '').slice(0, 12);
+  };
+
+  // Validate all personal fields
+  const validatePersonalDetails = (data) => {
+    return {
+      firstName: validateName(data.firstName, true),
+      middleName: validateName(data.middleName, false),
+      lastName: validateName(data.lastName, true),
+      fathersName: validateName(data.fathersName, false),
+      gender: !data.gender ? "Please select a gender." : "",
+      phone: validatePhone(data.phone, true),
+      alternatePhone: validatePhone(data.alternatePhone, false),
+      emailPersonal: validateEmail(data.emailPersonal, true),
+      emailOfficial: validateEmail(data.emailOfficial, false),
+      currentAddress: validateAddress(data.currentAddress, false),
+      permanentAddress: validateAddress(data.permanentAddress, false),
+      joiningDate: validateDate(data.joiningDate, true),
+      uanNumber: data.pfEnrolled ? validateUAN(data.uanNumber, true) : "",
+      esicNumber: data.esicEnrolled ? validateUAN(data.esicNumber, true) : "",
+    };
+  };
+
+  // On blur/change handlers
+  const handlePersonalFieldBlur = (field) => {
+    setFieldTouched((prev) => ({ ...prev, [field]: true }));
+    const errors = validatePersonalDetails(formData.employee);
+    setValidationErrors(errors);
+  };
+
+  // On submit, validate and scroll to first error
   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (activeSection !== "salary") {
-      const currentIndex = sections.findIndex(
-        (section) => section.id === activeSection
-      );
-      if (currentIndex < sections.length - 1) {
-        setActiveSection(sections[currentIndex + 1].id);
-        return;
-      }
+    e?.preventDefault?.();
+    const errors = validatePersonalDetails(formData.employee);
+    setValidationErrors(errors);
+    setFieldTouched((prev) => ({ ...prev, ...Object.keys(errors).reduce((acc, k) => { acc[k] = true; return acc; }, {}) }));
+    const firstErrorField = Object.keys(errors).find((key) => errors[key]);
+    if (firstErrorField) {
+      formRefs[firstErrorField]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      formRefs[firstErrorField]?.current?.focus?.();
+      return;
     }
-
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      // ... rest of the existing handleSubmit code ...
-    } catch (err) {
-      // ... existing error handling ...
-    } finally {
-      setLoading(false);
-    }
+    // ...existing handleSubmit logic...
   };
 
   useEffect(() => {
@@ -1266,6 +1513,199 @@ function EmployeeForm() {
     fetchDesignationsForDepartment();
   };
 
+  // In EmployeeForm, add gender options and state for Listbox
+  const genderOptions = [
+    { value: 'Male', label: 'Male' },
+    { value: 'Female', label: 'Female' },
+    { value: 'Other', label: 'Other' },
+  ];
+
+  // Modal open handlers
+  const handleOpenModal = (type, onConfirm) => {
+    setModal({ open: true, type, onConfirm });
+  };
+  const handleCloseModal = () => setModal({ open: false, type: '', onConfirm: null });
+
+  // Modal content map
+  const modalContent = {
+    cancel: {
+      title: 'Cancel Changes?',
+      message: 'Are you sure you want to cancel? Unsaved changes will be lost.',
+      confirmText: 'Yes, Cancel',
+      confirmColor: 'bg-red-600',
+      icon: <FiX className="w-8 h-8 text-red-500 mx-auto" />,
+    },
+    saveContinue: {
+      title: 'Save and Continue?',
+      message: 'Do you want to save and continue to the next section?',
+      confirmText: 'Save and Continue',
+      confirmColor: 'bg-blue-600',
+      icon: <FiCheck className="w-8 h-8 text-blue-500 mx-auto" />,
+    },
+    saveExit: {
+      title: 'Save and Exit?',
+      message: 'Do you want to save and exit? Your progress will be saved.',
+      confirmText: 'Save and Exit',
+      confirmColor: 'bg-green-600',
+      icon: <FiCheck className="w-8 h-8 text-green-500 mx-auto" />,
+    },
+  };
+
+  // Add validation patterns and help text for each document type
+  const docFieldMeta = {
+    aadharNo: {
+      label: 'Aadhar',
+      maxLength: 12,
+      pattern: /^[0-9]{0,12}$/,
+      help: '12 digits required',
+      inputMode: 'numeric',
+      toUpper: false,
+      allowed: v => v.replace(/[^0-9]/g, ''),
+      validate: v => v.length === 12,
+      error: 'Aadhar number must be 12 digits.'
+    },
+    panNo: {
+      label: 'PAN',
+      maxLength: 10,
+      pattern: /^[A-Z0-9]{0,10}$/,
+      help: 'Format: 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F)',
+      inputMode: 'text',
+      toUpper: true,
+      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
+      validate: v => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v),
+      error: 'PAN must be in format: 5 letters, 4 digits, 1 letter.'
+    },
+    passport: {
+      label: 'Passport',
+      maxLength: 8,
+      pattern: /^[A-Z0-9]{0,8}$/,
+      help: 'Format: 1 letter, 7 digits (e.g., A1234567)',
+      inputMode: 'text',
+      toUpper: true,
+      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
+      validate: v => /^[A-Z]{1}[0-9]{7}$/.test(v),
+      error: 'Passport must be 1 letter followed by 7 digits.'
+    },
+    drivingLicense: {
+      label: 'Driving License',
+      maxLength: 15,
+      pattern: /^[A-Z0-9]{0,15}$/,
+      help: 'Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)',
+      inputMode: 'text',
+      toUpper: true,
+      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
+      validate: v => /^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(v),
+      error: 'Driving License must be 2 letters, 2 digits, 11 digits.'
+    },
+    voterId: {
+      label: 'Voter ID',
+      maxLength: 10,
+      pattern: /^[A-Z0-9]{0,10}$/,
+      help: 'Format: 3 letters, 7 digits (e.g., ABC1234567)',
+      inputMode: 'text',
+      toUpper: true,
+      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
+      validate: v => /^[A-Z]{3}[0-9]{7}$/.test(v),
+      error: 'Voter ID must be 3 letters followed by 7 digits.'
+    },
+  };
+
+  // Helper to detect if the previewed file is a PDF
+  function isPDF(docPreview) {
+    if (docPreview.file && docPreview.file.type === 'application/pdf') return true;
+    if (typeof docPreview.imgUrl === 'string' && docPreview.imgUrl.toLowerCase().endsWith('.pdf')) return true;
+    return false;
+  }
+
+  // Add validation helpers for bank/UPI
+  const [bankTouched, setBankTouched] = useState({});
+  function bankAccountError(key) {
+    const vals = formData.bankDetails;
+    const anyAccount = vals.accountNumber || vals.accountHolderName || vals.ifscCode || vals.bankName || vals.branchName || vals.passbookImgUrl;
+    const anyUPI = vals.upiId || vals.upiPhoneNumber;
+    // If both anyAccount and anyUPI are filled, require all account fields and all UPI fields
+    if (anyAccount && anyUPI) {
+      if (!vals.accountNumber && key === 'accountNumber') return 'Required';
+      if (!vals.accountHolderName && key === 'accountHolderName') return 'Required';
+      if (!vals.ifscCode && key === 'ifscCode') return 'Required';
+      if (!vals.bankName && key === 'bankName') return 'Required';
+      if (!vals.branchName && key === 'branchName') return 'Required';
+      if (!vals.passbookImgUrl && key === 'passbookImgUrl') return 'Required';
+      return '';
+    }
+    // If only account section started
+    if (anyAccount) {
+      if (!vals.accountNumber && key === 'accountNumber') return 'Required';
+      if (!vals.accountHolderName && key === 'accountHolderName') return 'Required';
+      if (!vals.ifscCode && key === 'ifscCode') return 'Required';
+      if (!vals.bankName && key === 'bankName') return 'Required';
+      if (!vals.branchName && key === 'branchName') return 'Required';
+      if (!vals.passbookImgUrl && key === 'passbookImgUrl') return 'Required';
+      return '';
+    }
+    return '';
+  }
+  function upiError(key) {
+    const vals = formData.bankDetails;
+    const anyAccount = vals.accountNumber || vals.accountHolderName || vals.ifscCode || vals.bankName || vals.branchName || vals.passbookImgUrl;
+    const anyUPI = vals.upiId || vals.upiPhoneNumber;
+    // If both anyAccount and anyUPI are filled, require all account fields and all UPI fields
+    if (anyAccount && anyUPI) {
+      if (!vals.upiId && key === 'upiId') return 'Required';
+      if (!vals.upiPhoneNumber && key === 'upiPhoneNumber') return 'Required';
+      return '';
+    }
+    // If only UPI section started
+    if (anyUPI) {
+      if (!vals.upiId && key === 'upiId') return 'Required';
+      if (!vals.upiPhoneNumber && key === 'upiPhoneNumber') return 'Required';
+      return '';
+    }
+    return '';
+  }
+
+  // Add validation functions for bank details
+  const validateAccountNumber = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "Account number is required." : "";
+    if (!/^[0-9]{9,18}$/.test(value)) return "Account number must be 9-18 digits.";
+    return "";
+  };
+  const validateAccountHolderName = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "Account holder name is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (value.trim().length < 2) return "Must be at least 2 characters.";
+    return "";
+  };
+  const validateIFSC = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "IFSC code is required." : "";
+    if (!/^[A-Z]{4}0[0-9A-Z]{6}$/.test(value.trim().toUpperCase())) return "Invalid IFSC code format (e.g., SBIN0001234).";
+    return "";
+  };
+  const validateBankName = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "Bank name is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (value.trim().length < 2) return "Must be at least 2 characters.";
+    return "";
+  };
+  const validateUPI = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "UPI ID is required." : "";
+    if (!/^([a-zA-Z0-9.]+)@([a-zA-Z]+)$/.test(value)) return "Invalid UPI ID format (e.g., name@bank).";
+    return "";
+  };
+  const validateUPIName = (value, required = true) => {
+    if (!value || value.trim() === "") return required ? "UPI contact name is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (value.trim().length < 2) return "Must be at least 2 characters.";
+    return "";
+  };
+
+  // Helper to check if any bank or UPI field is filled
+  const anyBankFieldFilled = formData.bankDetails.accountNumber || formData.bankDetails.accountHolderName || formData.bankDetails.ifscCode || formData.bankDetails.bankName || formData.bankDetails.branchName || formData.bankDetails.passbookImgUrl;
+  const anyUPIFieldFilled = formData.bankDetails.upiId || formData.bankDetails.upiPhoneNumber;
+
+  // Helper to check if any personal field is filled
+  const anyPersonalFieldFilled = Object.values(formData.employee).some(v => v && v.toString().trim() !== "");
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -1292,12 +1732,8 @@ function EmployeeForm() {
               </h1>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col ">
+            <form onSubmit={handleSubmit} className="flex flex-col mt-4">
               <div className="bg-white rounded-2xl shadow-sm p-4 relative overflow-hidden flex-1">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50 rounded-full -mr-20 -mt-20 z-0" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-green-50 rounded-full -ml-16 -mb-16 z-0" />
-
                 {/* Section Tabs */}
                 <div className="relative z-10 flex gap-4 mb-8 border-b border-gray-100 pb-2">
                   {sections.map((section) => (
@@ -1344,807 +1780,605 @@ function EmployeeForm() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative z-10 pb-20"
+                  className="relative z-10 flex flex-col min-h-[600px]"
                 >
                   {/* Personal Details Section */}
                   {activeSection === "personal" && (
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                          Personal Information
-                        </h3>
-
-                        <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-3 flex-1 items-start">
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Personal Information</h3>
+                        <div className="grid grid-cols-3 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              First Name <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              className={inputClass}
-                              value={formData.employee.firstName || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "firstName",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter first name"
+                            <label className={inputLabelClass}>First Name <span className="text-red-400">*</span></label>
+                            <input 
+                              type="text" 
+                              className={`${inputClass} ${validationErrors.firstName && (fieldTouched.firstName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              placeholder="Enter first name" 
+                              value={formData.employee.firstName || ""} 
+                              onChange={e => handleInputChange("employee", "firstName", filterNameInput(e.target.value))} 
+                              ref={formRefs.firstName} 
+                              onBlur={() => handlePersonalFieldBlur("firstName")} 
+                              maxLength={30}
                             />
+                            {validationErrors.firstName && (fieldTouched.firstName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.firstName}</p>)}
                           </div>
                           <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              Middle Name
-                            </label>
-                            <input
-                              type="text"
-                              className={inputClass}
-                              value={formData.employee.middleName || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "middleName",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter middle name (optional)"
+                            <label className={inputLabelClass}>Middle Name</label>
+                            <input 
+                              type="text" 
+                              className={`${inputClass} ${validationErrors.middleName && (fieldTouched.middleName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              placeholder="Enter middle name (optional)" 
+                              value={formData.employee.middleName || ""} 
+                              onChange={e => handleInputChange("employee", "middleName", filterNameInput(e.target.value))} 
+                              ref={formRefs.middleName} 
+                              onBlur={() => handlePersonalFieldBlur("middleName")} 
+                              maxLength={30}
                             />
+                            {validationErrors.middleName && (fieldTouched.middleName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.middleName}</p>)}
                           </div>
                           <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              Last Name <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              className={inputClass}
-                              value={formData.employee.lastName || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "lastName",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Enter last name"
+                            <label className={inputLabelClass}>Last Name <span className="text-red-400">*</span></label>
+                            <input 
+                              type="text" 
+                              className={`${inputClass} ${validationErrors.lastName && (fieldTouched.lastName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              placeholder="Enter last name" 
+                              value={formData.employee.lastName || ""} 
+                              onChange={e => handleInputChange("employee", "lastName", filterNameInput(e.target.value))} 
+                              ref={formRefs.lastName} 
+                              onBlur={() => handlePersonalFieldBlur("lastName")} 
+                              maxLength={30}
                             />
+                            {validationErrors.lastName && (fieldTouched.lastName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.lastName}</p>)}
                           </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              Father&apos;s Name
-                            </label>
-                            <input
-                              type="text"
-                              className={inputClass}
-                              value={formData.employee.fathersName || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "fathersName",
-                                  e.target.value
-                                )
-                              }
+                            <label className={inputLabelClass}>Father&aposs Name</label>
+                            <input 
+                              type="text" 
+                              className={`${inputClass} ${validationErrors.fathersName && (fieldTouched.fathersName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              placeholder="Enter father's name" 
+                              value={formData.employee.fathersName || ""} 
+                              onChange={e => handleInputChange("employee", "fathersName", filterNameInput(e.target.value))} 
+                              ref={formRefs.fathersName} 
+                              onBlur={() => handlePersonalFieldBlur("fathersName")} 
+                              maxLength={30}
                             />
+                            {validationErrors.fathersName && (fieldTouched.fathersName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.fathersName}</p>)}
                           </div>
                           <div className={inputGroupClass}>
-                            <label className={floatingLabelClass}>Gender</label>
-                            <select
-                              className={inputClass}
-                              value={formData.employee.gender || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "employee",
-                                  "gender",
-                                  e.target.value
-                                )
-                              }
-                            >
-                              <option value="">Select gender</option>
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                              <option value="Other">Other</option>
-                            </select>
+                            <label className={inputLabelClass}>Gender</label>
+                            <Listbox value={formData.employee.gender} onChange={val => handleInputChange('employee', 'gender', val)}>
+                              <div className="relative">
+                                <Listbox.Button className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 flex justify-between items-center ${validationErrors.gender && (fieldTouched.gender || anyPersonalFieldFilled) ? 'border-red-500' : 'border-gray-300'}`}>
+                                  <span>{genderOptions.find(opt => opt.value === formData.employee.gender)?.label || 'Select gender'}</span>
+                                  <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                </Listbox.Button>
+                                <Listbox.Options className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                  {genderOptions.map(option => (
+                                    <Listbox.Option
+                                      key={option.value}
+                                      value={option.value}
+                                      className={({ active, selected }) =>
+                                        `cursor-pointer select-none relative py-2 pl-10 pr-4 ${
+                                          active ? 'bg-gray-100' : ''
+                                        } ${selected ? 'font-semibold text-blue-600' : 'text-gray-900'}`
+                                      }
+                                    >
+                                      {({ selected }) => (
+                                        <>
+                                          <span className={`block truncate ${selected ? 'font-semibold' : ''}`}>{option.label}</span>
+                                          {selected ? (
+                                            <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                                              <CheckIcon className="w-5 h-5 text-blue-600" />
+                                            </span>
+                                          ) : null}
+                                        </>
+                                      )}
+                                    </Listbox.Option>
+                                  ))}
+                                </Listbox.Options>
+                              </div>
+                            </Listbox>
+                            {validationErrors.gender && (fieldTouched.gender || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.gender}</p>)}
                           </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          {[
-                            {
-                              label: "Phone",
-                              field: "phone",
-                              required: true,
-                              type: "tel",
-                            },
-                            {
-                              label: "Alternate Phone",
-                              field: "alternatePhone",
-                              type: "tel",
-                            },
-                          ].map(({ label, field, required, type }) => (
-                            <div key={field} className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
-                                {label}{" "}
-                                {required && (
-                                  <span className="text-red-400">*</span>
-                                )}
-                              </label>
-                              <input
-                                type={type || "text"}
-                                required={required}
-                                className={inputClass}
-                                value={formData.employee[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "employee",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div className={inputGroupClass}>
+                            <label className={inputLabelClass}>Phone <span className="text-red-400">*</span></label>
+                            <input 
+                              type="tel" 
+                              className={`${inputClass} ${validationErrors.phone && (fieldTouched.phone || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              placeholder="Enter phone number" 
+                              value={formData.employee.phone || ""} 
+                              onChange={e => handleInputChange("employee", "phone", filterPhoneInput(e.target.value))} 
+                              ref={formRefs.phone} 
+                              onBlur={() => handlePersonalFieldBlur("phone")} 
+                              maxLength={10}
+                              inputMode="numeric"
+                            />
+                            {validationErrors.phone && (fieldTouched.phone || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.phone}</p>)}
+                          </div>
+                          <div className={inputGroupClass}>
+                            <label className={inputLabelClass}>Alternate Phone</label>
+                            <input 
+                              type="tel" 
+                              className={`${inputClass} ${validationErrors.alternatePhone && (fieldTouched.alternatePhone || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              placeholder="Enter alternate phone" 
+                              value={formData.employee.alternatePhone || ""} 
+                              onChange={e => handleInputChange("employee", "alternatePhone", filterPhoneInput(e.target.value))} 
+                              ref={formRefs.alternatePhone} 
+                              onBlur={() => handlePersonalFieldBlur("alternatePhone")} 
+                              maxLength={10}
+                              inputMode="numeric"
+                            />
+                            {validationErrors.alternatePhone && (fieldTouched.alternatePhone || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.alternatePhone}</p>)}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div className={inputGroupClass}>
+                            <label className={inputLabelClass}>Personal Email <span className="text-red-400">*</span></label>
+                            <div className="relative">
+                              <input 
+                                type="email" 
+                                className={`${inputClass} ${validationErrors.emailPersonal && (fieldTouched.emailPersonal || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                                placeholder="Enter personal email" 
+                                value={formData.employee.emailPersonal || ""} 
+                                onChange={e => handleInputChange("employee", "emailPersonal", filterEmailInput(e.target.value))} 
+                                ref={formRefs.emailPersonal} 
+                                onBlur={() => handlePersonalFieldBlur("emailPersonal")} 
+                                maxLength={50}
                               />
+                              {getEmailSuggestion(formData.employee.emailPersonal) && !formData.employee.emailPersonal.includes('@') && (
+                                <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
+                                  <span className="font-medium">Suggestion:</span> 
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleInputChange("employee", "emailPersonal", getEmailSuggestion(formData.employee.emailPersonal))}
+                                    className="ml-1 underline hover:text-blue-900 cursor-pointer"
+                                  >
+                                    {getEmailSuggestion(formData.employee.emailPersonal)}
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          ))}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          {[
-                            {
-                              label: "Personal Email",
-                              field: "emailPersonal",
-                              type: "email",
-                              required: true,
-                            },
-                          ].map(({ label, field, type, required }) => (
-                            <div key={field} className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
-                                {label} {required && <span className="text-red-400">*</span>}
-                              </label>
-                              <input
-                                type={type}
-                                className={inputClass}
-                                value={formData.employee[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "employee",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
+                            {validationErrors.emailPersonal && (fieldTouched.emailPersonal || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailPersonal}</p>)}
+                          </div>
+                          <div className={inputGroupClass}>
+                            <label className={inputLabelClass}>Official Email</label>
+                            <div className="relative">
+                              <input 
+                                type="email" 
+                                className={`${inputClass} ${validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                                placeholder="Enter official email" 
+                                value={formData.employee.emailOfficial || ""} 
+                                onChange={e => handleInputChange("employee", "emailOfficial", filterEmailInput(e.target.value))} 
+                                ref={formRefs.emailOfficial} 
+                                onBlur={() => handlePersonalFieldBlur("emailOfficial")} 
+                                maxLength={50}
                               />
+                              {getEmailSuggestion(formData.employee.emailOfficial) && !formData.employee.emailOfficial.includes('@') && (
+                                <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
+                                  <span className="font-medium">Suggestion:</span> 
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleInputChange("employee", "emailOfficial", getEmailSuggestion(formData.employee.emailOfficial))}
+                                    className="ml-1 underline hover:text-blue-900 cursor-pointer"
+                                  >
+                                    {getEmailSuggestion(formData.employee.emailOfficial)}
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          ))}
+                            {validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailOfficial}</p>)}
+                          </div>
                         </div>
-
-                        {/* Addresses */}
                         <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>
-                            Current Address
-                          </label>
-                          <textarea
-                            className={inputClass}
-                            rows="2"
-                            value={formData.employee.currentAddress || ""}
-                            onChange={(e) =>
-                              handleInputChange(
-                                "employee",
-                                "currentAddress",
-                                e.target.value
-                              )
-                            }
+                          <label className={inputLabelClass}>Current Address</label>
+                          <textarea 
+                            className={`${inputClass} ${validationErrors.currentAddress && (fieldTouched.currentAddress || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                            rows="2" 
+                            placeholder="Enter current address" 
+                            value={formData.employee.currentAddress || ""} 
+                            onChange={e => handleInputChange("employee", "currentAddress", e.target.value)} 
+                            ref={formRefs.currentAddress} 
+                            onBlur={() => handlePersonalFieldBlur("currentAddress")} 
+                            maxLength={200}
                           />
+                          {validationErrors.currentAddress && (fieldTouched.currentAddress || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.currentAddress}</p>)}
+                          <p className="text-xs text-gray-500 mt-1">Maximum 200 characters</p>
                         </div>
-
-                        <div className="flex items-center mb-2">
-                          <input
-                            type="checkbox"
-                            id="sameAsCurrent"
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                            checked={
-                              formData.employee.permanentAddress ===
-                              formData.employee.currentAddress
-                            } // Sync checkbox state
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                handleInputChange(
-                                  "employee",
-                                  "permanentAddress",
-                                  formData.employee.currentAddress
-                                );
-                              } else {
-                                handleInputChange(
-                                  "employee",
-                                  "permanentAddress",
-                                  ""
-                                ); // Clear permanent address
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor="sameAsCurrent"
-                            className="ml-2 text-sm text-gray-700"
-                          >
-                            Same as current address
-                          </label>
+                        <div className="flex items-center mb-1">
+                          <input type="checkbox" id="sameAsCurrent" className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={formData.employee.permanentAddress === formData.employee.currentAddress} onChange={e => { if (e.target.checked) { handleInputChange("employee", "permanentAddress", formData.employee.currentAddress); } else { handleInputChange("employee", "permanentAddress", ""); } }} />
+                          <label htmlFor="sameAsCurrent" className="ml-2 text-sm text-gray-700">Same as current address</label>
                         </div>
-
                         <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>
-                            Permanent Address
-                          </label>
-                          <textarea
-                            className={inputClass}
-                            rows="2"
-                            value={formData.employee.permanentAddress || ""}
-                            onChange={(e) =>
-                              handleInputChange(
-                                "employee",
-                                "permanentAddress",
-                                e.target.value
-                              )
-                            }
+                          <label className={inputLabelClass}>Permanent Address</label>
+                          <textarea 
+                            className={`${inputClass} ${validationErrors.permanentAddress && (fieldTouched.permanentAddress || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                            rows="2" 
+                            placeholder="Enter permanent address" 
+                            value={formData.employee.permanentAddress || ""} 
+                            onChange={e => handleInputChange("employee", "permanentAddress", e.target.value)} 
+                            ref={formRefs.permanentAddress} 
+                            onBlur={() => handlePersonalFieldBlur("permanentAddress")} 
+                            maxLength={200}
                           />
+                          {validationErrors.permanentAddress && (fieldTouched.permanentAddress || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.permanentAddress}</p>)}
+                          <p className="text-xs text-gray-500 mt-1">Maximum 200 characters</p>
                         </div>
                       </div>
-
-                      {/* Right Column - Professional Information */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                          Professional Information
-                        </h3>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <DepartmentSelect
-                            label="Department"
-                            options={departments}
-                            value={formData.employee.department}
-                            onChange={(selectedDepartment) => {
-                              handleInputChange("employee", "department", {
-                                departmentId: selectedDepartment.departmentId,
-                                name: selectedDepartment.name,
-                              });
-                              // Set weekly holidays as read-only weekly offs
-                              const weeklyHolidays =
-                                selectedDepartment.weeklyHolidays
-                                  ? selectedDepartment.weeklyHolidays.split(",")
-                                  : [];
-                              handleInputChange("employee", "weeklyOffs", weeklyHolidays);
-                              // Clear designation and manager when department changes
-                              handleInputChange("employee", "designation", null);
-                              handleInputChange("employee", "reportingManager", null);
-                            }}
-                            onAddDepartment={() => setShowDepartmentModal(true)}
-                          />
-                          <DesignationSelect
-                            label="Designation"
-                            options={formData.employee.department ? designations : []}
-                            value={formData.employee.designation}
-                            onChange={(selectedDesignation) =>
-                              handleInputChange("employee", "designation", {
-                                designationId: selectedDesignation.designationId,
-                                name: selectedDesignation.name,
-                                manager: selectedDesignation.manager,
-                                overtimeEligible: selectedDesignation.overtimeEligible,
-                              })
-                            }
-                            onAddDesignation={() => setShowDesignationModal(true)}
-                            disabled={isDesignationLoading || !formData.employee.department}
-                            placeholder={!formData.employee.department ? 'First Select Department' : 'Select designation'}
-                            loading={isDesignationLoading}
-                          />
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Professional Information</h3>
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <DepartmentSelect label="Department" options={departments} value={formData.employee.department} onChange={selectedDepartment => { const cleanName = selectedDepartment.name.replace(/[bedjw]{5,}/g, '').replace(/\|.*$/, '').replace(/\s+/g, ' ').trim(); handleInputChange("employee", "department", { departmentId: selectedDepartment.departmentId, name: cleanName }); const weeklyHolidays = selectedDepartment.weeklyHolidays ? selectedDepartment.weeklyHolidays.split(",") : []; handleInputChange("employee", "weeklyOffs", weeklyHolidays); handleInputChange("employee", "designation", null); handleInputChange("employee", "reportingManager", null); }} onAddDepartment={() => setShowDepartmentModal(true)} />
+                          <DesignationSelect label="Designation" options={formData.employee.department ? designations : []} value={formData.employee.designation} onChange={selectedDesignation => handleInputChange("employee", "designation", { designationId: selectedDesignation.designationId, name: selectedDesignation.name, manager: selectedDesignation.manager, overtimeEligible: selectedDesignation.overtimeEligible, })} onAddDesignation={() => setShowDesignationModal(true)} disabled={isDesignationLoading || !formData.employee.department} placeholder={!formData.employee.department ? 'First Select Department' : 'Select designation'} loading={isDesignationLoading} />
                         </div>
-
-                        <div className={inputGroupClass}>
-                          <label className={floatingLabelClass}>Official Email</label>
-                          <input
-                            type="email"
-                            className={inputClass}
-                            value={formData.employee.emailOfficial || ""}
-                            onChange={(e) =>
-                              handleInputChange("employee", "emailOfficial", e.target.value)
-                            }
-                            placeholder="Enter official email"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          {[
-                            {
-                              label: "Date of Joining",
-                              field: "joiningDate",
-                              required: true,
-                              type: "date",
-                            },
-                          ].map(({ label, field, type, required }) => (
-                            <div key={field} className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
-                                {label}{" "}
-                                {required && (
-                                  <span className="text-red-400">*</span>
-                                )}
-                              </label>
-                              <input
-                                type={type || "text"}
-                                className={`${inputClass} ${type === "date" ? "py-[0.4rem] px-3" : ""
-                                  }`}
-                                value={formData.employee[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "employee",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </div>
-                          ))}
-
-                          <div className="grid grid-1 gap-4">
-                            <ReportingManagerSelect
-                              label="Reporting Manager"
-                              options={managers}
-                              value={formData.employee.reportingManager}
-                              onChange={(selectedManager) =>
-                                handleInputChange(
-                                  "employee",
-                                  "reportingManager",
-                                  {
-                                    employeeId: selectedManager.employeeId,
-                                    name: selectedManager.name,
-                                  }
-                                )
-                              }
+                        <div className="grid grid-cols-2 gap-2 mb-2">
+                          <div className={inputGroupClass}>
+                            <label className={inputLabelClass}>Date of Joining <span className="text-red-400">*</span></label>
+                            <input 
+                              type="date" 
+                              className={`${inputClass} ${validationErrors.joiningDate && (fieldTouched.joiningDate || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              value={formData.employee.joiningDate || ""} 
+                              onChange={e => handleInputChange("employee", "joiningDate", e.target.value)} 
+                              ref={formRefs.joiningDate} 
+                              onBlur={() => handlePersonalFieldBlur("joiningDate")} 
                             />
+                            {validationErrors.joiningDate && (fieldTouched.joiningDate || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.joiningDate}</p>)}
+                          </div>
+                          <div className="grid grid-1 gap-2">
+                            <ReportingManagerSelect label="Reporting Manager" options={managers} value={formData.employee.reportingManager} onChange={selectedManager => handleInputChange("employee", "reportingManager", { employeeId: selectedManager.employeeId, name: selectedManager.name, })} />
                           </div>
                         </div>
-
-                        {/* Statutory Details */}
-                        <div className="space-y-4 border-t pt-4 mt-4">
-                          <h4 className="text-md font-medium text-gray-700">
-                            Statutory Details
-                          </h4>
-
-                          <MultiSelect
-                            label="Weekly Off"
-                            options={weekDays}
-                            value={formData.employee.weeklyOffs || []}
-                            onChange={(selected) =>
-                              handleInputChange(
-                                "employee",
-                                "weeklyOffs",
-                                selected
-                              )
-                            }
-                          />
-
-                          <div className="flex flex-col space-y-4">
-                            {/* PF Section */}
-                            <div className="space-y-2">
-                              <div className="flex items-center mb-3">
-                                <input
-                                  type="checkbox"
-                                  id="pfEnrolled"
-                                  checked={formData.employee.pfEnrolled}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "employee",
-                                      "pfEnrolled",
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <label
-                                  htmlFor="pfEnrolled"
-                                  className="ml-2 text-sm text-gray-700"
-                                >
-                                  PF Enrolled
-                                </label>
-                              </div>
-
-                              {formData.employee.pfEnrolled && (
-                                <div className={`${inputGroupClass} mt-2`}>
-                                  <label className={floatingLabelClass}>
-                                    UAN Number
-                                  </label>
-                                  <input
-                                    type="text"
-                                    className={inputClass}
-                                    value={formData.employee.uanNumber || ""}
-                                    onChange={(e) =>
-                                      handleInputChange(
-                                        "employee",
-                                        "uanNumber",
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="Enter UAN Number"
-                                  />
-                                </div>
-                              )}
-                            </div>
-
-                            {/* ESIC Section */}
-                            <div className="space-y-2">
-                              <div className="flex items-center mb-3">
-                                <input
-                                  type="checkbox"
-                                  id="esicEnrolled"
-                                  checked={formData.employee.esicEnrolled}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "employee",
-                                      "esicEnrolled",
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                                />
-                                <label
-                                  htmlFor="esicEnrolled"
-                                  className="ml-2 text-sm text-gray-700"
-                                >
-                                  ESIC Enrolled
-                                </label>
-                              </div>
-
-                              {formData.employee.esicEnrolled && (
-                                <div className={`${inputGroupClass} mt-2`}>
-                                  <label className={floatingLabelClass}>
-                                    ESIC Number
-                                  </label>
-                                  <input
-                                    type="text"
-                                    className={inputClass}
-                                    value={formData.employee.esicNumber || ""}
-                                    onChange={(e) =>
-                                      handleInputChange(
-                                        "employee",
-                                        "esicNumber",
-                                        e.target.value
-                                      )
-                                    }
-                                    placeholder="Enter ESIC Number"
-                                  />
-                                </div>
-                              )}
-                            </div>
+                        <h4 className="text-md font-medium text-gray-700 mt-4 mb-2">Statutory Details</h4>
+                        <MultiSelect label="Weekly Off" options={weekDays} value={formData.employee.weeklyOffs || []} onChange={selected => handleInputChange("employee", "weeklyOffs", selected)} />
+                        <div className="flex flex-col space-y-1 mt-2">
+                          <div className="flex items-center mb-1">
+                            <input type="checkbox" id="pfEnrolled" checked={formData.employee.pfEnrolled} onChange={e => handleInputChange("employee", "pfEnrolled", e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                            <label htmlFor="pfEnrolled" className="ml-2 text-sm text-gray-700">PF Enrolled</label>
                           </div>
+                          {formData.employee.pfEnrolled && (
+                            <div className={inputGroupClass + " mt-1"}>
+                              <label className={inputLabelClass}>UAN Number <span className="text-red-400">*</span></label>
+                              <input 
+                                type="text" 
+                                className={`${inputClass} ${validationErrors.uanNumber && (fieldTouched.uanNumber || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                                value={formData.employee.uanNumber || ""} 
+                                onChange={e => handleInputChange("employee", "uanNumber", filterUANInput(e.target.value))} 
+                                placeholder="Enter UAN Number" 
+                                maxLength={12}
+                                inputMode="numeric"
+                                onBlur={() => handlePersonalFieldBlur("uanNumber")}
+                              />
+                              {validationErrors.uanNumber && (fieldTouched.uanNumber || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.uanNumber}</p>)}
+                            </div>
+                          )}
+                          <div className="flex items-center mb-1">
+                            <input type="checkbox" id="esicEnrolled" checked={formData.employee.esicEnrolled} onChange={e => handleInputChange("employee", "esicEnrolled", e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+                            <label htmlFor="esicEnrolled" className="ml-2 text-sm text-gray-700">ESIC Enrolled</label>
+                          </div>
+                          {formData.employee.esicEnrolled && (
+                            <div className={inputGroupClass + " mt-1"}>
+                              <label className={inputLabelClass}>ESIC Number <span className="text-red-400">*</span></label>
+                              <input 
+                                type="text" 
+                                className={`${inputClass} ${validationErrors.esicNumber && (fieldTouched.esicNumber || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                                value={formData.employee.esicNumber || ""} 
+                                onChange={e => handleInputChange("employee", "esicNumber", filterUANInput(e.target.value))} 
+                                placeholder="Enter ESIC Number" 
+                                maxLength={12}
+                                inputMode="numeric"
+                                onBlur={() => handlePersonalFieldBlur("esicNumber")}
+                              />
+                              {validationErrors.esicNumber && (fieldTouched.esicNumber || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.esicNumber}</p>)}
+                            </div>
+                          )}
                         </div>
-
                       </div>
                     </div>
                   )}
 
                   {/* ID Proofs Section */}
                   {activeSection === "idProofs" && (
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                        Identity Documents
-                      </h3>
+                    <div className="flex-1 p-4">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Identity Documents</h3>
                       <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                        {[
-                          {
-                            label: "Aadhar No.",
-                            key: "aadharNo",
-                            docType: "Aadhar Card",
-                            imgField: "aadharImgUrl",
-                          },
-                          {
-                            label: "PAN No.",
-                            key: "panNo",
-                            docType: "PAN Card",
-                            imgField: "pancardImgUrl",
-                          },
-                          {
-                            label: "Passport",
-                            key: "passport",
-                            docType: "Passport",
-                            imgField: "passportImgUrl",
-                          },
-                          {
-                            label: "Driving License",
-                            key: "drivingLicense",
-                            docType: "Driving License",
-                            imgField: "drivingLicenseImgUrl",
-                          },
-                          {
-                            label: "Voter ID",
-                            key: "voterId",
-                            docType: "Voter ID",
-                            imgField: "voterIdImgUrl",
-                          },
-                        ].map(({ label, key, docType, imgField }) => (
-                          <div key={key} className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              {label}
-                            </label>
-                            <div className="relative flex items-center">
+                        {Object.entries(docFieldMeta).map(([key, meta]) => {
+                          const imgField = key === 'aadharNo' ? 'aadharImgUrl'
+                            : key === 'panNo' ? 'pancardImgUrl'
+                            : key === 'passport' ? 'passportImgUrl'
+                            : key === 'drivingLicense' ? 'drivingLicenseImgUrl'
+                            : key === 'voterId' ? 'voterIdImgUrl' : '';
+                          const value = formData.idProofs[key] || '';
+                          const hasFile = !!formData.idProofs[imgField];
+                          const isTouched = idProofsTouched[key];
+                          const isValid = meta.validate(value);
+                          // Passport: after first char, only allow digits
+                          const handlePassportInput = (v) => {
+                            if (v.length === 0) return '';
+                            let first = v[0].replace(/[^a-zA-Z]/g, '').toUpperCase();
+                            let rest = v.slice(1).replace(/[^0-9]/g, '');
+                            return (first + rest).slice(0, 8);
+                          };
+                          // General allowed function
+                          const allowedValue = (v) => {
+                            if (key === 'passport') return handlePassportInput(v);
+                            return meta.allowed(v);
+                          };
+                          // Show error if: (1) field is touched or blurred, and (2) value is invalid, or (3) file is uploaded and value is invalid, or (4) value is entered but no file
+                          const showError = (
+                            (isTouched && value && !isValid) ||
+                            (hasFile && !isValid) ||
+                            (value && !hasFile)
+                          );
+                          let errorMsg = '';
+                          if (isTouched && value && !isValid) errorMsg = meta.error;
+                          else if (hasFile && !isValid) errorMsg = meta.error;
+                          else if (value && !hasFile) errorMsg = `Please upload ${meta.label} document.`;
+                          else if (hasFile && !value) errorMsg = `${meta.label} number is required when document is uploaded.`;
+                          return (
+                            <div key={key} className={`flex flex-col md:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md transition-all duration-200 ${showError ? 'ring-2 ring-red-200 border-red-400' : hasFile ? 'ring-2 ring-blue-100' : ''}`}>
+                              <div className="flex-1">
+                                <label className="block text-sm font-semibold text-gray-800 mb-1">{meta.label} Number <span className="text-red-400">*</span></label>
                               <input
-                                className={`${inputClass} pr-10`}
-                                value={formData.idProofs[key] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "idProofs",
-                                    key,
-                                    e.target.value
-                                  )
-                                }
-                              />
-                              <div className="absolute right-3 group">
-                                {formData.idProofs[imgField] ? (
+                                  className={inputClass + (showError ? ' border-red-500' : '') + ' font-mono tracking-wider'}
+                                  value={value}
+                                  onChange={e => {
+                                    let v = e.target.value;
+                                    v = allowedValue(v);
+                                    handleInputChange("idProofs", key, v);
+                                  }}
+                                  onInput={e => {
+                                    let v = e.target.value;
+                                    v = allowedValue(v);
+                                    e.target.value = v;
+                                  }}
+                                  onBlur={() => setIdProofsTouched(t => ({ ...t, [key]: true }))}
+                                  placeholder={meta.placeholder}
+                                  maxLength={meta.maxLength}
+                                  inputMode={meta.inputMode}
+                                  autoComplete="off"
+                                  style={{ textTransform: meta.toUpper ? 'uppercase' : 'none' }}
+                                  required={hasFile}
+                                />
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-gray-500">{meta.help}</span>
+                                  {showError && <span className="text-xs text-red-500">{errorMsg}</span>}
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-center gap-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">{meta.label} Photo/PDF <span className="text-red-400">*</span></label>
                                   <div className="flex items-center gap-2">
-                                    {/* Show preview for both new uploads and existing files */}
-                                    {formData.idProofs[imgField] instanceof
-                                    File ? (
-                                      // For new uploads (File objects)
-                                      <img
-                                        src={URL.createObjectURL(
-                                          formData.idProofs[imgField]
+                                  {formData.idProofs[imgField] ? (
+                                    <>
+                                      <button type="button" onClick={() => setDocPreview({
+                                        open: true,
+                                        imgUrl: formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField],
+                                        number: value,
+                                        label: meta.label,
+                                        file: formData.idProofs[imgField] instanceof File ? formData.idProofs[imgField] : null,
+                                      })} className="focus:outline-none">
+                                        {formData.idProofs[imgField].type === 'application/pdf' || (typeof formData.idProofs[imgField] === 'string' && formData.idProofs[imgField].endsWith('.pdf')) ? (
+                                          <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">PDF</span>
+                                        ) : (
+                                          <img src={formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField]} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />
                                         )}
-                                        alt={`${docType} preview`}
-                                        className="w-8 h-8 object-cover rounded"
-                                      />
-                                    ) : (
-                                      // For existing files (URLs)
-                                      <img
-                                        src={formData.idProofs[imgField]}
-                                        alt={`${docType} preview`}
-                                        className="w-8 h-8 object-cover rounded"
-                                      />
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          idProofs: {
-                                            ...prev.idProofs,
-                                            [imgField]: null,
-                                          },
-                                        }));
-                                      }}
-                                      className="text-red-500 hover:text-red-700"
-                                    >
-                                      <X className="w-4 h-4" />
                                     </button>
-                                  </div>
-                                ) : (
-                                  <label
-                                    htmlFor={`upload-${key}`}
-                                    className="cursor-pointer"
-                                  >
-                                    <FiUpload className="w-5 h-5 text-gray-500 hover:text-blue-600" />
-                                    <span className="invisible group-hover:visible absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap">
-                                      Upload {docType}
-                                    </span>
-                                  </label>
-                                )}
+                                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, idProofs: { ...prev.idProofs, [imgField]: null } }))} className="text-red-500 hover:text-red-700 ml-2">Remove</button>
+                                    </>
+                                  ) : (
+                                    <label htmlFor={`upload-${key}`} className="cursor-pointer inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-100 text-sm text-gray-700">
+                                      Upload
                                 <input
                                   type="file"
                                   id={`upload-${key}`}
                                   className="hidden"
                                   accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={(e) => {
+                                        onChange={e => {
                                     const file = e.target.files[0];
                                     if (file) {
-                                      // Add file size validation (e.g., 5MB limit)
-                                      const maxSize = 5 * 1024 * 1024; // 5MB
-                                      if (file.size > maxSize) {
-                                        toast.error(
-                                          "File size should not exceed 5MB"
-                                        );
-                                        return;
-                                      }
-                                      // Add file type validation
-                                      const allowedTypes = [
-                                        "application/pdf",
-                                        "image/jpeg",
-                                        "image/jpg",
-                                        "image/png",
-                                      ];
+                                            const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
                                       if (!allowedTypes.includes(file.type)) {
-                                        toast.error(
-                                          "Please upload a valid PDF or image file"
-                                        );
+                                              toast.error("Only PDF or image files are allowed.");
                                         return;
                                       }
                                       handleFileUpload(key, file);
+                                            setIdProofsTouched(t => ({ ...t, [key]: true }));
                                     }
                                   }}
                                 />
+                                    </label>
+                                  )}
                               </div>
+                                <span className="text-xs text-gray-500 mt-1">Only PDF or image files allowed. Max 5MB.</span>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
+                      {/* Document Preview Modal */}
+                      {docPreview.open && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+                            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={() => { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}><X className="w-5 h-5" /></button>
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4">{docPreview.label} Document Preview</h2>
+                            {isPDF(docPreview) ? (
+                              <>
+                                {/* Custom PDF Toolbar */}
+                                <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
+                                  {/* Rotate Left */}
+                                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Left">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" /></svg>
+                                  </button>
+                                  {/* Rotate Right */}
+                                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Right">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" /></svg>
+                                  </button>
+                                  {/* Zoom Out */}
+                                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+                                  </button>
+                                  {/* Zoom In */}
+                                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                                  </button>
+                                  {/* Download */}
+                                  <a
+                                    href={docPreview.imgUrl}
+                                    download={docPreview.label + '.pdf'}
+                                    className="text-gray-600 hover:text-blue-600"
+                                    title="Download PDF"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                                  </a>
+                                </div>
+                                {/* PDF Preview Area with dynamic width/height for rotation */}
+                                {(() => {
+                                  const rotation = ((pdfControls.rotate % 360) + 360) % 360;
+                                  const isSideways = rotation === 90 || rotation === 270;
+                                  const previewWidth = isSideways ? '24rem' : '100%';
+                                  const previewHeight = isSideways ? '100%' : '24rem';
+                                  return (
+                                    <div
+                                      className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
+                                      style={{
+                                        width: '100%',
+                                        height: '24rem',
+                                        minHeight: '24rem',
+                                        minWidth: '24rem',
+                                        maxHeight: '32rem',
+                                        maxWidth: '100%',
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          width: previewWidth,
+                                          height: previewHeight,
+                                          transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
+                                          transition: 'transform 0.2s',
+                                          display: 'flex',
+                                          justifyContent: 'center',
+                                          alignItems: 'center',
+                                        }}
+                                      >
+                                        <iframe
+                                          src={docPreview.imgUrl + '#toolbar=0'}
+                                          title={`${docPreview.label} PDF`}
+                                          className="w-full h-full border-none"
+                                          style={{ background: 'white' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </>
+                            ) : (
+                              <img src={docPreview.imgUrl} alt={`${docPreview.label} preview`} className="w-64 h-64 object-contain rounded border mb-4" />
+                            )}
+                            <div className="text-center mt-4">
+                              <span className="block text-gray-700 font-medium">{docPreview.label} Number:</span>
+                              <span className="text-lg font-mono text-gray-900 tracking-widest">{docPreview.number || '—'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {/* Bank Details Section */}
                   {activeSection === "bank" && (
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                        Banking Information
-                      </h3>
-                      <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                        {[
-                          { label: "Account Number", key: "accountNumber" },
-                          {
-                            label: "Account Holder Name",
-                            key: "accountHolderName",
-                          },
-                          { label: "IFSC Code", key: "ifscCode" },
-                          { label: "Bank Name", key: "bankName" },
-                          { label: "Branch Name", key: "branchName" },
-                          { label: "UPI ID", key: "upiId" },
-                          { label: "UPI Phone Number", key: "upiPhoneNumber" },
-                        ].map(({ label, key }) => (
-                          <div key={key} className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
-                              {label}
-                            </label>
-                            <input
-                              className={inputClass}
-                              value={formData.bankDetails[key] || ""}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "bankDetails",
-                                  key,
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Document Upload Section */}
-                      <div className="mt-2 space-y-1">
-                        <h4 className="text-sm font-medium text-gray-700">
-                          Account Verification Document
-                        </h4>
-                        <div className="flex items-start space-x-6">
-                          {/* Passbook Photo Upload */}
-                          <div className="flex-1">
-                            <div
-                              className={`border-2 border-dashed rounded-lg p-2 transition-all duration-200 ${
-                                formData.bankDetails.passbookImgUrl
-                                  ? "border-green-200 bg-green-50"
-                                  : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-                              }`}
-                            >
-                              <div className="flex flex-col items-center justify-center">
+                    <div className="flex-1 p-4 pt-2"> {/* pt-2 to shift up */}
+                      <h3 className="text-lg font-semibold text-gray-800 mb-3">Bank Details</h3>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-4"> {/* gap-y-4 for more vertical space */}
+                        {/* Account fields */}
+                        <div className="flex flex-col mb-3"> {/* mb-3 for more space below */}
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">Account Number</label>
+                          <input className={inputClass + (bankAccountError('accountNumber') || ((bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber)) ? ' border-red-500' : '')} value={formData.bankDetails.accountNumber || ''} onChange={e => handleInputChange('bankDetails', 'accountNumber', e.target.value)} placeholder="Enter account number" type="text" inputMode="numeric" maxLength={18} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountNumber: true }))} />
+                          {(bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber) && <span className="text-xs text-red-500">{validateAccountNumber(formData.bankDetails.accountNumber)}</span>}
+                        </div>
+                        <div className="flex flex-col mb-3">
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">Account Holder Name</label>
+                          <input className={inputClass + (bankAccountError('accountHolderName') || ((bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName)) ? ' border-red-500' : '')} value={formData.bankDetails.accountHolderName || ''} onChange={e => handleInputChange('bankDetails', 'accountHolderName', e.target.value)} placeholder="Enter account holder name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountHolderName: true }))} />
+                          {(bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName) && <span className="text-xs text-red-500">{validateAccountHolderName(formData.bankDetails.accountHolderName)}</span>}
+                        </div>
+                        <div className="flex flex-col mb-3">
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">IFSC Code</label>
+                          <input className={inputClass + (bankAccountError('ifscCode') || ((bankTouched.ifscCode || anyBankFieldFilled) && validateIFSC(formData.bankDetails.ifscCode)) ? ' border-red-500' : '')} value={formData.bankDetails.ifscCode || ''} onChange={e => handleInputChange('bankDetails', 'ifscCode', e.target.value.toUpperCase())} placeholder="Enter IFSC code" type="text" inputMode="text" maxLength={11} autoComplete="off" style={{ textTransform: 'uppercase' }} onBlur={() => setBankTouched(t => ({ ...t, ifscCode: true }))} />
+                          {(bankTouched.ifscCode || anyBankFieldFilled) && validateIFSC(formData.bankDetails.ifscCode) && <span className="text-xs text-red-500">{validateIFSC(formData.bankDetails.ifscCode)}</span>}
+                        </div>
+                        <div className="flex flex-col mb-3">
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">Bank Name</label>
+                          <input className={inputClass + (bankAccountError('bankName') || ((bankTouched.bankName || anyBankFieldFilled) && validateBankName(formData.bankDetails.bankName)) ? ' border-red-500' : '')} value={formData.bankDetails.bankName || ''} onChange={e => handleInputChange('bankDetails', 'bankName', e.target.value)} placeholder="Enter bank name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, bankName: true }))} />
+                          {(bankTouched.bankName || anyBankFieldFilled) && validateBankName(formData.bankDetails.bankName) && <span className="text-xs text-red-500">{validateBankName(formData.bankDetails.bankName)}</span>}
+                        </div>
+                        <div className="flex flex-col mb-3">
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">Branch Name</label>
+                          <input className={inputClass + (bankAccountError('branchName') ? ' border-red-500' : '')} value={formData.bankDetails.branchName || ''} onChange={e => handleInputChange('bankDetails', 'branchName', e.target.value)} placeholder="Enter branch name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, branchName: true }))} style={{ maxWidth: '260px' }} />
+                          {bankAccountError('branchName') && <span className="text-xs text-red-500 mt-0.5">{bankAccountError('branchName')}</span>}
+                        </div>
+                        {/* Upload Passbook/Cheque */}
+                        <div className="flex flex-col mb-3 col-span-2">
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">Upload Passbook/Cancelled Cheque <span className="text-red-400">*</span></label>
+                          <div className="relative flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl px-3 py-8 transition-all duration-150 hover:border-blue-400 focus-within:border-blue-400 min-h-[120px]">
+                            {/* Upload Button - centered icon */}
+                            {!formData.bankDetails.passbookImgUrl && (
+                              <label htmlFor="passbook-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                                <span className="flex items-center justify-center w-14 h-14 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 text-gray-600 hover:text-blue-600 transition-all duration-150 mb-2">
+                                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                                </span>
+                                <span className="text-sm text-gray-500">Click or drag file to upload</span>
                                 <input
                                   type="file"
                                   id="passbook-upload"
                                   className="hidden"
-                                  accept="image/*,.pdf"
-                                  onChange={(e) => {
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  onChange={e => {
                                     const file = e.target.files[0];
                                     if (file) {
-                                      // Add file size validation (e.g., 5MB limit)
-                                      const maxSize = 5 * 1024 * 1024; // 5MB
-                                      if (file.size > maxSize) {
-                                        toast.error(
-                                          "File size should not exceed 5MB"
-                                        );
-                                        return;
-                                      }
-                                      // Add file type validation
-                                      const allowedTypes = [
-                                        "application/pdf",
-                                        "image/jpeg",
-                                        "image/jpg",
-                                        "image/png",
-                                      ];
+                                      const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
                                       if (!allowedTypes.includes(file.type)) {
-                                        toast.error(
-                                          "Please upload a valid PDF or image file"
-                                        );
+                                        toast.error("Only PDF or image files are allowed.");
                                         return;
                                       }
-                                      handleFileUpload("passbookImgUrl", file);
+                                      handleFileUpload('passbookImgUrl', file);
+                                      setBankTouched(t => ({ ...t, passbookImgUrl: true }));
                                     }
                                   }}
                                 />
-                                <label
-                                  htmlFor="passbook-upload"
-                                  className="cursor-pointer text-center group"
-                                >
-                                  <div className="flex flex-col items-center space-y-1">
-                                    <div
-                                      className={`p-1 rounded-full ${
-                                        formData.bankDetails.passbookImgUrl
-                                          ? "bg-green-100 text-green-600"
-                                          : "bg-blue-100 text-blue-600 group-hover:bg-blue-200"
-                                      }`}
-                                    >
-                                      <FiUpload className="w-4 h-4" />
-                                    </div>
-                                    <div className="space-y-0.5">
-                                      <p className="text-xs font-medium text-gray-700">
-                                        {formData.bankDetails.passbookImgUrl
-                                          ? "Upload a different file"
-                                          : "Upload Passbook/Cancelled Cheque"}
-                                      </p>
-                                      <p className="text-[10px] text-gray-500">
-                                        PDF or Image file (max 5MB)
-                                      </p>
-                                    </div>
-                                  </div>
-                                </label>
+                              </label>
+                            )}
+                            {/* Preview/Info */}
+                            {formData.bankDetails.passbookImgUrl && (
+                              <div className="flex items-center gap-3 w-full justify-center">
+                                {formData.bankDetails.passbookImgUrl.type === 'application/pdf' || (typeof formData.bankDetails.passbookImgUrl === 'string' && formData.bankDetails.passbookImgUrl.endsWith('.pdf')) ? (
+                                  <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">PDF</span>
+                                ) : (
+                                  <img src={formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl} alt="Passbook preview" className="w-12 h-12 object-cover rounded border border-gray-300" />
+                                )}
+                                <span className="ml-2 text-xs text-gray-700 truncate max-w-[120px]">
+                                  {formData.bankDetails.passbookImgUrl instanceof File ? formData.bankDetails.passbookImgUrl.name : (typeof formData.bankDetails.passbookImgUrl === 'string' ? formData.bankDetails.passbookImgUrl.split('/').pop() : '')}
+                                </span>
+                                <button type="button" onClick={() => setBankPreview({ open: true, imgUrl: formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl, file: formData.bankDetails.passbookImgUrl instanceof File ? formData.bankDetails.passbookImgUrl : null })} className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200" title="View">View</button>
+                                <button type="button" onClick={() => setFormData(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, passbookImgUrl: null } }))} className="ml-2 px-2 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100 border border-red-200" title="Remove">Remove</button>
                               </div>
-                              {formData.bankDetails.passbookImgUrl && (
-                                <div className="mt-1.5 flex items-center justify-between bg-white rounded-lg p-1.5 shadow-sm">
-                                  <div className="flex items-center space-x-2">
-                                    {formData.bankDetails
-                                      .passbookImgUrl instanceof File ? (
-                                      <img
-                                        src={URL.createObjectURL(
-                                          formData.bankDetails.passbookImgUrl
-                                        )}
-                                        alt="Passbook preview"
-                                        className="w-8 h-8 object-cover rounded border border-gray-200"
-                                      />
-                                    ) : typeof formData.bankDetails
-                                        .passbookImgUrl === "string" ? (
-                                      <img
-                                        src={
-                                          formData.bankDetails.passbookImgUrl
-                                        }
-                                        alt="Passbook preview"
-                                        className="w-8 h-8 object-cover rounded border border-gray-200"
-                                        onError={(e) => {
-                                          e.target.onerror = null;
-                                          e.target.src =
-                                            "/placeholder-image.png";
-                                        }}
-                                      />
-                                    ) : null}
-                                    <div className="flex flex-col">
-                                      <span className="text-xs font-medium text-gray-700 truncate max-w-[180px]">
-                                        {formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? formData.bankDetails.passbookImgUrl
-                                              .name
-                                          : "Passbook Document"}
-                                      </span>
-                                      <span className="text-[10px] text-gray-500">
-                                        {formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? `${(
-                                              formData.bankDetails
-                                                .passbookImgUrl.size /
-                                              1024 /
-                                              1024
-                                            ).toFixed(2)} MB`
-                                          : "Uploaded Document"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        bankDetails: {
-                                          ...prev.bankDetails,
-                                          passbookImgUrl: null,
-                                        },
-                                      }));
-                                    }}
-                                    className="p-0.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-500 transition-colors"
-                                    title="Remove file"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                            )}
+                          </div>
+                          {bankAccountError('passbookImgUrl') && <span className="text-xs text-red-500 mt-0.5">{bankAccountError('passbookImgUrl')}</span>}
+                        </div>
+                        {/* UPI Fields Grid - now below upload */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-2 col-span-2"> {/* gap-y-4 for more vertical space */}
+                          <div className="flex flex-col mb-3">
+                            <label className="text-sm font-medium text-gray-700 mb-0.5">UPI ID</label>
+                            <input className={inputClass + (upiError('upiId') || ((bankTouched.upiId || anyUPIFieldFilled) && validateUPI(formData.bankDetails.upiId)) ? ' border-red-500' : '')} value={formData.bankDetails.upiId || ''} onChange={e => handleInputChange('bankDetails', 'upiId', e.target.value)} placeholder="Enter UPI ID" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, upiId: true }))} />
+                            {(bankTouched.upiId || anyUPIFieldFilled) && validateUPI(formData.bankDetails.upiId) && <span className="text-xs text-red-500">{validateUPI(formData.bankDetails.upiId)}</span>}
+                          </div>
+                          <div className="flex flex-col mb-3">
+                            <label className="text-sm font-medium text-gray-700 mb-0.5">UPI Contact Name</label>
+                            <input className={inputClass + (upiError('upiPhoneNumber') || ((bankTouched.upiPhoneNumber || anyUPIFieldFilled) && validateUPIName(formData.bankDetails.upiPhoneNumber)) ? ' border-red-500' : '')} value={formData.bankDetails.upiPhoneNumber || ''} onChange={e => handleInputChange('bankDetails', 'upiPhoneNumber', e.target.value)} placeholder="Enter UPI Name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, upiPhoneNumber: true }))} />
+                            {(bankTouched.upiPhoneNumber || anyUPIFieldFilled) && validateUPIName(formData.bankDetails.upiPhoneNumber) && <span className="text-xs text-red-500">{validateUPIName(formData.bankDetails.upiPhoneNumber)}</span>}
                           </div>
                         </div>
                       </div>
@@ -2153,7 +2387,7 @@ function EmployeeForm() {
 
                   {/* Salary Section */}
                   {activeSection === "salary" && (
-                    <div className="space-y-4">
+                    <div className="flex-1 space-y-4">
                       <h3 className="text-lg font-semibold text-gray-800 mb-3">
                         Salary Details
                       </h3>
@@ -2166,7 +2400,7 @@ function EmployeeForm() {
                           { label: "Allowances", field: "allowances" },
                         ].map(({ label, field }) => (
                           <div key={field} className={inputGroupClass}>
-                            <label className={floatingLabelClass}>
+                            <label className={inputLabelClass}>
                               {label}
                             </label>
                             <div className="relative">
@@ -2204,7 +2438,7 @@ function EmployeeForm() {
                         {formData.employee.pfEnrolled && (
                           <>
                             <div className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
+                              <label className={inputLabelClass}>
                                 Employer PF Contribution
                               </label>
                               <div className="relative">
@@ -2227,7 +2461,7 @@ function EmployeeForm() {
                             </div>
 
                             <div className={inputGroupClass}>
-                              <label className={floatingLabelClass}>
+                              <label className={inputLabelClass}>
                                 Employee PF Contribution
                               </label>
                               <div className="relative">
@@ -2255,21 +2489,44 @@ function EmployeeForm() {
                   )}
 
                   {/* Action Buttons - visible on all sections */}
-                  <div className="flex gap-4 justify-end mt-8 pt-6 border-t border-gray-100">
+                  <div className="flex gap-4 justify-end mt-auto pt-6 border-t border-gray-100">
+                    {/* Back Button: Only show if not on the first section */}
+                    {sections.findIndex(s => s.id === activeSection) > 0 && (
                     <motion.button
                       type="button"
-                      className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg"
-                      onClick={() => router.push("/hradmin/employees")}
+                        className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
+                        onClick={() => {
+                          const currentIndex = sections.findIndex(s => s.id === activeSection);
+                          if (currentIndex > 0) setActiveSection(sections[currentIndex - 1].id);
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {/* Left Arrow Icon */}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back
+                      </motion.button>
+                    )}
+
+                    <motion.button
+                      type="button"
+                      className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg"
+                      onClick={() => handleOpenModal('cancel', () => { handleCloseModal(); router.push('/hradmin/employees'); })}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       Cancel
                     </motion.button>
 
+                    {/* Add extra spacing between Cancel and Save buttons */}
+                    <div className="w-8" />
+
                     <motion.button
                       type="button"
                       className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                      onClick={handleSubmit}
+                      onClick={() => handleOpenModal('saveContinue', () => { handleCloseModal(); handleSubmit(); })}
                       disabled={loading}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -2320,7 +2577,7 @@ function EmployeeForm() {
                     <motion.button
                       type="button"
                       className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                      onClick={handleSaveAndExit}
+                      onClick={() => handleOpenModal('saveExit', () => { handleCloseModal(); handleSaveAndExit(); })}
                       disabled={loading}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -2410,6 +2667,102 @@ function EmployeeForm() {
         companyId={company}
         defaultDepartment={formData.employee.department}
       />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        open={modal.open}
+        onClose={handleCloseModal}
+        onConfirm={modal.onConfirm}
+        {...modalContent[modal.type]}
+      />
+
+      {/* Passbook/Bank Document Preview Modal */}
+      {bankPreview.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              onClick={() => { setBankPreview({ open: false, imgUrl: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}>
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Passbook Document Preview</h2>
+            {isPDF(bankPreview) ? (
+              <>
+                {/* PDF Toolbar (reuse docPreview toolbar) */}
+                <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
+                  {/* Rotate Left */}
+                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Left">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" /></svg>
+                  </button>
+                  {/* Rotate Right */}
+                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Right">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" /></svg>
+                  </button>
+                  {/* Zoom Out */}
+                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+                  </button>
+                  {/* Zoom In */}
+                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                  </button>
+                  {/* Download */}
+                  <a
+                    href={bankPreview.imgUrl}
+                    download={'passbook.pdf'}
+                    className="text-gray-600 hover:text-blue-600"
+                    title="Download PDF"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                  </a>
+                </div>
+                {/* PDF Preview Area with dynamic width/height for rotation */}
+                {(() => {
+                  const rotation = ((pdfControls.rotate % 360) + 360) % 360;
+                  const isSideways = rotation === 90 || rotation === 270;
+                  const previewWidth = isSideways ? '24rem' : '100%';
+                  const previewHeight = isSideways ? '100%' : '24rem';
+                  return (
+                    <div
+                      className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
+                      style={{
+                        width: '100%',
+                        height: '24rem',
+                        minHeight: '24rem',
+                        minWidth: '24rem',
+                        maxHeight: '32rem',
+                        maxWidth: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: previewWidth,
+                          height: previewHeight,
+                          transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
+                          transition: 'transform 0.2s',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <iframe
+                          src={bankPreview.imgUrl + '#toolbar=0'}
+                          title="Passbook PDF"
+                          className="w-full h-full border-none"
+                          style={{ background: 'white' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </>
+            ) : (
+              <img src={bankPreview.imgUrl} alt="Passbook preview" className="w-64 h-64 object-contain rounded border mb-4" />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
