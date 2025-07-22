@@ -208,7 +208,11 @@ const modularMenus = {
 const SIDEBAR_COLLAPSE_KEY = "sidebar_isCollapsed";
 const SIDEBAR_EXPANDED_MENUS_KEY = "sidebar_expandedMenus";
 
-const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSidebar, autoExpand = true }) => {
+const Sidebar = ({
+  isCollapsed: propIsCollapsed,
+  toggleSidebar: propToggleSidebar,
+  autoExpand = true,
+}) => {
   // Read from localStorage on mount
   const getInitialCollapsed = () => {
     if (typeof window !== "undefined") {
@@ -233,29 +237,32 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
   const [userModules, setUserModules] = useState([]);
   const router = useRouter();
 
-    // Get available modules based on roles and moduleIds
+  // Get available modules based on roles and moduleIds
   const hasAdminRole = () => {
-    return userRoles.some(role => 
-      role === "ADMIN" || 
-      role === "COMPANY_HEAD" || 
-      role.includes("ADMIN")
+    return userRoles.some(
+      (role) =>
+        role === "ADMIN" || role === "COMPANY_HEAD" || role.includes("ADMIN")
     );
   };
 
   const hasManagerRole = () => {
-    return userRoles.some(role => 
-      role === "MANAGER" || 
-      role === "COMPANY_HEAD" ||
-      role.includes("MANAGER")
+    return userRoles.some(
+      (role) =>
+        role === "MANAGER" ||
+        role === "COMPANY_HEAD" ||
+        role.includes("MANAGER")
     );
   };
 
-    const isActiveParent = useCallback((item) => {
-    if (!item.hasSubmenu) return false;
-    return item.subItems.some((subItem) =>
-      router.pathname.startsWith(subItem.link)
-    );
-  }, [router.pathname]);
+  const isActiveParent = useCallback(
+    (item) => {
+      if (!item.hasSubmenu) return false;
+      return item.subItems.some((subItem) =>
+        router.pathname.startsWith(subItem.link)
+      );
+    },
+    [router.pathname]
+  );
 
   const isModuleActive = (module) => {
     return module.items.some((item) => {
@@ -268,14 +275,14 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
     });
   };
 
-
   const getAvailableModules = useCallback(() => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
-    
+
     // Check if user has COMPANY_HEAD role with empty moduleIds
-    const isCompanyHead = userRoles.includes("COMPANY_HEAD") && userModules.length === 0;
-    
+    const isCompanyHead =
+      userRoles.includes("COMPANY_HEAD") && userModules.length === 0;
+
     if (isCompanyHead) {
       // Show all modules for COMPANY_HEAD with empty moduleIds
       Object.entries(modularMenus).forEach(([key, module]) => {
@@ -284,13 +291,13 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
           if (key === "MOD_HR") {
             const filteredModule = {
               ...module,
-              items: module.items.filter(item => 
-                item.label !== "Settings" || hasAdminRole()
-              )
+              items: module.items.filter(
+                (item) => item.label !== "Settings" || hasAdminRole()
+              ),
             };
             modules.push({ key, ...filteredModule });
           } else if (key === "MOD_SALES") {
-            const filteredItems = module.items.filter(item => {
+            const filteredItems = module.items.filter((item) => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole(); // Only Admins can see Sales Settings
               }
@@ -299,20 +306,20 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
               }
               return true; // Keep other items if any
             });
-          
+
             const filteredModule = {
               ...module,
-              items: filteredItems
+              items: filteredItems,
             };
-          
+
             modules.push({ key, ...filteredModule });
           } else if (key === "MOD_ACCOUNTANT") {
             // Filter out Account Settings menu if user doesn't have admin role
             const filteredModule = {
               ...module,
-              items: module.items.filter(item => 
-                item.label !== "Account Settings" || hasAdminRole()
-              )
+              items: module.items.filter(
+                (item) => item.label !== "Account Settings" || hasAdminRole()
+              ),
             };
             modules.push({ key, ...filteredModule });
           } else {
@@ -329,36 +336,38 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
           if (moduleId === "MOD_HR") {
             const filteredModule = {
               ...modularMenus[moduleId],
-              items: modularMenus[moduleId].items.filter(item => 
-                item.label !== "Settings" || hasAdminRole()
-              )
+              items: modularMenus[moduleId].items.filter(
+                (item) => item.label !== "Settings" || hasAdminRole()
+              ),
             };
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_SALES") {
             // Filter out Sales Settings menu if user doesn't have admin role
-            const filteredItems = modularMenus[moduleId].items.filter(item => {
-              if (item.label === "Sales Settings") {
-                return hasAdminRole(); // Only Admins can see Sales Settings
+            const filteredItems = modularMenus[moduleId].items.filter(
+              (item) => {
+                if (item.label === "Sales Settings") {
+                  return hasAdminRole(); // Only Admins can see Sales Settings
+                }
+                if (item.label === "Team Management") {
+                  return hasManagerRole(); // Only Managers can see Team Management
+                }
+                return true; // Keep other items if any
               }
-              if (item.label === "Team Management") {
-                return hasManagerRole(); // Only Managers can see Team Management
-              }
-              return true; // Keep other items if any
-            });
-          
+            );
+
             const filteredModule = {
               ...modularMenus[moduleId],
-              items: filteredItems
+              items: filteredItems,
             };
-          
+
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_ACCOUNTANT") {
             // Filter out Account Settings menu if user doesn't have admin role
             const filteredModule = {
               ...modularMenus[moduleId],
-              items: modularMenus[moduleId].items.filter(item => 
-                item.label !== "Account Settings" || hasAdminRole()
-              )
+              items: modularMenus[moduleId].items.filter(
+                (item) => item.label !== "Account Settings" || hasAdminRole()
+              ),
             };
             modules.push({ key: moduleId, ...filteredModule });
           } else {
@@ -367,7 +376,7 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
           addedModules.add(moduleId);
         }
       });
-      
+
       // Show role-specific modules based on user roles
       userRoles.forEach((role) => {
         if (modularMenus[role] && !addedModules.has(role)) {
@@ -393,7 +402,7 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
     const role = sessionStorage.getItem("currentRole");
     const dept = sessionStorage.getItem("departmentName");
     const token = getItemFromSessionStorage("token");
-    
+
     setCurrentRole(role);
     setDepartment(dept);
 
@@ -423,7 +432,10 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
   // Persist expandedMenus to localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem(SIDEBAR_EXPANDED_MENUS_KEY, JSON.stringify(expandedMenus));
+      localStorage.setItem(
+        SIDEBAR_EXPANDED_MENUS_KEY,
+        JSON.stringify(expandedMenus)
+      );
     }
   }, [expandedMenus]);
 
@@ -443,19 +455,30 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
     if (userRoles.length > 0) {
       const availableModules = getAvailableModules();
     }
-  }, [currentRole, userRoles, userModules, router.pathname, getAvailableModules]);
+  }, [
+    currentRole,
+    userRoles,
+    userModules,
+    router.pathname,
+    getAvailableModules,
+  ]);
 
-  const isActiveLink = useCallback((link) => {
-    if (!link) return false;
-    
-    // Special case: addNewEmployee page should be considered active for Employees link
-    if (link === "/hradmin/employees" && router.pathname === "/hradmin/addNewEmployee") {
-      return true;
-    }
-    
-    return router.pathname === link || router.pathname.startsWith(link);
-  }, [router.pathname]);
+  const isActiveLink = useCallback(
+    (link) => {
+      if (!link) return false;
 
+      // Special case: addNewEmployee page should be considered active for Employees link
+      if (
+        link === "/hradmin/employees" &&
+        router.pathname === "/hradmin/addNewEmployee"
+      ) {
+        return true;
+      }
+
+      return router.pathname === link || router.pathname.startsWith(link);
+    },
+    [router.pathname]
+  );
 
   return (
     <aside
@@ -477,7 +500,11 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
           `}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <div className={`transform transition-transform duration-300 ease-in-out ${isCollapsed ? 'rotate-0' : 'rotate-180'}`}>
+          <div
+            className={`transform transition-transform duration-300 ease-in-out ${
+              isCollapsed ? "rotate-0" : "rotate-180"
+            }`}
+          >
             <FaAngleRight className="w-5 h-5" />
           </div>
         </button>
@@ -488,8 +515,8 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
         <div className="px-4">
           {!isCollapsed && (
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              {userRoles.includes("COMPANY_HEAD") && userModules.length === 0 
-                ? "All Modules" 
+              {userRoles.includes("COMPANY_HEAD") && userModules.length === 0
+                ? "All Modules"
                 : "Available Modules"}
             </div>
           )}
@@ -518,9 +545,7 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
                 >
                   <span
                     className={`text-lg flex-shrink-0 ${
-                      isActive
-                        ? "text-blue-600"
-                        : "group-hover:text-blue-600"
+                      isActive ? "text-blue-600" : "group-hover:text-blue-600"
                     }`}
                   >
                     {module.icon}
@@ -548,7 +573,11 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
                     mt-1 
                     transition-all duration-300 ease-in-out
                     overflow-hidden
-                    ${isModuleExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}
+                    ${
+                      isModuleExpanded
+                        ? "max-h-screen opacity-100"
+                        : "max-h-0 opacity-0"
+                    }
                   `}
                 >
                   {module.items.map((item, itemIndex) => {
@@ -604,7 +633,11 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
                                 mt-1 
                                 transition-all duration-300 ease-in-out
                                 overflow-hidden
-                                ${isExpanded ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}
+                                ${
+                                  isExpanded
+                                    ? "max-h-screen opacity-100"
+                                    : "max-h-0 opacity-0"
+                                }
                               `}
                             >
                               {item.subItems.map((subItem, subIndex) => {
@@ -619,7 +652,9 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
                                       flex items-center px-2 py-2 
                                       transition-all duration-200 
                                       rounded-md
-                                      ${isCollapsed ? "justify-center" : "gap-3"}
+                                      ${
+                                        isCollapsed ? "justify-center" : "gap-3"
+                                      }
                                       ${
                                         isSubActive
                                           ? "text-blue-600 bg-blue-50"
@@ -656,12 +691,25 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              ${item.label === "Customers" || item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                              ${
+                                item.label === "Customers" ||
+                                item.label === "Account Settings"
+                                  ? "cursor-not-allowed opacity-60"
+                                  : "cursor-pointer"
+                              }
                             `}
                             aria-label={item.label}
-                            title={item.label === "Customers" || item.label === "Account Settings" ? "This feature is in progress" : ""}
+                            title={
+                              item.label === "Customers" ||
+                              item.label === "Account Settings"
+                                ? "This feature is in progress"
+                                : ""
+                            }
                             onClick={(e) => {
-                              if (item.label === "Customers" || item.label === "Account Settings") {
+                              if (
+                                item.label === "Customers" ||
+                                item.label === "Account Settings"
+                              ) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 return;
@@ -680,9 +728,12 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
                               {item.icon}
                             </span>
                             {!isCollapsed && (
-                              <span className="text-sm min-w-0 truncate">{item.label}</span>
+                              <span className="text-sm min-w-0 truncate">
+                                {item.label}
+                              </span>
                             )}
-                            {item.label === "Customers" || item.label === "Account Settings" ? (
+                            {item.label === "Customers" ||
+                            item.label === "Account Settings" ? (
                               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                                 This feature is in progress
                               </div>
@@ -698,9 +749,11 @@ const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSideba
           })}
         </ul>
       </nav>
-            {/* App Version at the bottom */}
-            <div className="absolute bottom-4 right-0 w-full px-4 text-right">
-        <span className="text-xs text-gray-400 font-mono select-none">v{version.version}</span>
+      {/* App Version at the bottom */}
+      <div className="absolute bottom-4 right-0 w-full px-4 text-right">
+        <span className="text-xs text-gray-400 font-mono select-none">
+          v{version.version}
+        </span>
       </div>
     </aside>
   );
