@@ -726,8 +726,13 @@ function EmployeeForm() {
   };
 
   const handleInputChange = (section, field, value) => {
-    // Clean debug text from string values
-    const cleanedValue = typeof value === 'string' ? cleanDebugText(value) : value;
+    // For address fields and Father Name, do not trim or clean spaces on input
+    const isFreeSpaceField =
+      section === "employee" && (field === "currentAddress" || field === "permanentAddress" || field === "fathersName");
+
+    const cleanedValue = (!isFreeSpaceField && typeof value === 'string')
+      ? cleanDebugText(value)
+      : value;
     
     setFormData((prev) => {
       const updatedData = {
@@ -1833,11 +1838,11 @@ function EmployeeForm() {
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Father&aposs Name</label>
+                            <label className={inputLabelClass}>Father Name</label>
                             <input 
                               type="text" 
                               className={`${inputClass} ${validationErrors.fathersName && (fieldTouched.fathersName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                              placeholder="Enter father's name" 
+                              placeholder="Enter father name" 
                               value={formData.employee.fathersName || ""} 
                               onChange={e => handleInputChange("employee", "fathersName", filterNameInput(e.target.value))} 
                               ref={formRefs.fathersName} 

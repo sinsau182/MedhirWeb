@@ -25,6 +25,21 @@ import { useRouter } from "next/router";
 import withAuth from "@/components/withAuth";
 import SuperadminHeaders from "@/components/SuperadminHeaders";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import axios from "axios";
+import { updateEmployee } from "@/redux/slices/employeeSlice";
+
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 // Helper function to truncate text and show tooltip
 const TruncatedText = ({ text, maxWidth, className = "", trimAfter = 20 }) => {
@@ -108,6 +123,7 @@ function SuperadminCompanies() {
     email: false,
     phone: false,
   });
+  const [isCompanyHeadValid, setIsCompanyHeadValid] = useState(true);
 
   const dispatch = useDispatch();
   const { companies, loading, err } = useSelector((state) => state.companies);
@@ -452,11 +468,164 @@ function SuperadminCompanies() {
     }));
   };
 
-  const handleCompanyHeadFieldBlur = (name, value) => {
+  const checkEmployeeExistence = async (email, phone) => {
+    try {
+      const token = getItemFromSessionStorage("token"); // or your token getter
+      const response = await axios.get(
+        `http://localhost:8083/employees/existence-check`,
+        {
+          params: { email, phone },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      // Optionally handle 401 here (e.g., redirect to login)
+      return {};
+    }
+  };
+
+  const debouncedCompanyEmail = useDebounce(companyData.email, 500);
+  const debouncedPrefix = useDebounce(companyData.prefixForEmpID, 500);
+
+  // Helper for company uniqueness check
+  const checkCompanyUnique = async (email, phone, prefixForEmpID) => {
+    try {
+      const token = getItemFromSessionStorage("token");
+      const response = await axios.get(
+        `http://localhost:8083/superadmin/companies/check-unique`,
+        {
+          params: { email, phone, prefixForEmpID },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      return {};
+    }
+  };
+
+  // Debounced check for company email (persistent error logic)
+  useEffect(() => {
+    if (isEditing) return; // Skip uniqueness check when editing
+    const check = async () => {
+      if (!debouncedCompanyEmail) {
+        setValidationErrors((prev) => ({ ...prev, email: "" }));
+        return;
+      }
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(debouncedCompanyEmail)) {
+        setValidationErrors((prev) => ({ ...prev, email: "Please enter a valid email address" }));
+        return;
+      }
+      const result = await checkCompanyUnique(debouncedCompanyEmail, undefined, undefined);
+      if (result.email) {
+        setValidationErrors((prev) => ({ ...prev, email: "This email already exists." }));
+      } else {
+        // Only clear error if uniqueness passes and value changed
+        setValidationErrors((prev) => {
+          if (prev.email === "This email already exists.") {
+            return { ...prev, email: "" };
+          } else {
+            // Run format/required validation if not uniqueness error
+            const error = validateField("email", debouncedCompanyEmail);
+            return { ...prev, email: error };
+          }
+        });
+      }
+    };
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCompanyEmail, isEditing]);
+
+  // Debounced check for company prefix (persistent error logic)
+  useEffect(() => {
+    if (isEditing) return; // Skip uniqueness check when editing
+    const check = async () => {
+      if (!debouncedPrefix || debouncedPrefix.length < 3) {
+        setValidationErrors((prev) => ({ ...prev, prefixForEmpID: "" }));
+        return;
+      }
+      const result = await checkCompanyUnique(undefined, undefined, debouncedPrefix);
+      console.log("Prefix uniqueness API result:", result); // Debug log
+      if (result.prefixForEmpID) {
+        setValidationErrors((prev) => ({ ...prev, prefixForEmpID: "This prefix already exists." }));
+      } else {
+        setValidationErrors((prev) => {
+          if (prev.prefixForEmpID === "This prefix already exists.") {
+            return { ...prev, prefixForEmpID: "" };
+          } else {
+            const error = validateField("prefixForEmpID", debouncedPrefix);
+            return { ...prev, prefixForEmpID: error };
+          }
+        });
+      }
+    };
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedPrefix, isEditing]);
+
+  // Phone check when 10 digits entered (persistent error logic)
+  const handleCompanyPhoneChange = (e) => {
+    handleInputChange(e);
+    if (isEditing) {
+      // Only run format/required validation when editing
+      const error = validateField("phone", e.target.value);
+      setValidationErrors((prev) => ({ ...prev, phone: error }));
+      return;
+    }
+    if (e.target.value.length === 10) {
+      checkCompanyUnique(undefined, e.target.value, undefined).then((result) => {
+        if (result.phone) {
+          setValidationErrors((prev) => ({ ...prev, phone: "This phone number already exists." }));
+        } else {
+          setValidationErrors((prev) => {
+            if (prev.phone === "This phone number already exists.") {
+              return { ...prev, phone: "" };
+            } else {
+              const error = validateField("phone", e.target.value);
+              return { ...prev, phone: error };
+            }
+          });
+        }
+      });
+    } else {
+      const error = validateField("phone", e.target.value);
+      setValidationErrors((prev) => ({ ...prev, phone: error }));
+    }
+  };
+
+  const handleCompanyHeadFieldBlur = async (name, value) => {
     setCompanyHeadFieldTouched((prev) => ({
       ...prev,
       [name]: true,
     }));
+
+    // Only check for phone
+    if (name === "phone") {
+      const email = companyHeadData.email;
+      const phone = value;
+      const existence = await checkEmployeeExistence(email, phone);
+      let hasError = false;
+      if (existence.phone || existence.phonePersonal) {
+        setCompanyHeadValidationErrors((prev) => ({
+          ...prev,
+          phone: "This phone number already exists.",
+        }));
+        hasError = true;
+      } else {
+        setCompanyHeadValidationErrors((prev) => ({
+          ...prev,
+          phone: "",
+        }));
+      }
+      setIsCompanyHeadValid(!hasError);
+      if (hasError) return;
+    }
 
     const error = validateCompanyHeadField(name, value);
     setCompanyHeadValidationErrors((prev) => ({
@@ -655,7 +824,7 @@ function SuperadminCompanies() {
     setIsCompanyHeadModalOpen(true);
   };
 
-  const handleCompanyHeadSave = () => {
+  const handleCompanyHeadSave = async () => {
     // Mark all company head fields as touched
     setCompanyHeadFieldTouched({
       firstName: true,
@@ -683,6 +852,34 @@ function SuperadminCompanies() {
       return;
     }
 
+    // If editing an existing company head, update employee
+    if (companyHeadData.employeeId) {
+      // Prepare the updated employee data
+      const updatedEmployee = {
+        companyId: companyData.companyId,
+        firstName: companyHeadData.firstName,
+        middleName: companyHeadData.middleName,
+        lastName: companyHeadData.lastName,
+        phone: companyHeadData.phone,
+        emailPersonal: companyHeadData.email, // or companyHeadData.emailPersonal if that's the field
+      };
+
+      // Create FormData and append employee as JSON string
+      const formData = new FormData();
+      formData.append("employee", JSON.stringify(updatedEmployee));
+
+      try {
+        await dispatch(updateEmployee({ id: companyHeadData.employeeId, updatedData: formData }));
+        toast.success("Company Head updated successfully!");
+        // Reload the company list in the background
+        dispatch(fetchCompanies());
+        // Do NOT close the modal or reset the form
+      } catch (err) {
+        toast.error("Failed to update Company Head");
+        return;
+      }
+    }
+
     setCompanyData((prevData) => ({
       ...prevData,
       companyHeads: [
@@ -692,7 +889,6 @@ function SuperadminCompanies() {
           lastName: companyHeadData.lastName.trim(),
           email: companyHeadData.email,
           phone: companyHeadData.phone,
-          // Include employeeId if it exists (for editing)
           ...(companyHeadData.employeeId && {
             employeeId: companyHeadData.employeeId,
           }),
@@ -1088,21 +1284,18 @@ function SuperadminCompanies() {
               name="prefixForEmpID"
               value={companyData.prefixForEmpID || ""}
               onChange={handleInputChange}
-              onBlur={() =>
-                handleFieldBlur("prefixForEmpID", companyData.prefixForEmpID)
-              }
               placeholder="Enter company prefix"
-              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
-                "prefixForEmpID",
-                companyData.prefixForEmpID,
-                fieldTouched.prefixForEmpID,
-                validationErrors.prefixForEmpID
-              )}`}
+              readOnly={isEditing}
+              className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.prefixForEmpID ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
             />
+            {isEditing && (
+              <p className="text-yellow-600 text-xs mt-1 font-medium">Company prefix can&apos;t be edited.</p>
+            )}
+            {!isEditing && (
+              <p className="text-yellow-600 text-xs mt-1 font-medium">Company prefix can&apos;t be edited after creation.</p>
+            )}
             {validationErrors.prefixForEmpID && (
-              <p className="text-red-600 text-xs mt-1">
-                {validationErrors.prefixForEmpID}
-              </p>
+              <p className="text-red-600 text-xs mt-1">{validationErrors.prefixForEmpID}</p>
             )}
           </div>
 
@@ -1212,15 +1405,12 @@ function SuperadminCompanies() {
                 name="email"
                 value={companyData.email}
                 onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("email", companyData.email)}
                 placeholder="Enter email address"
-                className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
-                  "email",
-                  companyData.email,
-                  fieldTouched.email,
-                  validationErrors.email
-                )}`}
+                className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
               />
+              {validationErrors.email && (
+                <p className="text-red-600 text-xs mt-1">{validationErrors.email}</p>
+              )}
               {getEmailSuggestion(companyData.email) &&
                 !companyData.email.includes("@") && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-gray-50 border border-gray-200 rounded-md p-2 text-sm text-gray-600">
@@ -1246,11 +1436,6 @@ function SuperadminCompanies() {
                   </div>
                 )}
             </div>
-            {validationErrors.email && (
-              <p className="text-red-600 text-xs mt-1">
-                {validationErrors.email}
-              </p>
-            )}
           </div>
 
           <div>
@@ -1264,16 +1449,10 @@ function SuperadminCompanies() {
               id="phone"
               name="phone"
               value={companyData.phone}
-              onChange={handleInputChange}
-              onBlur={() => handleFieldBlur("phone", companyData.phone)}
+              onChange={handleCompanyPhoneChange}
               placeholder="Enter phone number"
               maxLength="10"
-              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
-                "phone",
-                companyData.phone,
-                fieldTouched.phone,
-                validationErrors.phone
-              )}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
             />
             {validationErrors.phone && (
               <p className="text-red-600 text-xs mt-1">
@@ -1355,9 +1534,17 @@ function SuperadminCompanies() {
               handleSaveCompany();
               setSelectedCompany(null);
             }}
-            disabled={!isFormValid()}
+            disabled={
+              !isFormValid() ||
+              validationErrors.email ||
+              validationErrors.phone ||
+              validationErrors.prefixForEmpID
+            }
             className={`mt-1 ${
-              isFormValid()
+              isFormValid() &&
+              !validationErrors.email &&
+              !validationErrors.phone &&
+              !validationErrors.prefixForEmpID
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
@@ -1396,6 +1583,7 @@ function SuperadminCompanies() {
             email: "",
             phone: "",
           });
+          setIsCompanyHeadValid(true); // Reset validity state
         }}
       >
         <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
@@ -1432,6 +1620,7 @@ function SuperadminCompanies() {
                   email: "",
                   phone: "",
                 });
+                setIsCompanyHeadValid(true); // Reset validity state
               }}
               className="absolute right-0 text-gray-500 hover:text-gray-800 mt-1"
             >
@@ -1589,6 +1778,11 @@ function SuperadminCompanies() {
                     </div>
                   )}
               </div>
+              {/* {companyHeadValidationErrors.email && (
+                <p className="text-red-600 text-xs mt-1">
+                  {companyHeadValidationErrors.email}
+                </p>
+              )} */}
               {companyHeadValidationErrors.email && (
                 <p className="text-red-600 text-xs mt-1">
                   {companyHeadValidationErrors.email}
@@ -1610,10 +1804,18 @@ function SuperadminCompanies() {
                 id="headPhone"
                 name="phone"
                 value={companyHeadData.phone}
-                onChange={handleCompanyHeadInputChange}
-                onBlur={() =>
-                  handleCompanyHeadFieldBlur("phone", companyHeadData.phone)
-                }
+                onChange={e => {
+                  handleCompanyHeadInputChange(e);
+                  if (e.target.value.length === 10) {
+                    handleCompanyHeadFieldBlur("phone", e.target.value);
+                  }
+                }}
+                onBlur={() => {
+                  // Only check if not already checked at 10 digits
+                  if (companyHeadData.phone.length !== 10) {
+                    handleCompanyHeadFieldBlur("phone", companyHeadData.phone);
+                  }
+                }}
                 placeholder="Enter phone number"
                 maxLength="10"
                 className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
@@ -1640,9 +1842,9 @@ function SuperadminCompanies() {
 
           <Button
             onClick={handleCompanyHeadSave}
-            disabled={!isCompanyHeadFormValid()}
+            disabled={!isCompanyHeadFormValid() || !isCompanyHeadValid}
             className={`mt-6 ${
-              isCompanyHeadFormValid()
+              isCompanyHeadFormValid() && isCompanyHeadValid
                 ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
