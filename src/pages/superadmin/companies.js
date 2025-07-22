@@ -1554,7 +1554,7 @@ function SuperadminCompanies() {
                     handleCompanyHeadFieldBlur("email", companyHeadData.email)
                   }
                   placeholder="Enter email address"
-                  onKeyDown={e => {
+                  onKeyDown={(e) => {
                     if (e.key === " ") e.preventDefault();
                   }}
                   className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
