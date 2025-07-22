@@ -205,15 +205,35 @@ const modularMenus = {
   },
 };
 
-const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
+const SIDEBAR_COLLAPSE_KEY = "sidebar_isCollapsed";
+const SIDEBAR_EXPANDED_MENUS_KEY = "sidebar_expandedMenus";
+
+const Sidebar = ({ isCollapsed: propIsCollapsed, toggleSidebar: propToggleSidebar, autoExpand = true }) => {
+  // Read from localStorage on mount
+  const getInitialCollapsed = () => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
+      return stored === null ? false : stored === "true";
+    }
+    return false;
+  };
+  const getInitialExpandedMenus = () => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(SIDEBAR_EXPANDED_MENUS_KEY);
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
+  };
+
+  const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed);
+  const [expandedMenus, setExpandedMenus] = useState(getInitialExpandedMenus);
   const [currentRole, setCurrentRole] = useState("");
-  const [expandedMenus, setExpandedMenus] = useState({});
   const [department, setDepartment] = useState("");
   const [userRoles, setUserRoles] = useState([]);
   const [userModules, setUserModules] = useState([]);
   const router = useRouter();
 
-  // Helper functions defined as regular functions instead of useCallback
+    // Get available modules based on roles and moduleIds
   const hasAdminRole = () => {
     return userRoles.some(role => 
       role === "ADMIN" || 
@@ -230,20 +250,26 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     );
   };
 
-  const isActiveLink = (link) => {
-    if (!link) return false;
-    return router.pathname === link || router.pathname.startsWith(link);
-  };
-
-  const isActiveParent = (item) => {
+    const isActiveParent = useCallback((item) => {
     if (!item.hasSubmenu) return false;
     return item.subItems.some((subItem) =>
       router.pathname.startsWith(subItem.link)
     );
+  }, [router.pathname]);
+
+  const isModuleActive = (module) => {
+    return module.items.some((item) => {
+      if (item.hasSubmenu) {
+        return item.subItems.some((subItem) =>
+          router.pathname.startsWith(subItem.link)
+        );
+      }
+      return isActiveLink(item.link);
+    });
   };
 
-  // Get available modules based on roles and moduleIds
-  const getAvailableModules = () => {
+
+  const getAvailableModules = useCallback(() => {
     const modules = [];
     const addedModules = new Set(); // To prevent duplicates
     
@@ -361,18 +387,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     }
 
     return modules;
-  };
-
-  const isModuleActive = (module) => {
-    return module.items.some((item) => {
-      if (item.hasSubmenu) {
-        return item.subItems.some((subItem) =>
-          router.pathname.startsWith(subItem.link)
-        );
-      }
-      return isActiveLink(item.link);
-    });
-  };
+  }, [userRoles, userModules, hasAdminRole, hasManagerRole]);
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
@@ -384,14 +399,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
 
     // Decode JWT token to get roles and moduleIds
     if (token) {
-      try {
-        const decodedToken = jwtDecode(token);
-        if (decodedToken) {
-          setUserRoles(decodedToken.roles || []);
-          setUserModules(decodedToken.module_ids || []);
-        }
-      } catch (error) {
-        console.error('Error decoding token:', error);
+      const decodedToken = jwtDecode(token);
+      if (decodedToken) {
+        setUserRoles(decodedToken.roles || []);
+        setUserModules(decodedToken.module_ids || []);
       }
     }
 
@@ -402,75 +413,49 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
     }));
   }, []);
 
-  // Auto-expand sidebar and select correct module based on current route
+  // Persist isCollapsed to localStorage
   useEffect(() => {
-    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
-      // Calculate available modules here
-      const availableModules = getAvailableModules();
-      
-      const currentPath = router.pathname;
-      
-      // Find which module contains the current route
-      const activeModule = availableModules.find(module => 
-        module.items.some(item => {
-          if (item.hasSubmenu) {
-            return item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
-            );
-          }
-          return currentPath.startsWith(item.link);
-        })
-      );
-
-      if (activeModule) {
-        // Expand the active module
-        setExpandedMenus(prev => ({
-          ...prev,
-          [activeModule.key]: true
-        }));
-
-        // Also expand any submenus that contain the current route
-        activeModule.items.forEach(item => {
-          if (item.hasSubmenu) {
-            const hasActiveSubItem = item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
-            );
-            if (hasActiveSubItem) {
-              setExpandedMenus(prev => ({
-                ...prev,
-                [item.menuKey]: true
-              }));
-            }
-          }
-        });
-      }
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SIDEBAR_COLLAPSE_KEY, isCollapsed);
     }
-  }, [userRoles, userModules, router.pathname]);
+  }, [isCollapsed]);
 
-  // Auto-expand modules when sidebar is collapsed
+  // Persist expandedMenus to localStorage
   useEffect(() => {
-    if (isCollapsed && userRoles.length > 0) {
-      const availableModules = getAvailableModules();
-      const expandedModules = {};
-      availableModules.forEach((module) => {
-        expandedModules[module.key] = true;
-        // Only expand submenus if they contain the active route
-        module.items.forEach((item) => {
-          if (item.menuKey && isActiveParent(item)) {
-            expandedModules[item.menuKey] = true;
-          }
-        });
-      });
-      setExpandedMenus(expandedModules);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SIDEBAR_EXPANDED_MENUS_KEY, JSON.stringify(expandedMenus));
     }
-  }, [isCollapsed, userRoles, userModules]);
+  }, [expandedMenus]);
+
+  const toggleSidebar = () => {
+    setIsCollapsed((prev) => !prev);
+  };
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
       ...prev,
-      [menuKey]: !prev[menuKey], // Toggle between true and false
+      [menuKey]: !prev[menuKey],
     }));
   };
+
+  // Debug logging to see what modules are available
+  useEffect(() => {
+    if (userRoles.length > 0) {
+      const availableModules = getAvailableModules();
+    }
+  }, [currentRole, userRoles, userModules, router.pathname, getAvailableModules]);
+
+  const isActiveLink = useCallback((link) => {
+    if (!link) return false;
+    
+    // Special case: addNewEmployee page should be considered active for Employees link
+    if (link === "/hradmin/employees" && router.pathname === "/hradmin/addNewEmployee") {
+      return true;
+    }
+    
+    return router.pathname === link || router.pathname.startsWith(link);
+  }, [router.pathname]);
+
 
   return (
     <aside
@@ -713,8 +698,8 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
           })}
         </ul>
       </nav>
-      {/* App Version at the bottom */}
-      <div className="absolute bottom-4 right-0 w-full px-4 text-right">
+            {/* App Version at the bottom */}
+            <div className="absolute bottom-4 right-0 w-full px-4 text-right">
         <span className="text-xs text-gray-400 font-mono select-none">v{version.version}</span>
       </div>
     </aside>

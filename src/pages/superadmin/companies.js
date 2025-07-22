@@ -415,6 +415,9 @@ function SuperadminCompanies() {
     if (name === "phone") {
       processedValue = value.replace(/\D/g, "").slice(0, 10);
     }
+    if (name === "email") {
+      processedValue = value.replace(/\s+/g, "");
+    }
     setCompanyHeadData((prevData) => ({
       ...prevData,
       [name]: processedValue,
