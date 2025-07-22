@@ -213,111 +213,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const [userModules, setUserModules] = useState([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const role = sessionStorage.getItem("currentRole");
-    const dept = sessionStorage.getItem("departmentName");
-    const token = getItemFromSessionStorage("token");
-    
-    setCurrentRole(role);
-    setDepartment(dept);
-
-    // Decode JWT token to get roles and moduleIds
-    if (token) {
-      const decodedToken = jwtDecode(token);
-      if (decodedToken) {
-        setUserRoles(decodedToken.roles || []);
-        setUserModules(decodedToken.module_ids || []);
-      }
-    }
-
-    // Initialize Settings menu as expanded
-    setExpandedMenus((prev) => ({
-      ...prev,
-      settings: true,
-    }));
-  }, []);
-
-  // Auto-expand sidebar and select correct module based on current route
-  // This includes pages that don't have direct menu items but belong to a module (e.g., /hradmin/addNewEmployee)
-  useEffect(() => {
-    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
-      // Calculate available modules here
-      const availableModules = getAvailableModules();
-      
-      const currentPath = router.pathname;
-      
-      // Find which module contains the current route
-      const activeModule = availableModules.find(module => {
-        // Check if any item in the module matches the current route
-        const hasMatchingItem = module.items.some(item => {
-          if (item.hasSubmenu) {
-            return item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
-            );
-          }
-          return currentPath.startsWith(item.link);
-        });
-        
-        // If no direct item match, check if the current path starts with the module's base path
-        if (!hasMatchingItem) {
-          // Define module base paths
-          const moduleBasePaths = {
-            'MOD_HR': '/hradmin/',
-            'MOD_SALES': '/Sales/',
-            'MOD_ACCOUNTANT': '/account/',
-            'EMPLOYEE': '/employee/',
-            'MANAGER': '/manager/',
-          };
-          
-          const moduleBasePath = moduleBasePaths[module.key];
-          if (moduleBasePath && currentPath.startsWith(moduleBasePath)) {
-            return true;
-          }
-        }
-        
-        return hasMatchingItem;
-      });
-
-      if (activeModule) {
-        // Expand the active module
-        setExpandedMenus(prev => ({
-          ...prev,
-          [activeModule.key]: true
-        }));
-
-        // Also expand any submenus that contain the current route
-        activeModule.items.forEach(item => {
-          if (item.hasSubmenu) {
-            const hasActiveSubItem = item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
-            );
-            if (hasActiveSubItem) {
-              setExpandedMenus(prev => ({
-                ...prev,
-                [item.menuKey]: true
-              }));
-            }
-          }
-        });
-      }
-    }
-  }, [userRoles, userModules, router.pathname, getAvailableModules]);
-
-  // Get available modules based on roles and moduleIds
   const hasAdminRole = () => {
-    return userRoles.some(role => 
-      role === "ADMIN" || 
-      role === "COMPANY_HEAD" || 
-      role.includes("ADMIN")
-    );
+    return userRoles.includes("SUPERADMIN") || userRoles.includes("HRADMIN");
   };
 
   const hasManagerRole = () => {
-    return userRoles.some(role => 
-      role === "MANAGER" || 
-      role === "COMPANY_HEAD" ||
-      role.includes("MANAGER")
-    );
+    return userRoles.includes("SUPERADMIN") || userRoles.includes("HRADMIN") || userRoles.includes("SALESMANAGER");
   };
 
   const getAvailableModules = useCallback(() => {
@@ -418,27 +319,122 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
           addedModules.add(moduleId);
         }
       });
-      
-      // Show role-specific modules based on user roles
-      userRoles.forEach((role) => {
-        if (modularMenus[role] && !addedModules.has(role)) {
-          // Only show MANAGER module if user has MANAGER role
-          if (role === "MANAGER" || role.includes("MANAGER")) {
-            if (hasManagerRole()) {
-              modules.push({ key: role, ...modularMenus[role] });
-              addedModules.add(role);
-            }
-          } else {
-            // Show other role-specific modules (like EMPLOYEE)
-            modules.push({ key: role, ...modularMenus[role] });
-            addedModules.add(role);
-          }
-        }
-      });
+    }
+    
+    return modules;
+  }, [userRoles, userModules]);
+
+  const isActiveLink = useCallback((link) => {
+    if (!link) return false;
+    
+    // Special case: addNewEmployee page should be considered active for Employees link
+    if (link === "/hradmin/employees" && router.pathname === "/hradmin/addNewEmployee") {
+      return true;
+    }
+    
+    return router.pathname === link || router.pathname.startsWith(link);
+  }, [router.pathname]);
+
+  const isActiveParent = useCallback((item) => {
+    if (!item.hasSubmenu) return false;
+    return item.subItems.some((subItem) =>
+      router.pathname.startsWith(subItem.link)
+    );
+  }, [router.pathname]);
+
+  useEffect(() => {
+    const role = sessionStorage.getItem("currentRole");
+    const dept = sessionStorage.getItem("departmentName");
+    const token = getItemFromSessionStorage("token");
+    
+    setCurrentRole(role);
+    setDepartment(dept);
+
+    // Decode JWT token to get roles and moduleIds
+    if (token) {
+      const decodedToken = jwtDecode(token);
+      if (decodedToken) {
+        setUserRoles(decodedToken.roles || []);
+        setUserModules(decodedToken.module_ids || []);
+      }
     }
 
-    return modules;
-  }, [userRoles, userModules, hasAdminRole, hasManagerRole]);
+    // Initialize Settings menu as expanded
+    setExpandedMenus((prev) => ({
+      ...prev,
+      settings: true,
+    }));
+  }, []);
+
+  // Auto-expand sidebar and select correct module based on current route
+  // This includes pages that don't have direct menu items but belong to a module (e.g., /hradmin/addNewEmployee)
+  useEffect(() => {
+    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
+      // Calculate available modules here
+      const availableModules = getAvailableModules();
+      
+      const currentPath = router.pathname;
+      
+      // Find which module contains the current route
+      const activeModule = availableModules.find(module => {
+        // Check if any item in the module matches the current route
+        const hasMatchingItem = module.items.some(item => {
+          if (item.hasSubmenu) {
+            return item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+            }
+          return currentPath.startsWith(item.link);
+        });
+        
+        // If no direct item match, check if the current path starts with the module's base path
+        if (!hasMatchingItem) {
+          // Define module base paths
+          const moduleBasePaths = {
+            'MOD_HR': '/hradmin/',
+            'MOD_SALES': '/Sales/',
+            'MOD_ACCOUNTANT': '/account/',
+            'EMPLOYEE': '/employee/',
+            'MANAGER': '/manager/',
+          };
+          
+          const moduleBasePath = moduleBasePaths[module.key];
+          if (moduleBasePath && currentPath.startsWith(moduleBasePath)) {
+            return true;
+          }
+        }
+        
+        return hasMatchingItem;
+      });
+
+      if (activeModule) {
+        // Expand the active module
+        setExpandedMenus(prev => ({
+          ...prev,
+          [activeModule.key]: true
+        }));
+
+        // Also expand any submenus that contain the current route
+        activeModule.items.forEach(item => {
+          if (item.hasSubmenu) {
+            const hasActiveSubItem = item.subItems.some(subItem => 
+              currentPath.startsWith(subItem.link)
+            );
+            if (hasActiveSubItem) {
+              setExpandedMenus(prev => ({
+                ...prev,
+                [item.menuKey]: true
+              }));
+            }
+          }
+        });
+      }
+    }
+  }, [userRoles, userModules, router.pathname, getAvailableModules]);
+
+
+
+
 
   // Auto-expand modules when sidebar is collapsed
   useEffect(() => {
@@ -471,24 +467,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       const availableModules = getAvailableModules();
     }
   }, [currentRole, userRoles, userModules, router.pathname, getAvailableModules]);
-
-  const isActiveLink = useCallback((link) => {
-    if (!link) return false;
-    
-    // Special case: addNewEmployee page should be considered active for Employees link
-    if (link === "/hradmin/employees" && router.pathname === "/hradmin/addNewEmployee") {
-      return true;
-    }
-    
-    return router.pathname === link || router.pathname.startsWith(link);
-  }, [router.pathname]);
-
-  const isActiveParent = useCallback((item) => {
-    if (!item.hasSubmenu) return false;
-    return item.subItems.some((subItem) =>
-      router.pathname.startsWith(subItem.link)
-    );
-  }, [router.pathname]);
 
   const isModuleActive = (module) => {
     return module.items.some((item) => {
