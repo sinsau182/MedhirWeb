@@ -822,7 +822,7 @@ function EmployeeForm() {
   };
 
   const handleSaveAndExit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
 
     // Only validate required fields for the current section
     const validateCurrentSection = () => {
