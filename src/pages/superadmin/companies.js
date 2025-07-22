@@ -1301,7 +1301,7 @@ function SuperadminCompanies() {
               onBlur={() => handleFieldBlur("gst", companyData.gst)}
               placeholder="Enter GST Number"
               maxLength={15}
-              style={{ textTransform: "uppercase" }}
+              // style={{ textTransform: "uppercase" }}
               className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
                 "gst",
                 companyData.gst,
