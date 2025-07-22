@@ -372,8 +372,14 @@ function SuperadminCompanies() {
     }
     setCompanyData((prevData) => {
       const updatedData = { ...prevData, [name]: processedValue };
-      if (name === "name" && processedValue.length >= 3) {
-        updatedData.prefixForEmpID = processedValue.substring(0, 3).toUpperCase();
+      if (name === "name") {
+        // Remove all spaces for prefix logic
+        const nameNoSpaces = processedValue.replace(/\s+/g, "");
+        if (nameNoSpaces.length >= 3) {
+          updatedData.prefixForEmpID = nameNoSpaces.substring(0, 3).toUpperCase();
+        } else {
+          updatedData.prefixForEmpID = "";
+        }
       }
       if (name === "prefixForEmpID") {
         const cleanedPrefix = processedValue.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
