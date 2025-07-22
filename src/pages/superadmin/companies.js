@@ -522,12 +522,22 @@ function SuperadminCompanies() {
       }
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(debouncedCompanyEmail)) {
-        setValidationErrors((prev) => ({ ...prev, email: "Please enter a valid email address" }));
+        setValidationErrors((prev) => ({
+          ...prev,
+          email: "Please enter a valid email address",
+        }));
         return;
       }
-      const result = await checkCompanyUnique(debouncedCompanyEmail, undefined, undefined);
+      const result = await checkCompanyUnique(
+        debouncedCompanyEmail,
+        undefined,
+        undefined
+      );
       if (result.email) {
-        setValidationErrors((prev) => ({ ...prev, email: "This email already exists." }));
+        setValidationErrors((prev) => ({
+          ...prev,
+          email: "This email already exists.",
+        }));
       } else {
         // Only clear error if uniqueness passes and value changed
         setValidationErrors((prev) => {
@@ -553,10 +563,17 @@ function SuperadminCompanies() {
         setValidationErrors((prev) => ({ ...prev, prefixForEmpID: "" }));
         return;
       }
-      const result = await checkCompanyUnique(undefined, undefined, debouncedPrefix);
+      const result = await checkCompanyUnique(
+        undefined,
+        undefined,
+        debouncedPrefix
+      );
       console.log("Prefix uniqueness API result:", result); // Debug log
       if (result.prefixForEmpID) {
-        setValidationErrors((prev) => ({ ...prev, prefixForEmpID: "This prefix already exists." }));
+        setValidationErrors((prev) => ({
+          ...prev,
+          prefixForEmpID: "This prefix already exists.",
+        }));
       } else {
         setValidationErrors((prev) => {
           if (prev.prefixForEmpID === "This prefix already exists.") {
@@ -582,20 +599,25 @@ function SuperadminCompanies() {
       return;
     }
     if (e.target.value.length === 10) {
-      checkCompanyUnique(undefined, e.target.value, undefined).then((result) => {
-        if (result.phone) {
-          setValidationErrors((prev) => ({ ...prev, phone: "This phone number already exists." }));
-        } else {
-          setValidationErrors((prev) => {
-            if (prev.phone === "This phone number already exists.") {
-              return { ...prev, phone: "" };
-            } else {
-              const error = validateField("phone", e.target.value);
-              return { ...prev, phone: error };
-            }
-          });
+      checkCompanyUnique(undefined, e.target.value, undefined).then(
+        (result) => {
+          if (result.phone) {
+            setValidationErrors((prev) => ({
+              ...prev,
+              phone: "This phone number already exists.",
+            }));
+          } else {
+            setValidationErrors((prev) => {
+              if (prev.phone === "This phone number already exists.") {
+                return { ...prev, phone: "" };
+              } else {
+                const error = validateField("phone", e.target.value);
+                return { ...prev, phone: error };
+              }
+            });
+          }
         }
-      });
+      );
     } else {
       const error = validateField("phone", e.target.value);
       setValidationErrors((prev) => ({ ...prev, phone: error }));
@@ -873,7 +895,12 @@ function SuperadminCompanies() {
       formData.append("employee", JSON.stringify(updatedEmployee));
 
       try {
-        await dispatch(updateEmployee({ id: companyHeadData.employeeId, updatedData: formData }));
+        await dispatch(
+          updateEmployee({
+            id: companyHeadData.employeeId,
+            updatedData: formData,
+          })
+        );
         toast.success("Company Head updated successfully!");
         // Reload the company list in the background
         dispatch(fetchCompanies());
@@ -1288,19 +1315,37 @@ function SuperadminCompanies() {
               name="prefixForEmpID"
               value={companyData.prefixForEmpID || ""}
               {...(isEditing
-                ? { readOnly: true, tabIndex: -1, style: { backgroundColor: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' } }
+                ? {
+                    readOnly: true,
+                    tabIndex: -1,
+                    style: {
+                      backgroundColor: "#f3f4f6",
+                      color: "#6b7280",
+                      cursor: "not-allowed",
+                    },
+                  }
                 : { onChange: handleInputChange })}
               placeholder="Enter company prefix"
-              className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.prefixForEmpID ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${
+                validationErrors.prefixForEmpID
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              }`}
             />
             {isEditing && (
-              <p className="text-yellow-600 text-xs mt-1 font-medium">Company prefix can&apos;t be edited.</p>
+              <p className="text-yellow-600 text-xs mt-1 font-medium">
+                Company prefix can&apos;t be edited.
+              </p>
             )}
             {!isEditing && (
-              <p className="text-yellow-600 text-xs mt-1 font-medium">Company prefix can&apos;t be edited after creation.</p>
+              <p className="text-yellow-600 text-xs mt-1 font-medium">
+                Company prefix can&apos;t be edited after creation.
+              </p>
             )}
             {validationErrors.prefixForEmpID && (
-              <p className="text-red-600 text-xs mt-1">{validationErrors.prefixForEmpID}</p>
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.prefixForEmpID}
+              </p>
             )}
           </div>
 
@@ -1411,10 +1456,16 @@ function SuperadminCompanies() {
                 value={companyData.email}
                 onChange={handleInputChange}
                 placeholder="Enter email address"
-                className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
+                className={`bg-gray-100 text-[#4a4a4a] ${
+                  validationErrors.email
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                }`}
               />
               {validationErrors.email && (
-                <p className="text-red-600 text-xs mt-1">{validationErrors.email}</p>
+                <p className="text-red-600 text-xs mt-1">
+                  {validationErrors.email}
+                </p>
               )}
               {getEmailSuggestion(companyData.email) &&
                 !companyData.email.includes("@") && (
@@ -1457,7 +1508,11 @@ function SuperadminCompanies() {
               onChange={handleCompanyPhoneChange}
               placeholder="Enter phone number"
               maxLength="10"
-              className={`bg-gray-100 text-[#4a4a4a] ${validationErrors.phone ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${
+                validationErrors.phone
+                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              }`}
             />
             {validationErrors.phone && (
               <p className="text-red-600 text-xs mt-1">
@@ -1809,7 +1864,7 @@ function SuperadminCompanies() {
                 id="headPhone"
                 name="phone"
                 value={companyHeadData.phone}
-                onChange={e => {
+                onChange={(e) => {
                   handleCompanyHeadInputChange(e);
                   if (e.target.value.length === 10) {
                     handleCompanyHeadFieldBlur("phone", e.target.value);
