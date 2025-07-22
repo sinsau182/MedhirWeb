@@ -1915,7 +1915,7 @@ function EmployeeForm() {
                             {validationErrors.alternatePhone && (fieldTouched.alternatePhone || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.alternatePhone}</p>)}
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="grid grid-cols-1 gap-2 mb-2">
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Personal Email <span className="text-red-400">*</span></label>
                             <div className="relative">
@@ -1944,34 +1944,7 @@ function EmployeeForm() {
                             </div>
                             {validationErrors.emailPersonal && (fieldTouched.emailPersonal || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailPersonal}</p>)}
                           </div>
-                          <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Official Email</label>
-                            <div className="relative">
-                              <input 
-                                type="email" 
-                                className={`${inputClass} ${validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                                placeholder="Enter official email" 
-                                value={formData.employee.emailOfficial || ""} 
-                                onChange={e => handleInputChange("employee", "emailOfficial", filterEmailInput(e.target.value))} 
-                                ref={formRefs.emailOfficial} 
-                                onBlur={() => handlePersonalFieldBlur("emailOfficial")} 
-                                maxLength={50}
-                              />
-                              {getEmailSuggestion(formData.employee.emailOfficial) && !formData.employee.emailOfficial.includes('@') && (
-                                <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
-                                  <span className="font-medium">Suggestion:</span> 
-                                  <button 
-                                    type="button"
-                                    onClick={() => handleInputChange("employee", "emailOfficial", getEmailSuggestion(formData.employee.emailOfficial))}
-                                    className="ml-1 underline hover:text-blue-900 cursor-pointer"
-                                  >
-                                    {getEmailSuggestion(formData.employee.emailOfficial)}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            {validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailOfficial}</p>)}
-                          </div>
+
                         </div>
                         <div className={inputGroupClass}>
                           <label className={inputLabelClass}>Current Address</label>
@@ -2014,6 +1987,34 @@ function EmployeeForm() {
                           <DepartmentSelect label="Department" options={departments} value={formData.employee.department} onChange={selectedDepartment => { const cleanName = selectedDepartment.name.replace(/[bedjw]{5,}/g, '').replace(/\|.*$/, '').replace(/\s+/g, ' ').trim(); handleInputChange("employee", "department", { departmentId: selectedDepartment.departmentId, name: cleanName }); const weeklyHolidays = selectedDepartment.weeklyHolidays ? selectedDepartment.weeklyHolidays.split(",") : []; handleInputChange("employee", "weeklyOffs", weeklyHolidays); handleInputChange("employee", "designation", null); handleInputChange("employee", "reportingManager", null); }} onAddDepartment={() => setShowDepartmentModal(true)} />
                           <DesignationSelect label="Designation" options={formData.employee.department ? designations : []} value={formData.employee.designation} onChange={selectedDesignation => handleInputChange("employee", "designation", { designationId: selectedDesignation.designationId, name: selectedDesignation.name, manager: selectedDesignation.manager, overtimeEligible: selectedDesignation.overtimeEligible, })} onAddDesignation={() => setShowDesignationModal(true)} disabled={isDesignationLoading || !formData.employee.department} placeholder={!formData.employee.department ? 'First Select Department' : 'Select designation'} loading={isDesignationLoading} />
                         </div>
+                                                  <div className={inputGroupClass}>
+                            <label className={inputLabelClass}>Official Email</label>
+                            <div className="relative">
+                              <input 
+                                type="email" 
+                                className={`${inputClass} ${validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                                placeholder="Enter official email" 
+                                value={formData.employee.emailOfficial || ""} 
+                                onChange={e => handleInputChange("employee", "emailOfficial", filterEmailInput(e.target.value))} 
+                                ref={formRefs.emailOfficial} 
+                                onBlur={() => handlePersonalFieldBlur("emailOfficial")} 
+                                maxLength={50}
+                              />
+                              {getEmailSuggestion(formData.employee.emailOfficial) && !formData.employee.emailOfficial.includes('@') && (
+                                <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
+                                  <span className="font-medium">Suggestion:</span> 
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleInputChange("employee", "emailOfficial", getEmailSuggestion(formData.employee.emailOfficial))}
+                                    className="ml-1 underline hover:text-blue-900 cursor-pointer"
+                                  >
+                                    {getEmailSuggestion(formData.employee.emailOfficial)}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            {validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailOfficial}</p>)}
+                          </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Date of Joining <span className="text-red-400">*</span></label>
