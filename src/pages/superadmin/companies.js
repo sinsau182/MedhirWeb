@@ -1920,3 +1920,4 @@ function SuperadminCompanies() {
 }
 
 export default withAuth(SuperadminCompanies);
+
