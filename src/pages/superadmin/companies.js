@@ -10,7 +10,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Table } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
-import { UserPlus, Edit, ChevronDown, User, Trash, Info, Check } from "lucide-react";
+import {
+  UserPlus,
+  Edit,
+  ChevronDown,
+  User,
+  Trash,
+  Info,
+  Check,
+} from "lucide-react";
 import { FaBuilding } from "react-icons/fa";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
@@ -21,9 +29,9 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 // Helper function to truncate text and show tooltip
 const TruncatedText = ({ text, maxWidth, className = "", trimAfter = 20 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  
+
   return (
-    <div 
+    <div
       className={`truncate ${maxWidth} ${className} relative group`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
@@ -85,12 +93,13 @@ function SuperadminCompanies() {
     employeeId: "", // Add employeeId to track when editing
   });
   const [companyHeadError, setCompanyHeadError] = useState("");
-  const [companyHeadValidationErrors, setCompanyHeadValidationErrors] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-  });
+  const [companyHeadValidationErrors, setCompanyHeadValidationErrors] =
+    useState({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+    });
   const [companyHeadFieldTouched, setCompanyHeadFieldTouched] = useState({
     firstName: false,
     lastName: false,
@@ -145,13 +154,14 @@ function SuperadminCompanies() {
   };
 
   const validateGST = (gst) => {
-    const regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+    const regex =
+      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
     return regex.test(gst);
   };
 
   const validateField = (name, value) => {
     let error = "";
-    
+
     switch (name) {
       case "name":
         if (!value.trim()) {
@@ -191,13 +201,13 @@ function SuperadminCompanies() {
       default:
         break;
     }
-    
+
     return error;
   };
 
   const validateCompanyHeadField = (name, value) => {
     let error = "";
-    
+
     switch (name) {
       case "firstName":
         if (!value.trim()) {
@@ -230,14 +240,14 @@ function SuperadminCompanies() {
       default:
         break;
     }
-    
+
     return error;
   };
 
   // Smart email suggestion function
   const getEmailSuggestion = (input) => {
-    if (!input || input.includes('@')) return null;
-    
+    if (!input || input.includes("@")) return null;
+
     const cleanInput = input.trim().toLowerCase();
     if (cleanInput.length >= 2) {
       return `${cleanInput}@gmail.com`;
@@ -295,7 +305,7 @@ function SuperadminCompanies() {
         employeeId: "",
       });
     }
-    
+
     // Reset validation states
     setValidationErrors({
       name: "",
@@ -311,25 +321,27 @@ function SuperadminCompanies() {
       gst: false,
       regAdd: false,
     });
-    
+
     setIsCompanyModalOpen(true);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Handle phone number input - only allow digits
     let processedValue = value;
     if (name === "phone") {
-      processedValue = value.replace(/\D/g, '').slice(0, 10);
+      processedValue = value.replace(/\D/g, "").slice(0, 10);
     }
-    
+
     setCompanyData((prevData) => {
       const updatedData = { ...prevData, [name]: processedValue };
 
       // Auto-generate prefix if the company name is being updated
       if (name === "name" && processedValue.length >= 3) {
-        updatedData.prefixForEmpID = processedValue.substring(0, 3).toUpperCase();
+        updatedData.prefixForEmpID = processedValue
+          .substring(0, 3)
+          .toUpperCase();
       }
       // Ensure prefix is always uppercase
       if (name === "prefixForEmpID") {
@@ -349,34 +361,34 @@ function SuperadminCompanies() {
 
     // Real-time validation
     const error = validateField(name, processedValue);
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
   };
 
   const handleFieldBlur = (name, value) => {
-    setFieldTouched(prev => ({
+    setFieldTouched((prev) => ({
       ...prev,
-      [name]: true
+      [name]: true,
     }));
-    
+
     const error = validateField(name, value);
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
   };
 
   const handleCompanyHeadInputChange = (e) => {
     const { name, value } = e.target;
-    
+
     // Handle phone number input - only allow digits
     let processedValue = value;
     if (name === "phone") {
-      processedValue = value.replace(/\D/g, '').slice(0, 10);
+      processedValue = value.replace(/\D/g, "").slice(0, 10);
     }
-    
+
     setCompanyHeadData((prevData) => ({
       ...prevData,
       [name]: processedValue,
@@ -384,22 +396,22 @@ function SuperadminCompanies() {
 
     // Real-time validation for company head fields
     const error = validateCompanyHeadField(name, processedValue);
-    setCompanyHeadValidationErrors(prev => ({
+    setCompanyHeadValidationErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
   };
 
   const handleCompanyHeadFieldBlur = (name, value) => {
-    setCompanyHeadFieldTouched(prev => ({
+    setCompanyHeadFieldTouched((prev) => ({
       ...prev,
-      [name]: true
+      [name]: true,
     }));
-    
+
     const error = validateCompanyHeadField(name, value);
-    setCompanyHeadValidationErrors(prev => ({
+    setCompanyHeadValidationErrors((prev) => ({
       ...prev,
-      [name]: error
+      [name]: error,
     }));
   };
 
@@ -415,16 +427,16 @@ function SuperadminCompanies() {
 
     // Validate all fields
     const errors = {};
-    Object.keys(companyData).forEach(key => {
-      if (['name', 'email', 'phone', 'gst', 'regAdd'].includes(key)) {
+    Object.keys(companyData).forEach((key) => {
+      if (["name", "email", "phone", "gst", "regAdd"].includes(key)) {
         errors[key] = validateField(key, companyData[key]);
-    }
+      }
     });
 
     setValidationErrors(errors);
 
     // Check if there are any validation errors
-    const hasErrors = Object.values(errors).some(error => error);
+    const hasErrors = Object.values(errors).some((error) => error);
     if (hasErrors) {
       toast.error("Please fix the validation errors before saving");
       return;
@@ -495,10 +507,6 @@ function SuperadminCompanies() {
     }
   };
 
-
-
-
-
   const predefinedColors = [
     "#B0E0E6",
     "#FFE4E1",
@@ -530,42 +538,42 @@ function SuperadminCompanies() {
 
   // Function to check if the form is valid
   const isFormValid = () => {
-    const requiredFields = ['name', 'email', 'phone', 'gst', 'regAdd'];
-    
+    const requiredFields = ["name", "email", "phone", "gst", "regAdd"];
+
     // Check if all required fields have values
-    const hasAllValues = requiredFields.every(field => 
-      companyData[field] && companyData[field].trim() !== ''
+    const hasAllValues = requiredFields.every(
+      (field) => companyData[field] && companyData[field].trim() !== ""
     );
-    
+
     // Check if all required fields are valid (no validation errors)
-    const hasNoErrors = requiredFields.every(field => 
-      !validationErrors[field] || validationErrors[field] === ''
+    const hasNoErrors = requiredFields.every(
+      (field) => !validationErrors[field] || validationErrors[field] === ""
     );
-    
+
     // Color is always selected (has default)
     const hasColorSelected = true;
-    
+
     return hasAllValues && hasNoErrors && hasColorSelected;
   };
 
   // Function to check if the company head form is valid
   const isCompanyHeadFormValid = () => {
-    const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
-    
+    const requiredFields = ["firstName", "lastName", "email", "phone"];
+
     // Check if all required fields have values
-    const hasAllValues = requiredFields.every(field => 
-      companyHeadData[field] && companyHeadData[field].trim() !== ''
+    const hasAllValues = requiredFields.every(
+      (field) => companyHeadData[field] && companyHeadData[field].trim() !== ""
     );
-    
+
     // Check if all required fields are valid (no validation errors)
-    const hasNoErrors = requiredFields.every(field => 
-      !companyHeadValidationErrors[field] || companyHeadValidationErrors[field] === ''
+    const hasNoErrors = requiredFields.every(
+      (field) =>
+        !companyHeadValidationErrors[field] ||
+        companyHeadValidationErrors[field] === ""
     );
-    
+
     return hasAllValues && hasNoErrors;
   };
-
-
 
   const handleColorChange = (color) => {
     setCompanyData((prevData) => ({ ...prevData, colorCode: color }));
@@ -608,8 +616,8 @@ function SuperadminCompanies() {
 
     // Validate all company head fields
     const errors = {};
-    Object.keys(companyHeadData).forEach(key => {
-      if (['firstName', 'lastName', 'email', 'phone'].includes(key)) {
+    Object.keys(companyHeadData).forEach((key) => {
+      if (["firstName", "lastName", "email", "phone"].includes(key)) {
         errors[key] = validateCompanyHeadField(key, companyHeadData[key]);
       }
     });
@@ -617,31 +625,33 @@ function SuperadminCompanies() {
     setCompanyHeadValidationErrors(errors);
 
     // Check if there are any validation errors
-    const hasErrors = Object.values(errors).some(error => error);
+    const hasErrors = Object.values(errors).some((error) => error);
     if (hasErrors) {
-      toast.error("Please fix the validation errors before saving Company Head");
+      toast.error(
+        "Please fix the validation errors before saving Company Head"
+      );
       return;
     }
 
-      setCompanyData((prevData) => ({
-        ...prevData,
-        companyHeads: [
-          {
-            firstName: companyHeadData.firstName.trim(),
-            middleName: companyHeadData.middleName.trim(),
-            lastName: companyHeadData.lastName.trim(),
-            email: companyHeadData.email,
-            phone: companyHeadData.phone,
-            // Include employeeId if it exists (for editing)
-            ...(companyHeadData.employeeId && {
-              employeeId: companyHeadData.employeeId,
-            }),
-          },
-        ],
-      }));
-      setIsCompanyHeadModalOpen(false);
-      setIsDropdownOpen(false);
-      toast.success("Company Head added successfully!");
+    setCompanyData((prevData) => ({
+      ...prevData,
+      companyHeads: [
+        {
+          firstName: companyHeadData.firstName.trim(),
+          middleName: companyHeadData.middleName.trim(),
+          lastName: companyHeadData.lastName.trim(),
+          email: companyHeadData.email,
+          phone: companyHeadData.phone,
+          // Include employeeId if it exists (for editing)
+          ...(companyHeadData.employeeId && {
+            employeeId: companyHeadData.employeeId,
+          }),
+        },
+      ],
+    }));
+    setIsCompanyHeadModalOpen(false);
+    setIsDropdownOpen(false);
+    toast.success("Company Head added successfully!");
   };
 
   // Close dropdown when clicking outside
@@ -661,7 +671,7 @@ function SuperadminCompanies() {
   // Filter companies based on search query
   const filteredCompanies = companies.filter((company) => {
     if (!searchQuery) return true;
-    
+
     const searchLower = searchQuery.toLowerCase();
     return (
       company.name?.toLowerCase().includes(searchLower) ||
@@ -670,13 +680,14 @@ function SuperadminCompanies() {
       company.gst?.toLowerCase().includes(searchLower) ||
       company.companyId?.toLowerCase().includes(searchLower) ||
       company.prefixForEmpID?.toLowerCase().includes(searchLower) ||
-      (company.companyHeads && company.companyHeads.some(head => 
-        [head.firstName, head.middleName, head.lastName]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(searchLower)
-      ))
+      (company.companyHeads &&
+        company.companyHeads.some((head) =>
+          [head.firstName, head.middleName, head.lastName]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(searchLower)
+        ))
     );
   });
 
@@ -711,205 +722,226 @@ function SuperadminCompanies() {
                   />
                 </svg>
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex items-center space-x-6">
-              <button
-                onClick={() => handleOpenCompanyModal()}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm"
-              >
-                <UserPlus className="h-5 w-5" />
-                Add Company
-              </button>
-              <button
-                onClick={() => handleOpenCompanyModal(selectedCompany)}
-                disabled={!selectedCompany}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors font-semibold shadow-sm ${
-                  selectedCompany
-                    ? "bg-green-600 text-white hover:bg-green-700"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                <Edit className="h-5 w-5" />
-                Edit Company
-              </button>
+                <button
+                  onClick={() => handleOpenCompanyModal()}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm"
+                >
+                  <UserPlus className="h-5 w-5" />
+                  Add Company
+                </button>
+                <button
+                  onClick={() => handleOpenCompanyModal(selectedCompany)}
+                  disabled={!selectedCompany}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors font-semibold shadow-sm ${
+                    selectedCompany
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  <Edit className="h-5 w-5" />
+                  Edit Company
+                </button>
               </div>
             </div>
           </div>
-          
+
           <div className="mt-8">
             {loading ? (
               <div className="text-center py-8 text-gray-600">Loading...</div>
             ) : err ? (
               <div className="text-center text-red-500 py-8">{err}</div>
             ) : (
-                                          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100">
                 <div className="overflow-x-auto max-h-[60vh] overflow-y-auto">
-                <table className="min-w-full divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm">
-                    <tr>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Company ID
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Name
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Company Head
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Email
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Phone
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        GST
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Register Add.
-                      </th>
-                      <th
-                        scope="col"
-                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
-                      >
-                        Company Prefix
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredCompanies.map((company) => (
-                      <tr
-                        key={company._id}
-                        className={`cursor-pointer transition-colors duration-200 ${
-                          selectedCompany?.companyId === company.companyId
-                            ? "bg-blue-100"
-                            : "bg-gray-50 hover:bg-blue-50"
-                        }`}
-                        onClick={() => {
-                          console.log("Clicking company:", company.name, "Company ID:", company.companyId, "Current selected:", selectedCompany?.companyId);
-                          const isCurrentlySelected = selectedCompany?.companyId === company.companyId;
-                          const newSelection = isCurrentlySelected ? null : company;
-                          console.log("Setting selection to:", newSelection?.companyId);
-                          setSelectedCompany(newSelection);
-                        }}
-                        onDoubleClick={() => handleOpenCompanyModal(company)}
-                      >
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <div className="flex items-center space-x-2">
-                            {selectedCompany?.companyId === company.companyId && (
-                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                            )}
-                            <TruncatedText 
-                              text={company.companyId || company._id || "—"} 
-                              maxWidth="max-w-[200px]"
-                              className="font-mono"
-                              trimAfter={22}
-                            />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={company.name} 
-                            maxWidth="max-w-[150px]"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={
-                              company.companyHeads && company.companyHeads.length > 0
-                                ? company.companyHeads.map((head, index) => 
-                                    [head.firstName, head.middleName, head.lastName].filter(Boolean).join(" ")
-                                  ).join(", ")
-                                : "No Company Head"
-                            }
-                            maxWidth="max-w-[120px]"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={company.email} 
-                            maxWidth="max-w-[180px]"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={company.phone} 
-                            maxWidth="max-w-[100px]"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={company.gst} 
-                            maxWidth="max-w-[140px]"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={company.regAdd} 
-                            maxWidth="max-w-[200px]"
-                          />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <TruncatedText 
-                            text={company.prefixForEmpID} 
-                            maxWidth="max-w-[80px]"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredCompanies.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={8}
-                          className="px-6 py-12 text-center"
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
                         >
-                          <div className="flex flex-col items-center space-y-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                              <FaBuilding className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <div className="text-center">
-                              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                No companies found
-                              </h3>
-                              <p className="text-sm text-gray-500 mb-6">
-                                Get started by adding your first company to the system.
-                              </p>
-                              <button
-                                onClick={() => handleOpenCompanyModal()}
-                                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm mx-auto"
-                              >
-                                <UserPlus className="h-5 w-5" />
-                                Add Your First Company
-                              </button>
-                            </div>
-                          </div>
-                        </td>
+                          Company ID
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          Name
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          Company Head
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          Email
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          Phone
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          GST
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          Register Add.
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300 bg-gray-100"
+                        >
+                          Company Prefix
+                        </th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredCompanies.map((company) => (
+                        <tr
+                          key={company._id}
+                          className={`cursor-pointer transition-colors duration-200 ${
+                            selectedCompany?.companyId === company.companyId
+                              ? "bg-blue-100"
+                              : "bg-gray-50 hover:bg-blue-50"
+                          }`}
+                          onClick={() => {
+                            console.log(
+                              "Clicking company:",
+                              company.name,
+                              "Company ID:",
+                              company.companyId,
+                              "Current selected:",
+                              selectedCompany?.companyId
+                            );
+                            const isCurrentlySelected =
+                              selectedCompany?.companyId === company.companyId;
+                            const newSelection = isCurrentlySelected
+                              ? null
+                              : company;
+                            console.log(
+                              "Setting selection to:",
+                              newSelection?.companyId
+                            );
+                            setSelectedCompany(newSelection);
+                          }}
+                          onDoubleClick={() => handleOpenCompanyModal(company)}
+                        >
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="flex items-center space-x-2">
+                              {selectedCompany?.companyId ===
+                                company.companyId && (
+                                <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                              )}
+                              <TruncatedText
+                                text={company.companyId || company._id || "—"}
+                                maxWidth="max-w-[200px]"
+                                className="font-mono"
+                                trimAfter={22}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.name}
+                              maxWidth="max-w-[150px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={
+                                company.companyHeads &&
+                                company.companyHeads.length > 0
+                                  ? company.companyHeads
+                                      .map((head, index) =>
+                                        [
+                                          head.firstName,
+                                          head.middleName,
+                                          head.lastName,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ")
+                                      )
+                                      .join(", ")
+                                  : "No Company Head"
+                              }
+                              maxWidth="max-w-[120px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.email}
+                              maxWidth="max-w-[180px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.phone}
+                              maxWidth="max-w-[100px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.gst}
+                              maxWidth="max-w-[140px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.regAdd}
+                              maxWidth="max-w-[200px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.prefixForEmpID}
+                              maxWidth="max-w-[80px]"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredCompanies.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-12 text-center">
+                            <div className="flex flex-col items-center space-y-4">
+                              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                                <FaBuilding className="w-8 h-8 text-gray-400" />
+                              </div>
+                              <div className="text-center">
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                  No companies found
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-6">
+                                  Get started by adding your first company to
+                                  the system.
+                                </p>
+                                <button
+                                  onClick={() => handleOpenCompanyModal()}
+                                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm mx-auto"
+                                >
+                                  <UserPlus className="h-5 w-5" />
+                                  Add Your First Company
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -967,10 +999,17 @@ function SuperadminCompanies() {
               onBlur={() => handleFieldBlur("name", companyData.name)}
               placeholder="Enter company name"
               maxLength="100"
-              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("name", companyData.name, fieldTouched.name, validationErrors.name)}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                "name",
+                companyData.name,
+                fieldTouched.name,
+                validationErrors.name
+              )}`}
             />
             {validationErrors.name && (
-              <p className="text-red-600 text-xs mt-1">{validationErrors.name}</p>
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.name}
+              </p>
             )}
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Maximum 100 characters</span>
@@ -990,12 +1029,21 @@ function SuperadminCompanies() {
               name="prefixForEmpID"
               value={companyData.prefixForEmpID || ""}
               onChange={handleInputChange}
-              onBlur={() => handleFieldBlur("prefixForEmpID", companyData.prefixForEmpID)}
+              onBlur={() =>
+                handleFieldBlur("prefixForEmpID", companyData.prefixForEmpID)
+              }
               placeholder="Enter company prefix"
-              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("prefixForEmpID", companyData.prefixForEmpID, fieldTouched.prefixForEmpID, validationErrors.prefixForEmpID)}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                "prefixForEmpID",
+                companyData.prefixForEmpID,
+                fieldTouched.prefixForEmpID,
+                validationErrors.prefixForEmpID
+              )}`}
             />
             {validationErrors.prefixForEmpID && (
-              <p className="text-red-600 text-xs mt-1">{validationErrors.prefixForEmpID}</p>
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.prefixForEmpID}
+              </p>
             )}
           </div>
 
@@ -1100,36 +1148,49 @@ function SuperadminCompanies() {
               Email Address <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-            <Input
-              id="email"
-              name="email"
-              value={companyData.email}
-              onChange={handleInputChange}
+              <Input
+                id="email"
+                name="email"
+                value={companyData.email}
+                onChange={handleInputChange}
                 onBlur={() => handleFieldBlur("email", companyData.email)}
-              placeholder="Enter email address"
-                className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("email", companyData.email, fieldTouched.email, validationErrors.email)}`}
+                placeholder="Enter email address"
+                className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                  "email",
+                  companyData.email,
+                  fieldTouched.email,
+                  validationErrors.email
+                )}`}
               />
-              {getEmailSuggestion(companyData.email) && !companyData.email.includes('@') && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-50 border border-gray-200 rounded-md p-2 text-sm text-gray-600">
-                  <span className="text-gray-400">Suggestion: </span>
-                  <span 
-                    className="text-blue-600 cursor-pointer hover:text-blue-800"
-                    onClick={() => {
-                      setCompanyData(prev => ({
-                        ...prev,
-                        email: getEmailSuggestion(companyData.email)
-                      }));
-                      handleFieldBlur("email", getEmailSuggestion(companyData.email));
-                    }}
-                  >
-                    {getEmailSuggestion(companyData.email)}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-2">(Click to use)</span>
-                </div>
-              )}
+              {getEmailSuggestion(companyData.email) &&
+                !companyData.email.includes("@") && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-gray-50 border border-gray-200 rounded-md p-2 text-sm text-gray-600">
+                    <span className="text-gray-400">Suggestion: </span>
+                    <span
+                      className="text-blue-600 cursor-pointer hover:text-blue-800"
+                      onClick={() => {
+                        setCompanyData((prev) => ({
+                          ...prev,
+                          email: getEmailSuggestion(companyData.email),
+                        }));
+                        handleFieldBlur(
+                          "email",
+                          getEmailSuggestion(companyData.email)
+                        );
+                      }}
+                    >
+                      {getEmailSuggestion(companyData.email)}
+                    </span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      (Click to use)
+                    </span>
+                  </div>
+                )}
             </div>
             {validationErrors.email && (
-              <p className="text-red-600 text-xs mt-1">{validationErrors.email}</p>
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.email}
+              </p>
             )}
           </div>
 
@@ -1145,17 +1206,24 @@ function SuperadminCompanies() {
               name="phone"
               value={companyData.phone}
               onChange={handleInputChange}
-                onBlur={() => handleFieldBlur("phone", companyData.phone)}
+              onBlur={() => handleFieldBlur("phone", companyData.phone)}
               placeholder="Enter phone number"
-                maxLength="10"
-                className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("phone", companyData.phone, fieldTouched.phone, validationErrors.phone)}`}
-              />
-              {validationErrors.phone && (
-                <p className="text-red-600 text-xs mt-1">{validationErrors.phone}</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Enter 10-digit mobile number without country code
+              maxLength="10"
+              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                "phone",
+                companyData.phone,
+                fieldTouched.phone,
+                validationErrors.phone
+              )}`}
+            />
+            {validationErrors.phone && (
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.phone}
               </p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Enter 10-digit mobile number without country code
+            </p>
           </div>
 
           <div>
@@ -1172,10 +1240,17 @@ function SuperadminCompanies() {
               onChange={handleInputChange}
               onBlur={() => handleFieldBlur("gst", companyData.gst)}
               placeholder="Enter GST Number"
-              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("gst", companyData.gst, fieldTouched.gst, validationErrors.gst)}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                "gst",
+                companyData.gst,
+                fieldTouched.gst,
+                validationErrors.gst
+              )}`}
             />
             {validationErrors.gst && (
-              <p className="text-red-600 text-xs mt-1">{validationErrors.gst}</p>
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.gst}
+              </p>
             )}
           </div>
           <div>
@@ -1193,10 +1268,17 @@ function SuperadminCompanies() {
               onBlur={() => handleFieldBlur("regAdd", companyData.regAdd)}
               placeholder="Enter registered address"
               maxLength="200"
-              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("regAdd", companyData.regAdd, fieldTouched.regAdd, validationErrors.regAdd)}`}
+              className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                "regAdd",
+                companyData.regAdd,
+                fieldTouched.regAdd,
+                validationErrors.regAdd
+              )}`}
             />
             {validationErrors.regAdd && (
-              <p className="text-red-600 text-xs mt-1">{validationErrors.regAdd}</p>
+              <p className="text-red-600 text-xs mt-1">
+                {validationErrors.regAdd}
+              </p>
             )}
             <div className="flex justify-between text-xs text-gray-500 mt-1">
               <span>Maximum 200 characters</span>
@@ -1213,8 +1295,8 @@ function SuperadminCompanies() {
             }}
             disabled={!isFormValid()}
             className={`mt-1 ${
-              isFormValid() 
-                ? "bg-blue-600 hover:bg-blue-700 text-white" 
+              isFormValid()
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
@@ -1222,8 +1304,6 @@ function SuperadminCompanies() {
           </Button>
         </div>
       </Modal>
-
-
 
       {/* Company Head Modal */}
       <Modal
@@ -1323,13 +1403,25 @@ function SuperadminCompanies() {
                     name="firstName"
                     value={companyHeadData.firstName}
                     onChange={handleCompanyHeadInputChange}
-                    onBlur={() => handleCompanyHeadFieldBlur("firstName", companyHeadData.firstName)}
+                    onBlur={() =>
+                      handleCompanyHeadFieldBlur(
+                        "firstName",
+                        companyHeadData.firstName
+                      )
+                    }
                     placeholder="Enter first name"
                     maxLength="50"
-                    className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("firstName", companyHeadData.firstName, companyHeadFieldTouched.firstName, companyHeadValidationErrors.firstName)}`}
+                    className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                      "firstName",
+                      companyHeadData.firstName,
+                      companyHeadFieldTouched.firstName,
+                      companyHeadValidationErrors.firstName
+                    )}`}
                   />
                   {companyHeadValidationErrors.firstName && (
-                    <p className="text-red-600 text-xs mt-1">{companyHeadValidationErrors.firstName}</p>
+                    <p className="text-red-600 text-xs mt-1">
+                      {companyHeadValidationErrors.firstName}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -1340,7 +1432,12 @@ function SuperadminCompanies() {
                     name="middleName"
                     value={companyHeadData.middleName}
                     onChange={handleCompanyHeadInputChange}
-                    onBlur={() => handleCompanyHeadFieldBlur("middleName", companyHeadData.middleName)}
+                    onBlur={() =>
+                      handleCompanyHeadFieldBlur(
+                        "middleName",
+                        companyHeadData.middleName
+                      )
+                    }
                     placeholder="Enter middle name (optional)"
                     className="bg-gray-100 text-[#4a4a4a] border border-gray-300"
                   />
@@ -1353,13 +1450,25 @@ function SuperadminCompanies() {
                     name="lastName"
                     value={companyHeadData.lastName}
                     onChange={handleCompanyHeadInputChange}
-                    onBlur={() => handleCompanyHeadFieldBlur("lastName", companyHeadData.lastName)}
+                    onBlur={() =>
+                      handleCompanyHeadFieldBlur(
+                        "lastName",
+                        companyHeadData.lastName
+                      )
+                    }
                     placeholder="Enter last name"
                     maxLength="50"
-                    className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("lastName", companyHeadData.lastName, companyHeadFieldTouched.lastName, companyHeadValidationErrors.lastName)}`}
+                    className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                      "lastName",
+                      companyHeadData.lastName,
+                      companyHeadFieldTouched.lastName,
+                      companyHeadValidationErrors.lastName
+                    )}`}
                   />
                   {companyHeadValidationErrors.lastName && (
-                    <p className="text-red-600 text-xs mt-1">{companyHeadValidationErrors.lastName}</p>
+                    <p className="text-red-600 text-xs mt-1">
+                      {companyHeadValidationErrors.lastName}
+                    </p>
                   )}
                 </div>
               </div>
@@ -1373,37 +1482,52 @@ function SuperadminCompanies() {
                 Email <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-              <Input
-                id="headEmail"
-                name="email"
-                type="email"
-                value={companyHeadData.email}
-                onChange={handleCompanyHeadInputChange}
-                  onBlur={() => handleCompanyHeadFieldBlur("email", companyHeadData.email)}
-                placeholder="Enter email address"
-                  className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("email", companyHeadData.email, companyHeadFieldTouched.email, companyHeadValidationErrors.email)}`}
+                <Input
+                  id="headEmail"
+                  name="email"
+                  type="email"
+                  value={companyHeadData.email}
+                  onChange={handleCompanyHeadInputChange}
+                  onBlur={() =>
+                    handleCompanyHeadFieldBlur("email", companyHeadData.email)
+                  }
+                  placeholder="Enter email address"
+                  className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                    "email",
+                    companyHeadData.email,
+                    companyHeadFieldTouched.email,
+                    companyHeadValidationErrors.email
+                  )}`}
                 />
-                {getEmailSuggestion(companyHeadData.email) && !companyHeadData.email.includes('@') && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-gray-50 border border-gray-200 rounded-md p-2 text-sm text-gray-600">
-                    <span className="text-gray-400">Suggestion: </span>
-                    <span 
-                      className="text-blue-600 cursor-pointer hover:text-blue-800"
-                      onClick={() => {
-                        setCompanyHeadData(prev => ({
-                          ...prev,
-                          email: getEmailSuggestion(companyHeadData.email)
-                        }));
-                        handleCompanyHeadFieldBlur("email", getEmailSuggestion(companyHeadData.email));
-                      }}
-                    >
-                      {getEmailSuggestion(companyHeadData.email)}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-2">(Click to use)</span>
-                  </div>
-                )}
+                {getEmailSuggestion(companyHeadData.email) &&
+                  !companyHeadData.email.includes("@") && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-gray-50 border border-gray-200 rounded-md p-2 text-sm text-gray-600">
+                      <span className="text-gray-400">Suggestion: </span>
+                      <span
+                        className="text-blue-600 cursor-pointer hover:text-blue-800"
+                        onClick={() => {
+                          setCompanyHeadData((prev) => ({
+                            ...prev,
+                            email: getEmailSuggestion(companyHeadData.email),
+                          }));
+                          handleCompanyHeadFieldBlur(
+                            "email",
+                            getEmailSuggestion(companyHeadData.email)
+                          );
+                        }}
+                      >
+                        {getEmailSuggestion(companyHeadData.email)}
+                      </span>
+                      <span className="text-xs text-gray-500 ml-2">
+                        (Click to use)
+                      </span>
+                    </div>
+                  )}
               </div>
               {companyHeadValidationErrors.email && (
-                <p className="text-red-600 text-xs mt-1">{companyHeadValidationErrors.email}</p>
+                <p className="text-red-600 text-xs mt-1">
+                  {companyHeadValidationErrors.email}
+                </p>
               )}
               <p className="text-xs text-gray-500 mt-1">
                 Email will be used as login ID
@@ -1422,13 +1546,22 @@ function SuperadminCompanies() {
                 name="phone"
                 value={companyHeadData.phone}
                 onChange={handleCompanyHeadInputChange}
-                  onBlur={() => handleCompanyHeadFieldBlur("phone", companyHeadData.phone)}
+                onBlur={() =>
+                  handleCompanyHeadFieldBlur("phone", companyHeadData.phone)
+                }
                 placeholder="Enter phone number"
-                  maxLength="10"
-                  className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass("phone", companyHeadData.phone, companyHeadFieldTouched.phone, companyHeadValidationErrors.phone)}`}
+                maxLength="10"
+                className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
+                  "phone",
+                  companyHeadData.phone,
+                  companyHeadFieldTouched.phone,
+                  companyHeadValidationErrors.phone
+                )}`}
               />
               {companyHeadValidationErrors.phone && (
-                <p className="text-red-600 text-xs mt-1">{companyHeadValidationErrors.phone}</p>
+                <p className="text-red-600 text-xs mt-1">
+                  {companyHeadValidationErrors.phone}
+                </p>
               )}
               <p className="text-xs text-gray-500 mt-1">
                 Phone number will be used as password
@@ -1444,8 +1577,8 @@ function SuperadminCompanies() {
             onClick={handleCompanyHeadSave}
             disabled={!isCompanyHeadFormValid()}
             className={`mt-6 ${
-              isCompanyHeadFormValid() 
-                ? "bg-blue-600 hover:bg-blue-700 text-white" 
+              isCompanyHeadFormValid()
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
