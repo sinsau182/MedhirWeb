@@ -60,8 +60,7 @@ const Overview = () => {
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
 
-  useEffect(() => {
-  }, [dispatch]);
+  useEffect(() => {}, [dispatch]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
