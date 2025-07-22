@@ -215,11 +215,25 @@ function SuperadminCompanies() {
       case "middleName":
       case "lastName":
         if (!value.trim()) {
-          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name is required`;
+          error = `${
+            name === "firstName"
+              ? "First"
+              : name === "middleName"
+              ? "Middle"
+              : "Last"
+          } name is required`;
         } else if (!singleWordRegex.test(value)) {
-          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name must be a single word with only letters (no spaces)`;
+          error = `${
+            name === "firstName"
+              ? "First"
+              : name === "middleName"
+              ? "Middle"
+              : "Last"
+          } name must be a single word with only letters (no spaces)`;
         } else if (value.trim().length < 2 && name !== "middleName") {
-          error = `${name === "firstName" ? "First" : "Last"} name must be at least 2 characters`;
+          error = `${
+            name === "firstName" ? "First" : "Last"
+          } name must be at least 2 characters`;
         }
         break;
       case "email":
@@ -335,7 +349,10 @@ function SuperadminCompanies() {
       const input = gstInputRef.current;
       const start = input ? input.selectionStart : null;
       // Transform value
-      let newValue = value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 15);
+      let newValue = value
+        .toUpperCase()
+        .replace(/[^0-9A-Z]/g, "")
+        .slice(0, 15);
       processedValue = newValue;
       setCompanyData((prevData) => ({ ...prevData, gst: processedValue }));
       // Restore cursor position
@@ -368,7 +385,7 @@ function SuperadminCompanies() {
       processedValue = value
         .replace(/^ +/, "") // No leading spaces
         .replace(/ {2,}/g, " ") // Only one space between words
-        .replace(/ +$/, match => match.length > 1 ? " " : match); // At most one trailing space
+        .replace(/ +$/, (match) => (match.length > 1 ? " " : match)); // At most one trailing space
     }
     setCompanyData((prevData) => {
       const updatedData = { ...prevData, [name]: processedValue };
@@ -376,13 +393,18 @@ function SuperadminCompanies() {
         // Remove all spaces for prefix logic
         const nameNoSpaces = processedValue.replace(/\s+/g, "");
         if (nameNoSpaces.length >= 3) {
-          updatedData.prefixForEmpID = nameNoSpaces.substring(0, 3).toUpperCase();
+          updatedData.prefixForEmpID = nameNoSpaces
+            .substring(0, 3)
+            .toUpperCase();
         } else {
           updatedData.prefixForEmpID = "";
         }
       }
       if (name === "prefixForEmpID") {
-        const cleanedPrefix = processedValue.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
+        const cleanedPrefix = processedValue
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "")
+          .slice(0, 3);
         updatedData.prefixForEmpID = cleanedPrefix;
       }
       return updatedData;
