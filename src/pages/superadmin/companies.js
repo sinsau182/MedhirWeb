@@ -53,6 +53,8 @@ function SuperadminCompanies() {
   const deleteButtonRef = useRef(null);
   const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
 
+  // Add this line to define gstInputRef
+  const gstInputRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
   const [companyData, setCompanyData] = useState({
     name: "",
@@ -153,9 +155,10 @@ function SuperadminCompanies() {
     return regex.test(phone);
   };
 
+  // Update validateGST to only validate if not empty (GST optional)
   const validateGST = (gst) => {
-    const regex =
-      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+    if (!gst) return true; // Optional
+    const regex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}Z[0-9A-Z]{1}$/;
     return regex.test(gst);
   };
 
@@ -185,9 +188,7 @@ function SuperadminCompanies() {
         }
         break;
       case "gst":
-        if (!value.trim()) {
-          error = "GST number is required";
-        } else if (!validateGST(value)) {
+        if (value.trim() && !validateGST(value)) {
           error = "Please enter a valid GST number (e.g., 22AAAAA0000A1Z5)";
         }
         break;
@@ -207,20 +208,20 @@ function SuperadminCompanies() {
 
   const validateCompanyHeadField = (name, value) => {
     let error = "";
-
+    // Only allow letters and single spaces between words, no leading/trailing spaces
+    const nameRegex = /^[A-Za-z]+( [A-Za-z]+)?$/;
     switch (name) {
       case "firstName":
-        if (!value.trim()) {
-          error = "First name is required";
-        } else if (value.trim().length < 2) {
-          error = "First name must be at least 2 characters";
-        }
-        break;
+      case "middleName":
       case "lastName":
         if (!value.trim()) {
-          error = "Last name is required";
-        } else if (value.trim().length < 2) {
-          error = "Last name must be at least 2 characters";
+          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name is required`;
+        } else if (value[0] === ' ') {
+          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name cannot start with a space`;
+        } else if (!nameRegex.test(value)) {
+          error = `${name === "firstName" ? "First" : name === "middleName" ? "Middle" : "Last"} name can only have one space between two words, and only letters`;
+        } else if (value.trim().length < 2 && name !== "middleName") {
+          error = `${name === "firstName" ? "First" : "Last"} name must be at least 2 characters`;
         }
         break;
       case "email":
@@ -240,7 +241,6 @@ function SuperadminCompanies() {
       default:
         break;
     }
-
     return error;
   };
 
@@ -293,7 +293,7 @@ function SuperadminCompanies() {
         phone: "",
         gst: "",
         regAdd: "",
-        colorCode: "", // Initialize colorCode for new companies
+        colorCode: "#D1D5DB", // Default to grey color
         companyHeads: [], // Initialize company heads as empty array
       });
       setCompanyHeadData({
@@ -327,44 +327,65 @@ function SuperadminCompanies() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    // Handle phone number input - only allow digits
     let processedValue = value;
     if (name === "phone") {
       processedValue = value.replace(/\D/g, "").slice(0, 10);
     }
-
+    // GST logic
+    if (name === "gst") {
+      // Save cursor position
+      const input = gstInputRef.current;
+      const start = input ? input.selectionStart : null;
+      // Transform value
+      let newValue = value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 15);
+      processedValue = newValue;
+      setCompanyData((prevData) => ({ ...prevData, gst: processedValue }));
+      // Restore cursor position
+      setTimeout(() => {
+        if (input && start !== null) {
+          input.setSelectionRange(start, start);
+        }
+      }, 0);
+      // Real-time validation
+      const error = validateField(name, processedValue);
+      setValidationErrors((prev) => ({ ...prev, [name]: error }));
+      return;
+    }
+    // Company Prefix logic: eliminate spaces
+    if (name === "prefixForEmpID") {
+      processedValue = value.replace(/\s+/g, "");
+    }
+    // Company Name logic: eliminate all spaces except allow at most one trailing space
+    if (name === "name") {
+      processedValue = value
+        .replace(/\s+/g, "") // Remove all spaces
+        .replace(/ +$/, " "); // Allow at most one trailing space
+    }
+    // Email logic: eliminate all spaces
+    if (name === "email") {
+      processedValue = value.replace(/\s+/g, "");
+    }
+    // Registered Address logic: no leading space, only one space between words, allow at most one trailing space
+    if (name === "regAdd") {
+      processedValue = value
+        .replace(/^ +/, "") // No leading spaces
+        .replace(/ {2,}/g, " ") // Only one space between words
+        .replace(/ +$/, match => match.length > 1 ? " " : match); // At most one trailing space
+    }
     setCompanyData((prevData) => {
       const updatedData = { ...prevData, [name]: processedValue };
-
-      // Auto-generate prefix if the company name is being updated
       if (name === "name" && processedValue.length >= 3) {
-        updatedData.prefixForEmpID = processedValue
-          .substring(0, 3)
-          .toUpperCase();
+        updatedData.prefixForEmpID = processedValue.substring(0, 3).toUpperCase();
       }
-      // Ensure prefix is always uppercase
       if (name === "prefixForEmpID") {
-        const cleanedPrefix = processedValue
-          .toUpperCase()
-          .replace(/[^A-Z]/g, "")
-          .slice(0, 3);
+        const cleanedPrefix = processedValue.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3);
         updatedData.prefixForEmpID = cleanedPrefix;
       }
-
-      if (name === "gst") {
-        updatedData.gst = processedValue.toUpperCase();
-      }
-
       return updatedData;
     });
-
     // Real-time validation
     const error = validateField(name, processedValue);
-    setValidationErrors((prev) => ({
-      ...prev,
-      [name]: error,
-    }));
+    setValidationErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleFieldBlur = (name, value) => {
@@ -382,18 +403,22 @@ function SuperadminCompanies() {
 
   const handleCompanyHeadInputChange = (e) => {
     const { name, value } = e.target;
-
-    // Handle phone number input - only allow digits
     let processedValue = value;
+    // For name fields, allow only letters, one space between words, no leading space, at most one trailing space
+    if (["firstName", "middleName", "lastName"].includes(name)) {
+      processedValue = value
+        .replace(/[^A-Za-z ]/g, "") // Only letters and spaces
+        .replace(/^ +/, "") // No leading spaces
+        .replace(/ {2,}/g, " ") // Only one space between words
+        .replace(/ +$/, match => match.length > 1 ? " " : match); // At most one trailing space
+    }
     if (name === "phone") {
       processedValue = value.replace(/\D/g, "").slice(0, 10);
     }
-
     setCompanyHeadData((prevData) => ({
       ...prevData,
       [name]: processedValue,
     }));
-
     // Real-time validation for company head fields
     const error = validateCompanyHeadField(name, processedValue);
     setCompanyHeadValidationErrors((prev) => ({
@@ -538,7 +563,7 @@ function SuperadminCompanies() {
 
   // Function to check if the form is valid
   const isFormValid = () => {
-    const requiredFields = ["name", "email", "phone", "gst", "regAdd"];
+    const requiredFields = ["name", "email", "phone", "regAdd"];
 
     // Check if all required fields have values
     const hasAllValues = requiredFields.every(
@@ -1049,7 +1074,7 @@ function SuperadminCompanies() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Head
+              Company Head <span className="text-red-500">*</span>
             </label>
             <div className="relative dropdown-container">
               <div
@@ -1122,7 +1147,7 @@ function SuperadminCompanies() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Choose Company Color
+              Choose Company Color <span className="text-red-500">*</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {predefinedColors.map((color) => (
@@ -1231,15 +1256,18 @@ function SuperadminCompanies() {
               htmlFor="gst"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              GST Number <span className="text-red-500">*</span>
+              GST Number
             </label>
             <Input
               id="gst"
               name="gst"
+              ref={gstInputRef}
               value={companyData.gst}
               onChange={handleInputChange}
               onBlur={() => handleFieldBlur("gst", companyData.gst)}
               placeholder="Enter GST Number"
+              maxLength={15}
+              style={{ textTransform: "uppercase" }}
               className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
                 "gst",
                 companyData.gst,
