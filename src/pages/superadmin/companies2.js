@@ -860,7 +860,110 @@ function SuperadminCompanies() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredCompanies.length === 0 ? (
+                      {filteredCompanies.map((company) => (
+                        <tr
+                          key={company._id}
+                          className={`cursor-pointer transition-colors duration-200 ${
+                            selectedCompany?.companyId === company.companyId
+                              ? "bg-blue-100"
+                              : "bg-gray-50 hover:bg-blue-50"
+                          }`}
+                          onClick={() => {
+                            console.log(
+                              "Clicking company:",
+                              company.name,
+                              "Company ID:",
+                              company.companyId,
+                              "Current selected:",
+                              selectedCompany?.companyId
+                            );
+                            const isCurrentlySelected =
+                              selectedCompany?.companyId === company.companyId;
+                            const newSelection = isCurrentlySelected
+                              ? null
+                              : company;
+                            console.log(
+                              "Setting selection to:",
+                              newSelection?.companyId
+                            );
+                            setSelectedCompany(newSelection);
+                          }}
+                          onDoubleClick={() => handleOpenCompanyModal(company)}
+                        >
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="flex items-center space-x-2">
+                              {selectedCompany?.companyId ===
+                                company.companyId && (
+                                <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                              )}
+                              <TruncatedText
+                                text={company.companyId || company._id || "—"}
+                                maxWidth="max-w-[200px]"
+                                className="font-mono"
+                                trimAfter={22}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.name}
+                              maxWidth="max-w-[150px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={
+                                company.companyHeads &&
+                                company.companyHeads.length > 0
+                                  ? company.companyHeads
+                                      .map((head, index) =>
+                                        [
+                                          head.firstName,
+                                          head.middleName,
+                                          head.lastName,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ")
+                                      )
+                                      .join(", ")
+                                  : "No Company Head"
+                              }
+                              maxWidth="max-w-[120px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.email}
+                              maxWidth="max-w-[180px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.phone}
+                              maxWidth="max-w-[100px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.gst}
+                              maxWidth="max-w-[140px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.regAdd}
+                              maxWidth="max-w-[200px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.prefixForEmpID}
+                              maxWidth="max-w-[80px]"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredCompanies.length === 0 && (
                         <tr>
                           <td colSpan={8} className="px-6 py-12 text-center">
                             <div className="flex flex-col items-center space-y-4">
@@ -869,135 +972,23 @@ function SuperadminCompanies() {
                               </div>
                               <div className="text-center">
                                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                  {searchQuery
-                                    ? `No companies found for "${searchQuery}"`
-                                    : "No companies found"}
+                                  No companies found
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-6">
-                                  {searchQuery
-                                    ? "Try a different search or clear your search input."
-                                    : "Get started by adding your first company to the system."}
+                                  Get started by adding your first company to
+                                  the system.
                                 </p>
-                                {!searchQuery && (
-                                  <button
-                                    onClick={() => handleOpenCompanyModal()}
-                                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm mx-auto"
-                                  >
-                                    <UserPlus className="h-5 w-5" />
-                                    Add Your First Company
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => handleOpenCompanyModal()}
+                                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm mx-auto"
+                                >
+                                  <UserPlus className="h-5 w-5" />
+                                  Add Your First Company
+                                </button>
                               </div>
                             </div>
                           </td>
                         </tr>
-                      ) : (
-                        filteredCompanies.map((company) => (
-                          <tr
-                            key={company._id}
-                            className={`cursor-pointer transition-colors duration-200 ${
-                              selectedCompany?.companyId === company.companyId
-                                ? "bg-blue-100"
-                                : "bg-gray-50 hover:bg-blue-50"
-                            }`}
-                            onClick={() => {
-                              console.log(
-                                "Clicking company:",
-                                company.name,
-                                "Company ID:",
-                                company.companyId,
-                                "Current selected:",
-                                selectedCompany?.companyId
-                              );
-                              const isCurrentlySelected =
-                                selectedCompany?.companyId ===
-                                company.companyId;
-                              const newSelection = isCurrentlySelected
-                                ? null
-                                : company;
-                              console.log(
-                                "Setting selection to:",
-                                newSelection?.companyId
-                              );
-                              setSelectedCompany(newSelection);
-                            }}
-                            onDoubleClick={() =>
-                              handleOpenCompanyModal(company)
-                            }
-                          >
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <div className="flex items-center space-x-2">
-                                {selectedCompany?.companyId ===
-                                  company.companyId && (
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                )}
-                                <TruncatedText
-                                  text={company.companyId || company._id || "—"}
-                                  maxWidth="max-w-[200px]"
-                                  className="font-mono"
-                                  trimAfter={22}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.name}
-                                maxWidth="max-w-[150px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={
-                                  company.companyHeads &&
-                                  company.companyHeads.length > 0
-                                    ? company.companyHeads
-                                        .map((head, index) =>
-                                          [
-                                            head.firstName,
-                                            head.middleName,
-                                            head.lastName,
-                                          ]
-                                            .filter(Boolean)
-                                            .join(" ")
-                                        )
-                                        .join(", ")
-                                    : "No Company Head"
-                                }
-                                maxWidth="max-w-[120px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.email}
-                                maxWidth="max-w-[180px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.phone}
-                                maxWidth="max-w-[100px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.gst}
-                                maxWidth="max-w-[140px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.regAdd}
-                                maxWidth="max-w-[200px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.prefixForEmpID}
-                                maxWidth="max-w-[80px]"
-                              />
-                            </td>
-                          </tr>
-                        ))
                       )}
                     </tbody>
                   </table>
@@ -1301,7 +1292,7 @@ function SuperadminCompanies() {
               onBlur={() => handleFieldBlur("gst", companyData.gst)}
               placeholder="Enter GST Number"
               maxLength={15}
-              // style={{ textTransform: "uppercase" }}
+              style={{ textTransform: "uppercase" }}
               className={`bg-gray-100 text-[#4a4a4a] ${getBorderColorClass(
                 "gst",
                 companyData.gst,
