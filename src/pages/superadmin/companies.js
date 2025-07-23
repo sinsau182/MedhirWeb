@@ -28,6 +28,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import axios from "axios";
 import { updateEmployee } from "@/redux/slices/employeeSlice";
 import getConfig from "next/config";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
@@ -505,7 +506,7 @@ function SuperadminCompanies() {
   const [originalEmail, setOriginalEmail] = useState("");
   // Add state to track original phone for comparison during editing
   const [originalPhone, setOriginalPhone] = useState("");
-
+  const [originalHeadEmail, setOriginalHeadEmail] = useState("");
   // Helper for company uniqueness check
   const checkCompanyUnique = async (email, phone, prefixForEmpID) => {
     try {
@@ -931,8 +932,9 @@ function SuperadminCompanies() {
         lastName: firstHead.lastName || "",
         email: firstHead.email || "",
         phone: firstHead.phone || "",
-        employeeId: firstHead.employeeId || "", // Preserve employeeId when editing
+        employeeId: firstHead.employeeId || "",
       });
+      setOriginalHeadEmail(firstHead.email || "");
     } else {
       setCompanyHeadData({
         firstName: "",
@@ -940,8 +942,9 @@ function SuperadminCompanies() {
         lastName: "",
         email: "",
         phone: "",
-        employeeId: "", // Reset employeeId for new company head
+        employeeId: "",
       });
+      setOriginalHeadEmail("");
     }
     setCompanyHeadError("");
     setIsCompanyHeadModalOpen(true);
@@ -1082,6 +1085,20 @@ function SuperadminCompanies() {
         setIsCompanyHeadValid(false);
         return;
       }
+      // If editing, only check if email has changed
+      if (debouncedCompanyHeadEmail === originalHeadEmail) {
+        setCompanyHeadValidationErrors((prev) => {
+          if (prev.email === "This email already exists.") {
+            return { ...prev, email: "" };
+          } else {
+            // Run format/required validation
+            const error = validateCompanyHeadField("email", debouncedCompanyHeadEmail);
+            return { ...prev, email: error };
+          }
+        });
+        setIsCompanyHeadValid(true);
+        return;
+      }
       // Call API to check existence
       const existence = await checkEmployeeExistence(debouncedCompanyHeadEmail, undefined);
       if (existence.email || existence.emailPersonal) {
@@ -1102,12 +1119,13 @@ function SuperadminCompanies() {
     };
     check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedCompanyHeadEmail]);
+  }, [debouncedCompanyHeadEmail, originalHeadEmail]);
 
   const [showSelectHeadModal, setShowSelectHeadModal] = useState(false);
   const [companyEmployees, setCompanyEmployees] = useState([]);
   const [selectedNewHead, setSelectedNewHead] = useState(null);
   const [isFetchingEmployees, setIsFetchingEmployees] = useState(false);
+  const [searchEmployee, setSearchEmployee] = useState("");
 
   // Fetch employees for the company
   const fetchCompanyEmployees = async (companyId) => {
@@ -1130,6 +1148,9 @@ function SuperadminCompanies() {
       setIsFetchingEmployees(false);
     }
   };
+
+  // Add this line to define originalHeadEmail
+  
 
   return (
     <div className="bg-white text-[#4a4a4a] min-h-screen">
@@ -1572,9 +1593,9 @@ function SuperadminCompanies() {
                         }}
                       >
                         <div className="flex items-center space-x-2">
-                          <Trash size={16} className="text-red-600" />
-                          <span className="text-red-600">
-                            Remove Company Head
+                          <UserPlus size={16} className="text-blue-600" />
+                          <span className="text-blue-600 font-medium">
+                            Assign New Company Head
                           </span>
                         </div>
                       </div>
@@ -2086,10 +2107,36 @@ function SuperadminCompanies() {
         onClose={() => {
           setShowSelectHeadModal(false);
           setSelectedNewHead(null);
+          setSearchEmployee("");
         }}
         disableBackdropClick={true}
       >
-        <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
+        <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center relative">
+          {/* Close (X) button */}
+          <button
+            onClick={() => {
+              setShowSelectHeadModal(false);
+              setSelectedNewHead(null);
+              setSearchEmployee("");
+            }}
+            className="absolute right-4 top-4 text-gray-500 hover:text-gray-800"
+            aria-label="Close"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
           <h2 className="text-xl font-semibold mb-4">Company must have a Company Head</h2>
           <p className="mb-4">Please select a new Company Head from the list of employees below.</p>
           {isFetchingEmployees ? (
@@ -2097,18 +2144,44 @@ function SuperadminCompanies() {
           ) : companyEmployees.length === 0 ? (
             <div className="text-red-600">No employees found for this company.</div>
           ) : (
-            <select
-              className="w-full p-2 border rounded mb-4"
-              value={selectedNewHead || ""}
-              onChange={e => setSelectedNewHead(e.target.value)}
-            >
-              <option value="" disabled>Select an employee</option>
-              {companyEmployees.map(emp => (
-                <option key={emp.employeeId} value={emp.employeeId}>
-                  {emp.firstName} {emp.middleName} {emp.lastName} ({emp.emailPersonal || emp.emailOfficial || emp.phone})
-                </option>
-              ))}
-            </select>
+            <div className="w-full mb-4">
+              <div className="mb-2">
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded"
+                  placeholder="Search employees..."
+                  value={searchEmployee}
+                  onChange={e => setSearchEmployee(e.target.value)}
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded bg-white">
+                {companyEmployees.filter(emp =>
+                  (emp.firstName + " " + emp.middleName + " " + emp.lastName + " " + (emp.emailPersonal || emp.emailOfficial || "") + " " + (emp.phone || "")).toLowerCase().includes(searchEmployee.toLowerCase())
+                ).length === 0 ? (
+                  <div className="p-2 text-gray-500">No employees found.</div>
+                ) : (
+                  companyEmployees
+                    .filter(emp =>
+                      (emp.firstName + " " + emp.middleName + " " + emp.lastName + " " + (emp.emailPersonal || emp.emailOfficial || "") + " " + (emp.phone || "")).toLowerCase().includes(searchEmployee.toLowerCase())
+                    )
+                    .map(emp => (
+                      <div
+                        key={emp.employeeId}
+                        className={`cursor-pointer px-3 py-2 hover:bg-blue-50 flex items-center justify-between ${selectedNewHead === emp.employeeId ? "bg-blue-100" : ""}`}
+                        onClick={() => setSelectedNewHead(emp.employeeId)}
+                      >
+                        <div>
+                          <div className="font-medium">{emp.firstName} {emp.middleName} {emp.lastName}</div>
+                          <div className="text-xs text-gray-500">{emp.emailPersonal || emp.emailOfficial || emp.phone}</div>
+                        </div>
+                        {selectedNewHead === emp.employeeId && (
+                          <Check className="text-blue-600 w-4 h-4" />
+                        )}
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
           )}
           <Button
             onClick={() => {
@@ -2131,6 +2204,7 @@ function SuperadminCompanies() {
                 }));
                 setShowSelectHeadModal(false);
                 setSelectedNewHead(null);
+                setSearchEmployee("");
                 toast.success("New Company Head selected.");
               }
             }}
