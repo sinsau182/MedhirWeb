@@ -39,10 +39,24 @@ function EmployeeProfilePage() {
   const [isEditable, setIsEditable] = useState(true); // Controls if editing is allowed based on updateStatus
   const [showPendingChangesModal, setShowPendingChangesModal] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(null);
-  const [passbookPreview, setPassbookPreview] = useState({ open: false, url: null, file: null });
+  const [passbookPreview, setPassbookPreview] = useState({
+    open: false,
+    url: null,
+    file: null,
+  });
   const [pdfControls, setPdfControls] = useState({ rotate: 0, zoom: 1 });
-  const [idProofPreview, setIdProofPreview] = useState({ open: false, url: null, file: null, title: "" });
-  const [uploadedIdProofPreview, setUploadedIdProofPreview] = useState({ open: false, url: null, file: null, title: "" });
+  const [idProofPreview, setIdProofPreview] = useState({
+    open: false,
+    url: null,
+    file: null,
+    title: "",
+  });
+  const [uploadedIdProofPreview, setUploadedIdProofPreview] = useState({
+    open: false,
+    url: null,
+    file: null,
+    title: "",
+  });
 
   // Main state for form data, used during editing
   const [formData, setFormData] = useState({
@@ -91,7 +105,8 @@ function EmployeeProfilePage() {
   const validateAccountNumber = (value) => {
     if (!value || value.trim() === "") return "";
     if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
-    if (value.length < 9 || value.length > 18) return "Account number must be 9-18 digits";
+    if (value.length < 9 || value.length > 18)
+      return "Account number must be 9-18 digits";
     return "";
   };
 
@@ -105,7 +120,8 @@ function EmployeeProfilePage() {
 
   const validateIFSC = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.toUpperCase())) return "Invalid IFSC format (e.g., SBIN0001234)";
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.toUpperCase()))
+      return "Invalid IFSC format (e.g., SBIN0001234)";
     return "";
   };
 
@@ -119,7 +135,8 @@ function EmployeeProfilePage() {
 
   const validateBranchName = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Za-z0-9 ]+$/.test(value)) return "Only alphabets, numbers and spaces allowed";
+    if (!/^[A-Za-z0-9 ]+$/.test(value))
+      return "Only alphabets, numbers and spaces allowed";
     if (value.trim().length < 2) return "Must be at least 2 characters";
     if (value.trim().length > 50) return "Maximum 50 characters allowed";
     return "";
@@ -127,7 +144,8 @@ function EmployeeProfilePage() {
 
   const validateUPI = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/.test(value)) return "Invalid UPI ID format (e.g., user@upi)";
+    if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/.test(value))
+      return "Invalid UPI ID format (e.g., user@upi)";
     if (value.length > 50) return "Maximum 50 characters allowed";
     return "";
   };
@@ -142,31 +160,34 @@ function EmployeeProfilePage() {
 
   // Input filtering functions
   const filterAccountNumber = (value) => {
-    return value.replace(/[^0-9]/g, '').slice(0, 18);
+    return value.replace(/[^0-9]/g, "").slice(0, 18);
   };
 
   const filterAccountHolderName = (value) => {
-    return value.replace(/[^A-Za-z ]/g, '').slice(0, 50);
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 50);
   };
 
   const filterIFSC = (value) => {
-    return value.replace(/[^A-Za-z0-9]/g, '').slice(0, 11).toUpperCase();
+    return value
+      .replace(/[^A-Za-z0-9]/g, "")
+      .slice(0, 11)
+      .toUpperCase();
   };
 
   const filterBankName = (value) => {
-    return value.replace(/[^A-Za-z ]/g, '').slice(0, 50);
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 50);
   };
 
   const filterBranchName = (value) => {
-    return value.replace(/[^A-Za-z0-9 ]/g, '').slice(0, 50);
+    return value.replace(/[^A-Za-z0-9 ]/g, "").slice(0, 50);
   };
 
   const filterUPI = (value) => {
-    return value.replace(/[^a-zA-Z0-9._@-]/g, '').slice(0, 50);
+    return value.replace(/[^a-zA-Z0-9._@-]/g, "").slice(0, 50);
   };
 
   const filterUPIContactName = (value) => {
-    return value.replace(/[^A-Za-z ]/g, '').slice(0, 30);
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 30);
   };
 
   // Validate all bank fields
@@ -192,16 +213,23 @@ function EmployeeProfilePage() {
   // Helper functions for file handling
   const isPDF = (file) => {
     if (file instanceof File) {
-      return file.type === 'application/pdf';
+      return file.type === "application/pdf";
     }
-    if (typeof file === 'string') {
-      return file.toLowerCase().endsWith('.pdf') || file.includes('application/pdf');
+    if (typeof file === "string") {
+      return (
+        file.toLowerCase().endsWith(".pdf") || file.includes("application/pdf")
+      );
     }
     return false;
   };
 
   const validateFileUpload = (file) => {
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!allowedTypes.includes(file.type)) {
@@ -221,76 +249,91 @@ function EmployeeProfilePage() {
       toast.error(error);
       return false;
     }
-    
+
     handleInputChange("bank", "passbookDoc", file);
     toast.success("Passbook document uploaded successfully!");
     return true;
   };
 
   const openPassbookPreview = () => {
-    const currentPassbook = formData.bank.passbookDoc instanceof File 
-      ? formData.bank.passbookDoc 
-      : employeeById?.bankDetails?.passbookImgUrl;
-    
+    const currentPassbook =
+      formData.bank.passbookDoc instanceof File
+        ? formData.bank.passbookDoc
+        : employeeById?.bankDetails?.passbookImgUrl;
+
     if (!currentPassbook) {
       toast.error("No passbook document available to preview.");
       return;
     }
 
-    const previewUrl = currentPassbook instanceof File 
-      ? URL.createObjectURL(currentPassbook) 
-      : currentPassbook;
+    const previewUrl =
+      currentPassbook instanceof File
+        ? URL.createObjectURL(currentPassbook)
+        : currentPassbook;
 
     // Get the account number
-    const accountNumber = formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
-    const title = accountNumber ? `Passbook Document - ${accountNumber}` : "Passbook Document";
+    const accountNumber =
+      formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+    const title = accountNumber
+      ? `Passbook Document - ${accountNumber}`
+      : "Passbook Document";
 
-    setPassbookPreview({ 
-      open: true, 
-      url: previewUrl, 
-      file: currentPassbook instanceof File ? currentPassbook : null 
+    setPassbookPreview({
+      open: true,
+      url: previewUrl,
+      file: currentPassbook instanceof File ? currentPassbook : null,
     });
     setPdfControls({ rotate: 0, zoom: 1 });
   };
 
   const openIdProofPreview = (documentType, imgUrlKey) => {
-    const currentDocument = formData.idProofs[`${documentType}Image`] instanceof File 
-      ? formData.idProofs[`${documentType}Image`] 
-      : employeeById?.idProofs?.[imgUrlKey];
-    
+    const currentDocument =
+      formData.idProofs[`${documentType}Image`] instanceof File
+        ? formData.idProofs[`${documentType}Image`]
+        : employeeById?.idProofs?.[imgUrlKey];
+
     if (!currentDocument) {
       toast.error(`No ${documentType} document available to preview.`);
       return;
     }
 
-    const previewUrl = currentDocument instanceof File 
-      ? URL.createObjectURL(currentDocument) 
-      : currentDocument;
+    const previewUrl =
+      currentDocument instanceof File
+        ? URL.createObjectURL(currentDocument)
+        : currentDocument;
 
     const documentTitles = {
       aadhar: "Aadhar Card",
-      pan: "PAN Card", 
+      pan: "PAN Card",
       passport: "Passport",
       drivingLicense: "Driving License",
-      voterId: "Voter ID"
+      voterId: "Voter ID",
     };
 
     // Get the document number
-    const numberField = documentType === 'aadhar' ? 'aadharNo' : 
-                       documentType === 'pan' ? 'panNo' : 
-                       documentType === 'passport' ? 'passport' : 
-                       documentType === 'drivingLicense' ? 'drivingLicense' : 
-                       documentType === 'voterId' ? 'voterId' : '';
-    
-    const documentNumber = formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+    const numberField =
+      documentType === "aadhar"
+        ? "aadharNo"
+        : documentType === "pan"
+        ? "panNo"
+        : documentType === "passport"
+        ? "passport"
+        : documentType === "drivingLicense"
+        ? "drivingLicense"
+        : documentType === "voterId"
+        ? "voterId"
+        : "";
+
+    const documentNumber =
+      formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
     const title = documentTitles[documentType] || documentType;
     const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
 
-    setIdProofPreview({ 
-      open: true, 
-      url: previewUrl, 
+    setIdProofPreview({
+      open: true,
+      url: previewUrl,
       file: currentDocument instanceof File ? currentDocument : null,
-      title: fullTitle
+      title: fullTitle,
     });
     setPdfControls({ rotate: 0, zoom: 1 });
   };
@@ -305,28 +348,35 @@ function EmployeeProfilePage() {
 
     const documentTitles = {
       aadhar: "Aadhar Card",
-      pan: "PAN Card", 
+      pan: "PAN Card",
       passport: "Passport",
       drivingLicense: "Driving License",
-      voterId: "Voter ID"
+      voterId: "Voter ID",
     };
 
     // Get the document number
-    const numberField = documentType === 'aadhar' ? 'aadharNo' : 
-                       documentType === 'pan' ? 'panNo' : 
-                       documentType === 'passport' ? 'passport' : 
-                       documentType === 'drivingLicense' ? 'drivingLicense' : 
-                       documentType === 'voterId' ? 'voterId' : '';
-    
+    const numberField =
+      documentType === "aadhar"
+        ? "aadharNo"
+        : documentType === "pan"
+        ? "panNo"
+        : documentType === "passport"
+        ? "passport"
+        : documentType === "drivingLicense"
+        ? "drivingLicense"
+        : documentType === "voterId"
+        ? "voterId"
+        : "";
+
     const documentNumber = formData.idProofs[numberField];
     const title = documentTitles[documentType] || documentType;
     const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
 
-    setUploadedIdProofPreview({ 
-      open: true, 
-      url: previewUrl, 
+    setUploadedIdProofPreview({
+      open: true,
+      url: previewUrl,
       file: file,
-      title: fullTitle
+      title: fullTitle,
     });
     setPdfControls({ rotate: 0, zoom: 1 });
   };
@@ -338,15 +388,18 @@ function EmployeeProfilePage() {
     }
 
     const previewUrl = URL.createObjectURL(file);
-    
-    // Get the account number
-    const accountNumber = formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
-    const title = accountNumber ? `Passbook Document - ${accountNumber}` : "Passbook Document";
 
-    setPassbookPreview({ 
-      open: true, 
-      url: previewUrl, 
-      file: file 
+    // Get the account number
+    const accountNumber =
+      formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+    const title = accountNumber
+      ? `Passbook Document - ${accountNumber}`
+      : "Passbook Document";
+
+    setPassbookPreview({
+      open: true,
+      url: previewUrl,
+      file: file,
     });
     setPdfControls({ rotate: 0, zoom: 1 });
   };
@@ -357,25 +410,39 @@ function EmployeeProfilePage() {
       toast.error(error);
       return false;
     }
-    
+
     handleInputChange("idProofs", `${documentType}Image`, file);
-    
+
     // Trigger validation for the corresponding number field
-    const numberField = documentType === 'aadhar' ? 'aadharNo' : 
-                       documentType === 'pan' ? 'panNo' : 
-                       documentType === 'passport' ? 'passport' : 
-                       documentType === 'drivingLicense' ? 'drivingLicense' : 
-                       documentType === 'voterId' ? 'voterId' : '';
-    
+    const numberField =
+      documentType === "aadhar"
+        ? "aadharNo"
+        : documentType === "pan"
+        ? "panNo"
+        : documentType === "passport"
+        ? "passport"
+        : documentType === "drivingLicense"
+        ? "drivingLicense"
+        : documentType === "voterId"
+        ? "voterId"
+        : "";
+
     if (numberField) {
       const conditionalError = validateIdProofConditional(numberField);
       if (conditionalError) {
-        setIdProofValidationErrors(prev => ({ ...prev, [numberField]: conditionalError }));
-        setIdProofFieldTouched(prev => ({ ...prev, [numberField]: true }));
+        setIdProofValidationErrors((prev) => ({
+          ...prev,
+          [numberField]: conditionalError,
+        }));
+        setIdProofFieldTouched((prev) => ({ ...prev, [numberField]: true }));
       }
     }
-    
-    toast.success(`${documentType.charAt(0).toUpperCase() + documentType.slice(1)} document uploaded successfully!`);
+
+    toast.success(
+      `${
+        documentType.charAt(0).toUpperCase() + documentType.slice(1)
+      } document uploaded successfully!`
+    );
     return true;
   };
 
@@ -802,7 +869,9 @@ function EmployeeProfilePage() {
     if (formData.bank.upiId !== employeeById.bankDetails?.upiId) {
       return true;
     }
-    if (formData.bank.upiContactName !== employeeById.bankDetails?.upiContactName) {
+    if (
+      formData.bank.upiContactName !== employeeById.bankDetails?.upiContactName
+    ) {
       return true;
     }
 
@@ -901,7 +970,10 @@ function EmployeeProfilePage() {
       if (formData.bank.upiId !== employeeById.bankDetails?.upiId) {
         payload.upiId = formData.bank.upiId;
       }
-      if (formData.bank.upiContactName !== employeeById.bankDetails?.upiContactName) {
+      if (
+        formData.bank.upiContactName !==
+        employeeById.bankDetails?.upiContactName
+      ) {
         payload.upiContactName = formData.bank.upiContactName;
       }
 
@@ -945,11 +1017,10 @@ function EmployeeProfilePage() {
         `${publicRuntimeConfig.apiURL}/employee/update-request`,
         {
           method: "PUT",
+          body: formDataPayload,
           headers: {
-            "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,
           },
-          body: formDataPayload,
         }
       );
 
@@ -1027,37 +1098,43 @@ function EmployeeProfilePage() {
   };
 
   const generateEmailSuggestions = (input) => {
-    if (!input || !input.includes('@')) return [];
-    
-    const [localPart] = input.split('@');
+    if (!input || !input.includes("@")) return [];
+
+    const [localPart] = input.split("@");
     if (!localPart) return [];
-    
-    const commonDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'company.com'];
-    return commonDomains.map(domain => `${localPart}@${domain}`);
+
+    const commonDomains = [
+      "gmail.com",
+      "yahoo.com",
+      "outlook.com",
+      "hotmail.com",
+      "company.com",
+    ];
+    return commonDomains.map((domain) => `${localPart}@${domain}`);
   };
 
   const handleEmailInput = (value) => {
     handleNestedInputChange("employee", "email", "personal", value);
-    
+
     // Generate suggestions
     const suggestions = generateEmailSuggestions(value);
     setEmailSuggestions(suggestions);
-    setShowEmailSuggestions(suggestions.length > 0 && value.includes('@'));
-    
+    setShowEmailSuggestions(suggestions.length > 0 && value.includes("@"));
+
     // Validate on input
     const error = validateEmail(value);
-    setPersonalValidationErrors(prev => ({ ...prev, email: error }));
+    setPersonalValidationErrors((prev) => ({ ...prev, email: error }));
   };
 
   const selectEmailSuggestion = (suggestion) => {
     handleNestedInputChange("employee", "email", "personal", suggestion);
     setShowEmailSuggestions(false);
-    setPersonalValidationErrors(prev => ({ ...prev, email: "" }));
+    setPersonalValidationErrors((prev) => ({ ...prev, email: "" }));
   };
 
   const handlePersonalFieldBlur = (field) => {
-    setPersonalFieldTouched(prev => ({ ...prev, [field]: true }));
-    
+    setPersonalFieldTouched((prev) => ({ ...prev, [field]: true }));
+
     let error = "";
     switch (field) {
       case "phone1":
@@ -1070,8 +1147,8 @@ function EmployeeProfilePage() {
         error = validateEmail(formData.employee.email.personal);
         break;
     }
-    
-    setPersonalValidationErrors(prev => ({ ...prev, [field]: error }));
+
+    setPersonalValidationErrors((prev) => ({ ...prev, [field]: error }));
     setShowEmailSuggestions(false);
   };
 
@@ -1085,28 +1162,35 @@ function EmployeeProfilePage() {
 
   const validatePANNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase())) return "Invalid PAN format (e.g., ABCDE1234F)";
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase()))
+      return "Invalid PAN format (e.g., ABCDE1234F)";
     return "";
   };
 
   const validatePassportNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z0-9]+$/.test(value.toUpperCase())) return "Only alphabets and numbers allowed";
-    if (value.length < 6 || value.length > 9) return "Passport number must be 6-9 characters";
+    if (!/^[A-Z0-9]+$/.test(value.toUpperCase()))
+      return "Only alphabets and numbers allowed";
+    if (value.length < 6 || value.length > 9)
+      return "Passport number must be 6-9 characters";
     return "";
   };
 
   const validateDrivingLicenseNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z0-9]+$/.test(value.toUpperCase())) return "Only alphabets and numbers allowed";
-    if (value.length < 10 || value.length > 15) return "License number must be 10-15 characters";
+    if (!/^[A-Z0-9]+$/.test(value.toUpperCase()))
+      return "Only alphabets and numbers allowed";
+    if (value.length < 10 || value.length > 15)
+      return "License number must be 10-15 characters";
     return "";
   };
 
   const validateVoterIdNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z0-9]+$/.test(value.toUpperCase())) return "Only alphabets and numbers allowed";
-    if (value.length < 6 || value.length > 10) return "Voter ID must be 6-10 characters";
+    if (!/^[A-Z0-9]+$/.test(value.toUpperCase()))
+      return "Only alphabets and numbers allowed";
+    if (value.length < 6 || value.length > 10)
+      return "Voter ID must be 6-10 characters";
     return "";
   };
 
@@ -1129,29 +1213,36 @@ function EmployeeProfilePage() {
 
   const validateIdProofConditional = (field) => {
     const numberValue = formData.idProofs[field];
-    const hasFile = formData.idProofs[`${field.replace('No', '').replace('Number', '')}Image`] instanceof File;
+    const hasFile =
+      formData.idProofs[
+        `${field.replace("No", "").replace("Number", "")}Image`
+      ] instanceof File;
     const hasNumber = numberValue && numberValue.trim() !== "";
-    
+
     if (hasFile && !hasNumber) {
-      return `Please enter the ${field.replace('No', ' Number').replace('Number', ' Number')} for the uploaded document`;
+      return `Please enter the ${field
+        .replace("No", " Number")
+        .replace("Number", " Number")} for the uploaded document`;
     }
     if (hasNumber && !hasFile) {
-      return `Please upload the ${field.replace('No', ' document').replace('Number', ' document')}`;
+      return `Please upload the ${field
+        .replace("No", " document")
+        .replace("Number", " document")}`;
     }
     return "";
   };
 
   const handleIdProofFieldBlur = (field) => {
-    setIdProofFieldTouched(prev => ({ ...prev, [field]: true }));
-    
+    setIdProofFieldTouched((prev) => ({ ...prev, [field]: true }));
+
     // Validate the number format
     const numberError = validateIdProofField(field, formData.idProofs[field]);
-    
+
     // Validate conditional requirement
     const conditionalError = validateIdProofConditional(field);
-    
+
     const finalError = numberError || conditionalError;
-    setIdProofValidationErrors(prev => ({ ...prev, [field]: finalError }));
+    setIdProofValidationErrors((prev) => ({ ...prev, [field]: finalError }));
   };
 
   const handleIdProofNumberChange = (field, value) => {
@@ -1160,12 +1251,12 @@ function EmployeeProfilePage() {
     if (field !== "aadharNo") {
       processedValue = value.toUpperCase();
     }
-    
+
     handleInputChange("idProofs", field, processedValue);
-    
+
     // Clear error if field is being filled
     if (processedValue.trim() !== "") {
-      setIdProofValidationErrors(prev => ({ ...prev, [field]: "" }));
+      setIdProofValidationErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -1406,7 +1497,7 @@ function EmployeeProfilePage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* --- Profile Info Sections --- */}
               <div className="p-6 bg-gray-50">
                 <div className="grid grid-cols-1 lg:grid-cols-11 gap-6">
@@ -1453,12 +1544,23 @@ function EmployeeProfilePage() {
                                     type="tel"
                                     value={formData.employee.phone1}
                                     onChange={(e) => {
-                                      const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
-                                      handleInputChange("employee", "phone1", value);
+                                      const value = e.target.value
+                                        .replace(/[^0-9]/g, "")
+                                        .slice(0, 10);
+                                      handleInputChange(
+                                        "employee",
+                                        "phone1",
+                                        value
+                                      );
                                     }}
-                                    onBlur={() => handlePersonalFieldBlur("phone1")}
+                                    onBlur={() =>
+                                      handlePersonalFieldBlur("phone1")
+                                    }
                                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                      personalFieldTouched.phone1 && personalValidationErrors.phone1 ? 'border-red-500' : ''
+                                      personalFieldTouched.phone1 &&
+                                      personalValidationErrors.phone1
+                                        ? "border-red-500"
+                                        : ""
                                     }`}
                                     pattern="[0-9]{10}"
                                     disabled={!isEditable}
@@ -1466,10 +1568,15 @@ function EmployeeProfilePage() {
                                     maxLength={10}
                                     inputMode="numeric"
                                   />
-                                  {personalFieldTouched.phone1 && personalValidationErrors.phone1 && (
-                                    <p className="text-xs text-red-500 mt-1">{personalValidationErrors.phone1}</p>
-                                  )}
-                                  <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number</p>
+                                  {personalFieldTouched.phone1 &&
+                                    personalValidationErrors.phone1 && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {personalValidationErrors.phone1}
+                                      </p>
+                                    )}
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Enter 10-digit mobile number
+                                  </p>
                                 </div>
                               ) : (
                                 <p className="text-base text-gray-900">
@@ -1488,12 +1595,23 @@ function EmployeeProfilePage() {
                                     type="tel"
                                     value={formData.employee.phone2 || ""}
                                     onChange={(e) => {
-                                      const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10);
-                                      handleInputChange("employee", "phone2", value);
+                                      const value = e.target.value
+                                        .replace(/[^0-9]/g, "")
+                                        .slice(0, 10);
+                                      handleInputChange(
+                                        "employee",
+                                        "phone2",
+                                        value
+                                      );
                                     }}
-                                    onBlur={() => handlePersonalFieldBlur("phone2")}
+                                    onBlur={() =>
+                                      handlePersonalFieldBlur("phone2")
+                                    }
                                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                      personalFieldTouched.phone2 && personalValidationErrors.phone2 ? 'border-red-500' : ''
+                                      personalFieldTouched.phone2 &&
+                                      personalValidationErrors.phone2
+                                        ? "border-red-500"
+                                        : ""
                                     }`}
                                     pattern="[0-9]{10}"
                                     placeholder="10-digit number (optional)"
@@ -1501,10 +1619,15 @@ function EmployeeProfilePage() {
                                     maxLength={10}
                                     inputMode="numeric"
                                   />
-                                  {personalFieldTouched.phone2 && personalValidationErrors.phone2 && (
-                                    <p className="text-xs text-red-500 mt-1">{personalValidationErrors.phone2}</p>
-                                  )}
-                                  <p className="text-xs text-gray-500 mt-1">Optional: Enter 10-digit mobile number</p>
+                                  {personalFieldTouched.phone2 &&
+                                    personalValidationErrors.phone2 && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {personalValidationErrors.phone2}
+                                      </p>
+                                    )}
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Optional: Enter 10-digit mobile number
+                                  </p>
                                 </div>
                               ) : (
                                 <p className="text-base text-gray-900">
@@ -1522,34 +1645,55 @@ function EmployeeProfilePage() {
                                   <input
                                     type="email"
                                     value={formData.employee.email.personal}
-                                    onChange={(e) => handleEmailInput(e.target.value)}
-                                    onBlur={() => handlePersonalFieldBlur("email")}
+                                    onChange={(e) =>
+                                      handleEmailInput(e.target.value)
+                                    }
+                                    onBlur={() =>
+                                      handlePersonalFieldBlur("email")
+                                    }
                                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                      personalFieldTouched.email && personalValidationErrors.email ? 'border-red-500' : ''
+                                      personalFieldTouched.email &&
+                                      personalValidationErrors.email
+                                        ? "border-red-500"
+                                        : ""
                                     }`}
                                     disabled={!isEditable}
                                     placeholder="Enter your email address"
                                   />
-                                  {personalFieldTouched.email && personalValidationErrors.email && (
-                                    <p className="text-xs text-red-500 mt-1">{personalValidationErrors.email}</p>
-                                  )}
-                                  
+                                  {personalFieldTouched.email &&
+                                    personalValidationErrors.email && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {personalValidationErrors.email}
+                                      </p>
+                                    )}
+
                                   {/* Email Suggestions Dropdown */}
-                                  {showEmailSuggestions && emailSuggestions.length > 0 && (
-                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
-                                      {emailSuggestions.map((suggestion, index) => (
-                                        <button
-                                          key={index}
-                                          type="button"
-                                          onClick={() => selectEmailSuggestion(suggestion)}
-                                          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center"
-                                        >
-                                          <span className="text-gray-700">{suggestion}</span>
-                                          <span className="ml-auto text-xs text-gray-400">Tap to select</span>
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
+                                  {showEmailSuggestions &&
+                                    emailSuggestions.length > 0 && (
+                                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                        {emailSuggestions.map(
+                                          (suggestion, index) => (
+                                            <button
+                                              key={index}
+                                              type="button"
+                                              onClick={() =>
+                                                selectEmailSuggestion(
+                                                  suggestion
+                                                )
+                                              }
+                                              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center"
+                                            >
+                                              <span className="text-gray-700">
+                                                {suggestion}
+                                              </span>
+                                              <span className="ml-auto text-xs text-gray-400">
+                                                Tap to select
+                                              </span>
+                                            </button>
+                                          )
+                                        )}
+                                      </div>
+                                    )}
                                 </div>
                               ) : (
                                 <p className="text-base text-gray-900">
@@ -1651,191 +1795,252 @@ function EmployeeProfilePage() {
                             key: "aadharNo",
                             imgUrlKey: "aadharImgUrl",
                             fileKey: "aadharImage",
-                            documentType: "aadhar"
+                            documentType: "aadhar",
                           },
                           {
                             label: "PAN No.",
                             key: "panNo",
                             imgUrlKey: "pancardImgUrl",
                             fileKey: "panImage",
-                            documentType: "pan"
+                            documentType: "pan",
                           },
                           {
                             label: "Passport",
                             key: "passport",
                             imgUrlKey: "passportImgUrl",
                             fileKey: "passportImage",
-                            documentType: "passport"
+                            documentType: "passport",
                           },
                           {
                             label: "Driving License",
                             key: "drivingLicense",
                             imgUrlKey: "drivingLicenseImgUrl",
                             fileKey: "drivingLicenseImage",
-                            documentType: "drivingLicense"
+                            documentType: "drivingLicense",
                           },
                           {
                             label: "Voter ID",
                             key: "voterId",
                             imgUrlKey: "voterIdImgUrl",
                             fileKey: "voterIdImage",
-                            documentType: "voterId"
+                            documentType: "voterId",
                           },
-                        ].map(({ label, key, imgUrlKey, fileKey, documentType }) => (
-                          <div
-                            key={key}
-                            className="bg-gray-50 p-3 rounded-lg space-y-1"
-                          >
-                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                              {label}
-                            </label>
-                            {/* Number field - Editable in edit mode */}
-                            {isPageInEditMode ? (
-                              <div>
-                                <input
-                                  type="text"
-                                  value={formData.idProofs[key] || ""}
-                                  onChange={(e) => handleIdProofNumberChange(key, e.target.value)}
-                                  onBlur={() => handleIdProofFieldBlur(key)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                    idProofFieldTouched[key] && idProofValidationErrors[key] ? 'border-red-500' : ''
-                                  }`}
-                                  disabled={!isEditable}
-                                  placeholder={key === "aadharNo" ? "12-digit number" : 
-                                             key === "panNo" ? "ABCDE1234F" : 
-                                             key === "passport" ? "Passport number" : 
-                                             key === "drivingLicense" ? "License number" : 
-                                             "Voter ID number"}
-                                  maxLength={key === "aadharNo" ? 12 : 
-                                           key === "panNo" ? 10 : 
-                                           key === "passport" ? 9 : 
-                                           key === "drivingLicense" ? 15 : 10}
-                                />
-                                {idProofFieldTouched[key] && idProofValidationErrors[key] && (
-                                  <p className="text-xs text-red-500 mt-1">{idProofValidationErrors[key]}</p>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-base text-gray-900">
-                                {employeeById?.idProofs?.[key] || "-"}
-                              </p>
-                            )}
-                            <div className="pt-2 border-t border-gray-200 mt-2">
+                        ].map(
+                          ({
+                            label,
+                            key,
+                            imgUrlKey,
+                            fileKey,
+                            documentType,
+                          }) => (
+                            <div
+                              key={key}
+                              className="bg-gray-50 p-3 rounded-lg space-y-1"
+                            >
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                                {label}
+                              </label>
+                              {/* Number field - Editable in edit mode */}
                               {isPageInEditMode ? (
                                 <div>
-                                  {!formData.idProofs[fileKey] && (
-                                    <label
-                                      htmlFor={`upload-${key}`}
-                                      className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                        isEditable
-                                          ? "cursor-pointer"
-                                          : "opacity-50 cursor-not-allowed"
-                                      }`}
-                                    >
-                                      <FiUpload className="w-3 h-3 mr-1" />{" "}
-                                      Upload
-                                    </label>
-                                  )}
                                   <input
-                                    type="file"
-                                    id={`upload-${key}`}
-                                    className="hidden"
-                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    type="text"
+                                    value={formData.idProofs[key] || ""}
+                                    onChange={(e) =>
+                                      handleIdProofNumberChange(
+                                        key,
+                                        e.target.value
+                                      )
+                                    }
+                                    onBlur={() => handleIdProofFieldBlur(key)}
+                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                      idProofFieldTouched[key] &&
+                                      idProofValidationErrors[key]
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
                                     disabled={!isEditable}
-                                    onChange={(e) => {
-                                      const file = e.target.files[0];
-                                      if (file) {
-                                        handleIdProofUpload(documentType, file);
-                                      }
-                                    }}
+                                    placeholder={
+                                      key === "aadharNo"
+                                        ? "12-digit number"
+                                        : key === "panNo"
+                                        ? "ABCDE1234F"
+                                        : key === "passport"
+                                        ? "Passport number"
+                                        : key === "drivingLicense"
+                                        ? "License number"
+                                        : "Voter ID number"
+                                    }
+                                    maxLength={
+                                      key === "aadharNo"
+                                        ? 12
+                                        : key === "panNo"
+                                        ? 10
+                                        : key === "passport"
+                                        ? 9
+                                        : key === "drivingLicense"
+                                        ? 15
+                                        : 10
+                                    }
                                   />
-                                  {formData.idProofs[fileKey] instanceof
-                                    File && (
-                                    <div className="mt-2 flex items-center text-sm">
-                                      <div className="flex items-center space-x-3">
-                                        {isPDF(formData.idProofs[fileKey]) ? (
-                                          <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
-                                            <span className="text-sm text-red-600 font-bold">PDF</span>
-                                          </div>
-                                        ) : (
-                                          <img
-                                            src={URL.createObjectURL(formData.idProofs[fileKey])}
-                                            alt={`${label} preview`}
-                                            className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
-                                          />
-                                        )}
-                                        <div className="flex flex-col">
-                                          <span className="text-gray-700 font-medium truncate max-w-[120px]">
-                                            {formData.idProofs[fileKey].name}
-                                          </span>
-                                          <span className="text-xs text-gray-500">
-                                            {(formData.idProofs[fileKey].size / 1024 / 1024).toFixed(2)} MB
-                                          </span>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center space-x-2 ml-3">
-                                        <button
-                                          type="button"
-                                          onClick={() => openUploadedIdProofPreview(documentType, formData.idProofs[fileKey])}
-                                          className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
-                                          disabled={!isEditable}
-                                        >
-                                          <FiEye className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleInputChange(
-                                              "idProofs",
-                                              fileKey,
-                                              null
-                                            )
-                                          }
-                                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
-                                          disabled={!isEditable}
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    PDF, JPG, JPEG, PNG (max 5MB)
-                                  </p>
-                                </div>
-                              ) : employeeById?.idProofs?.[imgUrlKey] ? (
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-2">
-                                    {isPDF(employeeById.idProofs[imgUrlKey]) ? (
-                                      <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
-                                        <span className="text-xs text-red-600 font-medium">PDF</span>
-                                      </div>
-                                    ) : (
-                                      <img
-                                        src={employeeById.idProofs[imgUrlKey]}
-                                        alt={`${label} preview`}
-                                        className="w-8 h-8 object-cover rounded border border-gray-300"
-                                      />
+                                  {idProofFieldTouched[key] &&
+                                    idProofValidationErrors[key] && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {idProofValidationErrors[key]}
+                                      </p>
                                     )}
-                                    <span className="text-sm text-gray-700 truncate">
-                                      {employeeById.idProofs[imgUrlKey].split('/').pop()}
-                                    </span>
-                                  </div>
-                                  <button
-                                    onClick={() => openIdProofPreview(documentType, imgUrlKey)}
-                                    className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                  >
-                                    <FiEye className="w-4 h-4 mr-1" /> View
-                                  </button>
                                 </div>
                               ) : (
-                                <p className="text-xs text-gray-500">
-                                  No document
+                                <p className="text-base text-gray-900">
+                                  {employeeById?.idProofs?.[key] || "-"}
                                 </p>
                               )}
+                              <div className="pt-2 border-t border-gray-200 mt-2">
+                                {isPageInEditMode ? (
+                                  <div>
+                                    {!formData.idProofs[fileKey] && (
+                                      <label
+                                        htmlFor={`upload-${key}`}
+                                        className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                                          isEditable
+                                            ? "cursor-pointer"
+                                            : "opacity-50 cursor-not-allowed"
+                                        }`}
+                                      >
+                                        <FiUpload className="w-3 h-3 mr-1" />{" "}
+                                        Upload
+                                      </label>
+                                    )}
+                                    <input
+                                      type="file"
+                                      id={`upload-${key}`}
+                                      className="hidden"
+                                      accept=".pdf,.jpg,.jpeg,.png"
+                                      disabled={!isEditable}
+                                      onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                          handleIdProofUpload(
+                                            documentType,
+                                            file
+                                          );
+                                        }
+                                      }}
+                                    />
+                                    {formData.idProofs[fileKey] instanceof
+                                      File && (
+                                      <div className="mt-2 flex items-center text-sm">
+                                        <div className="flex items-center space-x-3">
+                                          {isPDF(formData.idProofs[fileKey]) ? (
+                                            <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
+                                              <span className="text-sm text-red-600 font-bold">
+                                                PDF
+                                              </span>
+                                            </div>
+                                          ) : (
+                                            <img
+                                              src={URL.createObjectURL(
+                                                formData.idProofs[fileKey]
+                                              )}
+                                              alt={`${label} preview`}
+                                              className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                                            />
+                                          )}
+                                          <div className="flex flex-col">
+                                            <span className="text-gray-700 font-medium truncate max-w-[120px]">
+                                              {formData.idProofs[fileKey].name}
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                              {(
+                                                formData.idProofs[fileKey]
+                                                  .size /
+                                                1024 /
+                                                1024
+                                              ).toFixed(2)}{" "}
+                                              MB
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2 ml-3">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              openUploadedIdProofPreview(
+                                                documentType,
+                                                formData.idProofs[fileKey]
+                                              )
+                                            }
+                                            className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                                            disabled={!isEditable}
+                                          >
+                                            <FiEye className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleInputChange(
+                                                "idProofs",
+                                                fileKey,
+                                                null
+                                              )
+                                            }
+                                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                            disabled={!isEditable}
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      PDF, JPG, JPEG, PNG (max 5MB)
+                                    </p>
+                                  </div>
+                                ) : employeeById?.idProofs?.[imgUrlKey] ? (
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                      {isPDF(
+                                        employeeById.idProofs[imgUrlKey]
+                                      ) ? (
+                                        <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                          <span className="text-xs text-red-600 font-medium">
+                                            PDF
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <img
+                                          src={employeeById.idProofs[imgUrlKey]}
+                                          alt={`${label} preview`}
+                                          className="w-8 h-8 object-cover rounded border border-gray-300"
+                                        />
+                                      )}
+                                      <span className="text-sm text-gray-700 truncate">
+                                        {employeeById.idProofs[imgUrlKey]
+                                          .split("/")
+                                          .pop()}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        openIdProofPreview(
+                                          documentType,
+                                          imgUrlKey
+                                        )
+                                      }
+                                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                    >
+                                      <FiEye className="w-4 h-4 mr-1" /> View
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-500">
+                                    No document
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -1954,9 +2159,14 @@ function EmployeeProfilePage() {
                                   filterAccountNumber(e.target.value)
                                 )
                               }
-                              onBlur={() => handleBankFieldBlur("accountNumber")}
+                              onBlur={() =>
+                                handleBankFieldBlur("accountNumber")
+                              }
                               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                fieldTouched.accountNumber && validationErrors.accountNumber ? 'border-red-500' : ''
+                                fieldTouched.accountNumber &&
+                                validationErrors.accountNumber
+                                  ? "border-red-500"
+                                  : ""
                               }`}
                               disabled={!isEditable}
                               maxLength={18}
@@ -1967,9 +2177,12 @@ function EmployeeProfilePage() {
                               {employeeById?.bankDetails?.accountNumber || "-"}
                             </p>
                           )}
-                          {fieldTouched.accountNumber && validationErrors.accountNumber && (
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.accountNumber}</p>
-                          )}
+                          {fieldTouched.accountNumber &&
+                            validationErrors.accountNumber && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.accountNumber}
+                              </p>
+                            )}
                         </div>
                         {/* IFSC Code - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
@@ -1989,7 +2202,10 @@ function EmployeeProfilePage() {
                               }
                               onBlur={() => handleBankFieldBlur("ifscCode")}
                               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                fieldTouched.ifscCode && validationErrors.ifscCode ? 'border-red-500' : ''
+                                fieldTouched.ifscCode &&
+                                validationErrors.ifscCode
+                                  ? "border-red-500"
+                                  : ""
                               }`}
                               disabled={!isEditable}
                               maxLength={11}
@@ -2000,9 +2216,12 @@ function EmployeeProfilePage() {
                               {employeeById?.bankDetails?.ifscCode || "-"}
                             </p>
                           )}
-                          {fieldTouched.ifscCode && validationErrors.ifscCode && (
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.ifscCode}</p>
-                          )}
+                          {fieldTouched.ifscCode &&
+                            validationErrors.ifscCode && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.ifscCode}
+                              </p>
+                            )}
                         </div>
                         {/* Bank Name - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
@@ -2022,7 +2241,10 @@ function EmployeeProfilePage() {
                               }
                               onBlur={() => handleBankFieldBlur("bankName")}
                               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                fieldTouched.bankName && validationErrors.bankName ? 'border-red-500' : ''
+                                fieldTouched.bankName &&
+                                validationErrors.bankName
+                                  ? "border-red-500"
+                                  : ""
                               }`}
                               disabled={!isEditable}
                               maxLength={50}
@@ -2032,9 +2254,12 @@ function EmployeeProfilePage() {
                               {employeeById?.bankDetails?.bankName || "-"}
                             </p>
                           )}
-                          {fieldTouched.bankName && validationErrors.bankName && (
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.bankName}</p>
-                          )}
+                          {fieldTouched.bankName &&
+                            validationErrors.bankName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.bankName}
+                              </p>
+                            )}
                         </div>
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
@@ -2053,7 +2278,10 @@ function EmployeeProfilePage() {
                               }
                               onBlur={() => handleBankFieldBlur("branchName")}
                               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                fieldTouched.branchName && validationErrors.branchName ? 'border-red-500' : ''
+                                fieldTouched.branchName &&
+                                validationErrors.branchName
+                                  ? "border-red-500"
+                                  : ""
                               }`}
                               disabled={!isEditable}
                               maxLength={50}
@@ -2063,9 +2291,12 @@ function EmployeeProfilePage() {
                               {employeeById?.bankDetails?.branchName || "-"}
                             </p>
                           )}
-                          {fieldTouched.branchName && validationErrors.branchName && (
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.branchName}</p>
-                          )}
+                          {fieldTouched.branchName &&
+                            validationErrors.branchName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.branchName}
+                              </p>
+                            )}
                         </div>
                         {/* UPI ID - Editable */}
                         <div className="border-t border-gray-200 mt-6"></div>
@@ -2086,7 +2317,9 @@ function EmployeeProfilePage() {
                               }
                               onBlur={() => handleBankFieldBlur("upiId")}
                               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                fieldTouched.upiId && validationErrors.upiId ? 'border-red-500' : ''
+                                fieldTouched.upiId && validationErrors.upiId
+                                  ? "border-red-500"
+                                  : ""
                               }`}
                               disabled={!isEditable}
                               maxLength={50}
@@ -2098,7 +2331,9 @@ function EmployeeProfilePage() {
                             </p>
                           )}
                           {fieldTouched.upiId && validationErrors.upiId && (
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.upiId}</p>
+                            <p className="text-xs text-red-500 mt-1">
+                              {validationErrors.upiId}
+                            </p>
                           )}
                         </div>
                         {/* UPI Contact Name - Editable */}
@@ -2117,9 +2352,14 @@ function EmployeeProfilePage() {
                                   filterUPIContactName(e.target.value)
                                 )
                               }
-                              onBlur={() => handleBankFieldBlur("upiContactName")}
+                              onBlur={() =>
+                                handleBankFieldBlur("upiContactName")
+                              }
                               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
-                                fieldTouched.upiContactName && validationErrors.upiContactName ? 'border-red-500' : ''
+                                fieldTouched.upiContactName &&
+                                validationErrors.upiContactName
+                                  ? "border-red-500"
+                                  : ""
                               }`}
                               disabled={!isEditable}
                               maxLength={30}
@@ -2129,9 +2369,12 @@ function EmployeeProfilePage() {
                               {employeeById?.bankDetails?.upiContactName || "-"}
                             </p>
                           )}
-                          {fieldTouched.upiContactName && validationErrors.upiContactName && (
-                            <p className="text-xs text-red-500 mt-1">{validationErrors.upiContactName}</p>
-                          )}
+                          {fieldTouched.upiContactName &&
+                            validationErrors.upiContactName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.upiContactName}
+                              </p>
+                            )}
                         </div>
                         {/* Passbook Upload - Enabled in Edit Mode */}
                         <div className="border-t pt-4 mt-4">
@@ -2171,11 +2414,15 @@ function EmployeeProfilePage() {
                                   <div className="flex items-center space-x-3">
                                     {isPDF(formData.bank.passbookDoc) ? (
                                       <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
-                                        <span className="text-sm text-red-600 font-bold">PDF</span>
+                                        <span className="text-sm text-red-600 font-bold">
+                                          PDF
+                                        </span>
                                       </div>
                                     ) : (
                                       <img
-                                        src={URL.createObjectURL(formData.bank.passbookDoc)}
+                                        src={URL.createObjectURL(
+                                          formData.bank.passbookDoc
+                                        )}
                                         alt="Passbook preview"
                                         className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                                       />
@@ -2185,14 +2432,23 @@ function EmployeeProfilePage() {
                                         {formData.bank.passbookDoc.name}
                                       </span>
                                       <span className="text-xs text-gray-500">
-                                        {(formData.bank.passbookDoc.size / 1024 / 1024).toFixed(2)} MB
+                                        {(
+                                          formData.bank.passbookDoc.size /
+                                          1024 /
+                                          1024
+                                        ).toFixed(2)}{" "}
+                                        MB
                                       </span>
                                     </div>
                                   </div>
                                   <div className="flex items-center space-x-2 ml-3">
                                     <button
                                       type="button"
-                                      onClick={() => openUploadedPassbookPreview(formData.bank.passbookDoc)}
+                                      onClick={() =>
+                                        openUploadedPassbookPreview(
+                                          formData.bank.passbookDoc
+                                        )
+                                      }
                                       className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
                                       disabled={!isEditable}
                                     >
@@ -2224,23 +2480,34 @@ function EmployeeProfilePage() {
                               <div className="flex items-center space-x-3">
                                 {employeeById?.bankDetails?.passbookImgUrl ? (
                                   <>
-                                    {isPDF(employeeById.bankDetails.passbookImgUrl) ? (
+                                    {isPDF(
+                                      employeeById.bankDetails.passbookImgUrl
+                                    ) ? (
                                       <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
-                                        <span className="text-xs text-red-600 font-medium">PDF</span>
+                                        <span className="text-xs text-red-600 font-medium">
+                                          PDF
+                                        </span>
                                       </div>
                                     ) : (
                                       <img
-                                        src={employeeById.bankDetails.passbookImgUrl}
+                                        src={
+                                          employeeById.bankDetails
+                                            .passbookImgUrl
+                                        }
                                         alt="Passbook preview"
                                         className="w-8 h-8 object-cover rounded border border-gray-300"
                                       />
                                     )}
                                     <span className="text-sm text-gray-700 truncate">
-                                      {employeeById.bankDetails.passbookImgUrl.split('/').pop()}
+                                      {employeeById.bankDetails.passbookImgUrl
+                                        .split("/")
+                                        .pop()}
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="text-sm text-gray-500">No document uploaded</span>
+                                  <span className="text-sm text-gray-500">
+                                    No document uploaded
+                                  </span>
                                 )}
                               </div>
                               {employeeById?.bankDetails?.passbookImgUrl && (
@@ -2408,8 +2675,12 @@ function EmployeeProfilePage() {
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800">
-                {formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber 
-                  ? `Passbook Document - ${formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber}`
+                {formData.bank.accountNumber ||
+                employeeById?.bankDetails?.accountNumber
+                  ? `Passbook Document - ${
+                      formData.bank.accountNumber ||
+                      employeeById?.bankDetails?.accountNumber
+                    }`
                   : "Passbook Document Preview"}
               </h3>
               <button
@@ -2422,50 +2693,114 @@ function EmployeeProfilePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {isPDF(passbookPreview.file || passbookPreview.url) ? (
               <>
                 {/* PDF Toolbar */}
                 <div className="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg px-4 py-2">
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Rotate Left"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Rotate Right"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Zoom Out"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
                     </svg>
                   </button>
                   <span className="text-sm text-gray-600 min-w-[60px] text-center">
                     {Math.round(pdfControls.zoom * 100)}%
                   </span>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Zoom In"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                   </button>
                   <button
@@ -2473,8 +2808,18 @@ function EmployeeProfilePage() {
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Reset"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                   </button>
                   <div className="flex-1"></div>
@@ -2486,27 +2831,37 @@ function EmployeeProfilePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
                     </svg>
                   </a>
                 </div>
-                
+
                 {/* PDF Preview Area */}
                 <div className="flex-1 bg-gray-100 rounded-lg overflow-auto">
                   <div
                     className="flex justify-center items-center p-4"
                     style={{
-                      minHeight: '400px',
+                      minHeight: "400px",
                       transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
-                      transition: 'transform 0.2s',
+                      transition: "transform 0.2s",
                     }}
                   >
                     <iframe
                       src={`${passbookPreview.url}#toolbar=0`}
                       title="Passbook PDF"
                       className="w-full h-full min-h-[400px] border-none rounded"
-                      style={{ background: 'white' }}
+                      style={{ background: "white" }}
                     />
                   </div>
                 </div>
@@ -2530,10 +2885,17 @@ function EmployeeProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">{idProofPreview.title} Preview</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                {idProofPreview.title} Preview
+              </h3>
               <button
                 onClick={() => {
-                  setIdProofPreview({ open: false, url: null, file: null, title: "" });
+                  setIdProofPreview({
+                    open: false,
+                    url: null,
+                    file: null,
+                    title: "",
+                  });
                   setPdfControls({ rotate: 0, zoom: 1 });
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -2541,50 +2903,114 @@ function EmployeeProfilePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {isPDF(idProofPreview.file || idProofPreview.url) ? (
               <>
                 {/* PDF Toolbar */}
                 <div className="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg px-4 py-2">
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Rotate Left"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Rotate Right"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Zoom Out"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
                     </svg>
                   </button>
                   <span className="text-sm text-gray-600 min-w-[60px] text-center">
                     {Math.round(pdfControls.zoom * 100)}%
                   </span>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Zoom In"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                   </button>
                   <button
@@ -2592,40 +3018,62 @@ function EmployeeProfilePage() {
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Reset"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                   </button>
                   <div className="flex-1"></div>
                   <a
                     href={idProofPreview.url}
-                    download={`${idProofPreview.title.toLowerCase().replace(' ', '_')}.pdf`}
+                    download={`${idProofPreview.title
+                      .toLowerCase()
+                      .replace(" ", "_")}.pdf`}
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Download PDF"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
                     </svg>
                   </a>
                 </div>
-                
+
                 {/* PDF Preview Area */}
                 <div className="flex-1 bg-gray-100 rounded-lg overflow-auto">
                   <div
                     className="flex justify-center items-center p-4"
                     style={{
-                      minHeight: '400px',
+                      minHeight: "400px",
                       transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
-                      transition: 'transform 0.2s',
+                      transition: "transform 0.2s",
                     }}
                   >
                     <iframe
                       src={`${idProofPreview.url}#toolbar=0`}
                       title={`${idProofPreview.title} PDF`}
                       className="w-full h-full min-h-[400px] border-none rounded"
-                      style={{ background: 'white' }}
+                      style={{ background: "white" }}
                     />
                   </div>
                 </div>
@@ -2649,10 +3097,17 @@ function EmployeeProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">{uploadedIdProofPreview.title} Preview (Uploaded)</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                {uploadedIdProofPreview.title} Preview (Uploaded)
+              </h3>
               <button
                 onClick={() => {
-                  setUploadedIdProofPreview({ open: false, url: null, file: null, title: "" });
+                  setUploadedIdProofPreview({
+                    open: false,
+                    url: null,
+                    file: null,
+                    title: "",
+                  });
                   setPdfControls({ rotate: 0, zoom: 1 });
                 }}
                 className="text-gray-400 hover:text-gray-600"
@@ -2660,50 +3115,114 @@ function EmployeeProfilePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             {isPDF(uploadedIdProofPreview.file) ? (
               <>
                 {/* PDF Toolbar */}
                 <div className="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg px-4 py-2">
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Rotate Left"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Rotate Right"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Zoom Out"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
                     </svg>
                   </button>
                   <span className="text-sm text-gray-600 min-w-[60px] text-center">
                     {Math.round(pdfControls.zoom * 100)}%
                   </span>
                   <button
-                    onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))}
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Zoom In"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
                     </svg>
                   </button>
                   <button
@@ -2711,8 +3230,18 @@ function EmployeeProfilePage() {
                     className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
                     title="Reset"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
                     </svg>
                   </button>
                   <div className="flex-1"></div>
@@ -2724,27 +3253,37 @@ function EmployeeProfilePage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
                     </svg>
                   </a>
                 </div>
-                
+
                 {/* PDF Preview Area */}
                 <div className="flex-1 bg-gray-100 rounded-lg overflow-auto">
                   <div
                     className="flex justify-center items-center p-4"
                     style={{
-                      minHeight: '400px',
+                      minHeight: "400px",
                       transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
-                      transition: 'transform 0.2s',
+                      transition: "transform 0.2s",
                     }}
                   >
                     <iframe
                       src={`${uploadedIdProofPreview.url}#toolbar=0`}
                       title={`${uploadedIdProofPreview.title} PDF`}
                       className="w-full h-full min-h-[400px] border-none rounded"
-                      style={{ background: 'white' }}
+                      style={{ background: "white" }}
                     />
                   </div>
                 </div>
