@@ -3766,4 +3766,4 @@ function EmployeeProfilePage() {
   );
 }
 
-export default withAuth(EmployeeProfilePage); 
+export default withAuth(EmployeeProfilePage);
