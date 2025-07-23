@@ -1259,12 +1259,12 @@ function EmployeeForm() {
   }, [activeMainTab, activeSectionParam]);
 
   const handleFileUpload = (documentType, file) => {
-    if (file ) {
-      // Restrict file size to 5MB
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB.");
-        return;
-      }
+    if (file) {
+          // Restrict file size to 5MB
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB.");
+      return;
+    }
       // Create a preview URL for the file
       const previewUrl = URL.createObjectURL(file);
 
@@ -1779,19 +1779,6 @@ function EmployeeForm() {
   // Helper to check if any personal field is filled
   const anyPersonalFieldFilled = Object.values(formData.employee).some(v => v && v.toString().trim() !== "");
 
-  // Helper to format Aadhar with hyphens every 4 digits
-  const formatAadharWithHyphens = (value) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, "").slice(0, 12);
-    // Insert hyphens every 4 digits
-    return digits.replace(/(\d{4})(\d{0,4})(\d{0,4})/, (m, g1, g2, g3) => {
-      let out = g1;
-      if (g2) out += '-' + g2;
-      if (g3) out += '-' + g3;
-      return out;
-    });
-  };
-
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -2131,7 +2118,7 @@ function EmployeeForm() {
                           </div>
                           {formData.employee.pfEnrolled && (
                             <div className={inputGroupClass + " mt-1"}>
-                              <label className={inputLabelClass}>UAN Number <span className="text-red-400">*</span></label>
+                              <label className={inputLabelClass}>UAN Number</label>
                               <input 
                                 type="text" 
                                 className={`${inputClass} ${validationErrors.uanNumber && (fieldTouched.uanNumber || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
@@ -2214,20 +2201,20 @@ function EmployeeForm() {
                                 <label className="block text-sm font-semibold text-gray-800 mb-1">{meta.label} Number <span className="text-red-400">*</span></label>
                               <input
                                   className={inputClass + (showError ? ' border-red-500' : '') + ' font-mono tracking-wider'}
-                                  value={formatAadharWithHyphens(value)}
+                                  value={value}
                                   onChange={e => {
-                                    let raw = e.target.value.replace(/[^0-9]/g, '');
-                                    raw = raw.slice(0, 12);
-                                    handleInputChange("idProofs", key, raw);
+                                    let v = e.target.value;
+                                    v = allowedValue(v);
+                                    handleInputChange("idProofs", key, v);
                                   }}
                                   onInput={e => {
-                                    let raw = e.target.value.replace(/[^0-9]/g, '');
-                                    raw = raw.slice(0, 12);
-                                    e.target.value = formatAadharWithHyphens(raw);
+                                    let v = e.target.value;
+                                    v = allowedValue(v);
+                                    e.target.value = v;
                                   }}
                                   onBlur={() => setIdProofsTouched(t => ({ ...t, [key]: true }))}
                                   placeholder={meta.placeholder}
-                                  maxLength={14}
+                                  maxLength={meta.maxLength}
                                   inputMode={meta.inputMode}
                                   autoComplete="off"
                                   style={{ textTransform: meta.toUpper ? 'uppercase' : 'none' }}
