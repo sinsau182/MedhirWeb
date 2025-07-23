@@ -230,14 +230,14 @@ function EmployeeProfilePage() {
       "image/jpg",
       "image/png",
     ];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 1 * 1024 * 1024; // 1MB
 
     if (!allowedTypes.includes(file.type)) {
       return "Only PDF, JPG, JPEG, and PNG files are allowed.";
     }
 
     if (file.size > maxSize) {
-      return "File size must be less than 5MB.";
+      return "File size must be less than 1MB.";
     }
 
     return null; // No error
@@ -870,7 +870,7 @@ function EmployeeProfilePage() {
       return true;
     }
     if (
-      formData.bank.upiContactName !== employeeById.bankDetails?.upiContactName
+      formData.bank.upiContactName !== employeeById.bankDetails?.upiPhoneNumber
     ) {
       return true;
     }
@@ -902,6 +902,28 @@ function EmployeeProfilePage() {
     return false;
   };
 
+  // Helper to robustly check if any bank field is changed
+  function isBankFieldChanged(formData, employeeById) {
+    if (!employeeById?.bankDetails) return false;
+    const fields = [
+      "accountNumber",
+      "ifscCode",
+      "accountHolderName",
+      "bankName",
+      "branchName",
+      "upiId",
+      "upiContactName"
+    ];
+    return fields.some(field => {
+      const formValue = formData.bank[field] || "";
+      const backendValue =
+        field === "upiContactName"
+          ? employeeById.bankDetails.upiPhoneNumber || ""
+          : employeeById.bankDetails[field] || "";
+      return formValue !== backendValue;
+    });
+  }
+
   // Update the handleSaveAllClick function to check for changes
   const handleSaveAllClick = async () => {
     if (!isEditable) {
@@ -919,6 +941,89 @@ function EmployeeProfilePage() {
       setIsPageInEditMode(false);
       return;
     }
+
+    // --- Custom validation: If any bank field is filled or changed, require all related fields ---
+    const bankFields = [
+      "accountNumber",
+      "ifscCode",
+      "accountHolderName",
+      "bankName",
+      "branchName",
+      "upiId",
+      "upiContactName",
+      "passbookDoc",
+    ];
+    const bankFieldValues = {
+      accountNumber: formData.bank.accountNumber,
+      ifscCode: formData.bank.ifscCode,
+      accountHolderName: formData.bank.accountHolderName,
+      bankName: formData.bank.bankName,
+      branchName: formData.bank.branchName,
+      upiId: formData.bank.upiId,
+      upiContactName: formData.bank.upiContactName,
+      passbookDoc: formData.bank.passbookDoc instanceof File ? "file" : "",
+    };
+    // Detect if any bank field (except passbookDoc) is filled
+    const anyBankFieldFilled = bankFields.some(
+      (field) => field !== "passbookDoc" && bankFieldValues[field] && bankFieldValues[field].toString().trim() !== ""
+    );
+    // Use robust function to check for real changes
+    const anyBankInfoChanged = isBankFieldChanged(formData, employeeById);
+    // Only run bank validation if a bank field is changed or filled
+    if (anyBankInfoChanged || anyBankFieldFilled) {
+      setFieldTouched((prev) => ({
+        ...prev,
+        accountNumber: true,
+        ifscCode: true,
+        bankName: true,
+        branchName: true,
+        passbookDoc: true,
+      }));
+      const missingFields = [];
+      const newValidationErrors = { ...validationErrors };
+      let firstMissingField = null;
+      if (!formData.bank.accountNumber || formData.bank.accountNumber.trim() === "") {
+        missingFields.push("Account Number");
+        newValidationErrors.accountNumber = "Account Number is required";
+        if (!firstMissingField) firstMissingField = "accountNumber";
+      }
+      if (!formData.bank.ifscCode || formData.bank.ifscCode.trim() === "") {
+        missingFields.push("IFSC Code");
+        newValidationErrors.ifscCode = "IFSC Code is required";
+        if (!firstMissingField) firstMissingField = "ifscCode";
+      }
+      if (!formData.bank.bankName || formData.bank.bankName.trim() === "") {
+        missingFields.push("Bank Name");
+        newValidationErrors.bankName = "Bank Name is required";
+        if (!firstMissingField) firstMissingField = "bankName";
+      }
+      if (!formData.bank.branchName || formData.bank.branchName.trim() === "") {
+        missingFields.push("Branch Name");
+        newValidationErrors.branchName = "Branch Name is required";
+        if (!firstMissingField) firstMissingField = "branchName";
+      }
+      if (!(formData.bank.passbookDoc instanceof File)) {
+        missingFields.push("Bank Passbook File");
+        newValidationErrors.passbookDoc = "Bank Passbook file is required";
+        if (!firstMissingField) firstMissingField = "passbookDoc";
+      }
+      setValidationErrors(newValidationErrors);
+      if (missingFields.length > 0 && firstMissingField) {
+        // Try to scroll to the first missing field
+        const fieldRef =
+          document.getElementById(`bank-field-${firstMissingField}`) ||
+          document.getElementById(`bank-field-${firstMissingField}-label`) ||
+          document.getElementById(`bank-field-${firstMissingField}-container`);
+        if (fieldRef) {
+          fieldRef.scrollIntoView({ behavior: "smooth", block: "center" });
+          fieldRef.focus?.();
+        }
+        return;
+      }
+    }
+
+    // --- Custom validation: Only require passbook file if one of the main bank fields is changed or filled ---
+    // (Block removed: No longer require passbook file for any update)
 
     setLoading(true);
     try {
@@ -971,45 +1076,51 @@ function EmployeeProfilePage() {
         payload.upiId = formData.bank.upiId;
       }
       if (
-        formData.bank.upiContactName !==
-        employeeById.bankDetails?.upiContactName
+        formData.bank.upiContactName !== employeeById.bankDetails?.upiPhoneNumber
       ) {
-        payload.upiContactName = formData.bank.upiContactName;
+        payload.upiPhoneNumber = formData.bank.upiContactName;
       }
 
       // Create FormData for the request
       const formDataPayload = new FormData();
       formDataPayload.append("updateRequest", JSON.stringify(payload));
 
-      // Add files if they exist
+      // Add files if they exist, otherwise send last uploaded file URL
       if (formData.employee.profileImage instanceof File) {
         formDataPayload.append("profileImage", formData.employee.profileImage);
+      } else if (employeeById?.employeeImgUrl) {
+        payload.profileImgUrl = employeeById.employeeImgUrl;
       }
       if (formData.bank.passbookDoc instanceof File) {
         formDataPayload.append("passbookImage", formData.bank.passbookDoc);
+      } else if (employeeById?.bankDetails?.passbookImgUrl) {
+        payload.passbookImgUrl = employeeById.bankDetails.passbookImgUrl;
       }
-
-      // Add document files if they exist
+      // Add document files if they exist, otherwise send last uploaded file URL
       if (formData.idProofs.aadharImage instanceof File) {
         formDataPayload.append("aadharImage", formData.idProofs.aadharImage);
+      } else if (employeeById?.idProofs?.aadharImgUrl) {
+        payload.aadharImgUrl = employeeById.idProofs.aadharImgUrl;
       }
       if (formData.idProofs.panImage instanceof File) {
         formDataPayload.append("panImage", formData.idProofs.panImage);
+      } else if (employeeById?.idProofs?.pancardImgUrl) {
+        payload.pancardImgUrl = employeeById.idProofs.pancardImgUrl;
       }
       if (formData.idProofs.passportImage instanceof File) {
-        formDataPayload.append(
-          "passportImage",
-          formData.idProofs.passportImage
-        );
+        formDataPayload.append("passportImage", formData.idProofs.passportImage);
+      } else if (employeeById?.idProofs?.passportImgUrl) {
+        payload.passportImgUrl = employeeById.idProofs.passportImgUrl;
       }
       if (formData.idProofs.drivingLicenseImage instanceof File) {
-        formDataPayload.append(
-          "drivingLicenseImage",
-          formData.idProofs.drivingLicenseImage
-        );
+        formDataPayload.append("drivingLicenseImage", formData.idProofs.drivingLicenseImage);
+      } else if (employeeById?.idProofs?.drivingLicenseImgUrl) {
+        payload.drivingLicenseImgUrl = employeeById.idProofs.drivingLicenseImgUrl;
       }
       if (formData.idProofs.voterIdImage instanceof File) {
         formDataPayload.append("voterIdImage", formData.idProofs.voterIdImage);
+      } else if (employeeById?.idProofs?.voterIdImgUrl) {
+        payload.voterIdImgUrl = employeeById.idProofs.voterIdImgUrl;
       }
 
       const token = getItemFromSessionStorage("token");
@@ -1898,19 +2009,15 @@ function EmployeeProfilePage() {
                               <div className="pt-2 border-t border-gray-200 mt-2">
                                 {isPageInEditMode ? (
                                   <div>
-                                    {!formData.idProofs[fileKey] && (
-                                      <label
-                                        htmlFor={`upload-${key}`}
-                                        className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                          isEditable
-                                            ? "cursor-pointer"
-                                            : "opacity-50 cursor-not-allowed"
-                                        }`}
-                                      >
-                                        <FiUpload className="w-3 h-3 mr-1" />{" "}
-                                        Upload
-                                      </label>
-                                    )}
+                                    <label
+                                      htmlFor={`upload-${key}`}
+                                      className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                                        isEditable ? "cursor-pointer" : "opacity-50 cursor-not-allowed"
+                                      }`}
+                                    >
+                                      <FiUpload className="w-3 h-3 mr-1" />
+                                      {formData.idProofs[fileKey] instanceof File || employeeById?.idProofs?.[imgUrlKey] ? "Change File" : "Upload"}
+                                    </label>
                                     <input
                                       type="file"
                                       id={`upload-${key}`}
@@ -1993,7 +2100,7 @@ function EmployeeProfilePage() {
                                       </div>
                                     )}
                                     <p className="text-xs text-gray-500 mt-1">
-                                      PDF, JPG, JPEG, PNG (max 5MB)
+                                      PDF, JPG, JPEG, PNG (max 1MB)
                                     </p>
                                   </div>
                                 ) : employeeById?.idProofs?.[imgUrlKey] ? (
@@ -2171,6 +2278,7 @@ function EmployeeProfilePage() {
                               disabled={!isEditable}
                               maxLength={18}
                               inputMode="numeric"
+                              id="bank-field-accountNumber"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
@@ -2210,6 +2318,7 @@ function EmployeeProfilePage() {
                               disabled={!isEditable}
                               maxLength={11}
                               placeholder="e.g., SBIN0001234"
+                              id="bank-field-ifscCode"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
@@ -2248,6 +2357,7 @@ function EmployeeProfilePage() {
                               }`}
                               disabled={!isEditable}
                               maxLength={50}
+                              id="bank-field-bankName"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
@@ -2285,6 +2395,7 @@ function EmployeeProfilePage() {
                               }`}
                               disabled={!isEditable}
                               maxLength={50}
+                              id="bank-field-branchName"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
@@ -2324,6 +2435,7 @@ function EmployeeProfilePage() {
                               disabled={!isEditable}
                               maxLength={50}
                               placeholder="e.g., user@upi"
+                              id="bank-field-upiId"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
@@ -2363,6 +2475,7 @@ function EmployeeProfilePage() {
                               }`}
                               disabled={!isEditable}
                               maxLength={30}
+                              id="bank-field-upiContactName"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
@@ -2382,23 +2495,18 @@ function EmployeeProfilePage() {
                             Bank Passbook
                           </label>
                           {isPageInEditMode ? (
-                            <div>
+                            <div id="bank-field-passbookDoc-container">
                               <label
-                                htmlFor="passbook-upload"
-                                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                  isEditable
-                                    ? "cursor-pointer"
-                                    : "opacity-50 cursor-not-allowed"
-                                }`}
+                                htmlFor="bank-field-passbookDoc"
+                                id="bank-field-passbookDoc-label"
+                                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${isEditable ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
                               >
                                 <FiUpload className="w-4 h-4 mr-2" />
-                                {formData.bank.passbookDoc instanceof File
-                                  ? "Change File"
-                                  : "Upload File"}
+                                {formData.bank.passbookDoc instanceof File || employeeById?.bankDetails?.passbookImgUrl ? "Change File" : "Upload File"}
                               </label>
                               <input
                                 type="file"
-                                id="passbook-upload"
+                                id="bank-field-passbookDoc"
                                 className="hidden"
                                 accept=".pdf,.jpg,.jpeg,.png"
                                 disabled={!isEditable}
@@ -2409,46 +2517,38 @@ function EmployeeProfilePage() {
                                   }
                                 }}
                               />
-                              {formData.bank.passbookDoc instanceof File && (
+                              {/* Show preview: new file if uploaded, else last uploaded file from backend */}
+                              {(formData.bank.passbookDoc instanceof File || employeeById?.bankDetails?.passbookImgUrl) && (
                                 <div className="mt-2 flex items-center text-sm">
                                   <div className="flex items-center space-x-3">
-                                    {isPDF(formData.bank.passbookDoc) ? (
+                                    {isPDF(formData.bank.passbookDoc instanceof File ? formData.bank.passbookDoc : employeeById?.bankDetails?.passbookImgUrl) ? (
                                       <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
-                                        <span className="text-sm text-red-600 font-bold">
-                                          PDF
-                                        </span>
+                                        <span className="text-sm text-red-600 font-bold">PDF</span>
                                       </div>
                                     ) : (
                                       <img
-                                        src={URL.createObjectURL(
-                                          formData.bank.passbookDoc
-                                        )}
+                                        src={formData.bank.passbookDoc instanceof File ? URL.createObjectURL(formData.bank.passbookDoc) : employeeById?.bankDetails?.passbookImgUrl}
                                         alt="Passbook preview"
                                         className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                                       />
                                     )}
                                     <div className="flex flex-col">
                                       <span className="text-gray-700 font-medium truncate max-w-[150px]">
-                                        {formData.bank.passbookDoc.name}
+                                        {formData.bank.passbookDoc instanceof File
+                                          ? formData.bank.passbookDoc.name
+                                          : employeeById?.bankDetails?.passbookImgUrl?.split("/").pop()}
                                       </span>
                                       <span className="text-xs text-gray-500">
-                                        {(
-                                          formData.bank.passbookDoc.size /
-                                          1024 /
-                                          1024
-                                        ).toFixed(2)}{" "}
-                                        MB
+                                        {formData.bank.passbookDoc instanceof File
+                                          ? `${(formData.bank.passbookDoc.size / 1024 / 1024).toFixed(2)} MB`
+                                          : null}
                                       </span>
                                     </div>
                                   </div>
                                   <div className="flex items-center space-x-2 ml-3">
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        openUploadedPassbookPreview(
-                                          formData.bank.passbookDoc
-                                        )
-                                      }
+                                      onClick={() => openUploadedPassbookPreview(formData.bank.passbookDoc instanceof File ? formData.bank.passbookDoc : employeeById?.bankDetails?.passbookImgUrl)}
                                       className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
                                       disabled={!isEditable}
                                     >
@@ -2456,13 +2556,7 @@ function EmployeeProfilePage() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        handleInputChange(
-                                          "bank",
-                                          "passbookDoc",
-                                          null
-                                        )
-                                      }
+                                      onClick={() => handleInputChange("bank", "passbookDoc", null)}
                                       className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
                                       disabled={!isEditable}
                                     >
@@ -2472,8 +2566,11 @@ function EmployeeProfilePage() {
                                 </div>
                               )}
                               <p className="text-xs text-gray-500 mt-2">
-                                Accepted formats: PDF, JPG, JPEG, PNG (max 5MB)
+                                Accepted formats: PDF, JPG, JPEG, PNG (max 1MB)
                               </p>
+                              {validationErrors.passbookDoc && (
+                                <p className="text-xs text-red-500 mt-1">{validationErrors.passbookDoc}</p>
+                              )}
                             </div>
                           ) : (
                             <div className="flex items-center justify-between mt-2 bg-gray-50 p-3 rounded-lg">
