@@ -22,6 +22,7 @@ import { FaCalendarCheck } from "react-icons/fa";
 import { X } from "lucide-react";
 import getConfig from "next/config";
 import { clearSession } from "@/utils/sessionManager";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 function EmployeeProfilePage() {
   const router = useRouter();
@@ -383,10 +384,17 @@ function EmployeeProfilePage() {
   // --- Data Fetching ---
   const fetchByEmployeeId = useCallback(async () => {
     const employeeIdToFetch = sessionStorage.getItem("employeeId");
+    const token = getItemFromSessionStorage("token");
     setLoading(true);
     try {
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/employee/id/${employeeIdToFetch}`
+        `${publicRuntimeConfig.apiURL}/employee/id/${employeeIdToFetch}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -2050,6 +2058,7 @@ function EmployeeProfilePage() {
                           )}
                         </div>
                         {/* UPI ID - Editable */}
+                        <div className="border-t border-gray-200 mt-6"></div>
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             UPI ID

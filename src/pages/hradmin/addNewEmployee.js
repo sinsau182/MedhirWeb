@@ -762,6 +762,18 @@ function EmployeeForm() {
 
       return updatedData;
     });
+
+    // Clear validation error immediately when user makes changes
+    if (section === "employee" && fieldTouched[field]) {
+      const errors = validatePersonalDetails({
+        ...formData.employee,
+        [field]: cleanedValue
+      });
+      setValidationErrors(prev => ({
+        ...prev,
+        [field]: errors[field]
+      }));
+    }
   };
 
   const prepareFormData = (obj) => {
@@ -829,7 +841,20 @@ function EmployeeForm() {
   const handleSaveAndExit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    // Only validate required fields for the current section
+    // Mark all fields as touched to show validation errors
+    setFieldTouched(prev => ({
+      ...prev,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      joiningDate: true,
+      emailPersonal: true,
+      gender: true,
+      department: true,
+      designation: true
+    }));
+
+    // Validate all required fields
     const validateCurrentSection = () => {
       const errors = {};
 
@@ -849,6 +874,15 @@ function EmployeeForm() {
       if (!formData.employee.emailPersonal?.trim()) {
         errors.emailPersonal = "Personal email is required";
       }
+      if (!formData.employee.gender) {
+        errors.gender = "Please select a gender";
+      }
+      if (!formData.employee.department) {
+        errors.department = "Department is required";
+      }
+      if (!formData.employee.designation) {
+        errors.designation = "Designation is required";
+      }
 
       // Validate phone number format if provided
       if (
@@ -858,11 +892,19 @@ function EmployeeForm() {
         errors.phone = "Invalid phone number format";
       }
 
+      // Validate email format if provided
+      if (formData.employee.emailPersonal && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.employee.emailPersonal)) {
+        errors.emailPersonal = "Please enter a valid email address";
+      }
+
       // Validate ID proofs only if they have values
       if (activeSection === "idProofs") {
         const idProofErrors = validateIdProofs(formData.idProofs);
         Object.assign(errors, idProofErrors);
       }
+
+      // Update validation errors state
+      setValidationErrors(errors);
 
       // If there are errors, show them and return false
       if (Object.keys(errors).length > 0) {
@@ -898,7 +940,7 @@ function EmployeeForm() {
           fathersName: formData.employee.fathersName.trim(),
         }),
         ...(formData.employee.gender && {
-          gender: formData.employee.gender.trim(),
+          gender: formData.employee.gender,
         }),
         ...(formData.employee.alternatePhone && {
           alternatePhone: formData.employee.alternatePhone.trim(),
@@ -1030,13 +1072,23 @@ function EmployeeForm() {
 
         if (result) {
           toast.success("Employee updated successfully");
-          router.push("/hradmin/employees");
+          // Continue to next section instead of redirecting
+          const sections = ["personal", "idProofs", "bankDetails", "salaryDetails"];
+          const currentIndex = sections.indexOf(activeSection);
+          if (currentIndex < sections.length - 1) {
+            setActiveSection(sections[currentIndex + 1]);
+          }
         }
       } else {
         const result = await dispatch(createEmployee(submitFormData)).unwrap();
         if (result) {
           toast.success("Employee created successfully");
-          router.push("/hradmin/employees");
+          // Continue to next section instead of redirecting
+          const sections = ["personal", "idProofs", "bankDetails", "salaryDetails"];
+          const currentIndex = sections.indexOf(activeSection);
+          if (currentIndex < sections.length - 1) {
+            setActiveSection(sections[currentIndex + 1]);
+          }
         }
       }
     } catch (err) {
@@ -1168,11 +1220,22 @@ function EmployeeForm() {
     };
   };
 
+  // Helper function to get border color class based on field state
+  const getFieldBorderClass = (fieldName, value, touched, error) => {
+    if (!touched) return 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+    if (error) return 'border-red-500 focus:border-red-500 focus:ring-red-500';
+    if (value && value.toString().trim() !== '') return 'border-green-500 focus:border-green-500 focus:ring-green-500';
+    return 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+  };
+
   // On blur/change handlers
   const handlePersonalFieldBlur = (field) => {
     setFieldTouched((prev) => ({ ...prev, [field]: true }));
     const errors = validatePersonalDetails(formData.employee);
-    setValidationErrors(errors);
+    setValidationErrors(prev => ({
+      ...prev,
+      [field]: errors[field]
+    }));
   };
 
   // On submit, validate and scroll to first error
@@ -1797,7 +1860,7 @@ function EmployeeForm() {
                             <label className={inputLabelClass}>First Name <span className="text-red-400">*</span></label>
                             <input 
                               type="text" 
-                              className={`${inputClass} ${validationErrors.firstName && (fieldTouched.firstName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              className={`${inputClass} ${getFieldBorderClass("firstName", formData.employee.firstName, fieldTouched.firstName, validationErrors.firstName)}`} 
                               placeholder="Enter first name" 
                               value={formData.employee.firstName || ""} 
                               onChange={e => handleInputChange("employee", "firstName", filterNameInput(e.target.value))} 
@@ -1805,13 +1868,13 @@ function EmployeeForm() {
                               onBlur={() => handlePersonalFieldBlur("firstName")} 
                               maxLength={30}
                             />
-                            {validationErrors.firstName && (fieldTouched.firstName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.firstName}</p>)}
+                            {validationErrors.firstName && fieldTouched.firstName && (<p className="text-red-600 text-xs mt-1">{validationErrors.firstName}</p>)}
                           </div>
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Middle Name</label>
                             <input 
                               type="text" 
-                              className={`${inputClass} ${validationErrors.middleName && (fieldTouched.middleName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              className={`${inputClass} ${getFieldBorderClass("middleName", formData.employee.middleName, fieldTouched.middleName, validationErrors.middleName)}`} 
                               placeholder="Enter middle name (optional)" 
                               value={formData.employee.middleName || ""} 
                               onChange={e => handleInputChange("employee", "middleName", filterNameInput(e.target.value))} 
@@ -1819,13 +1882,13 @@ function EmployeeForm() {
                               onBlur={() => handlePersonalFieldBlur("middleName")} 
                               maxLength={30}
                             />
-                            {validationErrors.middleName && (fieldTouched.middleName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.middleName}</p>)}
+                            {validationErrors.middleName && fieldTouched.middleName && (<p className="text-red-600 text-xs mt-1">{validationErrors.middleName}</p>)}
                           </div>
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Last Name <span className="text-red-400">*</span></label>
                             <input 
                               type="text" 
-                              className={`${inputClass} ${validationErrors.lastName && (fieldTouched.lastName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              className={`${inputClass} ${getFieldBorderClass("lastName", formData.employee.lastName, fieldTouched.lastName, validationErrors.lastName)}`} 
                               placeholder="Enter last name" 
                               value={formData.employee.lastName || ""} 
                               onChange={e => handleInputChange("employee", "lastName", filterNameInput(e.target.value))} 
@@ -1833,7 +1896,7 @@ function EmployeeForm() {
                               onBlur={() => handlePersonalFieldBlur("lastName")} 
                               maxLength={30}
                             />
-                            {validationErrors.lastName && (fieldTouched.lastName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.lastName}</p>)}
+                            {validationErrors.lastName && fieldTouched.lastName && (<p className="text-red-600 text-xs mt-1">{validationErrors.lastName}</p>)}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
@@ -1841,7 +1904,7 @@ function EmployeeForm() {
                             <label className={inputLabelClass}>Father Name</label>
                             <input 
                               type="text" 
-                              className={`${inputClass} ${validationErrors.fathersName && (fieldTouched.fathersName || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
+                              className={`${inputClass} ${getFieldBorderClass("fathersName", formData.employee.fathersName, fieldTouched.fathersName, validationErrors.fathersName)}`} 
                               placeholder="Enter father name" 
                               value={formData.employee.fathersName || ""} 
                               onChange={e => handleInputChange("employee", "fathersName", filterNameInput(e.target.value))} 
@@ -1849,13 +1912,17 @@ function EmployeeForm() {
                               onBlur={() => handlePersonalFieldBlur("fathersName")} 
                               maxLength={30}
                             />
-                            {validationErrors.fathersName && (fieldTouched.fathersName || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.fathersName}</p>)}
+                            {validationErrors.fathersName && fieldTouched.fathersName && (<p className="text-red-600 text-xs mt-1">{validationErrors.fathersName}</p>)}
                           </div>
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Gender</label>
-                            <Listbox value={formData.employee.gender} onChange={val => handleInputChange('employee', 'gender', val)}>
+                            <Listbox value={formData.employee.gender} onChange={val => {
+                              handleInputChange('employee', 'gender', val);
+                              // Mark gender as touched immediately when selected
+                              setFieldTouched(prev => ({ ...prev, gender: true }));
+                            }}>
                               <div className="relative">
-                                <Listbox.Button className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 flex justify-between items-center ${validationErrors.gender && (fieldTouched.gender || anyPersonalFieldFilled) ? 'border-red-500' : 'border-gray-300'}`}>
+                                <Listbox.Button className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 flex justify-between items-center ${getFieldBorderClass("gender", formData.employee.gender, fieldTouched.gender, validationErrors.gender)}`}>
                                   <span>{genderOptions.find(opt => opt.value === formData.employee.gender)?.label || 'Select gender'}</span>
                                   <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                                 </Listbox.Button>
@@ -1885,7 +1952,7 @@ function EmployeeForm() {
                                 </Listbox.Options>
                               </div>
                             </Listbox>
-                            {validationErrors.gender && (fieldTouched.gender || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.gender}</p>)}
+                            {validationErrors.gender && fieldTouched.gender && (<p className="text-red-600 text-xs mt-1">{validationErrors.gender}</p>)}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">

@@ -295,6 +295,10 @@ function SuperadminCompanies() {
         colorCode: company.colorCode || "", // Ensure colorCode is included
         companyHeads: company.companyHeads || [], // Include company heads data as array
       });
+      // Set original email for comparison during editing
+      setOriginalEmail(company.email || "");
+      // Set original phone for comparison during editing
+      setOriginalPhone(company.phone || "");
       // Pre-fill companyHeadData for editing (take first company head if exists)
       if (company.companyHeads && company.companyHeads.length > 0) {
         const firstHead = company.companyHeads[0];
@@ -335,6 +339,10 @@ function SuperadminCompanies() {
         phone: "",
         employeeId: "",
       });
+      // Reset original email when adding new company
+      setOriginalEmail("");
+      // Reset original phone when adding new company
+      setOriginalPhone("");
     }
 
     // Reset validation states
@@ -493,6 +501,11 @@ function SuperadminCompanies() {
   const debouncedCompanyEmail = useDebounce(companyData.email, 500);
   const debouncedPrefix = useDebounce(companyData.prefixForEmpID, 500);
 
+  // Add state to track original email for comparison during editing
+  const [originalEmail, setOriginalEmail] = useState("");
+  // Add state to track original phone for comparison during editing
+  const [originalPhone, setOriginalPhone] = useState("");
+
   // Helper for company uniqueness check
   const checkCompanyUnique = async (email, phone, prefixForEmpID) => {
     try {
@@ -514,7 +527,6 @@ function SuperadminCompanies() {
 
   // Debounced check for company email (persistent error logic)
   useEffect(() => {
-    if (isEditing) return; // Skip uniqueness check when editing
     const check = async () => {
       if (!debouncedCompanyEmail) {
         setValidationErrors((prev) => ({ ...prev, email: "" }));
@@ -528,6 +540,22 @@ function SuperadminCompanies() {
         }));
         return;
       }
+
+      // If editing, only check if email has changed
+      if (isEditing && debouncedCompanyEmail === originalEmail) {
+        // Email hasn't changed, clear any uniqueness error
+        setValidationErrors((prev) => {
+          if (prev.email === "This email already exists.") {
+            return { ...prev, email: "" };
+          } else {
+            // Run format/required validation
+            const error = validateField("email", debouncedCompanyEmail);
+            return { ...prev, email: error };
+          }
+        });
+        return;
+      }
+
       const result = await checkCompanyUnique(
         debouncedCompanyEmail,
         undefined,
@@ -553,7 +581,7 @@ function SuperadminCompanies() {
     };
     check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedCompanyEmail, isEditing]);
+  }, [debouncedCompanyEmail, isEditing, originalEmail]);
 
   // Debounced check for company prefix (persistent error logic)
   useEffect(() => {
@@ -592,14 +620,18 @@ function SuperadminCompanies() {
   // Phone check when 10 digits entered (persistent error logic)
   const handleCompanyPhoneChange = (e) => {
     handleInputChange(e);
-    if (isEditing) {
-      // Only run format/required validation when editing
-      const error = validateField("phone", e.target.value);
+    const phoneValue = e.target.value;
+    
+    // If editing, check if phone has changed
+    if (isEditing && phoneValue === originalPhone) {
+      // Phone hasn't changed, only run format/required validation
+      const error = validateField("phone", phoneValue);
       setValidationErrors((prev) => ({ ...prev, phone: error }));
       return;
     }
-    if (e.target.value.length === 10) {
-      checkCompanyUnique(undefined, e.target.value, undefined).then(
+    
+    if (phoneValue.length === 10) {
+      checkCompanyUnique(undefined, phoneValue, undefined).then(
         (result) => {
           if (result.phone) {
             setValidationErrors((prev) => ({
@@ -611,7 +643,7 @@ function SuperadminCompanies() {
               if (prev.phone === "This phone number already exists.") {
                 return { ...prev, phone: "" };
               } else {
-                const error = validateField("phone", e.target.value);
+                const error = validateField("phone", phoneValue);
                 return { ...prev, phone: error };
               }
             });
@@ -619,7 +651,7 @@ function SuperadminCompanies() {
         }
       );
     } else {
-      const error = validateField("phone", e.target.value);
+      const error = validateField("phone", phoneValue);
       setValidationErrors((prev) => ({ ...prev, phone: error }));
     }
   };
@@ -723,32 +755,84 @@ function SuperadminCompanies() {
               : [],
         };
 
-        // Dispatch update action with Redux
-        await dispatch(
+        // Dispatch update action with Redux and handle the result properly
+        const result = await dispatch(
           updateCompany({
             id: selectedCompany.companyId, // Handle both id formats
             updatedData: updateRequestBody,
           })
         );
-        toast.success("Company updated successfully!");
+
+        // Check if the action was fulfilled or rejected
+        if (updateCompany.fulfilled.match(result)) {
+          toast.success("Company updated successfully!");
+          // Refetch updated list
+          dispatch(fetchCompanies());
+          // Close modal and reset selection
+          setIsCompanyModalOpen(false);
+          setSelectedCompany(null);
+        } else if (updateCompany.rejected.match(result)) {
+          // Handle specific backend validation errors
+          const errorMessage = result.payload || result.error?.message || "Failed to update company";
+          
+          // Check for specific field errors
+          if (errorMessage.includes("phone number already exists")) {
+            setValidationErrors(prev => ({
+              ...prev,
+              phone: "This phone number already exists"
+            }));
+            toast.error("Please fix the phone number error");
+            return; // Don't close modal
+          } else if (errorMessage.includes("email already exists")) {
+            setValidationErrors(prev => ({
+              ...prev,
+              email: "This email already exists"
+            }));
+            toast.error("Please fix the email error");
+            return; // Don't close modal
+          } else {
+            toast.error(errorMessage);
+            return; // Don't close modal for other errors
+          }
+        }
       } else {
         const result = await dispatch(createCompany(requestBody));
 
         if (createCompany.fulfilled.match(result)) {
           toast.success("Company created successfully!");
-        } else {
-          toast.error(result.payload || "Failed to create company.");
+          // Refetch updated list
+          dispatch(fetchCompanies());
+          // Close modal and reset selection
+          setIsCompanyModalOpen(false);
+          setSelectedCompany(null);
+        } else if (createCompany.rejected.match(result)) {
+          // Handle specific backend validation errors for create
+          const errorMessage = result.payload || result.error?.message || "Failed to create company";
+          
+          // Check for specific field errors
+          if (errorMessage.includes("phone number already exists")) {
+            setValidationErrors(prev => ({
+              ...prev,
+              phone: "This phone number already exists"
+            }));
+            toast.error("Please fix the phone number error");
+            return; // Don't close modal
+          } else if (errorMessage.includes("email already exists")) {
+            setValidationErrors(prev => ({
+              ...prev,
+              email: "This email already exists"
+            }));
+            toast.error("Please fix the email error");
+            return; // Don't close modal
+          } else {
+            toast.error(errorMessage);
+            return; // Don't close modal for other errors
+          }
         }
       }
-
-      // Refetch updated list
-      dispatch(fetchCompanies());
-
-      // Close modal and reset selection
-      setIsCompanyModalOpen(false);
-      setSelectedCompany(null);
     } catch (error) {
-      toast.error("Failed to save company data.");
+      console.error("Unexpected error:", error);
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -798,7 +882,20 @@ function SuperadminCompanies() {
     // Color is always selected (has default)
     const hasColorSelected = true;
 
-    return hasAllValues && hasNoErrors && hasColorSelected;
+    // Company Head must be present and valid
+    const hasCompanyHead =
+      companyData.companyHeads &&
+      companyData.companyHeads.length > 0 &&
+      companyData.companyHeads[0].firstName &&
+      companyData.companyHeads[0].lastName &&
+      companyData.companyHeads[0].email &&
+      companyData.companyHeads[0].phone &&
+      companyData.companyHeads[0].firstName.trim() !== "" &&
+      companyData.companyHeads[0].lastName.trim() !== "" &&
+      companyData.companyHeads[0].email.trim() !== "" &&
+      companyData.companyHeads[0].phone.trim() !== "";
+
+    return hasAllValues && hasNoErrors && hasColorSelected && hasCompanyHead;
   };
 
   // Function to check if the company head form is valid
@@ -967,6 +1064,72 @@ function SuperadminCompanies() {
         ))
     );
   });
+
+  const debouncedCompanyHeadEmail = useDebounce(companyHeadData.email, 500);
+
+  // Real-time email uniqueness check for Company Head
+  useEffect(() => {
+    const check = async () => {
+      if (!debouncedCompanyHeadEmail) {
+        setCompanyHeadValidationErrors((prev) => ({ ...prev, email: "" }));
+        setIsCompanyHeadValid(true);
+        return;
+      }
+      // Only check if email is valid format
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(debouncedCompanyHeadEmail)) {
+        setCompanyHeadValidationErrors((prev) => ({ ...prev, email: "Please enter a valid email address" }));
+        setIsCompanyHeadValid(false);
+        return;
+      }
+      // Call API to check existence
+      const existence = await checkEmployeeExistence(debouncedCompanyHeadEmail, undefined);
+      if (existence.email || existence.emailPersonal) {
+        setCompanyHeadValidationErrors((prev) => ({ ...prev, email: "This email already exists." }));
+        setIsCompanyHeadValid(false);
+      } else {
+        setCompanyHeadValidationErrors((prev) => {
+          if (prev.email === "This email already exists.") {
+            return { ...prev, email: "" };
+          } else {
+            // Run format/required validation if not uniqueness error
+            const error = validateCompanyHeadField("email", debouncedCompanyHeadEmail);
+            return { ...prev, email: error };
+          }
+        });
+        setIsCompanyHeadValid(true);
+      }
+    };
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCompanyHeadEmail]);
+
+  const [showSelectHeadModal, setShowSelectHeadModal] = useState(false);
+  const [companyEmployees, setCompanyEmployees] = useState([]);
+  const [selectedNewHead, setSelectedNewHead] = useState(null);
+  const [isFetchingEmployees, setIsFetchingEmployees] = useState(false);
+
+  // Fetch employees for the company
+  const fetchCompanyEmployees = async (companyId) => {
+    setIsFetchingEmployees(true);
+    try {
+      const token = getItemFromSessionStorage("token");
+      const response = await axios.get(
+        `${API_BASE_URL}/hradmin/companies/${companyId}/employees`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setCompanyEmployees(response.data || []);
+    } catch (err) {
+      toast.error("Failed to fetch employees for this company");
+      setCompanyEmployees([]);
+    } finally {
+      setIsFetchingEmployees(false);
+    }
+  };
 
   return (
     <div className="bg-white text-[#4a4a4a] min-h-screen">
@@ -1241,6 +1404,7 @@ function SuperadminCompanies() {
           setIsCompanyModalOpen(false);
           setSelectedCompany(null);
         }}
+        disableBackdropClick={true}
       >
         <div className="relative w-full flex justify-center -mt-4">
           <h2 className="text-2xl font-thin tracking-wide">
@@ -1401,12 +1565,10 @@ function SuperadminCompanies() {
                     companyData.companyHeads.length > 0 && (
                       <div
                         className="p-3 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setCompanyData((prevData) => ({
-                            ...prevData,
-                            companyHeads: [],
-                          }));
-                          setIsDropdownOpen(false);
+                        onClick={async () => {
+                          if (!selectedCompany?.companyId) return;
+                          await fetchCompanyEmployees(selectedCompany.companyId);
+                          setShowSelectHeadModal(true);
                         }}
                       >
                         <div className="flex items-center space-x-2">
@@ -1455,6 +1617,7 @@ function SuperadminCompanies() {
                 name="email"
                 value={companyData.email}
                 onChange={handleInputChange}
+                onBlur={() => handleFieldBlur("email", companyData.email)}
                 placeholder="Enter email address"
                 className={`bg-gray-100 text-[#4a4a4a] ${
                   validationErrors.email
@@ -1645,6 +1808,7 @@ function SuperadminCompanies() {
           });
           setIsCompanyHeadValid(true); // Reset validity state
         }}
+        disableBackdropClick={true}
       >
         <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
           <div className="relative w-full flex justify-center -mt-4">
@@ -1915,9 +2079,70 @@ function SuperadminCompanies() {
           </Button>
         </div>
       </Modal>
+
+      {/* Modal for selecting new company head */}
+      <Modal
+        isOpen={showSelectHeadModal}
+        onClose={() => {
+          setShowSelectHeadModal(false);
+          setSelectedNewHead(null);
+        }}
+        disableBackdropClick={true}
+      >
+        <div className="p-6 bg-gray-200 text-[#4a4a4a] rounded-lg flex flex-col items-center justify-center">
+          <h2 className="text-xl font-semibold mb-4">Company must have a Company Head</h2>
+          <p className="mb-4">Please select a new Company Head from the list of employees below.</p>
+          {isFetchingEmployees ? (
+            <div className="text-gray-600">Loading employees...</div>
+          ) : companyEmployees.length === 0 ? (
+            <div className="text-red-600">No employees found for this company.</div>
+          ) : (
+            <select
+              className="w-full p-2 border rounded mb-4"
+              value={selectedNewHead || ""}
+              onChange={e => setSelectedNewHead(e.target.value)}
+            >
+              <option value="" disabled>Select an employee</option>
+              {companyEmployees.map(emp => (
+                <option key={emp.employeeId} value={emp.employeeId}>
+                  {emp.firstName} {emp.middleName} {emp.lastName} ({emp.emailPersonal || emp.emailOfficial || emp.phone})
+                </option>
+              ))}
+            </select>
+          )}
+          <Button
+            onClick={() => {
+              if (!selectedNewHead) return;
+              // Set the selected employee as company head
+              const emp = companyEmployees.find(e => e.employeeId === selectedNewHead);
+              if (emp) {
+                setCompanyData(prev => ({
+                  ...prev,
+                  companyHeads: [
+                    {
+                      firstName: emp.firstName,
+                      middleName: emp.middleName,
+                      lastName: emp.lastName,
+                      email: emp.emailPersonal || emp.emailOfficial || "",
+                      phone: emp.phone,
+                      employeeId: emp.employeeId,
+                    },
+                  ],
+                }));
+                setShowSelectHeadModal(false);
+                setSelectedNewHead(null);
+                toast.success("New Company Head selected.");
+              }
+            }}
+            disabled={!selectedNewHead}
+            className="bg-blue-600 text-white px-4 py-2 rounded disabled:bg-gray-300"
+          >
+            Set as Company Head
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
 
 export default withAuth(SuperadminCompanies);
-
