@@ -207,37 +207,48 @@ function EmployeeProfilePage() {
   const handleBankFieldBlur = (field) => {
     setFieldTouched((prev) => ({ ...prev, [field]: true }));
     const errors = validateBankDetails(formData.bank);
-    
+
     // Add core bank field validation
-    const coreBankFields = ["accountNumber", "ifscCode", "bankName", "branchName"];
-    const hasAnyCoreBankField = coreBankFields.some(fieldKey => {
+    const coreBankFields = [
+      "accountNumber",
+      "ifscCode",
+      "bankName",
+      "branchName",
+    ];
+    const hasAnyCoreBankField = coreBankFields.some((fieldKey) => {
       const currentValue = formData.bank[fieldKey];
       const originalValue = employeeById?.bankDetails?.[fieldKey];
-      return currentValue && currentValue.trim() !== "" && currentValue !== originalValue;
+      return (
+        currentValue &&
+        currentValue.trim() !== "" &&
+        currentValue !== originalValue
+      );
     });
 
     if (hasAnyCoreBankField) {
-      coreBankFields.forEach(fieldKey => {
+      coreBankFields.forEach((fieldKey) => {
         const currentValue = formData.bank[fieldKey];
         if (!currentValue || currentValue.trim() === "") {
           const fieldLabels = {
             accountNumber: "Account Number",
-            ifscCode: "IFSC Code", 
+            ifscCode: "IFSC Code",
             bankName: "Bank Name",
-            branchName: "Branch Name"
+            branchName: "Branch Name",
           };
-          errors[fieldKey] = `${fieldLabels[fieldKey]} is required when filling bank details.`;
+          errors[
+            fieldKey
+          ] = `${fieldLabels[fieldKey]} is required when filling bank details.`;
         }
       });
-      
+
       // Mark core bank fields as touched so errors are displayed
       const touchedFields = {};
-      coreBankFields.forEach(fieldKey => {
+      coreBankFields.forEach((fieldKey) => {
         touchedFields[fieldKey] = true;
       });
-      setFieldTouched(prev => ({ ...prev, ...touchedFields }));
+      setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
     }
-    
+
     setValidationErrors((prev) => ({ ...prev, ...errors }));
   };
 
@@ -245,42 +256,61 @@ function EmployeeProfilePage() {
   const handleBankFieldChange = (field, value) => {
     // Update the form data first
     handleInputChange("bank", field, value);
-    
+
     // Then validate if this is a core bank field
-    const coreBankFields = ["accountNumber", "ifscCode", "bankName", "branchName"];
+    const coreBankFields = [
+      "accountNumber",
+      "ifscCode",
+      "bankName",
+      "branchName",
+    ];
     if (coreBankFields.includes(field)) {
-      const hasAnyCoreBankField = coreBankFields.some(fieldKey => {
-        const currentValue = fieldKey === field ? value : formData.bank[fieldKey];
+      const hasAnyCoreBankField = coreBankFields.some((fieldKey) => {
+        const currentValue =
+          fieldKey === field ? value : formData.bank[fieldKey];
         const originalValue = employeeById?.bankDetails?.[fieldKey];
-        return currentValue && currentValue.trim() !== "" && currentValue !== originalValue;
+        return (
+          currentValue &&
+          currentValue.trim() !== "" &&
+          currentValue !== originalValue
+        );
       });
 
       if (hasAnyCoreBankField) {
-        const errors = validateBankDetails({ ...formData.bank, [field]: value });
-        coreBankFields.forEach(fieldKey => {
-          const currentValue = fieldKey === field ? value : formData.bank[fieldKey];
+        const errors = validateBankDetails({
+          ...formData.bank,
+          [field]: value,
+        });
+        coreBankFields.forEach((fieldKey) => {
+          const currentValue =
+            fieldKey === field ? value : formData.bank[fieldKey];
           if (!currentValue || currentValue.trim() === "") {
             const fieldLabels = {
               accountNumber: "Account Number",
-              ifscCode: "IFSC Code", 
+              ifscCode: "IFSC Code",
               bankName: "Bank Name",
-              branchName: "Branch Name"
+              branchName: "Branch Name",
             };
-            errors[fieldKey] = `${fieldLabels[fieldKey]} is required when filling bank details.`;
+            errors[
+              fieldKey
+            ] = `${fieldLabels[fieldKey]} is required when filling bank details.`;
           }
         });
         setValidationErrors((prev) => ({ ...prev, ...errors }));
-        
+
         // Mark core bank fields as touched so errors are displayed
         const touchedFields = {};
-        coreBankFields.forEach(fieldKey => {
+        coreBankFields.forEach((fieldKey) => {
           touchedFields[fieldKey] = true;
         });
-        setFieldTouched(prev => ({ ...prev, ...touchedFields }));
+        setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
       } else {
         // If no core fields are filled, clear the validation errors for core fields
-        const errors = validateBankDetails({ ...formData.bank, [field]: value });
-        coreBankFields.forEach(fieldKey => {
+        const errors = validateBankDetails({
+          ...formData.bank,
+          [field]: value,
+        });
+        coreBankFields.forEach((fieldKey) => {
           delete errors[fieldKey];
         });
         setValidationErrors((prev) => ({ ...prev, ...errors }));
@@ -726,8 +756,7 @@ function EmployeeProfilePage() {
     }
     if (
       employeeById.pendingUpdateRequest.panNo &&
-      employeeById.pendingUpdateRequest.panNo !==
-        employeeById.idProofs?.panNo
+      employeeById.pendingUpdateRequest.panNo !== employeeById.idProofs?.panNo
     ) {
       changes.identityDocuments.push({
         field: "PAN Number",
@@ -1036,11 +1065,17 @@ function EmployeeProfilePage() {
     }
 
     // Add these checks:
-    if (formData.idProofs.aadharNo !== employeeById.idProofs?.aadharNo) return true;
+    if (formData.idProofs.aadharNo !== employeeById.idProofs?.aadharNo)
+      return true;
     if (formData.idProofs.panNo !== employeeById.idProofs?.panNo) return true;
-    if (formData.idProofs.passport !== employeeById.idProofs?.passport) return true;
-    if (formData.idProofs.drivingLicense !== employeeById.idProofs?.drivingLicense) return true;
-    if (formData.idProofs.voterId !== employeeById.idProofs?.voterId) return true;
+    if (formData.idProofs.passport !== employeeById.idProofs?.passport)
+      return true;
+    if (
+      formData.idProofs.drivingLicense !== employeeById.idProofs?.drivingLicense
+    )
+      return true;
+    if (formData.idProofs.voterId !== employeeById.idProofs?.voterId)
+      return true;
 
     // No changes detected
     return false;
@@ -1069,7 +1104,11 @@ function EmployeeProfilePage() {
       { key: "aadharNo", fileKey: "aadharImage", urlKey: "aadharImgUrl" },
       { key: "panNo", fileKey: "panImage", urlKey: "pancardImgUrl" },
       { key: "passport", fileKey: "passportImage", urlKey: "passportImgUrl" },
-      { key: "drivingLicense", fileKey: "drivingLicenseImage", urlKey: "drivingLicenseImgUrl" },
+      {
+        key: "drivingLicense",
+        fileKey: "drivingLicenseImage",
+        urlKey: "drivingLicenseImgUrl",
+      },
       { key: "voterId", fileKey: "voterIdImage", urlKey: "voterIdImgUrl" },
     ];
     let idProofValidationErrors = {};
@@ -1079,22 +1118,29 @@ function EmployeeProfilePage() {
       const file = formData.idProofs[fileKey];
       const url = formData.idProofs[urlKey] || employeeById?.idProofs?.[urlKey];
       // Only require file if number is filled and neither a new file nor an existing URL is present
-      if (number && !(file instanceof File || (typeof url === 'string' && url.trim() !== ''))) {
-        idProofValidationErrors[key] = "Please upload the document for this number.";
+      if (
+        number &&
+        !(
+          file instanceof File ||
+          (typeof url === "string" && url.trim() !== "")
+        )
+      ) {
+        idProofValidationErrors[key] =
+          "Please upload the document for this number.";
         if (!firstMissingFileField) firstMissingFileField = key;
       } else {
         idProofValidationErrors[key] = "";
       }
     });
     setIdProofValidationErrors(idProofValidationErrors);
-    
+
     // Mark fields as touched so errors are displayed
     const touchedFields = {};
     idProofFields.forEach(({ key }) => {
       touchedFields[key] = true;
     });
-    setIdProofFieldTouched(prev => ({ ...prev, ...touchedFields }));
-    
+    setIdProofFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+
     if (firstMissingFileField) {
       // Scroll to the field
       const el = document.querySelector(`[name='${firstMissingFileField}']`);
@@ -1107,47 +1153,53 @@ function EmployeeProfilePage() {
       { key: "accountNumber", label: "Account Number" },
       { key: "ifscCode", label: "IFSC Code" },
       { key: "bankName", label: "Bank Name" },
-      { key: "branchName", label: "Branch Name" }
+      { key: "branchName", label: "Branch Name" },
     ];
-    
+
     // Check if any of the four core bank fields has been filled
-    const hasAnyCoreBankField = coreBankFields.some(field => {
+    const hasAnyCoreBankField = coreBankFields.some((field) => {
       const currentValue = formData.bank[field.key];
       const originalValue = employeeById?.bankDetails?.[field.key];
-      return currentValue && currentValue.trim() !== "" && currentValue !== originalValue;
+      return (
+        currentValue &&
+        currentValue.trim() !== "" &&
+        currentValue !== originalValue
+      );
     });
 
     // If any core field is filled, validate all four are required
-          if (hasAnyCoreBankField) {
-        let bankValidationErrors = {};
-        let firstMissingBankField = null;
-        
-        coreBankFields.forEach(({ key, label }) => {
-          const currentValue = formData.bank[key];
-          if (!currentValue || currentValue.trim() === "") {
-            bankValidationErrors[key] = `${label} is required when filling bank details.`;
-            if (!firstMissingBankField) firstMissingBankField = key;
-          } else {
-            bankValidationErrors[key] = "";
-          }
-        });
-        
-        setValidationErrors(prev => ({ ...prev, ...bankValidationErrors }));
-        
-        // Mark all core bank fields as touched so errors are displayed
-        const touchedFields = {};
-        coreBankFields.forEach(({ key }) => {
-          touchedFields[key] = true;
-        });
-        setFieldTouched(prev => ({ ...prev, ...touchedFields }));
-        
-        if (firstMissingBankField) {
-          // Scroll to the first missing field
-          const el = document.querySelector(`[name='${firstMissingBankField}']`);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-          return;
+    if (hasAnyCoreBankField) {
+      let bankValidationErrors = {};
+      let firstMissingBankField = null;
+
+      coreBankFields.forEach(({ key, label }) => {
+        const currentValue = formData.bank[key];
+        if (!currentValue || currentValue.trim() === "") {
+          bankValidationErrors[
+            key
+          ] = `${label} is required when filling bank details.`;
+          if (!firstMissingBankField) firstMissingBankField = key;
+        } else {
+          bankValidationErrors[key] = "";
         }
+      });
+
+      setValidationErrors((prev) => ({ ...prev, ...bankValidationErrors }));
+
+      // Mark all core bank fields as touched so errors are displayed
+      const touchedFields = {};
+      coreBankFields.forEach(({ key }) => {
+        touchedFields[key] = true;
+      });
+      setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+
+      if (firstMissingBankField) {
+        // Scroll to the first missing field
+        const el = document.querySelector(`[name='${firstMissingBankField}']`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
       }
+    }
 
     // --- Comprehensive Validation Check: Prevent API call if any validation errors exist ---
     // Run validation on all fields to ensure we have the latest validation state
@@ -1157,26 +1209,27 @@ function EmployeeProfilePage() {
       phone: validatePhone(formData.employee.phone1),
       alternatePhone: validatePhone(formData.employee.phone2),
     };
-    
+
     // Check ID proof validation for numbers
     const idProofNumberValidationErrors = {};
     idProofFields.forEach(({ key }) => {
       const value = formData.idProofs[key];
       if (value) {
         switch (key) {
-          case 'aadharNo':
+          case "aadharNo":
             idProofNumberValidationErrors[key] = validateAadharNumber(value);
             break;
-          case 'panNo':
+          case "panNo":
             idProofNumberValidationErrors[key] = validatePANNumber(value);
             break;
-          case 'passport':
+          case "passport":
             idProofNumberValidationErrors[key] = validatePassportNumber(value);
             break;
-          case 'drivingLicense':
-            idProofNumberValidationErrors[key] = validateDrivingLicenseNumber(value);
+          case "drivingLicense":
+            idProofNumberValidationErrors[key] =
+              validateDrivingLicenseNumber(value);
             break;
-          case 'voterId':
+          case "voterId":
             idProofNumberValidationErrors[key] = validateVoterIdNumber(value);
             break;
         }
@@ -1189,64 +1242,96 @@ function EmployeeProfilePage() {
       ...bankValidationErrors,
       ...personalValidationErrors,
       ...idProofNumberValidationErrors,
-      ...idProofValidationErrors
+      ...idProofValidationErrors,
     };
 
     // Update validation errors state with all validation results
     setValidationErrors(allValidationErrors);
-    setIdProofValidationErrors(prev => ({ ...prev, ...idProofNumberValidationErrors }));
+    setIdProofValidationErrors((prev) => ({
+      ...prev,
+      ...idProofNumberValidationErrors,
+    }));
 
     // Check if there are any validation errors
-    const hasValidationErrors = Object.values(allValidationErrors).some(error => 
-      error && error.trim() !== ""
+    const hasValidationErrors = Object.values(allValidationErrors).some(
+      (error) => error && error.trim() !== ""
     );
 
     if (hasValidationErrors) {
       // Find the first field with an error to scroll to
-      const firstErrorField = Object.keys(allValidationErrors).find(key => 
-        allValidationErrors[key] && allValidationErrors[key].trim() !== ""
+      const firstErrorField = Object.keys(allValidationErrors).find(
+        (key) =>
+          allValidationErrors[key] && allValidationErrors[key].trim() !== ""
       );
-      
+
       if (firstErrorField) {
         // Mark all fields as touched so errors are displayed
         const allFields = [
           // Personal fields
-          'emailPersonal', 'phone', 'alternatePhone', 'currentAddress', 'permanentAddress',
+          "emailPersonal",
+          "phone",
+          "alternatePhone",
+          "currentAddress",
+          "permanentAddress",
           // Bank fields
-          'accountNumber', 'accountHolderName', 'ifscCode', 'bankName', 'branchName', 'upiId', 'upiPhoneNumber',
+          "accountNumber",
+          "accountHolderName",
+          "ifscCode",
+          "bankName",
+          "branchName",
+          "upiId",
+          "upiPhoneNumber",
           // ID proof fields
-          'aadharNo', 'panNo', 'passport', 'drivingLicense', 'voterId'
+          "aadharNo",
+          "panNo",
+          "passport",
+          "drivingLicense",
+          "voterId",
         ];
-        
+
         const touchedFields = {};
-        allFields.forEach(field => {
+        allFields.forEach((field) => {
           touchedFields[field] = true;
         });
-        setFieldTouched(prev => ({ ...prev, ...touchedFields }));
-        setIdProofFieldTouched(prev => ({ ...prev, ...touchedFields }));
-        
+        setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+        setIdProofFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+
         // Scroll to the first field with an error
         const el = document.querySelector(`[name='${firstErrorField}']`);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
-      
+
       // Always mark fields as touched when there are validation errors
       const allFields = [
         // Personal fields
-        'emailPersonal', 'phone', 'alternatePhone', 'currentAddress', 'permanentAddress',
+        "emailPersonal",
+        "phone",
+        "alternatePhone",
+        "currentAddress",
+        "permanentAddress",
         // Bank fields
-        'accountNumber', 'accountHolderName', 'ifscCode', 'bankName', 'branchName', 'upiId', 'upiPhoneNumber',
+        "accountNumber",
+        "accountHolderName",
+        "ifscCode",
+        "bankName",
+        "branchName",
+        "upiId",
+        "upiPhoneNumber",
         // ID proof fields
-        'aadharNo', 'panNo', 'passport', 'drivingLicense', 'voterId'
+        "aadharNo",
+        "panNo",
+        "passport",
+        "drivingLicense",
+        "voterId",
       ];
-      
+
       const touchedFields = {};
-      allFields.forEach(field => {
+      allFields.forEach((field) => {
         touchedFields[field] = true;
       });
-      setFieldTouched(prev => ({ ...prev, ...touchedFields }));
-      setIdProofFieldTouched(prev => ({ ...prev, ...touchedFields }));
-      
+      setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+      setIdProofFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+
       return; // Prevent API call
     }
 
@@ -1301,7 +1386,8 @@ function EmployeeProfilePage() {
         payload.upiId = formData.bank.upiId;
       }
       if (
-        formData.bank.upiContactName !== employeeById.bankDetails?.upiPhoneNumber
+        formData.bank.upiContactName !==
+        employeeById.bankDetails?.upiPhoneNumber
       ) {
         payload.upiPhoneNumber = formData.bank.upiContactName; // ✅ CORRECT
       }
@@ -1316,7 +1402,10 @@ function EmployeeProfilePage() {
       if (formData.idProofs.passport !== employeeById.idProofs?.passport) {
         payload.passport = formData.idProofs.passport;
       }
-      if (formData.idProofs.drivingLicense !== employeeById.idProofs?.drivingLicense) {
+      if (
+        formData.idProofs.drivingLicense !==
+        employeeById.idProofs?.drivingLicense
+      ) {
         payload.drivingLicense = formData.idProofs.drivingLicense;
       }
       if (formData.idProofs.voterId !== employeeById.idProofs?.voterId) {
