@@ -406,7 +406,12 @@ function EmployeeProfilePage() {
       if (data.reportingManager) {
         try {
           const managerResponse = await fetch(
-            `${publicRuntimeConfig.apiURL}/employee/id/${data.reportingManager}`
+            `${publicRuntimeConfig.apiURL}/employee/id/${data.reportingManager}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
           );
           if (managerResponse.ok) {
             const managerData = await managerResponse.json();
@@ -935,10 +940,15 @@ function EmployeeProfilePage() {
         formDataPayload.append("voterIdImage", formData.idProofs.voterIdImage);
       }
 
+      const token = getItemFromSessionStorage("token");
       const response = await fetch(
         `${publicRuntimeConfig.apiURL}/employee/update-request`,
         {
           method: "PUT",
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
           body: formDataPayload,
         }
       );

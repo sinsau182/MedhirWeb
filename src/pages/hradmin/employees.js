@@ -18,6 +18,7 @@ function Employees() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
+  console.log(employees)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -102,7 +103,7 @@ function Employees() {
           { key: "emailOfficial", label: "Email(Off.)" },
           { key: "joiningDate", label: "DOJ" },
           { key: "designationName", label: "Designation" },
-          { key: "assignTo", label: "Members" },
+          // { key: "assignTo", label: "Members" },
           { key: "currentAddress", label: "Current Address" },
         ];
       case "ID Proofs":
@@ -434,8 +435,8 @@ function Employees() {
       {/* Add Modal for Document View */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white rounded-lg p-4 max-w-full max-h-full overflow-auto flex flex-col items-center justify-center">
+            <div className="flex justify-between items-center mb-4 w-full max-w-2xl">
               <h3 className="text-lg font-semibold">Passbook Document</h3>
               <button
                 onClick={closeModal}
@@ -456,11 +457,21 @@ function Employees() {
                 </svg>
               </button>
             </div>
-            <img
-              src={selectedImage}
-              alt="Passbook Document"
-              className="max-w-full h-auto"
-            />
+            {selectedImage && selectedImage.toLowerCase().endsWith('.pdf') ? (
+              <iframe
+                src={selectedImage}
+                title="Passbook PDF"
+                className="w-full max-w-2xl"
+                style={{ minHeight: '60vh', maxHeight: '90vh' }}
+              />
+            ) : (
+              <img
+                src={selectedImage}
+                alt="Passbook Document"
+                className="h-auto w-auto max-w-2xl max-h-[80vh] object-contain rounded shadow"
+                style={{ display: 'block', margin: '0 auto' }}
+              />
+            )}
           </div>
         </div>
       )}
