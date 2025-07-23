@@ -26,6 +26,7 @@ import paymentsReducer from "./slices/paymentSlice";
 import purchaseOrderReducer from "./slices/PurchaseOrderSlice";
 import pipelineReducer from "./slices/pipelineSlice";
 import masterModulesReducer from "./slices/masterModulesSlice";
+import manualAttendanceReducer from "./slices/manualAttendanceSlice";
 // import assetCategoryReducer from './slices/assetCategorySlice';
 // import assetLocationReducer from './slices/assetLocationSlice';
 // import assetStatusReducer from './slices/assetStatusSlice';
@@ -63,6 +64,7 @@ export const store = configureStore({
     payments: paymentsReducer,
     purchaseOrders: purchaseOrderReducer,
     pipelines: pipelineReducer,
+    manualAttendance: manualAttendanceReducer,
     // assetCategories: assetCategoryReducer,
     // assetLocations: assetLocationReducer,
     // assetStatuses: assetStatusReducer,

@@ -1935,13 +1935,13 @@ function EmployeeProfilePage() {
 
               {/* --- Profile Info Sections --- */}
               <div className="p-6 bg-gray-50">
-                <div className="grid grid-cols-1 lg:grid-cols-11 gap-6">
-                  <div className="lg:col-span-8 space-y-6">
+                <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                  <div className="xl:col-span-8 space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                       {/* Personal Information Card */}
                       <div className="lg:col-span-6">
                         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                          <div className="flex justify-between items-center mb-3 pb-3 -mt-2 border-b border-gray-100">
+                          <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
                             <div className="flex items-center">
                               <FiUser className="w-5 h-5 text-blue-500 mr-2" />
                               <h3 className="text-lg font-semibold text-gray-800">
@@ -1949,27 +1949,27 @@ function EmployeeProfilePage() {
                               </h3>
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Father's Name - Read Only */}
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Father&apos;s Name
                               </label>
-                              <p className="text-base text-gray-900">
+                              <p className="text-base text-gray-900 break-words">
                                 {employeeById?.fathersName || "-"}
                               </p>
                             </div>
                             {/* Gender - Read Only */}
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Gender
                               </label>
-                              <p className="text-base text-gray-900">
+                              <p className="text-base text-gray-900 break-words">
                                 {employeeById?.gender || "-"}
                               </p>
                             </div>
                             {/* Phone - Editable */}
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Phone
                               </label>
@@ -2014,13 +2014,13 @@ function EmployeeProfilePage() {
                                   </p>
                                 </div>
                               ) : (
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.phone || "-"}
                                 </p>
                               )}
                             </div>
                             {/* Alternate Phone - Editable */}
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Alternate Phone
                               </label>
@@ -2065,13 +2065,13 @@ function EmployeeProfilePage() {
                                   </p>
                                 </div>
                               ) : (
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.alternatePhone || "-"}
                                 </p>
                               )}
                             </div>
                             {/* Personal Email - Editable */}
-                            <div className="col-span-2 bg-gray-50 p-3 rounded-lg">
+                            <div className="sm:col-span-2 bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Personal Email
                               </label>
@@ -2131,7 +2131,7 @@ function EmployeeProfilePage() {
                                     )}
                                 </div>
                               ) : (
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.emailPersonal || "-"}
                                 </p>
                               )}
@@ -2143,14 +2143,14 @@ function EmployeeProfilePage() {
                       {/* Statutory Information Card */}
                       <div className="lg:col-span-6">
                         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                          <div className="flex items-center mb-5 pb-3 border-b border-gray-100">
+                          <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
                             <FiShield className="w-5 h-5 text-blue-500 mr-2" />
                             <h3 className="text-lg font-semibold text-gray-800">
                               Statutory Information
                             </h3>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 PF Status
                               </label>
@@ -2162,7 +2162,7 @@ function EmployeeProfilePage() {
                                       : "bg-red-500"
                                   }`}
                                 ></div>
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.pfEnrolled
                                     ? "Enrolled"
                                     : "Not Enrolled"}
@@ -2170,16 +2170,16 @@ function EmployeeProfilePage() {
                               </div>
                             </div>
                             {employeeById?.pfEnrolled && (
-                              <div className="bg-gray-50 p-3 rounded-lg">
+                              <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                                 <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                   UAN Number
                                 </label>
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.uanNumber || "-"}
                                 </p>
                               </div>
                             )}
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 ESIC Status
                               </label>
@@ -2191,7 +2191,7 @@ function EmployeeProfilePage() {
                                       : "bg-red-500"
                                   }`}
                                 ></div>
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.esicEnrolled
                                     ? "Enrolled"
                                     : "Not Enrolled"}
@@ -2199,11 +2199,11 @@ function EmployeeProfilePage() {
                               </div>
                             </div>
                             {employeeById?.esicEnrolled && (
-                              <div className="bg-gray-50 p-3 rounded-lg">
+                              <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                                 <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                   ESIC Number
                                 </label>
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.esicNumber || "-"}
                                 </p>
                               </div>
@@ -2215,7 +2215,7 @@ function EmployeeProfilePage() {
 
                     {/* ID Proofs Card */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                      <div className="flex justify-between items-center mb-5 pb-2 -mt-2 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
                         <div className="flex items-center">
                           <FiBook className="w-5 h-5 text-blue-500 mr-2" />
                           <h3 className="text-lg font-semibold text-gray-800">
@@ -2223,7 +2223,7 @@ function EmployeeProfilePage() {
                           </h3>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[
                           {
                             label: "Aadhar No.",
@@ -2270,7 +2270,7 @@ function EmployeeProfilePage() {
                           }) => (
                             <div
                               key={key}
-                              className="bg-gray-50 p-3 rounded-lg space-y-1"
+                              className="bg-gray-50 p-3 rounded-lg space-y-1 min-h-[120px]"
                             >
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 {label}
@@ -2327,7 +2327,7 @@ function EmployeeProfilePage() {
                                     )}
                                 </div>
                               ) : (
-                                <p className="text-base text-gray-900">
+                                <p className="text-base text-gray-900 break-words">
                                   {employeeById?.idProofs?.[key] || "-"}
                                 </p>
                               )}
@@ -2382,9 +2382,15 @@ function EmployeeProfilePage() {
                                               className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                                             />
                                           )}
-                                          <div className="flex flex-col">
+                                          <div className="flex flex-col min-w-0">
                                             <span className="text-gray-700 font-medium truncate max-w-[120px]">
-                                              {formData.idProofs[fileKey].name}
+                                              {(() => {
+                                                const filename = formData.idProofs[fileKey].name;
+                                                // Truncate filename to max 15 characters
+                                                return filename.length > 15 
+                                                  ? filename.substring(0, 12) + "..." 
+                                                  : filename;
+                                              })()}
                                             </span>
                                             <span className="text-xs text-gray-500">
                                               {(
@@ -2434,11 +2440,11 @@ function EmployeeProfilePage() {
                                   </div>
                                 ) : employeeById?.idProofs?.[imgUrlKey] ? (
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2 flex-1 min-w-0">
                                       {isPDF(
                                         employeeById.idProofs[imgUrlKey]
                                       ) ? (
-                                        <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                        <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300 flex-shrink-0">
                                           <span className="text-xs text-red-600 font-medium">
                                             PDF
                                           </span>
@@ -2447,13 +2453,19 @@ function EmployeeProfilePage() {
                                         <img
                                           src={employeeById.idProofs[imgUrlKey]}
                                           alt={`${label} preview`}
-                                          className="w-8 h-8 object-cover rounded border border-gray-300"
+                                          className="w-8 h-8 object-cover rounded border border-gray-300 flex-shrink-0"
                                         />
                                       )}
-                                      <span className="text-sm text-gray-700 truncate">
-                                        {employeeById.idProofs[imgUrlKey]
-                                          .split("/")
-                                          .pop()}
+                                      <span className="text-sm text-gray-700 truncate min-w-0">
+                                        {(() => {
+                                          const filename = employeeById.idProofs[imgUrlKey]
+                                            .split("/")
+                                            .pop();
+                                          // Truncate filename to max 20 characters
+                                          return filename.length > 20 
+                                            ? filename.substring(0, 17) + "..." 
+                                            : filename;
+                                        })()}
                                       </span>
                                     </div>
                                     <button
@@ -2463,7 +2475,7 @@ function EmployeeProfilePage() {
                                           imgUrlKey
                                         )
                                       }
-                                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0 ml-2"
                                     >
                                       <FiEye className="w-4 h-4 mr-1" /> View
                                     </button>
@@ -2482,58 +2494,58 @@ function EmployeeProfilePage() {
 
                     {/* Salary Information Card */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                      <div className="flex items-center mb-5 pb-3 -mt-2 border-b border-gray-100">
+                      <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
                         <FiDollarSign className="w-5 h-5 text-blue-500 mr-2" />
                         <h3 className="text-lg font-semibold text-gray-800">
                           Salary Information
                         </h3>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Annual CTC
                           </label>
-                          <p className="text-base text-gray-900">
+                          <p className="text-base text-gray-900 break-words">
                             ₹
                             {employeeById?.salaryDetails?.annualCtc?.toLocaleString() ||
                               "-"}
                           </p>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Monthly CTC
                           </label>
-                          <p className="text-base text-gray-900">
+                          <p className="text-base text-gray-900 break-words">
                             ₹
                             {employeeById?.salaryDetails?.monthlyCtc?.toLocaleString() ||
                               "-"}
                           </p>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Basic Salary
                           </label>
-                          <p className="text-base text-gray-900">
+                          <p className="text-base text-gray-900 break-words">
                             ₹
                             {employeeById?.salaryDetails?.basicSalary?.toLocaleString() ||
                               "-"}
                           </p>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             HRA
                           </label>
-                          <p className="text-base text-gray-900">
+                          <p className="text-base text-gray-900 break-words">
                             ₹
                             {employeeById?.salaryDetails?.hra?.toLocaleString() ||
                               "-"}
                           </p>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Allowances
                           </label>
-                          <p className="text-base text-gray-900">
+                          <p className="text-base text-gray-900 break-words">
                             ₹
                             {employeeById?.salaryDetails?.allowances?.toLocaleString() ||
                               "-"}
@@ -2541,21 +2553,21 @@ function EmployeeProfilePage() {
                         </div>
                         {employeeById?.pfEnrolled && (
                           <>
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Employer PF
                               </label>
-                              <p className="text-base text-gray-900">
+                              <p className="text-base text-gray-900 break-words">
                                 ₹
                                 {employeeById?.salaryDetails?.employerPfContribution?.toLocaleString() ||
                                   "-"}
                               </p>
                             </div>
-                            <div className="bg-gray-50 p-3 rounded-lg">
+                            <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 Employee PF
                               </label>
-                              <p className="text-base text-gray-900">
+                              <p className="text-base text-gray-900 break-words">
                                 ₹
                                 {employeeById?.salaryDetails?.employeePfContribution?.toLocaleString() ||
                                   "-"}
@@ -2567,10 +2579,10 @@ function EmployeeProfilePage() {
                     </div>
                   </div>
 
-                  <div className="lg:col-span-3">
+                  <div className="xl:col-span-4">
                     {/* Bank Information Card */}
                     <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-300">
-                      <div className="flex justify-between items-center mb-5 pb-5 border-b border-gray-100">
+                      <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
                         <div className="flex items-center">
                           <FiCreditCard className="w-5 h-5 text-blue-500 mr-2" />
                           <h3 className="text-lg font-semibold text-gray-800">
@@ -2578,9 +2590,9 @@ function EmployeeProfilePage() {
                           </h3>
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 gap-6">
+                      <div className="grid grid-cols-1 gap-4">
                         {/* Account Number - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Account Number
                           </label>
@@ -2609,7 +2621,7 @@ function EmployeeProfilePage() {
                               inputMode="numeric"
                             />
                           ) : (
-                            <p className="text-base text-gray-900">
+                            <p className="text-base text-gray-900 break-words">
                               {employeeById?.bankDetails?.accountNumber || "-"}
                             </p>
                           )}
@@ -2621,7 +2633,7 @@ function EmployeeProfilePage() {
                             )}
                         </div>
                         {/* IFSC Code - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             IFSC Code
                           </label>
@@ -2648,7 +2660,7 @@ function EmployeeProfilePage() {
                               placeholder="e.g., SBIN0001234"
                             />
                           ) : (
-                            <p className="text-base text-gray-900">
+                            <p className="text-base text-gray-900 break-words">
                               {employeeById?.bankDetails?.ifscCode || "-"}
                             </p>
                           )}
@@ -2660,7 +2672,7 @@ function EmployeeProfilePage() {
                             )}
                         </div>
                         {/* Bank Name - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Bank Name
                           </label>
@@ -2686,7 +2698,7 @@ function EmployeeProfilePage() {
                               maxLength={50}
                             />
                           ) : (
-                            <p className="text-base text-gray-900">
+                            <p className="text-base text-gray-900 break-words">
                               {employeeById?.bankDetails?.bankName || "-"}
                             </p>
                           )}
@@ -2697,7 +2709,7 @@ function EmployeeProfilePage() {
                               </p>
                             )}
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Branch Name
                           </label>
@@ -2723,7 +2735,7 @@ function EmployeeProfilePage() {
                               maxLength={50}
                             />
                           ) : (
-                            <p className="text-base text-gray-900">
+                            <p className="text-base text-gray-900 break-words">
                               {employeeById?.bankDetails?.branchName || "-"}
                             </p>
                           )}
@@ -2735,8 +2747,8 @@ function EmployeeProfilePage() {
                             )}
                         </div>
                         {/* UPI ID - Editable */}
-                        <div className="border-t border-gray-200 mt-6"></div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="border-t border-gray-200 mt-4"></div>
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             UPI ID
                           </label>
@@ -2762,7 +2774,7 @@ function EmployeeProfilePage() {
                               placeholder="e.g., user@upi"
                             />
                           ) : (
-                            <p className="text-base text-gray-900">
+                            <p className="text-base text-gray-900 break-words">
                               {employeeById?.bankDetails?.upiId || "-"}
                             </p>
                           )}
@@ -2773,7 +2785,7 @@ function EmployeeProfilePage() {
                           )}
                         </div>
                         {/* UPI Contact Name - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="bg-gray-50 p-3 rounded-lg min-h-[80px]">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             UPI Contact Name
                           </label>
@@ -2801,7 +2813,7 @@ function EmployeeProfilePage() {
                               maxLength={30}
                             />
                           ) : (
-                            <p className="text-base text-gray-900">
+                            <p className="text-base text-gray-900 break-words">
                               {employeeById?.bankDetails?.upiContactName || "-"}
                             </p>
                           )}
@@ -2863,9 +2875,15 @@ function EmployeeProfilePage() {
                                         className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                                       />
                                     )}
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col min-w-0">
                                       <span className="text-gray-700 font-medium truncate max-w-[150px]">
-                                        {formData.bank.passbookDoc.name}
+                                        {(() => {
+                                          const filename = formData.bank.passbookDoc.name;
+                                          // Truncate filename to max 20 characters
+                                          return filename.length > 20 
+                                            ? filename.substring(0, 17) + "..." 
+                                            : filename;
+                                        })()}
                                       </span>
                                       <span className="text-xs text-gray-500">
                                         {(
@@ -2913,13 +2931,13 @@ function EmployeeProfilePage() {
                             </div>
                           ) : (
                             <div className="flex items-center justify-between mt-2 bg-gray-50 p-3 rounded-lg">
-                              <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
                                 {employeeById?.bankDetails?.passbookImgUrl ? (
                                   <>
                                     {isPDF(
                                       employeeById.bankDetails.passbookImgUrl
                                     ) ? (
-                                      <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                      <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300 flex-shrink-0">
                                         <span className="text-xs text-red-600 font-medium">
                                           PDF
                                         </span>
@@ -2931,13 +2949,19 @@ function EmployeeProfilePage() {
                                             .passbookImgUrl
                                         }
                                         alt="Passbook preview"
-                                        className="w-8 h-8 object-cover rounded border border-gray-300"
+                                        className="w-8 h-8 object-cover rounded border border-gray-300 flex-shrink-0"
                                       />
                                     )}
-                                    <span className="text-sm text-gray-700 truncate">
-                                      {employeeById.bankDetails.passbookImgUrl
-                                        .split("/")
-                                        .pop()}
+                                    <span className="text-sm text-gray-700 truncate min-w-0">
+                                      {(() => {
+                                        const filename = employeeById.bankDetails.passbookImgUrl
+                                          .split("/")
+                                          .pop();
+                                        // Truncate filename to max 20 characters
+                                        return filename.length > 20 
+                                          ? filename.substring(0, 17) + "..." 
+                                          : filename;
+                                      })()}
                                     </span>
                                   </>
                                 ) : (
@@ -2949,7 +2973,7 @@ function EmployeeProfilePage() {
                               {employeeById?.bankDetails?.passbookImgUrl && (
                                 <button
                                   onClick={openPassbookPreview}
-                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0 ml-2"
                                 >
                                   <FiEye className="w-4 h-4 mr-1" /> View
                                 </button>

@@ -421,6 +421,7 @@ function EmployeeForm() {
 
   const [activeMain, setActiveMain] = useState(activeMainTab || "Basic");
   const [employeeId, setEmployeeId] = useState(null);
+  const [originalValues, setOriginalValues] = useState({ emailPersonal: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Keep sidebar expanded for HR pages
   const [previewModal, setPreviewModal] = useState({ show: false });
@@ -668,11 +669,36 @@ function EmployeeForm() {
         }));
 
         setEmployeeId(parsedEmployee.employeeId);
+        // Set original values for uniqueness validation
+        setOriginalValues({
+          emailPersonal: parsedEmployee.emailPersonal || "",
+          phone: parsedEmployee.phone || ""
+        });
+        // Clear any existing uniqueness errors since these are the original values
+        setUniquenessErrors({
+          emailPersonal: "",
+          phone: "",
+        });
       } catch (error) {
         toast.error("Error loading employee data");
       }
     }
   }, [employee, company]);
+
+  // Clear uniqueness errors when original values are set and form data matches
+  useEffect(() => {
+    if (employeeId && originalValues.emailPersonal && originalValues.phone) {
+      const currentEmail = formData.employee.emailPersonal;
+      const currentPhone = formData.employee.phone;
+      
+      if (currentEmail === originalValues.emailPersonal && currentPhone === originalValues.phone) {
+        setUniquenessErrors({
+          emailPersonal: "",
+          phone: "",
+        });
+      }
+    }
+  }, [originalValues, formData.employee.emailPersonal, formData.employee.phone, employeeId]);
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
@@ -780,7 +806,24 @@ function EmployeeForm() {
     if (section === "employee" && (field === "emailPersonal" || field === "phone")) {
       const nextEmail = field === "emailPersonal" ? value : formData.employee.emailPersonal;
       const nextPhone = field === "phone" ? value : formData.employee.phone;
-      debouncedCheckUniqueness(nextEmail, nextPhone);
+      
+      // Check if we're editing and if the values match the original
+      if (employeeId && originalValues.emailPersonal && originalValues.phone) {
+        if (nextEmail === originalValues.emailPersonal && nextPhone === originalValues.phone) {
+          // Values match original, clear uniqueness errors and skip API call
+          setUniquenessErrors((prev) => ({
+            ...prev,
+            emailPersonal: "",
+            phone: "",
+          }));
+          return;
+        }
+      }
+      
+      // Only run uniqueness check if values have changed or we're creating new employee
+      if (!employeeId || (nextEmail !== originalValues.emailPersonal || nextPhone !== originalValues.phone)) {
+        debouncedCheckUniqueness(nextEmail, nextPhone);
+      }
     }
   };
 
@@ -1915,10 +1958,26 @@ function EmployeeForm() {
 
   const debouncedCheckUniqueness = useRef(
     debounce(async (email, phone) => {
+      // Skip validation if the values haven't changed from original (when editing)
+      if (employeeId && originalValues.emailPersonal && originalValues.phone) {
+        if (email === originalValues.emailPersonal && phone === originalValues.phone) {
+          // Values haven't changed, clear any existing errors
+          setUniquenessErrors((prev) => ({
+            ...prev,
+            emailPersonal: "",
+            phone: "",
+          }));
+          return;
+        }
+      }
+      
       const params = {};
       if (email) params.email = email;
       if (phone) params.phone = phone;
+      // Add employeeId to exclude current employee when editing
+      if (employeeId) params.excludeEmployeeId = employeeId;
       if (!email && !phone) return;
+      
       try {
         const token = getItemFromSessionStorage("token");
         const res = await axios.get(
