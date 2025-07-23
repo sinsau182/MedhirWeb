@@ -778,9 +778,37 @@ function EmployeeForm() {
 
     // Debounced uniqueness check for emailPersonal and phone
     if (section === "employee" && (field === "emailPersonal" || field === "phone")) {
-      const nextEmail = field === "emailPersonal" ? value : formData.employee.emailPersonal;
-      const nextPhone = field === "phone" ? value : formData.employee.phone;
-      debouncedCheckUniqueness(nextEmail, nextPhone);
+      // If editing an employee, only check if the field value has actually changed
+      if (employee) {
+        try {
+          const parsedEmployee = JSON.parse(employee);
+          const currentEmail = parsedEmployee.emailPersonal;
+          const currentPhone = parsedEmployee.phone;
+          
+          // Only check the field that was actually changed
+          if (field === "emailPersonal" && value !== currentEmail) {
+            // Only check email existence
+            debouncedCheckUniqueness(value, "");
+          } else if (field === "phone" && value !== currentPhone) {
+            // Only check phone existence
+            debouncedCheckUniqueness("", value);
+          }
+          // If value hasn't changed, don't run any check - keep existing errors
+        } catch (error) {
+          // If parsing fails, run the check anyway
+          debouncedCheckUniqueness(
+            field === "emailPersonal" ? value : formData.employee.emailPersonal,
+            field === "phone" ? value : formData.employee.phone
+          );
+        }
+      } else {
+        // For new employees, check the field being edited
+        if (field === "emailPersonal") {
+          debouncedCheckUniqueness(value, "");
+        } else if (field === "phone") {
+          debouncedCheckUniqueness("", value);
+        }
+      }
     }
   };
 
@@ -1919,6 +1947,18 @@ function EmployeeForm() {
       if (email) params.email = email;
       if (phone) params.phone = phone;
       if (!email && !phone) return;
+      
+      // If editing an employee, exclude their current email and phone from uniqueness check
+      if (employee) {
+        try {
+          const parsedEmployee = JSON.parse(employee);
+          if (parsedEmployee.emailPersonal) params.excludeEmail = parsedEmployee.emailPersonal;
+          if (parsedEmployee.phone) params.excludePhone = parsedEmployee.phone;
+        } catch (error) {
+          // If parsing fails, continue without exclusion
+        }
+      }
+      
       try {
         const token = getItemFromSessionStorage("token");
         const res = await axios.get(
@@ -1933,8 +1973,8 @@ function EmployeeForm() {
         );
         setUniquenessErrors((prev) => ({
           ...prev,
-          emailPersonal: res.data.emailPersonal === true ? "This email is already existing." : "",
-          phone: res.data.phone === true ? "This phone is already existing." : "",
+          emailPersonal: email ? (res.data.emailPersonal === true ? "This email is already existing." : "") : prev.emailPersonal,
+          phone: phone ? (res.data.phone === true ? "This phone is already existing." : "") : prev.phone,
         }));
       } catch (err) {
         // Optionally handle error

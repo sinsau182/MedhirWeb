@@ -120,7 +120,7 @@ function EmployeeProfilePage() {
 
   const validateIFSC = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(value.toUpperCase()))
+    if (!/^[A-Z]{4}0[0-9]{6}$/.test(value.toUpperCase()))
       return "Invalid IFSC format (e.g., SBIN0001234)";
     return "";
   };
@@ -211,6 +211,7 @@ function EmployeeProfilePage() {
     // Add core bank field validation
     const coreBankFields = [
       "accountNumber",
+      "accountHolderName",
       "ifscCode",
       "bankName",
       "branchName",
@@ -231,6 +232,7 @@ function EmployeeProfilePage() {
         if (!currentValue || currentValue.trim() === "") {
           const fieldLabels = {
             accountNumber: "Account Number",
+            accountHolderName: "Account Holder Name",
             ifscCode: "IFSC Code",
             bankName: "Bank Name",
             branchName: "Branch Name",
@@ -260,6 +262,7 @@ function EmployeeProfilePage() {
     // Then validate if this is a core bank field
     const coreBankFields = [
       "accountNumber",
+      "accountHolderName",
       "ifscCode",
       "bankName",
       "branchName",
@@ -287,6 +290,7 @@ function EmployeeProfilePage() {
           if (!currentValue || currentValue.trim() === "") {
             const fieldLabels = {
               accountNumber: "Account Number",
+              accountHolderName: "Account Holder Name",
               ifscCode: "IFSC Code",
               bankName: "Bank Name",
               branchName: "Branch Name",
@@ -986,6 +990,11 @@ function EmployeeProfilePage() {
   // Add a function to handle canceling edits
   const handleCancelClick = () => {
     setIsPageInEditMode(false);
+    // Clear all validation states
+    setValidationErrors({});
+    setFieldTouched({});
+    setIdProofValidationErrors({});
+    setIdProofFieldTouched({});
     // Optionally re-fetch data to reset form
     fetchByEmployeeId();
   };
@@ -1148,9 +1157,10 @@ function EmployeeProfilePage() {
       return;
     }
 
-    // --- Bank Details: If any of the four core fields is filled, all four are required ---
+    // --- Bank Details: If any of the five core fields is filled, all five are required ---
     const coreBankFields = [
       { key: "accountNumber", label: "Account Number" },
+      { key: "accountHolderName", label: "Account Holder Name" },
       { key: "ifscCode", label: "IFSC Code" },
       { key: "bankName", label: "Bank Name" },
       { key: "branchName", label: "Branch Name" },
@@ -1604,10 +1614,8 @@ function EmployeeProfilePage() {
 
   const validatePassportNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z0-9]+$/.test(value.toUpperCase()))
-      return "Only alphabets and numbers allowed";
-    if (value.length < 6 || value.length > 9)
-      return "Passport number must be 6-9 characters";
+    if (!/^[A-Z][0-9]{7}$/.test(value.toUpperCase()))
+      return "Passport number must be 1 letter followed by 7 digits (e.g., K1234567)";
     return "";
   };
 
@@ -1622,10 +1630,8 @@ function EmployeeProfilePage() {
 
   const validateVoterIdNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z0-9]+$/.test(value.toUpperCase()))
-      return "Only alphabets and numbers allowed";
-    if (value.length < 6 || value.length > 10)
-      return "Voter ID must be 6-10 characters";
+    if (!/^[A-Z]{3}[0-9]{7}$/.test(value.toUpperCase()))
+      return "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)";
     return "";
   };
 
@@ -1689,10 +1695,47 @@ function EmployeeProfilePage() {
 
     handleInputChange("idProofs", field, processedValue);
 
-    // Clear error if field is being filled
-    if (processedValue.trim() !== "") {
-      setIdProofValidationErrors((prev) => ({ ...prev, [field]: "" }));
+    // Mark field as touched and validate in real-time
+    setIdProofFieldTouched((prev) => ({ ...prev, [field]: true }));
+    
+    // Validate the number format immediately
+    const numberError = validateIdProofField(field, processedValue);
+    
+    // Validate conditional requirement
+    const conditionalError = validateIdProofConditional(field);
+    
+    const finalError = numberError || conditionalError;
+    setIdProofValidationErrors((prev) => ({ ...prev, [field]: finalError }));
+  };
+
+  // Helper function to extract filename after underscore
+  const getDisplayFileName = (fullFileName) => {
+    if (!fullFileName) return "";
+    
+    // Split by underscore
+    const parts = fullFileName.split("_");
+    
+    // Find the first part that doesn't look like a numeric ID
+    // (numeric IDs are typically long numbers)
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      // Check if this part looks like a filename (contains letters, spaces, dots, etc.)
+      // and not just a long numeric ID
+      if (part && !/^\d{10,}$/.test(part)) {
+        // Return this part and all remaining parts joined
+        return parts.slice(i).join("_");
+      }
     }
+    
+    // If all parts look like numeric IDs, return the last part
+    return parts[parts.length - 1] || fullFileName;
+  };
+
+  // Helper function to truncate filename if too long
+  const truncateFileName = (fileName, maxLength = 20) => {
+    if (!fileName) return "";
+    if (fileName.length <= maxLength) return fileName;
+    return fileName.substring(0, maxLength - 3) + "...";
   };
 
   return (
@@ -2223,7 +2266,7 @@ function EmployeeProfilePage() {
                           </h3>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[
                           {
                             label: "Aadhar No.",
@@ -2270,7 +2313,7 @@ function EmployeeProfilePage() {
                           }) => (
                             <div
                               key={key}
-                              className="bg-gray-50 p-3 rounded-lg space-y-1"
+                              className="bg-gray-50 p-3 rounded-lg space-y-1 min-w-0"
                             >
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 {label}
@@ -2327,9 +2370,24 @@ function EmployeeProfilePage() {
                                     )}
                                 </div>
                               ) : (
-                                <p className="text-base text-gray-900">
-                                  {employeeById?.idProofs?.[key] || "-"}
-                                </p>
+                                <div className="flex items-center justify-between">
+                                  <p className="text-base text-gray-900 truncate flex-1 mr-2">
+                                    {employeeById?.idProofs?.[key] || "-"}
+                                  </p>
+                                  {employeeById?.idProofs?.[imgUrlKey] && (
+                                    <button
+                                      onClick={() =>
+                                        openIdProofPreview(
+                                          documentType,
+                                          imgUrlKey
+                                        )
+                                      }
+                                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0"
+                                    >
+                                      <FiEye className="w-4 h-4 mr-1" /> View
+                                    </button>
+                                  )}
+                                </div>
                               )}
                               <div className="pt-2 border-t border-gray-200 mt-2">
                                 {isPageInEditMode ? (
@@ -2384,7 +2442,7 @@ function EmployeeProfilePage() {
                                           )}
                                           <div className="flex flex-col">
                                             <span className="text-gray-700 font-medium truncate max-w-[120px]">
-                                              {formData.idProofs[fileKey].name}
+                                              {truncateFileName(getDisplayFileName(formData.idProofs[fileKey].name))}
                                             </span>
                                             <span className="text-xs text-gray-500">
                                               {(
@@ -2433,40 +2491,27 @@ function EmployeeProfilePage() {
                                     </p>
                                   </div>
                                 ) : employeeById?.idProofs?.[imgUrlKey] ? (
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-2">
-                                      {isPDF(
-                                        employeeById.idProofs[imgUrlKey]
-                                      ) ? (
-                                        <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
-                                          <span className="text-xs text-red-600 font-medium">
-                                            PDF
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <img
-                                          src={employeeById.idProofs[imgUrlKey]}
-                                          alt={`${label} preview`}
-                                          className="w-8 h-8 object-cover rounded border border-gray-300"
-                                        />
-                                      )}
-                                      <span className="text-sm text-gray-700 truncate">
-                                        {employeeById.idProofs[imgUrlKey]
-                                          .split("/")
-                                          .pop()}
-                                      </span>
-                                    </div>
-                                    <button
-                                      onClick={() =>
-                                        openIdProofPreview(
-                                          documentType,
-                                          imgUrlKey
-                                        )
-                                      }
-                                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                    >
-                                      <FiEye className="w-4 h-4 mr-1" /> View
-                                    </button>
+                                  <div className="flex items-center space-x-2">
+                                    {isPDF(
+                                      employeeById.idProofs[imgUrlKey]
+                                    ) ? (
+                                      <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                        <span className="text-xs text-red-600 font-medium">
+                                          PDF
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={employeeById.idProofs[imgUrlKey]}
+                                        alt={`${label} preview`}
+                                        className="w-8 h-8 object-cover rounded border border-gray-300"
+                                      />
+                                    )}
+                                    <span className="text-sm text-gray-700 truncate">
+                                      {truncateFileName(getDisplayFileName(employeeById.idProofs[imgUrlKey]
+                                        .split("/")
+                                        .pop()))}
+                                    </span>
                                   </div>
                                 ) : (
                                   <p className="text-xs text-gray-500">
@@ -2579,6 +2624,47 @@ function EmployeeProfilePage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-6">
+                        {/* Account Holder Name - Editable */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            Account Holder Name
+                          </label>
+                          {isPageInEditMode ? (
+                            <input
+                              type="text"
+                              name="accountHolderName"
+                              value={formData.bank.accountHolderName}
+                              onChange={(e) =>
+                                handleBankFieldChange(
+                                  "accountHolderName",
+                                  filterAccountHolderName(e.target.value)
+                                )
+                              }
+                              onBlur={() =>
+                                handleBankFieldBlur("accountHolderName")
+                              }
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.accountHolderName &&
+                                validationErrors.accountHolderName
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              disabled={!isEditable}
+                              maxLength={50}
+                              placeholder="Enter account holder name"
+                            />
+                          ) : (
+                            <p className="text-base text-gray-900">
+                              {employeeById?.bankDetails?.accountHolderName || "-"}
+                            </p>
+                          )}
+                          {fieldTouched.accountHolderName &&
+                            validationErrors.accountHolderName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.accountHolderName}
+                              </p>
+                            )}
+                        </div>
                         {/* Account Number - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
@@ -2734,6 +2820,151 @@ function EmployeeProfilePage() {
                               </p>
                             )}
                         </div>
+                                                {/* Passbook Upload - Enabled in Edit Mode */}
+                                                <div className="border-t pt-4 mt-4">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-sm text-gray-600 font-medium">
+                              Bank Passbook
+                            </label>
+                            {!isPageInEditMode && employeeById?.bankDetails?.passbookImgUrl && (
+                              <button
+                                onClick={openPassbookPreview}
+                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0"
+                              >
+                                <FiEye className="w-4 h-4 mr-1" /> View
+                              </button>
+                            )}
+                          </div>
+                          {isPageInEditMode ? (
+                            <div>
+                              <label
+                                htmlFor="passbook-upload"
+                                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                                  isEditable
+                                    ? "cursor-pointer"
+                                    : "opacity-50 cursor-not-allowed"
+                                }`}
+                              >
+                                <FiUpload className="w-4 h-4 mr-2" />
+                                {formData.bank.passbookDoc instanceof File
+                                  ? "Change File"
+                                  : "Upload File"}
+                              </label>
+                              <input
+                                type="file"
+                                id="passbook-upload"
+                                className="hidden"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                disabled={!isEditable}
+                                onChange={(e) => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    handlePassbookUpload(file);
+                                  }
+                                }}
+                              />
+                              {formData.bank.passbookDoc instanceof File && (
+                                <div className="mt-2 flex items-center text-sm">
+                                  <div className="flex items-center space-x-3">
+                                    {isPDF(formData.bank.passbookDoc) ? (
+                                      <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
+                                        <span className="text-sm text-red-600 font-bold">
+                                          PDF
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={URL.createObjectURL(
+                                          formData.bank.passbookDoc
+                                        )}
+                                        alt="Passbook preview"
+                                        className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                                      />
+                                    )}
+                                    <div className="flex flex-col">
+                                      <span className="text-gray-700 font-medium truncate max-w-[150px]">
+                                        {truncateFileName(getDisplayFileName(formData.bank.passbookDoc.name))}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {(
+                                          formData.bank.passbookDoc.size /
+                                          1024 /
+                                          1024
+                                        ).toFixed(2)}{" "}
+                                        MB
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2 ml-3">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openUploadedPassbookPreview(
+                                          formData.bank.passbookDoc
+                                        )
+                                      }
+                                      className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                                      disabled={!isEditable}
+                                    >
+                                      <FiEye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleInputChange(
+                                          "bank",
+                                          "passbookDoc",
+                                          null
+                                        )
+                                      }
+                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                      disabled={!isEditable}
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                              <p className="text-xs text-gray-500 mt-2">
+                                Accepted formats: PDF, JPG, JPEG, PNG (max 5MB)
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-3 mt-2 bg-gray-50 p-3 rounded-lg">
+                              {employeeById?.bankDetails?.passbookImgUrl ? (
+                                <>
+                                  {isPDF(
+                                    employeeById.bankDetails.passbookImgUrl
+                                  ) ? (
+                                    <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                      <span className="text-xs text-red-600 font-medium">
+                                        PDF
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <img
+                                      src={
+                                        employeeById.bankDetails
+                                          .passbookImgUrl
+                                      }
+                                      alt="Passbook preview"
+                                      className="w-8 h-8 object-cover rounded border border-gray-300"
+                                    />
+                                  )}
+                                  <span className="text-sm text-gray-700 truncate">
+                                    {truncateFileName(getDisplayFileName(employeeById.bankDetails.passbookImgUrl
+                                      .split("/")
+                                      .pop()))}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-sm text-gray-500">
+                                  No document uploaded
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         {/* UPI ID - Editable */}
                         <div className="border-t border-gray-200 mt-6"></div>
                         <div className="bg-gray-50 p-3 rounded-lg">
@@ -2812,151 +3043,7 @@ function EmployeeProfilePage() {
                               </p>
                             )}
                         </div>
-                        {/* Passbook Upload - Enabled in Edit Mode */}
-                        <div className="border-t pt-4 mt-4">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Bank Passbook
-                          </label>
-                          {isPageInEditMode ? (
-                            <div>
-                              <label
-                                htmlFor="passbook-upload"
-                                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                  isEditable
-                                    ? "cursor-pointer"
-                                    : "opacity-50 cursor-not-allowed"
-                                }`}
-                              >
-                                <FiUpload className="w-4 h-4 mr-2" />
-                                {formData.bank.passbookDoc instanceof File
-                                  ? "Change File"
-                                  : "Upload File"}
-                              </label>
-                              <input
-                                type="file"
-                                id="passbook-upload"
-                                className="hidden"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                disabled={!isEditable}
-                                onChange={(e) => {
-                                  const file = e.target.files[0];
-                                  if (file) {
-                                    handlePassbookUpload(file);
-                                  }
-                                }}
-                              />
-                              {formData.bank.passbookDoc instanceof File && (
-                                <div className="mt-2 flex items-center text-sm">
-                                  <div className="flex items-center space-x-3">
-                                    {isPDF(formData.bank.passbookDoc) ? (
-                                      <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
-                                        <span className="text-sm text-red-600 font-bold">
-                                          PDF
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <img
-                                        src={URL.createObjectURL(
-                                          formData.bank.passbookDoc
-                                        )}
-                                        alt="Passbook preview"
-                                        className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
-                                      />
-                                    )}
-                                    <div className="flex flex-col">
-                                      <span className="text-gray-700 font-medium truncate max-w-[150px]">
-                                        {formData.bank.passbookDoc.name}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        {(
-                                          formData.bank.passbookDoc.size /
-                                          1024 /
-                                          1024
-                                        ).toFixed(2)}{" "}
-                                        MB
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center space-x-2 ml-3">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        openUploadedPassbookPreview(
-                                          formData.bank.passbookDoc
-                                        )
-                                      }
-                                      className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
-                                      disabled={!isEditable}
-                                    >
-                                      <FiEye className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleInputChange(
-                                          "bank",
-                                          "passbookDoc",
-                                          null
-                                        )
-                                      }
-                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
-                                      disabled={!isEditable}
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                              <p className="text-xs text-gray-500 mt-2">
-                                Accepted formats: PDF, JPG, JPEG, PNG (max 5MB)
-                              </p>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between mt-2 bg-gray-50 p-3 rounded-lg">
-                              <div className="flex items-center space-x-3">
-                                {employeeById?.bankDetails?.passbookImgUrl ? (
-                                  <>
-                                    {isPDF(
-                                      employeeById.bankDetails.passbookImgUrl
-                                    ) ? (
-                                      <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
-                                        <span className="text-xs text-red-600 font-medium">
-                                          PDF
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <img
-                                        src={
-                                          employeeById.bankDetails
-                                            .passbookImgUrl
-                                        }
-                                        alt="Passbook preview"
-                                        className="w-8 h-8 object-cover rounded border border-gray-300"
-                                      />
-                                    )}
-                                    <span className="text-sm text-gray-700 truncate">
-                                      {employeeById.bankDetails.passbookImgUrl
-                                        .split("/")
-                                        .pop()}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="text-sm text-gray-500">
-                                    No document uploaded
-                                  </span>
-                                )}
-                              </div>
-                              {employeeById?.bankDetails?.passbookImgUrl && (
-                                <button
-                                  onClick={openPassbookPreview}
-                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                >
-                                  <FiEye className="w-4 h-4 mr-1" /> View
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
+
                       </div>
                     </div>
                   </div>
