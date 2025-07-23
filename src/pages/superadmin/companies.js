@@ -765,7 +765,7 @@ function SuperadminCompanies() {
 
         // Check if the action was fulfilled or rejected
         if (updateCompany.fulfilled.match(result)) {
-          toast.success("Company updated successfully!");
+        toast.success("Company updated successfully!");
           // Refetch updated list
           dispatch(fetchCompanies());
           // Close modal and reset selection
@@ -790,21 +790,21 @@ function SuperadminCompanies() {
             }));
             toast.error("Please fix the email error");
             return; // Don't close modal
-          } else {
+        } else {
             toast.error(errorMessage);
             return; // Don't close modal for other errors
-          }
         }
+      }
       } else {
         const result = await dispatch(createCompany(requestBody));
 
         if (createCompany.fulfilled.match(result)) {
           toast.success("Company created successfully!");
-          // Refetch updated list
-          dispatch(fetchCompanies());
-          // Close modal and reset selection
-          setIsCompanyModalOpen(false);
-          setSelectedCompany(null);
+      // Refetch updated list
+      dispatch(fetchCompanies());
+      // Close modal and reset selection
+      setIsCompanyModalOpen(false);
+      setSelectedCompany(null);
         } else if (createCompany.rejected.match(result)) {
           // Handle specific backend validation errors for create
           const errorMessage = result.payload || result.error?.message || "Failed to create company";
@@ -1283,110 +1283,110 @@ function SuperadminCompanies() {
                         </tr>
                       ) : (
                         filteredCompanies.map((company) => (
-                          <tr
-                            key={company._id}
-                            className={`cursor-pointer transition-colors duration-200 ${
-                              selectedCompany?.companyId === company.companyId
-                                ? "bg-blue-100"
-                                : "bg-gray-50 hover:bg-blue-50"
-                            }`}
-                            onClick={() => {
-                              console.log(
-                                "Clicking company:",
-                                company.name,
-                                "Company ID:",
-                                company.companyId,
-                                "Current selected:",
-                                selectedCompany?.companyId
-                              );
-                              const isCurrentlySelected =
+                        <tr
+                          key={company._id}
+                          className={`cursor-pointer transition-colors duration-200 ${
+                            selectedCompany?.companyId === company.companyId
+                              ? "bg-blue-100"
+                              : "bg-gray-50 hover:bg-blue-50"
+                          }`}
+                          onClick={() => {
+                            console.log(
+                              "Clicking company:",
+                              company.name,
+                              "Company ID:",
+                              company.companyId,
+                              "Current selected:",
+                              selectedCompany?.companyId
+                            );
+                            const isCurrentlySelected =
                                 selectedCompany?.companyId ===
                                 company.companyId;
-                              const newSelection = isCurrentlySelected
-                                ? null
-                                : company;
-                              console.log(
-                                "Setting selection to:",
-                                newSelection?.companyId
-                              );
-                              setSelectedCompany(newSelection);
-                            }}
+                            const newSelection = isCurrentlySelected
+                              ? null
+                              : company;
+                            console.log(
+                              "Setting selection to:",
+                              newSelection?.companyId
+                            );
+                            setSelectedCompany(newSelection);
+                          }}
                             onDoubleClick={() =>
                               handleOpenCompanyModal(company)
                             }
-                          >
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <div className="flex items-center space-x-2">
-                                {selectedCompany?.companyId ===
-                                  company.companyId && (
-                                  <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                )}
-                                <TruncatedText
-                                  text={company.companyId || company._id || "—"}
-                                  maxWidth="max-w-[200px]"
-                                  className="font-mono"
-                                  trimAfter={22}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
+                        >
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <div className="flex items-center space-x-2">
+                              {selectedCompany?.companyId ===
+                                company.companyId && (
+                                <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                              )}
                               <TruncatedText
-                                text={company.name}
-                                maxWidth="max-w-[150px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={
-                                  company.companyHeads &&
-                                  company.companyHeads.length > 0
-                                    ? company.companyHeads
-                                        .map((head, index) =>
-                                          [
-                                            head.firstName,
-                                            head.middleName,
-                                            head.lastName,
-                                          ]
-                                            .filter(Boolean)
-                                            .join(" ")
-                                        )
-                                        .join(", ")
-                                    : "No Company Head"
-                                }
-                                maxWidth="max-w-[120px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.email}
-                                maxWidth="max-w-[180px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.phone}
-                                maxWidth="max-w-[100px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.gst}
-                                maxWidth="max-w-[140px]"
-                              />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.regAdd}
+                                text={company.companyId || company._id || "—"}
                                 maxWidth="max-w-[200px]"
+                                className="font-mono"
+                                trimAfter={22}
                               />
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              <TruncatedText
-                                text={company.prefixForEmpID}
-                                maxWidth="max-w-[80px]"
-                              />
-                            </td>
-                          </tr>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.name}
+                              maxWidth="max-w-[150px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={
+                                company.companyHeads &&
+                                company.companyHeads.length > 0
+                                  ? company.companyHeads
+                                      .map((head, index) =>
+                                        [
+                                          head.firstName,
+                                          head.middleName,
+                                          head.lastName,
+                                        ]
+                                          .filter(Boolean)
+                                          .join(" ")
+                                      )
+                                      .join(", ")
+                                  : "No Company Head"
+                              }
+                              maxWidth="max-w-[120px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.email}
+                              maxWidth="max-w-[180px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.phone}
+                              maxWidth="max-w-[100px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.gst}
+                              maxWidth="max-w-[140px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.regAdd}
+                              maxWidth="max-w-[200px]"
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            <TruncatedText
+                              text={company.prefixForEmpID}
+                              maxWidth="max-w-[80px]"
+                            />
+                          </td>
+                        </tr>
                         ))
                       )}
                     </tbody>
