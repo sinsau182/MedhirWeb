@@ -912,9 +912,9 @@ function EmployeeProfilePage() {
       "bankName",
       "branchName",
       "upiId",
-      "upiContactName"
+      "upiContactName",
     ];
-    return fields.some(field => {
+    return fields.some((field) => {
       const formValue = formData.bank[field] || "";
       const backendValue =
         field === "upiContactName"
@@ -965,7 +965,10 @@ function EmployeeProfilePage() {
     };
     // Detect if any bank field (except passbookDoc) is filled
     const anyBankFieldFilled = bankFields.some(
-      (field) => field !== "passbookDoc" && bankFieldValues[field] && bankFieldValues[field].toString().trim() !== ""
+      (field) =>
+        field !== "passbookDoc" &&
+        bankFieldValues[field] &&
+        bankFieldValues[field].toString().trim() !== ""
     );
     // Use robust function to check for real changes
     const anyBankInfoChanged = isBankFieldChanged(formData, employeeById);
@@ -982,7 +985,10 @@ function EmployeeProfilePage() {
       const missingFields = [];
       const newValidationErrors = { ...validationErrors };
       let firstMissingField = null;
-      if (!formData.bank.accountNumber || formData.bank.accountNumber.trim() === "") {
+      if (
+        !formData.bank.accountNumber ||
+        formData.bank.accountNumber.trim() === ""
+      ) {
         missingFields.push("Account Number");
         newValidationErrors.accountNumber = "Account Number is required";
         if (!firstMissingField) firstMissingField = "accountNumber";
@@ -1076,7 +1082,8 @@ function EmployeeProfilePage() {
         payload.upiId = formData.bank.upiId;
       }
       if (
-        formData.bank.upiContactName !== employeeById.bankDetails?.upiPhoneNumber
+        formData.bank.upiContactName !==
+        employeeById.bankDetails?.upiPhoneNumber
       ) {
         payload.upiPhoneNumber = formData.bank.upiContactName;
       }
@@ -1108,14 +1115,21 @@ function EmployeeProfilePage() {
         payload.pancardImgUrl = employeeById.idProofs.pancardImgUrl;
       }
       if (formData.idProofs.passportImage instanceof File) {
-        formDataPayload.append("passportImage", formData.idProofs.passportImage);
+        formDataPayload.append(
+          "passportImage",
+          formData.idProofs.passportImage
+        );
       } else if (employeeById?.idProofs?.passportImgUrl) {
         payload.passportImgUrl = employeeById.idProofs.passportImgUrl;
       }
       if (formData.idProofs.drivingLicenseImage instanceof File) {
-        formDataPayload.append("drivingLicenseImage", formData.idProofs.drivingLicenseImage);
+        formDataPayload.append(
+          "drivingLicenseImage",
+          formData.idProofs.drivingLicenseImage
+        );
       } else if (employeeById?.idProofs?.drivingLicenseImgUrl) {
-        payload.drivingLicenseImgUrl = employeeById.idProofs.drivingLicenseImgUrl;
+        payload.drivingLicenseImgUrl =
+          employeeById.idProofs.drivingLicenseImgUrl;
       }
       if (formData.idProofs.voterIdImage instanceof File) {
         formDataPayload.append("voterIdImage", formData.idProofs.voterIdImage);
@@ -2012,11 +2026,17 @@ function EmployeeProfilePage() {
                                     <label
                                       htmlFor={`upload-${key}`}
                                       className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                        isEditable ? "cursor-pointer" : "opacity-50 cursor-not-allowed"
+                                        isEditable
+                                          ? "cursor-pointer"
+                                          : "opacity-50 cursor-not-allowed"
                                       }`}
                                     >
                                       <FiUpload className="w-3 h-3 mr-1" />
-                                      {formData.idProofs[fileKey] instanceof File || employeeById?.idProofs?.[imgUrlKey] ? "Change File" : "Upload"}
+                                      {formData.idProofs[fileKey] instanceof
+                                        File ||
+                                      employeeById?.idProofs?.[imgUrlKey]
+                                        ? "Change File"
+                                        : "Upload"}
                                     </label>
                                     <input
                                       type="file"
@@ -2499,10 +2519,17 @@ function EmployeeProfilePage() {
                               <label
                                 htmlFor="bank-field-passbookDoc"
                                 id="bank-field-passbookDoc-label"
-                                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${isEditable ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+                                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                                  isEditable
+                                    ? "cursor-pointer"
+                                    : "opacity-50 cursor-not-allowed"
+                                }`}
                               >
                                 <FiUpload className="w-4 h-4 mr-2" />
-                                {formData.bank.passbookDoc instanceof File || employeeById?.bankDetails?.passbookImgUrl ? "Change File" : "Upload File"}
+                                {formData.bank.passbookDoc instanceof File ||
+                                employeeById?.bankDetails?.passbookImgUrl
+                                  ? "Change File"
+                                  : "Upload File"}
                               </label>
                               <input
                                 type="file"
@@ -2518,29 +2545,53 @@ function EmployeeProfilePage() {
                                 }}
                               />
                               {/* Show preview: new file if uploaded, else last uploaded file from backend */}
-                              {(formData.bank.passbookDoc instanceof File || employeeById?.bankDetails?.passbookImgUrl) && (
+                              {(formData.bank.passbookDoc instanceof File ||
+                                employeeById?.bankDetails?.passbookImgUrl) && (
                                 <div className="mt-2 flex items-center text-sm">
                                   <div className="flex items-center space-x-3">
-                                    {isPDF(formData.bank.passbookDoc instanceof File ? formData.bank.passbookDoc : employeeById?.bankDetails?.passbookImgUrl) ? (
+                                    {isPDF(
+                                      formData.bank.passbookDoc instanceof File
+                                        ? formData.bank.passbookDoc
+                                        : employeeById?.bankDetails
+                                            ?.passbookImgUrl
+                                    ) ? (
                                       <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
-                                        <span className="text-sm text-red-600 font-bold">PDF</span>
+                                        <span className="text-sm text-red-600 font-bold">
+                                          PDF
+                                        </span>
                                       </div>
                                     ) : (
                                       <img
-                                        src={formData.bank.passbookDoc instanceof File ? URL.createObjectURL(formData.bank.passbookDoc) : employeeById?.bankDetails?.passbookImgUrl}
+                                        src={
+                                          formData.bank.passbookDoc instanceof
+                                          File
+                                            ? URL.createObjectURL(
+                                                formData.bank.passbookDoc
+                                              )
+                                            : employeeById?.bankDetails
+                                                ?.passbookImgUrl
+                                        }
                                         alt="Passbook preview"
                                         className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
                                       />
                                     )}
                                     <div className="flex flex-col">
                                       <span className="text-gray-700 font-medium truncate max-w-[150px]">
-                                        {formData.bank.passbookDoc instanceof File
+                                        {formData.bank.passbookDoc instanceof
+                                        File
                                           ? formData.bank.passbookDoc.name
-                                          : employeeById?.bankDetails?.passbookImgUrl?.split("/").pop()}
+                                          : employeeById?.bankDetails?.passbookImgUrl
+                                              ?.split("/")
+                                              .pop()}
                                       </span>
                                       <span className="text-xs text-gray-500">
-                                        {formData.bank.passbookDoc instanceof File
-                                          ? `${(formData.bank.passbookDoc.size / 1024 / 1024).toFixed(2)} MB`
+                                        {formData.bank.passbookDoc instanceof
+                                        File
+                                          ? `${(
+                                              formData.bank.passbookDoc.size /
+                                              1024 /
+                                              1024
+                                            ).toFixed(2)} MB`
                                           : null}
                                       </span>
                                     </div>
@@ -2548,7 +2599,15 @@ function EmployeeProfilePage() {
                                   <div className="flex items-center space-x-2 ml-3">
                                     <button
                                       type="button"
-                                      onClick={() => openUploadedPassbookPreview(formData.bank.passbookDoc instanceof File ? formData.bank.passbookDoc : employeeById?.bankDetails?.passbookImgUrl)}
+                                      onClick={() =>
+                                        openUploadedPassbookPreview(
+                                          formData.bank.passbookDoc instanceof
+                                            File
+                                            ? formData.bank.passbookDoc
+                                            : employeeById?.bankDetails
+                                                ?.passbookImgUrl
+                                        )
+                                      }
                                       className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
                                       disabled={!isEditable}
                                     >
@@ -2556,7 +2615,13 @@ function EmployeeProfilePage() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => handleInputChange("bank", "passbookDoc", null)}
+                                      onClick={() =>
+                                        handleInputChange(
+                                          "bank",
+                                          "passbookDoc",
+                                          null
+                                        )
+                                      }
                                       className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
                                       disabled={!isEditable}
                                     >
@@ -2569,7 +2634,9 @@ function EmployeeProfilePage() {
                                 Accepted formats: PDF, JPG, JPEG, PNG (max 1MB)
                               </p>
                               {validationErrors.passbookDoc && (
-                                <p className="text-xs text-red-500 mt-1">{validationErrors.passbookDoc}</p>
+                                <p className="text-xs text-red-500 mt-1">
+                                  {validationErrors.passbookDoc}
+                                </p>
                               )}
                             </div>
                           ) : (
