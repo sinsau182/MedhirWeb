@@ -775,6 +775,13 @@ function EmployeeForm() {
         [field]: errors[field]
       }));
     }
+
+    // Debounced uniqueness check for emailPersonal and phone
+    if (section === "employee" && (field === "emailPersonal" || field === "phone")) {
+      const nextEmail = field === "emailPersonal" ? value : formData.employee.emailPersonal;
+      const nextPhone = field === "phone" ? value : formData.employee.phone;
+      debouncedCheckUniqueness(nextEmail, nextPhone);
+    }
   };
 
   const prepareFormData = (obj) => {
@@ -843,7 +850,7 @@ function EmployeeForm() {
     if (e && e.preventDefault) e.preventDefault();
 
     // Validate all required fields
-    const errors = {};
+      const errors = {};
     if (!formData.employee.firstName?.trim()) errors.firstName = 'First Name is required';
     if (!formData.employee.lastName?.trim()) errors.lastName = 'Last Name is required';
     if (!formData.employee.phone?.trim()) errors.phone = 'Phone Number is required';
@@ -1020,6 +1027,12 @@ function EmployeeForm() {
           break;
         }
       }
+      return;
+    }
+
+    // Check for uniqueness errors
+    if (uniquenessErrors.emailPersonal || uniquenessErrors.phone) {
+      toast.error("Please fix uniqueness errors before submitting.");
       return;
     }
 
@@ -1886,6 +1899,53 @@ function EmployeeForm() {
     return "";
   };
 
+  // Debounce utility
+  function debounce(func, wait) {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  }
+
+  const [uniquenessErrors, setUniquenessErrors] = useState({
+    emailPersonal: "",
+    phone: "",
+  });
+
+  const debouncedCheckUniqueness = useRef(
+    debounce(async (email, phone) => {
+      const params = {};
+      if (email) params.email = email;
+      if (phone) params.phone = phone;
+      if (!email && !phone) return;
+      try {
+        const token = getItemFromSessionStorage("token");
+        const res = await axios.get(
+          `${publicRuntimeConfig.apiURL}/employees/existence-check`,
+          {
+            params,
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          }
+        );
+        setUniquenessErrors((prev) => ({
+          ...prev,
+          emailPersonal: res.data.emailPersonal === true ? "This email is already existing." : "",
+          phone: res.data.phone === true ? "This phone is already existing." : "",
+        }));
+      } catch (err) {
+        // Optionally handle error
+      }
+    }, 500)
+  ).current;
+
+  // Add input filtering for account number and account holder name
+  const filterAccountNumberInput = (value) => value.replace(/[^0-9]/g, '');
+  const filterAccountHolderNameInput = (value) => value.replace(/[^A-Za-z ]/g, '');
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -2082,6 +2142,9 @@ function EmployeeForm() {
                               inputMode="numeric"
                             />
                             {validationErrors.phone && (fieldTouched.phone || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.phone}</p>)}
+                            {uniquenessErrors.phone && (
+                              <p className="text-red-600 text-xs mt-1">{uniquenessErrors.phone}</p>
+                            )}
                           </div>
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Alternate Phone</label>
@@ -2127,6 +2190,9 @@ function EmployeeForm() {
                               )}
                             </div>
                             {validationErrors.emailPersonal && (fieldTouched.emailPersonal || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailPersonal}</p>)}
+                            {uniquenessErrors.emailPersonal && (
+                              <p className="text-red-600 text-xs mt-1">{uniquenessErrors.emailPersonal}</p>
+                            )}
                           </div>
 
                         </div>
@@ -2481,12 +2547,12 @@ function EmployeeForm() {
                         {/* Account fields */}
                         <div className="flex flex-col mb-3"> {/* mb-3 for more space below */}
                           <label className="text-sm font-medium text-gray-700 mb-0.5">Account Number</label>
-                          <input className={inputClass + (bankAccountError('accountNumber') || ((bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber)) ? ' border-red-500' : '')} value={formData.bankDetails.accountNumber || ''} onChange={e => handleInputChange('bankDetails', 'accountNumber', e.target.value)} placeholder="Enter account number" type="text" inputMode="numeric" maxLength={18} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountNumber: true }))} />
+                          <input className={inputClass + (bankAccountError('accountNumber') || ((bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber)) ? ' border-red-500' : '')} value={formData.bankDetails.accountNumber || ''} onChange={e => handleInputChange('bankDetails', 'accountNumber', filterAccountNumberInput(e.target.value))} placeholder="Enter account number" type="text" inputMode="numeric" maxLength={18} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountNumber: true }))} />
                           {(bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber) && <span className="text-xs text-red-500">{validateAccountNumber(formData.bankDetails.accountNumber)}</span>}
                         </div>
                         <div className="flex flex-col mb-3">
                           <label className="text-sm font-medium text-gray-700 mb-0.5">Account Holder Name</label>
-                          <input className={inputClass + (bankAccountError('accountHolderName') || ((bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName)) ? ' border-red-500' : '')} value={formData.bankDetails.accountHolderName || ''} onChange={e => handleInputChange('bankDetails', 'accountHolderName', e.target.value)} placeholder="Enter account holder name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountHolderName: true }))} />
+                          <input className={inputClass + (bankAccountError('accountHolderName') || ((bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName)) ? ' border-red-500' : '')} value={formData.bankDetails.accountHolderName || ''} onChange={e => handleInputChange('bankDetails', 'accountHolderName', filterAccountHolderNameInput(e.target.value))} placeholder="Enter account holder name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountHolderName: true }))} />
                           {(bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName) && <span className="text-xs text-red-500">{validateAccountHolderName(formData.bankDetails.accountHolderName)}</span>}
                         </div>
                         <div className="flex flex-col mb-3">
@@ -2682,18 +2748,18 @@ function EmployeeForm() {
                         const currentIndex = sectionsArr.indexOf(activeSection);
                         if (currentIndex > 0) {
                           return (
-                            <motion.button
-                              type="button"
-                              className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
+                    <motion.button
+                      type="button"
+                        className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
                               onClick={() => setActiveSection(sectionsArr[currentIndex - 1])}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                              </svg>
-                              Back
-                            </motion.button>
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Back
+                      </motion.button>
                           );
                         }
                         return null;
@@ -2701,18 +2767,18 @@ function EmployeeForm() {
                     </div>
                     {/* Right: Cancel, Next, Save and Exit */}
                     <div className="flex gap-2 items-center">
-                      <motion.button
-                        type="button"
+                    <motion.button
+                      type="button"
                         className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg flex items-center gap-2"
-                        onClick={() => handleOpenModal('cancel', () => { handleCloseModal(); router.push('/hradmin/employees'); })}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        Cancel
-                      </motion.button>
-                      <motion.button
-                        type="button"
-                        className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                      onClick={() => handleOpenModal('cancel', () => { handleCloseModal(); router.push('/hradmin/employees'); })}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
                         onClick={() => {
                           // Move to next section/tab
                           const sectionsArr = ["personal", "idProofs", "bank", "salary"];
@@ -2721,64 +2787,64 @@ function EmployeeForm() {
                             setActiveSection(sectionsArr[currentIndex + 1]);
                           }
                         }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
                         <span>Next</span>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </motion.button>
-                      <motion.button
-                        type="button"
-                        className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                        onClick={() => handleOpenModal('saveExit', () => { handleCloseModal(); handleSaveAndExit(); })}
-                        disabled={loading}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {loading ? (
-                          <>
-                            <svg
-                              className="animate-spin h-4 w-4"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                fill="none"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                            <span>Saving...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Save and Exit</span>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
+                          </svg>
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                      onClick={() => handleOpenModal('saveExit', () => { handleCloseModal(); handleSaveAndExit(); })}
+                      disabled={loading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {loading ? (
+                        <>
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
                               stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </>
-                        )}
-                      </motion.button>
+                              strokeWidth="4"
+                              fill="none"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
+                          </svg>
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Save and Exit</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </>
+                      )}
+                    </motion.button>
                     </div>
                   </div>
                 </motion.div>
