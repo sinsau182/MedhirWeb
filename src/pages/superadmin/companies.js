@@ -454,6 +454,7 @@ function SuperadminCompanies() {
       [name]: error,
     }));
   };
+  
 
   const handleCompanyHeadInputChange = (e) => {
     const { name, value } = e.target;

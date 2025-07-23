@@ -841,83 +841,186 @@ function EmployeeForm() {
   const handleSaveAndExit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    // Mark all fields as touched to show validation errors
-    setFieldTouched(prev => ({
-      ...prev,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      joiningDate: true,
-      emailPersonal: true,
-      gender: true,
-      department: true,
-      designation: true
-    }));
-
     // Validate all required fields
-    const validateCurrentSection = () => {
-      const errors = {};
+    const errors = {};
+    if (!formData.employee.firstName?.trim()) errors.firstName = 'First Name is required';
+    if (!formData.employee.lastName?.trim()) errors.lastName = 'Last Name is required';
+    if (!formData.employee.phone?.trim()) errors.phone = 'Phone Number is required';
+    if (!formData.employee.joiningDate) errors.joiningDate = 'Date of Joining is required';
+    if (!formData.employee.emailPersonal?.trim()) errors.emailPersonal = 'Personal Email is required';
+    // Add more required fields as needed
 
-      // Basic required fields that must always be present
-      if (!formData.employee.firstName?.trim()) {
-        errors.firstName = "First name is required";
-      }
-      if (!formData.employee.lastName?.trim()) {
-        errors.lastName = "Last name is required";
-      }
-      if (!formData.employee.phone?.trim()) {
-        errors.phone = "Phone number is required";
-      }
-      if (!formData.employee.joiningDate) {
-        errors.joiningDate = "Date of joining is required";
-      }
-      if (!formData.employee.emailPersonal?.trim()) {
-        errors.emailPersonal = "Personal email is required";
-      }
-      // if (!formData.employee.gender) {
-      //   errors.gender = "Please select a gender";
-      // }
-      // if (!formData.employee.department) {
-      //   errors.department = "Department is required";
-      // }
-      // if (!formData.employee.designation) {
-      //   errors.designation = "Designation is required";
-      // }
+    const missingFields = Object.keys(errors);
+    if (missingFields.length > 0) {
+      // Mark all missing fields as touched to show red border
+      setFieldTouched(prev => ({
+        ...prev,
+        ...missingFields.reduce((acc, field) => { acc[field] = true; return acc; }, {})
+      }));
+      // Set validation errors for all missing fields
+      setValidationErrors(prev => ({
+        ...prev,
+        ...missingFields.reduce((acc, field) => { acc[field] = errors[field]; return acc; }, {})
+      }));
+      // If not on personal tab, navigate to it
+      if (activeSection !== 'personal') setActiveSection('personal');
+      // Show a separate toast for each missing field
+      missingFields.forEach(field => {
+        toast.error(errors[field]);
+      });
+      return;
+    }
 
-      // Validate phone number format if provided
-      if (
-        formData.employee.phone &&
-        !/^[0-9]{10}$/.test(formData.employee.phone)
-      ) {
-        errors.phone = "Invalid phone number format";
+    // After personal details validation, add ID Proofs validation
+    const idProofFields = [
+      { key: 'aadharNo', img: 'aadharImgUrl', label: 'Aadhar' },
+      { key: 'panNo', img: 'pancardImgUrl', label: 'PAN' },
+      { key: 'passport', img: 'passportImgUrl', label: 'Passport' },
+      { key: 'drivingLicense', img: 'drivingLicenseImgUrl', label: 'Driving License' },
+      { key: 'voterId', img: 'voterIdImgUrl', label: 'Voter ID' },
+    ];
+    let idProofError = false;
+    let idProofTouched = {};
+    let idProofValidationErrors = {};
+
+    idProofFields.forEach(({ key, img, label }) => {
+      const number = formData.idProofs[key];
+      const file = formData.idProofs[img];
+      if ((number && !file) || (!number && file)) {
+        idProofError = true;
+        idProofTouched[key] = true;
+        idProofTouched[img] = true;
+        if (!number && file) {
+          idProofValidationErrors[key] = `${label} Number is required if you upload a document.`;
+          toast.error(`${label} Number is required if you upload a document.`);
+        }
+        if (number && !file) {
+          idProofValidationErrors[img] = `${label} document is required if you enter a number.`;
+          toast.error(`${label} document is required if you enter a number.`);
+        }
       }
+    });
 
-      // Validate email format if provided
-      if (formData.employee.emailPersonal && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.employee.emailPersonal)) {
-        errors.emailPersonal = "Please enter a valid email address";
+    if (idProofError) {
+      // Mark all touched for id proofs
+      setIdProofsTouched(prev => ({ ...prev, ...idProofTouched }));
+      setValidationErrors(prev => ({ ...prev, ...idProofValidationErrors }));
+      // If not on ID Proofs tab, navigate to it
+      if (activeSection !== 'idProofs') setActiveSection('idProofs');
+      return;
+    }
+
+    // After ID Proofs validation, add Bank Details validation
+    const accountFields = [
+      { key: 'accountNumber', label: 'Account Number' },
+      { key: 'accountHolderName', label: 'Account Holder Name' },
+      { key: 'ifscCode', label: 'IFSC Code' },
+      { key: 'bankName', label: 'Bank Name' },
+      { key: 'branchName', label: 'Branch Name' },
+      { key: 'passbookImgUrl', label: 'Passbook/Cancelled Cheque' },
+    ];
+    const upiFields = [
+      { key: 'upiId', label: 'UPI ID' },
+      { key: 'upiPhoneNumber', label: 'UPI Contact Name' },
+    ];
+    const bankVals = formData.bankDetails;
+    const anyAccountFilled = accountFields.some(f => bankVals[f.key] && bankVals[f.key].toString().trim() !== '');
+    const anyUPIFilled = upiFields.some(f => bankVals[f.key] && bankVals[f.key].toString().trim() !== '');
+    let bankError = false;
+    let bankTouched = {};
+    let bankValidationErrors = {};
+
+    if (anyAccountFilled && anyUPIFilled) {
+      // All account and UPI fields required
+      accountFields.forEach(f => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+          bankError = true;
+          bankTouched[f.key] = true;
+          bankValidationErrors[f.key] = `${f.label} is required.`;
+          toast.error(`${f.label} is required.`);
+        }
+      });
+      upiFields.forEach(f => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+          bankError = true;
+          bankTouched[f.key] = true;
+          bankValidationErrors[f.key] = `${f.label} is required.`;
+          toast.error(`${f.label} is required.`);
+        }
+      });
+    } else if (anyAccountFilled) {
+      // All account fields required
+      accountFields.forEach(f => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+          bankError = true;
+          bankTouched[f.key] = true;
+          bankValidationErrors[f.key] = `${f.label} is required.`;
+          toast.error(`${f.label} is required.`);
+        }
+      });
+    } else if (anyUPIFilled) {
+      // Both UPI fields required
+      upiFields.forEach(f => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+          bankError = true;
+          bankTouched[f.key] = true;
+          bankValidationErrors[f.key] = `${f.label} is required.`;
+          toast.error(`${f.label} is required.`);
+        }
+      });
+    }
+
+    if (bankError) {
+      setBankTouched(prev => ({ ...prev, ...bankTouched }));
+      setValidationErrors(prev => ({ ...prev, ...bankValidationErrors }));
+      if (activeSection !== 'bank') setActiveSection('bank');
+      return;
+    }
+    // Clear touched and errors for bank fields if nothing is filled
+    if (!anyAccountFilled && !anyUPIFilled) {
+      setBankTouched(prev => ({
+        ...prev,
+        accountNumber: false,
+        accountHolderName: false,
+        ifscCode: false,
+        bankName: false,
+        branchName: false,
+        passbookImgUrl: false,
+        upiId: false,
+        upiPhoneNumber: false,
+      }));
+      setValidationErrors(prev => ({
+        ...prev,
+        accountNumber: '',
+        accountHolderName: '',
+        ifscCode: '',
+        bankName: '',
+        branchName: '',
+        passbookImgUrl: '',
+        upiId: '',
+        upiPhoneNumber: '',
+      }));
+    }
+
+    // After all tab validations and before setLoading(true):
+    const hasAnyValidationError = Object.values(validationErrors).some(v => v && v.toString().trim() !== '');
+    if (hasAnyValidationError) {
+      toast.error('Please fix all validation errors before submitting.');
+      // Try to navigate to the first tab with a validation error
+      const tabFieldMap = [
+        { tab: 'personal', fields: ['firstName', 'middleName', 'lastName', 'fathersName', 'gender', 'phone', 'alternatePhone', 'emailPersonal', 'emailOfficial', 'currentAddress', 'permanentAddress', 'joiningDate', 'department', 'designation', 'reportingManager', 'weeklyOffs', 'pfEnrolled', 'uanNumber', 'esicEnrolled', 'esicNumber'] },
+        { tab: 'idProofs', fields: ['aadharNo', 'aadharImgUrl', 'panNo', 'pancardImgUrl', 'passport', 'passportImgUrl', 'drivingLicense', 'drivingLicenseImgUrl', 'voterId', 'voterIdImgUrl'] },
+        { tab: 'bank', fields: ['accountNumber', 'accountHolderName', 'ifscCode', 'bankName', 'branchName', 'passbookImgUrl', 'upiId', 'upiPhoneNumber'] },
+        { tab: 'salary', fields: ['annualCtc', 'basicSalary'] },
+      ];
+      for (const { tab, fields } of tabFieldMap) {
+        if (fields.some(f => validationErrors[f] && validationErrors[f].toString().trim() !== '')) {
+          setActiveSection(tab);
+          break;
+        }
       }
-
-      // Validate ID proofs only if they have values
-      if (activeSection === "idProofs") {
-        const idProofErrors = validateIdProofs(formData.idProofs);
-        Object.assign(errors, idProofErrors);
-      }
-
-      // Update validation errors state
-      setValidationErrors(errors);
-
-      // If there are errors, show them and return false
-      if (Object.keys(errors).length > 0) {
-        Object.entries(errors).forEach(([field, message]) => {
-          toast.error(message);
-        });
-        return false;
-      }
-
-      return true;
-    };
-
-    if (!validateCurrentSection()) return;
+      return;
+    }
 
     setLoading(true);
     try {
@@ -1769,6 +1872,18 @@ function EmployeeForm() {
 
   // Helper to check if any personal field is filled
   const anyPersonalFieldFilled = Object.values(formData.employee).some(v => v && v.toString().trim() !== "");
+
+  // Add input filtering for salary fields
+  const filterNumberInput = (value) => {
+    return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); // allow only one dot
+  };
+
+  // Add validation for salary fields
+  const validateNumber = (value, required = true) => {
+    if (!value || value.toString().trim() === "") return required ? "This field is required." : "";
+    if (isNaN(Number(value))) return "Only numbers allowed.";
+    return "";
+  };
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
