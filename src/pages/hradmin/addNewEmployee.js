@@ -728,7 +728,8 @@ function EmployeeForm() {
   const handleInputChange = (section, field, value) => {
     // For address fields and Father Name, do not trim or clean spaces on input
     const isFreeSpaceField =
-      section === "employee" && (field === "currentAddress" || field === "permanentAddress" || field === "fathersName");
+      (section === "employee" && (field === "currentAddress" || field === "permanentAddress" || field === "fathersName")) ||
+      (section === "bankDetails" && (field === "accountHolderName" || field === "bankName" || field === "branchName" || field === "upiPhoneNumber"));
 
     const cleanedValue = (!isFreeSpaceField && typeof value === 'string')
       ? cleanDebugText(value)
