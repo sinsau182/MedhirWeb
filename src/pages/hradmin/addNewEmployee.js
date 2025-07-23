@@ -874,9 +874,9 @@ function EmployeeForm() {
       if (!formData.employee.emailPersonal?.trim()) {
         errors.emailPersonal = "Personal email is required";
       }
-      if (!formData.employee.gender) {
-        errors.gender = "Please select a gender";
-      }
+      // if (!formData.employee.gender) {
+      //   errors.gender = "Please select a gender";
+      // }
       // if (!formData.employee.department) {
       //   errors.department = "Department is required";
       // }
