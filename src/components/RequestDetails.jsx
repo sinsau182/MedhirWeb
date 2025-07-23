@@ -537,40 +537,65 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
         <TabsList className="grid grid-cols-5 gap-3 mb-5 bg-transparent p-0">
           <TabsTrigger
             value="leaveRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative"
           >
             <Calendar className="h-4 w-4 mr-2" />
             <span>Leave Requests</span>
+            {pendingLeaves && pendingLeaves.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {pendingLeaves.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="compOffRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative"
           >
             <Calendar className="h-4 w-4 mr-2" />
             <span>Comp Off</span>
+            {pendingCompOffs && pendingCompOffs.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {pendingCompOffs.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="profileUpdates"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative"
           >
             <UserCog className="h-4 w-4 mr-2" />
             <span>Profile Updates</span>
+            {profileUpdates && profileUpdates.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {profileUpdates.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="expenseRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative"
             disabled={true}
           >
             <DollarSign className="h-4 w-4 mr-2" />
             <span>Expense Requests</span>
+            {expensesRequests && expensesRequests.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {expensesRequests.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="incomeRequests"
-            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            className="flex items-center justify-center py-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative"
             disabled={true}
           >
             <Wallet className="h-4 w-4 mr-2" />
             <span>Income Requests</span>
+            {incomeRequests && incomeRequests.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {incomeRequests.length}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="leaveRequests">
@@ -578,7 +603,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
                 <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-3 text-left text-sm font-medium border-b border-gray-100 min-w-[100px] w-[120px]">
                     Employee ID
                   </th>
                   <th className="py-4 px-2 text-left text-sm font-medium border-b border-gray-100">
@@ -629,7 +654,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                       key={`${request.leaveId}-${request.employeeId}-${index}`}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-3 py-4 text-sm font-medium text-gray-900 break-all">
                         {request.employeeId}
                       </td>
                       <td className="px-5 py-4 text-sm">
@@ -771,7 +796,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                       key={`${request.leaveId}-${request.employeeId}-${index}`}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-3 py-4 text-sm font-medium text-gray-900 break-all">
                         {request.employeeId}
                       </td>
                       <td className="px-5 py-4 text-sm">
@@ -854,7 +879,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
                 <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-3 text-left text-sm font-medium border-b border-gray-100 min-w-[100px] w-[120px]">
                     Employee ID
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
@@ -896,7 +921,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                         key={update.id || update.employeeId}
                         className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                       >
-                        <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                        <td className="px-3 py-4 text-sm font-medium text-gray-900 break-all">
                           {update.employeeId}
                         </td>
                         <td className="px-5 py-4 text-sm">
@@ -960,7 +985,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
                 <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-3 text-left text-sm font-medium border-b border-gray-100 min-w-[100px] w-[120px]">
                     Employee ID
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
@@ -1002,7 +1027,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                       key={request.expenseId}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-3 py-4 text-sm font-medium text-gray-900 break-all">
                         {request.submittedBy}
                       </td>
                       <td className="px-5 py-4 text-sm">
@@ -1055,7 +1080,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
             <table className="w-full">
               <thead className="bg-[#F0F4FB] text-gray-700">
                 <tr>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
+                  <th className="py-4 px-3 text-left text-sm font-medium border-b border-gray-100 min-w-[100px] w-[120px]">
                     Employee ID
                   </th>
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
@@ -1097,7 +1122,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                       key={request.id}
                       className="border-t border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                      <td className="px-3 py-4 text-sm font-medium text-gray-900 break-all">
                         {request.submittedBy}
                       </td>
                       <td className="px-5 py-4 text-sm">
