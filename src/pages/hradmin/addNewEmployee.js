@@ -3344,6 +3344,11 @@ function EmployeeForm() {
                                               ...t,
                                               [key]: true,
                                             }));
+                                            // Clear validation error for the file field
+                                            setValidationErrors((prev) => ({
+                                              ...prev,
+                                              [imgField]: "",
+                                            }));
                                           }
                                         }}
                                       />
@@ -3866,6 +3871,11 @@ function EmployeeForm() {
                                       setBankTouched((t) => ({
                                         ...t,
                                         passbookImgUrl: true,
+                                      }));
+                                      // Clear validation error for passbook
+                                      setValidationErrors((prev) => ({
+                                        ...prev,
+                                        passbookImgUrl: "",
                                       }));
                                     }
                                   }}
