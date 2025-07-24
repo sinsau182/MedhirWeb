@@ -1321,6 +1321,11 @@ function EmployeeForm() {
             // Skip File objects as they'll be handled separately
             return;
           }
+          // Always include string URLs for passbookImgUrl if present
+          if (key === "passbookImgUrl" && typeof value === "string" && value) {
+            bankDetailsData[key] = value;
+            return;
+          }
           if (
             value &&
             typeof value === "string" &&
@@ -1772,12 +1777,6 @@ function EmployeeForm() {
   useEffect(() => {
     const fetchManagers = async () => {
       try {
-        const departmentId = formData.employee.department?.departmentId;
-        if (!departmentId) {
-          setManagers([]);
-          return;
-        }
-
         const token = getItemFromSessionStorage("token", null);
 
         const response = await axios.get(
@@ -1806,7 +1805,7 @@ function EmployeeForm() {
     };
 
     fetchManagers();
-  }, [formData.employee.department?.departmentId, publicRuntimeConfig.apiURL]);
+  }, [publicRuntimeConfig.apiURL]);
 
   const handleDepartmentAdded = (newDepartment) => {
     // Refetch departments and select the new one
@@ -1841,7 +1840,7 @@ function EmployeeForm() {
             handleInputChange("employee", "weeklyOffs", weeklyHolidays);
             // Clear designation and manager when department changes
             handleInputChange("employee", "designation", null);
-            handleInputChange("employee", "reportingManager", null);
+            // handleInputChange("employee", "reportingManager", null); // Removed to make reporting manager independent
           }
         }
       } catch (error) {
@@ -2828,11 +2827,7 @@ function EmployeeForm() {
                                 "designation",
                                 null
                               );
-                              handleInputChange(
-                                "employee",
-                                "reportingManager",
-                                null
-                              );
+                              // handleInputChange("employee", "reportingManager", null); // Removed to make reporting manager independent
                             }}
                             onAddDepartment={() => setShowDepartmentModal(true)}
                           />
