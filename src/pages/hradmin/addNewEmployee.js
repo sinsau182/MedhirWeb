@@ -1588,7 +1588,7 @@ function EmployeeForm() {
         const token = getItemFromSessionStorage("token", null);
 
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/departments/${departmentId}/managers`,
+          `${publicRuntimeConfig.apiURL}/employees/managers`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
