@@ -1986,6 +1986,42 @@ function EmployeeForm() {
   const filterAccountNumberInput = (value) => value.replace(/[^0-9]/g, '');
   const filterAccountHolderNameInput = (value) => value.replace(/[^A-Za-z ]/g, '');
 
+  // Add a custom hook for draggable modals
+  function useDraggableModal() {
+    const modalRef = useRef(null);
+    const pos = useRef({ x: 0, y: 0, dx: 0, dy: 0, dragging: false });
+
+    const onMouseDown = (e) => {
+      if (e.button !== 0) return;
+      pos.current.dragging = true;
+      pos.current.dx = e.clientX - pos.current.x;
+      pos.current.dy = e.clientY - pos.current.y;
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    };
+
+    const onMouseMove = (e) => {
+      if (!pos.current.dragging) return;
+      pos.current.x = e.clientX - pos.current.dx;
+      pos.current.y = e.clientY - pos.current.dy;
+      if (modalRef.current) {
+        modalRef.current.style.transform = `translate(${pos.current.x}px, ${pos.current.y}px)`;
+      }
+    };
+
+    const onMouseUp = () => {
+      pos.current.dragging = false;
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    return { modalRef, onMouseDown };
+  }
+
+  // Inside EmployeeForm, after useState/useEffect hooks:
+  const { modalRef: docModalRef, onMouseDown: onDocModalMouseDown } = useDraggableModal();
+  const { modalRef: bankModalRef, onMouseDown: onBankModalMouseDown } = useDraggableModal();
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -2490,10 +2526,12 @@ function EmployeeForm() {
                       </div>
                       {/* Document Preview Modal */}
                       {docPreview.open && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                        <div ref={docModalRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                           <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
-                            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={() => { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}><X className="w-5 h-5" /></button>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4">{docPreview.label} Document Preview</h2>
+                            <div className="flex justify-between items-center mb-4 w-full cursor-move" onMouseDown={onDocModalMouseDown}>
+                              <h2 className="text-lg font-semibold text-gray-800 mb-4">{docPreview.label} Document Preview</h2>
+                              <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={() => { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}><X className="w-5 h-5" /></button>
+                            </div>
                             {isPDF(docPreview) ? (
                               <>
                                 {/* Custom PDF Toolbar */}
@@ -2997,13 +3035,15 @@ function EmployeeForm() {
 
       {/* Passbook/Bank Document Preview Modal */}
       {bankPreview.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div ref={bankModalRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-              onClick={() => { setBankPreview({ open: false, imgUrl: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}>
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Passbook Document Preview</h2>
+            <div className="flex justify-between items-center mb-4 w-full cursor-move" onMouseDown={onBankModalMouseDown}>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Passbook Document Preview</h2>
+              <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                onClick={() => { setBankPreview({ open: false, imgUrl: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             {isPDF(bankPreview) ? (
               <>
                 {/* PDF Toolbar (reuse docPreview toolbar) */}
