@@ -15,6 +15,7 @@ function Employees() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [hoveredEmployeeId, setHoveredEmployeeId] = useState(null);
+  const [zoom, setZoom] = useState(1); // Add zoom state for modal
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
@@ -78,6 +79,7 @@ function Employees() {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedImage(null);
+    setZoom(1); // Reset zoom when closing modal
   };
 
   const filteredEmployees = (employees || []).filter((employee) =>
@@ -457,20 +459,67 @@ function Employees() {
                 </svg>
               </button>
             </div>
+            {/* Zoom Controls */}
+            <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
+              {/* Zoom Out */}
+              <button onClick={() => setZoom(z => Math.max(0.5, z - 0.1))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+              </button>
+              {/* Zoom In */}
+              <button onClick={() => setZoom(z => Math.min(2, z + 0.1))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+              </button>
+            </div>
             {selectedImage && selectedImage.toLowerCase().endsWith('.pdf') ? (
-              <iframe
-                src={selectedImage}
-                title="Passbook PDF"
-                className="w-full max-w-2xl"
-                style={{ minHeight: '60vh', maxHeight: '90vh' }}
-              />
+              <div
+                className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
+                style={{
+                  width: '100%',
+                  height: '60vh',
+                  minHeight: '24rem',
+                  minWidth: '24rem',
+                  maxHeight: '90vh',
+                  maxWidth: '100%',
+                }}
+              >
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    transform: `scale(${zoom})`,
+                    transition: 'transform 0.2s',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <iframe
+                    src={selectedImage}
+                    title="Passbook PDF"
+                    className="w-full h-full border-none"
+                    style={{ background: 'white' }}
+                  />
+                </div>
+              </div>
             ) : (
-              <img
-                src={selectedImage}
-                alt="Passbook Document"
-                className="h-auto w-auto max-w-2xl max-h-[80vh] object-contain rounded shadow"
-                style={{ display: 'block', margin: '0 auto' }}
-              />
+              <div
+                className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
+                style={{
+                  width: '100%',
+                  height: '60vh',
+                  minHeight: '24rem',
+                  minWidth: '24rem',
+                  maxHeight: '90vh',
+                  maxWidth: '100%',
+                }}
+              >
+                <img
+                  src={selectedImage}
+                  alt="Passbook Document"
+                  className="h-auto w-auto max-w-2xl max-h-[80vh] object-contain rounded shadow"
+                  style={{ display: 'block', margin: '0 auto', transform: `scale(${zoom})`, transition: 'transform 0.2s' }}
+                />
+              </div>
             )}
           </div>
         </div>

@@ -3077,7 +3077,56 @@ function EmployeeForm() {
                 })()}
               </>
             ) : (
-              <img src={bankPreview.imgUrl} alt="Passbook preview" className="w-64 h-64 object-contain rounded border mb-4" />
+              <>
+                {/* Image Zoom Controls */}
+                <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
+                  {/* Zoom Out */}
+                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+                  </button>
+                  {/* Zoom In */}
+                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                  </button>
+                  {/* Download */}
+                  <a
+                    href={bankPreview.imgUrl}
+                    download={'passbook.jpg'}
+                    className="text-gray-600 hover:text-blue-600"
+                    title="Download Image"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                  </a>
+                </div>
+                {/* Image Preview Area with zoom */}
+                <div
+                  className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
+                  style={{
+                    width: '100%',
+                    height: '24rem',
+                    minHeight: '24rem',
+                    minWidth: '24rem',
+                    maxHeight: '32rem',
+                    maxWidth: '100%',
+                  }}
+                >
+                  <img
+                    src={bankPreview.imgUrl}
+                    alt="Passbook preview"
+                    className="object-contain rounded border mb-4"
+                    style={{
+                      width: 'auto',
+                      height: '100%',
+                      transform: `scale(${pdfControls.zoom})`,
+                      transition: 'transform 0.2s',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                    }}
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>
