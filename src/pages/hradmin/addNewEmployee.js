@@ -2526,8 +2526,8 @@ function EmployeeForm() {
                       </div>
                       {/* Document Preview Modal */}
                       {docPreview.open && (
-                        <div ref={docModalRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center">
+                          <div ref={docModalRef} className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
                             <div className="flex justify-between items-center mb-4 w-full cursor-move" onMouseDown={onDocModalMouseDown}>
                               <h2 className="text-lg font-semibold text-gray-800 mb-4">{docPreview.label} Document Preview</h2>
                               <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={() => { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}><X className="w-5 h-5" /></button>
@@ -3035,8 +3035,8 @@ function EmployeeForm() {
 
       {/* Passbook/Bank Document Preview Modal */}
       {bankPreview.open && (
-        <div ref={bankModalRef} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div ref={bankModalRef} className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
             <div className="flex justify-between items-center mb-4 w-full cursor-move" onMouseDown={onBankModalMouseDown}>
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Passbook Document Preview</h2>
               <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
