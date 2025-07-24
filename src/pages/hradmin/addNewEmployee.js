@@ -22,19 +22,18 @@ import getConfig from "next/config";
 import axios from "axios";
 import DepartmentFormModal from "@/components/Forms/DepartmentFormModal";
 import DesignationFormModal from "@/components/Forms/DesignationFormModal";
-import { Listbox } from '@headlessui/react';
-import { CheckIcon } from '@heroicons/react/20/solid';
+import { Listbox } from "@headlessui/react";
+import { CheckIcon } from "@heroicons/react/20/solid";
 
 // Add this CSS class to your global styles or component
-const inputGroupClass =
-  "flex flex-col gap-1 mb-2";
-const inputLabelClass =
-  "block text-sm font-medium text-gray-700 mb-1";
+const inputGroupClass = "flex flex-col gap-1 mb-2";
+const inputLabelClass = "block text-sm font-medium text-gray-700 mb-1";
 const inputClass =
   "w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-100 bg-gray-50 outline-none text-gray-700 text-sm truncate overflow-hidden transition-all duration-200";
 
 // Add a new class for modern select styling
-const modernSelectClass = "bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 appearance-none transition-all duration-200 w-full h-[42px]";
+const modernSelectClass =
+  "bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 appearance-none transition-all duration-200 w-full h-[42px]";
 
 const MultiSelect = ({ label, options, value }) => {
   return (
@@ -64,7 +63,13 @@ const MultiSelect = ({ label, options, value }) => {
   );
 };
 
-const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) => {
+const DepartmentSelect = ({
+  label,
+  options,
+  value,
+  onChange,
+  onAddDepartment,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -88,7 +93,7 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
         >
           <div className="flex flex-wrap gap-1 py-1 overflow-hidden">
             {value ? (
-              <TruncatedText 
+              <TruncatedText
                 text={typeof value === "object" ? value.name : value}
                 maxWidth="max-w-[200px]"
                 className="text-gray-700"
@@ -99,7 +104,9 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -127,14 +134,16 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
               <div
                 key={department.departmentId}
                 className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.departmentId === department.departmentId ? "bg-blue-50" : ""
+                  value?.departmentId === department.departmentId
+                    ? "bg-blue-50"
+                    : ""
                 }`}
                 onClick={() => {
                   onChange(department);
                   setIsOpen(false);
                 }}
               >
-                <TruncatedText 
+                <TruncatedText
                   text={department.name}
                   maxWidth="max-w-full"
                   className="text-gray-700"
@@ -149,7 +158,16 @@ const DepartmentSelect = ({ label, options, value, onChange, onAddDepartment }) 
   );
 };
 
-const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, disabled, placeholder, loading }) => {
+const DesignationSelect = ({
+  label,
+  options,
+  value,
+  onChange,
+  onAddDesignation,
+  disabled,
+  placeholder,
+  loading,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -169,7 +187,13 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
   }, []);
 
   return (
-    <div className={inputGroupClass + (disabled || loading ? ' opacity-60 pointer-events-none' : '')} ref={dropdownRef}>
+    <div
+      className={
+        inputGroupClass +
+        (disabled || loading ? " opacity-60 pointer-events-none" : "")
+      }
+      ref={dropdownRef}
+    >
       <label className={inputLabelClass}>{label}</label>
       <div className="relative">
         <div
@@ -185,18 +209,22 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
                 Loading...
               </span>
             ) : value ? (
-              <TruncatedText 
+              <TruncatedText
                 text={typeof value === "object" ? value.name : value}
                 maxWidth="max-w-[200px]"
                 className="text-gray-700"
                 maxLength={20}
               />
             ) : (
-              <span className="text-gray-500">{placeholder || 'Select designation'}</span>
+              <span className="text-gray-500">
+                {placeholder || "Select designation"}
+              </span>
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`w-4 h-4 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -224,7 +252,9 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
               <div
                 key={designation.designationId}
                 className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.designationId === designation.designationId ? "bg-blue-50" : ""
+                  value?.designationId === designation.designationId
+                    ? "bg-blue-50"
+                    : ""
                 }`}
                 onClick={() => {
                   onChange({
@@ -236,7 +266,7 @@ const DesignationSelect = ({ label, options, value, onChange, onAddDesignation, 
                   setIsOpen(false);
                 }}
               >
-                <TruncatedText 
+                <TruncatedText
                   text={designation.name}
                   maxWidth="max-w-full"
                   className="text-gray-700"
@@ -271,24 +301,24 @@ const removeEmptyValues = (obj) => {
 // Helper function to truncate text and show tooltip
 const TruncatedText = ({ text, maxWidth, className = "", maxLength = 25 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
-  
+
   if (!text) return null;
-  
+
   // Clean debug text first
   const cleanText = text
-    .replace(/[bedjw]{5,}/g, '') // Remove 5+ consecutive debug chars
-    .replace(/\|.*$/, '') // Remove everything after pipe
-    .replace(/\s+/g, ' ') // Normalize spaces
+    .replace(/[bedjw]{5,}/g, "") // Remove 5+ consecutive debug chars
+    .replace(/\|.*$/, "") // Remove everything after pipe
+    .replace(/\s+/g, " ") // Normalize spaces
     .trim();
   const isLongText = cleanText.length > maxLength;
-  
+
   return (
-    <div 
+    <div
       className={`${maxWidth} ${className} relative group`}
       onMouseEnter={() => isLongText && setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
-      <span 
+      <span
         className={isLongText ? "truncate block" : ""}
         title={isLongText ? cleanText : ""}
       >
@@ -329,7 +359,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
-              <TruncatedText 
+              <TruncatedText
                 text={typeof value === "object" ? value.name : value}
                 maxWidth="max-w-[200px]"
                 className="text-gray-700"
@@ -372,7 +402,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                   setIsOpen(false);
                 }}
               >
-                <TruncatedText 
+                <TruncatedText
                   text={manager.name}
                   maxWidth="max-w-full"
                   className="text-gray-700"
@@ -388,18 +418,45 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
 };
 
 // Add a reusable confirmation modal component
-function ConfirmationModal({ open, onClose, onConfirm, title, message, confirmText = 'Confirm', cancelText = 'Cancel', confirmColor = 'bg-blue-600', icon }) {
+function ConfirmationModal({
+  open,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  confirmColor = "bg-blue-600",
+  icon,
+}) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
       <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md relative">
-        <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={onClose}><X className="w-5 h-5" /></button>
+        <button
+          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+          onClick={onClose}
+        >
+          <X className="w-5 h-5" />
+        </button>
         {icon && <div className="flex justify-center mb-2">{icon}</div>}
-        <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center">{title}</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-2 text-center">
+          {title}
+        </h2>
         <p className="text-gray-600 mb-6 text-center">{message}</p>
         <div className="flex justify-center gap-4">
-          <button className="px-5 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200" onClick={onClose}>{cancelText}</button>
-          <button className={`px-5 py-2 rounded-lg text-white ${confirmColor} hover:brightness-90`} onClick={onConfirm}>{confirmText}</button>
+          <button
+            className="px-5 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+            onClick={onClose}
+          >
+            {cancelText}
+          </button>
+          <button
+            className={`px-5 py-2 rounded-lg text-white ${confirmColor} hover:brightness-90`}
+            onClick={onConfirm}
+          >
+            {confirmText}
+          </button>
         </div>
       </div>
     </div>
@@ -432,17 +489,34 @@ function EmployeeForm() {
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [showDesignationModal, setShowDesignationModal] = useState(false);
   const [isDesignationLoading, setIsDesignationLoading] = useState(false);
-  const [modal, setModal] = useState({ open: false, type: '', onConfirm: null });
+  const [modal, setModal] = useState({
+    open: false,
+    type: "",
+    onConfirm: null,
+  });
   // Add state for preview modal for Aadhar
-  const [aadharPreview, setAadharPreview] = useState({ open: false, imgUrl: '', number: '' });
+  const [aadharPreview, setAadharPreview] = useState({
+    open: false,
+    imgUrl: "",
+    number: "",
+  });
   // Add state for preview modal for ID Proofs (generalized)
-  const [docPreview, setDocPreview] = useState({ open: false, imgUrl: '', number: '', label: '' });
+  const [docPreview, setDocPreview] = useState({
+    open: false,
+    imgUrl: "",
+    number: "",
+    label: "",
+  });
   // Add state to track touched/blurred fields for instant validation
   const [idProofsTouched, setIdProofsTouched] = useState({});
   // Add state for PDF preview controls
   const [pdfControls, setPdfControls] = useState({ rotate: 0, zoom: 1 });
   // Add state for bank preview modal
-  const [bankPreview, setBankPreview] = useState({ open: false, imgUrl: '', file: null });
+  const [bankPreview, setBankPreview] = useState({
+    open: false,
+    imgUrl: "",
+    file: null,
+  });
 
   // Add department fetch on component mount
   useEffect(() => {
@@ -468,13 +542,15 @@ function EmployeeForm() {
 
         if (response.data && Array.isArray(response.data)) {
           // Clean debug text from department names
-          const cleanedDepartments = response.data.map(dept => ({
+          const cleanedDepartments = response.data.map((dept) => ({
             ...dept,
-            name: dept.name ? dept.name
-              .replace(/[bedjw]{5,}/g, '') // Remove 5+ consecutive debug chars
-              .replace(/\|.*$/, '') // Remove everything after pipe
-              .replace(/\s+/g, ' ') // Normalize spaces
-              .trim() : dept.name
+            name: dept.name
+              ? dept.name
+                  .replace(/[bedjw]{5,}/g, "") // Remove 5+ consecutive debug chars
+                  .replace(/\|.*$/, "") // Remove everything after pipe
+                  .replace(/\s+/g, " ") // Normalize spaces
+                  .trim()
+              : dept.name,
           }));
           setDepartments(cleanedDepartments);
           if (response.data.length === 0) {
@@ -495,23 +571,27 @@ function EmployeeForm() {
 
   // Clean any existing debug text in form data on component mount
   useEffect(() => {
-    setFormData(prev => {
+    setFormData((prev) => {
       const cleaned = { ...prev };
-      
+
       // Clean employee data
       if (cleaned.employee) {
-        Object.keys(cleaned.employee).forEach(key => {
-          if (typeof cleaned.employee[key] === 'string') {
+        Object.keys(cleaned.employee).forEach((key) => {
+          if (typeof cleaned.employee[key] === "string") {
             cleaned.employee[key] = cleanDebugText(cleaned.employee[key]);
-          } else if (cleaned.employee[key] && typeof cleaned.employee[key] === 'object' && cleaned.employee[key].name) {
+          } else if (
+            cleaned.employee[key] &&
+            typeof cleaned.employee[key] === "object" &&
+            cleaned.employee[key].name
+          ) {
             cleaned.employee[key] = {
               ...cleaned.employee[key],
-              name: cleanDebugText(cleaned.employee[key].name)
+              name: cleanDebugText(cleaned.employee[key].name),
             };
           }
         });
       }
-      
+
       return cleaned;
     });
   }, []);
@@ -716,25 +796,33 @@ function EmployeeForm() {
 
   // Function to clean debug text from any string value
   const cleanDebugText = (text) => {
-    if (typeof text !== 'string') return text;
+    if (typeof text !== "string") return text;
     // More aggressive cleaning - remove any repetitive patterns
     return text
-      .replace(/[bedjw]{5,}/g, '') // Remove 5+ consecutive debug chars
-      .replace(/\|.*$/, '') // Remove everything after pipe
-      .replace(/\s+/g, ' ') // Normalize spaces
+      .replace(/[bedjw]{5,}/g, "") // Remove 5+ consecutive debug chars
+      .replace(/\|.*$/, "") // Remove everything after pipe
+      .replace(/\s+/g, " ") // Normalize spaces
       .trim();
   };
 
   const handleInputChange = (section, field, value) => {
     // For address fields and Father Name, do not trim or clean spaces on input
     const isFreeSpaceField =
-      (section === "employee" && (field === "currentAddress" || field === "permanentAddress" || field === "fathersName")) ||
-      (section === "bankDetails" && (field === "accountHolderName" || field === "bankName" || field === "branchName" || field === "upiPhoneNumber"));
+      (section === "employee" &&
+        (field === "currentAddress" ||
+          field === "permanentAddress" ||
+          field === "fathersName")) ||
+      (section === "bankDetails" &&
+        (field === "accountHolderName" ||
+          field === "bankName" ||
+          field === "branchName" ||
+          field === "upiPhoneNumber"));
 
-    const cleanedValue = (!isFreeSpaceField && typeof value === 'string')
-      ? cleanDebugText(value)
-      : value;
-    
+    const cleanedValue =
+      !isFreeSpaceField && typeof value === "string"
+        ? cleanDebugText(value)
+        : value;
+
     setFormData((prev) => {
       const updatedData = {
         ...prev,
@@ -768,23 +856,26 @@ function EmployeeForm() {
     if (section === "employee" && fieldTouched[field]) {
       const errors = validatePersonalDetails({
         ...formData.employee,
-        [field]: cleanedValue
+        [field]: cleanedValue,
       });
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [field]: errors[field]
+        [field]: errors[field],
       }));
     }
 
     // Debounced uniqueness check for emailPersonal and phone
-    if (section === "employee" && (field === "emailPersonal" || field === "phone")) {
+    if (
+      section === "employee" &&
+      (field === "emailPersonal" || field === "phone")
+    ) {
       // If editing an employee, only check if the field value has actually changed
       if (employee) {
         try {
           const parsedEmployee = JSON.parse(employee);
           const currentEmail = parsedEmployee.emailPersonal;
           const currentPhone = parsedEmployee.phone;
-          
+
           // Only check the field that was actually changed
           if (field === "emailPersonal" && value !== currentEmail) {
             // Only check email existence
@@ -878,30 +969,41 @@ function EmployeeForm() {
     if (e && e.preventDefault) e.preventDefault();
 
     // Validate all required fields
-      const errors = {};
-    if (!formData.employee.firstName?.trim()) errors.firstName = 'First Name is required';
-    if (!formData.employee.lastName?.trim()) errors.lastName = 'Last Name is required';
-    if (!formData.employee.phone?.trim()) errors.phone = 'Phone Number is required';
-    if (!formData.employee.joiningDate) errors.joiningDate = 'Date of Joining is required';
-    if (!formData.employee.emailPersonal?.trim()) errors.emailPersonal = 'Personal Email is required';
+    const errors = {};
+    if (!formData.employee.firstName?.trim())
+      errors.firstName = "First Name is required";
+    if (!formData.employee.lastName?.trim())
+      errors.lastName = "Last Name is required";
+    if (!formData.employee.phone?.trim())
+      errors.phone = "Phone Number is required";
+    if (!formData.employee.joiningDate)
+      errors.joiningDate = "Date of Joining is required";
+    if (!formData.employee.emailPersonal?.trim())
+      errors.emailPersonal = "Personal Email is required";
     // Add more required fields as needed
 
     const missingFields = Object.keys(errors);
     if (missingFields.length > 0) {
       // Mark all missing fields as touched to show red border
-      setFieldTouched(prev => ({
+      setFieldTouched((prev) => ({
         ...prev,
-        ...missingFields.reduce((acc, field) => { acc[field] = true; return acc; }, {})
+        ...missingFields.reduce((acc, field) => {
+          acc[field] = true;
+          return acc;
+        }, {}),
       }));
       // Set validation errors for all missing fields
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        ...missingFields.reduce((acc, field) => { acc[field] = errors[field]; return acc; }, {})
+        ...missingFields.reduce((acc, field) => {
+          acc[field] = errors[field];
+          return acc;
+        }, {}),
       }));
       // If not on personal tab, navigate to it
-      if (activeSection !== 'personal') setActiveSection('personal');
+      if (activeSection !== "personal") setActiveSection("personal");
       // Show a separate toast for each missing field
-      missingFields.forEach(field => {
+      missingFields.forEach((field) => {
         toast.error(errors[field]);
       });
       return;
@@ -909,11 +1011,15 @@ function EmployeeForm() {
 
     // After personal details validation, add ID Proofs validation
     const idProofFields = [
-      { key: 'aadharNo', img: 'aadharImgUrl', label: 'Aadhar' },
-      { key: 'panNo', img: 'pancardImgUrl', label: 'PAN' },
-      { key: 'passport', img: 'passportImgUrl', label: 'Passport' },
-      { key: 'drivingLicense', img: 'drivingLicenseImgUrl', label: 'Driving License' },
-      { key: 'voterId', img: 'voterIdImgUrl', label: 'Voter ID' },
+      { key: "aadharNo", img: "aadharImgUrl", label: "Aadhar" },
+      { key: "panNo", img: "pancardImgUrl", label: "PAN" },
+      { key: "passport", img: "passportImgUrl", label: "Passport" },
+      {
+        key: "drivingLicense",
+        img: "drivingLicenseImgUrl",
+        label: "Driving License",
+      },
+      { key: "voterId", img: "voterIdImgUrl", label: "Voter ID" },
     ];
     let idProofError = false;
     let idProofTouched = {};
@@ -927,11 +1033,15 @@ function EmployeeForm() {
         idProofTouched[key] = true;
         idProofTouched[img] = true;
         if (!number && file) {
-          idProofValidationErrors[key] = `${label} Number is required if you upload a document.`;
+          idProofValidationErrors[
+            key
+          ] = `${label} Number is required if you upload a document.`;
           toast.error(`${label} Number is required if you upload a document.`);
         }
         if (number && !file) {
-          idProofValidationErrors[img] = `${label} document is required if you enter a number.`;
+          idProofValidationErrors[
+            img
+          ] = `${label} document is required if you enter a number.`;
           toast.error(`${label} document is required if you enter a number.`);
         }
       }
@@ -939,45 +1049,49 @@ function EmployeeForm() {
 
     if (idProofError) {
       // Mark all touched for id proofs
-      setIdProofsTouched(prev => ({ ...prev, ...idProofTouched }));
-      setValidationErrors(prev => ({ ...prev, ...idProofValidationErrors }));
+      setIdProofsTouched((prev) => ({ ...prev, ...idProofTouched }));
+      setValidationErrors((prev) => ({ ...prev, ...idProofValidationErrors }));
       // If not on ID Proofs tab, navigate to it
-      if (activeSection !== 'idProofs') setActiveSection('idProofs');
+      if (activeSection !== "idProofs") setActiveSection("idProofs");
       return;
     }
 
     // After ID Proofs validation, add Bank Details validation
     const accountFields = [
-      { key: 'accountNumber', label: 'Account Number' },
-      { key: 'accountHolderName', label: 'Account Holder Name' },
-      { key: 'ifscCode', label: 'IFSC Code' },
-      { key: 'bankName', label: 'Bank Name' },
-      { key: 'branchName', label: 'Branch Name' },
-      { key: 'passbookImgUrl', label: 'Passbook/Cancelled Cheque' },
+      { key: "accountNumber", label: "Account Number" },
+      { key: "accountHolderName", label: "Account Holder Name" },
+      { key: "ifscCode", label: "IFSC Code" },
+      { key: "bankName", label: "Bank Name" },
+      { key: "branchName", label: "Branch Name" },
+      { key: "passbookImgUrl", label: "Passbook/Cancelled Cheque" },
     ];
     const upiFields = [
-      { key: 'upiId', label: 'UPI ID' },
-      { key: 'upiPhoneNumber', label: 'UPI Contact Name' },
+      { key: "upiId", label: "UPI ID" },
+      { key: "upiPhoneNumber", label: "UPI Contact Name" },
     ];
     const bankVals = formData.bankDetails;
-    const anyAccountFilled = accountFields.some(f => bankVals[f.key] && bankVals[f.key].toString().trim() !== '');
-    const anyUPIFilled = upiFields.some(f => bankVals[f.key] && bankVals[f.key].toString().trim() !== '');
+    const anyAccountFilled = accountFields.some(
+      (f) => bankVals[f.key] && bankVals[f.key].toString().trim() !== ""
+    );
+    const anyUPIFilled = upiFields.some(
+      (f) => bankVals[f.key] && bankVals[f.key].toString().trim() !== ""
+    );
     let bankError = false;
     let bankTouched = {};
     let bankValidationErrors = {};
 
     if (anyAccountFilled && anyUPIFilled) {
       // All account and UPI fields required
-      accountFields.forEach(f => {
-        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+      accountFields.forEach((f) => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === "") {
           bankError = true;
           bankTouched[f.key] = true;
           bankValidationErrors[f.key] = `${f.label} is required.`;
           toast.error(`${f.label} is required.`);
         }
       });
-      upiFields.forEach(f => {
-        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+      upiFields.forEach((f) => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === "") {
           bankError = true;
           bankTouched[f.key] = true;
           bankValidationErrors[f.key] = `${f.label} is required.`;
@@ -986,8 +1100,8 @@ function EmployeeForm() {
       });
     } else if (anyAccountFilled) {
       // All account fields required
-      accountFields.forEach(f => {
-        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+      accountFields.forEach((f) => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === "") {
           bankError = true;
           bankTouched[f.key] = true;
           bankValidationErrors[f.key] = `${f.label} is required.`;
@@ -996,8 +1110,8 @@ function EmployeeForm() {
       });
     } else if (anyUPIFilled) {
       // Both UPI fields required
-      upiFields.forEach(f => {
-        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === '') {
+      upiFields.forEach((f) => {
+        if (!bankVals[f.key] || bankVals[f.key].toString().trim() === "") {
           bankError = true;
           bankTouched[f.key] = true;
           bankValidationErrors[f.key] = `${f.label} is required.`;
@@ -1007,14 +1121,14 @@ function EmployeeForm() {
     }
 
     if (bankError) {
-      setBankTouched(prev => ({ ...prev, ...bankTouched }));
-      setValidationErrors(prev => ({ ...prev, ...bankValidationErrors }));
-      if (activeSection !== 'bank') setActiveSection('bank');
+      setBankTouched((prev) => ({ ...prev, ...bankTouched }));
+      setValidationErrors((prev) => ({ ...prev, ...bankValidationErrors }));
+      if (activeSection !== "bank") setActiveSection("bank");
       return;
     }
     // Clear touched and errors for bank fields if nothing is filled
     if (!anyAccountFilled && !anyUPIFilled) {
-      setBankTouched(prev => ({
+      setBankTouched((prev) => ({
         ...prev,
         accountNumber: false,
         accountHolderName: false,
@@ -1025,33 +1139,91 @@ function EmployeeForm() {
         upiId: false,
         upiPhoneNumber: false,
       }));
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        accountNumber: '',
-        accountHolderName: '',
-        ifscCode: '',
-        bankName: '',
-        branchName: '',
-        passbookImgUrl: '',
-        upiId: '',
-        upiPhoneNumber: '',
+        accountNumber: "",
+        accountHolderName: "",
+        ifscCode: "",
+        bankName: "",
+        branchName: "",
+        passbookImgUrl: "",
+        upiId: "",
+        upiPhoneNumber: "",
       }));
     }
 
     // After all tab validations and before setLoading(true):
-    const hasAnyValidationError = Object.values(validationErrors).some(v => v && v.toString().trim() !== '');
+    const hasAnyValidationError = Object.values(validationErrors).some(
+      (v) => v && v.toString().trim() !== ""
+    );
     if (hasAnyValidationError) {
       console.log("Validation Errors:", validationErrors);
-      toast.error('Please fix all validation errors before submitting.');
+      toast.error("Please fix all validation errors before submitting.");
       // Try to navigate to the first tab with a validation error
       const tabFieldMap = [
-        { tab: 'personal', fields: ['firstName', 'middleName', 'lastName', 'fathersName', 'gender', 'phone', 'alternatePhone', 'emailPersonal', 'emailOfficial', 'currentAddress', 'permanentAddress', 'joiningDate', 'department', 'designation', 'reportingManager', 'weeklyOffs', 'pfEnrolled', 'uanNumber', 'esicEnrolled', 'esicNumber'] },
-        { tab: 'idProofs', fields: ['aadharNo', 'aadharImgUrl', 'panNo', 'pancardImgUrl', 'passport', 'passportImgUrl', 'drivingLicense', 'drivingLicenseImgUrl', 'voterId', 'voterIdImgUrl'] },
-        { tab: 'bank', fields: ['accountNumber', 'accountHolderName', 'ifscCode', 'bankName', 'branchName', 'passbookImgUrl', 'upiId', 'upiPhoneNumber'] },
-        { tab: 'salary', fields: ['annualCtc', 'basicSalary'] },
+        {
+          tab: "personal",
+          fields: [
+            "firstName",
+            "middleName",
+            "lastName",
+            "fathersName",
+            "gender",
+            "phone",
+            "alternatePhone",
+            "emailPersonal",
+            "emailOfficial",
+            "currentAddress",
+            "permanentAddress",
+            "joiningDate",
+            "department",
+            "designation",
+            "reportingManager",
+            "weeklyOffs",
+            "pfEnrolled",
+            "uanNumber",
+            "esicEnrolled",
+            "esicNumber",
+          ],
+        },
+        {
+          tab: "idProofs",
+          fields: [
+            "aadharNo",
+            "aadharImgUrl",
+            "panNo",
+            "pancardImgUrl",
+            "passport",
+            "passportImgUrl",
+            "drivingLicense",
+            "drivingLicenseImgUrl",
+            "voterId",
+            "voterIdImgUrl",
+          ],
+        },
+        {
+          tab: "bank",
+          fields: [
+            "accountNumber",
+            "accountHolderName",
+            "ifscCode",
+            "bankName",
+            "branchName",
+            "passbookImgUrl",
+            "upiId",
+            "upiPhoneNumber",
+          ],
+        },
+        { tab: "salary", fields: ["annualCtc", "basicSalary"] },
       ];
       for (const { tab, fields } of tabFieldMap) {
-        if (fields.some(f => validationErrors[f] && validationErrors[f].toString().trim() !== '')) {
+        if (
+          fields.some(
+            (f) =>
+              validationErrors[f] &&
+              validationErrors[f].toString().trim() !== ""
+          )
+        ) {
           setActiveSection(tab);
           break;
         }
@@ -1213,14 +1385,14 @@ function EmployeeForm() {
         ).unwrap();
         if (result) {
           toast.success("Employee updated successfully");
-          router.push('/hradmin/employees');
+          router.push("/hradmin/employees");
           return;
         }
       } else {
         const result = await dispatch(createEmployee(submitFormData)).unwrap();
         if (result) {
           toast.success("Employee created successfully");
-          router.push('/hradmin/employees');
+          router.push("/hradmin/employees");
           return;
         }
       }
@@ -1265,22 +1437,27 @@ function EmployeeForm() {
 
   // Validation functions
   const validateName = (value, required = true, maxLength = 30) => {
-    if (!value || value.trim() === "") return required ? "This field is required." : "";
-    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (!value || value.trim() === "")
+      return required ? "This field is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value))
+      return "Only alphabets and spaces allowed.";
     if (value.trim().length < 2) return "Must be at least 2 characters.";
-    if (value.trim().length > maxLength) return `Maximum ${maxLength} characters allowed.`;
+    if (value.trim().length > maxLength)
+      return `Maximum ${maxLength} characters allowed.`;
     return "";
   };
 
   const validatePhone = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "Phone number is required." : "";
+    if (!value || value.trim() === "")
+      return required ? "Phone number is required." : "";
     if (!/^[0-9]+$/.test(value)) return "Only numbers allowed.";
     if (value.length !== 10) return "Phone number must be exactly 10 digits.";
     return "";
   };
 
   const validateEmail = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "Email is required." : "";
+    if (!value || value.trim() === "")
+      return required ? "Email is required." : "";
     const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!regex.test(value)) return "Enter a valid email address.";
     if (value.length > 50) return "Email must be less than 50 characters.";
@@ -1288,21 +1465,26 @@ function EmployeeForm() {
   };
 
   const validateAddress = (value, required = false, maxLength = 200) => {
-    if (!value || value.trim() === "") return required ? "Address is required." : "";
-    if (value.trim().length < 10) return "Address must be at least 10 characters.";
-    if (value.trim().length > maxLength) return `Maximum ${maxLength} characters allowed.`;
+    if (!value || value.trim() === "")
+      return required ? "Address is required." : "";
+    if (value.trim().length < 10)
+      return "Address must be at least 10 characters.";
+    if (value.trim().length > maxLength)
+      return `Maximum ${maxLength} characters allowed.`;
     return "";
   };
 
   const validateDate = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "Date is required." : "";
+    if (!value || value.trim() === "")
+      return required ? "Date is required." : "";
     const date = new Date(value);
     if (isNaN(date.getTime())) return "Please enter a valid date.";
     return "";
   };
 
   const validateUAN = (value, required = false) => {
-    if (!value || value.trim() === "") return required ? "UAN number is required." : "";
+    if (!value || value.trim() === "")
+      return required ? "UAN number is required." : "";
     if (!/^[0-9]+$/.test(value)) return "Only numbers allowed.";
     if (value.length !== 12) return "UAN number must be exactly 12 digits.";
     return "";
@@ -1310,27 +1492,27 @@ function EmployeeForm() {
 
   // Smart email suggestion function
   const getEmailSuggestion = (value) => {
-    if (!value || value.includes('@')) return null;
-    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    if (!value || value.includes("@")) return null;
+    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
     if (cleanValue.length < 2) return null;
     return `${cleanValue}@gmail.com`;
   };
 
   // Input filtering functions
   const filterNameInput = (value) => {
-    return value.replace(/[^A-Za-z ]/g, '').slice(0, 30);
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 30);
   };
 
   const filterPhoneInput = (value) => {
-    return value.replace(/[^0-9]/g, '').slice(0, 10);
+    return value.replace(/[^0-9]/g, "").slice(0, 10);
   };
 
   const filterEmailInput = (value) => {
-    return value.replace(/[^a-zA-Z0-9@._%+-]/g, '').slice(0, 50);
+    return value.replace(/[^a-zA-Z0-9@._%+-]/g, "").slice(0, 50);
   };
 
   const filterUANInput = (value) => {
-    return value.replace(/[^0-9]/g, '').slice(0, 12);
+    return value.replace(/[^0-9]/g, "").slice(0, 12);
   };
 
   // Validate all personal fields
@@ -1355,19 +1537,21 @@ function EmployeeForm() {
 
   // Helper function to get border color class based on field state
   const getFieldBorderClass = (fieldName, value, touched, error) => {
-    if (!touched) return 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
-    if (error) return 'border-red-500 focus:border-red-500 focus:ring-red-500';
-    if (value && value.toString().trim() !== '') return 'border-green-500 focus:border-green-500 focus:ring-green-500';
-    return 'border-gray-300 focus:border-blue-500 focus:ring-blue-500';
+    if (!touched)
+      return "border-gray-300 focus:border-blue-500 focus:ring-blue-500";
+    if (error) return "border-red-500 focus:border-red-500 focus:ring-red-500";
+    if (value && value.toString().trim() !== "")
+      return "border-green-500 focus:border-green-500 focus:ring-green-500";
+    return "border-gray-300 focus:border-blue-500 focus:ring-blue-500";
   };
 
   // On blur/change handlers
   const handlePersonalFieldBlur = (field) => {
     setFieldTouched((prev) => ({ ...prev, [field]: true }));
     const errors = validatePersonalDetails(formData.employee);
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      [field]: errors[field]
+      [field]: errors[field],
     }));
   };
 
@@ -1376,10 +1560,19 @@ function EmployeeForm() {
     e?.preventDefault?.();
     const errors = validatePersonalDetails(formData.employee);
     setValidationErrors(errors);
-    setFieldTouched((prev) => ({ ...prev, ...Object.keys(errors).reduce((acc, k) => { acc[k] = true; return acc; }, {}) }));
+    setFieldTouched((prev) => ({
+      ...prev,
+      ...Object.keys(errors).reduce((acc, k) => {
+        acc[k] = true;
+        return acc;
+      }, {}),
+    }));
     const firstErrorField = Object.keys(errors).find((key) => errors[key]);
     if (firstErrorField) {
-      formRefs[firstErrorField]?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      formRefs[firstErrorField]?.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
       formRefs[firstErrorField]?.current?.focus?.();
       return;
     }
@@ -1393,11 +1586,11 @@ function EmployeeForm() {
 
   const handleFileUpload = (documentType, file) => {
     if (file) {
-          // Restrict file size to 5MB
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size must be less than 5MB.");
-      return;
-    }
+      // Restrict file size to 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB.");
+        return;
+      }
       // Create a preview URL for the file
       const previewUrl = URL.createObjectURL(file);
 
@@ -1695,9 +1888,7 @@ function EmployeeForm() {
             );
           }
           if (!created) {
-            created = response.data.find(
-              (d) => d.name === newDesignation.name
-            );
+            created = response.data.find((d) => d.name === newDesignation.name);
           }
           if (created) {
             handleInputChange("employee", "designation", {
@@ -1721,38 +1912,39 @@ function EmployeeForm() {
 
   // In EmployeeForm, add gender options and state for Listbox
   const genderOptions = [
-    { value: 'Male', label: 'Male' },
-    { value: 'Female', label: 'Female' },
-    { value: 'Other', label: 'Other' },
+    { value: "Male", label: "Male" },
+    { value: "Female", label: "Female" },
+    { value: "Other", label: "Other" },
   ];
 
   // Modal open handlers
   const handleOpenModal = (type, onConfirm) => {
     setModal({ open: true, type, onConfirm });
   };
-  const handleCloseModal = () => setModal({ open: false, type: '', onConfirm: null });
+  const handleCloseModal = () =>
+    setModal({ open: false, type: "", onConfirm: null });
 
   // Modal content map
   const modalContent = {
     cancel: {
-      title: 'Cancel Changes?',
-      message: 'Are you sure you want to cancel? Unsaved changes will be lost.',
-      confirmText: 'Yes, Cancel',
-      confirmColor: 'bg-red-600',
+      title: "Cancel Changes?",
+      message: "Are you sure you want to cancel? Unsaved changes will be lost.",
+      confirmText: "Yes, Cancel",
+      confirmColor: "bg-red-600",
       icon: <FiX className="w-8 h-8 text-red-500 mx-auto" />,
     },
     saveContinue: {
-      title: 'Save and Continue?',
-      message: 'Do you want to save and continue to the next section?',
-      confirmText: 'Save and Continue',
-      confirmColor: 'bg-blue-600',
+      title: "Save and Continue?",
+      message: "Do you want to save and continue to the next section?",
+      confirmText: "Save and Continue",
+      confirmColor: "bg-blue-600",
       icon: <FiCheck className="w-8 h-8 text-blue-500 mx-auto" />,
     },
     saveExit: {
-      title: 'Save and Exit?',
-      message: 'Do you want to save and exit? Your progress will be saved.',
-      confirmText: 'Save and Exit',
-      confirmColor: 'bg-green-600',
+      title: "Save and Exit?",
+      message: "Do you want to save and exit? Your progress will be saved.",
+      confirmText: "Save and Exit",
+      confirmColor: "bg-green-600",
       icon: <FiCheck className="w-8 h-8 text-green-500 mx-auto" />,
     },
   };
@@ -1760,66 +1952,71 @@ function EmployeeForm() {
   // Add validation patterns and help text for each document type
   const docFieldMeta = {
     aadharNo: {
-      label: 'Aadhar',
+      label: "Aadhar",
       maxLength: 12,
       pattern: /^[0-9]{0,12}$/,
-      help: '12 digits required',
-      inputMode: 'numeric',
+      help: "12 digits required",
+      inputMode: "numeric",
       toUpper: false,
-      allowed: v => v.replace(/[^0-9]/g, ''),
-      validate: v => v.length === 12,
-      error: 'Aadhar number must be 12 digits.'
+      allowed: (v) => v.replace(/[^0-9]/g, ""),
+      validate: (v) => v.length === 12,
+      error: "Aadhar number must be 12 digits.",
     },
     panNo: {
-      label: 'PAN',
+      label: "PAN",
       maxLength: 10,
       pattern: /^[A-Z0-9]{0,10}$/,
-      help: 'Format: 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F)',
-      inputMode: 'text',
+      help: "Format: 5 letters, 4 digits, 1 letter (e.g., ABCDE1234F)",
+      inputMode: "text",
       toUpper: true,
-      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
-      validate: v => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v),
-      error: 'PAN must be in format: 5 letters, 4 digits, 1 letter.'
+      allowed: (v) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      validate: (v) => /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v),
+      error: "PAN must be in format: 5 letters, 4 digits, 1 letter.",
     },
     passport: {
-      label: 'Passport',
+      label: "Passport",
       maxLength: 8,
       pattern: /^[A-Z0-9]{0,8}$/,
-      help: 'Format: 1 letter, 7 digits (e.g., A1234567)',
-      inputMode: 'text',
+      help: "Format: 1 letter, 7 digits (e.g., A1234567)",
+      inputMode: "text",
       toUpper: true,
-      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
-      validate: v => /^[A-Z]{1}[0-9]{7}$/.test(v),
-      error: 'Passport must be 1 letter followed by 7 digits.'
+      allowed: (v) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      validate: (v) => /^[A-Z]{1}[0-9]{7}$/.test(v),
+      error: "Passport must be 1 letter followed by 7 digits.",
     },
     drivingLicense: {
-      label: 'Driving License',
+      label: "Driving License",
       maxLength: 15,
       pattern: /^[A-Z0-9]{0,15}$/,
-      help: 'Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)',
-      inputMode: 'text',
+      help: "Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)",
+      inputMode: "text",
       toUpper: true,
-      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
-      validate: v => /^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(v),
-      error: 'Driving License must be 2 letters, 2 digits, 11 digits.'
+      allowed: (v) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      validate: (v) => /^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(v),
+      error: "Driving License must be 2 letters, 2 digits, 11 digits.",
     },
     voterId: {
-      label: 'Voter ID',
+      label: "Voter ID",
       maxLength: 10,
       pattern: /^[A-Z0-9]{0,10}$/,
-      help: 'Format: 3 letters, 7 digits (e.g., ABC1234567)',
-      inputMode: 'text',
+      help: "Format: 3 letters, 7 digits (e.g., ABC1234567)",
+      inputMode: "text",
       toUpper: true,
-      allowed: v => v.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
-      validate: v => /^[A-Z]{3}[0-9]{7}$/.test(v),
-      error: 'Voter ID must be 3 letters followed by 7 digits.'
+      allowed: (v) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(),
+      validate: (v) => /^[A-Z]{3}[0-9]{7}$/.test(v),
+      error: "Voter ID must be 3 letters followed by 7 digits.",
     },
   };
 
   // Helper to detect if the previewed file is a PDF
   function isPDF(docPreview) {
-    if (docPreview.file && docPreview.file.type === 'application/pdf') return true;
-    if (typeof docPreview.imgUrl === 'string' && docPreview.imgUrl.toLowerCase().endsWith('.pdf')) return true;
+    if (docPreview.file && docPreview.file.type === "application/pdf")
+      return true;
+    if (
+      typeof docPreview.imgUrl === "string" &&
+      docPreview.imgUrl.toLowerCase().endsWith(".pdf")
+    )
+      return true;
     return false;
   }
 
@@ -1827,99 +2024,135 @@ function EmployeeForm() {
   const [bankTouched, setBankTouched] = useState({});
   function bankAccountError(key) {
     const vals = formData.bankDetails;
-    const anyAccount = vals.accountNumber || vals.accountHolderName || vals.ifscCode || vals.bankName || vals.branchName || vals.passbookImgUrl;
+    const anyAccount =
+      vals.accountNumber ||
+      vals.accountHolderName ||
+      vals.ifscCode ||
+      vals.bankName ||
+      vals.branchName ||
+      vals.passbookImgUrl;
     const anyUPI = vals.upiId || vals.upiPhoneNumber;
     // If both anyAccount and anyUPI are filled, require all account fields and all UPI fields
     if (anyAccount && anyUPI) {
-      if (!vals.accountNumber && key === 'accountNumber') return 'Required';
-      if (!vals.accountHolderName && key === 'accountHolderName') return 'Required';
-      if (!vals.ifscCode && key === 'ifscCode') return 'Required';
-      if (!vals.bankName && key === 'bankName') return 'Required';
-      if (!vals.branchName && key === 'branchName') return 'Required';
-      if (!vals.passbookImgUrl && key === 'passbookImgUrl') return 'Required';
-      return '';
+      if (!vals.accountNumber && key === "accountNumber") return "Required";
+      if (!vals.accountHolderName && key === "accountHolderName")
+        return "Required";
+      if (!vals.ifscCode && key === "ifscCode") return "Required";
+      if (!vals.bankName && key === "bankName") return "Required";
+      if (!vals.branchName && key === "branchName") return "Required";
+      if (!vals.passbookImgUrl && key === "passbookImgUrl") return "Required";
+      return "";
     }
     // If only account section started
     if (anyAccount) {
-      if (!vals.accountNumber && key === 'accountNumber') return 'Required';
-      if (!vals.accountHolderName && key === 'accountHolderName') return 'Required';
-      if (!vals.ifscCode && key === 'ifscCode') return 'Required';
-      if (!vals.bankName && key === 'bankName') return 'Required';
-      if (!vals.branchName && key === 'branchName') return 'Required';
-      if (!vals.passbookImgUrl && key === 'passbookImgUrl') return 'Required';
-      return '';
+      if (!vals.accountNumber && key === "accountNumber") return "Required";
+      if (!vals.accountHolderName && key === "accountHolderName")
+        return "Required";
+      if (!vals.ifscCode && key === "ifscCode") return "Required";
+      if (!vals.bankName && key === "bankName") return "Required";
+      if (!vals.branchName && key === "branchName") return "Required";
+      if (!vals.passbookImgUrl && key === "passbookImgUrl") return "Required";
+      return "";
     }
-    return '';
+    return "";
   }
   function upiError(key) {
     const vals = formData.bankDetails;
-    const anyAccount = vals.accountNumber || vals.accountHolderName || vals.ifscCode || vals.bankName || vals.branchName || vals.passbookImgUrl;
+    const anyAccount =
+      vals.accountNumber ||
+      vals.accountHolderName ||
+      vals.ifscCode ||
+      vals.bankName ||
+      vals.branchName ||
+      vals.passbookImgUrl;
     const anyUPI = vals.upiId || vals.upiPhoneNumber;
     // If both anyAccount and anyUPI are filled, require all account fields and all UPI fields
     if (anyAccount && anyUPI) {
-      if (!vals.upiId && key === 'upiId') return 'Required';
-      if (!vals.upiPhoneNumber && key === 'upiPhoneNumber') return 'Required';
-      return '';
+      if (!vals.upiId && key === "upiId") return "Required";
+      if (!vals.upiPhoneNumber && key === "upiPhoneNumber") return "Required";
+      return "";
     }
     // If only UPI section started
     if (anyUPI) {
-      if (!vals.upiId && key === 'upiId') return 'Required';
-      if (!vals.upiPhoneNumber && key === 'upiPhoneNumber') return 'Required';
-      return '';
+      if (!vals.upiId && key === "upiId") return "Required";
+      if (!vals.upiPhoneNumber && key === "upiPhoneNumber") return "Required";
+      return "";
     }
-    return '';
+    return "";
   }
 
   // Add validation functions for bank details
   const validateAccountNumber = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "Account number is required." : "";
-    if (!/^[0-9]{9,18}$/.test(value)) return "Account number must be 9-18 digits.";
+    if (!value || value.trim() === "")
+      return required ? "Account number is required." : "";
+    if (!/^[0-9]{9,18}$/.test(value))
+      return "Account number must be 9-18 digits.";
     return "";
   };
   const validateAccountHolderName = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "Account holder name is required." : "";
-    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (!value || value.trim() === "")
+      return required ? "Account holder name is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value))
+      return "Only alphabets and spaces allowed.";
     if (value.trim().length < 2) return "Must be at least 2 characters.";
     return "";
   };
   const validateIFSC = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "IFSC code is required." : "";
-    if (!/^[A-Z]{4}0[0-9A-Z]{6}$/.test(value.trim().toUpperCase())) return "Invalid IFSC code format (e.g., SBIN0001234).";
+    if (!value || value.trim() === "")
+      return required ? "IFSC code is required." : "";
+    if (!/^[A-Z]{4}0[0-9A-Z]{6}$/.test(value.trim().toUpperCase()))
+      return "Invalid IFSC code format (e.g., SBIN0001234).";
     return "";
   };
   const validateBankName = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "Bank name is required." : "";
-    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (!value || value.trim() === "")
+      return required ? "Bank name is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value))
+      return "Only alphabets and spaces allowed.";
     if (value.trim().length < 2) return "Must be at least 2 characters.";
     return "";
   };
   const validateUPI = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "UPI ID is required." : "";
-    if (!/^([a-zA-Z0-9.]+)@([a-zA-Z]+)$/.test(value)) return "Invalid UPI ID format (e.g., name@bank).";
+    if (!value || value.trim() === "")
+      return required ? "UPI ID is required." : "";
+    if (!/^([a-zA-Z0-9.]+)@([a-zA-Z]+)$/.test(value))
+      return "Invalid UPI ID format (e.g., name@bank).";
     return "";
   };
   const validateUPIName = (value, required = true) => {
-    if (!value || value.trim() === "") return required ? "UPI contact name is required." : "";
-    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed.";
+    if (!value || value.trim() === "")
+      return required ? "UPI contact name is required." : "";
+    if (!/^[A-Za-z ]+$/.test(value))
+      return "Only alphabets and spaces allowed.";
     if (value.trim().length < 2) return "Must be at least 2 characters.";
     return "";
   };
 
   // Helper to check if any bank or UPI field is filled
-  const anyBankFieldFilled = formData.bankDetails.accountNumber || formData.bankDetails.accountHolderName || formData.bankDetails.ifscCode || formData.bankDetails.bankName || formData.bankDetails.branchName || formData.bankDetails.passbookImgUrl;
-  const anyUPIFieldFilled = formData.bankDetails.upiId || formData.bankDetails.upiPhoneNumber;
+  const anyBankFieldFilled =
+    formData.bankDetails.accountNumber ||
+    formData.bankDetails.accountHolderName ||
+    formData.bankDetails.ifscCode ||
+    formData.bankDetails.bankName ||
+    formData.bankDetails.branchName ||
+    formData.bankDetails.passbookImgUrl;
+  const anyUPIFieldFilled =
+    formData.bankDetails.upiId || formData.bankDetails.upiPhoneNumber;
 
   // Helper to check if any personal field is filled
-  const anyPersonalFieldFilled = Object.values(formData.employee).some(v => v && v.toString().trim() !== "");
+  const anyPersonalFieldFilled = Object.values(formData.employee).some(
+    (v) => v && v.toString().trim() !== ""
+  );
 
   // Add input filtering for salary fields
   const filterNumberInput = (value) => {
-    return value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'); // allow only one dot
+    return value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"); // allow only one dot
   };
 
   // Add validation for salary fields
   const validateNumber = (value, required = true) => {
-    if (!value || value.toString().trim() === "") return required ? "This field is required." : "";
+    if (!value || value.toString().trim() === "")
+      return required ? "This field is required." : "";
     if (isNaN(Number(value))) return "Only numbers allowed.";
     return "";
   };
@@ -1944,18 +2177,19 @@ function EmployeeForm() {
       if (email) params.email = email;
       if (phone) params.phone = phone;
       if (!email && !phone) return;
-      
+
       // If editing an employee, exclude their current email and phone from uniqueness check
       if (employee) {
         try {
           const parsedEmployee = JSON.parse(employee);
-          if (parsedEmployee.emailPersonal) params.excludeEmail = parsedEmployee.emailPersonal;
+          if (parsedEmployee.emailPersonal)
+            params.excludeEmail = parsedEmployee.emailPersonal;
           if (parsedEmployee.phone) params.excludePhone = parsedEmployee.phone;
         } catch (error) {
           // If parsing fails, continue without exclusion
         }
       }
-      
+
       try {
         const token = getItemFromSessionStorage("token");
         const res = await axios.get(
@@ -1964,14 +2198,22 @@ function EmployeeForm() {
             params,
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
         setUniquenessErrors((prev) => ({
           ...prev,
-          emailPersonal: email ? (res.data.emailPersonal === true ? "This email is already existing." : "") : prev.emailPersonal,
-          phone: phone ? (res.data.phone === true ? "This phone is already existing." : "") : prev.phone,
+          emailPersonal: email
+            ? res.data.emailPersonal === true
+              ? "This email is already existing."
+              : ""
+            : prev.emailPersonal,
+          phone: phone
+            ? res.data.phone === true
+              ? "This phone is already existing."
+              : ""
+            : prev.phone,
         }));
       } catch (err) {
         // Optionally handle error
@@ -1980,8 +2222,9 @@ function EmployeeForm() {
   ).current;
 
   // Add input filtering for account number and account holder name
-  const filterAccountNumberInput = (value) => value.replace(/[^0-9]/g, '');
-  const filterAccountHolderNameInput = (value) => value.replace(/[^A-Za-z ]/g, '');
+  const filterAccountNumberInput = (value) => value.replace(/[^0-9]/g, "");
+  const filterAccountHolderNameInput = (value) =>
+    value.replace(/[^A-Za-z ]/g, "");
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -2063,92 +2306,212 @@ function EmployeeForm() {
                   {activeSection === "personal" && (
                     <div className="grid grid-cols-2 gap-3 flex-1 items-start">
                       <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Personal Information</h3>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          Personal Information
+                        </h3>
                         <div className="grid grid-cols-3 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>First Name <span className="text-red-400">*</span></label>
-                            <input 
-                              type="text" 
-                              className={`${inputClass} ${getFieldBorderClass("firstName", formData.employee.firstName, fieldTouched.firstName, validationErrors.firstName)}`} 
-                              placeholder="Enter first name" 
-                              value={formData.employee.firstName || ""} 
-                              onChange={e => handleInputChange("employee", "firstName", filterNameInput(e.target.value))} 
-                              ref={formRefs.firstName} 
-                              onBlur={() => handlePersonalFieldBlur("firstName")} 
+                            <label className={inputLabelClass}>
+                              First Name <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={`${inputClass} ${getFieldBorderClass(
+                                "firstName",
+                                formData.employee.firstName,
+                                fieldTouched.firstName,
+                                validationErrors.firstName
+                              )}`}
+                              placeholder="Enter first name"
+                              value={formData.employee.firstName || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "firstName",
+                                  filterNameInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.firstName}
+                              onBlur={() =>
+                                handlePersonalFieldBlur("firstName")
+                              }
                               maxLength={30}
                             />
-                            {validationErrors.firstName && fieldTouched.firstName && (<p className="text-red-600 text-xs mt-1">{validationErrors.firstName}</p>)}
+                            {validationErrors.firstName &&
+                              fieldTouched.firstName && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.firstName}
+                                </p>
+                              )}
                           </div>
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Middle Name</label>
-                            <input 
-                              type="text" 
-                              className={`${inputClass} ${getFieldBorderClass("middleName", formData.employee.middleName, fieldTouched.middleName, validationErrors.middleName)}`} 
-                              placeholder="Enter middle name (optional)" 
-                              value={formData.employee.middleName || ""} 
-                              onChange={e => handleInputChange("employee", "middleName", filterNameInput(e.target.value))} 
-                              ref={formRefs.middleName} 
-                              onBlur={() => handlePersonalFieldBlur("middleName")} 
+                            <label className={inputLabelClass}>
+                              Middle Name
+                            </label>
+                            <input
+                              type="text"
+                              className={`${inputClass} ${getFieldBorderClass(
+                                "middleName",
+                                formData.employee.middleName,
+                                fieldTouched.middleName,
+                                validationErrors.middleName
+                              )}`}
+                              placeholder="Enter middle name (optional)"
+                              value={formData.employee.middleName || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "middleName",
+                                  filterNameInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.middleName}
+                              onBlur={() =>
+                                handlePersonalFieldBlur("middleName")
+                              }
                               maxLength={30}
                             />
-                            {validationErrors.middleName && fieldTouched.middleName && (<p className="text-red-600 text-xs mt-1">{validationErrors.middleName}</p>)}
+                            {validationErrors.middleName &&
+                              fieldTouched.middleName && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.middleName}
+                                </p>
+                              )}
                           </div>
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Last Name <span className="text-red-400">*</span></label>
-                            <input 
-                              type="text" 
-                              className={`${inputClass} ${getFieldBorderClass("lastName", formData.employee.lastName, fieldTouched.lastName, validationErrors.lastName)}`} 
-                              placeholder="Enter last name" 
-                              value={formData.employee.lastName || ""} 
-                              onChange={e => handleInputChange("employee", "lastName", filterNameInput(e.target.value))} 
-                              ref={formRefs.lastName} 
-                              onBlur={() => handlePersonalFieldBlur("lastName")} 
+                            <label className={inputLabelClass}>
+                              Last Name <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              className={`${inputClass} ${getFieldBorderClass(
+                                "lastName",
+                                formData.employee.lastName,
+                                fieldTouched.lastName,
+                                validationErrors.lastName
+                              )}`}
+                              placeholder="Enter last name"
+                              value={formData.employee.lastName || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "lastName",
+                                  filterNameInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.lastName}
+                              onBlur={() => handlePersonalFieldBlur("lastName")}
                               maxLength={30}
                             />
-                            {validationErrors.lastName && fieldTouched.lastName && (<p className="text-red-600 text-xs mt-1">{validationErrors.lastName}</p>)}
+                            {validationErrors.lastName &&
+                              fieldTouched.lastName && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.lastName}
+                                </p>
+                              )}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Father Name</label>
-                            <input 
-                              type="text" 
-                              className={`${inputClass} ${getFieldBorderClass("fathersName", formData.employee.fathersName, fieldTouched.fathersName, validationErrors.fathersName)}`} 
-                              placeholder="Enter father name" 
-                              value={formData.employee.fathersName || ""} 
-                              onChange={e => handleInputChange("employee", "fathersName", filterNameInput(e.target.value))} 
-                              ref={formRefs.fathersName} 
-                              onBlur={() => handlePersonalFieldBlur("fathersName")} 
+                            <label className={inputLabelClass}>
+                              Father Name
+                            </label>
+                            <input
+                              type="text"
+                              className={`${inputClass} ${getFieldBorderClass(
+                                "fathersName",
+                                formData.employee.fathersName,
+                                fieldTouched.fathersName,
+                                validationErrors.fathersName
+                              )}`}
+                              placeholder="Enter father name"
+                              value={formData.employee.fathersName || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "fathersName",
+                                  filterNameInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.fathersName}
+                              onBlur={() =>
+                                handlePersonalFieldBlur("fathersName")
+                              }
                               maxLength={30}
                             />
-                            {validationErrors.fathersName && fieldTouched.fathersName && (<p className="text-red-600 text-xs mt-1">{validationErrors.fathersName}</p>)}
+                            {validationErrors.fathersName &&
+                              fieldTouched.fathersName && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.fathersName}
+                                </p>
+                              )}
                           </div>
                           <div className={inputGroupClass}>
                             <label className={inputLabelClass}>Gender</label>
-                            <Listbox value={formData.employee.gender} onChange={val => {
-                              handleInputChange('employee', 'gender', val);
-                              // Mark gender as touched immediately when selected
-                              setFieldTouched(prev => ({ ...prev, gender: true }));
-                            }}>
+                            <Listbox
+                              value={formData.employee.gender}
+                              onChange={(val) => {
+                                handleInputChange("employee", "gender", val);
+                                // Mark gender as touched immediately when selected
+                                setFieldTouched((prev) => ({
+                                  ...prev,
+                                  gender: true,
+                                }));
+                              }}
+                            >
                               <div className="relative">
-                                <Listbox.Button className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 flex justify-between items-center ${getFieldBorderClass("gender", formData.employee.gender, fieldTouched.gender, validationErrors.gender)}`}>
-                                  <span>{genderOptions.find(opt => opt.value === formData.employee.gender)?.label || 'Select gender'}</span>
-                                  <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                <Listbox.Button
+                                  className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 flex justify-between items-center ${getFieldBorderClass(
+                                    "gender",
+                                    formData.employee.gender,
+                                    fieldTouched.gender,
+                                    validationErrors.gender
+                                  )}`}
+                                >
+                                  <span>
+                                    {genderOptions.find(
+                                      (opt) =>
+                                        opt.value === formData.employee.gender
+                                    )?.label || "Select gender"}
+                                  </span>
+                                  <svg
+                                    className="w-4 h-4 ml-2 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M19 9l-7 7-7-7"
+                                    />
+                                  </svg>
                                 </Listbox.Button>
                                 <Listbox.Options className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                  {genderOptions.map(option => (
+                                  {genderOptions.map((option) => (
                                     <Listbox.Option
                                       key={option.value}
                                       value={option.value}
                                       className={({ active, selected }) =>
                                         `cursor-pointer select-none relative py-2 pl-10 pr-4 ${
-                                          active ? 'bg-gray-100' : ''
-                                        } ${selected ? 'font-semibold text-blue-600' : 'text-gray-900'}`
+                                          active ? "bg-gray-100" : ""
+                                        } ${
+                                          selected
+                                            ? "font-semibold text-blue-600"
+                                            : "text-gray-900"
+                                        }`
                                       }
                                     >
                                       {({ selected }) => (
                                         <>
-                                          <span className={`block truncate ${selected ? 'font-semibold' : ''}`}>{option.label}</span>
+                                          <span
+                                            className={`block truncate ${
+                                              selected ? "font-semibold" : ""
+                                            }`}
+                                          >
+                                            {option.label}
+                                          </span>
                                           {selected ? (
                                             <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                                               <CheckIcon className="w-5 h-5 text-blue-600" />
@@ -2161,205 +2524,603 @@ function EmployeeForm() {
                                 </Listbox.Options>
                               </div>
                             </Listbox>
-                            {validationErrors.gender && fieldTouched.gender && (<p className="text-red-600 text-xs mt-1">{validationErrors.gender}</p>)}
+                            {validationErrors.gender && fieldTouched.gender && (
+                              <p className="text-red-600 text-xs mt-1">
+                                {validationErrors.gender}
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Phone <span className="text-red-400">*</span></label>
-                            <input 
-                              type="tel" 
-                              className={`${inputClass} ${validationErrors.phone && (fieldTouched.phone || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                              placeholder="Enter phone number" 
-                              value={formData.employee.phone || ""} 
-                              onChange={e => handleInputChange("employee", "phone", filterPhoneInput(e.target.value))} 
-                              ref={formRefs.phone} 
-                              onBlur={() => handlePersonalFieldBlur("phone")} 
+                            <label className={inputLabelClass}>
+                              Phone <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="tel"
+                              className={`${inputClass} ${
+                                validationErrors.phone &&
+                                (fieldTouched.phone || anyPersonalFieldFilled)
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              placeholder="Enter phone number"
+                              value={formData.employee.phone || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "phone",
+                                  filterPhoneInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.phone}
+                              onBlur={() => handlePersonalFieldBlur("phone")}
                               maxLength={10}
                               inputMode="numeric"
                             />
-                            {validationErrors.phone && (fieldTouched.phone || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.phone}</p>)}
+                            {validationErrors.phone &&
+                              (fieldTouched.phone ||
+                                anyPersonalFieldFilled) && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.phone}
+                                </p>
+                              )}
                             {uniquenessErrors.phone && (
-                              <p className="text-red-600 text-xs mt-1">{uniquenessErrors.phone}</p>
+                              <p className="text-red-600 text-xs mt-1">
+                                {uniquenessErrors.phone}
+                              </p>
                             )}
                           </div>
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Alternate Phone</label>
-                            <input 
-                              type="tel" 
-                              className={`${inputClass} ${validationErrors.alternatePhone && (fieldTouched.alternatePhone || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                              placeholder="Enter alternate phone" 
-                              value={formData.employee.alternatePhone || ""} 
-                              onChange={e => handleInputChange("employee", "alternatePhone", filterPhoneInput(e.target.value))} 
-                              ref={formRefs.alternatePhone} 
-                              onBlur={() => handlePersonalFieldBlur("alternatePhone")} 
+                            <label className={inputLabelClass}>
+                              Alternate Phone
+                            </label>
+                            <input
+                              type="tel"
+                              className={`${inputClass} ${
+                                validationErrors.alternatePhone &&
+                                (fieldTouched.alternatePhone ||
+                                  anyPersonalFieldFilled)
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              placeholder="Enter alternate phone"
+                              value={formData.employee.alternatePhone || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "alternatePhone",
+                                  filterPhoneInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.alternatePhone}
+                              onBlur={() =>
+                                handlePersonalFieldBlur("alternatePhone")
+                              }
                               maxLength={10}
                               inputMode="numeric"
                             />
-                            {validationErrors.alternatePhone && (fieldTouched.alternatePhone || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.alternatePhone}</p>)}
+                            {validationErrors.alternatePhone &&
+                              (fieldTouched.alternatePhone ||
+                                anyPersonalFieldFilled) && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.alternatePhone}
+                                </p>
+                              )}
                           </div>
                         </div>
                         <div className="grid grid-cols-1 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Personal Email <span className="text-red-400">*</span></label>
+                            <label className={inputLabelClass}>
+                              Personal Email{" "}
+                              <span className="text-red-400">*</span>
+                            </label>
                             <div className="relative">
-                              <input 
-                                type="email" 
-                                className={`${inputClass} ${validationErrors.emailPersonal && (fieldTouched.emailPersonal || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                                placeholder="Enter personal email" 
-                                value={formData.employee.emailPersonal || ""} 
-                                onChange={e => handleInputChange("employee", "emailPersonal", filterEmailInput(e.target.value))} 
-                                ref={formRefs.emailPersonal} 
-                                onBlur={() => handlePersonalFieldBlur("emailPersonal")} 
+                              <input
+                                type="email"
+                                className={`${inputClass} ${
+                                  validationErrors.emailPersonal &&
+                                  (fieldTouched.emailPersonal ||
+                                    anyPersonalFieldFilled)
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
+                                placeholder="Enter personal email"
+                                value={formData.employee.emailPersonal || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "employee",
+                                    "emailPersonal",
+                                    filterEmailInput(e.target.value)
+                                  )
+                                }
+                                ref={formRefs.emailPersonal}
+                                onBlur={() =>
+                                  handlePersonalFieldBlur("emailPersonal")
+                                }
                                 maxLength={50}
                               />
-                              {getEmailSuggestion(formData.employee.emailPersonal) && !formData.employee.emailPersonal.includes('@') && (
-                                <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
-                                  <span className="font-medium">Suggestion:</span> 
-                                  <button 
-                                    type="button"
-                                    onClick={() => handleInputChange("employee", "emailPersonal", getEmailSuggestion(formData.employee.emailPersonal))}
-                                    className="ml-1 underline hover:text-blue-900 cursor-pointer"
-                                  >
-                                    {getEmailSuggestion(formData.employee.emailPersonal)}
-                                  </button>
-                                </div>
-                              )}
+                              {getEmailSuggestion(
+                                formData.employee.emailPersonal
+                              ) &&
+                                !formData.employee.emailPersonal.includes(
+                                  "@"
+                                ) && (
+                                  <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
+                                    <span className="font-medium">
+                                      Suggestion:
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleInputChange(
+                                          "employee",
+                                          "emailPersonal",
+                                          getEmailSuggestion(
+                                            formData.employee.emailPersonal
+                                          )
+                                        )
+                                      }
+                                      className="ml-1 underline hover:text-blue-900 cursor-pointer"
+                                    >
+                                      {getEmailSuggestion(
+                                        formData.employee.emailPersonal
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
                             </div>
-                            {validationErrors.emailPersonal && (fieldTouched.emailPersonal || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailPersonal}</p>)}
+                            {validationErrors.emailPersonal &&
+                              (fieldTouched.emailPersonal ||
+                                anyPersonalFieldFilled) && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.emailPersonal}
+                                </p>
+                              )}
                             {uniquenessErrors.emailPersonal && (
-                              <p className="text-red-600 text-xs mt-1">{uniquenessErrors.emailPersonal}</p>
+                              <p className="text-red-600 text-xs mt-1">
+                                {uniquenessErrors.emailPersonal}
+                              </p>
                             )}
                           </div>
-
                         </div>
                         <div className={inputGroupClass}>
-                          <label className={inputLabelClass}>Current Address</label>
-                          <textarea 
-                            className={`${inputClass} ${validationErrors.currentAddress && (fieldTouched.currentAddress || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                            rows="2" 
-                            placeholder="Enter current address" 
-                            value={formData.employee.currentAddress || ""} 
-                            onChange={e => handleInputChange("employee", "currentAddress", e.target.value)} 
-                            ref={formRefs.currentAddress} 
-                            onBlur={() => handlePersonalFieldBlur("currentAddress")} 
+                          <label className={inputLabelClass}>
+                            Current Address
+                          </label>
+                          <textarea
+                            className={`${inputClass} ${
+                              validationErrors.currentAddress &&
+                              (fieldTouched.currentAddress ||
+                                anyPersonalFieldFilled)
+                                ? "border-red-500"
+                                : ""
+                            }`}
+                            rows="2"
+                            placeholder="Enter current address"
+                            value={formData.employee.currentAddress || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "employee",
+                                "currentAddress",
+                                e.target.value
+                              )
+                            }
+                            ref={formRefs.currentAddress}
+                            onBlur={() =>
+                              handlePersonalFieldBlur("currentAddress")
+                            }
                             maxLength={200}
                           />
-                          {validationErrors.currentAddress && (fieldTouched.currentAddress || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.currentAddress}</p>)}
-                          <p className="text-xs text-gray-500 mt-1">Maximum 200 characters</p>
+                          {validationErrors.currentAddress &&
+                            (fieldTouched.currentAddress ||
+                              anyPersonalFieldFilled) && (
+                              <p className="text-red-600 text-xs mt-1">
+                                {validationErrors.currentAddress}
+                              </p>
+                            )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            Maximum 200 characters
+                          </p>
                         </div>
                         <div className="flex items-center mb-1">
-                          <input type="checkbox" id="sameAsCurrent" className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" checked={formData.employee.permanentAddress === formData.employee.currentAddress} onChange={e => { if (e.target.checked) { handleInputChange("employee", "permanentAddress", formData.employee.currentAddress); } else { handleInputChange("employee", "permanentAddress", ""); } }} />
-                          <label htmlFor="sameAsCurrent" className="ml-2 text-sm text-gray-700">Same as current address</label>
+                          <input
+                            type="checkbox"
+                            id="sameAsCurrent"
+                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            checked={
+                              formData.employee.permanentAddress ===
+                              formData.employee.currentAddress
+                            }
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleInputChange(
+                                  "employee",
+                                  "permanentAddress",
+                                  formData.employee.currentAddress
+                                );
+                              } else {
+                                handleInputChange(
+                                  "employee",
+                                  "permanentAddress",
+                                  ""
+                                );
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="sameAsCurrent"
+                            className="ml-2 text-sm text-gray-700"
+                          >
+                            Same as current address
+                          </label>
                         </div>
                         <div className={inputGroupClass}>
-                          <label className={inputLabelClass}>Permanent Address</label>
-                          <textarea 
-                            className={`${inputClass} ${validationErrors.permanentAddress && (fieldTouched.permanentAddress || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                            rows="2" 
-                            placeholder="Enter permanent address" 
-                            value={formData.employee.permanentAddress || ""} 
-                            onChange={e => handleInputChange("employee", "permanentAddress", e.target.value)} 
-                            ref={formRefs.permanentAddress} 
-                            onBlur={() => handlePersonalFieldBlur("permanentAddress")} 
+                          <label className={inputLabelClass}>
+                            Permanent Address
+                          </label>
+                          <textarea
+                            className={`${inputClass} ${
+                              validationErrors.permanentAddress &&
+                              (fieldTouched.permanentAddress ||
+                                anyPersonalFieldFilled)
+                                ? "border-red-500"
+                                : ""
+                            }`}
+                            rows="2"
+                            placeholder="Enter permanent address"
+                            value={formData.employee.permanentAddress || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "employee",
+                                "permanentAddress",
+                                e.target.value
+                              )
+                            }
+                            ref={formRefs.permanentAddress}
+                            onBlur={() =>
+                              handlePersonalFieldBlur("permanentAddress")
+                            }
                             maxLength={200}
                           />
-                          {validationErrors.permanentAddress && (fieldTouched.permanentAddress || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.permanentAddress}</p>)}
-                          <p className="text-xs text-gray-500 mt-1">Maximum 200 characters</p>
+                          {validationErrors.permanentAddress &&
+                            (fieldTouched.permanentAddress ||
+                              anyPersonalFieldFilled) && (
+                              <p className="text-red-600 text-xs mt-1">
+                                {validationErrors.permanentAddress}
+                              </p>
+                            )}
+                          <p className="text-xs text-gray-500 mt-1">
+                            Maximum 200 characters
+                          </p>
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Professional Information</h3>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          Professional Information
+                        </h3>
                         <div className="grid grid-cols-2 gap-2 mb-2">
-                          <DepartmentSelect label="Department" options={departments} value={formData.employee.department} onChange={selectedDepartment => { const cleanName = selectedDepartment.name.replace(/[bedjw]{5,}/g, '').replace(/\|.*$/, '').replace(/\s+/g, ' ').trim(); handleInputChange("employee", "department", { departmentId: selectedDepartment.departmentId, name: cleanName }); const weeklyHolidays = selectedDepartment.weeklyHolidays ? selectedDepartment.weeklyHolidays.split(",") : []; handleInputChange("employee", "weeklyOffs", weeklyHolidays); handleInputChange("employee", "designation", null); handleInputChange("employee", "reportingManager", null); }} onAddDepartment={() => setShowDepartmentModal(true)} />
-                          <DesignationSelect label="Designation" options={formData.employee.department ? designations : []} value={formData.employee.designation} onChange={selectedDesignation => handleInputChange("employee", "designation", { designationId: selectedDesignation.designationId, name: selectedDesignation.name, manager: selectedDesignation.manager, overtimeEligible: selectedDesignation.overtimeEligible, })} onAddDesignation={() => setShowDesignationModal(true)} disabled={isDesignationLoading || !formData.employee.department} placeholder={!formData.employee.department ? 'First Select Department' : 'Select designation'} loading={isDesignationLoading} />
+                          <DepartmentSelect
+                            label="Department"
+                            options={departments}
+                            value={formData.employee.department}
+                            onChange={(selectedDepartment) => {
+                              const cleanName = selectedDepartment.name
+                                .replace(/[bedjw]{5,}/g, "")
+                                .replace(/\|.*$/, "")
+                                .replace(/\s+/g, " ")
+                                .trim();
+                              handleInputChange("employee", "department", {
+                                departmentId: selectedDepartment.departmentId,
+                                name: cleanName,
+                              });
+                              const weeklyHolidays =
+                                selectedDepartment.weeklyHolidays
+                                  ? selectedDepartment.weeklyHolidays.split(",")
+                                  : [];
+                              handleInputChange(
+                                "employee",
+                                "weeklyOffs",
+                                weeklyHolidays
+                              );
+                              handleInputChange(
+                                "employee",
+                                "designation",
+                                null
+                              );
+                              handleInputChange(
+                                "employee",
+                                "reportingManager",
+                                null
+                              );
+                            }}
+                            onAddDepartment={() => setShowDepartmentModal(true)}
+                          />
+                          <DesignationSelect
+                            label="Designation"
+                            options={
+                              formData.employee.department ? designations : []
+                            }
+                            value={formData.employee.designation}
+                            onChange={(selectedDesignation) =>
+                              handleInputChange("employee", "designation", {
+                                designationId:
+                                  selectedDesignation.designationId,
+                                name: selectedDesignation.name,
+                                manager: selectedDesignation.manager,
+                                overtimeEligible:
+                                  selectedDesignation.overtimeEligible,
+                              })
+                            }
+                            onAddDesignation={() =>
+                              setShowDesignationModal(true)
+                            }
+                            disabled={
+                              isDesignationLoading ||
+                              !formData.employee.department
+                            }
+                            placeholder={
+                              !formData.employee.department
+                                ? "First Select Department"
+                                : "Select designation"
+                            }
+                            loading={isDesignationLoading}
+                          />
                         </div>
-                                                  <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Official Email</label>
-                            <div className="relative">
-                              <input 
-                                type="email" 
-                                className={`${inputClass} ${validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                                placeholder="Enter official email" 
-                                value={formData.employee.emailOfficial || ""} 
-                                onChange={e => handleInputChange("employee", "emailOfficial", filterEmailInput(e.target.value))} 
-                                ref={formRefs.emailOfficial} 
-                                onBlur={() => handlePersonalFieldBlur("emailOfficial")} 
-                                maxLength={50}
-                              />
-                              {getEmailSuggestion(formData.employee.emailOfficial) && !formData.employee.emailOfficial.includes('@') && (
+                        <div className={inputGroupClass}>
+                          <label className={inputLabelClass}>
+                            Official Email
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="email"
+                              className={`${inputClass} ${
+                                validationErrors.emailOfficial &&
+                                (fieldTouched.emailOfficial ||
+                                  anyPersonalFieldFilled)
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              placeholder="Enter official email"
+                              value={formData.employee.emailOfficial || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "emailOfficial",
+                                  filterEmailInput(e.target.value)
+                                )
+                              }
+                              ref={formRefs.emailOfficial}
+                              onBlur={() =>
+                                handlePersonalFieldBlur("emailOfficial")
+                              }
+                              maxLength={50}
+                            />
+                            {getEmailSuggestion(
+                              formData.employee.emailOfficial
+                            ) &&
+                              !formData.employee.emailOfficial.includes(
+                                "@"
+                              ) && (
                                 <div className="absolute top-full left-0 right-0 bg-blue-50 border border-blue-200 rounded-b-lg px-3 py-2 text-sm text-blue-700 z-10">
-                                  <span className="font-medium">Suggestion:</span> 
-                                  <button 
+                                  <span className="font-medium">
+                                    Suggestion:
+                                  </span>
+                                  <button
                                     type="button"
-                                    onClick={() => handleInputChange("employee", "emailOfficial", getEmailSuggestion(formData.employee.emailOfficial))}
+                                    onClick={() =>
+                                      handleInputChange(
+                                        "employee",
+                                        "emailOfficial",
+                                        getEmailSuggestion(
+                                          formData.employee.emailOfficial
+                                        )
+                                      )
+                                    }
                                     className="ml-1 underline hover:text-blue-900 cursor-pointer"
                                   >
-                                    {getEmailSuggestion(formData.employee.emailOfficial)}
+                                    {getEmailSuggestion(
+                                      formData.employee.emailOfficial
+                                    )}
                                   </button>
                                 </div>
                               )}
-                            </div>
-                            {validationErrors.emailOfficial && (fieldTouched.emailOfficial || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.emailOfficial}</p>)}
                           </div>
+                          {validationErrors.emailOfficial &&
+                            (fieldTouched.emailOfficial ||
+                              anyPersonalFieldFilled) && (
+                              <p className="text-red-600 text-xs mt-1">
+                                {validationErrors.emailOfficial}
+                              </p>
+                            )}
+                        </div>
                         <div className="grid grid-cols-2 gap-2 mb-2">
                           <div className={inputGroupClass}>
-                            <label className={inputLabelClass}>Date of Joining <span className="text-red-400">*</span></label>
-                            <input 
-                              type="date" 
-                              className={`${inputClass} ${validationErrors.joiningDate && (fieldTouched.joiningDate || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                              value={formData.employee.joiningDate || ""} 
-                              onChange={e => handleInputChange("employee", "joiningDate", e.target.value)} 
-                              ref={formRefs.joiningDate} 
-                              onBlur={() => handlePersonalFieldBlur("joiningDate")} 
+                            <label className={inputLabelClass}>
+                              Date of Joining{" "}
+                              <span className="text-red-400">*</span>
+                            </label>
+                            <input
+                              type="date"
+                              className={`${inputClass} ${
+                                validationErrors.joiningDate &&
+                                (fieldTouched.joiningDate ||
+                                  anyPersonalFieldFilled)
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              value={formData.employee.joiningDate || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "joiningDate",
+                                  e.target.value
+                                )
+                              }
+                              ref={formRefs.joiningDate}
+                              onBlur={() =>
+                                handlePersonalFieldBlur("joiningDate")
+                              }
                             />
-                            {validationErrors.joiningDate && (fieldTouched.joiningDate || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.joiningDate}</p>)}
+                            {validationErrors.joiningDate &&
+                              (fieldTouched.joiningDate ||
+                                anyPersonalFieldFilled) && (
+                                <p className="text-red-600 text-xs mt-1">
+                                  {validationErrors.joiningDate}
+                                </p>
+                              )}
                           </div>
                           <div className="grid grid-1 gap-2">
-                            <ReportingManagerSelect label="Reporting Manager" options={managers} value={formData.employee.reportingManager} onChange={selectedManager => handleInputChange("employee", "reportingManager", { employeeId: selectedManager.employeeId, name: selectedManager.name, })} />
+                            <ReportingManagerSelect
+                              label="Reporting Manager"
+                              options={managers}
+                              value={formData.employee.reportingManager}
+                              onChange={(selectedManager) =>
+                                handleInputChange(
+                                  "employee",
+                                  "reportingManager",
+                                  {
+                                    employeeId: selectedManager.employeeId,
+                                    name: selectedManager.name,
+                                  }
+                                )
+                              }
+                            />
                           </div>
                         </div>
-                        <h4 className="text-md font-medium text-gray-700 mt-4 mb-2">Statutory Details</h4>
-                        <MultiSelect label="Weekly Off" options={weekDays} value={formData.employee.weeklyOffs || []} onChange={selected => handleInputChange("employee", "weeklyOffs", selected)} />
+                        <h4 className="text-md font-medium text-gray-700 mt-4 mb-2">
+                          Statutory Details
+                        </h4>
+                        <MultiSelect
+                          label="Weekly Off"
+                          options={weekDays}
+                          value={formData.employee.weeklyOffs || []}
+                          onChange={(selected) =>
+                            handleInputChange(
+                              "employee",
+                              "weeklyOffs",
+                              selected
+                            )
+                          }
+                        />
                         <div className="flex flex-col space-y-1 mt-2">
                           <div className="flex items-center mb-1">
-                            <input type="checkbox" id="pfEnrolled" checked={formData.employee.pfEnrolled} onChange={e => handleInputChange("employee", "pfEnrolled", e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
-                            <label htmlFor="pfEnrolled" className="ml-2 text-sm text-gray-700">PF Enrolled</label>
+                            <input
+                              type="checkbox"
+                              id="pfEnrolled"
+                              checked={formData.employee.pfEnrolled}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "pfEnrolled",
+                                  e.target.checked
+                                )
+                              }
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <label
+                              htmlFor="pfEnrolled"
+                              className="ml-2 text-sm text-gray-700"
+                            >
+                              PF Enrolled
+                            </label>
                           </div>
                           {formData.employee.pfEnrolled && (
                             <div className={inputGroupClass + " mt-1"}>
-                              <label className={inputLabelClass}>UAN Number</label>
-                              <input 
-                                type="text" 
-                                className={`${inputClass} ${validationErrors.uanNumber && (fieldTouched.uanNumber || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                                value={formData.employee.uanNumber || ""} 
-                                onChange={e => handleInputChange("employee", "uanNumber", filterUANInput(e.target.value))} 
-                                placeholder="Enter UAN Number" 
+                              <label className={inputLabelClass}>
+                                UAN Number
+                              </label>
+                              <input
+                                type="text"
+                                className={`${inputClass} ${
+                                  validationErrors.uanNumber &&
+                                  (fieldTouched.uanNumber ||
+                                    anyPersonalFieldFilled)
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
+                                value={formData.employee.uanNumber || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "employee",
+                                    "uanNumber",
+                                    filterUANInput(e.target.value)
+                                  )
+                                }
+                                placeholder="Enter UAN Number"
                                 maxLength={12}
                                 inputMode="numeric"
-                                onBlur={() => handlePersonalFieldBlur("uanNumber")}
+                                onBlur={() =>
+                                  handlePersonalFieldBlur("uanNumber")
+                                }
                               />
-                              {validationErrors.uanNumber && (fieldTouched.uanNumber || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.uanNumber}</p>)}
+                              {validationErrors.uanNumber &&
+                                (fieldTouched.uanNumber ||
+                                  anyPersonalFieldFilled) && (
+                                  <p className="text-red-600 text-xs mt-1">
+                                    {validationErrors.uanNumber}
+                                  </p>
+                                )}
                             </div>
                           )}
                           <div className="flex items-center mb-1">
-                            <input type="checkbox" id="esicEnrolled" checked={formData.employee.esicEnrolled} onChange={e => handleInputChange("employee", "esicEnrolled", e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
-                            <label htmlFor="esicEnrolled" className="ml-2 text-sm text-gray-700">ESIC Enrolled</label>
+                            <input
+                              type="checkbox"
+                              id="esicEnrolled"
+                              checked={formData.employee.esicEnrolled}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "employee",
+                                  "esicEnrolled",
+                                  e.target.checked
+                                )
+                              }
+                              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                            />
+                            <label
+                              htmlFor="esicEnrolled"
+                              className="ml-2 text-sm text-gray-700"
+                            >
+                              ESIC Enrolled
+                            </label>
                           </div>
                           {formData.employee.esicEnrolled && (
                             <div className={inputGroupClass + " mt-1"}>
-                              <label className={inputLabelClass}>ESIC Number <span className="text-red-400">*</span></label>
-                              <input 
-                                type="text" 
-                                className={`${inputClass} ${validationErrors.esicNumber && (fieldTouched.esicNumber || anyPersonalFieldFilled) ? 'border-red-500' : ''}`} 
-                                value={formData.employee.esicNumber || ""} 
-                                onChange={e => handleInputChange("employee", "esicNumber", filterUANInput(e.target.value))} 
-                                placeholder="Enter ESIC Number" 
+                              <label className={inputLabelClass}>
+                                ESIC Number{" "}
+                                <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                className={`${inputClass} ${
+                                  validationErrors.esicNumber &&
+                                  (fieldTouched.esicNumber ||
+                                    anyPersonalFieldFilled)
+                                    ? "border-red-500"
+                                    : ""
+                                }`}
+                                value={formData.employee.esicNumber || ""}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    "employee",
+                                    "esicNumber",
+                                    filterUANInput(e.target.value)
+                                  )
+                                }
+                                placeholder="Enter ESIC Number"
                                 maxLength={12}
                                 inputMode="numeric"
-                                onBlur={() => handlePersonalFieldBlur("esicNumber")}
+                                onBlur={() =>
+                                  handlePersonalFieldBlur("esicNumber")
+                                }
                               />
-                              {validationErrors.esicNumber && (fieldTouched.esicNumber || anyPersonalFieldFilled) && (<p className="text-red-600 text-xs mt-1">{validationErrors.esicNumber}</p>)}
+                              {validationErrors.esicNumber &&
+                                (fieldTouched.esicNumber ||
+                                  anyPersonalFieldFilled) && (
+                                  <p className="text-red-600 text-xs mt-1">
+                                    {validationErrors.esicNumber}
+                                  </p>
+                                )}
                             </div>
                           )}
                         </div>
@@ -2370,118 +3131,235 @@ function EmployeeForm() {
                   {/* ID Proofs Section */}
                   {activeSection === "idProofs" && (
                     <div className="flex-1 p-4">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Identity Documents</h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                        Identity Documents
+                      </h3>
                       <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                         {Object.entries(docFieldMeta).map(([key, meta]) => {
-                          const imgField = key === 'aadharNo' ? 'aadharImgUrl'
-                            : key === 'panNo' ? 'pancardImgUrl'
-                            : key === 'passport' ? 'passportImgUrl'
-                            : key === 'drivingLicense' ? 'drivingLicenseImgUrl'
-                            : key === 'voterId' ? 'voterIdImgUrl' : '';
-                          const value = formData.idProofs[key] || '';
+                          const imgField =
+                            key === "aadharNo"
+                              ? "aadharImgUrl"
+                              : key === "panNo"
+                              ? "pancardImgUrl"
+                              : key === "passport"
+                              ? "passportImgUrl"
+                              : key === "drivingLicense"
+                              ? "drivingLicenseImgUrl"
+                              : key === "voterId"
+                              ? "voterIdImgUrl"
+                              : "";
+                          const value = formData.idProofs[key] || "";
                           const hasFile = !!formData.idProofs[imgField];
                           const isTouched = idProofsTouched[key];
                           const isValid = meta.validate(value);
                           // Passport: after first char, only allow digits
                           const handlePassportInput = (v) => {
-                            if (v.length === 0) return '';
-                            let first = v[0].replace(/[^a-zA-Z]/g, '').toUpperCase();
-                            let rest = v.slice(1).replace(/[^0-9]/g, '');
+                            if (v.length === 0) return "";
+                            let first = v[0]
+                              .replace(/[^a-zA-Z]/g, "")
+                              .toUpperCase();
+                            let rest = v.slice(1).replace(/[^0-9]/g, "");
                             return (first + rest).slice(0, 8);
                           };
                           // General allowed function
                           const allowedValue = (v) => {
-                            if (key === 'passport') return handlePassportInput(v);
+                            if (key === "passport")
+                              return handlePassportInput(v);
                             return meta.allowed(v);
                           };
                           // Show error if: (1) field is touched or blurred, and (2) value is invalid, or (3) file is uploaded and value is invalid, or (4) value is entered but no file
-                          const showError = (
+                          const showError =
                             (isTouched && value && !isValid) ||
                             (hasFile && !isValid) ||
-                            (value && !hasFile)
-                          );
-                          let errorMsg = '';
-                          if (isTouched && value && !isValid) errorMsg = meta.error;
+                            (value && !hasFile);
+                          let errorMsg = "";
+                          if (isTouched && value && !isValid)
+                            errorMsg = meta.error;
                           else if (hasFile && !isValid) errorMsg = meta.error;
-                          else if (value && !hasFile) errorMsg = `Please upload ${meta.label} document.`;
-                          else if (hasFile && !value) errorMsg = `${meta.label} number is required when document is uploaded.`;
+                          else if (value && !hasFile)
+                            errorMsg = `Please upload ${meta.label} document.`;
+                          else if (hasFile && !value)
+                            errorMsg = `${meta.label} number is required when document is uploaded.`;
                           return (
-                            <div key={key} className={`flex flex-col md:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md transition-all duration-200 ${showError ? 'ring-2 ring-red-200 border-red-400' : hasFile ? 'ring-2 ring-blue-100' : ''}`}>
+                            <div
+                              key={key}
+                              className={`flex flex-col md:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md transition-all duration-200 ${
+                                showError
+                                  ? "ring-2 ring-red-200 border-red-400"
+                                  : hasFile
+                                  ? "ring-2 ring-blue-100"
+                                  : ""
+                              }`}
+                            >
                               <div className="flex-1">
-                                <label className="block text-sm font-semibold text-gray-800 mb-1">{meta.label} Number <span className="text-red-400">*</span></label>
-                              <input
-                                  className={inputClass + (showError ? ' border-red-500' : '') + ' font-mono tracking-wider'}
+                                <label className="block text-sm font-semibold text-gray-800 mb-1">
+                                  {meta.label} Number{" "}
+                                  <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                  className={
+                                    inputClass +
+                                    (showError ? " border-red-500" : "") +
+                                    " font-mono tracking-wider"
+                                  }
                                   value={value}
-                                  onChange={e => {
+                                  onChange={(e) => {
                                     let v = e.target.value;
                                     v = allowedValue(v);
                                     handleInputChange("idProofs", key, v);
                                   }}
-                                  onInput={e => {
+                                  onInput={(e) => {
                                     let v = e.target.value;
                                     v = allowedValue(v);
                                     e.target.value = v;
                                   }}
-                                  onBlur={() => setIdProofsTouched(t => ({ ...t, [key]: true }))}
+                                  onBlur={() =>
+                                    setIdProofsTouched((t) => ({
+                                      ...t,
+                                      [key]: true,
+                                    }))
+                                  }
                                   placeholder={meta.placeholder}
                                   maxLength={meta.maxLength}
                                   inputMode={meta.inputMode}
                                   autoComplete="off"
-                                  style={{ textTransform: meta.toUpper ? 'uppercase' : 'none' }}
+                                  style={{
+                                    textTransform: meta.toUpper
+                                      ? "uppercase"
+                                      : "none",
+                                  }}
                                   required={hasFile}
                                 />
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-gray-500">{meta.help}</span>
-                                  {showError && <span className="text-xs text-red-500">{errorMsg}</span>}
+                                  <span className="text-xs text-gray-500">
+                                    {meta.help}
+                                  </span>
+                                  {showError && (
+                                    <span className="text-xs text-red-500">
+                                      {errorMsg}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex flex-col items-center gap-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">{meta.label} Photo/PDF <span className="text-red-400">*</span></label>
-                                  <div className="flex items-center gap-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  {meta.label} Photo/PDF{" "}
+                                  <span className="text-red-400">*</span>
+                                </label>
+                                <div className="flex items-center gap-2">
                                   {formData.idProofs[imgField] ? (
                                     <>
-                                      <button type="button" onClick={() => setDocPreview({
-                                        open: true,
-                                        imgUrl: formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField],
-                                        number: value,
-                                        label: meta.label,
-                                        file: formData.idProofs[imgField] instanceof File ? formData.idProofs[imgField] : null,
-                                      })} className="focus:outline-none">
-                                        {formData.idProofs[imgField].type === 'application/pdf' || (typeof formData.idProofs[imgField] === 'string' && formData.idProofs[imgField].endsWith('.pdf')) ? (
-                                          <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">PDF</span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setDocPreview({
+                                            open: true,
+                                            imgUrl:
+                                              formData.idProofs[
+                                                imgField
+                                              ] instanceof File
+                                                ? URL.createObjectURL(
+                                                    formData.idProofs[imgField]
+                                                  )
+                                                : formData.idProofs[imgField],
+                                            number: value,
+                                            label: meta.label,
+                                            file:
+                                              formData.idProofs[
+                                                imgField
+                                              ] instanceof File
+                                                ? formData.idProofs[imgField]
+                                                : null,
+                                          })
+                                        }
+                                        className="focus:outline-none"
+                                      >
+                                        {formData.idProofs[imgField].type ===
+                                          "application/pdf" ||
+                                        (typeof formData.idProofs[imgField] ===
+                                          "string" &&
+                                          formData.idProofs[imgField].endsWith(
+                                            ".pdf"
+                                          )) ? (
+                                          <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">
+                                            PDF
+                                          </span>
                                         ) : (
-                                          <img src={formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField]} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />
+                                          <img
+                                            src={
+                                              formData.idProofs[
+                                                imgField
+                                              ] instanceof File
+                                                ? URL.createObjectURL(
+                                                    formData.idProofs[imgField]
+                                                  )
+                                                : formData.idProofs[imgField]
+                                            }
+                                            alt={`${meta.label} preview`}
+                                            className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
+                                          />
                                         )}
-                                    </button>
-                                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, idProofs: { ...prev.idProofs, [imgField]: null } }))} className="text-red-500 hover:text-red-700 ml-2">Remove</button>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            idProofs: {
+                                              ...prev.idProofs,
+                                              [imgField]: null,
+                                            },
+                                          }))
+                                        }
+                                        className="text-red-500 hover:text-red-700 ml-2"
+                                      >
+                                        Remove
+                                      </button>
                                     </>
                                   ) : (
-                                    <label htmlFor={`upload-${key}`} className="cursor-pointer inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-100 text-sm text-gray-700">
+                                    <label
+                                      htmlFor={`upload-${key}`}
+                                      className="cursor-pointer inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-100 text-sm text-gray-700"
+                                    >
                                       Upload
-                                <input
-                                  type="file"
-                                  id={`upload-${key}`}
-                                  className="hidden"
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={e => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                            const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
-                                      if (!allowedTypes.includes(file.type)) {
-                                              toast.error("Only PDF or image files are allowed.");
-                                        return;
-                                      }
-                                      handleFileUpload(key, file);
-                                            setIdProofsTouched(t => ({ ...t, [key]: true }));
-                                    }
-                                  }}
-                                />
+                                      <input
+                                        type="file"
+                                        id={`upload-${key}`}
+                                        className="hidden"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            const allowedTypes = [
+                                              "application/pdf",
+                                              "image/jpeg",
+                                              "image/jpg",
+                                              "image/png",
+                                            ];
+                                            if (
+                                              !allowedTypes.includes(file.type)
+                                            ) {
+                                              toast.error(
+                                                "Only PDF or image files are allowed."
+                                              );
+                                              return;
+                                            }
+                                            handleFileUpload(key, file);
+                                            setIdProofsTouched((t) => ({
+                                              ...t,
+                                              [key]: true,
+                                            }));
+                                          }
+                                        }}
+                                      />
                                     </label>
                                   )}
+                                </div>
+                                <span className="text-xs text-gray-500 mt-1">
+                                  Only PDF or image files allowed. Max 5MB.
+                                </span>
                               </div>
-                                <span className="text-xs text-gray-500 mt-1">Only PDF or image files allowed. Max 5MB.</span>
                             </div>
-                          </div>
                           );
                         })}
                       </div>
@@ -2489,56 +3367,186 @@ function EmployeeForm() {
                       {docPreview.open && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
                           <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
-                            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={() => { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}><X className="w-5 h-5" /></button>
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4">{docPreview.label} Document Preview</h2>
+                            <button
+                              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+                              onClick={() => {
+                                setDocPreview({
+                                  open: false,
+                                  imgUrl: "",
+                                  number: "",
+                                  label: "",
+                                  file: null,
+                                });
+                                setPdfControls({ rotate: 0, zoom: 1 });
+                              }}
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                              {docPreview.label} Document Preview
+                            </h2>
                             {isPDF(docPreview) ? (
                               <>
                                 {/* Custom PDF Toolbar */}
                                 <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
                                   {/* Rotate Left */}
-                                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Left">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" /></svg>
+                                  <button
+                                    onClick={() =>
+                                      setPdfControls((c) => ({
+                                        ...c,
+                                        rotate: c.rotate - 90,
+                                      }))
+                                    }
+                                    className="text-gray-600 hover:text-blue-600"
+                                    title="Rotate Left"
+                                  >
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                                      />
+                                    </svg>
                                   </button>
                                   {/* Rotate Right */}
-                                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Right">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" /></svg>
+                                  <button
+                                    onClick={() =>
+                                      setPdfControls((c) => ({
+                                        ...c,
+                                        rotate: c.rotate + 90,
+                                      }))
+                                    }
+                                    className="text-gray-600 hover:text-blue-600"
+                                    title="Rotate Right"
+                                  >
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                                      />
+                                    </svg>
                                   </button>
                                   {/* Zoom Out */}
-                                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+                                  <button
+                                    onClick={() =>
+                                      setPdfControls((c) => ({
+                                        ...c,
+                                        zoom: Math.max(0.5, c.zoom - 0.1),
+                                      }))
+                                    }
+                                    className="text-gray-600 hover:text-blue-600"
+                                    title="Zoom Out"
+                                  >
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M20 12H4"
+                                      />
+                                    </svg>
                                   </button>
                                   {/* Zoom In */}
-                                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                                  <button
+                                    onClick={() =>
+                                      setPdfControls((c) => ({
+                                        ...c,
+                                        zoom: Math.min(2, c.zoom + 0.1),
+                                      }))
+                                    }
+                                    className="text-gray-600 hover:text-blue-600"
+                                    title="Zoom In"
+                                  >
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M12 4v16m8-8H4"
+                                      />
+                                    </svg>
                                   </button>
                                   {/* Download */}
                                   <a
                                     href={docPreview.imgUrl}
-                                    download={docPreview.label + '.pdf'}
+                                    download={docPreview.label + ".pdf"}
                                     className="text-gray-600 hover:text-blue-600"
                                     title="Download PDF"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                                    <svg
+                                      className="w-5 h-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                                      />
+                                    </svg>
                                   </a>
                                 </div>
                                 {/* PDF Preview Area with dynamic width/height for rotation */}
                                 {(() => {
-                                  const rotation = ((pdfControls.rotate % 360) + 360) % 360;
-                                  const isSideways = rotation === 90 || rotation === 270;
-                                  const previewWidth = isSideways ? '24rem' : '100%';
-                                  const previewHeight = isSideways ? '100%' : '24rem';
+                                  const rotation =
+                                    ((pdfControls.rotate % 360) + 360) % 360;
+                                  const isSideways =
+                                    rotation === 90 || rotation === 270;
+                                  const previewWidth = isSideways
+                                    ? "24rem"
+                                    : "100%";
+                                  const previewHeight = isSideways
+                                    ? "100%"
+                                    : "24rem";
                                   return (
                                     <div
                                       className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
                                       style={{
-                                        width: '100%',
-                                        height: '24rem',
-                                        minHeight: '24rem',
-                                        minWidth: '24rem',
-                                        maxHeight: '32rem',
-                                        maxWidth: '100%',
+                                        width: "100%",
+                                        height: "24rem",
+                                        minHeight: "24rem",
+                                        minWidth: "24rem",
+                                        maxHeight: "32rem",
+                                        maxWidth: "100%",
                                       }}
                                     >
                                       <div
@@ -2546,17 +3554,17 @@ function EmployeeForm() {
                                           width: previewWidth,
                                           height: previewHeight,
                                           transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
-                                          transition: 'transform 0.2s',
-                                          display: 'flex',
-                                          justifyContent: 'center',
-                                          alignItems: 'center',
+                                          transition: "transform 0.2s",
+                                          display: "flex",
+                                          justifyContent: "center",
+                                          alignItems: "center",
                                         }}
                                       >
                                         <iframe
-                                          src={docPreview.imgUrl + '#toolbar=0'}
+                                          src={docPreview.imgUrl + "#toolbar=0"}
                                           title={`${docPreview.label} PDF`}
                                           className="w-full h-full border-none"
-                                          style={{ background: 'white' }}
+                                          style={{ background: "white" }}
                                         />
                                       </div>
                                     </div>
@@ -2564,11 +3572,19 @@ function EmployeeForm() {
                                 })()}
                               </>
                             ) : (
-                              <img src={docPreview.imgUrl} alt={`${docPreview.label} preview`} className="w-64 h-64 object-contain rounded border mb-4" />
+                              <img
+                                src={docPreview.imgUrl}
+                                alt={`${docPreview.label} preview`}
+                                className="w-64 h-64 object-contain rounded border mb-4"
+                              />
                             )}
                             <div className="text-center mt-4">
-                              <span className="block text-gray-700 font-medium">{docPreview.label} Number:</span>
-                              <span className="text-lg font-mono text-gray-900 tracking-widest">{docPreview.number || '—'}</span>
+                              <span className="block text-gray-700 font-medium">
+                                {docPreview.label} Number:
+                              </span>
+                              <span className="text-lg font-mono text-gray-900 tracking-widest">
+                                {docPreview.number || "—"}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -2578,61 +3594,284 @@ function EmployeeForm() {
 
                   {/* Bank Details Section */}
                   {activeSection === "bank" && (
-                    <div className="flex-1 p-4 pt-2"> {/* pt-2 to shift up */}
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">Bank Details</h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-4"> {/* gap-y-4 for more vertical space */}
+                    <div className="flex-1 p-4 pt-2">
+                      {" "}
+                      {/* pt-2 to shift up */}
+                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                        Bank Details
+                      </h3>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                        {" "}
+                        {/* gap-y-4 for more vertical space */}
                         {/* Account fields */}
-                        <div className="flex flex-col mb-3"> {/* mb-3 for more space below */}
-                          <label className="text-sm font-medium text-gray-700 mb-0.5">Account Number</label>
-                          <input className={inputClass + (bankAccountError('accountNumber') || ((bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber)) ? ' border-red-500' : '')} value={formData.bankDetails.accountNumber || ''} onChange={e => handleInputChange('bankDetails', 'accountNumber', filterAccountNumberInput(e.target.value))} placeholder="Enter account number" type="text" inputMode="numeric" maxLength={18} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountNumber: true }))} />
-                          {(bankTouched.accountNumber || anyBankFieldFilled) && validateAccountNumber(formData.bankDetails.accountNumber) && <span className="text-xs text-red-500">{validateAccountNumber(formData.bankDetails.accountNumber)}</span>}
+                        <div className="flex flex-col mb-3">
+                          {" "}
+                          {/* mb-3 for more space below */}
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">
+                            Account Number
+                          </label>
+                          <input
+                            className={
+                              inputClass +
+                              (bankAccountError("accountNumber") ||
+                              ((bankTouched.accountNumber ||
+                                anyBankFieldFilled) &&
+                                validateAccountNumber(
+                                  formData.bankDetails.accountNumber
+                                ))
+                                ? " border-red-500"
+                                : "")
+                            }
+                            value={formData.bankDetails.accountNumber || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "bankDetails",
+                                "accountNumber",
+                                filterAccountNumberInput(e.target.value)
+                              )
+                            }
+                            placeholder="Enter account number"
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={18}
+                            autoComplete="off"
+                            onBlur={() =>
+                              setBankTouched((t) => ({
+                                ...t,
+                                accountNumber: true,
+                              }))
+                            }
+                          />
+                          {(bankTouched.accountNumber || anyBankFieldFilled) &&
+                            validateAccountNumber(
+                              formData.bankDetails.accountNumber
+                            ) && (
+                              <span className="text-xs text-red-500">
+                                {validateAccountNumber(
+                                  formData.bankDetails.accountNumber
+                                )}
+                              </span>
+                            )}
                         </div>
                         <div className="flex flex-col mb-3">
-                          <label className="text-sm font-medium text-gray-700 mb-0.5">Account Holder Name</label>
-                          <input className={inputClass + (bankAccountError('accountHolderName') || ((bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName)) ? ' border-red-500' : '')} value={formData.bankDetails.accountHolderName || ''} onChange={e => handleInputChange('bankDetails', 'accountHolderName', filterAccountHolderNameInput(e.target.value))} placeholder="Enter account holder name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, accountHolderName: true }))} />
-                          {(bankTouched.accountHolderName || anyBankFieldFilled) && validateAccountHolderName(formData.bankDetails.accountHolderName) && <span className="text-xs text-red-500">{validateAccountHolderName(formData.bankDetails.accountHolderName)}</span>}
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">
+                            Account Holder Name
+                          </label>
+                          <input
+                            className={
+                              inputClass +
+                              (bankAccountError("accountHolderName") ||
+                              ((bankTouched.accountHolderName ||
+                                anyBankFieldFilled) &&
+                                validateAccountHolderName(
+                                  formData.bankDetails.accountHolderName
+                                ))
+                                ? " border-red-500"
+                                : "")
+                            }
+                            value={formData.bankDetails.accountHolderName || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "bankDetails",
+                                "accountHolderName",
+                                filterAccountHolderNameInput(e.target.value)
+                              )
+                            }
+                            placeholder="Enter account holder name"
+                            type="text"
+                            inputMode="text"
+                            maxLength={50}
+                            autoComplete="off"
+                            onBlur={() =>
+                              setBankTouched((t) => ({
+                                ...t,
+                                accountHolderName: true,
+                              }))
+                            }
+                          />
+                          {(bankTouched.accountHolderName ||
+                            anyBankFieldFilled) &&
+                            validateAccountHolderName(
+                              formData.bankDetails.accountHolderName
+                            ) && (
+                              <span className="text-xs text-red-500">
+                                {validateAccountHolderName(
+                                  formData.bankDetails.accountHolderName
+                                )}
+                              </span>
+                            )}
                         </div>
                         <div className="flex flex-col mb-3">
-                          <label className="text-sm font-medium text-gray-700 mb-0.5">IFSC Code</label>
-                          <input className={inputClass + (bankAccountError('ifscCode') || ((bankTouched.ifscCode || anyBankFieldFilled) && validateIFSC(formData.bankDetails.ifscCode)) ? ' border-red-500' : '')} value={formData.bankDetails.ifscCode || ''} onChange={e => handleInputChange('bankDetails', 'ifscCode', e.target.value.toUpperCase())} placeholder="Enter IFSC code" type="text" inputMode="text" maxLength={11} autoComplete="off" style={{ textTransform: 'uppercase' }} onBlur={() => setBankTouched(t => ({ ...t, ifscCode: true }))} />
-                          {(bankTouched.ifscCode || anyBankFieldFilled) && validateIFSC(formData.bankDetails.ifscCode) && <span className="text-xs text-red-500">{validateIFSC(formData.bankDetails.ifscCode)}</span>}
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">
+                            IFSC Code
+                          </label>
+                          <input
+                            className={
+                              inputClass +
+                              (bankAccountError("ifscCode") ||
+                              ((bankTouched.ifscCode || anyBankFieldFilled) &&
+                                validateIFSC(formData.bankDetails.ifscCode))
+                                ? " border-red-500"
+                                : "")
+                            }
+                            value={formData.bankDetails.ifscCode || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "bankDetails",
+                                "ifscCode",
+                                e.target.value.toUpperCase()
+                              )
+                            }
+                            placeholder="Enter IFSC code"
+                            type="text"
+                            inputMode="text"
+                            maxLength={11}
+                            autoComplete="off"
+                            style={{ textTransform: "uppercase" }}
+                            onBlur={() =>
+                              setBankTouched((t) => ({ ...t, ifscCode: true }))
+                            }
+                          />
+                          {(bankTouched.ifscCode || anyBankFieldFilled) &&
+                            validateIFSC(formData.bankDetails.ifscCode) && (
+                              <span className="text-xs text-red-500">
+                                {validateIFSC(formData.bankDetails.ifscCode)}
+                              </span>
+                            )}
                         </div>
                         <div className="flex flex-col mb-3">
-                          <label className="text-sm font-medium text-gray-700 mb-0.5">Bank Name</label>
-                          <input className={inputClass + (bankAccountError('bankName') || ((bankTouched.bankName || anyBankFieldFilled) && validateBankName(formData.bankDetails.bankName)) ? ' border-red-500' : '')} value={formData.bankDetails.bankName || ''} onChange={e => handleInputChange('bankDetails', 'bankName', e.target.value)} placeholder="Enter bank name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, bankName: true }))} />
-                          {(bankTouched.bankName || anyBankFieldFilled) && validateBankName(formData.bankDetails.bankName) && <span className="text-xs text-red-500">{validateBankName(formData.bankDetails.bankName)}</span>}
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">
+                            Bank Name
+                          </label>
+                          <input
+                            className={
+                              inputClass +
+                              (bankAccountError("bankName") ||
+                              ((bankTouched.bankName || anyBankFieldFilled) &&
+                                validateBankName(formData.bankDetails.bankName))
+                                ? " border-red-500"
+                                : "")
+                            }
+                            value={formData.bankDetails.bankName || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "bankDetails",
+                                "bankName",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter bank name"
+                            type="text"
+                            inputMode="text"
+                            maxLength={50}
+                            autoComplete="off"
+                            onBlur={() =>
+                              setBankTouched((t) => ({ ...t, bankName: true }))
+                            }
+                          />
+                          {(bankTouched.bankName || anyBankFieldFilled) &&
+                            validateBankName(formData.bankDetails.bankName) && (
+                              <span className="text-xs text-red-500">
+                                {validateBankName(
+                                  formData.bankDetails.bankName
+                                )}
+                              </span>
+                            )}
                         </div>
                         <div className="flex flex-col mb-3">
-                          <label className="text-sm font-medium text-gray-700 mb-0.5">Branch Name</label>
-                          <input className={inputClass + (bankAccountError('branchName') ? ' border-red-500' : '')} value={formData.bankDetails.branchName || ''} onChange={e => handleInputChange('bankDetails', 'branchName', e.target.value)} placeholder="Enter branch name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, branchName: true }))} style={{ maxWidth: '260px' }} />
-                          {bankAccountError('branchName') && <span className="text-xs text-red-500 mt-0.5">{bankAccountError('branchName')}</span>}
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">
+                            Branch Name
+                          </label>
+                          <input
+                            className={
+                              inputClass +
+                              (bankAccountError("branchName")
+                                ? " border-red-500"
+                                : "")
+                            }
+                            value={formData.bankDetails.branchName || ""}
+                            onChange={(e) =>
+                              handleInputChange(
+                                "bankDetails",
+                                "branchName",
+                                e.target.value
+                              )
+                            }
+                            placeholder="Enter branch name"
+                            type="text"
+                            inputMode="text"
+                            maxLength={50}
+                            autoComplete="off"
+                            onBlur={() =>
+                              setBankTouched((t) => ({
+                                ...t,
+                                branchName: true,
+                              }))
+                            }
+                            style={{ maxWidth: "260px" }}
+                          />
+                          {bankAccountError("branchName") && (
+                            <span className="text-xs text-red-500 mt-0.5">
+                              {bankAccountError("branchName")}
+                            </span>
+                          )}
                         </div>
                         {/* Upload Passbook/Cheque */}
                         <div className="flex flex-col mb-3 col-span-2">
-                          <label className="text-sm font-medium text-gray-700 mb-0.5">Upload Passbook/Cancelled Cheque <span className="text-red-400">*</span></label>
+                          <label className="text-sm font-medium text-gray-700 mb-0.5">
+                            Upload Passbook/Cancelled Cheque{" "}
+                            <span className="text-red-400">*</span>
+                          </label>
                           <div className="relative flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl px-3 py-8 transition-all duration-150 hover:border-blue-400 focus-within:border-blue-400 min-h-[120px]">
                             {/* Upload Button - centered icon */}
                             {!formData.bankDetails.passbookImgUrl && (
-                              <label htmlFor="passbook-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                              <label
+                                htmlFor="passbook-upload"
+                                className="cursor-pointer flex flex-col items-center justify-center w-full h-full"
+                              >
                                 <span className="flex items-center justify-center w-14 h-14 bg-white border border-gray-300 rounded-full shadow-sm hover:bg-gray-100 text-gray-600 hover:text-blue-600 transition-all duration-150 mb-2">
-                                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                                  <svg
+                                    className="w-8 h-8"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                                    />
+                                  </svg>
                                 </span>
-                                <span className="text-sm text-gray-500">Click or drag file to upload</span>
+                                <span className="text-sm text-gray-500">
+                                  Click or drag file to upload
+                                </span>
                                 <input
                                   type="file"
                                   id="passbook-upload"
                                   className="hidden"
                                   accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={e => {
+                                  onChange={(e) => {
                                     const file = e.target.files[0];
                                     if (file) {
-                                      const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+                                      const allowedTypes = [
+                                        "application/pdf",
+                                        "image/jpeg",
+                                        "image/jpg",
+                                        "image/png",
+                                      ];
                                       if (!allowedTypes.includes(file.type)) {
-                                        toast.error("Only PDF or image files are allowed.");
+                                        toast.error(
+                                          "Only PDF or image files are allowed."
+                                        );
                                         return;
                                       }
-                                      handleFileUpload('passbookImgUrl', file);
-                                      setBankTouched(t => ({ ...t, passbookImgUrl: true }));
+                                      handleFileUpload("passbookImgUrl", file);
+                                      setBankTouched((t) => ({
+                                        ...t,
+                                        passbookImgUrl: true,
+                                      }));
                                     }
                                   }}
                                 />
@@ -2641,32 +3880,179 @@ function EmployeeForm() {
                             {/* Preview/Info */}
                             {formData.bankDetails.passbookImgUrl && (
                               <div className="flex items-center gap-3 w-full justify-center">
-                                {formData.bankDetails.passbookImgUrl.type === 'application/pdf' || (typeof formData.bankDetails.passbookImgUrl === 'string' && formData.bankDetails.passbookImgUrl.endsWith('.pdf')) ? (
-                                  <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">PDF</span>
+                                {formData.bankDetails.passbookImgUrl.type ===
+                                  "application/pdf" ||
+                                (typeof formData.bankDetails.passbookImgUrl ===
+                                  "string" &&
+                                  formData.bankDetails.passbookImgUrl.endsWith(
+                                    ".pdf"
+                                  )) ? (
+                                  <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">
+                                    PDF
+                                  </span>
                                 ) : (
-                                  <img src={formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl} alt="Passbook preview" className="w-12 h-12 object-cover rounded border border-gray-300" />
+                                  <img
+                                    src={
+                                      formData.bankDetails
+                                        .passbookImgUrl instanceof File
+                                        ? URL.createObjectURL(
+                                            formData.bankDetails.passbookImgUrl
+                                          )
+                                        : formData.bankDetails.passbookImgUrl
+                                    }
+                                    alt="Passbook preview"
+                                    className="w-12 h-12 object-cover rounded border border-gray-300"
+                                  />
                                 )}
                                 <span className="ml-2 text-xs text-gray-700 truncate max-w-[120px]">
-                                  {formData.bankDetails.passbookImgUrl instanceof File ? formData.bankDetails.passbookImgUrl.name : (typeof formData.bankDetails.passbookImgUrl === 'string' ? formData.bankDetails.passbookImgUrl.split('/').pop() : '')}
+                                  {formData.bankDetails
+                                    .passbookImgUrl instanceof File
+                                    ? formData.bankDetails.passbookImgUrl.name
+                                    : typeof formData.bankDetails
+                                        .passbookImgUrl === "string"
+                                    ? formData.bankDetails.passbookImgUrl
+                                        .split("/")
+                                        .pop()
+                                    : ""}
                                 </span>
-                                <button type="button" onClick={() => setBankPreview({ open: true, imgUrl: formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl, file: formData.bankDetails.passbookImgUrl instanceof File ? formData.bankDetails.passbookImgUrl : null })} className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200" title="View">View</button>
-                                <button type="button" onClick={() => setFormData(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, passbookImgUrl: null } }))} className="ml-2 px-2 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100 border border-red-200" title="Remove">Remove</button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setBankPreview({
+                                      open: true,
+                                      imgUrl:
+                                        formData.bankDetails
+                                          .passbookImgUrl instanceof File
+                                          ? URL.createObjectURL(
+                                              formData.bankDetails
+                                                .passbookImgUrl
+                                            )
+                                          : formData.bankDetails.passbookImgUrl,
+                                      file:
+                                        formData.bankDetails
+                                          .passbookImgUrl instanceof File
+                                          ? formData.bankDetails.passbookImgUrl
+                                          : null,
+                                    })
+                                  }
+                                  className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200"
+                                  title="View"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      bankDetails: {
+                                        ...prev.bankDetails,
+                                        passbookImgUrl: null,
+                                      },
+                                    }))
+                                  }
+                                  className="ml-2 px-2 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100 border border-red-200"
+                                  title="Remove"
+                                >
+                                  Remove
+                                </button>
                               </div>
                             )}
                           </div>
-                          {bankAccountError('passbookImgUrl') && <span className="text-xs text-red-500 mt-0.5">{bankAccountError('passbookImgUrl')}</span>}
+                          {bankAccountError("passbookImgUrl") && (
+                            <span className="text-xs text-red-500 mt-0.5">
+                              {bankAccountError("passbookImgUrl")}
+                            </span>
+                          )}
                         </div>
                         {/* UPI Fields Grid - now below upload */}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-2 col-span-2"> {/* gap-y-4 for more vertical space */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-4 mt-2 col-span-2">
+                          {" "}
+                          {/* gap-y-4 for more vertical space */}
                           <div className="flex flex-col mb-3">
-                            <label className="text-sm font-medium text-gray-700 mb-0.5">UPI ID</label>
-                            <input className={inputClass + (upiError('upiId') || ((bankTouched.upiId || anyUPIFieldFilled) && validateUPI(formData.bankDetails.upiId)) ? ' border-red-500' : '')} value={formData.bankDetails.upiId || ''} onChange={e => handleInputChange('bankDetails', 'upiId', e.target.value)} placeholder="Enter UPI ID" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, upiId: true }))} />
-                            {(bankTouched.upiId || anyUPIFieldFilled) && validateUPI(formData.bankDetails.upiId) && <span className="text-xs text-red-500">{validateUPI(formData.bankDetails.upiId)}</span>}
+                            <label className="text-sm font-medium text-gray-700 mb-0.5">
+                              UPI ID
+                            </label>
+                            <input
+                              className={
+                                inputClass +
+                                (upiError("upiId") ||
+                                ((bankTouched.upiId || anyUPIFieldFilled) &&
+                                  validateUPI(formData.bankDetails.upiId))
+                                  ? " border-red-500"
+                                  : "")
+                              }
+                              value={formData.bankDetails.upiId || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "bankDetails",
+                                  "upiId",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Enter UPI ID"
+                              type="text"
+                              inputMode="text"
+                              maxLength={50}
+                              autoComplete="off"
+                              onBlur={() =>
+                                setBankTouched((t) => ({ ...t, upiId: true }))
+                              }
+                            />
+                            {(bankTouched.upiId || anyUPIFieldFilled) &&
+                              validateUPI(formData.bankDetails.upiId) && (
+                                <span className="text-xs text-red-500">
+                                  {validateUPI(formData.bankDetails.upiId)}
+                                </span>
+                              )}
                           </div>
                           <div className="flex flex-col mb-3">
-                            <label className="text-sm font-medium text-gray-700 mb-0.5">UPI Contact Name</label>
-                            <input className={inputClass + (upiError('upiPhoneNumber') || ((bankTouched.upiPhoneNumber || anyUPIFieldFilled) && validateUPIName(formData.bankDetails.upiPhoneNumber)) ? ' border-red-500' : '')} value={formData.bankDetails.upiPhoneNumber || ''} onChange={e => handleInputChange('bankDetails', 'upiPhoneNumber', e.target.value)} placeholder="Enter UPI Name" type="text" inputMode="text" maxLength={50} autoComplete="off" onBlur={() => setBankTouched(t => ({ ...t, upiPhoneNumber: true }))} />
-                            {(bankTouched.upiPhoneNumber || anyUPIFieldFilled) && validateUPIName(formData.bankDetails.upiPhoneNumber) && <span className="text-xs text-red-500">{validateUPIName(formData.bankDetails.upiPhoneNumber)}</span>}
+                            <label className="text-sm font-medium text-gray-700 mb-0.5">
+                              UPI Contact Name
+                            </label>
+                            <input
+                              className={
+                                inputClass +
+                                (upiError("upiPhoneNumber") ||
+                                ((bankTouched.upiPhoneNumber ||
+                                  anyUPIFieldFilled) &&
+                                  validateUPIName(
+                                    formData.bankDetails.upiPhoneNumber
+                                  ))
+                                  ? " border-red-500"
+                                  : "")
+                              }
+                              value={formData.bankDetails.upiPhoneNumber || ""}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "bankDetails",
+                                  "upiPhoneNumber",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Enter UPI Name"
+                              type="text"
+                              inputMode="text"
+                              maxLength={50}
+                              autoComplete="off"
+                              onBlur={() =>
+                                setBankTouched((t) => ({
+                                  ...t,
+                                  upiPhoneNumber: true,
+                                }))
+                              }
+                            />
+                            {(bankTouched.upiPhoneNumber ||
+                              anyUPIFieldFilled) &&
+                              validateUPIName(
+                                formData.bankDetails.upiPhoneNumber
+                              ) && (
+                                <span className="text-xs text-red-500">
+                                  {validateUPIName(
+                                    formData.bankDetails.upiPhoneNumber
+                                  )}
+                                </span>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -2688,9 +4074,7 @@ function EmployeeForm() {
                           { label: "Allowances", field: "allowances" },
                         ].map(({ label, field }) => (
                           <div key={field} className={inputGroupClass}>
-                            <label className={inputLabelClass}>
-                              {label}
-                            </label>
+                            <label className={inputLabelClass}>{label}</label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
                                 ₹
@@ -2706,16 +4090,25 @@ function EmployeeForm() {
                                     : ""
                                 }`}
                                 value={formData.salaryDetails[field] || ""}
-                                onChange={e => {
-                                  let val = e.target.value.replace(/[^\d.]/g, ""); // Remove all except digits and dot
+                                onChange={(e) => {
+                                  let val = e.target.value.replace(
+                                    /[^\d.]/g,
+                                    ""
+                                  ); // Remove all except digits and dot
                                   if (val.startsWith(".")) val = ""; // Prevent leading dot
                                   if (val && parseFloat(val) < 0) val = ""; // Prevent negative
                                   // Prevent negative or plus sign in pasted value
-                                  if (val.includes("-") || val.includes("+")) val = val.replace(/[-+]/g, "");
-                                  handleInputChange("salaryDetails", field, val);
+                                  if (val.includes("-") || val.includes("+"))
+                                    val = val.replace(/[-+]/g, "");
+                                  handleInputChange(
+                                    "salaryDetails",
+                                    field,
+                                    val
+                                  );
                                 }}
-                                onKeyDown={e => {
-                                  if (e.key === "-" || e.key === "+") e.preventDefault();
+                                onKeyDown={(e) => {
+                                  if (e.key === "-" || e.key === "+")
+                                    e.preventDefault();
                                 }}
                                 readOnly={
                                   field === "monthlyCtc" ||
@@ -2786,22 +4179,39 @@ function EmployeeForm() {
                     {/* Left: Back Button */}
                     <div>
                       {(() => {
-                        const sectionsArr = ["personal", "idProofs", "bank", "salary"];
+                        const sectionsArr = [
+                          "personal",
+                          "idProofs",
+                          "bank",
+                          "salary",
+                        ];
                         const currentIndex = sectionsArr.indexOf(activeSection);
                         if (currentIndex > 0) {
                           return (
-                    <motion.button
-                      type="button"
-                        className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
-                              onClick={() => setActiveSection(sectionsArr[currentIndex - 1])}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Back
-                      </motion.button>
+                            <motion.button
+                              type="button"
+                              className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
+                              onClick={() =>
+                                setActiveSection(sectionsArr[currentIndex - 1])
+                              }
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M15 19l-7-7 7-7"
+                                />
+                              </svg>
+                              Back
+                            </motion.button>
                           );
                         }
                         return null;
@@ -2809,84 +4219,110 @@ function EmployeeForm() {
                     </div>
                     {/* Right: Cancel, Next, Save and Exit */}
                     <div className="flex gap-2 items-center">
-                    <motion.button
-                      type="button"
+                      <motion.button
+                        type="button"
                         className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg flex items-center gap-2"
-                      onClick={() => handleOpenModal('cancel', () => { handleCloseModal(); router.push('/hradmin/employees'); })}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Cancel
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                        onClick={() =>
+                          handleOpenModal("cancel", () => {
+                            handleCloseModal();
+                            router.push("/hradmin/employees");
+                          })
+                        }
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
                         onClick={() => {
                           // Move to next section/tab
-                          const sectionsArr = ["personal", "idProofs", "bank", "salary"];
-                          const currentIndex = sectionsArr.indexOf(activeSection);
+                          const sectionsArr = [
+                            "personal",
+                            "idProofs",
+                            "bank",
+                            "salary",
+                          ];
+                          const currentIndex =
+                            sectionsArr.indexOf(activeSection);
                           if (currentIndex < sectionsArr.length - 1) {
                             setActiveSection(sectionsArr[currentIndex + 1]);
                           }
                         }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
                         <span>Next</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                      onClick={() => handleOpenModal('saveExit', () => { handleCloseModal(); handleSaveAndExit(); })}
-                      disabled={loading}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {loading ? (
-                        <>
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M13 7l5 5m0 0l-5 5m5-5H6"
+                          />
+                        </svg>
+                      </motion.button>
+                      <motion.button
+                        type="button"
+                        className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                        onClick={() =>
+                          handleOpenModal("saveExit", () => {
+                            handleCloseModal();
+                            handleSaveAndExit();
+                          })
+                        }
+                        disabled={loading}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        {loading ? (
+                          <>
+                            <svg
+                              className="animate-spin h-4 w-4"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            <span>Saving...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Save and Exit</span>
+                            <svg
+                              className="w-4 h-4"
                               fill="none"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Save and Exit</span>
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </>
-                      )}
-                    </motion.button>
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </>
+                        )}
+                      </motion.button>
                     </div>
                   </div>
                 </motion.div>
@@ -2944,59 +4380,168 @@ function EmployeeForm() {
       {bankPreview.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
-            <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
-              onClick={() => { setBankPreview({ open: false, imgUrl: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}>
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                setBankPreview({ open: false, imgUrl: "", file: null });
+                setPdfControls({ rotate: 0, zoom: 1 });
+              }}
+            >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Passbook Document Preview</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">
+              Passbook Document Preview
+            </h2>
             {isPDF(bankPreview) ? (
               <>
                 {/* PDF Toolbar (reuse docPreview toolbar) */}
                 <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
                   {/* Rotate Left */}
-                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate - 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Left">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 11l-4 4m0 0l4 4m-4-4h18" /></svg>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600"
+                    title="Rotate Left"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
+                    </svg>
                   </button>
                   {/* Rotate Right */}
-                  <button onClick={() => setPdfControls(c => ({ ...c, rotate: c.rotate + 90 }))} className="text-gray-600 hover:text-blue-600" title="Rotate Right">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 13l4-4m0 0l-4-4m4 4H3" /></svg>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600"
+                    title="Rotate Right"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
+                    </svg>
                   </button>
                   {/* Zoom Out */}
-                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600"
+                    title="Zoom Out"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
+                    </svg>
                   </button>
                   {/* Zoom In */}
-                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600"
+                    title="Zoom In"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
                   </button>
                   {/* Download */}
                   <a
                     href={bankPreview.imgUrl}
-                    download={'passbook.pdf'}
+                    download={"passbook.pdf"}
                     className="text-gray-600 hover:text-blue-600"
                     title="Download PDF"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
+                    </svg>
                   </a>
                 </div>
                 {/* PDF Preview Area with dynamic width/height for rotation */}
                 {(() => {
                   const rotation = ((pdfControls.rotate % 360) + 360) % 360;
                   const isSideways = rotation === 90 || rotation === 270;
-                  const previewWidth = isSideways ? '24rem' : '100%';
-                  const previewHeight = isSideways ? '100%' : '24rem';
+                  const previewWidth = isSideways ? "24rem" : "100%";
+                  const previewHeight = isSideways ? "100%" : "24rem";
                   return (
                     <div
                       className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
                       style={{
-                        width: '100%',
-                        height: '24rem',
-                        minHeight: '24rem',
-                        minWidth: '24rem',
-                        maxHeight: '32rem',
-                        maxWidth: '100%',
+                        width: "100%",
+                        height: "24rem",
+                        minHeight: "24rem",
+                        minWidth: "24rem",
+                        maxHeight: "32rem",
+                        maxWidth: "100%",
                       }}
                     >
                       <div
@@ -3004,17 +4549,17 @@ function EmployeeForm() {
                           width: previewWidth,
                           height: previewHeight,
                           transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
-                          transition: 'transform 0.2s',
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
+                          transition: "transform 0.2s",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
                         }}
                       >
                         <iframe
-                          src={bankPreview.imgUrl + '#toolbar=0'}
+                          src={bankPreview.imgUrl + "#toolbar=0"}
                           title="Passbook PDF"
                           className="w-full h-full border-none"
-                          style={{ background: 'white' }}
+                          style={{ background: "white" }}
                         />
                       </div>
                     </div>
@@ -3022,7 +4567,11 @@ function EmployeeForm() {
                 })()}
               </>
             ) : (
-              <img src={bankPreview.imgUrl} alt="Passbook preview" className="w-64 h-64 object-contain rounded border mb-4" />
+              <img
+                src={bankPreview.imgUrl}
+                alt="Passbook preview"
+                className="w-64 h-64 object-contain rounded border mb-4"
+              />
             )}
           </div>
         </div>
