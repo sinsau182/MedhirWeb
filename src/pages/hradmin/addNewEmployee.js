@@ -2526,8 +2526,13 @@ function EmployeeForm() {
                       </div>
                       {/* Document Preview Modal */}
                       {docPreview.open && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center">
-                          <div ref={docModalRef} className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center" onMouseDown={e => { if (e.target === e.currentTarget) { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); } }}>
+                          <div
+                            ref={docModalRef}
+                            className="bg-white border-2 border-gray-400 rounded-xl shadow-lg p-4 max-w-xl w-full relative flex flex-col items-center"
+                            style={{ minWidth: '340px', maxWidth: '480px', minHeight: '200px', maxHeight: '80vh' }}
+                            onMouseDown={onDocModalMouseDown}
+                          >
                             <div className="flex justify-between items-center mb-4 w-full cursor-move" onMouseDown={onDocModalMouseDown}>
                               <h2 className="text-lg font-semibold text-gray-800 mb-4">{docPreview.label} Document Preview</h2>
                               <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600" onClick={() => { setDocPreview({ open: false, imgUrl: '', number: '', label: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); }}><X className="w-5 h-5" /></button>
@@ -3035,8 +3040,13 @@ function EmployeeForm() {
 
       {/* Passbook/Bank Document Preview Modal */}
       {bankPreview.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div ref={bankModalRef} className="bg-white rounded-xl shadow-lg p-6 max-w-2xl w-full relative flex flex-col items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onMouseDown={e => { if (e.target === e.currentTarget) { setBankPreview({ open: false, imgUrl: '', file: null }); setPdfControls({ rotate: 0, zoom: 1 }); } }}>
+          <div
+            ref={bankModalRef}
+            className="bg-white border-2 border-gray-400 rounded-xl shadow-lg p-4 max-w-xl w-full relative flex flex-col items-center"
+            style={{ minWidth: '340px', maxWidth: '480px', minHeight: '200px', maxHeight: '80vh' }}
+            onMouseDown={onBankModalMouseDown}
+          >
             <div className="flex justify-between items-center mb-4 w-full cursor-move" onMouseDown={onBankModalMouseDown}>
               <h2 className="text-lg font-semibold text-gray-800 mb-4">Passbook Document Preview</h2>
               <button className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
