@@ -2700,6 +2700,7 @@ function EmployeeForm() {
                               </span>
                               <input
                                 type="number"
+                                min="0"
                                 className={`${inputClass} pl-8 ${
                                   field === "monthlyCtc" ||
                                   field === "allowances" ||
@@ -2708,13 +2709,17 @@ function EmployeeForm() {
                                     : ""
                                 }`}
                                 value={formData.salaryDetails[field] || ""}
-                                onChange={(e) =>
-                                  handleInputChange(
-                                    "salaryDetails",
-                                    field,
-                                    e.target.value
-                                  )
-                                }
+                                onChange={e => {
+                                  let val = e.target.value.replace(/[^\d.]/g, ""); // Remove all except digits and dot
+                                  if (val.startsWith(".")) val = ""; // Prevent leading dot
+                                  if (val && parseFloat(val) < 0) val = ""; // Prevent negative
+                                  // Prevent negative or plus sign in pasted value
+                                  if (val.includes("-") || val.includes("+")) val = val.replace(/[-+]/g, "");
+                                  handleInputChange("salaryDetails", field, val);
+                                }}
+                                onKeyDown={e => {
+                                  if (e.key === "-" || e.key === "+") e.preventDefault();
+                                }}
                                 readOnly={
                                   field === "monthlyCtc" ||
                                   field === "allowances" ||

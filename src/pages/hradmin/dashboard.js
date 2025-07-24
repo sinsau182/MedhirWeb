@@ -69,6 +69,8 @@ const Overview = () => {
       totalAbsent: 0,
     });
 
+  console.log(currentDayAttendanceSummary);
+
   // Animation state for Total Employees card
   const [loadingNumbers, setLoadingNumbers] = useState(true);
   const [displayedTotal, setDisplayedTotal] = useState(0);

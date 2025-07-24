@@ -3,23 +3,27 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import getConfig from 'next/config';
+import { jwtDecode } from 'jwt-decode';
+import { useRouter } from "next/router";
 
 const PasswordChangeAlert = () => {
   const [showModal, setShowModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { publicRuntimeConfig } = getConfig();
+  const router = useRouter();
 
   useEffect(() => {
     const token = getItemFromSessionStorage('token');
-    const passwordChanged = sessionStorage.getItem('passwordChanged');
-    if (passwordChanged === 'false' && token) {
-      setShowModal(true);
+    if(token) {
+      const isFirstTime = jwtDecode(token).isFirstTime;
+      if (isFirstTime === true && token) {
+        setShowModal(true);
+      }
     }
-  }, []);
+  }, [getItemFromSessionStorage('token')]);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -35,10 +39,10 @@ const PasswordChangeAlert = () => {
 
     try {
       const token = getItemFromSessionStorage('token');
+      const employeeId = jwtDecode(token).employeeId;
       const response = await axios.post(
-        `${publicRuntimeConfig.apiURL}/api/auth/password/change`,
+        `${publicRuntimeConfig.apiURL}/api/auth/password/set/${employeeId}`,
         {
-          currentPassword,
           newPassword
         },
         {
@@ -49,8 +53,10 @@ const PasswordChangeAlert = () => {
       );
 
       if (response.data) {
-        sessionStorage.removeItem('passwordChanged');
+        // Clear session storage and log out
+        sessionStorage.clear();
         setShowModal(false);
+        router.push('/login');
       }
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to change password');
@@ -70,18 +76,6 @@ const PasswordChangeAlert = () => {
         </p>
 
         <form onSubmit={handlePasswordChange}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Current Password
-            </label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              required
-            />
-          </div>
 
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">
