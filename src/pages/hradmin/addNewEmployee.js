@@ -2567,7 +2567,56 @@ function EmployeeForm() {
                                 })()}
                               </>
                             ) : (
-                              <img src={docPreview.imgUrl} alt={`${docPreview.label} preview`} className="w-64 h-64 object-contain rounded border mb-4" />
+                              <>
+                                {/* Image Zoom Controls */}
+                                <div className="flex items-center gap-4 mb-2 bg-gray-50 rounded px-4 py-2 shadow-sm">
+                                  {/* Zoom Out */}
+                                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.max(0.5, c.zoom - 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom Out">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4" /></svg>
+                                  </button>
+                                  {/* Zoom In */}
+                                  <button onClick={() => setPdfControls(c => ({ ...c, zoom: Math.min(2, c.zoom + 0.1) }))} className="text-gray-600 hover:text-blue-600" title="Zoom In">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+                                  </button>
+                                  {/* Download */}
+                                  <a
+                                    href={docPreview.imgUrl}
+                                    download={docPreview.label + '.jpg'}
+                                    className="text-gray-600 hover:text-blue-600"
+                                    title="Download Image"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" /></svg>
+                                  </a>
+                                </div>
+                                {/* Image Preview Area with zoom */}
+                                <div
+                                  className="flex justify-center items-center w-full bg-gray-100 rounded border overflow-auto"
+                                  style={{
+                                    width: '100%',
+                                    height: '24rem',
+                                    minHeight: '24rem',
+                                    minWidth: '24rem',
+                                    maxHeight: '32rem',
+                                    maxWidth: '100%',
+                                  }}
+                                >
+                                  <img
+                                    src={docPreview.imgUrl}
+                                    alt={`${docPreview.label} preview`}
+                                    className="object-contain rounded border mb-4"
+                                    style={{
+                                      width: 'auto',
+                                      height: '100%',
+                                      transform: `scale(${pdfControls.zoom})`,
+                                      transition: 'transform 0.2s',
+                                      maxWidth: '100%',
+                                      maxHeight: '100%',
+                                    }}
+                                  />
+                                </div>
+                              </>
                             )}
                             <div className="text-center mt-4">
                               <span className="block text-gray-700 font-medium">{docPreview.label} Number:</span>
@@ -2823,22 +2872,25 @@ function EmployeeForm() {
                     </motion.button>
                     <motion.button
                       type="button"
-                      className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                        onClick={() => {
-                          // Move to next section/tab
-                          const sectionsArr = ["personal", "idProofs", "bank", "salary"];
-                          const currentIndex = sectionsArr.indexOf(activeSection);
-                          if (currentIndex < sectionsArr.length - 1) {
-                            setActiveSection(sectionsArr[currentIndex + 1]);
-                          }
-                        }}
+                      className={`px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg${activeSection === "salary" ? " opacity-60 cursor-not-allowed" : ""}`}
+                      onClick={() => {
+                        // Move to next section/tab
+                        const sectionsArr = ["personal", "idProofs", "bank", "salary"];
+                        const currentIndex = sectionsArr.indexOf(activeSection);
+                        if (currentIndex < sectionsArr.length - 1) {
+                          setActiveSection(sectionsArr[currentIndex + 1]);
+                        } else {
+                          // If on last section, cycle back to first (now disabled, so this won't run)
+                        }
+                      }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      disabled={activeSection === "salary"}
                     >
-                        <span>Next</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
+                      <span>Next</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
                     </motion.button>
                     <motion.button
                       type="button"
