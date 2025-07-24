@@ -690,6 +690,14 @@ function EmployeeProfilePage() {
     }
 
     // Compare bank details
+    if (employeeById.pendingUpdateRequest.accountHolderName && 
+      employeeById.pendingUpdateRequest.accountHolderName !== employeeById.bankDetails?.accountHolderName) {
+      changes.bankDetails.push({
+        field: "Account Holder Name",
+        oldValue: employeeById.bankDetails?.accountHolderName,
+        newValue: employeeById.pendingUpdateRequest.accountHolderName,
+      });
+    }
     if (
       employeeById.pendingUpdateRequest.accountNumber &&
       employeeById.pendingUpdateRequest.accountNumber !==
@@ -1863,6 +1871,10 @@ function EmployeeProfilePage() {
                             onChange={(e) => {
                               const file = e.target.files[0];
                               if (file) {
+                                if (file.size > 1024 * 1024 * 1) {
+                                  toast.error("File size must be less than 1MB");
+                                  return;
+                                }
                                 handleInputChange(
                                   "employee",
                                   "profileImage",

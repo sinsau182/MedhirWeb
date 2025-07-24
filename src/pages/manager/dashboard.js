@@ -236,7 +236,8 @@ const Overview = () => {
       <div
         className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300 overflow-hidden`}
+        } transition-all duration-300`}
+        style={{ minHeight: 0, display: "flex", flexDirection: "column" }}
       >
         {/* Navbar */}
 
@@ -244,7 +245,7 @@ const Overview = () => {
 
         {/* Page Content */}
 
-        <div className="pt-24 px-6">
+        <div className="pt-24 px-6 flex-1 flex flex-col min-h-0">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
               Manager Dashboard

@@ -541,6 +541,11 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           >
             <Calendar className="h-4 w-4 mr-2" />
             <span>Leave Requests</span>
+            {pendingLeaves && pendingLeaves.length > 0 && (
+              <span className="ml-2 bg-red-400 text-white rounded-full px-2 py-0.5 text-xs font-semibold">
+                {pendingLeaves.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="compOffRequests"
@@ -548,6 +553,11 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           >
             <Calendar className="h-4 w-4 mr-2" />
             <span>Comp Off</span>
+            {pendingCompOffs && pendingCompOffs.length > 0 && (
+              <span className="ml-2 bg-red-400 text-white rounded-full px-2 py-0.5 text-xs font-semibold">
+                {pendingCompOffs.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="profileUpdates"
@@ -555,6 +565,11 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           >
             <UserCog className="h-4 w-4 mr-2" />
             <span>Profile Updates</span>
+            {profileUpdates && profileUpdates.length > 0 && (
+              <span className="ml-2 bg-red-400 text-white rounded-full px-2 py-0.5 text-xs font-semibold">
+                {profileUpdates.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="expenseRequests"
@@ -563,6 +578,11 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           >
             <DollarSign className="h-4 w-4 mr-2" />
             <span>Expense Requests</span>
+            {expensesRequests && expensesRequests.length > 0 && (
+              <span className="ml-2 bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-semibold">
+                {expensesRequests.length}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger
             value="incomeRequests"
@@ -571,6 +591,11 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           >
             <Wallet className="h-4 w-4 mr-2" />
             <span>Income Requests</span>
+            {incomeRequests && incomeRequests.length > 0 && (
+              <span className="ml-2 bg-blue-100 text-blue-700 rounded-full px-2 py-0.5 text-xs font-semibold">
+                {incomeRequests.length}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="leaveRequests">
