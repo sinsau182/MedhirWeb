@@ -64,9 +64,9 @@ const PasswordChangeAlert = () => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-8 max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-4">Change Password Required</h2>
+        <h2 className="text-2xl font-bold mb-4">Setting Password Required</h2>
         <p className="text-gray-600 mb-6">
-          For security reasons, you need to change your password before continuing.
+          For security reasons, you need to set your password before continuing.
         </p>
 
         <form onSubmit={handlePasswordChange}>
@@ -85,7 +85,7 @@ const PasswordChangeAlert = () => {
 
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2">
-              New Password
+              Set Password
             </label>
             <input
               type="password"
@@ -98,7 +98,7 @@ const PasswordChangeAlert = () => {
 
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2">
-              Confirm New Password
+              Confirm Set Password
             </label>
             <input
               type="password"
@@ -121,7 +121,7 @@ const PasswordChangeAlert = () => {
               disabled={loading}
               className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
             >
-              {loading ? 'Changing...' : 'Change Password'}
+              {loading ? 'Setting...' : 'Set Password'}
             </button>
           </div>
         </form>
