@@ -1041,6 +1041,7 @@ function EmployeeForm() {
     // After all tab validations and before setLoading(true):
     const hasAnyValidationError = Object.values(validationErrors).some(v => v && v.toString().trim() !== '');
     if (hasAnyValidationError) {
+      console.log("Validation Errors:", validationErrors);
       toast.error('Please fix all validation errors before submitting.');
       // Try to navigate to the first tab with a validation error
       const tabFieldMap = [
@@ -1128,11 +1129,7 @@ function EmployeeForm() {
           // Skip File objects as they'll be handled separately
           return;
         }
-        if (
-          value &&
-          typeof value === "string" &&
-          !key.toLowerCase().includes("imgurl")
-        ) {
+        if (value && typeof value === "string") {
           idProofsData[key] = value.trim();
         }
       });
