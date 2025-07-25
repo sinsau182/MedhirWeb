@@ -1430,6 +1430,7 @@ function EmployeeForm() {
       }
 
       if (employeeId) {
+        console.log("submitFormData", submitFormData);
         const result = await dispatch(
           updateEmployee({
             id: employeeId,

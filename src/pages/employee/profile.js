@@ -1680,10 +1680,9 @@ function EmployeeProfilePage() {
 
   const validateDrivingLicenseNumber = (value) => {
     if (!value || value.trim() === "") return "";
-    if (!/^[A-Z0-9]+$/.test(value.toUpperCase()))
-      return "Only alphabets and numbers allowed";
-    if (value.length < 10 || value.length > 15)
-      return "License number must be 10-15 characters";
+    // Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)
+    if (!/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(value.toUpperCase()))
+      return "Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)";
     return "";
   };
 
