@@ -148,7 +148,7 @@ function EmployeeProfilePage() {
 
   // Validation functions
   const validateAccountNumber = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Account number is required";
     if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
     if (value.length < 9 || value.length > 18)
       return "Account number must be 9-18 digits";
@@ -156,7 +156,7 @@ function EmployeeProfilePage() {
   };
 
   const validateAccountHolderName = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Account holder name is required";
     if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed";
     if (value.trim().length < 2) return "Must be at least 2 characters";
     if (value.trim().length > 50) return "Maximum 50 characters allowed";
@@ -164,14 +164,14 @@ function EmployeeProfilePage() {
   };
 
   const validateIFSC = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "IFSC code is required";
     if (!/^[A-Z]{4}0[0-9]{6}$/.test(value.toUpperCase()))
       return "Invalid IFSC format (e.g., SBIN0001234)";
     return "";
   };
 
   const validateBankName = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Bank name is required";
     if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed";
     if (value.trim().length < 2) return "Must be at least 2 characters";
     if (value.trim().length > 50) return "Maximum 50 characters allowed";
@@ -179,7 +179,7 @@ function EmployeeProfilePage() {
   };
 
   const validateBranchName = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Branch name is required";
     if (!/^[A-Za-z0-9 ]+$/.test(value))
       return "Only alphabets, numbers and spaces allowed";
     if (value.trim().length < 2) return "Must be at least 2 characters";
@@ -188,7 +188,7 @@ function EmployeeProfilePage() {
   };
 
   const validateUPI = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "UPI ID is required";
     if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/.test(value))
       return "Invalid UPI ID format (e.g., user@upi)";
     if (value.length > 50) return "Maximum 50 characters allowed";
@@ -196,7 +196,7 @@ function EmployeeProfilePage() {
   };
 
   const validateUPIContactName = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "UPI contact name is required";
     if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed";
     if (value.trim().length < 2) return "Must be at least 2 characters";
     if (value.trim().length > 30) return "Maximum 30 characters allowed";
@@ -1588,14 +1588,15 @@ function EmployeeProfilePage() {
 
   // Validation functions
   const validatePhone = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Phone number is required";
     if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
     if (value.length !== 10) return "Phone number must be exactly 10 digits";
     return "";
   };
 
   const validateEmail = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Email is required";
+    if (value.trim().length < 3) return "Email must be at least 3 characters";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) return "Invalid email format";
     return "";
@@ -1645,10 +1646,27 @@ function EmployeeProfilePage() {
         error = validatePhone(formData.employee.phone1);
         break;
       case "phone2":
-        error = validatePhone(formData.employee.phone2);
+        // Alternate phone is optional, but if filled must be valid
+        if (formData.employee.phone2 && formData.employee.phone2.trim() !== "") {
+          error = validatePhone(formData.employee.phone2);
+        }
         break;
       case "email":
         error = validateEmail(formData.employee.email.personal);
+        break;
+      case "currentAddress":
+        if (!formData.employee.currentAddress || formData.employee.currentAddress.trim() === "") {
+          error = "Current address is required";
+        } else if (formData.employee.currentAddress.trim().length < 5) {
+          error = "Current address must be at least 5 characters";
+        }
+        break;
+      case "permanentAddress":
+        if (!formData.employee.permanentAddress || formData.employee.permanentAddress.trim() === "") {
+          error = "Permanent address is required";
+        } else if (formData.employee.permanentAddress.trim().length < 5) {
+          error = "Permanent address must be at least 5 characters";
+        }
         break;
     }
 
@@ -1658,35 +1676,35 @@ function EmployeeProfilePage() {
 
   // ID Proof validation functions
   const validateAadharNumber = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Aadhar number is required";
     if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
     if (value.length !== 12) return "Aadhar number must be exactly 12 digits";
     return "";
   };
 
   const validatePANNumber = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "PAN number is required";
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase()))
       return "Invalid PAN format (e.g., ABCDE1234F)";
     return "";
   };
 
   const validatePassportNumber = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Passport number is required";
     if (!/^[A-Z][0-9]{7}$/.test(value.toUpperCase()))
       return "Passport number must be 1 letter followed by 7 digits (e.g., K1234567)";
     return "";
   };
 
   const validateDrivingLicenseNumber = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Driving license number is required";
     if (!/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(value.toUpperCase()))
       return "Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)";
     return "";
   };
 
   const validateVoterIdNumber = (value) => {
-    if (!value || value.trim() === "") return "";
+    if (!value || value.trim() === "") return "Voter ID number is required";
     if (!/^[A-Z]{3}[0-9]{7}$/.test(value.toUpperCase()))
       return "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)";
     return "";
@@ -2426,7 +2444,7 @@ function EmployeeProfilePage() {
                                         : key === "panNo"
                                         ? 10
                                         : key === "passport"
-                                        ? 9
+                                        ? 8
                                         : key === "drivingLicense"
                                         ? 15
                                         : 10
