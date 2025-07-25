@@ -365,16 +365,17 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
   }, []);
 
   // Debug: Log the original options to see duplicates
-  console.log('Original managers options:', options);
-  
+  console.log("Original managers options:", options);
+
   // Remove duplicates and filter options based on search term
-  const uniqueOptions = options.filter((manager, index, self) => 
-    index === self.findIndex(m => m.employeeId === manager.employeeId)
+  const uniqueOptions = options.filter(
+    (manager, index, self) =>
+      index === self.findIndex((m) => m.employeeId === manager.employeeId)
   );
-  
+
   // Debug: Log unique options
-  console.log('Unique managers options:', uniqueOptions);
-  
+  console.log("Unique managers options:", uniqueOptions);
+
   const filteredOptions = uniqueOptions.filter((manager) =>
     manager.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -444,7 +445,7 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
-            
+
             {/* Options List */}
             <div className="max-h-[250px] overflow-y-auto">
               {filteredOptions.length > 0 ? (
@@ -452,7 +453,9 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                   <div
                     key={manager.employeeId}
                     className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                      value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
+                      value?.employeeId === manager.employeeId
+                        ? "bg-blue-50"
+                        : ""
                     }`}
                     onClick={() => handleSelect(manager)}
                   >
@@ -1856,7 +1859,7 @@ function EmployeeForm() {
         );
 
         if (response.data && Array.isArray(response.data)) {
-          console.log('API Response - Managers:', response.data);
+          console.log("API Response - Managers:", response.data);
           setManagers(response.data);
           if (response.data.length === 0) {
             toast.warning("No managers found for this department");
@@ -2874,9 +2877,17 @@ function EmployeeForm() {
                             value={formData.employee.department}
                             onChange={(selectedDepartment) => {
                               if (!selectedDepartment) {
-                                handleInputChange("employee", "department", null);
+                                handleInputChange(
+                                  "employee",
+                                  "department",
+                                  null
+                                );
                                 handleInputChange("employee", "weeklyOffs", []);
-                                handleInputChange("employee", "designation", null);
+                                handleInputChange(
+                                  "employee",
+                                  "designation",
+                                  null
+                                );
                                 return;
                               }
                               const cleanName = selectedDepartment.name
@@ -2890,9 +2901,13 @@ function EmployeeForm() {
                               });
                               const weeklyHolidays =
                                 selectedDepartment.weeklyHolidays
-                                  ? Array.isArray(selectedDepartment.weeklyHolidays)
+                                  ? Array.isArray(
+                                      selectedDepartment.weeklyHolidays
+                                    )
                                     ? selectedDepartment.weeklyHolidays
-                                    : selectedDepartment.weeklyHolidays.split(",")
+                                    : selectedDepartment.weeklyHolidays.split(
+                                        ","
+                                      )
                                   : [];
                               handleInputChange(
                                 "employee",
