@@ -148,8 +148,7 @@ const OrganizationSettings = () => {
         departmentHead: departmentForm.head,
         leavePolicy: departmentForm.leavePolicy.value,
         weeklyHolidays: departmentForm.weeklyHolidays
-          .map((day) => day.value)
-          .join(","),
+          .map((day) => day.value),
         assignedModules: Array.isArray(departmentForm.assignedModules) 
           ? departmentForm.assignedModules.map((module) => ({
               moduleId: module.value,
@@ -699,13 +698,17 @@ const OrganizationSettings = () => {
                               );
 
                               // Format weekly holidays into array of objects
-                              const weeklyHolidaysArray =
-                                department.weeklyHolidays
-                                  ?.split(",")
-                                  .map((day) => ({
-                                    value: day.trim(),
-                                    label: day.trim(),
-                                  })) || [];
+                              const weeklyHolidaysArray = department.weeklyHolidays
+                                ? Array.isArray(department.weeklyHolidays)
+                                  ? department.weeklyHolidays.map((day) => ({
+                                      value: day,
+                                      label: day,
+                                    }))
+                                  : department.weeklyHolidays.split(",").map((day) => ({
+                                      value: day.trim(),
+                                      label: day.trim(),
+                                    }))
+                                : [];
 
                               // Format modules into array of objects if they exist
                               const modulesArray = department.assignedModules && Array.isArray(department.assignedModules)
@@ -747,7 +750,9 @@ const OrganizationSettings = () => {
                               )?.name || department.leavePolicy}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {department.weeklyHolidays}
+                              {Array.isArray(department.weeklyHolidays)
+                                ? department.weeklyHolidays.join(", ")
+                                : department.weeklyHolidays}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-900">
                               {department.assignedModules && department.assignedModules.length > 0

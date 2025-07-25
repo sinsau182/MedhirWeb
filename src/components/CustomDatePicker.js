@@ -136,7 +136,9 @@ const CustomDatePicker = ({
 
     // Weekly holidays
     if (departmentInfo?.weeklyHolidays) {
-      const weekDays = departmentInfo.weeklyHolidays.split(',').map(day => day.trim());
+      const weekDays = Array.isArray(departmentInfo.weeklyHolidays)
+        ? departmentInfo.weeklyHolidays
+        : departmentInfo.weeklyHolidays.split(',').map(day => day.trim());
       const dayName = format(date, 'EEEE');
       if (weekDays.includes(dayName)) return true;
     }

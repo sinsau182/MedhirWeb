@@ -1902,7 +1902,9 @@ function EmployeeForm() {
             });
             // Set weekly holidays as read-only weekly offs
             const weeklyHolidays = created.weeklyHolidays
-              ? created.weeklyHolidays.split(",")
+              ? Array.isArray(created.weeklyHolidays)
+                ? created.weeklyHolidays
+                : created.weeklyHolidays.split(",")
               : [];
             handleInputChange("employee", "weeklyOffs", weeklyHolidays);
             // Clear designation and manager when department changes
@@ -2888,7 +2890,9 @@ function EmployeeForm() {
                               });
                               const weeklyHolidays =
                                 selectedDepartment.weeklyHolidays
-                                  ? selectedDepartment.weeklyHolidays.split(",")
+                                  ? Array.isArray(selectedDepartment.weeklyHolidays)
+                                    ? selectedDepartment.weeklyHolidays
+                                    : selectedDepartment.weeklyHolidays.split(",")
                                   : [];
                               handleInputChange(
                                 "employee",
