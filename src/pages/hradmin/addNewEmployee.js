@@ -2225,6 +2225,55 @@ function EmployeeForm() {
   const filterAccountHolderNameInput = (value) =>
     value.replace(/[^A-Za-z ]/g, "");
 
+  // Add this helper function inside EmployeeForm:
+  function openMinioFileInNewTab(minioUrl) {
+    const token = getItemFromSessionStorage("token");
+    if (!minioUrl) return;
+    const apiUrl = `/minio/fetch-image?url=${encodeURIComponent(minioUrl)}`;
+    const newTab = window.open();
+    fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          newTab.document.write("<h2 style='color:red'>File not found or unauthorized</h2>");
+          newTab.document.close();
+          return;
+        }
+        const contentType = res.headers.get("Content-Type");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        if (contentType && (contentType.startsWith("image/") || contentType === "application/pdf")) {
+          newTab.location.href = url;
+        } else {
+          // For other types, trigger download
+          const a = newTab.document.createElement("a");
+          a.href = url;
+          a.download = minioUrl.split("/").pop();
+          newTab.document.body.appendChild(a);
+          a.click();
+          newTab.document.body.removeChild(a);
+          newTab.close();
+        }
+      })
+      .catch(() => {
+        newTab.document.write("<h2 style='color:red'>Failed to fetch file</h2>");
+        newTab.document.close();
+      });
+  }
+
+  function openFileInNewTab(fileOrUrl) {
+    if (!fileOrUrl) return;
+    if (fileOrUrl instanceof File) {
+      const url = URL.createObjectURL(fileOrUrl);
+      window.open(url, '_blank', 'noopener');
+    } else {
+      openMinioFileInNewTab(fileOrUrl);
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -3246,70 +3295,25 @@ function EmployeeForm() {
                                     <>
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          setDocPreview({
-                                            open: true,
-                                            imgUrl:
-                                              formData.idProofs[
-                                                imgField
-                                              ] instanceof File
-                                                ? URL.createObjectURL(
-                                                    formData.idProofs[imgField]
-                                                  )
-                                                : formData.idProofs[imgField],
-                                            number: value,
-                                            label: meta.label,
-                                            file:
-                                              formData.idProofs[
-                                                imgField
-                                              ] instanceof File
-                                                ? formData.idProofs[imgField]
-                                                : null,
-                                          })
-                                        }
-                                        className="focus:outline-none"
+                                        onClick={() => openFileInNewTab(formData.idProofs[imgField])}
+                                        className="focus:outline-none px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200 ml-2"
                                       >
-                                        {formData.idProofs[imgField].type ===
-                                          "application/pdf" ||
-                                        (typeof formData.idProofs[imgField] ===
-                                          "string" &&
-                                          formData.idProofs[imgField].endsWith(
-                                            ".pdf"
-                                          )) ? (
-                                          <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">
-                                            PDF
-                                          </span>
+                                        View
+                                      </button>
+                                      <button type="button" onClick={() => setDocPreview({
+                                        open: true,
+                                        imgUrl: formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField],
+                                        number: value,
+                                        label: meta.label,
+                                        file: formData.idProofs[imgField] instanceof File ? formData.idProofs[imgField] : null,
+                                      })} className="focus:outline-none">
+                                        {formData.idProofs[imgField].type === 'application/pdf' || (typeof formData.idProofs[imgField] === 'string' && formData.idProofs[imgField].endsWith('.pdf')) ? (
+                                          <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">PDF</span>
                                         ) : (
-                                          <img
-                                            src={
-                                              formData.idProofs[
-                                                imgField
-                                              ] instanceof File
-                                                ? URL.createObjectURL(
-                                                    formData.idProofs[imgField]
-                                                  )
-                                                : formData.idProofs[imgField]
-                                            }
-                                            alt={`${meta.label} preview`}
-                                            className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
-                                          />
+                                          <img src={formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField]} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />
                                         )}
                                       </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            idProofs: {
-                                              ...prev.idProofs,
-                                              [imgField]: null,
-                                            },
-                                          }))
-                                        }
-                                        className="text-red-500 hover:text-red-700 ml-2"
-                                      >
-                                        Remove
-                                      </button>
+                                      <button type="button" onClick={() => setFormData(prev => ({ ...prev, idProofs: { ...prev.idProofs, [imgField]: null } }))} className="text-red-500 hover:text-red-700 ml-2">Remove</button>
                                     </>
                                   ) : (
                                     <label
@@ -3922,27 +3926,15 @@ function EmployeeForm() {
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setBankPreview({
-                                      open: true,
-                                      imgUrl:
-                                        formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? URL.createObjectURL(
-                                              formData.bankDetails
-                                                .passbookImgUrl
-                                            )
-                                          : formData.bankDetails.passbookImgUrl,
-                                      file:
-                                        formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? formData.bankDetails.passbookImgUrl
-                                          : null,
-                                    })
-                                  }
-                                  className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200"
+                                  onClick={() => openFileInNewTab(formData.bankDetails.passbookImgUrl)}
+                                  className="focus:outline-none px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200 ml-2"
                                   title="View"
                                 >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setBankPreview({ open: true, imgUrl: formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl, file: formData.bankDetails.passbookImgUrl instanceof File ? formData.bankDetails.passbookImgUrl : null })} className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200" title="View">
                                   View
                                 </button>
                                 <button
