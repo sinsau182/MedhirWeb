@@ -2258,6 +2258,8 @@ function EmployeeForm() {
     }
   }
 
+  const minioUrlPattern = /^https?:\/\/[^/]*minio[^/]*\//i;
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -3285,7 +3287,28 @@ function EmployeeForm() {
                                         {formData.idProofs[imgField].type === 'application/pdf' || (typeof formData.idProofs[imgField] === 'string' && formData.idProofs[imgField].endsWith('.pdf')) ? (
                                           <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">PDF</span>
                                         ) : (
-                                          <img src={formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField]} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />
+                                          (() => {
+                                            const fileOrUrl = formData.idProofs[imgField];
+                                            if (fileOrUrl instanceof File) {
+                                              return <img src={URL.createObjectURL(fileOrUrl)} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />;
+                                            } else if (typeof fileOrUrl === 'string' && minioUrlPattern.test(fileOrUrl)) {
+                                              // MinIO protected URL
+                                              const blobUrl = minio.images[fileOrUrl];
+                                              if (!blobUrl && !minio.loading) {
+                                                // Dispatch fetch if not already loading
+                                                const token = getItemFromSessionStorage('token');
+                                                dispatch(fetchMinioImage({ url: fileOrUrl, token, apiURL: publicRuntimeConfig.apiURL }));
+                                              }
+                                              if (blobUrl) {
+                                                return <img src={blobUrl} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />;
+                                              } else {
+                                                return <span className="inline-block w-16 h-16 flex items-center justify-center bg-gray-100 border border-gray-300 rounded"><FiLoader className="animate-spin w-6 h-6 text-gray-400" /></span>;
+                                              }
+                                            } else {
+                                              // Public URL or other string
+                                              return <img src={fileOrUrl} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />;
+                                            }
+                                          })()
                                         )}
                                       </span>
                                       <button type="button" onClick={() => setFormData(prev => ({ ...prev, idProofs: { ...prev.idProofs, [imgField]: null } }))} className="text-red-500 hover:text-red-700 ml-2">Remove</button>
