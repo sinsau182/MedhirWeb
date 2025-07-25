@@ -69,6 +69,7 @@ const DepartmentSelect = ({
   value,
   onChange,
   onAddDepartment,
+  showUnselect = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -121,6 +122,17 @@ const DepartmentSelect = ({
         </div>
         {isOpen && (
           <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto min-w-[250px]">
+            {showUnselect && (
+              <div
+                className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 text-gray-600 border-b border-gray-100 font-semibold"
+                onClick={() => {
+                  onChange(null);
+                  setIsOpen(false);
+                }}
+              >
+                Unselect Department
+              </div>
+            )}
             <div
               className="px-4 py-2.5 cursor-pointer hover:bg-blue-100 text-blue-600 border-b border-gray-100 font-semibold"
               onClick={() => {
@@ -1827,14 +1839,19 @@ function EmployeeForm() {
     const fetchManagers = async () => {
       try {
         const token = getItemFromSessionStorage("token", null);
-
+        const companyId = sessionStorage.getItem("employeeCompanyId");
+        const params = {};
+        if (employeeId) {
+          params.excludeEmployeeId = employeeId;
+        }
         const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/employees/managers`,
+          `${publicRuntimeConfig.apiURL}/employees/managers/${companyId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
+            params,
           }
         );
 
@@ -1855,7 +1872,7 @@ function EmployeeForm() {
     };
 
     fetchManagers();
-  }, [publicRuntimeConfig.apiURL]);
+  }, [publicRuntimeConfig.apiURL, employeeId]);
 
   const handleDepartmentAdded = (newDepartment) => {
     // Refetch departments and select the new one
@@ -2854,6 +2871,12 @@ function EmployeeForm() {
                             options={departments}
                             value={formData.employee.department}
                             onChange={(selectedDepartment) => {
+                              if (!selectedDepartment) {
+                                handleInputChange("employee", "department", null);
+                                handleInputChange("employee", "weeklyOffs", []);
+                                handleInputChange("employee", "designation", null);
+                                return;
+                              }
                               const cleanName = selectedDepartment.name
                                 .replace(/[bedjw]{5,}/g, "")
                                 .replace(/\|.*$/, "")
@@ -2877,9 +2900,9 @@ function EmployeeForm() {
                                 "designation",
                                 null
                               );
-                              // handleInputChange("employee", "reportingManager", null); // Removed to make reporting manager independent
                             }}
                             onAddDepartment={() => setShowDepartmentModal(true)}
+                            showUnselect={!employeeId}
                           />
                           <DesignationSelect
                             label="Designation"
@@ -4288,41 +4311,43 @@ function EmployeeForm() {
                       >
                         Cancel
                       </motion.button>
-                      <motion.button
-                        type="button"
-                        className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                        onClick={() => {
-                          // Move to next section/tab
-                          const sectionsArr = [
-                            "personal",
-                            "idProofs",
-                            "bank",
-                            "salary",
-                          ];
-                          const currentIndex =
-                            sectionsArr.indexOf(activeSection);
-                          if (currentIndex < sectionsArr.length - 1) {
-                            setActiveSection(sectionsArr[currentIndex + 1]);
-                          }
-                        }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <span>Next</span>
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                      {activeSection !== "salary" && (
+                        <motion.button
+                          type="button"
+                          className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
+                          onClick={() => {
+                            // Move to next section/tab
+                            const sectionsArr = [
+                              "personal",
+                              "idProofs",
+                              "bank",
+                              "salary",
+                            ];
+                            const currentIndex =
+                              sectionsArr.indexOf(activeSection);
+                            if (currentIndex < sectionsArr.length - 1) {
+                              setActiveSection(sectionsArr[currentIndex + 1]);
+                            }
+                          }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M13 7l5 5m0 0l-5 5m5-5H6"
-                          />
-                        </svg>
-                      </motion.button>
+                          <span>Next</span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M13 7l5 5m0 0l-5 5m5-5H6"
+                            />
+                          </svg>
+                        </motion.button>
+                      )}
                       <motion.button
                         type="button"
                         className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"

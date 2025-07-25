@@ -1180,6 +1180,8 @@ function EmployeeProfilePage() {
 
   // Update the handleSaveAllClick function to add validation for ID proofs
   const handleSaveAllClick = async () => {
+    console.log("Save button clicked");
+    
     if (!isEditable) {
       toast.error("Cannot save while an update request is pending.");
       return;
@@ -1190,7 +1192,10 @@ function EmployeeProfilePage() {
     }
 
     // Check if any changes have been made
-    if (!hasChangesBeenMade()) {
+    const hasChanges = hasChangesBeenMade();
+    console.log("Has changes:", hasChanges);
+    
+    if (!hasChanges) {
       toast.info("No changes have been made. Nothing to save.");
       setIsPageInEditMode(false);
       return;
@@ -1300,13 +1305,73 @@ function EmployeeProfilePage() {
     }
 
     // --- Comprehensive Validation Check: Prevent API call if any validation errors exist ---
-    // Run validation on all fields to ensure we have the latest validation state
-    const bankValidationErrors = validateBankDetails(formData.bank);
-    const personalValidationErrors = {
-      emailPersonal: validateEmail(formData.employee.email.personal),
-      phone: validatePhone(formData.employee.phone1),
-      alternatePhone: validatePhone(formData.employee.phone2),
-    };
+    // Run validation only on fields that have been touched or changed
+    const additionalBankValidationErrors = {};
+    
+    // Only validate bank fields that have been touched or changed
+    const bankFieldsToValidate = [
+      "accountNumber",
+      "accountHolderName", 
+      "ifscCode",
+      "bankName",
+      "branchName",
+      "upiId",
+      "upiContactName"
+    ];
+    
+    bankFieldsToValidate.forEach(field => {
+      const currentValue = formData.bank[field];
+      const originalValue = employeeById?.bankDetails?.[field];
+      const hasChanged = currentValue !== originalValue;
+      const hasBeenTouched = fieldTouched[field];
+      
+      // Only validate if field has been touched or changed
+      if (hasChanged || hasBeenTouched) {
+        switch (field) {
+          case "accountNumber":
+            additionalBankValidationErrors[field] = validateAccountNumber(currentValue);
+            break;
+          case "accountHolderName":
+            additionalBankValidationErrors[field] = validateAccountHolderName(currentValue);
+            break;
+          case "ifscCode":
+            additionalBankValidationErrors[field] = validateIFSC(currentValue);
+            break;
+          case "bankName":
+            additionalBankValidationErrors[field] = validateBankName(currentValue);
+            break;
+          case "branchName":
+            additionalBankValidationErrors[field] = validateBranchName(currentValue);
+            break;
+          case "upiId":
+            additionalBankValidationErrors[field] = validateUPI(currentValue);
+            break;
+          case "upiContactName":
+            additionalBankValidationErrors[field] = validateUPIContactName(currentValue);
+            break;
+        }
+      }
+    });
+    
+    // Only validate personal fields that have been touched or changed
+    const personalValidationErrors = {};
+    const personalFieldsToValidate = [
+      { key: "email", originalKey: "emailPersonal", validateFn: validateEmail },
+      { key: "phone1", originalKey: "phone", validateFn: validatePhone },
+      { key: "phone2", originalKey: "alternatePhone", validateFn: validatePhone }
+    ];
+    
+    personalFieldsToValidate.forEach(({ key, originalKey, validateFn }) => {
+      const currentValue = key === "email" ? formData.employee.email.personal : formData.employee[key];
+      const originalValue = key === "email" ? employeeById?.emailPersonal : employeeById?.[originalKey];
+      const hasChanged = currentValue !== originalValue;
+      const hasBeenTouched = personalFieldTouched[key];
+      
+      // Only validate if field has been touched or changed
+      if (hasChanged || hasBeenTouched) {
+        personalValidationErrors[key] = validateFn(currentValue);
+      }
+    });
 
     // Check ID proof validation for numbers
     const idProofNumberValidationErrors = {};
@@ -1337,7 +1402,7 @@ function EmployeeProfilePage() {
     // Combine all validation errors
     const allValidationErrors = {
       ...validationErrors,
-      ...bankValidationErrors,
+      ...additionalBankValidationErrors,
       ...personalValidationErrors,
       ...idProofNumberValidationErrors,
       ...idProofValidationErrors,
@@ -1355,6 +1420,9 @@ function EmployeeProfilePage() {
       (error) => error && error.trim() !== ""
     );
 
+    console.log("Validation errors:", allValidationErrors);
+    console.log("Has validation errors:", hasValidationErrors);
+
     if (hasValidationErrors) {
       // Find the first field with an error to scroll to
       const firstErrorField = Object.keys(allValidationErrors).find(
@@ -1363,76 +1431,33 @@ function EmployeeProfilePage() {
       );
 
       if (firstErrorField) {
-        // Mark all fields as touched so errors are displayed
-        const allFields = [
-          // Personal fields
-          "emailPersonal",
-          "phone",
-          "alternatePhone",
-          "currentAddress",
-          "permanentAddress",
-          // Bank fields
-          "accountNumber",
-          "accountHolderName",
-          "ifscCode",
-          "bankName",
-          "branchName",
-          "upiId",
-          "upiContactName",
-          // ID proof fields
-          "aadharNo",
-          "panNo",
-          "passport",
-          "drivingLicense",
-          "voterId",
-        ];
-
+        // Mark only fields with errors as touched so errors are displayed
         const touchedFields = {};
-        allFields.forEach((field) => {
-          touchedFields[field] = true;
+        const idProofTouchedFields = {};
+        
+        Object.keys(allValidationErrors).forEach((field) => {
+          if (allValidationErrors[field] && allValidationErrors[field].trim() !== "") {
+            // Check if it's an ID proof field
+            if (["aadharNo", "panNo", "passport", "drivingLicense", "voterId"].includes(field)) {
+              idProofTouchedFields[field] = true;
+            } else {
+              touchedFields[field] = true;
+            }
+          }
         });
+        
         setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
-        setIdProofFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+        setIdProofFieldTouched((prev) => ({ ...prev, ...idProofTouchedFields }));
 
         // Scroll to the first field with an error
         const el = document.querySelector(`[name='${firstErrorField}']`);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
-      // Always mark fields as touched when there are validation errors
-      const allFields = [
-        // Personal fields
-        "emailPersonal",
-        "phone",
-        "alternatePhone",
-        "currentAddress",
-        "permanentAddress",
-        // Bank fields
-        "accountNumber",
-        "accountHolderName",
-        "ifscCode",
-        "bankName",
-        "branchName",
-        "upiId",
-        "upiContactName",
-        // ID proof fields
-        "aadharNo",
-        "panNo",
-        "passport",
-        "drivingLicense",
-        "voterId",
-      ];
-
-      const touchedFields = {};
-      allFields.forEach((field) => {
-        touchedFields[field] = true;
-      });
-      setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
-      setIdProofFieldTouched((prev) => ({ ...prev, ...touchedFields }));
-
       return; // Prevent API call
     }
 
+    console.log("Proceeding to API call");
     setLoading(true);
     try {
       // Create a payload with only the changed fields

@@ -134,7 +134,7 @@ export default function DepartmentFormModal({
         description: form.description || "",
         
         leavePolicy: form.leavePolicy.value,
-        weeklyHolidays: form.weeklyHolidays.map((d) => d.value).join(","),
+        weeklyHolidays: form.weeklyHolidays.map((d) => d.value),
         companyId,
         assignedModules: Array.isArray(form.assignedModules) 
           ? form.assignedModules.map((module) => ({

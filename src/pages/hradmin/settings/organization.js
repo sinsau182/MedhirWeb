@@ -236,9 +236,7 @@ const OrganizationSettings = () => {
         description: departmentForm.description || "",
         departmentHead: departmentForm.head,
         leavePolicy: departmentForm.leavePolicy.value,
-        weeklyHolidays: departmentForm.weeklyHolidays
-          .map((day) => day.value)
-          .join(","),
+        weeklyHolidays: departmentForm.weeklyHolidays.map((d) => d.value),
         assignedModules: Array.isArray(departmentForm.assignedModules) 
           ? departmentForm.assignedModules.map((module) => ({
               moduleId: module.value,
@@ -1060,7 +1058,7 @@ const OrganizationSettings = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Leave Policy <span className="text-red-500">*</span>
+                    Leave Policy
                   </label>
                   <Select
                     name="leavePolicy"
