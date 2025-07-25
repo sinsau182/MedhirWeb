@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import MinioImage from "@/components/ui/MinioImage";
+import { useMinioImage } from "@/hooks/useMinioImage";
 import {
   FiUser,
   FiBook,
@@ -29,6 +31,10 @@ function EmployeeProfilePage() {
   const { id } = router.query; // Get ID from URL query parameter
 
   const { publicRuntimeConfig } = getConfig();
+
+  // Minio slice integration - automatically handles image fetching and caching
+  // When any image is clicked, it will trigger the Minio slice to fetch the image
+  // with proper authentication and caching
 
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -430,24 +436,33 @@ function EmployeeProfilePage() {
       return;
     }
   
-    const previewUrl =
-      currentPassbook instanceof File
-        ? URL.createObjectURL(currentPassbook)
-        : currentPassbook;
-  
-    const accountNumber =
-      formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
-  
-    const title = accountNumber
-      ? `Passbook Document - ${accountNumber}`
-      : "Passbook Document";
-  
-    // Open in new tab or window
-    const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
-  
-    if (newWindow) {
-      newWindow.document.title = title;
-      newWindow.focus();
+    // If it's a Minio URL, use MinioImage component for proper handling
+    if (currentPassbook instanceof File) {
+      const previewUrl = URL.createObjectURL(currentPassbook);
+      const accountNumber =
+        formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+      const title = accountNumber
+        ? `Passbook Document - ${accountNumber}`
+        : "Passbook Document";
+      
+      const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = title;
+        newWindow.focus();
+      }
+    } else {
+      // For Minio URLs, open in new window with proper authentication
+      const accountNumber =
+        formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+      const title = accountNumber
+        ? `Passbook Document - ${accountNumber}`
+        : "Passbook Document";
+      
+      const newWindow = window.open(currentPassbook, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = title;
+        newWindow.focus();
+      }
     }
   };
   
@@ -463,47 +478,76 @@ function EmployeeProfilePage() {
       return;
     }
   
-    // Generate a preview URL
-    const previewUrl =
-      currentDocument instanceof File
-        ? URL.createObjectURL(currentDocument)
-        : currentDocument;
-  
-    // Optionally set a descriptive window title
-    const documentTitles = {
-      aadhar: "Aadhar Card",
-      pan: "PAN Card",
-      passport: "Passport",
-      drivingLicense: "Driving License",
-      voterId: "Voter ID",
-    };
-  
-    const numberField =
-      documentType === "aadhar"
-        ? "aadharNo"
-        : documentType === "pan"
-        ? "panNo"
-        : documentType === "passport"
-        ? "passport"
-        : documentType === "drivingLicense"
-        ? "drivingLicense"
-        : documentType === "voterId"
-        ? "voterId"
-        : "";
-  
-    const documentNumber =
-      formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
-  
-    const title = documentTitles[documentType] || documentType;
-    const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
-  
-    // Open in a new tab or window
-    const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
-  
-    // Optionally give focus to the new tab
-    if (newWindow) {
-      newWindow.document.title = fullTitle;
-      newWindow.focus();
+    // If it's a File, create object URL
+    if (currentDocument instanceof File) {
+      const previewUrl = URL.createObjectURL(currentDocument);
+      
+      const documentTitles = {
+        aadhar: "Aadhar Card",
+        pan: "PAN Card",
+        passport: "Passport",
+        drivingLicense: "Driving License",
+        voterId: "Voter ID",
+      };
+      
+      const numberField =
+        documentType === "aadhar"
+          ? "aadharNo"
+          : documentType === "pan"
+          ? "panNo"
+          : documentType === "passport"
+          ? "passport"
+          : documentType === "drivingLicense"
+          ? "drivingLicense"
+          : documentType === "voterId"
+          ? "voterId"
+          : "";
+      
+      const documentNumber =
+        formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+      
+      const title = documentTitles[documentType] || documentType;
+      const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+      
+      const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fullTitle;
+        newWindow.focus();
+      }
+    } else {
+      // For Minio URLs, open directly with proper authentication
+      const documentTitles = {
+        aadhar: "Aadhar Card",
+        pan: "PAN Card",
+        passport: "Passport",
+        drivingLicense: "Driving License",
+        voterId: "Voter ID",
+      };
+      
+      const numberField =
+        documentType === "aadhar"
+          ? "aadharNo"
+          : documentType === "pan"
+          ? "panNo"
+          : documentType === "passport"
+          ? "passport"
+          : documentType === "drivingLicense"
+          ? "drivingLicense"
+          : documentType === "voterId"
+          ? "voterId"
+          : "";
+      
+      const documentNumber =
+        formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+      
+      const title = documentTitles[documentType] || documentType;
+      const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+      
+      const newWindow = window.open(currentDocument, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fullTitle;
+        newWindow.focus();
+      }
     }
   };
   
@@ -2122,10 +2166,12 @@ function EmployeeProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : employeeById?.employeeImgUrl ? (
-                            <img
+                            <MinioImage
                               src={employeeById.employeeImgUrl}
                               alt="Profile"
                               className="w-full h-full object-cover"
+                              fallbackSrc="/avatar.jpg"
+                              onClick={() => console.log('Profile image clicked')}
                             />
                           ) : (
                             <FiUser className="w-16 h-16 text-gray-300" />
