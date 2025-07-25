@@ -596,11 +596,19 @@ function EmployeeProfilePage() {
 
       // Validate the number field immediately
       const numberValue = formData.idProofs[numberField] || "";
-      const numberError = validateIdProofField(numberField, numberValue) || "This number is required when uploading a document.";
+      const numberError =
+        validateIdProofField(numberField, numberValue) ||
+        "This number is required when uploading a document.";
       if (!numberValue.trim()) {
-        setIdProofValidationErrors((prev) => ({ ...prev, [numberField]: "This number is required when uploading a document." }));
+        setIdProofValidationErrors((prev) => ({
+          ...prev,
+          [numberField]: "This number is required when uploading a document.",
+        }));
       } else {
-        setIdProofValidationErrors((prev) => ({ ...prev, [numberField]: numberError }));
+        setIdProofValidationErrors((prev) => ({
+          ...prev,
+          [numberField]: numberError,
+        }));
       }
     }
 
@@ -1776,23 +1784,28 @@ function EmployeeProfilePage() {
       aadharNo: { fileKey: "aadharImage", urlKey: "aadharImgUrl" },
       panNo: { fileKey: "panImage", urlKey: "pancardImgUrl" },
       passport: { fileKey: "passportImage", urlKey: "passportImgUrl" },
-      drivingLicense: { fileKey: "drivingLicenseImage", urlKey: "drivingLicenseImgUrl" },
-      voterId: { fileKey: "voterIdImage", urlKey: "voterIdImgUrl" }
+      drivingLicense: {
+        fileKey: "drivingLicenseImage",
+        urlKey: "drivingLicenseImgUrl",
+      },
+      voterId: { fileKey: "voterIdImage", urlKey: "voterIdImgUrl" },
     };
 
     const { fileKey, urlKey } = fieldMap[field];
     const hasNewFile = formData.idProofs[fileKey] instanceof File;
-    const hasExistingFile = employeeById?.idProofs?.[urlKey] && employeeById.idProofs[urlKey].trim() !== "";
+    const hasExistingFile =
+      employeeById?.idProofs?.[urlKey] &&
+      employeeById.idProofs[urlKey].trim() !== "";
     const hasFile = hasNewFile || hasExistingFile;
     const hasNumber = numberValue && numberValue.trim() !== "";
 
     if (hasFile && !hasNumber) {
       const fieldLabels = {
         aadharNo: "Aadhar number",
-        panNo: "PAN number", 
+        panNo: "PAN number",
         passport: "Passport number",
         drivingLicense: "Driving license number",
-        voterId: "Voter ID number"
+        voterId: "Voter ID number",
       };
       return `Please enter the ${fieldLabels[field]} for the uploaded document`;
     }
@@ -1800,9 +1813,9 @@ function EmployeeProfilePage() {
       const fieldLabels = {
         aadharNo: "Aadhar document",
         panNo: "PAN document",
-        passport: "Passport document", 
+        passport: "Passport document",
         drivingLicense: "Driving license document",
-        voterId: "Voter ID document"
+        voterId: "Voter ID document",
       };
       return `Please upload the ${fieldLabels[field]}`;
     }
