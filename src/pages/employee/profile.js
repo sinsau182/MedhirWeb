@@ -100,6 +100,7 @@ function EmployeeProfilePage() {
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [idProofValidationErrors, setIdProofValidationErrors] = useState({});
   const [idProofFieldTouched, setIdProofFieldTouched] = useState({});
+  const [idProofFieldModified, setIdProofFieldModified] = useState({});
 
   useEffect(() => {
     // Only run validation if in edit mode AND user is actually editing id proofs
@@ -586,6 +587,16 @@ function EmployeeProfilePage() {
 
     if (numberField) {
       setIdProofFieldTouched((prev) => ({ ...prev, [numberField]: true }));
+      setIdProofFieldModified((prev) => ({ ...prev, [numberField]: true }));
+
+      // Validate the number field immediately
+      const numberValue = formData.idProofs[numberField] || "";
+      const numberError = validateIdProofField(numberField, numberValue) || "This number is required when uploading a document.";
+      if (!numberValue.trim()) {
+        setIdProofValidationErrors((prev) => ({ ...prev, [numberField]: "This number is required when uploading a document." }));
+      } else {
+        setIdProofValidationErrors((prev) => ({ ...prev, [numberField]: numberError }));
+      }
     }
 
     toast.success(
@@ -1739,21 +1750,41 @@ function EmployeeProfilePage() {
 
   const validateIdProofConditional = (field) => {
     const numberValue = formData.idProofs[field];
-    const hasFile =
-      formData.idProofs[
-        `${field.replace("No", "").replace("Number", "")}Image`
-      ] instanceof File;
+
+    // Map field names to their corresponding file field names and URL keys
+    const fieldMap = {
+      aadharNo: { fileKey: "aadharImage", urlKey: "aadharImgUrl" },
+      panNo: { fileKey: "panImage", urlKey: "pancardImgUrl" },
+      passport: { fileKey: "passportImage", urlKey: "passportImgUrl" },
+      drivingLicense: { fileKey: "drivingLicenseImage", urlKey: "drivingLicenseImgUrl" },
+      voterId: { fileKey: "voterIdImage", urlKey: "voterIdImgUrl" }
+    };
+
+    const { fileKey, urlKey } = fieldMap[field];
+    const hasNewFile = formData.idProofs[fileKey] instanceof File;
+    const hasExistingFile = employeeById?.idProofs?.[urlKey] && employeeById.idProofs[urlKey].trim() !== "";
+    const hasFile = hasNewFile || hasExistingFile;
     const hasNumber = numberValue && numberValue.trim() !== "";
 
     if (hasFile && !hasNumber) {
-      return `Please enter the ${field
-        .replace("No", " Number")
-        .replace("Number", " Number")} for the uploaded document`;
+      const fieldLabels = {
+        aadharNo: "Aadhar number",
+        panNo: "PAN number", 
+        passport: "Passport number",
+        drivingLicense: "Driving license number",
+        voterId: "Voter ID number"
+      };
+      return `Please enter the ${fieldLabels[field]} for the uploaded document`;
     }
     if (hasNumber && !hasFile) {
-      return `Please upload the ${field
-        .replace("No", " document")
-        .replace("Number", " document")}`;
+      const fieldLabels = {
+        aadharNo: "Aadhar document",
+        panNo: "PAN document",
+        passport: "Passport document", 
+        drivingLicense: "Driving license document",
+        voterId: "Voter ID document"
+      };
+      return `Please upload the ${fieldLabels[field]}`;
     }
     return "";
   };
