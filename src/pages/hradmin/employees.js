@@ -7,6 +7,8 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "react-hot-toast";
+import getConfig from 'next/config';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 function Employees() {
   const [activeTab, setActiveTab] = useState("Basic");
@@ -188,7 +190,7 @@ function Employees() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleViewDoc(employee.bankDetails.passbookImgUrl);
+                openFileInNewTab(employee.bankDetails.passbookImgUrl);
               }}
               className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 rounded border border-blue-200 hover:bg-blue-50"
             >
@@ -221,6 +223,41 @@ function Employees() {
   };
 
   const headers = getTableHeaders();
+
+  const { publicRuntimeConfig } = getConfig();
+
+  function openMinioFileInNewTab(minioUrl) {
+    const token = getItemFromSessionStorage("token");
+    if (!minioUrl) return;
+    const apiUrl = `${publicRuntimeConfig.apiURL}/minio/fetch-image?url=${encodeURIComponent(minioUrl)}`;
+    fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          toast.error(`File not found or unauthorized. URL: ${apiUrl}`);
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener');
+      })
+      .catch(() => {
+        toast.error(`Failed to fetch file. URL: ${apiUrl}`);
+      });
+  }
+
+  function openFileInNewTab(fileOrUrl) {
+    if (!fileOrUrl) return;
+    if (fileOrUrl instanceof File) {
+      const url = URL.createObjectURL(fileOrUrl);
+      window.open(url, '_blank', 'noopener');
+    } else {
+      openMinioFileInNewTab(fileOrUrl);
+    }
+  }
 
   if (err) {
     return (

@@ -2229,8 +2229,8 @@ function EmployeeForm() {
   function openMinioFileInNewTab(minioUrl) {
     const token = getItemFromSessionStorage("token");
     if (!minioUrl) return;
-    const apiUrl = `/minio/fetch-image?url=${encodeURIComponent(minioUrl)}`;
-    const newTab = window.open();
+    const apiUrl = `${publicRuntimeConfig.apiURL}/minio/fetch-image?url=${encodeURIComponent(minioUrl)}`;
+    console.log('Fetching Minio file:', apiUrl);
     fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -2238,29 +2238,16 @@ function EmployeeForm() {
     })
       .then(async (res) => {
         if (!res.ok) {
-          newTab.document.write("<h2 style='color:red'>File not found or unauthorized</h2>");
-          newTab.document.close();
+          toast.error(`File not found or unauthorized. URL: ${apiUrl}`);
           return;
         }
         const contentType = res.headers.get("Content-Type");
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
-        if (contentType && (contentType.startsWith("image/") || contentType === "application/pdf")) {
-          newTab.location.href = url;
-        } else {
-          // For other types, trigger download
-          const a = newTab.document.createElement("a");
-          a.href = url;
-          a.download = minioUrl.split("/").pop();
-          newTab.document.body.appendChild(a);
-          a.click();
-          newTab.document.body.removeChild(a);
-          newTab.close();
-        }
+        window.open(url, '_blank', 'noopener');
       })
       .catch(() => {
-        newTab.document.write("<h2 style='color:red'>Failed to fetch file</h2>");
-        newTab.document.close();
+        toast.error(`Failed to fetch file. URL: ${apiUrl}`);
       });
   }
 
@@ -3293,26 +3280,17 @@ function EmployeeForm() {
                                 <div className="flex items-center gap-2">
                                   {formData.idProofs[imgField] ? (
                                     <>
-                                      <button
-                                        type="button"
+                                      <span
                                         onClick={() => openFileInNewTab(formData.idProofs[imgField])}
-                                        className="focus:outline-none px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200 ml-2"
+                                        style={{ cursor: 'pointer', display: 'inline-block' }}
+                                        title="Open in new tab"
                                       >
-                                        View
-                                      </button>
-                                      <button type="button" onClick={() => setDocPreview({
-                                        open: true,
-                                        imgUrl: formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField],
-                                        number: value,
-                                        label: meta.label,
-                                        file: formData.idProofs[imgField] instanceof File ? formData.idProofs[imgField] : null,
-                                      })} className="focus:outline-none">
                                         {formData.idProofs[imgField].type === 'application/pdf' || (typeof formData.idProofs[imgField] === 'string' && formData.idProofs[imgField].endsWith('.pdf')) ? (
                                           <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">PDF</span>
                                         ) : (
                                           <img src={formData.idProofs[imgField] instanceof File ? URL.createObjectURL(formData.idProofs[imgField]) : formData.idProofs[imgField]} alt={`${meta.label} preview`} className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg" />
                                         )}
-                                      </button>
+                                      </span>
                                       <button type="button" onClick={() => setFormData(prev => ({ ...prev, idProofs: { ...prev.idProofs, [imgField]: null } }))} className="text-red-500 hover:text-red-700 ml-2">Remove</button>
                                     </>
                                   ) : (
@@ -3889,70 +3867,18 @@ function EmployeeForm() {
                             {/* Preview/Info */}
                             {formData.bankDetails.passbookImgUrl && (
                               <div className="flex items-center gap-3 w-full justify-center">
-                                {formData.bankDetails.passbookImgUrl.type ===
-                                  "application/pdf" ||
-                                (typeof formData.bankDetails.passbookImgUrl ===
-                                  "string" &&
-                                  formData.bankDetails.passbookImgUrl.endsWith(
-                                    ".pdf"
-                                  )) ? (
-                                  <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">
-                                    PDF
-                                  </span>
-                                ) : (
-                                  <img
-                                    src={
-                                      formData.bankDetails
-                                        .passbookImgUrl instanceof File
-                                        ? URL.createObjectURL(
-                                            formData.bankDetails.passbookImgUrl
-                                          )
-                                        : formData.bankDetails.passbookImgUrl
-                                    }
-                                    alt="Passbook preview"
-                                    className="w-12 h-12 object-cover rounded border border-gray-300"
-                                  />
-                                )}
-                                <span className="ml-2 text-xs text-gray-700 truncate max-w-[120px]">
-                                  {formData.bankDetails
-                                    .passbookImgUrl instanceof File
-                                    ? formData.bankDetails.passbookImgUrl.name
-                                    : typeof formData.bankDetails
-                                        .passbookImgUrl === "string"
-                                    ? formData.bankDetails.passbookImgUrl
-                                        .split("/")
-                                        .pop()
-                                    : ""}
-                                </span>
-                                <button
-                                  type="button"
+                                <span
                                   onClick={() => openFileInNewTab(formData.bankDetails.passbookImgUrl)}
-                                  className="focus:outline-none px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200 ml-2"
-                                  title="View"
+                                  style={{ cursor: 'pointer', display: 'inline-block' }}
+                                  title="Open in new tab"
                                 >
-                                  View
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setBankPreview({ open: true, imgUrl: formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl, file: formData.bankDetails.passbookImgUrl instanceof File ? formData.bankDetails.passbookImgUrl : null })} className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200" title="View">
-                                  View
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      bankDetails: {
-                                        ...prev.bankDetails,
-                                        passbookImgUrl: null,
-                                      },
-                                    }))
-                                  }
-                                  className="ml-2 px-2 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100 border border-red-200"
-                                  title="Remove"
-                                >
-                                  Remove
-                                </button>
+                                  {formData.bankDetails.passbookImgUrl.type === 'application/pdf' || (typeof formData.bankDetails.passbookImgUrl === 'string' && formData.bankDetails.passbookImgUrl.endsWith('.pdf')) ? (
+                                    <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">PDF</span>
+                                  ) : (
+                                    <img src={formData.bankDetails.passbookImgUrl instanceof File ? URL.createObjectURL(formData.bankDetails.passbookImgUrl) : formData.bankDetails.passbookImgUrl} alt="Passbook preview" className="w-12 h-12 object-cover rounded border border-gray-300 cursor-pointer" />
+                                  )}
+                                </span>
+                                <button type="button" onClick={() => setFormData(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, passbookImgUrl: null } }))} className="text-red-500 hover:text-red-700 ml-2">Remove</button>
                               </div>
                             )}
                           </div>
