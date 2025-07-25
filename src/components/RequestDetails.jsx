@@ -55,8 +55,7 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
               <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
                 <div>
                   <p className="text-xs text-gray-500 mb-2">Old Value:</p>
-                  {change.fieldName.toLowerCase().includes("image") ||
-                  change.fieldName.toLowerCase().includes("aadhar") ? (
+                  {change.fieldName.toLowerCase().includes("image") ? (
                     change.oldValue ? (
                       <div className="space-y-2">
                         <a
@@ -111,8 +110,7 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-2">New Value:</p>
-                  {change.fieldName.toLowerCase().includes("image") ||
-                  change.fieldName.toLowerCase().includes("aadhar") ? (
+                  {change.fieldName.toLowerCase().includes("image") ? (
                     change.newValue ? (
                       <div className="space-y-2">
                         <a

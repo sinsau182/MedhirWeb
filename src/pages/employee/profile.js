@@ -101,6 +101,51 @@ function EmployeeProfilePage() {
   const [idProofValidationErrors, setIdProofValidationErrors] = useState({});
   const [idProofFieldTouched, setIdProofFieldTouched] = useState({});
 
+  useEffect(() => {
+    // Only run validation if in edit mode AND user is actually editing id proofs
+    if (!isPageInEditMode) return;
+
+    // Check if user is actually editing id proof fields
+    const isEditingIdProofs = Object.keys(idProofFieldTouched).some(
+      (key) => idProofFieldTouched[key]
+    );
+    if (!isEditingIdProofs) return;
+
+    const idProofFields = [
+      { key: "aadharNo", fileKey: "aadharImage" },
+      { key: "panNo", fileKey: "panImage" },
+      { key: "passport", fileKey: "passportImage" },
+      { key: "drivingLicense", fileKey: "drivingLicenseImage" },
+      { key: "voterId", fileKey: "voterIdImage" },
+    ];
+
+    let newErrors = {};
+    idProofFields.forEach(({ key, fileKey }) => {
+      const number = formData.idProofs[key];
+      const file = formData.idProofs[fileKey];
+
+      // Only validate if:
+      // 1. The field has been touched by the user
+      // 2. AND there's a number entered
+      // 3. AND the number is different from the original (or there's a new file)
+      const originalNumber = employeeById?.idProofs?.[key];
+      const hasNewFile = file instanceof File;
+      const hasNumberChanged = number !== originalNumber;
+
+      if (
+        idProofFieldTouched[key] &&
+        number &&
+        number.trim() !== "" &&
+        (hasNumberChanged || hasNewFile)
+      ) {
+        const numberError = validateIdProofField(key, number);
+        const conditionalError = validateIdProofConditional(key);
+        newErrors[key] = numberError || conditionalError || "";
+      }
+    });
+    setIdProofValidationErrors((prev) => ({ ...prev, ...newErrors }));
+  }, [formData.idProofs, idProofFieldTouched, isPageInEditMode, employeeById]);
+
   // Validation functions
   const validateAccountNumber = (value) => {
     if (!value || value.trim() === "") return "";
@@ -540,14 +585,7 @@ function EmployeeProfilePage() {
         : "";
 
     if (numberField) {
-      const conditionalError = validateIdProofConditional(numberField);
-      if (conditionalError) {
-        setIdProofValidationErrors((prev) => ({
-          ...prev,
-          [numberField]: conditionalError,
-        }));
-        setIdProofFieldTouched((prev) => ({ ...prev, [numberField]: true }));
-      }
+      setIdProofFieldTouched((prev) => ({ ...prev, [numberField]: true }));
     }
 
     toast.success(
@@ -690,8 +728,11 @@ function EmployeeProfilePage() {
     }
 
     // Compare bank details
-    if (employeeById.pendingUpdateRequest.accountHolderName && 
-      employeeById.pendingUpdateRequest.accountHolderName !== employeeById.bankDetails?.accountHolderName) {
+    if (
+      employeeById.pendingUpdateRequest.accountHolderName &&
+      employeeById.pendingUpdateRequest.accountHolderName !==
+        employeeById.bankDetails?.accountHolderName
+    ) {
       changes.bankDetails.push({
         field: "Account Holder Name",
         oldValue: employeeById.bankDetails?.accountHolderName,
@@ -743,17 +784,27 @@ function EmployeeProfilePage() {
       });
     }
     if (
-      employeeById.pendingUpdateRequest.upiPhoneNumber &&
-      employeeById.pendingUpdateRequest.upiPhoneNumber !==
-        employeeById.bankDetails?.upiPhoneNumber
+      employeeById.pendingUpdateRequest.upiContactName &&
+      employeeById.pendingUpdateRequest.upiContactName !==
+        employeeById.bankDetails?.upiContactName
     ) {
       changes.bankDetails.push({
-        field: "UPI Phone",
-        oldValue: employeeById.bankDetails?.upiPhoneNumber,
-        newValue: employeeById.pendingUpdateRequest.upiPhoneNumber,
+        field: "UPI Contact Name",
+        oldValue: employeeById.bankDetails?.upiContactName,
+        newValue: employeeById.pendingUpdateRequest.upiContactName,
       });
     }
-
+    if (
+      employeeById.pendingUpdateRequest.upiId &&
+      employeeById.pendingUpdateRequest.upiId !==
+        employeeById.bankDetails?.upiId
+    ) {
+      changes.bankDetails.push({
+        field: "UPI ID",
+        oldValue: employeeById.bankDetails?.upiId,
+        newValue: employeeById.pendingUpdateRequest.upiId,
+      });
+    }
     // Compare identity document numbers
     if (
       employeeById.pendingUpdateRequest.aadharNo &&
@@ -1053,7 +1104,7 @@ function EmployeeProfilePage() {
       return true;
     }
     if (
-      formData.bank.upiContactName !== employeeById.bankDetails?.upiPhoneNumber
+      formData.bank.upiContactName !== employeeById.bankDetails?.upiContactName
     ) {
       return true;
     }
@@ -1298,7 +1349,7 @@ function EmployeeProfilePage() {
           "bankName",
           "branchName",
           "upiId",
-          "upiPhoneNumber",
+          "upiContactName",
           // ID proof fields
           "aadharNo",
           "panNo",
@@ -1334,7 +1385,7 @@ function EmployeeProfilePage() {
         "bankName",
         "branchName",
         "upiId",
-        "upiPhoneNumber",
+        "upiContactName",
         // ID proof fields
         "aadharNo",
         "panNo",
@@ -1405,9 +1456,9 @@ function EmployeeProfilePage() {
       }
       if (
         formData.bank.upiContactName !==
-        employeeById.bankDetails?.upiPhoneNumber
+        employeeById.bankDetails?.upiContactName
       ) {
-        payload.upiPhoneNumber = formData.bank.upiContactName; // ✅ CORRECT
+        payload.upiContactName = formData.bank.upiContactName; // ✅ CORRECT
       }
 
       // Include ID proof fields that have changed
@@ -1705,13 +1756,13 @@ function EmployeeProfilePage() {
 
     // Mark field as touched and validate in real-time
     setIdProofFieldTouched((prev) => ({ ...prev, [field]: true }));
-    
+
     // Validate the number format immediately
     const numberError = validateIdProofField(field, processedValue);
-    
+
     // Validate conditional requirement
     const conditionalError = validateIdProofConditional(field);
-    
+
     const finalError = numberError || conditionalError;
     setIdProofValidationErrors((prev) => ({ ...prev, [field]: finalError }));
   };
@@ -1719,10 +1770,10 @@ function EmployeeProfilePage() {
   // Helper function to extract filename after underscore
   const getDisplayFileName = (fullFileName) => {
     if (!fullFileName) return "";
-    
+
     // Split by underscore
     const parts = fullFileName.split("_");
-    
+
     // Find the first part that doesn't look like a numeric ID
     // (numeric IDs are typically long numbers)
     for (let i = 0; i < parts.length; i++) {
@@ -1734,7 +1785,7 @@ function EmployeeProfilePage() {
         return parts.slice(i).join("_");
       }
     }
-    
+
     // If all parts look like numeric IDs, return the last part
     return parts[parts.length - 1] || fullFileName;
   };
@@ -1745,6 +1796,8 @@ function EmployeeProfilePage() {
     if (fileName.length <= maxLength) return fileName;
     return fileName.substring(0, maxLength - 3) + "...";
   };
+
+  // Add this useEffect after state declarations and before return
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -1872,7 +1925,9 @@ function EmployeeProfilePage() {
                               const file = e.target.files[0];
                               if (file) {
                                 if (file.size > 1024 * 1024 * 1) {
-                                  toast.error("File size must be less than 1MB");
+                                  toast.error(
+                                    "File size must be less than 1MB"
+                                  );
                                   return;
                                 }
                                 handleInputChange(
@@ -2325,7 +2380,12 @@ function EmployeeProfilePage() {
                           }) => (
                             <div
                               key={key}
-                              className="bg-gray-50 p-3 rounded-lg space-y-1 min-w-0"
+                              className={`p-3 rounded-lg space-y-1 min-w-0 ${
+                                idProofFieldTouched[key] &&
+                                idProofValidationErrors[key]
+                                  ? "bg-red-50 border-2 border-red-300"
+                                  : "bg-gray-50"
+                              }`}
                             >
                               <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                                 {label}
@@ -2454,7 +2514,12 @@ function EmployeeProfilePage() {
                                           )}
                                           <div className="flex flex-col">
                                             <span className="text-gray-700 font-medium truncate max-w-[120px]">
-                                              {truncateFileName(getDisplayFileName(formData.idProofs[fileKey].name))}
+                                              {truncateFileName(
+                                                getDisplayFileName(
+                                                  formData.idProofs[fileKey]
+                                                    .name
+                                                )
+                                              )}
                                             </span>
                                             <span className="text-xs text-gray-500">
                                               {(
@@ -2504,9 +2569,7 @@ function EmployeeProfilePage() {
                                   </div>
                                 ) : employeeById?.idProofs?.[imgUrlKey] ? (
                                   <div className="flex items-center space-x-2">
-                                    {isPDF(
-                                      employeeById.idProofs[imgUrlKey]
-                                    ) ? (
+                                    {isPDF(employeeById.idProofs[imgUrlKey]) ? (
                                       <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
                                         <span className="text-xs text-red-600 font-medium">
                                           PDF
@@ -2520,9 +2583,13 @@ function EmployeeProfilePage() {
                                       />
                                     )}
                                     <span className="text-sm text-gray-700 truncate">
-                                      {truncateFileName(getDisplayFileName(employeeById.idProofs[imgUrlKey]
-                                        .split("/")
-                                        .pop()))}
+                                      {truncateFileName(
+                                        getDisplayFileName(
+                                          employeeById.idProofs[imgUrlKey]
+                                            .split("/")
+                                            .pop()
+                                        )
+                                      )}
                                     </span>
                                   </div>
                                 ) : (
@@ -2667,7 +2734,8 @@ function EmployeeProfilePage() {
                             />
                           ) : (
                             <p className="text-base text-gray-900">
-                              {employeeById?.bankDetails?.accountHolderName || "-"}
+                              {employeeById?.bankDetails?.accountHolderName ||
+                                "-"}
                             </p>
                           )}
                           {fieldTouched.accountHolderName &&
@@ -2832,20 +2900,21 @@ function EmployeeProfilePage() {
                               </p>
                             )}
                         </div>
-                                                {/* Passbook Upload - Enabled in Edit Mode */}
-                                                <div className="border-t pt-4 mt-4">
+                        {/* Passbook Upload - Enabled in Edit Mode */}
+                        <div className="border-t pt-4 mt-4">
                           <div className="flex items-center justify-between mb-1.5">
                             <label className="text-sm text-gray-600 font-medium">
                               Bank Passbook
                             </label>
-                            {!isPageInEditMode && employeeById?.bankDetails?.passbookImgUrl && (
-                              <button
-                                onClick={openPassbookPreview}
-                                className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0"
-                              >
-                                <FiEye className="w-4 h-4 mr-1" /> View
-                              </button>
-                            )}
+                            {!isPageInEditMode &&
+                              employeeById?.bankDetails?.passbookImgUrl && (
+                                <button
+                                  onClick={openPassbookPreview}
+                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0"
+                                >
+                                  <FiEye className="w-4 h-4 mr-1" /> View
+                                </button>
+                              )}
                           </div>
                           {isPageInEditMode ? (
                             <div>
@@ -2895,7 +2964,11 @@ function EmployeeProfilePage() {
                                     )}
                                     <div className="flex flex-col">
                                       <span className="text-gray-700 font-medium truncate max-w-[150px]">
-                                        {truncateFileName(getDisplayFileName(formData.bank.passbookDoc.name))}
+                                        {truncateFileName(
+                                          getDisplayFileName(
+                                            formData.bank.passbookDoc.name
+                                          )
+                                        )}
                                       </span>
                                       <span className="text-xs text-gray-500">
                                         {(
@@ -2956,17 +3029,20 @@ function EmployeeProfilePage() {
                                   ) : (
                                     <img
                                       src={
-                                        employeeById.bankDetails
-                                          .passbookImgUrl
+                                        employeeById.bankDetails.passbookImgUrl
                                       }
                                       alt="Passbook preview"
                                       className="w-8 h-8 object-cover rounded border border-gray-300"
                                     />
                                   )}
                                   <span className="text-sm text-gray-700 truncate">
-                                    {truncateFileName(getDisplayFileName(employeeById.bankDetails.passbookImgUrl
-                                      .split("/")
-                                      .pop()))}
+                                    {truncateFileName(
+                                      getDisplayFileName(
+                                        employeeById.bankDetails.passbookImgUrl
+                                          .split("/")
+                                          .pop()
+                                      )
+                                    )}
                                   </span>
                                 </>
                               ) : (
@@ -3055,7 +3131,6 @@ function EmployeeProfilePage() {
                               </p>
                             )}
                         </div>
-
                       </div>
                     </div>
                   </div>
@@ -3865,4 +3940,4 @@ function EmployeeProfilePage() {
   );
 }
 
-export default withAuth(EmployeeProfilePage); 
+export default withAuth(EmployeeProfilePage);

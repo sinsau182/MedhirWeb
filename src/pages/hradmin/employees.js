@@ -137,7 +137,7 @@ function Employees() {
           { key: "bankName", label: "Bank Name" },
           { key: "branchName", label: "Branch Name" },
           { key: "upiId", label: "UPI ID" },
-          { key: "upiPhoneNumber", label: "UPI Number" },
+          { key: "upiContactName", label: "UPI Number" },
           { key: "passbookDoc", label: "Passbook Doc" },
         ];
       case "Leaves Policy":

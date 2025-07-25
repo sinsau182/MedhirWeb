@@ -336,12 +336,15 @@ const TruncatedText = ({ text, maxWidth, className = "", maxLength = 25 }) => {
 
 const ReportingManagerSelect = ({ label, options, value, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm("");
       }
     };
 
@@ -349,13 +352,42 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Debug: Log the original options to see duplicates
+  console.log('Original managers options:', options);
+  
+  // Remove duplicates and filter options based on search term
+  const uniqueOptions = options.filter((manager, index, self) => 
+    index === self.findIndex(m => m.employeeId === manager.employeeId)
+  );
+  
+  // Debug: Log unique options
+  console.log('Unique managers options:', uniqueOptions);
+  
+  const filteredOptions = uniqueOptions.filter((manager) =>
+    manager.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSelect = (manager) => {
+    onChange({
+      employeeId: manager.employeeId,
+      name: manager.name,
+    });
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
   return (
     <div className={inputGroupClass} ref={dropdownRef}>
       <label className={inputLabelClass}>{label}</label>
       <div className="relative">
         <div
           className={`${inputClass} flex items-center justify-between cursor-pointer min-h-[42px]`}
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            setIsOpen(!isOpen);
+            if (!isOpen) {
+              setTimeout(() => searchInputRef.current?.focus(), 100);
+            }
+          }}
         >
           <div className="flex flex-wrap gap-1 py-1">
             {value ? (
@@ -387,29 +419,45 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
         </div>
 
         {isOpen && (
-          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 min-w-[250px]">
-            {options.map((manager) => (
-              <div
-                key={manager.employeeId}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
-                }`}
-                onClick={() => {
-                  onChange({
-                    employeeId: manager.employeeId,
-                    name: manager.name,
-                  });
-                  setIsOpen(false);
-                }}
-              >
-                <TruncatedText
-                  text={manager.name}
-                  maxWidth="max-w-full"
-                  className="text-gray-700"
-                  maxLength={35}
-                />
-              </div>
-            ))}
+          <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 min-w-[250px] max-h-[320px]">
+            {/* Search Input */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-2">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search managers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+            
+            {/* Options List */}
+            <div className="max-h-[250px] overflow-y-auto">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((manager) => (
+                  <div
+                    key={manager.employeeId}
+                    className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
+                      value?.employeeId === manager.employeeId ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => handleSelect(manager)}
+                  >
+                    <TruncatedText
+                      text={manager.name}
+                      maxWidth="max-w-full"
+                      className="text-gray-700"
+                      maxLength={35}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-3 text-gray-500 text-sm text-center">
+                  No managers found
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -651,7 +699,7 @@ function EmployeeForm() {
       bankName: "",
       branchName: "",
       upiId: "",
-      upiPhoneNumber: "",
+      upiContactName: "",
       passbookImgUrl: null,
     },
     salaryDetails: {
@@ -731,7 +779,7 @@ function EmployeeForm() {
             bankName: parsedEmployee.bankDetails?.bankName || "",
             branchName: parsedEmployee.bankDetails?.branchName || "",
             upiId: parsedEmployee.bankDetails?.upiId || "",
-            upiPhoneNumber: parsedEmployee.bankDetails?.upiPhoneNumber || "",
+            upiContactName: parsedEmployee.bankDetails?.upiContactName || "",
             passbookImgUrl: parsedEmployee.bankDetails?.passbookImgUrl || "",
           },
           salaryDetails: {
@@ -816,7 +864,7 @@ function EmployeeForm() {
         (field === "accountHolderName" ||
           field === "bankName" ||
           field === "branchName" ||
-          field === "upiPhoneNumber"));
+          field === "upiContactName"));
 
     const cleanedValue =
       !isFreeSpaceField && typeof value === "string"
@@ -1067,7 +1115,7 @@ function EmployeeForm() {
     ];
     const upiFields = [
       { key: "upiId", label: "UPI ID" },
-      { key: "upiPhoneNumber", label: "UPI Contact Name" },
+      { key: "upiContactName", label: "UPI Contact Name" },
     ];
     const bankVals = formData.bankDetails;
     const anyAccountFilled = accountFields.some(
@@ -1137,7 +1185,7 @@ function EmployeeForm() {
         branchName: false,
         passbookImgUrl: false,
         upiId: false,
-        upiPhoneNumber: false,
+        upiContactName: false,
       }));
       setValidationErrors((prev) => ({
         ...prev,
@@ -1148,7 +1196,7 @@ function EmployeeForm() {
         branchName: "",
         passbookImgUrl: "",
         upiId: "",
-        upiPhoneNumber: "",
+        upiContactName: "",
       }));
     }
 
@@ -1211,7 +1259,7 @@ function EmployeeForm() {
             "branchName",
             "passbookImgUrl",
             "upiId",
-            "upiPhoneNumber",
+            "upiContactName",
           ],
         },
         { tab: "salary", fields: ["annualCtc", "basicSalary"] },
@@ -1670,7 +1718,7 @@ function EmployeeForm() {
       "branchName",
       "passbookImgUrl",
       "upiId",
-      "upiPhoneNumber",
+      "upiContactName",
     ];
     return requiredFields.every((field) => {
       const value = formData.bankDetails[field];
@@ -1790,6 +1838,7 @@ function EmployeeForm() {
         );
 
         if (response.data && Array.isArray(response.data)) {
+          console.log('API Response - Managers:', response.data);
           setManagers(response.data);
           if (response.data.length === 0) {
             toast.warning("No managers found for this department");
@@ -2030,7 +2079,7 @@ function EmployeeForm() {
       vals.bankName ||
       vals.branchName ||
       vals.passbookImgUrl;
-    const anyUPI = vals.upiId || vals.upiPhoneNumber;
+    const anyUPI = vals.upiId || vals.upiContactName;
     // If both anyAccount and anyUPI are filled, require all account fields and all UPI fields
     if (anyAccount && anyUPI) {
       if (!vals.accountNumber && key === "accountNumber") return "Required";
@@ -2064,17 +2113,17 @@ function EmployeeForm() {
       vals.bankName ||
       vals.branchName ||
       vals.passbookImgUrl;
-    const anyUPI = vals.upiId || vals.upiPhoneNumber;
+    const anyUPI = vals.upiId || vals.upiContactName;
     // If both anyAccount and anyUPI are filled, require all account fields and all UPI fields
     if (anyAccount && anyUPI) {
       if (!vals.upiId && key === "upiId") return "Required";
-      if (!vals.upiPhoneNumber && key === "upiPhoneNumber") return "Required";
+      if (!vals.upiContactName && key === "upiContactName") return "Required";
       return "";
     }
     // If only UPI section started
     if (anyUPI) {
       if (!vals.upiId && key === "upiId") return "Required";
-      if (!vals.upiPhoneNumber && key === "upiPhoneNumber") return "Required";
+      if (!vals.upiContactName && key === "upiContactName") return "Required";
       return "";
     }
     return "";
@@ -2136,7 +2185,7 @@ function EmployeeForm() {
     formData.bankDetails.branchName ||
     formData.bankDetails.passbookImgUrl;
   const anyUPIFieldFilled =
-    formData.bankDetails.upiId || formData.bankDetails.upiPhoneNumber;
+    formData.bankDetails.upiId || formData.bankDetails.upiContactName;
 
   // Helper to check if any personal field is filled
   const anyPersonalFieldFilled = Object.values(formData.employee).some(
@@ -4018,20 +4067,20 @@ function EmployeeForm() {
                             <input
                               className={
                                 inputClass +
-                                (upiError("upiPhoneNumber") ||
-                                ((bankTouched.upiPhoneNumber ||
+                                (upiError("upiContactName") ||
+                                ((bankTouched.upiContactName ||
                                   anyUPIFieldFilled) &&
                                   validateUPIName(
-                                    formData.bankDetails.upiPhoneNumber
+                                    formData.bankDetails.upiContactName
                                   ))
                                   ? " border-red-500"
                                   : "")
                               }
-                              value={formData.bankDetails.upiPhoneNumber || ""}
+                              value={formData.bankDetails.upiContactName || ""}
                               onChange={(e) =>
                                 handleInputChange(
                                   "bankDetails",
-                                  "upiPhoneNumber",
+                                  "upiContactName",
                                   e.target.value
                                 )
                               }
@@ -4043,18 +4092,18 @@ function EmployeeForm() {
                               onBlur={() =>
                                 setBankTouched((t) => ({
                                   ...t,
-                                  upiPhoneNumber: true,
+                                  upiContactName: true,
                                 }))
                               }
                             />
-                            {(bankTouched.upiPhoneNumber ||
+                            {(bankTouched.upiContactName ||
                               anyUPIFieldFilled) &&
                               validateUPIName(
-                                formData.bankDetails.upiPhoneNumber
+                                formData.bankDetails.upiContactName
                               ) && (
                                 <span className="text-xs text-red-500">
                                   {validateUPIName(
-                                    formData.bankDetails.upiPhoneNumber
+                                    formData.bankDetails.upiContactName
                                   )}
                                 </span>
                               )}
