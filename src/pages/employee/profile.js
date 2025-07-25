@@ -152,6 +152,7 @@ function EmployeeProfilePage() {
     setIdProofValidationErrors((prev) => ({ ...prev, ...newErrors }));
   }, [formData.idProofs, idProofFieldTouched, isPageInEditMode, employeeById]);
 
+  
   // Validation functions
   const validateAccountNumber = (value) => {
     if (!value || value.trim() === "") return "Account number is required";
@@ -423,48 +424,52 @@ function EmployeeProfilePage() {
       formData.bank.passbookDoc instanceof File
         ? formData.bank.passbookDoc
         : employeeById?.bankDetails?.passbookImgUrl;
-
+  
     if (!currentPassbook) {
       toast.error("No passbook document available to preview.");
       return;
     }
-
+  
     const previewUrl =
       currentPassbook instanceof File
         ? URL.createObjectURL(currentPassbook)
         : currentPassbook;
-
-    // Get the account number
+  
     const accountNumber =
       formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+  
     const title = accountNumber
       ? `Passbook Document - ${accountNumber}`
       : "Passbook Document";
-
-    setPassbookPreview({
-      open: true,
-      url: previewUrl,
-      file: currentPassbook instanceof File ? currentPassbook : null,
-    });
-    setPdfControls({ rotate: 0, zoom: 1 });
+  
+    // Open in new tab or window
+    const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+  
+    if (newWindow) {
+      newWindow.document.title = title;
+      newWindow.focus();
+    }
   };
+  
 
   const openIdProofPreview = (documentType, imgUrlKey) => {
     const currentDocument =
       formData.idProofs[`${documentType}Image`] instanceof File
         ? formData.idProofs[`${documentType}Image`]
         : employeeById?.idProofs?.[imgUrlKey];
-
+  
     if (!currentDocument) {
       toast.error(`No ${documentType} document available to preview.`);
       return;
     }
-
+  
+    // Generate a preview URL
     const previewUrl =
       currentDocument instanceof File
         ? URL.createObjectURL(currentDocument)
         : currentDocument;
-
+  
+    // Optionally set a descriptive window title
     const documentTitles = {
       aadhar: "Aadhar Card",
       pan: "PAN Card",
@@ -472,8 +477,7 @@ function EmployeeProfilePage() {
       drivingLicense: "Driving License",
       voterId: "Voter ID",
     };
-
-    // Get the document number
+  
     const numberField =
       documentType === "aadhar"
         ? "aadharNo"
@@ -486,20 +490,23 @@ function EmployeeProfilePage() {
         : documentType === "voterId"
         ? "voterId"
         : "";
-
+  
     const documentNumber =
       formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+  
     const title = documentTitles[documentType] || documentType;
     const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
-
-    setIdProofPreview({
-      open: true,
-      url: previewUrl,
-      file: currentDocument instanceof File ? currentDocument : null,
-      title: fullTitle,
-    });
-    setPdfControls({ rotate: 0, zoom: 1 });
+  
+    // Open in a new tab or window
+    const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+  
+    // Optionally give focus to the new tab
+    if (newWindow) {
+      newWindow.document.title = fullTitle;
+      newWindow.focus();
+    }
   };
+  
 
   const openUploadedIdProofPreview = (documentType, file) => {
     if (!file || !(file instanceof File)) {
@@ -596,27 +603,51 @@ function EmployeeProfilePage() {
 
       // Validate the number field immediately
       const numberValue = formData.idProofs[numberField] || "";
-      const numberError =
-        validateIdProofField(numberField, numberValue) ||
-        "This number is required when uploading a document.";
+      const originalNumber = employeeById?.idProofs?.[numberField];
+      const hasNumberChanged = numberValue !== originalNumber;
+      
       if (!numberValue.trim()) {
         setIdProofValidationErrors((prev) => ({
           ...prev,
           [numberField]: "This number is required when uploading a document.",
         }));
       } else {
-        setIdProofValidationErrors((prev) => ({
-          ...prev,
-          [numberField]: numberError,
-        }));
+        // Check if number format is valid
+        const numberError = validateIdProofField(numberField, numberValue);
+        if (numberError) {
+          setIdProofValidationErrors((prev) => ({
+            ...prev,
+            [numberField]: numberError,
+          }));
+        } else {
+          // Clear validation error if number is valid
+          setIdProofValidationErrors((prev) => ({
+            ...prev,
+            [numberField]: "",
+          }));
+        }
       }
     }
 
-    toast.success(
-      `${
-        documentType.charAt(0).toUpperCase() + documentType.slice(1)
-      } document uploaded successfully!`
-    );
+    // Show appropriate success message
+    const documentName = documentType.charAt(0).toUpperCase() + documentType.slice(1);
+    
+    if (numberField) {
+      const numberValue = formData.idProofs[numberField] || "";
+      const originalNumber = employeeById?.idProofs?.[numberField];
+      const hasNumberChanged = numberValue !== originalNumber;
+      
+      if (hasNumberChanged) {
+        toast.success(
+          `${documentName} document uploaded successfully! The new number will be verified with this document.`
+        );
+      } else {
+        toast.success(
+          `${documentName} document uploaded successfully!`
+        );
+      }
+    }
+    
     return true;
   };
 
@@ -1073,6 +1104,7 @@ function EmployeeProfilePage() {
   // Add a function to handle canceling edits
   const handleCancelClick = () => {
     setIsPageInEditMode(false);
+    
     // Clear all validation states
     setValidationErrors({});
     setFieldTouched({});
@@ -1083,8 +1115,47 @@ function EmployeeProfilePage() {
     setPersonalFieldTouched({});
     setEmailSuggestions([]);
     setShowEmailSuggestions(false);
-    // Optionally re-fetch data to reset form
-    fetchByEmployeeId();
+    
+    // Reset form data to original values (clearing all uploaded files and changes)
+    if (employeeById) {
+      setFormData({
+        employee: {
+          fatherName: employeeById?.fathersName || "",
+          gender: employeeById?.gender || "",
+          phone1: employeeById?.phone || "",
+          phone2: employeeById?.alternatePhone || "",
+          email: { personal: employeeById?.emailPersonal || "" },
+          currentAddress: employeeById?.currentAddress || "",
+          permanentAddress: employeeById?.permanentAddress || "",
+          profileImage: null, // Clear any uploaded profile image
+        },
+        idProofs: {
+          aadharNo: employeeById?.idProofs?.aadharNo || "",
+          panNo: employeeById?.idProofs?.panNo || "",
+          passport: employeeById?.idProofs?.passport || "",
+          drivingLicense: employeeById?.idProofs?.drivingLicense || "",
+          voterId: employeeById?.idProofs?.voterId || "",
+          // Clear all uploaded ID proof files
+          aadharImage: null,
+          panImage: null,
+          passportImage: null,
+          drivingLicenseImage: null,
+          voterIdImage: null,
+        },
+        bank: {
+          accountNumber: employeeById?.bankDetails?.accountNumber || "",
+          accountHolderName: employeeById?.bankDetails?.accountHolderName || "",
+          ifscCode: employeeById?.bankDetails?.ifscCode || "",
+          bankName: employeeById?.bankDetails?.bankName || "",
+          branchName: employeeById?.bankDetails?.branchName || "",
+          upiId: employeeById?.bankDetails?.upiId || "",
+          upiContactName: employeeById?.bankDetails?.upiContactName || "",
+          passbookDoc: null, // Clear any uploaded passbook document
+        },
+      });
+    }
+    
+    toast.info("All changes have been cancelled. Form has been reset to original values.");
   };
 
   // Add a function to check if any changes have been made
@@ -1201,7 +1272,7 @@ function EmployeeProfilePage() {
       return;
     }
 
-    // --- ID Proofs: If number is filled, require file ---
+    // --- ID Proofs: If number is filled or changed, require file ---
     const idProofFields = [
       { key: "aadharNo", fileKey: "aadharImage", urlKey: "aadharImgUrl" },
       { key: "panNo", fileKey: "panImage", urlKey: "pancardImgUrl" },
@@ -1215,25 +1286,46 @@ function EmployeeProfilePage() {
     ];
     let idProofValidationErrors = {};
     let firstMissingFileField = null;
+    let hasAnyIdProofChanges = false;
+    
     idProofFields.forEach(({ key, fileKey, urlKey }) => {
       const number = formData.idProofs[key];
       const file = formData.idProofs[fileKey];
-      const url = formData.idProofs[urlKey] || employeeById?.idProofs?.[urlKey];
-      // Only require file if number is filled and neither a new file nor an existing URL is present
-      if (
-        number &&
-        !(
-          file instanceof File ||
-          (typeof url === "string" && url.trim() !== "")
-        )
-      ) {
-        idProofValidationErrors[key] =
-          "Please upload the document for this number.";
-        if (!firstMissingFileField) firstMissingFileField = key;
+      const originalNumber = employeeById?.idProofs?.[key];
+      const hasNumberChanged = number !== originalNumber;
+      
+      // Check if any ID proof field has been modified
+      if (hasNumberChanged || file instanceof File) {
+        hasAnyIdProofChanges = true;
+      }
+      
+      // If number is filled, always require document upload (either new or existing)
+      if (number && number.trim() !== "") {
+        const hasNewFile = file instanceof File;
+        const hasExistingFile = employeeById?.idProofs?.[urlKey] && employeeById.idProofs[urlKey].trim() !== "";
+        
+        if (hasNumberChanged) {
+          // If number changed, require a new document upload for verification
+          if (!hasNewFile) {
+            idProofValidationErrors[key] = "Document upload is required to verify the new number.";
+            if (!firstMissingFileField) firstMissingFileField = key;
+          } else {
+            idProofValidationErrors[key] = "";
+          }
+        } else {
+          // If number didn't change, require either new file or existing file
+          if (!hasNewFile && !hasExistingFile) {
+            idProofValidationErrors[key] = "Please upload the document for this number.";
+            if (!firstMissingFileField) firstMissingFileField = key;
+          } else {
+            idProofValidationErrors[key] = "";
+          }
+        }
       } else {
         idProofValidationErrors[key] = "";
       }
     });
+    
     setIdProofValidationErrors(idProofValidationErrors);
 
     // Mark fields as touched so errors are displayed
@@ -1247,6 +1339,7 @@ function EmployeeProfilePage() {
       // Scroll to the field
       const el = document.querySelector(`[name='${firstMissingFileField}']`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("Please upload the required documents for verification before saving.");
       return;
     }
 
@@ -1660,6 +1753,7 @@ function EmployeeProfilePage() {
 
   const validateEmail = (value) => {
     if (!value || value.trim() === "") return "Email is required";
+    if (/\s/.test(value)) return "Email cannot contain spaces";
     if (value.trim().length < 3) return "Email must be at least 3 characters";
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(value)) return "Invalid email format";
@@ -1803,6 +1897,8 @@ function EmployeeProfilePage() {
 
   const validateIdProofConditional = (field) => {
     const numberValue = formData.idProofs[field];
+    const originalNumber = employeeById?.idProofs?.[field];
+    const hasNumberChanged = numberValue !== originalNumber;
 
     // Map field names to their corresponding file field names and URL keys
     const fieldMap = {
@@ -1834,16 +1930,35 @@ function EmployeeProfilePage() {
       };
       return `Please enter the ${fieldLabels[field]} for the uploaded document`;
     }
-    if (hasNumber && !hasFile) {
-      const fieldLabels = {
-        aadharNo: "Aadhar document",
-        panNo: "PAN document",
-        passport: "Passport document",
-        drivingLicense: "Driving license document",
-        voterId: "Voter ID document",
-      };
-      return `Please upload the ${fieldLabels[field]}`;
+    
+    if (hasNumber) {
+      if (hasNumberChanged) {
+        // If number changed, require a new document upload for verification
+        if (!hasNewFile) {
+          const fieldLabels = {
+            aadharNo: "Aadhar document",
+            panNo: "PAN document",
+            passport: "Passport document",
+            drivingLicense: "Driving license document",
+            voterId: "Voter ID document",
+          };
+          return `Document upload is required to verify the new ${fieldLabels[field].toLowerCase()}. This is mandatory for saving changes.`;
+        }
+      } else {
+        // If number didn't change, require either new file or existing file
+        if (!hasFile) {
+          const fieldLabels = {
+            aadharNo: "Aadhar document",
+            panNo: "PAN document",
+            passport: "Passport document",
+            drivingLicense: "Driving license document",
+            voterId: "Voter ID document",
+          };
+          return `Please upload the ${fieldLabels[field]} for verification.`;
+        }
+      }
     }
+    
     return "";
   };
 
@@ -2328,7 +2443,7 @@ function EmployeeProfilePage() {
                                     )}
 
                                   {/* Email Suggestions Dropdown */}
-                                  {showEmailSuggestions &&
+                                  {/* {showEmailSuggestions &&
                                     emailSuggestions.length > 0 && (
                                       <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
                                         {emailSuggestions.map(
@@ -2353,7 +2468,7 @@ function EmployeeProfilePage() {
                                           )
                                         )}
                                       </div>
-                                    )}
+                                    )} */}
                                 </div>
                               ) : (
                                 <p className="text-base text-gray-900">
@@ -2448,6 +2563,14 @@ function EmployeeProfilePage() {
                           </h3>
                         </div>
                       </div>
+                      {isPageInEditMode && (
+                        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                          <p className="text-sm text-orange-700">
+                            <strong>Important:</strong> When you change any document number, you must upload the corresponding document for verification. 
+                            Document upload is mandatory for saving changes. Changed numbers will be marked with "Verification Required".
+                          </p>
+                        </div>
+                      )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[
                           {
@@ -2502,8 +2625,18 @@ function EmployeeProfilePage() {
                                   : "bg-gray-50"
                               }`}
                             >
-                              <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                                {label}
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium flex items-center justify-between">
+                                <span>{label}</span>
+                                {isPageInEditMode && formData.idProofs[key] && formData.idProofs[key] !== employeeById?.idProofs?.[key] && (
+                                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                                    Verification Required
+                                  </span>
+                                )}
+                                {isPageInEditMode && formData.idProofs[key] && formData.idProofs[key] !== employeeById?.idProofs?.[key] && !formData.idProofs[fileKey] && (
+                                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full ml-1">
+                                    Upload Required
+                                  </span>
+                                )}
                               </label>
                               {/* Number field - Editable in edit mode */}
                               {isPageInEditMode ? (
@@ -3359,17 +3492,33 @@ function EmployeeProfilePage() {
                       <p className="text-xs text-gray-500">Old Value:</p>
                       {doc.isImage ? (
                         doc.oldValue ? (
-                          <a
-                            href={doc.oldValue}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={doc.oldValue}
-                              alt={`Old ${doc.field}`}
-                              className="h-16 rounded border"
-                            />
-                          </a>
+                          doc.oldValue.toLowerCase().endsWith('.pdf') ? (
+                            <div className="flex flex-col items-center">
+                              <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 mb-1">
+                                <span className="text-sm text-red-600 font-bold">PDF</span>
+                              </div>
+                              <a
+                                href={doc.oldValue}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-red-600 hover:text-red-800"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                          ) : (
+                            <a
+                              href={doc.oldValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={doc.oldValue}
+                                alt={`Old ${doc.field}`}
+                                className="h-16 rounded border"
+                              />
+                            </a>
+                          )
                         ) : (
                           <span className="italic text-gray-400">(empty)</span>
                         )
@@ -3383,19 +3532,37 @@ function EmployeeProfilePage() {
                       <p className="text-xs text-gray-500">New Value:</p>
                       {doc.isImage ? (
                         doc.newValue ? (
-                          <a
-                            href={doc.newValue}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={doc.newValue}
-                              alt={`New ${doc.field}`}
-                              className="h-16 rounded border"
-                            />
-                          </a>
+                          doc.newValue.toLowerCase().endsWith('.pdf') ? (
+                            <div className="flex flex-col items-center">
+                              <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 mb-1">
+                                <span className="text-sm text-red-600 font-bold">PDF</span>
+                              </div>
+                              <a
+                                href={doc.newValue}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-red-600 hover:text-red-800"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                          ) : (
+                            <a
+                              href={doc.newValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={doc.newValue}
+                                alt={`New ${doc.field}`}
+                                className="h-16 rounded border"
+                              />
+                            </a>
+                          )
                         ) : (
-                          <span className="italic text-gray-400">(empty)</span>
+                          <p className="text-green-700 break-words">
+                            {doc.newValue || "(empty)"}
+                          </p>
                         )
                       ) : (
                         <p className="text-green-700 break-words">

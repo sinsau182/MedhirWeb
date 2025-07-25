@@ -55,33 +55,57 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
               <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center">
                 <div>
                   <p className="text-xs text-gray-500 mb-2">Old Value:</p>
-                  {change.fieldName.toLowerCase().includes("image") ? (
+                  {change.fieldName.toLowerCase().includes("image") || change.fieldName.toLowerCase().includes("pdf") ? (
                     change.oldValue ? (
                       <div className="space-y-2">
-                        <a
-                          href={change.oldValue}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          <img
-                            src={change.oldValue}
-                            alt={`Old ${change.fieldName}`}
-                            className="w-full h-32 object-contain rounded border bg-white p-2"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "/placeholder-image.png";
-                            }}
-                          />
-                        </a>
-                        <a
-                          href={change.oldValue}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          View Full Image
-                        </a>
+                        {change.oldValue.toLowerCase().endsWith('.pdf') ? (
+                          <div className="space-y-2">
+                            <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4">
+                              <svg className="w-12 h-12 text-red-500 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs text-gray-600 font-medium">PDF Document</span>
+                            </div>
+                            <a
+                              href={change.oldValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-red-600 hover:text-red-800 flex items-center justify-center"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                              </svg>
+                              View PDF
+                            </a>
+                          </div>
+                        ) : (
+                          <>
+                            <a
+                              href={change.oldValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={change.oldValue}
+                                alt={`Old ${change.fieldName}`}
+                                className="w-full h-32 object-contain rounded border bg-white p-2"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "/placeholder-image.png";
+                                }}
+                              />
+                            </a>
+                            <a
+                              href={change.oldValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              View Full Image
+                            </a>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <span className="italic text-gray-400">(empty)</span>
@@ -110,33 +134,57 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 mb-2">New Value:</p>
-                  {change.fieldName.toLowerCase().includes("image") ? (
+                  {change.fieldName.toLowerCase().includes("image") || change.fieldName.toLowerCase().includes("pdf") ? (
                     change.newValue ? (
                       <div className="space-y-2">
-                        <a
-                          href={change.newValue}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block"
-                        >
-                          <img
-                            src={change.newValue}
-                            alt={`New ${change.fieldName}`}
-                            className="w-full h-32 object-contain rounded border bg-white p-2"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "/placeholder-image.png";
-                            }}
-                          />
-                        </a>
-                        <a
-                          href={change.newValue}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          View Full Image
-                        </a>
+                        {change.newValue.toLowerCase().endsWith('.pdf') ? (
+                          <div className="space-y-2">
+                            <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4">
+                              <svg className="w-12 h-12 text-red-500 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs text-gray-600 font-medium">PDF Document</span>
+                            </div>
+                            <a
+                              href={change.newValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-red-600 hover:text-red-800 flex items-center justify-center"
+                            >
+                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                              </svg>
+                              View PDF
+                            </a>
+                          </div>
+                        ) : (
+                          <>
+                            <a
+                              href={change.newValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={change.newValue}
+                                alt={`New ${change.fieldName}`}
+                                className="w-full h-32 object-contain rounded border bg-white p-2"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = "/placeholder-image.png";
+                                }}
+                              />
+                            </a>
+                            <a
+                              href={change.newValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              View Full Image
+                            </a>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <span className="italic text-gray-400">(empty)</span>
