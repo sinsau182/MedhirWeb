@@ -103,8 +103,13 @@ function EmployeeProfilePage() {
   const [idProofFieldModified, setIdProofFieldModified] = useState({});
 
   useEffect(() => {
-    // Only run validation if in edit mode AND user is actually editing id proofs
-    if (!isPageInEditMode) return;
+    // Clear all validation errors when not in edit mode
+    if (!isPageInEditMode) {
+      setIdProofValidationErrors({});
+      setIdProofFieldTouched({});
+      setIdProofFieldModified({});
+      return;
+    }
 
     // Check if user is actually editing id proof fields
     const isEditingIdProofs = Object.keys(idProofFieldTouched).some(
@@ -1065,6 +1070,11 @@ function EmployeeProfilePage() {
     setFieldTouched({});
     setIdProofValidationErrors({});
     setIdProofFieldTouched({});
+    setIdProofFieldModified({});
+    setPersonalValidationErrors({});
+    setPersonalFieldTouched({});
+    setEmailSuggestions([]);
+    setShowEmailSuggestions(false);
     // Optionally re-fetch data to reset form
     fetchByEmployeeId();
   };
@@ -1552,6 +1562,16 @@ function EmployeeProfilePage() {
           result.message || "Update request submitted successfully."
         );
         setIsPageInEditMode(false);
+        // Clear all validation states on successful save
+        setValidationErrors({});
+        setFieldTouched({});
+        setIdProofValidationErrors({});
+        setIdProofFieldTouched({});
+        setIdProofFieldModified({});
+        setPersonalValidationErrors({});
+        setPersonalFieldTouched({});
+        setEmailSuggestions([]);
+        setShowEmailSuggestions(false);
         fetchByEmployeeId();
       } else {
         toast.error(result.message || `Failed: ${response.statusText}`);
