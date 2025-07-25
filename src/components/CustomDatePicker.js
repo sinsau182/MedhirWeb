@@ -124,7 +124,14 @@ const CustomDatePicker = ({
 
   const isDateDisabled = (date) => {
     if (!date) return true;
-    if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+    
+    // Calculate the cutoff date (first day of previous month)
+    const today = new Date();
+    const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    
+    // Allow dates from the first day of previous month onwards
+    if (date < previousMonth) return true;
+    
     if (disabledDates.some(disabledDate => isSameDay(new Date(disabledDate), date))) return true;
     if (frozenDates.some(frozenDate => isSameDay(frozenDate, date))) return true;
 
@@ -173,6 +180,44 @@ const CustomDatePicker = ({
 
   const isDateSelected = (date) => {
     return selectedDateObjects.some(selected => isSameDay(selected.date, date));
+  };
+
+  const isDateWithLeaveApplied = (date) => {
+    // Check if the date is in the disabledDates array (which contains dates with leave applied)
+    return disabledDates.some(disabledDate => isSameDay(new Date(disabledDate), date));
+  };
+
+  const getDateClassName = (date) => {
+    if (!date) return 'invisible';
+    
+    let baseClasses = 'relative p-1.5 text-center cursor-pointer rounded-md transition-all duration-200';
+    
+    if (isDateDisabled(date)) {
+      if (isDateWithLeaveApplied(date)) {
+        // Date with leave applied - show in blue
+        return `${baseClasses} bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-not-allowed`;
+      }
+      
+      // Check if it's a weekly off
+      if (!isCompOff && weeklyOffs && weeklyOffs.length > 0) {
+        const dayName = format(date, 'EEEE'); // 'Sunday', 'Monday', etc.
+        if (weeklyOffs.includes(dayName)) {
+          return `${baseClasses} text-gray-300 cursor-not-allowed`;
+        }
+      }
+      
+      return `${baseClasses} text-gray-300 cursor-not-allowed`;
+    }
+    
+    if (isDateSelected(date)) {
+      return `${baseClasses} bg-blue-500 text-white hover:bg-blue-600`;
+    }
+    
+    if (frozenDates.some(frozenDate => isSameDay(frozenDate, date))) {
+      return `${baseClasses} bg-gray-100 text-gray-700`;
+    }
+    
+    return `${baseClasses} hover:bg-blue-50 text-gray-700`;
   };
 
   const handleDateClick = (date) => {
@@ -407,21 +452,15 @@ const CustomDatePicker = ({
                 {getDaysInMonth(currentMonth).map((date, index) => (
                   <div
                     key={index}
-                    className={`
-                      relative p-1.5 text-center cursor-pointer rounded-md transition-all duration-200
-                      ${!date ? 'invisible' : ''}
-                      ${isDateDisabled(date) ? 'text-gray-300 cursor-not-allowed' : 
-                        isDateSelected(date) ? 'bg-blue-500 text-white hover:bg-blue-600' :
-                        'hover:bg-blue-50 text-gray-700'
-                      }
-                      ${frozenDates.some(frozenDate => isSameDay(frozenDate, date)) ? 'bg-gray-100' : ''}
-                    `}
+                    className={getDateClassName(date)}
                     onClick={(e) => {
                       e.stopPropagation();
                       date && handleDateClick(date);
                     }}
                     onMouseEnter={() => setHoverDate(date)}
                     onMouseLeave={() => setHoverDate(null)}
+                    title={date && isDateWithLeaveApplied(date) ? "Leave already applied for this date" : 
+                           date && !isCompOff && weeklyOffs && weeklyOffs.length > 0 && weeklyOffs.includes(format(date, 'EEEE')) ? "Weekly off" : ""}
                   >
                     {date ? (
                       <>

@@ -1,5 +1,6 @@
 import React from "react";
-import { Search } from "lucide-react";
+import { Search, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const AttendanceTable = ({
   dates,
@@ -22,6 +23,15 @@ const AttendanceTable = ({
   selectedYear,
   statusFilterRef,
   setIsStatusFilterOpen,
+  onCellClick,
+  setSelectedStatuses,
+  popoverOpenCell,
+  // Calendar props
+  isCalendarOpen,
+  toggleCalendar,
+  calendarRef,
+  handleMonthSelection,
+  isSingleEmployeeModalOpen,
 }) => {
   // Helper function to get attendance status for a specific date from the new API format
   const getAttendanceStatusForDate = (attendanceRecord, dateString) => {
@@ -35,7 +45,7 @@ const AttendanceTable = ({
 
     // Check full leave dates
     if (attendanceData.fullLeaveDates?.includes(dateString)) {
-      return "PL";
+      return "AL";
     }
 
     // Check half day leave dates
@@ -133,7 +143,7 @@ const AttendanceTable = ({
               case "P":
                 value = true;
                 break;
-              case "PL":
+              case "AL":
                 value = true;
                 break;
               case "A":
@@ -209,7 +219,7 @@ const AttendanceTable = ({
               case "P":
                 value = true;
                 break;
-              case "PL":
+              case "AL":
                 value = true;
                 break;
               case "A":
@@ -268,11 +278,99 @@ const AttendanceTable = ({
         </div>
       )}
       {!selectedEmployeeId && selectedDate && (
-        <div className="mb-2 text-gray-700 font-medium text-base">
-          Showing attendance of the employees on{" "}
-          <span className="font-semibold">
-            {selectedDate} {selectedMonth} {selectedYear}
-          </span>
+        <div className="flex items-center gap-4 mb-2">
+          <div className="text-gray-700 font-medium text-base">
+            Showing attendance of the employees on{" "}
+            <span className="font-semibold">
+              {selectedDate} {selectedMonth} {selectedYear}
+            </span>
+          </div>
+          {/* Calendar - Hide when Single Employee Month is open */}
+          {!isSingleEmployeeModalOpen && (
+            <div className="relative" ref={calendarRef}>
+              <Badge
+                variant="outline"
+                className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                onClick={toggleCalendar}
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="font-medium text-sm">
+                  {selectedYear}-{selectedMonth}
+                </span>
+              </Badge>
+              {isCalendarOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                  <div className="p-3 border-b flex justify-between items-center">
+                    <div className="text-sm font-medium text-gray-700">
+                      {selectedYear}
+                    </div>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => {
+                        const newYear = e.target.value;
+                        if (newYear === "2024") {
+                          handleMonthSelection("Aug", newYear);
+                        } else {
+                          handleMonthSelection("Jan", newYear);
+                        }
+                      }}
+                      className="ml-2 border rounded px-2 py-1 text-sm"
+                    >
+                      {[2024, 2025].map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 p-3">
+                    {(() => {
+                      const currentYear = new Date().getFullYear();
+                      const currentMonthIdx = new Date().getMonth();
+                      let months = [
+                        "Jan",
+                        "Feb",
+                        "Mar",
+                        "Apr",
+                        "May",
+                        "Jun",
+                        "Jul",
+                        "Aug",
+                        "Sep",
+                        "Oct",
+                        "Nov",
+                        "Dec",
+                      ];
+                      let startIdx = 0;
+                      let endIdx = 11;
+                      if (parseInt(selectedYear) === 2024) {
+                        startIdx = 7;
+                        endIdx = 11;
+                      } else if (parseInt(selectedYear) === 2025) {
+                        startIdx = 0;
+                        endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                      }
+                      return months.slice(startIdx, endIdx + 1).map((month) => (
+                        <button
+                          key={month}
+                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                            month === selectedMonth.slice(0, 3)
+                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                              : "hover:bg-gray-50 text-gray-700"
+                          }`}
+                          onClick={() =>
+                            handleMonthSelection(month, selectedYear)
+                          }
+                        >
+                          {month}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       {/* Summary Cards in Single Row */}
@@ -283,8 +381,8 @@ const AttendanceTable = ({
             case "P":
               summaryKey = "totalPresent";
               break;
-            case "PL":
-              summaryKey = "totalPresentWithLeave";
+            case "AL":
+              summaryKey = "totalApprovedLeave";
               break;
             case "A":
               summaryKey = "totalAbsent";
@@ -477,14 +575,10 @@ const AttendanceTable = ({
                 `}
                 style={{
                   background: isActive
-                    ? status.value === "P/A"
-                      ? "linear-gradient(90deg, #CCFFCC 50%, #FFCCCC 50%)"
-                      : status.color
+                    ? status.color
                     : "#f3f4f6",
                   borderColor: isActive
-                    ? status.value === "P/A"
-                      ? "transparent"
-                      : status.color
+                    ? status.color
                     : "#e5e7eb",
                   fontWeight: 400,
                   boxShadow: isActive
@@ -496,10 +590,7 @@ const AttendanceTable = ({
                 <div
                   className="w-3 h-3 rounded"
                   style={{
-                    background:
-                      status.value === "P/A"
-                        ? "linear-gradient(90deg, #CCFFCC 50%, #FFCCCC 50%)"
-                        : status.color,
+                    background: status.color,
                   }}
                 ></div>
                 <span>
@@ -591,7 +682,7 @@ const AttendanceTable = ({
                 </td>
 
                 {/* Scrollable Attendance Cells */}
-                {dates.map((date, index) => {
+                {dates.map((date, dateIdx) => {
                   const day = date.day;
                   const employeeAttendanceForMonth = filteredEmployees.find(
                     (emp) => emp.id === employee.id
@@ -628,7 +719,7 @@ const AttendanceTable = ({
                           case "P":
                             value = true;
                             break;
-                          case "PL":
+                          case "AL":
                             value = true;
                             break;
                           case "A":
@@ -660,25 +751,43 @@ const AttendanceTable = ({
                     }
                   } else if (
                     employeeAttendanceForMonth &&
-                    employeeAttendanceForMonth.length > index
+                    employeeAttendanceForMonth.length > dateIdx
                   ) {
                     // If no specific date is selected, use the full month attendance from filteredEmployees
-                    attendanceForDay = employeeAttendanceForMonth[index];
+                    attendanceForDay = employeeAttendanceForMonth[dateIdx];
                   }
 
+                  // Build date string for this cell
+                  const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+                  const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+                  const cellKey = `${employee.id}-${dateString}`;
                   return (
                     <td
-                      key={index}
+                      key={dateIdx}
                       data-date-cell
                       className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${getAttendanceColor(
                         attendanceForDay.label
                       )}`}
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click
-                        handleDateClick(day);
-                      }}
                     >
-                      {attendanceForDay.label?.toUpperCase()}
+                      {attendanceForDay.label ? (
+                        <button
+                          type="button"
+                          className="w-full h-full flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-400 rounded cursor-pointer transition hover:shadow-sm"
+                          style={{ background: "transparent" }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (onCellClick && (!popoverOpenCell || popoverOpenCell !== cellKey)) {
+                              onCellClick(employee, dateString, attendanceForDay.label, e);
+                            }
+                          }}
+                          tabIndex={0}
+                          title={`Edit attendance for ${employee.name} on ${dateString}`}
+                          disabled={popoverOpenCell === cellKey}
+                        >
+                          {attendanceForDay.label?.toUpperCase()}
+                        </button>
+                      ) : null}
                     </td>
                   );
                 })}

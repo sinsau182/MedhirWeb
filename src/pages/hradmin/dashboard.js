@@ -96,16 +96,14 @@ const Overview = () => {
   // Add useEffect to fetch current day's attendance and calculate summary
   useEffect(() => {
     const today = new Date();
-    const currentDay = today.getDate();
     const currentMonth = today.toLocaleString("default", { month: "short" });
     const currentYear = today.getFullYear().toString();
 
-    // Fetch attendance data for the current day
+    // Fetch attendance data for the current month
     dispatch(
       fetchAllEmployeeAttendanceOneMonth({
         month: currentMonth,
         year: currentYear,
-        date: currentDay, // Fetch only for the current day
         role: "HRADMIN",
       })
     );
@@ -117,15 +115,30 @@ const Overview = () => {
       let presentCount = 0;
       let absentCount = 0;
       const today = new Date();
-      const currentDay = today.getDate().toString(); // Need day as string key
+      const currentDay = today.getDate();
+      const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
+      const currentYear = today.getFullYear();
+      
+      // Create the date string in YYYY-MM-DD format
+      const currentDateString = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(currentDay).padStart(2, "0")}`;
 
       attendance.forEach((employeeRecord) => {
-        const status = employeeRecord.dailyAttendance?.[currentDay];
-        if (status === "P") {
-          presentCount++;
-        } else if (status === "A" || status === "LOP") {
-          // Consider LOP as Absent for this summary? Adjust if needed.
-          absentCount++;
+        const attendanceData = employeeRecord?.attendance;
+        if (attendanceData) {
+          // Check if employee is present on current date
+          if (attendanceData.presentDates?.includes(currentDateString) ||
+              attendanceData.fullLeaveDates?.includes(currentDateString) ||
+              attendanceData.fullCompoffDates?.includes(currentDateString)) {
+            presentCount++;
+          }
+          // Check if employee is absent on current date
+          else if (attendanceData.absentDates?.includes(currentDateString)) {
+            absentCount++;
+          }
+          // If not in any array, consider as absent (or you could exclude from count)
+          else {
+            absentCount++;
+          }
         }
       });
 

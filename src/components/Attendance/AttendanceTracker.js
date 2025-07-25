@@ -8,16 +8,24 @@ import React, {
 import { Search, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import { fetchAllEmployeeAttendanceOneMonth, fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 import { 
   markSingleEmployeeMonthAttendance, 
   markAllEmployeesDateAttendance,
+  markManualAttendance,
   clearError,
   clearSuccess 
 } from "@/redux/slices/manualAttendanceSlice";
 import { toast } from "sonner";
 import AttendanceTable from "./AttendanceTable";
 import LeaveTable from "./LeaveTable";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 
 function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   const dispatch = useDispatch();
@@ -57,6 +65,48 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Separate state for Single Employee Month Modal dropdowns
+  const [singleEmployeeMarkAsStatus, setSingleEmployeeMarkAsStatus] = useState("");
+  const [singleEmployeeApplyToScope, setSingleEmployeeApplyToScope] = useState("");
+  
+  // Separate state for All Employees Date Modal dropdowns
+  const [allEmployeesMarkAsStatus, setAllEmployeesMarkAsStatus] = useState("");
+  const [allEmployeesApplyToScope, setAllEmployeesApplyToScope] = useState("");
+  
+  // Add state for employee dropdown
+  const [employeeDropdownSearch, setEmployeeDropdownSearch] = useState("");
+  const [employeeDropdownInput, setEmployeeDropdownInput] = useState("");
+  
+  // Attendance cell popover state
+  const [cellPopoverOpen, setCellPopoverOpen] = useState(false);
+  const [cellPopoverEmployee, setCellPopoverEmployee] = useState(null);
+  const [cellPopoverDate, setCellPopoverDate] = useState(null);
+  const [cellPopoverStatus, setCellPopoverStatus] = useState("");
+  const [cellPopoverPosition, setCellPopoverPosition] = useState({ top: 0, left: 0 });
+  const cellPopoverAnchorRef = useRef(null);
+  const [popoverOpenCell, setPopoverOpenCell] = useState(null);
+  
+  // Universal close function for all modals and popups
+  const closeAllModals = () => {
+    setIsSingleEmployeeModalOpen(false);
+    setIsAllEmployeesDateModalOpen(false);
+    setSelectedEmployeeForMonth(null);
+    setMonthAttendanceData({});
+    setAllEmployeesAttendanceData({});
+    setAllEmployeesSearch("");
+    setSingleEmployeeMarkAsStatus("");
+    setSingleEmployeeApplyToScope("");
+    setAllEmployeesMarkAsStatus("");
+    setAllEmployeesApplyToScope("");
+    setEmployeeDropdownSearch("");
+    setEmployeeDropdownInput("");
+    setIsCalendarOpen(false);
+    setIsStatusFilterOpen(false);
+    setIsDepartmentFilterOpen(false);
+    setPopoverOpenCell(null);
+    setCellPopoverOpen(false);
+  };
+  
   // Single Employee Month Modal State
   const [isSingleEmployeeModalOpen, setIsSingleEmployeeModalOpen] = useState(false);
   const [selectedEmployeeForMonth, setSelectedEmployeeForMonth] = useState(null);
@@ -75,18 +125,38 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   // Constants/Options
   const statusOptions = [
     { value: "P", label: "Present", color: "#CCFFCC" },
-    { value: "PL", label: "Present with Leave", color: "#E5E5CC" },
+    { value: "AL", label: "Approved Leave", color: "#E5E5CC" },
     { value: "PH", label: "Present on Holiday", color: "#5cbf85" },
     { value: "P/A", label: "Half Day", color: "#FFFFCC" },
     { value: "PH/A", label: "Half Day on Holiday", color: "#ffcc80" },
     { value: "A", label: "Absent", color: "#FFCCCC" },
     { value: "LOP", label: "Loss of Pay", color: "#e57373" },
     { value: "H", label: "Holiday", color: "#E0E0E0" },
-    {
-      value: "P/LOP",
-      label: "Present Half Day on Loss of Pay",
-      color: "#A89EF6",
-    },
+    { value: "P/LOP", label: "Present Half Day on Loss of Pay", color: "#A89EF6" },
+  ];
+
+  const applyToOptions = [
+    { value: "all", label: "All Days" },
+    { value: "except_holiday", label: "All Except Holidays" },
+    { value: "unmarked", label: "All Unmarked Days" },
+    { value: "working", label: "All Working Days" },
+    { value: "weekends", label: "All Weekends" },
+  ];
+
+  // Separate Apply To options for Single Employee Month (applying to days)
+  const singleEmployeeApplyToOptions = [
+    { value: "all", label: "All Days" },
+    { value: "except_holiday", label: "All Except Holidays" },
+    { value: "unmarked", label: "All Unmarked Days" },
+    { value: "working", label: "All Working Days" },
+    { value: "weekends", label: "All Weekends" },
+  ];
+
+  // Separate Apply To options for All Employees Date (applying to employees)
+  const allEmployeesApplyToOptions = [
+    { value: "all", label: "All Employees" },
+    { value: "unmarked", label: "All Unmarked Employees" },
+    { value: "except_holiday", label: "All Except Holiday Status" },
   ];
 
   // Combined useEffect for click outside handling
@@ -112,13 +182,31 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       ) {
         setIsDepartmentFilterOpen(false);
       }
+
+      // Close cell popover when clicking outside
+      if (cellPopoverOpen) {
+        const popoverElement = document.querySelector('[data-cell-popover]');
+        const clickedElement = event.target;
+        
+        // Check if click is outside the popover
+        if (popoverElement && !popoverElement.contains(clickedElement)) {
+          // Don't close if clicking on dropdown elements
+          const isDropdownElement = clickedElement.closest('[data-radix-popper-content-wrapper]') || 
+                                   clickedElement.closest('[data-radix-popper-trigger]') ||
+                                   clickedElement.closest('[role="menuitemradio"]');
+          
+          if (!isDropdownElement) {
+            closePopover();
+          }
+        }
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [cellPopoverOpen]);
 
   // Effects
   useEffect(() => {
@@ -186,6 +274,36 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       dispatch(clearError());
     }
   }, [manualAttendanceSuccess, manualAttendanceError, manualAttendanceMessage, dispatch]);
+
+  useEffect(() => {
+    // Refresh attendance data when both modals are closed (returning to Attendance Tracker)
+    if (!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen) {
+      // Convert month name to numeric month (1-12)
+      const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+      const numericMonth = monthIndex + 1;
+      const year = selectedYear;
+      let apiParams = { month: numericMonth, year, role };
+      dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+    }
+  }, [isSingleEmployeeModalOpen, isAllEmployeesDateModalOpen, selectedMonth, selectedYear, role, dispatch]);
+
+  // Close cell popover when switching views or opening modals
+  useEffect(() => {
+    if (isSingleEmployeeModalOpen || isAllEmployeesDateModalOpen || activeTab !== "Attendance Tracker") {
+      setCellPopoverOpen(false);
+      setPopoverOpenCell(null);
+    }
+  }, [isSingleEmployeeModalOpen, isAllEmployeesDateModalOpen, activeTab]);
+
+  // Reset dropdown states when All Employees Date modal opens
+  useEffect(() => {
+    if (isAllEmployeesDateModalOpen) {
+      setAllEmployeesMarkAsStatus("");
+      setAllEmployeesApplyToScope("");
+      setAllEmployeesAttendanceData({});
+      setAllEmployeesSearch("");
+    }
+  }, [isAllEmployeesDateModalOpen]);
 
   // Callbacks
   const generateAttendanceData = useCallback(
@@ -270,7 +388,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
             case "P":
               value = true;
               break;
-            case "PL":
+            case "AL":
               value = true;
               break;
             case "A":
@@ -348,7 +466,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     if (status === null) return "bg-gray-100";
     const upperStatus = status.toUpperCase();
     if (upperStatus === "P") return "bg-[#CCFFCC]";
-    if (upperStatus === "PL") return "bg-[#E5E5CC]";
+    if (upperStatus === "AL") return "bg-[#E5E5CC]";
     if (upperStatus === "P/A") return "bg-[#FFFFCC]";
     if (upperStatus === "A") return "bg-[#FFCCCC]";
     if (upperStatus === "H") return "bg-[#E0E0E0]";
@@ -387,10 +505,30 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   );
 
   const handleMonthSelection = useCallback((month, year) => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    const currentDay = currentDate.getDate();
+    
+    // Get the month index for the selected month
+    const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+    
+    // Determine the date to select immediately
+    let dateToSelect;
+    if (year === currentYear.toString() && monthIndex === currentMonth) {
+      // Coming back to current month - always select current date
+      dateToSelect = currentDay;
+    } else {
+      // Going to a different month - always select the last date of that month
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+      dateToSelect = daysInMonth;
+    }
+    
+    // Update all states immediately
     setSelectedMonth(month);
     setSelectedYear(year);
+    setSelectedDate(dateToSelect);
     setIsCalendarOpen(false);
-    setSelectedDate(null);
     setSelectedEmployeeId(null);
   }, []);
 
@@ -400,6 +538,22 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     );
     setSelectedDate(null);
   }, []);
+
+  // Helper to determine if a color is light or dark (for text contrast)
+  function isColorLight(hex) {
+    if (!hex) return true;
+    // Remove # if present
+    hex = hex.replace('#', '');
+    // Convert 3-digit to 6-digit
+    if (hex.length === 3) {
+      hex = hex.split('').map(x => x + x).join('');
+    }
+    const r = parseInt(hex.substr(0,2),16);
+    const g = parseInt(hex.substr(2,2),16);
+    const b = parseInt(hex.substr(4,2),16);
+    // Perceived brightness
+    return (r*0.299 + g*0.587 + b*0.114) > 186;
+  }
 
   // Memoized values
   const filteredEmployees = useMemo(
@@ -453,13 +607,90 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployeeForMonth(employee);
-    // Initialize attendance data for the month
-    const dates = generateMonthDates(monthYear.month, monthYear.year);
-    const initialData = {};
-    dates.forEach(({ day }) => {
-      initialData[day] = "";
+    
+    // Fetch existing attendance data for this employee
+    const monthIndex = new Date(`${monthYear.month} 1, ${monthYear.year}`).getMonth();
+    const numericMonth = monthIndex + 1;
+    
+    dispatch(fetchOneEmployeeAttendanceOneMonth({
+      employeeId: employee.id,
+      month: monthYear.month,
+      year: monthYear.year
+    })).then((result) => {
+      if (!result.error && result.payload) {
+        // Initialize attendance data with existing data
+        const dates = generateMonthDates(monthYear.month, monthYear.year);
+        const initialData = {};
+        
+        // Helper function to get attendance status for a specific date
+        const getAttendanceStatusForDate = (dateString) => {
+          const attendanceData = result.payload;
+          if (!attendanceData) return null;
+
+          // Check present dates
+          if (attendanceData.presentDates?.includes(dateString)) {
+            return "P";
+          }
+
+          // Check full leave dates
+          if (attendanceData.fullLeaveDates?.includes(dateString)) {
+            return "PL";
+          }
+
+          // Check half day leave dates
+          if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
+            return "P/A";
+          }
+
+          // Check full comp-off dates
+          if (attendanceData.fullCompoffDates?.includes(dateString)) {
+            return "P";
+          }
+
+          // Check half comp-off dates
+          if (attendanceData.halfCompoffDates?.includes(dateString)) {
+            return "P/A";
+          }
+
+          // Check weekly off dates
+          if (attendanceData.weeklyOffDates?.includes(dateString)) {
+            return "H";
+          }
+
+          // Check absent dates
+          if (attendanceData.absentDates?.includes(dateString)) {
+            return "A";
+          }
+
+          return null;
+        };
+
+        dates.forEach(({ day }) => {
+          const dateString = `${monthYear.year}-${String(numericMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const status = getAttendanceStatusForDate(dateString);
+          initialData[day] = status || "";
+        });
+        
+        setMonthAttendanceData(initialData);
+      } else {
+        // If no existing data, initialize with empty values
+        const dates = generateMonthDates(monthYear.month, monthYear.year);
+        const initialData = {};
+        dates.forEach(({ day }) => {
+          initialData[day] = "";
+        });
+        setMonthAttendanceData(initialData);
+      }
+    }).catch((error) => {
+      console.error("Error fetching employee attendance:", error);
+      // Initialize with empty values on error
+      const dates = generateMonthDates(monthYear.month, monthYear.year);
+      const initialData = {};
+      dates.forEach(({ day }) => {
+        initialData[day] = "";
+      });
+      setMonthAttendanceData(initialData);
     });
-    setMonthAttendanceData(initialData);
   };
 
   const setAllDaysStatus = (status) => {
@@ -655,7 +886,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       let totalHalfDayOnHoliday = 0;
       let totalLOP = 0;
       let totalPresentOnLOP = 0;
-      let totalPresentWithLeave = 0;
+      let totalApprovedLeave = 0;
 
       const dataForSummary =
         dateToSummarize !== null
@@ -678,8 +909,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
               case "P":
                 totalPresent++;
                 break;
-              case "PL":
-                totalPresentWithLeave++;
+              case "AL":
+                totalApprovedLeave++;
                 break;
               case "A":
                 totalAbsent++;
@@ -711,8 +942,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                 case "P":
                   totalPresent++;
                   break;
-                case "PL":
-                  totalPresentWithLeave++;
+                case "AL":
+                  totalApprovedLeave++;
                   break;
                 case "A":
                   totalAbsent++;
@@ -750,7 +981,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         totalHalfDayOnHoliday,
         totalLOP,
         totalPresentOnLOP,
-        totalPresentWithLeave,
+        totalApprovedLeave,
       };
     },
     []
@@ -796,6 +1027,73 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     }
   }, [filteredEmployees, calculateAttendanceSummary, summaryDate, selectedEmployeeId]);
 
+  // Handler to open popover from AttendanceTable
+  const handleCellClick = (employee, date, status, event) => {
+    setCellPopoverEmployee(employee);
+    setCellPopoverDate(date);
+    setCellPopoverStatus(status);
+    setCellPopoverOpen(true);
+    setPopoverOpenCell(`${employee.id}-${date}`);
+    // Position popover just above the clicked cell button, centered horizontally
+    const cellRect = event.target.getBoundingClientRect();
+    const tableContainer = document.getElementById('attendance-table-container');
+    let containerRect = { left: 0, top: 0 };
+    if (tableContainer) {
+      containerRect = tableContainer.getBoundingClientRect();
+    }
+    // Default popover size
+    const popoverWidth = 320;
+    const popoverHeight = 180;
+    // Calculate left so popover is centered above the cell
+    let left = cellRect.left - containerRect.left + (cellRect.width / 2) - (popoverWidth / 2);
+    // Calculate top so popover is just above the cell
+    let top = cellRect.top - containerRect.top - popoverHeight - 8;
+    // If not enough space above, show below
+    if (top < 0) {
+      top = cellRect.bottom - containerRect.top + 8;
+    }
+    // Clamp left to container bounds
+    left = Math.max(8, Math.min(left, (containerRect.width - popoverWidth - 8)));
+    setCellPopoverPosition({ top, left });
+    cellPopoverAnchorRef.current = event.target;
+  };
+
+  // When closing popover, clear popoverOpenCell
+  const closePopover = () => {
+    setCellPopoverOpen(false);
+    setPopoverOpenCell(null);
+  };
+
+  // Handler to save status change
+  const handleCellPopoverSave = () => {
+    if (!cellPopoverEmployee || !cellPopoverDate) return;
+    const employeeId = cellPopoverEmployee.id;
+    const date = cellPopoverDate;
+    let presentDates = [];
+    let absentDates = [];
+    if (["P", "PL", "PH", "P/A", "PH/A", "P/LOP"].includes(cellPopoverStatus)) {
+      presentDates = [date];
+    } else if (["A", "LOP"].includes(cellPopoverStatus)) {
+      absentDates = [date];
+    } else {
+      presentDates = [];
+      absentDates = [];
+    }
+    const payload = {
+      employeeIds: [employeeId],
+      presentDates,
+      absentDates
+    };
+    dispatch(markManualAttendance(payload)).then(() => {
+      setCellPopoverOpen(false);
+      const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+      const numericMonth = monthIndex + 1;
+      const year = selectedYear;
+      let apiParams = { month: numericMonth, year, role };
+      dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+    });
+  };
+
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen text-red-500">
@@ -811,134 +1109,549 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         <h1 className="text-xl font-semibold text-gray-800">
           Attendance Management
         </h1>
-        {/* Calendar */}
-        <div className="relative ml-auto" ref={calendarRef}>
-          <Badge
-            variant="outline"
-            className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-            onClick={toggleCalendar}
-          >
-            <Calendar className="h-4 w-4" />
-            <span className="font-medium text-sm">
-              {selectedYear}-{selectedMonth}
-            </span>
-          </Badge>
-          {isCalendarOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-              <div className="p-3 border-b flex justify-between items-center">
-                <div className="text-sm font-medium text-gray-700">
-                  {selectedYear}
-                </div>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => {
-                    setSelectedYear(e.target.value);
-                    if (e.target.value === "2024") {
-                      setSelectedMonth("Aug");
-                    } else {
-                      setSelectedMonth("Jan");
-                    }
-                  }}
-                  className="ml-2 border rounded px-2 py-1 text-sm"
-                >
-                  {[2024, 2025].map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 p-3">
-                {(() => {
-                  const currentYear = new Date().getFullYear();
-                  const currentMonthIdx = new Date().getMonth();
-                  let months = [
-                    "Jan",
-                    "Feb",
-                    "Mar",
-                    "Apr",
-                    "May",
-                    "Jun",
-                    "Jul",
-                    "Aug",
-                    "Sep",
-                    "Oct",
-                    "Nov",
-                    "Dec",
-                  ];
-                  let startIdx = 0;
-                  let endIdx = 11;
-                  if (parseInt(selectedYear) === 2024) {
-                    startIdx = 7;
-                    endIdx = 11;
-                  } else if (parseInt(selectedYear) === 2025) {
-                    startIdx = 0;
-                    endIdx = currentYear === 2025 ? currentMonthIdx : 11;
-                  }
-                  return months.slice(startIdx, endIdx + 1).map((month) => (
-                    <button
-                      key={month}
-                      className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                        month === selectedMonth.slice(0, 3)
-                          ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                          : "hover:bg-gray-50 text-gray-700"
-                      }`}
-                      onClick={() =>
-                        handleMonthSelection(month, selectedYear)
-                      }
-                    >
-                      {month}
-                    </button>
-                  ));
-                })()}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* Manual Attendance Buttons */}
-      <div className="flex gap-4 mb-6">
-        <button
-          className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:from-purple-700 hover:to-purple-800 hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-          onClick={() => setIsSingleEmployeeModalOpen(true)}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span>Single Employee Month</span>
-        </button>
-        
-        <button
-          className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:from-blue-700 hover:to-blue-800 hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-          onClick={() => setIsAllEmployeesDateModalOpen(true)}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <span>All Employees Date</span>
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-6 mb-6">
-        {["Attendance Tracker", "Leave Tracker"].map((tab) => (
+      {/* Manual Attendance Buttons/Toggle */}
+      {!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen ? (
+        // Show buttons when no modal is active
+        <div className="flex gap-4 mb-6">
           <button
-            key={tab}
+            className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => {
+              closeAllModals();
+              setIsSingleEmployeeModalOpen(true);
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span>Single Employee Month</span>
+          </button>
+          
+          <button
+            className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => {
+              closeAllModals();
+              setIsAllEmployeesDateModalOpen(true);
+            }}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span>All Employees Date</span>
+          </button>
+                </div>
+      ) : (
+        // Show toggle interface when a modal is active
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isSingleEmployeeModalOpen
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              onClick={() => {
+                closeAllModals();
+                setIsSingleEmployeeModalOpen(true);
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>Single Employee Month</span>
+            </button>
+            
+            <button
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                isAllEmployeesDateModalOpen
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              onClick={() => {
+                closeAllModals();
+                setIsAllEmployeesDateModalOpen(true);
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>All Employees Date</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Regular Tabs - Only show when no modal is active */}
+      {!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen && (
+        <div className="flex gap-6 mb-6">
+          <button
             className={`px-4 py-2 text-sm font-medium ${
-              activeTab === tab
+              activeTab === "Attendance Tracker"
                 ? "text-blue-600 border-b-2 border-blue-600"
                 : "text-gray-600 hover:text-blue-600"
             }`}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => setActiveTab("Attendance Tracker")}
           >
-            {tab}
+            Attendance Tracker
           </button>
-        ))}
+          <button
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === "Leave Tracker"
+                ? "text-blue-600 border-b-2 border-blue-600"
+                : "text-gray-600 hover:text-blue-600"
+            }`}
+            onClick={() => setActiveTab("Leave Tracker")}
+          >
+            Leave Tracker
+          </button>
+        </div>
+      )}
+
+      {/* Content Area (relative for overlays) */}
+      <div className="relative" id="attendance-table-container">
+        {isSingleEmployeeModalOpen ? (
+          <div className="bg-white rounded-2xl shadow-xl p-4 w-full h-full flex flex-col border border-gray-100">
+            {/* Modern Header - More Compact */}
+            <div className="pb-4 mb-4 border-b border-gray-100">
+              {/* Employee Info Row - Top */}
+              <div className="flex items-center justify-between mb-4">
+                {selectedEmployeeForMonth ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
+                      {selectedEmployeeForMonth.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-semibold text-gray-800 text-base">{selectedEmployeeForMonth.name}</span>
+                    <span className="text-xs text-gray-500">{selectedEmployeeForMonth.id} • {selectedEmployeeForMonth.department}</span>
+                  </div>
+                ) : (
+                  <div></div> // Empty div to maintain flex layout
+                )}
+
+                {/* Back and Close Buttons */}
+                <div className="flex items-center gap-2">
+                  {selectedEmployeeForMonth && (
+                    <button
+                      onClick={() => setSelectedEmployeeForMonth(null)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Back
+                    </button>
+                  )}
+                  <button
+                    onClick={closeAllModals}
+                    className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Divider between employee info and controls */}
+              <div className="border-t border-gray-200 mb-4"></div>
+
+              {/* Controls Row - Only show when employee is selected */}
+              {selectedEmployeeForMonth && (
+                <div className="flex items-center gap-3 mb-4">
+                  {/* Date Selector */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">Date</label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="px-3 py-1 border border-gray-300 rounded-md text-xs bg-blue-500 hover:bg-blue-600 text-white shadow-sm flex items-center justify-between min-w-[120px] transition-colors h-[28px]">
+                          <span className="flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>{monthYear.month} {monthYear.year}</span>
+                          </span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-64 p-3 rounded-lg shadow-lg border border-gray-200">
+                        {/* Year Selector */}
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                          <div className="text-sm font-medium text-gray-700">{monthYear.year}</div>
+                          <select
+                            value={monthYear.year}
+                            onChange={(e) => setMonthYear(prev => ({ ...prev, year: e.target.value }))}
+                            className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {[2024, 2025].map(year => (
+                              <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+
+                        {/* Month Grid */}
+                        <div className="grid grid-cols-3 gap-1">
+                          {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(month => {
+                            const fullMonthName = {
+                              "Jan": "January", "Feb": "February", "Mar": "March", "Apr": "April",
+                              "May": "May", "Jun": "June", "Jul": "July", "Aug": "August",
+                              "Sep": "September", "Oct": "October", "Nov": "November", "Dec": "December"
+                            }[month];
+                            const isSelected = fullMonthName === monthYear.month;
+                            
+                            return (
+                    <button
+                      key={month}
+                                onClick={() => setMonthYear(prev => ({ ...prev, month: fullMonthName }))}
+                                className={`p-2 text-sm rounded-md transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-100 text-blue-600 font-medium"
+                                    : "hover:bg-gray-100 text-gray-700"
+                                }`}
+                    >
+                      {month}
+                    </button>
+                            );
+                          })}
+              </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+            </div>
+
+                  {/* Mark As Dropdown */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">Mark As</label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="px-3 py-1 border border-gray-300 rounded-md text-xs bg-white shadow-sm flex items-center justify-between min-w-[120px] hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors h-[28px]">
+                          <span className="flex items-center gap-2 text-gray-700 truncate">
+                            {singleEmployeeMarkAsStatus ? (
+                              <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: statusOptions.find(opt => opt.value === singleEmployeeMarkAsStatus)?.color }}></span>
+                            ) : null}
+                            {singleEmployeeMarkAsStatus ? statusOptions.find(opt => opt.value === singleEmployeeMarkAsStatus)?.label : "Select"}
+                          </span>
+                          <svg className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-[240px] rounded-md shadow-lg border border-gray-200 bg-white">
+                        <DropdownMenuRadioGroup value={singleEmployeeMarkAsStatus} onValueChange={(value) => {
+                          setSingleEmployeeMarkAsStatus(value);
+                          console.log("Single Employee Mark As Status changed to:", value);
+                        }}>
+                          {statusOptions.map(opt => (
+                            <DropdownMenuRadioItem 
+                              key={opt.value} 
+                              value={opt.value} 
+                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log("Single Employee Mark As dropdown item clicked:", opt.value);
+                                setSingleEmployeeMarkAsStatus(opt.value);
+                              }}
+                            >
+                              <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: opt.color }}></span>
+                              {opt.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+        </div>
+
+                  {/* Apply To Dropdown */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">Apply To</label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="px-3 py-1 border border-gray-300 rounded-md text-xs bg-white shadow-sm flex items-center justify-between min-w-[120px] hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors h-[28px]">
+                          <span className="text-gray-700 truncate">{singleEmployeeApplyToScope ? singleEmployeeApplyToOptions.find(opt => opt.value === singleEmployeeApplyToScope)?.label : "Select"}</span>
+                          <svg className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-[240px] rounded-md shadow-lg border border-gray-200 bg-white">
+                        <DropdownMenuRadioGroup value={singleEmployeeApplyToScope} onValueChange={setSingleEmployeeApplyToScope}>
+                          {singleEmployeeApplyToOptions.map(opt => (
+                            <DropdownMenuRadioItem 
+                              key={opt.value} 
+                              value={opt.value} 
+                              className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                            >
+                              {opt.label}
+                            </DropdownMenuRadioItem>
+                          ))}
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
       </div>
 
-      {/* Conditionally render based on active tab */}
-      {activeTab === "Attendance Tracker" ? (
+                  {/* Apply Button */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">&nbsp;</label>
+          <button
+                      className="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
+                      onClick={() => {
+                        const status = singleEmployeeMarkAsStatus;
+                        const scope = singleEmployeeApplyToScope;
+                        if (!status || !scope) {
+                          toast.error("Please select both status and scope.");
+                          return;
+                        }
+                        const dates = generateMonthDates(monthYear.month, monthYear.year);
+                        let daysToApply = [];
+                        if (scope === "all") {
+                          daysToApply = dates.map(d => d.day);
+                        } else if (scope === "except_holiday") {
+                          daysToApply = dates.filter(d => monthAttendanceData[d.day] !== "H").map(d => d.day);
+                        } else if (scope === "unmarked") {
+                          daysToApply = dates.filter(d => !monthAttendanceData[d.day]).map(d => d.day);
+                        } else if (scope === "working") {
+                          daysToApply = dates.filter(d => d.weekday !== "Sun" && d.weekday !== "Sat").map(d => d.day);
+                        } else if (scope === "weekends") {
+                          daysToApply = dates.filter(d => d.weekday === "Sun" || d.weekday === "Sat").map(d => d.day);
+                        }
+                        const newData = { ...monthAttendanceData };
+                        daysToApply.forEach(day => { newData[day] = status; });
+                        setMonthAttendanceData(newData);
+                      }}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {!selectedEmployeeForMonth ? (
+              <div className="flex flex-col items-center space-y-8">
+                <h3 className="text-lg font-semibold text-gray-800 mb-0 text-center">Select Employee</h3>
+                {/* Employee Dropdown with Search */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="w-[350px] px-3 py-2.5 border border-gray-200 rounded-lg shadow-sm flex items-center gap-2 bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-300">
+                      {employeeDropdownSearch && filteredEmployees.length > 0 ? (
+                        <>
+                          <span className="font-semibold text-gray-800 text-sm">{filteredEmployees.find(e => e.id === employeeDropdownSearch)?.name || "Select employee..."}</span>
+                          <span className="ml-auto text-gray-400">▼</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-gray-400 text-sm">Search or select employee...</span>
+                          <span className="ml-auto text-gray-400">▼</span>
+                        </>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[350px] p-2 rounded-lg shadow-lg border border-gray-200">
+                    <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-gray-50 rounded-md">
+                      <Search className="h-3.5 w-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search employees..."
+                        value={employeeDropdownInput}
+                        onChange={e => setEmployeeDropdownInput(e.target.value)}
+                        className="w-full px-2 py-1 border-none outline-none bg-transparent text-gray-800 text-xs"
+                      />
+                    </div>
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                      {filteredEmployees
+                        .filter(e =>
+                          e.name.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                          e.id.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                          (e.department && e.department.toLowerCase().includes(employeeDropdownInput.toLowerCase()))
+                        )
+                        .map(employee => (
+                          <DropdownMenuRadioItem
+                            key={employee.id}
+                            value={employee.id}
+                            className="flex items-center gap-2 px-2 py-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all border-b border-gray-50 last:border-b-0"
+                            onSelect={() => {
+                              setEmployeeDropdownSearch(employee.id);
+                              setTimeout(() => handleEmployeeSelect(employee), 200);
+                            }}
+                          >
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
+                              {employee.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-800 truncate text-sm">{employee.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{employee.id} • {employee.department}</div>
+                            </div>
+                          </DropdownMenuRadioItem>
+                        ))}
+                      {filteredEmployees.filter(e =>
+                        e.name.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                        e.id.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                        (e.department && e.department.toLowerCase().includes(employeeDropdownInput.toLowerCase()))
+                      ).length === 0 && (
+                        <div className="text-gray-400 text-center py-4 text-xs">No employees found</div>
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <div className="animate-fade-in-up space-y-3">
+
+
+                {/* Compact Calendar Grid */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
+                  <h4 className="font-semibold text-gray-800 text-sm mb-2">Mark Attendance for {monthYear.month} {monthYear.year}</h4>
+                  <div className="grid grid-cols-7 gap-2">
+                    {/* Day Headers */}
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+                      <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+                        {day}
+                      </div>
+                    ))}
+                    {/* Calendar Days */}
+                    {(() => {
+                      const dates = generateMonthDates(monthYear.month, monthYear.year);
+                      const firstDate = new Date(`${monthYear.year}-${String(new Date(`${monthYear.month} 1, ${monthYear.year}`).getMonth() + 1).padStart(2, "0")}-01`);
+                      const firstDayOfWeek = firstDate.getDay();
+                      const daysInMonth = dates.length;
+                      const totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
+                      const cells = [];
+                      let dateIdx = 0;
+                      for (let i = 0; i < totalCells; i++) {
+                        if (i < firstDayOfWeek || dateIdx >= daysInMonth) {
+                          // Blank cell
+                          cells.push(<div key={`empty-${i}`} className="p-4 min-h-[60px] bg-white border border-gray-200 rounded" />);
+                        } else {
+                          const { day, isWeekend, isFuture, weekday } = dates[dateIdx];
+                          // Use selectedEmployeeForMonth.weeklyOffs (array of weekday names) for week offs
+                          const weeklyOffs = selectedEmployeeForMonth?.weeklyOffs || [];
+                          const isWeekOff = weeklyOffs.includes(weekday);
+                          
+                          // Get existing attendance data for this day
+                          let value = monthAttendanceData[day] || "";
+                          
+                          // If no existing data and it's a week off, set to Holiday
+                          if (!value && isWeekOff) {
+                            value = statusOptions.find(opt => opt.value === 'H')?.value || "";
+                          }
+                          
+                          // If value changed for week off, update state (only on first render for that day)
+                          if (isWeekOff && !monthAttendanceData[day]) {
+                            setTimeout(() => setDayStatus(day, value), 0);
+                          }
+                          cells.push(
+                            <div
+                              key={day}
+                              className={`flex flex-col items-center justify-center p-2 border rounded min-h-[60px] transition-all ${
+                                isFuture
+                                  ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-100'
+                                  : isWeekOff
+                                  ? 'bg-blue-50 border-blue-200 hover:border-blue-300'
+                                  : 'bg-white border-gray-200 hover:border-blue-400 hover:shadow-sm'
+                              }`}
+                            >
+                              <div className="font-bold text-gray-800 text-base mb-2">{day}</div>
+                              {!isFuture && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    {(() => {
+                                      const selected = statusOptions.find(opt => opt.value === value);
+                                      const bgColor = selected ? selected.color : '#fff';
+                                      const textColor = selected ? (isColorLight(selected.color) ? 'text-gray-800' : 'text-white') : 'text-gray-400';
+                                      return (
+                                        <button
+                                          className={`w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors ${textColor}`}
+                                          style={{ backgroundColor: bgColor }}
+                                        >
+                                          <span className="flex items-center gap-2">
+                                            {selected ? (
+                                              <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: selected.color }}></span>
+                                            ) : null}
+                                            <span>
+                                              {selected ? selected.label : "Select"}
+                                            </span>
+                                          </span>
+                                          <svg className={`w-4 h-4 ml-2 flex-shrink-0 ${isColorLight(bgColor) ? 'text-gray-600' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                          </svg>
+          </button>
+                                      );
+                                    })()}
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" side="top" className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto">
+                                    <DropdownMenuRadioGroup value={value} onValueChange={(val) => {
+                                      console.log("Calendar day status changed to:", val, "for day:", day);
+                                      setDayStatus(day, val);
+                                    }}>
+                                      <DropdownMenuRadioItem value="" className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400">
+                                        -
+                                      </DropdownMenuRadioItem>
+                                      {statusOptions.map(opt => (
+                                        <DropdownMenuRadioItem 
+                                          key={opt.value} 
+                                          value={opt.value} 
+                                          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            console.log("Calendar dropdown item clicked:", opt.value, "for day:", day);
+                                            setDayStatus(day, opt.value);
+                                          }}
+                                        >
+                                          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: opt.color }}></span>
+                                          {opt.label}
+                                        </DropdownMenuRadioItem>
+                                      ))}
+                                    </DropdownMenuRadioGroup>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                          );
+                          dateIdx++;
+                        }
+                      }
+                      return cells;
+                    })()}
+                  </div>
+      </div>
+
+                {/* Compact Footer */}
+                {selectedEmployeeForMonth && (
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">{Object.values(monthAttendanceData).filter(status => status !== "").length}</span> days marked
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeAllModals}
+                        className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-base font-medium hover:bg-gray-100 hover:border-gray-400 transition-colors shadow-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveMonthAttendance}
+                        disabled={manualAttendanceLoading}
+                        className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {manualAttendanceLoading ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Attendance"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "Attendance Tracker" ? (
         <AttendanceTable
           dates={dates}
           statusOptions={statusOptions}
@@ -960,6 +1673,15 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           selectedYear={selectedYear}
           statusFilterRef={statusFilterRef}
           setIsStatusFilterOpen={setIsStatusFilterOpen}
+            onCellClick={(employee, date, status, event) => handleCellClick(employee, date, status, event)}
+            setSelectedStatuses={setSelectedStatuses}
+            popoverOpenCell={popoverOpenCell}
+            // Calendar props
+            isCalendarOpen={isCalendarOpen}
+            toggleCalendar={toggleCalendar}
+            calendarRef={calendarRef}
+            handleMonthSelection={handleMonthSelection}
+            isSingleEmployeeModalOpen={isSingleEmployeeModalOpen}
         />
       ) : (
         <LeaveTable
@@ -979,455 +1701,320 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         />
       )}
 
-      {/* Single Employee Month Modal */}
-      {isSingleEmployeeModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-purple-700 text-white">
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-                <h2 className="text-xl font-bold">Single Employee Month Attendance</h2>
+        {/* All Employees Date Playcard - moved here! */}
+        {isAllEmployeesDateModalOpen && (
+          <div className="absolute inset-0 z-40 flex flex-col w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
+              {/* Title */}
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
+                  A
+                </div>
+                <span className="font-semibold text-gray-800 text-base">All Employees Date</span>
               </div>
+
+              {/* Close Button */}
               <button
-                onClick={() => {
-                  setIsSingleEmployeeModalOpen(false);
-                  setSelectedEmployeeForMonth(null);
-                  setMonthAttendanceData({});
-                }}
-                className="text-white hover:text-gray-200 transition-colors"
+                onClick={closeAllModals}
+                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              {/* Step 1: Employee Selection */}
-              {!selectedEmployeeForMonth ? (
-                <div className="space-y-6">
-                  <div className="text-center">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Step 1: Select Employee</h3>
-                    <p className="text-gray-600">Choose an employee to mark attendance for the entire month</p>
-                  </div>
-                  
-                  {/* Employee Search */}
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search employees..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      onChange={(e) => {
-                        // TODO: Implement search functionality
-                      }}
-                    />
-                    <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-
-                  {/* Employee List */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                    {filteredEmployees.map((employee) => (
-                      <div
-                        key={employee.id}
-                        onClick={() => handleEmployeeSelect(employee)}
-                        className="p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 cursor-pointer transition-all duration-200 hover:shadow-md"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span className="text-purple-600 font-semibold text-sm">
-                              {employee.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-800 truncate">{employee.name}</h4>
-                            <p className="text-sm text-gray-600 truncate">{employee.id}</p>
-                            <p className="text-xs text-gray-500 truncate">{employee.department}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                /* Step 2: Month Selection and Attendance Marking */
-                <div className="space-y-6">
-                  {/* Selected Employee Info */}
-                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center">
-                          <span className="text-purple-700 font-bold text-lg">
-                            {selectedEmployeeForMonth.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-800">{selectedEmployeeForMonth.name}</h3>
-                          <p className="text-sm text-gray-600">{selectedEmployeeForMonth.id} • {selectedEmployeeForMonth.department}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedEmployeeForMonth(null)}
-                        className="text-purple-600 hover:text-purple-700 text-sm font-medium"
-                      >
-                        Change Employee
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Month/Year Selection */}
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                      <select
-                        value={monthYear.month}
-                        onChange={(e) => setMonthYear(prev => ({ ...prev, month: e.target.value }))}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      >
-                        {[
-                          "January", "February", "March", "April", "May", "June",
-                          "July", "August", "September", "October", "November", "December"
-                        ].map(month => (
-                          <option key={month} value={month}>{month}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                      <select
-                        value={monthYear.year}
-                        onChange={(e) => setMonthYear(prev => ({ ...prev, year: e.target.value }))}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      >
-                        {[2024, 2025].map(year => (
-                          <option key={year} value={year}>{year}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Bulk Actions */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-3">Quick Actions</h4>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={() => setAllDaysStatus("P")}
-                        className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
-                      >
-                        All Present
-                      </button>
-                      <button
-                        onClick={() => setAllDaysStatus("A")}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
-                      >
-                        All Absent
-                      </button>
-                      <button
-                        onClick={() => setAllDaysStatus("")}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Calendar Grid */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">Mark Attendance for {monthYear.month} {monthYear.year}</h4>
-                    <div className="grid grid-cols-7 gap-2">
-                      {/* Day Headers */}
-                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
-                        <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
-                          {day}
-                        </div>
-                      ))}
-                      
-                      {/* Calendar Days */}
-                      {generateMonthDates(monthYear.month, monthYear.year).map(({ day, weekday, isWeekend, isFuture }) => (
-                        <div
-                          key={day}
-                          className={`p-2 border rounded-lg text-center cursor-pointer transition-all duration-200 ${
-                            isFuture 
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                              : isWeekend 
-                                ? 'bg-blue-50 border-blue-200' 
-                                : 'bg-white border-gray-200 hover:border-purple-300'
-                          }`}
-                        >
-                          <div className="text-sm font-medium mb-1">{day}</div>
-                          <div className="text-xs text-gray-500 mb-2">{weekday}</div>
-                          {!isFuture && (
-                            <select
-                              value={monthAttendanceData[day] || ""}
-                              onChange={(e) => setDayStatus(day, e.target.value)}
-                              className={`w-full text-xs p-1 rounded border ${
-                                monthAttendanceData[day] === "P" ? "bg-green-100 border-green-300" :
-                                monthAttendanceData[day] === "A" ? "bg-red-100 border-red-300" :
-                                monthAttendanceData[day] === "P/A" ? "bg-yellow-100 border-yellow-300" :
-                                monthAttendanceData[day] === "H" ? "bg-gray-100 border-gray-300" :
-                                "bg-white border-gray-300"
-                              }`}
-                            >
-                              <option value="">-</option>
-                              <option value="P">Present</option>
-                              <option value="A">Absent</option>
-                              {/* <option value="P/A">Half Day</option>
-                              <option value="H">Holiday</option>
-                              <option value="LOP">LOP</option> */}
-                            </select>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            {selectedEmployeeForMonth && (
-              <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
-                <div className="text-sm text-gray-600">
-                  {Object.values(monthAttendanceData).filter(status => status !== "").length} days marked
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      setIsSingleEmployeeModalOpen(false);
-                      setSelectedEmployeeForMonth(null);
-                      setMonthAttendanceData({});
-                    }}
-                    className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveMonthAttendance}
-                    disabled={manualAttendanceLoading}
-                    className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {manualAttendanceLoading ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Attendance"
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* All Employees Date Modal */}
-      {isAllEmployeesDateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-              <div className="flex items-center gap-3">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <h2 className="text-xl font-bold">All Employees Date Attendance</h2>
-              </div>
-              <button
-                onClick={() => {
-                  setIsAllEmployeesDateModalOpen(false);
-                  setAllEmployeesAttendanceData({});
-                  setAllEmployeesSearch("");
-                }}
-                className="text-white hover:text-gray-200 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-              <div className="space-y-6">
-                {/* Date Selection */}
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-                  <h3 className="font-semibold text-gray-800 mb-3">Select Date</h3>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                      <input
-                        type="date"
-                        value={selectedDateForAll}
-                        onChange={(e) => handleDateSelectForAll(e.target.value)}
-                        max={new Date().toISOString().slice(0, 10)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Cannot select future dates</p>
-                    </div>
-                    <div className="flex items-end">
-                      <div className="bg-blue-200 p-3 rounded-lg">
-                        <div className="text-blue-800 font-bold text-lg">
-                          {new Date(selectedDateForAll).toLocaleDateString('en-US', { weekday: 'short' })}
-                        </div>
-                        <div className="text-blue-700 text-sm">
-                          {new Date(selectedDateForAll).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bulk Actions */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-gray-800 mb-3">Quick Actions for All Employees</h4>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => setAllEmployeesStatus("P")}
-                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      All Present
-                    </button>
-                    <button
-                      onClick={() => setAllEmployeesStatus("A")}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      All Absent
-                    </button>
-                    <button
-                      onClick={() => setAllEmployeesStatus("")}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium flex items-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5a2 2 0 002 2h5m5 9v-5a2 2 0 00-2-2h-5" />
-                      </svg>
-                      Clear All
-                    </button>
-                  </div>
-                </div>
-
-                {/* Employee Search */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search employees..."
-                    value={allEmployeesSearch}
-                    onChange={(e) => setAllEmployeesSearch(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            {/* Controls Section */}
+            <div className="flex items-center gap-3 p-4 border-b border-gray-100">
+              {/* Date Selector */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Date</label>
+                <button
+                  className="flex items-center gap-2 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors h-[28px]"
+                  onClick={() => {
+                    // Open native date picker
+                    const input = document.createElement('input');
+                    input.type = 'date';
+                    input.value = selectedDateForAll;
+                    input.onchange = (e) => handleDateSelectForAll(e.target.value);
+                    input.click();
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                </div>
+                  <span>{selectedDateForAll ? new Date(selectedDateForAll).toLocaleDateString() : "Select Date"}</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              {/* Mark As Dropdown */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">Mark As</label>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="px-3 py-1 border border-gray-300 rounded-md text-xs bg-white shadow-sm flex items-center justify-between min-w-[120px] hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors h-[28px]">
+                      <span className="flex items-center gap-2 text-gray-700 truncate">
+                        {allEmployeesMarkAsStatus ? (
+                          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: statusOptions.find(opt => opt.value === allEmployeesMarkAsStatus)?.color }}></span>
+                        ) : null}
+                        {allEmployeesMarkAsStatus ? statusOptions.find(opt => opt.value === allEmployeesMarkAsStatus)?.label : "Select"}
+                      </span>
+                      <svg className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[240px] rounded-md shadow-lg border border-gray-200 bg-white">
+                    <DropdownMenuRadioGroup value={allEmployeesMarkAsStatus} onValueChange={(value) => {
+                      setAllEmployeesMarkAsStatus(value);
+                      console.log("All Employees Mark As Status changed to:", value);
+                    }}>
+                      {statusOptions.map(opt => (
+                        <DropdownMenuRadioItem 
+                          key={opt.value} 
+                          value={opt.value} 
+                          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("All Employees Mark As dropdown item clicked:", opt.value);
+                            setAllEmployeesMarkAsStatus(opt.value);
+                          }}
+                        >
+                          <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: opt.color }}></span>
+                          {opt.label}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
 
-                {/* Employees List */}
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-3">
-                    Mark Attendance for {filteredEmployeesForModal.length} Employee{filteredEmployeesForModal.length !== 1 ? 's' : ''}
-                  </h4>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {filteredEmployeesForModal.map((employee) => (
-                      <div
-                        key={employee.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-semibold text-sm">
-                              {employee.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-800 truncate">{employee.name}</h4>
-                            <p className="text-sm text-gray-600 truncate">{employee.id}</p>
-                            <p className="text-xs text-gray-500 truncate">{employee.department}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={allEmployeesAttendanceData[employee.id] || ""}
-                            onChange={(e) => setEmployeeStatus(employee.id, e.target.value)}
-                            className={`px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                              allEmployeesAttendanceData[employee.id] === "P" ? "bg-green-100 border-green-300" :
-                              allEmployeesAttendanceData[employee.id] === "A" ? "bg-red-100 border-red-300" :
-                              allEmployeesAttendanceData[employee.id] === "P/A" ? "bg-yellow-100 border-yellow-300" :
-                              allEmployeesAttendanceData[employee.id] === "H" ? "bg-gray-100 border-gray-300" :
-                              allEmployeesAttendanceData[employee.id] === "LOP" ? "bg-orange-100 border-orange-300" :
-                              "bg-white border-gray-300"
-                            }`}
-                          >
-                            <option value="">-</option>
-                            <option value="P">Present</option>
-                            <option value="A">Absent</option>
-                            {/* <option value="P/A">Half Day</option>
-                            <option value="H">Holiday</option>
-                            <option value="LOP">LOP</option> */}
-                          </select>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {/* Apply Button */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">&nbsp;</label>
+                <button
+                  className="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
+                  onClick={() => {
+                    const status = allEmployeesMarkAsStatus;
+                    console.log("Apply button clicked - Status:", status);
+                    console.log("Current markAsStatus state:", allEmployeesMarkAsStatus);
+                    
+                    if (!status) {
+                      toast.error("Please select a status.");
+                      return;
+                    }
+                    
+                    // Apply the selected status to all employees
+                    const newData = { ...allEmployeesAttendanceData };
+                    filteredEmployeesForModal.forEach(employee => {
+                      newData[employee.id] = status;
+                    });
+                    
+                    setAllEmployeesAttendanceData(newData);
+                    toast.success(`Applied ${statusOptions.find(opt => opt.value === status)?.label} to all employees`);
+                  }}
+                >
+                  Apply
+                </button>
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+            {/* Employee List and Attendance Grid */}
+            <div className="flex-1 flex flex-col p-4 overflow-hidden">
+              {/* Search Bar */}
+              <div className="mb-3">
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={allEmployeesSearch}
+                  onChange={e => setAllEmployeesSearch(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {/* Employee Attendance Grid */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar bg-white border border-gray-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white z-10 shadow-sm">
+                    <tr className="border-b border-gray-200">
+                      <th className="py-2 px-2 text-left font-semibold text-gray-700 bg-white">Employee</th>
+                      <th className="py-2 px-2 text-left font-semibold text-gray-700 bg-white">Department</th>
+                      <th className="py-2 px-2 text-left font-semibold text-gray-700 bg-white">Attendance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="p-3">
+                    {filteredEmployeesForModal.map(employee => (
+                      <tr key={employee.id} className="border-b border-gray-100">
+                        <td className="py-2 px-2 flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
+                            {employee.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-800 truncate text-sm">{employee.name}</div>
+                            <div className="text-xs text-gray-500 truncate">{employee.id}</div>
+                          </div>
+                        </td>
+                        <td className="py-2 px-2 text-xs text-gray-600">{employee.department}</td>
+                        <td className="py-2 px-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              {(() => {
+                                const value = allEmployeesAttendanceData[employee.id] || "";
+                                const selected = statusOptions.find(opt => opt.value === value);
+                                const bgColor = selected ? selected.color : '#fff';
+                                const textColor = selected ? (isColorLight(selected.color) ? 'text-gray-800' : 'text-white') : 'text-gray-400';
+                                return (
+                                  <button
+                                    className={`w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors ${textColor}`}
+                                    style={{ backgroundColor: bgColor }}
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      {selected ? (
+                                        <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: selected.color }}></span>
+                                      ) : null}
+                                      <span>
+                                        {selected ? selected.label : "Select"}
+                                      </span>
+                                    </span>
+                                    <svg className={`w-4 h-4 ml-2 flex-shrink-0 ${isColorLight(bgColor) ? 'text-gray-600' : 'text-white'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                );
+                              })()}
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" side="top" className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto">
+                              <DropdownMenuRadioGroup value={allEmployeesAttendanceData[employee.id] || ""} onValueChange={(val) => {
+                                console.log("Employee status changed to:", val, "for employee:", employee.id);
+                                setEmployeeStatus(employee.id, val);
+                              }}>
+                                <DropdownMenuRadioItem value="" className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400">
+                                  -
+                                </DropdownMenuRadioItem>
+                                {statusOptions.map(opt => (
+                                  <DropdownMenuRadioItem 
+                                    key={opt.value} 
+                                    value={opt.value} 
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      console.log("Employee dropdown item clicked:", opt.value, "for employee:", employee.id);
+                                      setEmployeeStatus(employee.id, opt.value);
+                                    }}
+                                  >
+                                    <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: opt.color }}></span>
+                                    {opt.label}
+                                  </DropdownMenuRadioItem>
+                                ))}
+                              </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl p-4">
               <div className="text-sm text-gray-600">
-                {Object.values(allEmployeesAttendanceData).filter(status => status !== "").length} of {filteredEmployeesForModal.length} employees marked
+                <span className="font-medium">{Object.values(allEmployeesAttendanceData).filter(status => status !== "").length}</span> employees marked
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => {
-                    setIsAllEmployeesDateModalOpen(false);
-                    setAllEmployeesAttendanceData({});
-                    setAllEmployeesSearch("");
-                  }}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  onClick={closeAllModals}
+                  className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-base font-medium hover:bg-gray-100 hover:border-gray-400 transition-colors shadow-sm"
                 >
                   Cancel
                 </button>
-                                  <button
-                    onClick={handleSaveAllEmployeesAttendance}
-                    disabled={manualAttendanceLoading}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    {manualAttendanceLoading ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Attendance"
-                    )}
-                  </button>
+                <button
+                  onClick={handleSaveAllEmployeesAttendance}
+                  disabled={manualAttendanceLoading}
+                  className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {manualAttendanceLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Attendance"
+                  )}
+                </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+        {/* Attendance Cell Popover */}
+        {cellPopoverOpen && cellPopoverEmployee && cellPopoverDate && (
+          <div
+            data-cell-popover
+            style={{
+              position: "absolute",
+              top: cellPopoverPosition.top,
+              left: cellPopoverPosition.left,
+              zIndex: 9999,
+              width: 320,
+              minWidth: 280,
+              maxWidth: 360,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            }}
+            className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 flex flex-col items-center"
+          >
+            <div className="text-sm font-bold text-gray-800 mb-1">{cellPopoverEmployee.name} ({cellPopoverEmployee.id})</div>
+            <div className="text-sm font-bold text-gray-700 mb-2">{cellPopoverDate}</div>
+            
+            {/* Current Status */}
+            <div className="flex items-center gap-2 mb-4">
+              {cellPopoverStatus ? (
+                <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: statusOptions.find(opt => opt.value === cellPopoverStatus)?.color }}></span>
+              ) : null}
+              <span className="text-sm font-medium text-gray-800">{cellPopoverStatus ? statusOptions.find(opt => opt.value === cellPopoverStatus)?.label : "-"}</span>
+            </div>
+            
+            {/* Change to Dropdown */}
+            <div className="w-full mb-4">
+              <label className="block text-xs text-gray-500 mb-1">Change to:</label>
+              <select
+                value={cellPopoverStatus}
+                onChange={(e) => setCellPopoverStatus(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              >
+                <option value="">Select status...</option>
+                {statusOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-2 w-full">
+              <button
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
+                onClick={closePopover}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                onClick={() => {
+                  handleCellPopoverSave();
+                  closePopover();
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -134,7 +134,7 @@ const EmployeeAttendance = () => {
       const formattedData = [];
       const summaryCounts = {
         Present: 0,
-        "Present with Leave": 0,
+        "Approved Leave": 0,
         "Present on Holiday": 0,
         "Half Day on Holiday": 0,
         "Half Day": 0,
@@ -155,7 +155,7 @@ const EmployeeAttendance = () => {
 
         // Check full leave dates
         if (attendance.fullLeaveDates?.includes(dateString)) {
-          return "PL";
+          return "AL";
         }
 
         // Check half day leave dates
@@ -201,8 +201,8 @@ const EmployeeAttendance = () => {
           case "P":
             fullStatus = "Present";
             break;
-          case "PL":
-            fullStatus = "Present with Leave";
+          case "AL":
+            fullStatus = "Approved Leave";
             break;
           case "A":
             fullStatus = "Absent";
@@ -463,13 +463,13 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Present"] || 0}
                     </span>
                   </div>
-                  {/* Present with Leave */}
+                  {/* Approved Leave */}
                   <div className="flex flex-col bg-lime-100 p-3 rounded-lg">
                     <span className="font-medium text-green-800">
-                      Present with Leave (PL)
+                      Approved Leave (AL)
                     </span>
                     <span className="text-2xl font-bold">
-                      {monthlySummary["Present with Leave"] || 0}
+                      {monthlySummary["Approved Leave"] || 0}
                     </span>
                   </div>
                   {/* Half Day */}
@@ -671,7 +671,7 @@ const EmployeeAttendance = () => {
                   </div>
                 ) : error ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
-                    <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
+                    <CalendarIcon className="h-8 w-8  text-muted-foreground/60" />
                     <p className="text-lg font-medium">
                       Error loading attendance data
                     </p>
@@ -712,7 +712,7 @@ const EmployeeAttendance = () => {
                             bgColorClass =
                               "bg-green-100 hover:bg-green-200 text-green-800";
                             break;
-                          case "Present with Leave":
+                          case "Approved Leave":
                             bgColorClass =
                               "bg-lime-100 hover:bg-lime-200 text-lime-800";
                             break;
@@ -838,7 +838,7 @@ const EmployeeAttendance = () => {
                             className={`${
                               status === "Present"
                                 ? "bg-green-100 text-green-800"
-                                : status === "Present with Leave"
+                                : status === "Approved Leave"
                                 ? "bg-lime-100 text-lime-800"
                                 : status === "Absent"
                                 ? "bg-red-200 text-red-900"

@@ -212,7 +212,7 @@ const Leaves = () => {
     setRequestedDays(totalDays);
 
     // Check if requested days exceed available balance
-    if (leaveBalance && totalDays > leaveBalance.newLeaveBalance) {
+    if (leaveBalance && totalDays > leaveBalance.totalAvailableBalance) {
       setShowLOPWarning(true);
     } else {
       setShowLOPWarning(false);
@@ -290,7 +290,7 @@ const Leaves = () => {
 
     if (showLOPWarning) {
       const confirmLOP = window.confirm(
-        `Warning: You are requesting ${requestedDays} days of leave but only have ${leaveBalance.newLeaveBalance} days available. \n\nExcess days will be marked as Loss of Pay (LOP). \n\nDo you want to continue?`
+        `Warning: You are requesting ${requestedDays} days of leave but only have ${leaveBalance.totalAvailableBalance} days available. \n\nExcess days will be marked as Loss of Pay (LOP). \n\nDo you want to continue?`
       );
       if (!confirmLOP) {
         return;
@@ -706,18 +706,18 @@ const Leaves = () => {
                       weeklyOffs={weeklyOffs}
                       disabledDates={getDisabledDates()}
                     />
-                    {getDisabledDates().length > 0 && (
+                    {/* {getDisabledDates().length > 0 && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center">
                         <span className="mr-1">ℹ️</span>
                         Dates with existing leave requests are disabled
                       </div>
-                    )}
+                    )} */}
                     {showLOPWarning && (
-                      <div className="mt-2 text-red-500 text-sm flex items-center">
-                        <span className="mr-1">⚠️</span>
-                        Warning: {requestedDays -
-                          leaveBalance.newLeaveBalance}{" "}
-                        day(s) will be marked as Loss of Pay (LOP)
+                      <div className="mt-2 text-amber-600 text-sm flex items-center bg-amber-50 p-2 rounded border border-amber-200">
+                        <span className="mr-2">ℹ️</span>
+                        <span>
+                          Your requested days exceed your available balance.
+                        </span>
                       </div>
                     )}
                     {leaveForm.dates.length > 0 && (
@@ -727,7 +727,7 @@ const Leaves = () => {
                           ? requestedDays
                           : requestedDays.toFixed(1)}{" "}
                         day(s) | Available Balance:{" "}
-                        {formatNumber(leaveBalance?.newLeaveBalance || 0)}{" "}
+                        {formatNumber(leaveBalance?.totalAvailableBalance || 0)}{" "}
                         day(s)
                       </div>
                     )}
@@ -811,12 +811,12 @@ const Leaves = () => {
                       }}
                       disabledDates={getDisabledDates()}
                     />
-                    {getDisabledDates().length > 0 && (
+                    {/* {getDisabledDates().length > 0 && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center">
                         <span className="mr-1">ℹ️</span>
                         Dates with existing leave requests are disabled
                       </div>
-                    )}
+                    )} */}
                   </div>
 
                   <div>
