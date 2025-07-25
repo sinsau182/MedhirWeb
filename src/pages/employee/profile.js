@@ -1647,7 +1647,10 @@ function EmployeeProfilePage() {
         break;
       case "phone2":
         // Alternate phone is optional, but if filled must be valid
-        if (formData.employee.phone2 && formData.employee.phone2.trim() !== "") {
+        if (
+          formData.employee.phone2 &&
+          formData.employee.phone2.trim() !== ""
+        ) {
           error = validatePhone(formData.employee.phone2);
         }
         break;
@@ -1655,14 +1658,20 @@ function EmployeeProfilePage() {
         error = validateEmail(formData.employee.email.personal);
         break;
       case "currentAddress":
-        if (!formData.employee.currentAddress || formData.employee.currentAddress.trim() === "") {
+        if (
+          !formData.employee.currentAddress ||
+          formData.employee.currentAddress.trim() === ""
+        ) {
           error = "Current address is required";
         } else if (formData.employee.currentAddress.trim().length < 5) {
           error = "Current address must be at least 5 characters";
         }
         break;
       case "permanentAddress":
-        if (!formData.employee.permanentAddress || formData.employee.permanentAddress.trim() === "") {
+        if (
+          !formData.employee.permanentAddress ||
+          formData.employee.permanentAddress.trim() === ""
+        ) {
           error = "Permanent address is required";
         } else if (formData.employee.permanentAddress.trim().length < 5) {
           error = "Permanent address must be at least 5 characters";
@@ -1697,7 +1706,8 @@ function EmployeeProfilePage() {
   };
 
   const validateDrivingLicenseNumber = (value) => {
-    if (!value || value.trim() === "") return "Driving license number is required";
+    if (!value || value.trim() === "")
+      return "Driving license number is required";
     if (!/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(value.toUpperCase()))
       return "Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)";
     return "";
