@@ -24,6 +24,7 @@ import DepartmentFormModal from "@/components/Forms/DepartmentFormModal";
 import DesignationFormModal from "@/components/Forms/DesignationFormModal";
 import { Listbox } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/20/solid";
+import { fetchMinioImage } from "@/redux/slices/minioSlice";
 
 // Add this CSS class to your global styles or component
 const inputGroupClass = "flex flex-col gap-1 mb-2";
@@ -469,6 +470,7 @@ function EmployeeForm() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, err } = useSelector((state) => state.employees);
+  const minio = useSelector((state) => state.minio);
 
   const {
     activeMainTab,
@@ -2225,29 +2227,24 @@ function EmployeeForm() {
   const filterAccountHolderNameInput = (value) =>
     value.replace(/[^A-Za-z ]/g, "");
 
-  // Add this helper function inside EmployeeForm:
+  // Replace openMinioFileInNewTab to use Redux
   function openMinioFileInNewTab(minioUrl) {
     const token = getItemFromSessionStorage("token");
     if (!minioUrl) return;
-    const apiUrl = `${publicRuntimeConfig.apiURL}/minio/fetch-image?url=${encodeURIComponent(minioUrl)}`;
-    console.log('Fetching Minio file:', apiUrl);
-    fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          toast.error(`File not found or unauthorized. URL: ${apiUrl}`);
-          return;
-        }
-        const contentType = res.headers.get("Content-Type");
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank', 'noopener');
+    const apiUrl = publicRuntimeConfig.apiURL;
+    // If already fetched, open the blob URL
+    if (minio.images && minio.images[minioUrl]) {
+      window.open(minio.images[minioUrl], '_blank', 'noopener');
+      return;
+    }
+    // Otherwise, fetch and then open when ready
+    dispatch(fetchMinioImage({ url: minioUrl, token, apiURL: apiUrl }))
+      .unwrap()
+      .then((res) => {
+        window.open(res.blobUrl, '_blank', 'noopener');
       })
-      .catch(() => {
-        toast.error(`Failed to fetch file. URL: ${apiUrl}`);
+      .catch((err) => {
+        toast.error(err || 'Failed to fetch image');
       });
   }
 
