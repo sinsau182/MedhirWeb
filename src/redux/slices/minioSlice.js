@@ -7,40 +7,44 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const MINIO_BASE_URL = publicRuntimeConfig.apiURL + "/minio";
 
-// Helper function to get authentication headers
 const getAuthHeaders = () => {
   const token = getItemFromSessionStorage("token", null);
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
+
 
 // Async thunk to fetch image from Minio
 export const fetchImageFromMinio = createAsyncThunk(
   "minio/fetchImage",
   async ({ url }, { rejectWithValue }) => {
     try {
-      // Make a request to the Minio controller endpoint
-      const response = await axios.get(`${MINIO_BASE_URL}/fetch-image`, {
-        params: { url },
-        responseType: 'blob', // Important: Set response type to blob for image data
+      const token = getItemFromSessionStorage("token", null);
+
+      const response = await fetch(`${MINIO_BASE_URL}/fetch-image?url=${encodeURIComponent(url)}`, {
         headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(), // Include authentication token
-        },
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch image from Minio");
+      }
+
+      const blob = await response.blob();
       
       // Convert blob to data URL for easy use in components
-      const blob = new Blob([response.data]);
       const dataUrl = URL.createObjectURL(blob);
       
       return {
         originalUrl: url,
         dataUrl: dataUrl,
         blob: blob,
-        contentType: response.headers['content-type'] || 'image/jpeg',
+        contentType: response.headers.get('content-type') || 'image/jpeg',
       };
     } catch (error) {
-      console.error('Error fetching image from Minio:', error);
-      return rejectWithValue(error.response?.data || "Failed to fetch image");
+      return rejectWithValue(error.message);
     }
   }
 );
