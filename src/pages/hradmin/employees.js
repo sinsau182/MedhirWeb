@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Search, UserPlus, Calendar, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -70,9 +71,21 @@ function Employees() {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const handleViewDoc = (imageUrl) => {
-    setSelectedImage(imageUrl);
-    setIsModalOpen(true);
+  const handleViewDoc = async (imageUrl) => {
+    // Check if it's a Minio URL (starts with http)
+    if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+      try {
+        // For Minio URLs, fetch the image securely and open in new tab
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: imageUrl })).unwrap();
+        window.open(dataUrl, '_blank');
+      } catch (error) {
+        toast.error('Failed to preview document.');
+      }
+    } else {
+      // For regular URLs, keep the existing modal behavior
+      setSelectedImage(imageUrl);
+      setIsModalOpen(true);
+    }
   };
 
   const closeModal = () => {
