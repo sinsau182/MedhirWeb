@@ -24,6 +24,8 @@ import DepartmentFormModal from "@/components/Forms/DepartmentFormModal";
 import DesignationFormModal from "@/components/Forms/DesignationFormModal";
 import { Listbox } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/20/solid";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
+import MinioImage from "@/components/ui/MinioImage";
 
 // Add this CSS class to your global styles or component
 const inputGroupClass = "flex flex-col gap-1 mb-2";
@@ -3338,11 +3340,19 @@ function EmployeeForm() {
                                     <>
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          const url = formData.idProofs[imgField] instanceof File
-                                            ? URL.createObjectURL(formData.idProofs[imgField])
-                                            : formData.idProofs[imgField];
-                                          window.open(url, '_blank');
+                                        onClick={async () => {
+                                          const value = formData.idProofs[imgField];
+                                          if (value instanceof File) {
+                                            const url = URL.createObjectURL(value);
+                                            window.open(url, '_blank');
+                                          } else if (typeof value === 'string' && value.startsWith('http')) {
+                                            try {
+                                              const { dataUrl } = await dispatch(fetchImageFromMinio({ url: value })).unwrap();
+                                              window.open(dataUrl, '_blank');
+                                            } catch (error) {
+                                              toast.error('Failed to preview image.');
+                                            }
+                                          }
                                         }}
                                         className="focus:outline-none"
                                       >
@@ -3357,19 +3367,37 @@ function EmployeeForm() {
                                             PDF
                                           </span>
                                         ) : (
-                                          <img
-                                            src={
-                                              formData.idProofs[
-                                                imgField
-                                              ] instanceof File
-                                                ? URL.createObjectURL(
-                                                    formData.idProofs[imgField]
-                                                  )
-                                                : formData.idProofs[imgField]
-                                            }
-                                            alt={`${meta.label} preview`}
-                                            className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
-                                          />
+                                          formData.idProofs[imgField] instanceof File ? (
+                                            <img
+                                              src={URL.createObjectURL(formData.idProofs[imgField])}
+                                              alt={`${meta.label} preview`}
+                                              className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
+                                              onClick={async () => {
+                                                const url = URL.createObjectURL(formData.idProofs[imgField]);
+                                                window.open(url, '_blank');
+                                              }}
+                                            />
+                                          ) : typeof formData.idProofs[imgField] === 'string' && formData.idProofs[imgField].startsWith('http') ? (
+                                            <MinioImage
+                                              src={formData.idProofs[imgField]}
+                                              alt={`${meta.label} preview`}
+                                              className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
+                                              onClick={async () => {
+                                                try {
+                                                  const { dataUrl } = await dispatch(fetchImageFromMinio({ url: formData.idProofs[imgField] })).unwrap();
+                                                  window.open(dataUrl, '_blank');
+                                                } catch (error) {
+                                                  toast.error('Failed to preview image.');
+                                                }
+                                              }}
+                                            />
+                                          ) : (
+                                            <img
+                                              src={formData.idProofs[imgField]}
+                                              alt={`${meta.label} preview`}
+                                              className="w-16 h-16 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
+                                            />
+                                          )
                                         )}
                                       </button>
                                       <button
@@ -3973,18 +4001,37 @@ function EmployeeForm() {
                                     PDF
                                   </span>
                                 ) : (
-                                  <img
-                                    src={
-                                      formData.bankDetails
-                                        .passbookImgUrl instanceof File
-                                        ? URL.createObjectURL(
-                                            formData.bankDetails.passbookImgUrl
-                                          )
-                                        : formData.bankDetails.passbookImgUrl
-                                    }
-                                    alt="Passbook preview"
-                                    className="w-12 h-12 object-cover rounded border border-gray-300"
-                                  />
+                                  formData.bankDetails.passbookImgUrl instanceof File ? (
+                                    <img
+                                      src={URL.createObjectURL(formData.bankDetails.passbookImgUrl)}
+                                      alt="Passbook preview"
+                                      className="w-12 h-12 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
+                                      onClick={() => {
+                                        const url = URL.createObjectURL(formData.bankDetails.passbookImgUrl);
+                                        window.open(url, '_blank');
+                                      }}
+                                    />
+                                  ) : typeof formData.bankDetails.passbookImgUrl === 'string' && formData.bankDetails.passbookImgUrl.startsWith('http') ? (
+                                    <MinioImage
+                                      src={formData.bankDetails.passbookImgUrl}
+                                      alt="Passbook preview"
+                                      className="w-12 h-12 object-cover rounded border border-gray-300 cursor-pointer hover:shadow-lg"
+                                      onClick={async () => {
+                                        try {
+                                          const { dataUrl } = await dispatch(fetchImageFromMinio({ url: formData.bankDetails.passbookImgUrl })).unwrap();
+                                          window.open(dataUrl, '_blank');
+                                        } catch (error) {
+                                          toast.error('Failed to preview image.');
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <img
+                                      src={formData.bankDetails.passbookImgUrl}
+                                      alt="Passbook preview"
+                                      className="w-12 h-12 object-cover rounded border border-gray-300"
+                                    />
+                                  )
                                 )}
                                 <span className="ml-2 text-xs text-gray-700 truncate max-w-[120px]">
                                   {formData.bankDetails
@@ -3999,11 +4046,19 @@ function EmployeeForm() {
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const url = formData.bankDetails.passbookImgUrl instanceof File
-                                      ? URL.createObjectURL(formData.bankDetails.passbookImgUrl)
-                                      : formData.bankDetails.passbookImgUrl;
-                                    window.open(url, '_blank');
+                                  onClick={async () => {
+                                    const value = formData.bankDetails.passbookImgUrl;
+                                    if (value instanceof File) {
+                                      const url = URL.createObjectURL(value);
+                                      window.open(url, '_blank');
+                                    } else if (typeof value === 'string' && value.startsWith('http')) {
+                                      try {
+                                        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: value })).unwrap();
+                                        window.open(dataUrl, '_blank');
+                                      } catch (error) {
+                                        toast.error('Failed to preview document.');
+                                      }
+                                    }
                                   }}
                                   className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200"
                                   title="View"

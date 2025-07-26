@@ -132,67 +132,35 @@ const EmployeeAttendance = () => {
       ).getDate();
 
       const formattedData = [];
+      // Initialize summary counts from the response statusCounts
       const summaryCounts = {
-        Present: 0,
-        "Present with Leave": 0,
-        "Present on Holiday": 0,
-        "Half Day on Holiday": 0,
-        "Half Day": 0,
+        Present: attendance.statusCounts?.P || 0,
+        "Approved Leave": attendance.statusCounts?.AL || 0,
+        "Present on Holiday": 0, // Will be calculated from days
+        "Half Day on Holiday": 0, // Will be calculated from days
+        "Half Day": 0, // Will be calculated from days
         "On Leave": 0,
-        Holiday: 0,
+        Holiday: attendance.statusCounts?.H || 0,
         Weekend: 0,
-        "Loss of Pay": 0,
-        Absent: 0,
-        "No Data": 0,
+        "Loss of Pay": attendance.statusCounts?.LOP || 0,
+        Absent: attendance.statusCounts?.A || 0,
+        "Present Half Day on Loss of Pay": 0, // Will be calculated from days
       };
 
       // Helper function to determine attendance status for a given date
-      const getAttendanceStatusForDate = (dateString) => {
-        // Check present dates
-        if (attendance.presentDates?.includes(dateString)) {
-          return "P";
+      const getAttendanceStatusForDate = (dayNumber) => {
+        // Check if the day exists in the days object
+        if (attendance.days && attendance.days[dayNumber]) {
+          return attendance.days[dayNumber].statusCode;
         }
-
-        // Check full leave dates
-        if (attendance.fullLeaveDates?.includes(dateString)) {
-          return "PL";
-        }
-
-        // Check half day leave dates
-        if (attendance.halfDayLeaveDates?.includes(dateString)) {
-          return "P/A";
-        }
-
-        // Check full comp-off dates
-        if (attendance.fullCompoffDates?.includes(dateString)) {
-          return "P";
-        }
-
-        // Check half comp-off dates
-        if (attendance.halfCompoffDates?.includes(dateString)) {
-          return "P/A";
-        }
-
-        // Check weekly off dates
-        if (attendance.weeklyOffDates?.includes(dateString)) {
-          return "H";
-        }
-
-        // Check absent dates
-        if (attendance.absentDates?.includes(dateString)) {
-          return "A";
-        }
-
-        return null;
+        
+        // Default to "A" (Absent) if no status code is available
+        return "A";
       };
 
       for (let day = 1; day <= daysInMonth; day++) {
-        // Create date string in YYYY-MM-DD format
-        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(
-          2,
-          "0"
-        )}-${String(day).padStart(2, "0")}`;
-        const status = getAttendanceStatusForDate(dateString);
+        // Get status code for the current day
+        const status = getAttendanceStatusForDate(day.toString());
 
         let fullStatus = "No Data";
         let leaveType = null;
@@ -201,8 +169,8 @@ const EmployeeAttendance = () => {
           case "P":
             fullStatus = "Present";
             break;
-          case "PL":
-            fullStatus = "Present with Leave";
+          case "AL":
+            fullStatus = "Approved Leave";
             break;
           case "A":
             fullStatus = "Absent";
@@ -229,8 +197,12 @@ const EmployeeAttendance = () => {
             fullStatus = "Loss of Pay";
             leaveType = "Loss of Pay";
             break;
+          case "P/LOP":
+            fullStatus = "Present Half Day on Loss of Pay";
+            leaveType = "Present Half Day on Loss of Pay";
+            break;
           default:
-            fullStatus = "No Data";
+            fullStatus = "Absent"; // Default to Absent instead of "No Data"
         }
 
         formattedData.push({
@@ -245,7 +217,11 @@ const EmployeeAttendance = () => {
           totalWorkingMinutes: attendance?.totalWorkingMinutes || 0,
         });
 
-        summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
+        // Update summary counts for statuses that need to be calculated from days
+        if (fullStatus === "Present on Holiday" || fullStatus === "Half Day on Holiday" || 
+            fullStatus === "Half Day" || fullStatus === "Present Half Day on Loss of Pay") {
+          summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
+        }
       }
       setAttendanceData(formattedData);
       setMonthlySummary(summaryCounts);
@@ -369,7 +345,7 @@ const EmployeeAttendance = () => {
     );
     
     // Only fetch daily attendance data for present dates
-    if (selectedDayData && selectedDayData.status === "Present") {
+    if (selectedDayData && (selectedDayData.status === "Present" || selectedDayData.status === "Present Half Day on Loss of Pay")) {
       fetchAttendanceData(day);
     } else {
       // Clear daily attendance data for non-present dates
@@ -453,7 +429,7 @@ const EmployeeAttendance = () => {
             </CardHeader>
             <CardContent>
               <div className="w-full">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {/* Present */}
                   <div className="flex flex-col bg-green-100 p-3 rounded-lg">
                     <span className="font-medium text-green-800">
@@ -463,13 +439,13 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Present"] || 0}
                     </span>
                   </div>
-                  {/* Present with Leave */}
+                  {/* Approved Leave */}
                   <div className="flex flex-col bg-lime-100 p-3 rounded-lg">
                     <span className="font-medium text-green-800">
-                      Present with Leave (PL)
+                      Approved Leave (AL)
                     </span>
                     <span className="text-2xl font-bold">
-                      {monthlySummary["Present with Leave"] || 0}
+                      {monthlySummary["Approved Leave"] || 0}
                     </span>
                   </div>
                   {/* Half Day */}
@@ -524,7 +500,15 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Loss of Pay"] || 0}
                     </span>
                   </div>
-                  {/* No Data removed */}
+                  {/* Present Half Day on Loss of Pay */}
+                  <div className="flex flex-col bg-indigo-100 p-3 rounded-lg">
+                    <span className="font-medium text-indigo-800">
+                      Present Half Day on Loss of Pay (P/LOP)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Present Half Day on Loss of Pay"] || 0}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -671,20 +655,14 @@ const EmployeeAttendance = () => {
                   </div>
                 ) : error ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
-                    <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
+                    <CalendarIcon className="h-8 w-8  text-muted-foreground/60" />
                     <p className="text-lg font-medium">
                       Error loading attendance data
                     </p>
                     <p className="text-sm text-muted-foreground/80">{error}</p>
                   </div>
                 ) : !attendance ||
-                  (!attendance.presentDates &&
-                    !attendance.fullLeaveDates &&
-                    !attendance.halfDayLeaveDates &&
-                    !attendance.fullCompoffDates &&
-                    !attendance.halfCompoffDates &&
-                    !attendance.weeklyOffDates &&
-                    !attendance.absentDates) ? (
+                  (!attendance.days && !attendance.statusCounts) ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
                     <p className="text-lg font-medium">
@@ -712,7 +690,7 @@ const EmployeeAttendance = () => {
                             bgColorClass =
                               "bg-green-100 hover:bg-green-200 text-green-800";
                             break;
-                          case "Present with Leave":
+                          case "Approved Leave":
                             bgColorClass =
                               "bg-lime-100 hover:bg-lime-200 text-lime-800";
                             break;
@@ -739,6 +717,10 @@ const EmployeeAttendance = () => {
                           case "Loss of Pay":
                             bgColorClass =
                               "bg-purple-100 hover:bg-purple-200 text-purple-800";
+                            break;
+                          case "Present Half Day on Loss of Pay":
+                            bgColorClass =
+                              "bg-indigo-100 hover:bg-indigo-200 text-indigo-800";
                             break;
                           case "Weekend":
                             bgColorClass =
@@ -816,7 +798,7 @@ const EmployeeAttendance = () => {
                     ).toFixed(1);
 
                     // Check if this is a present date and has daily attendance data
-                    const isPresentDate = status === "Present" && (dailyAttendanceData || (date && dailyAttendanceData));
+                    const isPresentDate = (status === "Present" || status === "Present Half Day on Loss of Pay") && (dailyAttendanceData || (date && dailyAttendanceData));
                     
                     // Get check-in and check-out times for present dates
                     const attendanceDataForDate = dailyAttendanceData || selectedDayData?.dailyAttendanceData;
@@ -838,7 +820,7 @@ const EmployeeAttendance = () => {
                             className={`${
                               status === "Present"
                                 ? "bg-green-100 text-green-800"
-                                : status === "Present with Leave"
+                                : status === "Approved Leave"
                                 ? "bg-lime-100 text-lime-800"
                                 : status === "Absent"
                                 ? "bg-red-200 text-red-900"
@@ -852,6 +834,8 @@ const EmployeeAttendance = () => {
                                 ? "bg-orange-200 text-orange-800"
                                 : status === "Loss of Pay"
                                 ? "bg-purple-100 text-purple-800"
+                                : status === "Present Half Day on Loss of Pay"
+                                ? "bg-indigo-100 text-indigo-800"
                                 : "bg-gray-100 text-gray-700"
                             } text-xs font-semibold px-2 py-1 rounded-full`}
                           >

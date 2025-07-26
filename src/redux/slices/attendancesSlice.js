@@ -57,10 +57,9 @@ const fetchOneEmployeeAttendanceAllMonth = createAsyncThunk(
 
 export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchOneEmployeeAttendanceOneMonth",
-    async ({ month, year }, { rejectWithValue }) => {
+    async ({ employeeId, month, year }, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const employeeId = sessionStorage.getItem("employeeId");
             
             // Convert month name to numeric month (1-12)
             const monthIndex = new Date(`${month} 1, ${year}`).getMonth();

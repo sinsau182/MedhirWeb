@@ -19,7 +19,16 @@ export const markManualAttendance = createAsyncThunk(
         }
       );
 
-      const data = await response.json();
+      // Handle both text and JSON responses
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        // Handle plain text response
+        const textData = await response.text();
+        data = { message: textData };
+      }
 
       if (!response.ok) {
         return rejectWithValue(data.message || "Failed to mark attendance");
@@ -67,7 +76,7 @@ export const markAllEmployeesDateAttendance = createAsyncThunk(
   async (attendanceData, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        `${publicRuntimeConfig.attendanceURL}/attendance-summary/employee/manual-bulk-checkin`,
+        `${publicRuntimeConfig.attendanceURL}/attendance-summary/date/bulk-attendance`,
         {
           method: "POST",
           headers: {
@@ -77,7 +86,16 @@ export const markAllEmployeesDateAttendance = createAsyncThunk(
         }
       );
 
-      const data = await response.json();
+      // Handle both text and JSON responses
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        // Handle plain text response
+        const textData = await response.text();
+        data = { message: textData };
+      }
 
       if (!response.ok) {
         return rejectWithValue(data.message || "Failed to mark attendance");
