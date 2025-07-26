@@ -2632,7 +2632,7 @@ function EmployeeProfilePage() {
                         <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                           <p className="text-sm text-orange-700">
                             <strong>Important:</strong> When you change any document number, you must upload the corresponding document for verification. 
-                            Document upload is mandatory for saving changes. Changed numbers will be marked with "Verification Required".
+                            Document upload is mandatory for saving changes. Changed numbers will be marked with Verification Required.
                           </p>
                         </div>
                       )}
