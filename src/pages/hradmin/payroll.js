@@ -256,13 +256,12 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const employeeAttendance = attendance?.find(
+                // Fix: Use new attendance response format
+                const employeeAttendance = attendance?.monthlyAttendance?.find(
                   (record) => record.employeeId === employee.employeeId
                 );
-                
-                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
-                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
-                const paidDays = presentDays + fullLeaveDays || 0;
+                // Use paidDays from the new response, fallback to 0
+                const paidDays = employeeAttendance?.paidDays ?? 0;
 
                 const basic = parseFloat(
                   (
@@ -312,7 +311,7 @@ function PayrollManagement() {
                 const deductions = parseFloat(
                   (tds + advanceAdjusted + profTax).toFixed(0)
                 );
-                const netPay = parseFloat(
+                const netPay = Math.max(0, parseFloat(
                   (
                     basic +
                     hra +
@@ -321,7 +320,7 @@ function PayrollManagement() {
                     reimbursement -
                     deductions
                   ).toFixed(0)
-                );
+                ));
 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
@@ -459,10 +458,10 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const employeeAttendance = attendance?.find(record => record.employeeId === employee.employeeId);
-                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
-                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
-                const paidDays = presentDays + fullLeaveDays || 0;
+                // Fix: Use new attendance response format
+                const employeeAttendance = attendance?.monthlyAttendance?.find(record => record.employeeId === employee.employeeId);
+                // Use paidDays from the new response, fallback to 0
+                const paidDays = employeeAttendance?.paidDays ?? 0;
                 
                 return (
                   <tr key={index} className="hover:bg-gray-50">

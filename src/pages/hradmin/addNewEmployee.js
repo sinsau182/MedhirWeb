@@ -3338,27 +3338,12 @@ function EmployeeForm() {
                                     <>
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          setDocPreview({
-                                            open: true,
-                                            imgUrl:
-                                              formData.idProofs[
-                                                imgField
-                                              ] instanceof File
-                                                ? URL.createObjectURL(
-                                                    formData.idProofs[imgField]
-                                                  )
-                                                : formData.idProofs[imgField],
-                                            number: value,
-                                            label: meta.label,
-                                            file:
-                                              formData.idProofs[
-                                                imgField
-                                              ] instanceof File
-                                                ? formData.idProofs[imgField]
-                                                : null,
-                                          })
-                                        }
+                                        onClick={() => {
+                                          const url = formData.idProofs[imgField] instanceof File
+                                            ? URL.createObjectURL(formData.idProofs[imgField])
+                                            : formData.idProofs[imgField];
+                                          window.open(url, '_blank');
+                                        }}
                                         className="focus:outline-none"
                                       >
                                         {formData.idProofs[imgField].type ===
@@ -4014,24 +3999,12 @@ function EmployeeForm() {
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    setBankPreview({
-                                      open: true,
-                                      imgUrl:
-                                        formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? URL.createObjectURL(
-                                              formData.bankDetails
-                                                .passbookImgUrl
-                                            )
-                                          : formData.bankDetails.passbookImgUrl,
-                                      file:
-                                        formData.bankDetails
-                                          .passbookImgUrl instanceof File
-                                          ? formData.bankDetails.passbookImgUrl
-                                          : null,
-                                    })
-                                  }
+                                  onClick={() => {
+                                    const url = formData.bankDetails.passbookImgUrl instanceof File
+                                      ? URL.createObjectURL(formData.bankDetails.passbookImgUrl)
+                                      : formData.bankDetails.passbookImgUrl;
+                                    window.open(url, '_blank');
+                                  }}
                                   className="ml-2 px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 border border-blue-200"
                                   title="View"
                                 >
