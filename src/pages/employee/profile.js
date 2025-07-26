@@ -4,6 +4,10 @@ import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import MinioImage from "@/components/ui/MinioImage";
+import { useMinioImage } from "@/hooks/useMinioImage";
+import { useDispatch } from "react-redux";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import {
   FiUser,
   FiBook,
@@ -27,8 +31,13 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 function EmployeeProfilePage() {
   const router = useRouter();
   const { id } = router.query; // Get ID from URL query parameter
+  const dispatch = useDispatch();
 
   const { publicRuntimeConfig } = getConfig();
+
+  // Minio slice integration - automatically handles image fetching and caching
+  // When any image is clicked, it will trigger the Minio slice to fetch the image
+  // with proper authentication and caching
 
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -419,7 +428,7 @@ function EmployeeProfilePage() {
     return true;
   };
 
-  const openPassbookPreview = () => {
+  const openPassbookPreview = async () => {
     const currentPassbook =
       formData.bank.passbookDoc instanceof File
         ? formData.bank.passbookDoc
@@ -430,29 +439,46 @@ function EmployeeProfilePage() {
       return;
     }
   
-    const previewUrl =
-      currentPassbook instanceof File
-        ? URL.createObjectURL(currentPassbook)
-        : currentPassbook;
-  
-    const accountNumber =
-      formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
-  
-    const title = accountNumber
-      ? `Passbook Document - ${accountNumber}`
-      : "Passbook Document";
-  
-    // Open in new tab or window
-    const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
-  
-    if (newWindow) {
-      newWindow.document.title = title;
-      newWindow.focus();
+    // If it's a File, create object URL
+    if (currentPassbook instanceof File) {
+      const previewUrl = URL.createObjectURL(currentPassbook);
+      const accountNumber =
+        formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+      const title = accountNumber
+        ? `Passbook Document - ${accountNumber}`
+        : "Passbook Document";
+      
+      const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = title;
+        newWindow.focus();
+      }
+    } else {
+      // For Minio URLs, use the Minio slice to fetch the image with authentication
+      try {
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: currentPassbook })).unwrap();
+        
+        const accountNumber =
+          formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+        const title = accountNumber
+          ? `Passbook Document - ${accountNumber}`
+          : "Passbook Document";
+        
+        // Open the fetched image in new window
+        const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = title;
+          newWindow.focus();
+        }
+      } catch (error) {
+        console.error('Error fetching passbook image:', error);
+        toast.error("Failed to load passbook document. Please try again.");
+      }
     }
   };
   
 
-  const openIdProofPreview = (documentType, imgUrlKey) => {
+  const openIdProofPreview = async (documentType, imgUrlKey) => {
     const currentDocument =
       formData.idProofs[`${documentType}Image`] instanceof File
         ? formData.idProofs[`${documentType}Image`]
@@ -463,47 +489,84 @@ function EmployeeProfilePage() {
       return;
     }
   
-    // Generate a preview URL
-    const previewUrl =
-      currentDocument instanceof File
-        ? URL.createObjectURL(currentDocument)
-        : currentDocument;
-  
-    // Optionally set a descriptive window title
-    const documentTitles = {
-      aadhar: "Aadhar Card",
-      pan: "PAN Card",
-      passport: "Passport",
-      drivingLicense: "Driving License",
-      voterId: "Voter ID",
-    };
-  
-    const numberField =
-      documentType === "aadhar"
-        ? "aadharNo"
-        : documentType === "pan"
-        ? "panNo"
-        : documentType === "passport"
-        ? "passport"
-        : documentType === "drivingLicense"
-        ? "drivingLicense"
-        : documentType === "voterId"
-        ? "voterId"
-        : "";
-  
-    const documentNumber =
-      formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
-  
-    const title = documentTitles[documentType] || documentType;
-    const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
-  
-    // Open in a new tab or window
-    const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
-  
-    // Optionally give focus to the new tab
-    if (newWindow) {
-      newWindow.document.title = fullTitle;
-      newWindow.focus();
+    // If it's a File, create object URL
+    if (currentDocument instanceof File) {
+      const previewUrl = URL.createObjectURL(currentDocument);
+      
+      const documentTitles = {
+        aadhar: "Aadhar Card",
+        pan: "PAN Card",
+        passport: "Passport",
+        drivingLicense: "Driving License",
+        voterId: "Voter ID",
+      };
+      
+      const numberField =
+        documentType === "aadhar"
+          ? "aadharNo"
+          : documentType === "pan"
+          ? "panNo"
+          : documentType === "passport"
+          ? "passport"
+          : documentType === "drivingLicense"
+          ? "drivingLicense"
+          : documentType === "voterId"
+          ? "voterId"
+          : "";
+      
+      const documentNumber =
+        formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+      
+      const title = documentTitles[documentType] || documentType;
+      const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+      
+      const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fullTitle;
+        newWindow.focus();
+      }
+    } else {
+      // For Minio URLs, use the Minio slice to fetch the image with authentication
+      try {
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: currentDocument })).unwrap();
+        
+        const documentTitles = {
+          aadhar: "Aadhar Card",
+          pan: "PAN Card",
+          passport: "Passport",
+          drivingLicense: "Driving License",
+          voterId: "Voter ID",
+        };
+        
+        const numberField =
+          documentType === "aadhar"
+            ? "aadharNo"
+            : documentType === "pan"
+            ? "panNo"
+            : documentType === "passport"
+            ? "passport"
+            : documentType === "drivingLicense"
+            ? "drivingLicense"
+            : documentType === "voterId"
+            ? "voterId"
+            : "";
+        
+        const documentNumber =
+          formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+        
+        const title = documentTitles[documentType] || documentType;
+        const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+        
+        // Open the fetched image in new window
+        const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = fullTitle;
+          newWindow.focus();
+        }
+      } catch (error) {
+        console.error('Error fetching ID proof image:', error);
+        toast.error(`Failed to load ${documentType} document. Please try again.`);
+      }
     }
   };
   
@@ -2122,10 +2185,12 @@ function EmployeeProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : employeeById?.employeeImgUrl ? (
-                            <img
+                            <MinioImage
                               src={employeeById.employeeImgUrl}
                               alt="Profile"
                               className="w-full h-full object-cover"
+                              fallbackSrc="/avatar.jpg"
+                              onClick={() => console.log('Profile image clicked')}
                             />
                           ) : (
                             <FiUser className="w-16 h-16 text-gray-300" />
@@ -2824,10 +2889,11 @@ function EmployeeProfilePage() {
                                         </span>
                                       </div>
                                     ) : (
-                                      <img
+                                      <MinioImage
                                         src={employeeById.idProofs[imgUrlKey]}
                                         alt={`${label} preview`}
                                         className="w-8 h-8 object-cover rounded border border-gray-300"
+                                        fallbackSrc="/placeholder-image.jpg"
                                       />
                                     )}
                                     <span className="text-sm text-gray-700 truncate">
@@ -3275,12 +3341,13 @@ function EmployeeProfilePage() {
                                       </span>
                                     </div>
                                   ) : (
-                                    <img
+                                    <MinioImage
                                       src={
                                         employeeById.bankDetails.passbookImgUrl
                                       }
                                       alt="Passbook preview"
                                       className="w-8 h-8 object-cover rounded border border-gray-300"
+                                      fallbackSrc="/placeholder-image.jpg"
                                     />
                                   )}
                                   <span className="text-sm text-gray-700 truncate">
