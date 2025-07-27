@@ -23,7 +23,7 @@ const PasswordChangeAlert = () => {
         setShowModal(true);
       }
     }
-  }, [getItemFromSessionStorage('token')]);
+  }, []); // Remove the function call dependency to prevent infinite loop
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();

@@ -71,7 +71,7 @@ const Navbar = () => {
 
       setNavbarColor(backgroundColor);
     }
-  }, [navbarColor, companies]);
+  }, []); // Remove navbarColor and companies from dependencies to prevent infinite loop
 
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
@@ -135,7 +135,7 @@ const Navbar = () => {
     };
 
     fetchEmployeeDataFromToken();
-  }, [currentRole]);
+  }, []); // Remove currentRole dependency to prevent infinite loop
 
   useEffect(() => {
     const currentRole = sessionStorage.getItem("currentRole");
@@ -165,7 +165,7 @@ const Navbar = () => {
         window.removeEventListener("storage", handleStorageChange);
       }
     };
-  }, [companies]);
+  }, []); // Remove companies dependency to prevent unnecessary re-renders
 
   const handleCompanyChange = (companyName) => {
     const currentRole = sessionStorage.getItem("currentRole");
@@ -286,7 +286,7 @@ const Navbar = () => {
                 className="text-destructive cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Log out
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
