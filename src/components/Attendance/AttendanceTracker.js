@@ -130,6 +130,19 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     setPopoverOpenCell(null);
     setCellPopoverOpen(false);
   };
+
+  // Function to switch between tabs without losing data
+  const switchToSingleEmployeeTab = () => {
+    console.log('Switching to Single Employee Month tab - preserving state');
+    setIsAllEmployeesDateModalOpen(false);
+    setIsSingleEmployeeModalOpen(true);
+  };
+
+  const switchToAllEmployeesTab = () => {
+    console.log('Switching to All Employees Date tab - preserving state');
+    setIsSingleEmployeeModalOpen(false);
+    setIsAllEmployeesDateModalOpen(true);
+  };
   
   // Single Employee Month Modal State
   const [isSingleEmployeeModalOpen, setIsSingleEmployeeModalOpen] =
@@ -394,15 +407,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     }
   }, [isSingleEmployeeModalOpen, isAllEmployeesDateModalOpen, activeTab]);
 
-  // Reset dropdown states when All Employees Date modal opens
-  useEffect(() => {
-    if (isAllEmployeesDateModalOpen) {
-      setAllEmployeesMarkAsStatus("");
-      setAllEmployeesApplyToScope("");
-      setAllEmployeesAttendanceData({});
-      setAllEmployeesSearch("");
-    }
-  }, [isAllEmployeesDateModalOpen]);
+
 
   // Callbacks
   const generateAttendanceData = useCallback(
@@ -696,6 +701,39 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     [searchInput, employees, generateAttendanceData]
   );
 
+  // Load existing data when All Employees Date modal opens
+  useEffect(() => {
+    if (isAllEmployeesDateModalOpen) {
+      // Always set today's date as default when modal opens
+      const today = new Date();
+      setSelectedDateForAll(today);
+      
+      // Load existing attendance data for today's date
+      const initialData = {};
+      const selectedDay = today.getDate();
+      
+      filteredEmployees.forEach((employee) => {
+        // Check if we have attendance data for this employee and date
+        let existingStatus = null;
+        
+        if (attendance && attendance.monthlyAttendance) {
+          const employeeAttendance = attendance.monthlyAttendance.find(
+            (attRec) => attRec.employeeId === employee.id
+          );
+          
+          if (employeeAttendance && employeeAttendance.days) {
+            existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
+          }
+        }
+        
+        initialData[employee.id] = existingStatus;
+      });
+      
+      setAllEmployeesAttendanceData(initialData);
+      console.log('Modal opened - loaded existing attendance data for today:', today, 'Data:', initialData);
+    }
+  }, [isAllEmployeesDateModalOpen, attendance, filteredEmployees]);
+
   const departmentOptions = useMemo(() => {
     const departments = new Set();
     employees.forEach((employee) => {
@@ -907,12 +945,30 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   // All Employees Date Modal Functions
   const handleDateSelectForAll = (date) => {
     setSelectedDateForAll(date);
-    // Initialize attendance data for all employees
+    
+    // Load existing attendance data for the selected date
     const initialData = {};
+    const selectedDay = new Date(date).getDate();
+    
     filteredEmployees.forEach((employee) => {
-      initialData[employee.id] = null; // Use null instead of empty string
+      // Check if we have attendance data for this employee and date
+      let existingStatus = null;
+      
+      if (attendance && attendance.monthlyAttendance) {
+        const employeeAttendance = attendance.monthlyAttendance.find(
+          (attRec) => attRec.employeeId === employee.id
+        );
+        
+        if (employeeAttendance && employeeAttendance.days) {
+          existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
+        }
+      }
+      
+      initialData[employee.id] = existingStatus;
     });
+    
     setAllEmployeesAttendanceData(initialData);
+    console.log('Loaded existing attendance data for date:', date, 'Data:', initialData);
   };
 
   const setAllEmployeesStatus = (status) => {
@@ -933,6 +989,17 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   const handleSaveAllEmployeesAttendance = () => {
     if (!selectedDateForAll) {
       toast.error("Please select a date");
+      return;
+    }
+
+    // Check if selected date is in the future
+    const selectedDate = new Date(selectedDateForAll);
+    selectedDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    if (selectedDate > today) {
+      toast.error("Cannot mark attendance for future dates");
       return;
     }
 
@@ -1342,7 +1409,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             setEmployeeDropdownSearch(employee.id);
                             setIsEmployeeDropdownOpen(false);
                             setSelectedEmployeeForMonth(employee);
-                            setIsSingleEmployeeModalOpen(true);
+                            switchToSingleEmployeeTab();
                             // Fetch existing attendance data for this employee
                             const monthIndex = new Date(
                               `${monthYear.month} 1, ${monthYear.year}`
@@ -1543,8 +1610,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           <button
             className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
             onClick={() => {
-              closeAllModals();
-              setIsAllEmployeesDateModalOpen(true);
+              switchToAllEmployeesTab();
             }}
           >
             <svg
@@ -1564,64 +1630,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           </button>
                 </div>
       ) : (
-        // Show toggle interface when a modal is active
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                isSingleEmployeeModalOpen
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => {
-                closeAllModals();
-                setIsSingleEmployeeModalOpen(true);
-              }}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span>Single Employee Month</span>
-            </button>
-            
-            <button
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                isAllEmployeesDateModalOpen
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-              onClick={() => {
-                closeAllModals();
-                setIsAllEmployeesDateModalOpen(true);
-              }}
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <span>All Employees Date</span>
-            </button>
-          </div>
-        </div>
+        // No toggle interface when a modal is active - tabs are hidden
+        null
       )}
 
       {/* Regular Tabs - Only show when no modal is active */}
@@ -1677,27 +1687,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
                 {/* Back and Close Buttons */}
                 <div className="flex items-center gap-2">
-                  {selectedEmployeeForMonth && (
-                    <button
-                      onClick={() => setSelectedEmployeeForMonth(null)}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-xs font-medium text-gray-700 transition-colors"
-                    >
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                      Back
-                    </button>
-                  )}
                   <button
                     onClick={closeAllModals}
                     className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
@@ -2401,6 +2390,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         }
                         onChange={(e) => {
                           const newYear = parseInt(e.target.value);
+                          const currentYear = new Date().getFullYear();
+                          
+                          // Check if selected year is in the future
+                          if (newYear > currentYear) {
+                            toast.error("Cannot select future years for attendance");
+                            return;
+                          }
+                          
                           const currentDate = selectedDateForAll
                             ? new Date(selectedDateForAll)
                             : new Date();
@@ -2419,11 +2416,19 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         }}
                         className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
-                        {[2024, 2025, 2026].map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
+                        {(() => {
+                          const currentYear = new Date().getFullYear();
+                          const years = [];
+                          // Only show current year and past years
+                          for (let year = currentYear; year >= 2024; year--) {
+                            years.push(year);
+                          }
+                          return years.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ));
+                        })()}
                       </select>
                     </div>
 
@@ -2446,11 +2451,22 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         const isSelected =
                           selectedDateForAll &&
                           new Date(selectedDateForAll).getMonth() === index;
+                        
+                        // Check if this month/year combination is in the future
+                        const currentDate = new Date();
+                        const currentYear = currentDate.getFullYear();
+                        const currentMonth = currentDate.getMonth();
+                        const isFutureMonth = (currentYear === selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear) > currentYear || 
+                                           ((currentYear === selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear) === currentYear && index > currentMonth);
 
                         return (
                 <button
                             key={month}
                   onClick={() => {
+                              if (isFutureMonth) {
+                                toast.error("Cannot select future months for attendance");
+                                return;
+                              }
                               const currentDate = selectedDateForAll
                                 ? new Date(selectedDateForAll)
                                 : new Date();
@@ -2470,8 +2486,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             className={`p-2 text-sm rounded-md transition-colors ${
                               isSelected
                                 ? "bg-blue-100 text-blue-600 font-medium"
+                                : isFutureMonth
+                                ? "text-gray-300 cursor-not-allowed"
                                 : "hover:bg-gray-100 text-gray-700"
                             }`}
+                            disabled={isFutureMonth}
+                            title={isFutureMonth ? "Cannot select future months" : ""}
                           >
                             {month}
                 </button>
@@ -2502,11 +2522,22 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             const isSelected =
                               selectedDateForAll &&
                               new Date(selectedDateForAll).getDate() === day;
+                            
+                            // Check if this date is in the future
+                            const currentDate = new Date();
+                            currentDate.setHours(0, 0, 0, 0); // Reset time to start of day
+                            const buttonDate = new Date(year, month, day);
+                            buttonDate.setHours(0, 0, 0, 0); // Reset time to start of day
+                            const isFutureDate = buttonDate > currentDate;
 
                             days.push(
                               <button
                                 key={day}
                                 onClick={() => {
+                                  if (isFutureDate) {
+                                    toast.error("Cannot select future dates for attendance");
+                                    return;
+                                  }
                                   const newDate = new Date(year, month, day);
                                   // Format date without timezone issues
                                   const formattedDate = `${year}-${String(
@@ -2520,8 +2551,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                 className={`p-1 text-xs rounded transition-colors ${
                                   isSelected
                                     ? "bg-blue-100 text-blue-600 font-medium"
+                                    : isFutureDate
+                                    ? "text-gray-300 cursor-not-allowed"
                                     : "hover:bg-gray-100 text-gray-700"
                                 }`}
+                                disabled={isFutureDate}
+                                title={isFutureDate ? "Cannot select future dates" : ""}
                               >
                                 {day}
                               </button>

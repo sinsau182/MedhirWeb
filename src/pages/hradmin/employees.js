@@ -8,6 +8,8 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "react-hot-toast";
+import { jwtDecode } from "jwt-decode";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 function Employees() {
   const [activeTab, setActiveTab] = useState("Basic");
@@ -20,6 +22,13 @@ function Employees() {
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
   const [loggedInEmployeeId, setLoggedInEmployeeId] = useState(sessionStorage.getItem("employeeId"));
+  
+  // Get logged-in user's roles
+  const token = getItemFromSessionStorage("token");
+  const decodedToken = jwtDecode(token);
+  const loggedInUserRoles = decodedToken.roles;
+  const isCompanyHead = loggedInUserRoles.includes("COMPANY_HEAD");
+  
   console.log(employees)
 
   useEffect(() => {
@@ -36,8 +45,8 @@ function Employees() {
 
   const handleRowClick = (employee) => {
     try {
-      // Check if the employee is the logged-in user
-      if (employee.employeeId === loggedInEmployeeId) {
+      // Check if the employee is the logged-in user (but allow COMPANY_HEAD to edit their own record)
+      if (employee.employeeId === loggedInEmployeeId && !isCompanyHead) {
         toast.error("You cannot edit your own employee record from this page. Please use the profile page instead.");
         return;
       }
@@ -408,7 +417,7 @@ function Employees() {
                       </tr>
                     ) : (
                       filteredEmployees.map((employee) => {
-                        const isOwnRecord = employee.employeeId === loggedInEmployeeId;
+                        const isOwnRecord = employee.employeeId === loggedInEmployeeId && !isCompanyHead;
                         return (
                           <tr
                             key={employee.employeeId}
@@ -445,8 +454,8 @@ function Employees() {
                                     {cellValue}
                                   </span>
                                 )}
-                                {/* Show indicator for own record in the first column */}
-                                {index === 0 && isOwnRecord && (
+                                {/* Show indicator for own record in the first column (only for non-COMPANY_HEAD users) */}
+                                {index === 0 && employee.employeeId === loggedInEmployeeId && !isCompanyHead && (
                                   <span className="absolute top-1 right-1 text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
                                     You
                                   </span>
