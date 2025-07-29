@@ -176,11 +176,30 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     { value: "weekends", label: "All Weekends" },
   ];
 
-  // Separate Apply To options for Single Employee Month (applying to days)
-  const singleEmployeeApplyToOptions = [
-    { value: "unmarked", label: "All Unmarked Days" },
-    { value: "working", label: "All Working Days" },
-  ];
+  // Function to get dynamic Apply To options based on selected status
+  const getSingleEmployeeApplyToOptions = (selectedStatus) => {
+    // For Present on Holiday (PH), only show options that apply to holidays
+    if (selectedStatus === "PH") {
+      return [
+        { value: "unmarked", label: "All Unmarked Days" },
+        { value: "holidays", label: "All Holidays" },
+      ];
+    }
+    
+    // For Half Day on Holiday (PH/A), only show options that apply to holidays
+    if (selectedStatus === "PH/A") {
+      return [
+        { value: "unmarked", label: "All Unmarked Days" },
+        { value: "holidays", label: "All Holidays" },
+      ];
+    }
+    
+    // For regular statuses, show all options
+    return [
+      { value: "unmarked", label: "All Unmarked Days" },
+      { value: "working", label: "All Working Days" },
+    ];
+  };
 
   // Separate Apply To options for All Employees Date (applying to employees)
   const allEmployeesApplyToOptions = [
@@ -243,6 +262,19 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [cellPopoverOpen]);
+
+  // Reset apply scope when status changes
+  useEffect(() => {
+    if (singleEmployeeMarkAsStatus) {
+      const availableOptions = getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus);
+      const currentScopeExists = availableOptions.some(opt => opt.value === singleEmployeeApplyToScope);
+      
+      // If current scope is not available for the new status, reset to first available option
+      if (!currentScopeExists && availableOptions.length > 0) {
+        setSingleEmployeeApplyToScope(availableOptions[0].value);
+      }
+    }
+  }, [singleEmployeeMarkAsStatus, singleEmployeeApplyToScope]);
 
   // Effects
   useEffect(() => {
@@ -1762,7 +1794,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         <button className="px-3 py-1 border border-gray-300 rounded-md text-xs bg-white shadow-sm flex items-center justify-between min-w-[120px] hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors h-[28px]">
                           <span className="text-gray-700 truncate">
                             {singleEmployeeApplyToScope
-                              ? singleEmployeeApplyToOptions.find(
+                              ? getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus).find(
                                   (opt) =>
                                     opt.value === singleEmployeeApplyToScope
                                 )?.label
@@ -1791,7 +1823,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           value={singleEmployeeApplyToScope}
                           onValueChange={setSingleEmployeeApplyToScope}
                         >
-                          {singleEmployeeApplyToOptions.map((opt) => (
+                          {getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus).map((opt) => (
                             <DropdownMenuRadioItem 
                               key={opt.value} 
                               value={opt.value} 
@@ -1838,7 +1870,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           // Get the employee's weekly offs configuration
                           const weeklyOffs = selectedEmployeeForMonth?.weeklyOffs || [];
                           
-                          // Helper function to check if a date is a holiday
+                          // Helper function to check if a date is a holiday or non-working day
                           const isHoliday = (date) => {
                             // Check if it's a weekly off
                             if (weeklyOffs.includes(date.weekday)) {
@@ -1847,6 +1879,21 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             
                             // Check if it's already marked as holiday in attendance data
                             if (monthAttendanceData[date.day] === "H") {
+                              return true;
+                            }
+                            
+                            // Check if it's approved leave (AL) - non-working day
+                            if (monthAttendanceData[date.day] === "AL") {
+                              return true;
+                            }
+                            
+                            // Check if it's loss of pay (LOP) - non-working day
+                            if (monthAttendanceData[date.day] === "LOP") {
+                              return true;
+                            }
+                            
+                            // Check if it's absent (A) - non-working day
+                            if (monthAttendanceData[date.day] === "A") {
                               return true;
                             }
                             
@@ -1867,11 +1914,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           console.log("- Employee weekly offs:", weeklyOffs);
                           console.log("- Days to apply:", daysToApply);
                           console.log("- Total days in month:", dates.length);
+                          console.log("- Non-working days excluded:", dates.filter(d => isHoliday(d)).map(d => `${d.day}(${monthAttendanceData[d.day] || 'weekly-off'})`));
                         } else if (scope === "weekends") {
                           // Get the employee's weekly offs configuration
                           const weeklyOffs = selectedEmployeeForMonth?.weeklyOffs || [];
                           
-                          // Helper function to check if a date is a weekend/holiday
+                          // Helper function to check if a date is a weekend/holiday/non-working day
                           const isWeekendOrHoliday = (date) => {
                             // Check if it's a weekly off
                             if (weeklyOffs.includes(date.weekday)) {
@@ -1880,6 +1928,21 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             
                             // Check if it's already marked as holiday in attendance data
                             if (monthAttendanceData[date.day] === "H") {
+                              return true;
+                            }
+                            
+                            // Check if it's approved leave (AL) - non-working day
+                            if (monthAttendanceData[date.day] === "AL") {
+                              return true;
+                            }
+                            
+                            // Check if it's loss of pay (LOP) - non-working day
+                            if (monthAttendanceData[date.day] === "LOP") {
+                              return true;
+                            }
+                            
+                            // Check if it's absent (A) - non-working day
+                            if (monthAttendanceData[date.day] === "A") {
                               return true;
                             }
                             
@@ -1894,6 +1957,35 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           console.log("Weekends filter applied:");
                           console.log("- Employee weekly offs:", weeklyOffs);
                           console.log("- Days to apply:", daysToApply);
+                          console.log("- Non-working days included:", dates.filter(d => isWeekendOrHoliday(d)).map(d => `${d.day}(${monthAttendanceData[d.day] || 'weekly-off'})`));
+                        } else if (scope === "holidays") {
+                          // Get the employee's weekly offs configuration
+                          const weeklyOffs = selectedEmployeeForMonth?.weeklyOffs || [];
+                          
+                          // Helper function to check if a date is a holiday
+                          const isHoliday = (date) => {
+                            // Check if it's a weekly off
+                            if (weeklyOffs.includes(date.weekday)) {
+                              return true;
+                            }
+                            
+                            // Check if it's already marked as holiday in attendance data
+                            if (monthAttendanceData[date.day] === "H") {
+                              return true;
+                            }
+                            
+                            return false;
+                          };
+                          
+                          daysToApply = dates
+                            .filter((d) => isHoliday(d))
+                            .map((d) => d.day);
+                          
+                          // Debug logging
+                          console.log("Holidays filter applied:");
+                          console.log("- Employee weekly offs:", weeklyOffs);
+                          console.log("- Days to apply:", daysToApply);
+                          console.log("- Holiday days included:", dates.filter(d => isHoliday(d)).map(d => `${d.day}(${monthAttendanceData[d.day] || 'weekly-off'})`));
                         }
                         const newData = { ...monthAttendanceData };
                         daysToApply.forEach((day) => {
