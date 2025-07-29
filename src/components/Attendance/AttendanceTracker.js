@@ -712,14 +712,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         // Helper function to get attendance status for a specific date
           const getAttendanceStatusForDate = (dayNumber) => {
           const attendanceData = result.payload;
-            if (!attendanceData) return "A";
+            if (!attendanceData) return null; // Return null if no attendance data
 
             // Handle new format with days object
             if (attendanceData.days) {
               if (attendanceData.days[dayNumber]) {
                 return attendanceData.days[dayNumber].statusCode;
               }
-              return "A"; // Default to Absent if no status code is available
+              return null; // Return null if no status code is available (empty box)
             }
 
             // Fallback to old format
@@ -765,12 +765,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
             return "A";
           }
 
-            return "A"; // Default to Absent
+            return null; // Return null if no status found (empty box)
         };
 
         dates.forEach(({ day }) => {
             const status = getAttendanceStatusForDate(day.toString());
-          initialData[day] = status || "";
+          initialData[day] = status || null; // Use null instead of empty string
         });
         
         setMonthAttendanceData(initialData);
@@ -779,7 +779,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         const dates = generateMonthDates(monthYear.month, monthYear.year);
         const initialData = {};
         dates.forEach(({ day }) => {
-          initialData[day] = "";
+          initialData[day] = null; // Use null instead of empty string
         });
         setMonthAttendanceData(initialData);
       }
@@ -790,7 +790,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       const dates = generateMonthDates(monthYear.month, monthYear.year);
       const initialData = {};
       dates.forEach(({ day }) => {
-        initialData[day] = "";
+        initialData[day] = null; // Use null instead of empty string
       });
       setMonthAttendanceData(initialData);
     });
@@ -862,7 +862,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     // Initialize attendance data for all employees
     const initialData = {};
     filteredEmployees.forEach((employee) => {
-      initialData[employee.id] = "";
+      initialData[employee.id] = null; // Use null instead of empty string
     });
     setAllEmployeesAttendanceData(initialData);
   };
@@ -1322,15 +1322,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                     dayNumber
                                   ) => {
                                     const attendanceData = result.payload;
-                                    if (!attendanceData) return "A";
+                                    if (!attendanceData) return null; // Return null if no attendance data
 
                                     // Handle new format with days object
                                     if (attendanceData.days) {
                                       if (attendanceData.days[dayNumber]) {
-                                        return attendanceData.days[dayNumber]
-                                          .statusCode;
+                                        return attendanceData.days[dayNumber].statusCode;
                                       }
-                                      return "A"; // Default to Absent if no status code is available
+                                      return null; // Return null if no status code is available (empty box)
                                     }
 
                                     // Fallback to old format
@@ -1407,14 +1406,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                       return "A";
                                     }
 
-                                    return "A"; // Default to Absent
+                                    return null; // Return null if no status found (empty box)
                                   };
 
                                   dates.forEach(({ day }) => {
                                     const status = getAttendanceStatusForDate(
                                       day.toString()
                                     );
-                                    initialData[day] = status || "";
+                                    initialData[day] = status || null; // Use null instead of empty string
                                   });
 
                                   setMonthAttendanceData(initialData);
@@ -1426,7 +1425,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                   );
                                   const initialData = {};
                                   dates.forEach(({ day }) => {
-                                    initialData[day] = "";
+                                    initialData[day] = null; // Use null instead of empty string
                                   });
                                   setMonthAttendanceData(initialData);
                                 }
@@ -1443,7 +1442,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                 );
                                 const initialData = {};
                                 dates.forEach(({ day }) => {
-                                  initialData[day] = "";
+                                  initialData[day] = null; // Use null instead of empty string
                                 });
                                 setMonthAttendanceData(initialData);
                               });
@@ -1918,13 +1917,13 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           const isWeekOff = weeklyOffs.includes(weekday);
                           
                           // Get existing attendance data for this day
-                          let value = monthAttendanceData[day] || "";
+                          let value = monthAttendanceData[day] || null;
                           
                           // If no existing data and it's a week off, set to Holiday
                           if (!value && isWeekOff) {
                           value =
                             statusOptions.find((opt) => opt.value === "H")
-                              ?.value || "";
+                              ?.value || null;
                           }
                           
                           // If value changed for week off, update state (only on first render for that day)
@@ -1973,11 +1972,13 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                                 backgroundColor: selected.color,
                                               }}
                                             ></span>
-                                            ) : null}
+                                            ) : (
+                                              <span className="text-gray-400 text-xs">□</span>
+                                            )}
                                             <span>
                                             {selected
                                               ? selected.label
-                                              : "Select"}
+                                              : "Empty"}
                                             </span>
                                           </span>
                                         <svg
@@ -2007,7 +2008,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                   className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
                                 >
                                   <DropdownMenuRadioGroup
-                                    value={value}
+                                    value={value || ""}
                                     onValueChange={(val) => {
                                       console.log(
                                         "Calendar day status changed to:",
@@ -2015,14 +2016,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                         "for day:",
                                         day
                                       );
-                                      setDayStatus(day, val);
+                                      setDayStatus(day, val || null);
                                     }}
                                   >
                                     <DropdownMenuRadioItem
                                       value=""
                                       className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
                                     >
-                                        -
+                                        Empty
                                       </DropdownMenuRadioItem>
                                     {statusOptions.map((opt) => (
                                         <DropdownMenuRadioItem 
@@ -2068,7 +2069,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                     <span className="font-medium">
                       {
                         Object.values(monthAttendanceData).filter(
-                          (status) => status !== ""
+                          (status) => status !== null && status !== ""
                         ).length
                       }
                     </span>{" "}
@@ -2576,7 +2577,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             <DropdownMenuTrigger asChild>
                               {(() => {
                                 const value =
-                                  allEmployeesAttendanceData[employee.id] || "";
+                                  allEmployeesAttendanceData[employee.id] || null;
                                 const selected = statusOptions.find(
                                   (opt) => opt.value === value
                                 );
@@ -2601,9 +2602,11 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                             backgroundColor: selected.color,
                                           }}
                                         ></span>
-                                      ) : null}
+                                      ) : (
+                                        <span className="text-gray-400 text-xs">□</span>
+                                      )}
                                       <span>
-                                        {selected ? selected.label : "Select"}
+                                        {selected ? selected.label : "Empty"}
                                       </span>
                                     </span>
                                     <svg
@@ -2643,14 +2646,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                     "for employee:",
                                     employee.id
                                   );
-                                setEmployeeStatus(employee.id, val);
+                                setEmployeeStatus(employee.id, val || null);
                                 }}
                               >
                                 <DropdownMenuRadioItem
                                   value=""
                                   className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
                                 >
-                                  -
+                                  Empty
                                 </DropdownMenuRadioItem>
                                 {statusOptions.map((opt) => (
                                   <DropdownMenuRadioItem 
@@ -2691,7 +2694,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                 <span className="font-medium">
                   {
                     Object.values(allEmployeesAttendanceData).filter(
-                      (status) => status !== ""
+                      (status) => status !== null && status !== ""
                     ).length
                   }
                 </span>{" "}
