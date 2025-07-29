@@ -130,6 +130,19 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     setPopoverOpenCell(null);
     setCellPopoverOpen(false);
   };
+
+  // Function to switch between tabs without losing data
+  const switchToSingleEmployeeTab = () => {
+    console.log('Switching to Single Employee Month tab - preserving state');
+    setIsAllEmployeesDateModalOpen(false);
+    setIsSingleEmployeeModalOpen(true);
+  };
+
+  const switchToAllEmployeesTab = () => {
+    console.log('Switching to All Employees Date tab - preserving state');
+    setIsSingleEmployeeModalOpen(false);
+    setIsAllEmployeesDateModalOpen(true);
+  };
   
   // Single Employee Month Modal State
   const [isSingleEmployeeModalOpen, setIsSingleEmployeeModalOpen] =
@@ -1342,7 +1355,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             setEmployeeDropdownSearch(employee.id);
                             setIsEmployeeDropdownOpen(false);
                             setSelectedEmployeeForMonth(employee);
-                            setIsSingleEmployeeModalOpen(true);
+                            switchToSingleEmployeeTab();
                             // Fetch existing attendance data for this employee
                             const monthIndex = new Date(
                               `${monthYear.month} 1, ${monthYear.year}`
@@ -1543,8 +1556,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           <button
             className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
             onClick={() => {
-              closeAllModals();
-              setIsAllEmployeesDateModalOpen(true);
+              switchToAllEmployeesTab();
             }}
           >
             <svg
@@ -1574,8 +1586,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                   : "text-gray-600 hover:text-gray-800"
               }`}
               onClick={() => {
-                closeAllModals();
-                setIsSingleEmployeeModalOpen(true);
+                switchToSingleEmployeeTab();
               }}
             >
               <svg
@@ -1601,8 +1612,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                   : "text-gray-600 hover:text-gray-800"
               }`}
               onClick={() => {
-                closeAllModals();
-                setIsAllEmployeesDateModalOpen(true);
+                switchToAllEmployeesTab();
               }}
             >
               <svg
