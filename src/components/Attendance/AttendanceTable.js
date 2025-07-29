@@ -778,7 +778,7 @@ const AttendanceTable = ({
                         // Show empty clickable box for unmarked attendance
                         <button
                           type="button"
-                          className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition border border-gray-300 hover:border-gray-400 hover:bg-gray-50 ${
+                          className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition border border-gray-50 hover:border-gray-400 hover:bg-gray-50 ${
                             isFutureDate
                               ? "cursor-not-allowed opacity-50"
                               : "cursor-pointer focus:ring-2 focus:ring-blue-400"
@@ -804,7 +804,7 @@ const AttendanceTable = ({
                           disabled={isFutureDate || popoverOpenCell === cellKey}
                         >
                           {/* Show empty box for unmarked attendance */}
-                          <span className="text-gray-400 text-xs">□</span>
+                          <span className="text-gray-400 text-xs">-</span>
                         </button>
                       )}
                     </td>
