@@ -410,10 +410,9 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   // Reset dropdown states when All Employees Date modal opens
   useEffect(() => {
     if (isAllEmployeesDateModalOpen) {
-      setAllEmployeesMarkAsStatus("");
-      setAllEmployeesApplyToScope("");
-      setAllEmployeesAttendanceData({});
-      setAllEmployeesSearch("");
+      // Don't reset any state when switching tabs - preserve all data
+      // Only reset search if needed
+      // setAllEmployeesSearch("");
     }
   }, [isAllEmployeesDateModalOpen]);
 
@@ -946,6 +945,17 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   const handleSaveAllEmployeesAttendance = () => {
     if (!selectedDateForAll) {
       toast.error("Please select a date");
+      return;
+    }
+
+    // Check if selected date is in the future
+    const selectedDate = new Date(selectedDateForAll);
+    selectedDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    if (selectedDate > today) {
+      toast.error("Cannot mark attendance for future dates");
       return;
     }
 
@@ -2411,6 +2421,14 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         }
                         onChange={(e) => {
                           const newYear = parseInt(e.target.value);
+                          const currentYear = new Date().getFullYear();
+                          
+                          // Check if selected year is in the future
+                          if (newYear > currentYear) {
+                            toast.error("Cannot select future years for attendance");
+                            return;
+                          }
+                          
                           const currentDate = selectedDateForAll
                             ? new Date(selectedDateForAll)
                             : new Date();
@@ -2429,11 +2447,19 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         }}
                         className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
-                        {[2024, 2025, 2026].map((year) => (
-                          <option key={year} value={year}>
-                            {year}
-                          </option>
-                        ))}
+                        {(() => {
+                          const currentYear = new Date().getFullYear();
+                          const years = [];
+                          // Only show current year and past years
+                          for (let year = currentYear; year >= 2024; year--) {
+                            years.push(year);
+                          }
+                          return years.map((year) => (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          ));
+                        })()}
                       </select>
                     </div>
 
@@ -2456,11 +2482,22 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         const isSelected =
                           selectedDateForAll &&
                           new Date(selectedDateForAll).getMonth() === index;
+                        
+                        // Check if this month/year combination is in the future
+                        const currentDate = new Date();
+                        const currentYear = currentDate.getFullYear();
+                        const currentMonth = currentDate.getMonth();
+                        const isFutureMonth = (currentYear === selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear) > currentYear || 
+                                           ((currentYear === selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear) === currentYear && index > currentMonth);
 
                         return (
                 <button
                             key={month}
                   onClick={() => {
+                              if (isFutureMonth) {
+                                toast.error("Cannot select future months for attendance");
+                                return;
+                              }
                               const currentDate = selectedDateForAll
                                 ? new Date(selectedDateForAll)
                                 : new Date();
@@ -2480,8 +2517,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             className={`p-2 text-sm rounded-md transition-colors ${
                               isSelected
                                 ? "bg-blue-100 text-blue-600 font-medium"
+                                : isFutureMonth
+                                ? "text-gray-300 cursor-not-allowed"
                                 : "hover:bg-gray-100 text-gray-700"
                             }`}
+                            disabled={isFutureMonth}
+                            title={isFutureMonth ? "Cannot select future months" : ""}
                           >
                             {month}
                 </button>
@@ -2512,11 +2553,22 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             const isSelected =
                               selectedDateForAll &&
                               new Date(selectedDateForAll).getDate() === day;
+                            
+                            // Check if this date is in the future
+                            const currentDate = new Date();
+                            currentDate.setHours(0, 0, 0, 0); // Reset time to start of day
+                            const buttonDate = new Date(year, month, day);
+                            buttonDate.setHours(0, 0, 0, 0); // Reset time to start of day
+                            const isFutureDate = buttonDate > currentDate;
 
                             days.push(
                               <button
                                 key={day}
                                 onClick={() => {
+                                  if (isFutureDate) {
+                                    toast.error("Cannot select future dates for attendance");
+                                    return;
+                                  }
                                   const newDate = new Date(year, month, day);
                                   // Format date without timezone issues
                                   const formattedDate = `${year}-${String(
@@ -2530,8 +2582,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                 className={`p-1 text-xs rounded transition-colors ${
                                   isSelected
                                     ? "bg-blue-100 text-blue-600 font-medium"
+                                    : isFutureDate
+                                    ? "text-gray-300 cursor-not-allowed"
                                     : "hover:bg-gray-100 text-gray-700"
                                 }`}
+                                disabled={isFutureDate}
+                                title={isFutureDate ? "Cannot select future dates" : ""}
                               >
                                 {day}
                               </button>
