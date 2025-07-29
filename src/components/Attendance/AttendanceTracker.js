@@ -174,11 +174,32 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     { value: "weekends", label: "All Weekends" },
   ];
 
-  // Separate Apply To options for Single Employee Month (applying to days)
-  const singleEmployeeApplyToOptions = [
-    { value: "unmarked", label: "All Unmarked Days" },
-    { value: "working", label: "All Working Days" },
-  ];
+  // Function to get dynamic Apply To options based on selected status
+  const getSingleEmployeeApplyToOptions = (selectedStatus) => {
+    // For Present on Holiday (PH), only show options that apply to holidays
+    if (selectedStatus === "PH") {
+      return [
+        { value: "unmarked", label: "All Unmarked Days" },
+        { value: "holidays", label: "All Holidays" },
+      ];
+    }
+    
+    // For Half Day on Holiday (PH/A), only show options that apply to holidays
+    if (selectedStatus === "PH/A") {
+      return [
+        { value: "unmarked", label: "All Unmarked Days" },
+        { value: "holidays", label: "All Holidays" },
+      ];
+    }
+    
+    // For regular statuses, show all options
+    return [
+      { value: "unmarked", label: "All Unmarked Days" },
+      { value: "working", label: "All Working Days" },
+    ];
+  };
+
+
 
   // Separate Apply To options for All Employees Date (applying to employees)
   const allEmployeesApplyToOptions = [
@@ -241,6 +262,25 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [cellPopoverOpen]);
+
+  // Reset apply scope when status changes
+  useEffect(() => {
+    if (singleEmployeeMarkAsStatus) {
+      const availableOptions = getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus);
+      const currentScopeExists = availableOptions.some(opt => opt.value === singleEmployeeApplyToScope);
+      
+      console.log('Status changed to:', singleEmployeeMarkAsStatus);
+      console.log('Available options:', availableOptions);
+      console.log('Current scope:', singleEmployeeApplyToScope);
+      console.log('Current scope exists:', currentScopeExists);
+      
+      // If current scope is not available for the new status, reset to first available option
+      if (!currentScopeExists && availableOptions.length > 0) {
+        console.log('Resetting scope to:', availableOptions[0].value);
+        setSingleEmployeeApplyToScope(availableOptions[0].value);
+      }
+    }
+  }, [singleEmployeeMarkAsStatus, singleEmployeeApplyToScope]);
 
   // Effects
   useEffect(() => {
@@ -1778,7 +1818,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                         <button className="px-3 py-1 border border-gray-300 rounded-md text-xs bg-white shadow-sm flex items-center justify-between min-w-[120px] hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors h-[28px]">
                           <span className="text-gray-700 truncate">
                             {singleEmployeeApplyToScope
-                              ? singleEmployeeApplyToOptions.find(
+                              ? getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus).find(
                                   (opt) =>
                                     opt.value === singleEmployeeApplyToScope
                                 )?.label
@@ -1807,7 +1847,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           value={singleEmployeeApplyToScope}
                           onValueChange={setSingleEmployeeApplyToScope}
                         >
-                          {singleEmployeeApplyToOptions.map((opt) => (
+                          {getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus).map((opt) => (
                             <DropdownMenuRadioItem 
                               key={opt.value} 
                               value={opt.value} 
@@ -1890,6 +1930,38 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                               (d) => d.weekday === "Sun" || d.weekday === "Sat"
                             )
                             .map((d) => d.day);
+                        } else if (scope === "holidays") {
+                          // Get employee's weekly off days from API response
+                          const employeeWeeklyOffDays = selectedEmployeeForMonth?.weeklyOffDays || [];
+                          
+                          // Create mapping from full day names to abbreviated day names
+                          const dayNameMapping = {
+                            'Monday': 'Mon',
+                            'Tuesday': 'Tue', 
+                            'Wednesday': 'Wed',
+                            'Thursday': 'Thu',
+                            'Friday': 'Fri',
+                            'Saturday': 'Sat',
+                            'Sunday': 'Sun'
+                          };
+                          
+                          daysToApply = dates
+                            .filter((d) => {
+                              // Check if this day is a weekly off day for this employee
+                              const isWeeklyOffDay = employeeWeeklyOffDays.some(offDay => {
+                                const mappedDay = dayNameMapping[offDay];
+                                return mappedDay === d.weekday;
+                              });
+                              
+                              // Check if it's already marked as holiday in attendance data
+                              const isMarkedHoliday = monthAttendanceData[d.day] === "H";
+                              
+                              // Include if it's a weekly off or marked holiday
+                              return isWeeklyOffDay || isMarkedHoliday;
+                            })
+                            .map((d) => d.day);
+                          
+                          console.log('Holidays filter applied - Days to apply:', daysToApply);
                         }
                         const newData = { ...monthAttendanceData };
                         daysToApply.forEach((day) => {
