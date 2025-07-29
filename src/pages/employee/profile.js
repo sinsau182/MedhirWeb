@@ -159,7 +159,7 @@ function EmployeeProfilePage() {
       }
     });
     setIdProofValidationErrors((prev) => ({ ...prev, ...newErrors }));
-  }, [formData.idProofs, idProofFieldTouched, isPageInEditMode, employeeById]);
+  }, [isPageInEditMode]); // Remove idProofFieldTouched dependency to prevent infinite loop
 
   
   // Validation functions
@@ -720,10 +720,11 @@ function EmployeeProfilePage() {
   const fetchByEmployeeId = useCallback(async () => {
     const employeeIdToFetch = sessionStorage.getItem("employeeId");
     const token = getItemFromSessionStorage("token");
+    const apiURL = publicRuntimeConfig.apiURL; // Get API URL once
     setLoading(true);
     try {
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/employee/id/${employeeIdToFetch}`,
+        `${apiURL}/employee/id/${employeeIdToFetch}`,
         {
           headers: {
             "Content-Type": "application/json",
@@ -742,7 +743,7 @@ function EmployeeProfilePage() {
         try {
           const token = getItemFromSessionStorage("token");
           const managerResponse = await fetch(
-            `${publicRuntimeConfig.apiURL}/employee/id/${data.reportingManager}`,
+            `${apiURL}/employee/id/${data.reportingManager}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -774,7 +775,7 @@ function EmployeeProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [publicRuntimeConfig.apiURL]); // Add dependencies that the function uses
+  }, []); // Remove publicRuntimeConfig.apiURL dependency to prevent infinite loop
 
   const fetchPendingChanges = () => {
     if (!employeeById?.pendingUpdateRequest) {
@@ -1072,7 +1073,7 @@ function EmployeeProfilePage() {
   // Fetch data on component mount
   useEffect(() => {
     fetchByEmployeeId();
-  }, [fetchByEmployeeId]);
+  }, []); // Remove fetchByEmployeeId dependency to prevent infinite loop
 
   // --- Input Handling ---
   const handleInputChange = (section, field, value) => {

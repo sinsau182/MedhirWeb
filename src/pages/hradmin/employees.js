@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Search, UserPlus, Calendar, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -19,9 +19,11 @@ function Employees() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
+  const [loggedInEmployeeId, setLoggedInEmployeeId] = useState(sessionStorage.getItem("employeeId"));
   console.log(employees)
 
   useEffect(() => {
+    setLoggedInEmployeeId(sessionStorage.getItem("employeeId"));
     const fetchData = async () => {
       try {
         await dispatch(fetchEmployees()).unwrap();
@@ -30,10 +32,16 @@ function Employees() {
       }
     };
     fetchData();
-  }, [dispatch]);
+  }, [dispatch, loggedInEmployeeId]);
 
   const handleRowClick = (employee) => {
     try {
+      // Check if the employee is the logged-in user
+      if (employee.employeeId === loggedInEmployeeId) {
+        toast.error("You cannot edit your own employee record from this page. Please use the profile page instead.");
+        return;
+      }
+
       // Map the active tab to the corresponding section in the Add New Employee form
       let activeSection = "personal"; // Default to personal section
 
@@ -399,17 +407,23 @@ function Employees() {
                         </td>
                       </tr>
                     ) : (
-                      filteredEmployees.map((employee) => (
-                        <tr
-                          key={employee.employeeId}
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => handleRowClick(employee)}
-                          onMouseEnter={() =>
-                            setHoveredEmployeeId(employee.employeeId)
-                          }
-                          onMouseLeave={() => setHoveredEmployeeId(null)}
-                        >
-                          {headers.map((header) => {
+                      filteredEmployees.map((employee) => {
+                        const isOwnRecord = employee.employeeId === loggedInEmployeeId;
+                        return (
+                          <tr
+                            key={employee.employeeId}
+                            className={`${
+                              isOwnRecord 
+                                ? "bg-gray-100 cursor-not-allowed opacity-75" 
+                                : "hover:bg-gray-50 cursor-pointer"
+                            }`}
+                            onClick={() => !isOwnRecord && handleRowClick(employee)}
+                            onMouseEnter={() =>
+                              setHoveredEmployeeId(employee.employeeId)
+                            }
+                            onMouseLeave={() => setHoveredEmployeeId(null)}
+                          >
+                          {headers.map((header, index) => {
                             const cellValue = getCellValue(
                               employee,
                               header.key
@@ -431,11 +445,18 @@ function Employees() {
                                     {cellValue}
                                   </span>
                                 )}
+                                {/* Show indicator for own record in the first column */}
+                                {index === 0 && isOwnRecord && (
+                                  <span className="absolute top-1 right-1 text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                                    You
+                                  </span>
+                                )}
                               </td>
                             );
                           })}
                         </tr>
-                      ))
+                      );
+                    })
                     )}
                   </tbody>
                 </table>
