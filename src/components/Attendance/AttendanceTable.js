@@ -41,7 +41,7 @@ const AttendanceTable = ({
     if (attendanceRecord.days[dayNumber]) {
       return attendanceRecord.days[dayNumber].statusCode;
     }
-    
+
     // Return null if no status code is available (empty box)
     return null;
   };
@@ -50,7 +50,12 @@ const AttendanceTable = ({
   let dataToRender = filteredEmployees;
 
   // If we have attendance data from the API and status filters are applied
-  if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0 && selectedStatuses.length > 0) {
+  if (
+    attendance &&
+    attendance.monthlyAttendance &&
+    attendance.monthlyAttendance.length > 0 &&
+    selectedStatuses.length > 0
+  ) {
     // Filter filteredEmployees based on the attendance status on the summaryDate
     dataToRender = filteredEmployees
       .filter((employee) => {
@@ -145,7 +150,9 @@ const AttendanceTable = ({
     // We still need to use the data from the 'attendance' state, but without filtering by status
     dataToRender = filteredEmployees
       .filter((employee) =>
-        attendance.monthlyAttendance.some((attRec) => attRec.employeeId === employee.id)
+        attendance.monthlyAttendance.some(
+          (attRec) => attRec.employeeId === employee.id
+        )
       )
       .map((employee) => {
         const empAttendanceRecord = attendance.monthlyAttendance.find(
@@ -208,7 +215,9 @@ const AttendanceTable = ({
       });
   } else if (
     selectedStatuses.length > 0 &&
-    (!attendance || !attendance.monthlyAttendance || attendance.monthlyAttendance.length === 0)
+    (!attendance ||
+      !attendance.monthlyAttendance ||
+      attendance.monthlyAttendance.length === 0)
   ) {
     // If status filters are applied, but no attendance data was returned from the API for the selected date
     // This means no employee had the selected status on that date, so show empty table
@@ -526,16 +535,10 @@ const AttendanceTable = ({
                   ${isActive ? "" : "hover:bg-gray-200"}
                 `}
                 style={{
-                  background: isActive
-                    ? status.color
-                    : "#f3f4f6",
-                  borderColor: isActive
-                    ? status.color
-                    : "#e5e7eb",
+                  background: isActive ? status.color : "#f3f4f6",
+                  borderColor: isActive ? status.color : "#e5e7eb",
                   fontWeight: 400,
-                  boxShadow: isActive
-                    ? "0 2px 8px 0 rgba(0,0,0,0.04)"
-                    : "none",
+                  boxShadow: isActive ? "0 2px 8px 0 rgba(0,0,0,0.04)" : "none",
                   transition: "all 0.15s cubic-bezier(.4,0,.2,1)",
                 }}
               >
@@ -644,15 +647,20 @@ const AttendanceTable = ({
 
                   // Check if this date is in the future
                   const currentDate = new Date();
-                  const cellDate = new Date(selectedYear, new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth(), day);
+                  const cellDate = new Date(
+                    selectedYear,
+                    new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth(),
+                    day
+                  );
                   const isFutureDate = cellDate > currentDate;
 
                   // Determine the attendance data to display based on selectedDate and fetched attendance
                   if (selectedDate !== null) {
                     // If a specific date is selected, find the matching attendance record for that day in the fetched attendance
-                    const fetchedAttendanceForEmployee = attendance?.monthlyAttendance?.find(
-                      (attRec) => attRec.employeeId === employee.id
-                    );
+                    const fetchedAttendanceForEmployee =
+                      attendance?.monthlyAttendance?.find(
+                        (attRec) => attRec.employeeId === employee.id
+                      );
                     if (fetchedAttendanceForEmployee) {
                       // Use the helper function to get status for this date
                       const status = getAttendanceStatusForDate(
@@ -705,21 +713,26 @@ const AttendanceTable = ({
                   }
 
                   // Build date string for this cell
-                  const monthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
-                  const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  const monthIndex = new Date(
+                    `${selectedMonth} 1, ${selectedYear}`
+                  ).getMonth();
+                  const dateString = `${selectedYear}-${String(
+                    monthIndex + 1
+                  ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
                   const cellKey = `${employee.id}-${dateString}`;
-                  
+
                   // Check if this is a future date with "A" status that should be hidden
-                  const isFutureDateWithAbsent = isFutureDate && attendanceForDay.label === "A";
-                  
+                  const isFutureDateWithAbsent =
+                    isFutureDate && attendanceForDay.label === "A";
+
                   return (
                     <td
                       key={dateIdx}
                       data-date-cell
                       className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${
-                        isFutureDateWithAbsent 
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                        isFutureDateWithAbsent
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                           : getAttendanceColor(attendanceForDay.label)
                       }`}
                     >
@@ -727,50 +740,65 @@ const AttendanceTable = ({
                         <button
                           type="button"
                           className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition ${
-                            isFutureDate 
-                              ? 'cursor-not-allowed opacity-50' 
-                              : 'focus:ring-2 focus:ring-blue-400 hover:shadow-sm cursor-pointer'
+                            isFutureDate
+                              ? "cursor-not-allowed opacity-50"
+                              : "focus:ring-2 focus:ring-blue-400 hover:shadow-sm cursor-pointer"
                           }`}
                           style={{ background: "transparent" }}
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             // Only allow editing if it's not a future date
-                            if (!isFutureDate && onCellClick && (!popoverOpenCell || popoverOpenCell !== cellKey)) {
-                              onCellClick(employee, dateString, attendanceForDay.label, e);
+                            if (
+                              !isFutureDate &&
+                              onCellClick &&
+                              (!popoverOpenCell || popoverOpenCell !== cellKey)
+                            ) {
+                              onCellClick(
+                                employee,
+                                dateString,
+                                attendanceForDay.label,
+                                e
+                              );
                             }
                           }}
                           tabIndex={isFutureDate ? -1 : 0}
                           title={
-                            isFutureDate 
-                              ? `Cannot edit future date: ${dateString}` 
+                            isFutureDate
+                              ? `Cannot edit future date: ${dateString}`
                               : `Edit attendance for ${employee.name} on ${dateString}`
                           }
                           disabled={isFutureDate || popoverOpenCell === cellKey}
                         >
                           {/* Hide "A" text for future dates, show all other statuses */}
-                          {isFutureDateWithAbsent ? '' : attendanceForDay.label?.toUpperCase()}
+                          {isFutureDateWithAbsent
+                            ? ""
+                            : attendanceForDay.label?.toUpperCase()}
                         </button>
                       ) : (
                         // Show empty clickable box for unmarked attendance
                         <button
                           type="button"
                           className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition border border-gray-300 hover:border-gray-400 hover:bg-gray-50 ${
-                            isFutureDate 
-                              ? 'cursor-not-allowed opacity-50' 
-                              : 'cursor-pointer focus:ring-2 focus:ring-blue-400'
+                            isFutureDate
+                              ? "cursor-not-allowed opacity-50"
+                              : "cursor-pointer focus:ring-2 focus:ring-blue-400"
                           }`}
                           style={{ background: "transparent" }}
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             // Only allow editing if it's not a future date
-                            if (!isFutureDate && onCellClick && (!popoverOpenCell || popoverOpenCell !== cellKey)) {
+                            if (
+                              !isFutureDate &&
+                              onCellClick &&
+                              (!popoverOpenCell || popoverOpenCell !== cellKey)
+                            ) {
                               onCellClick(employee, dateString, null, e);
                             }
                           }}
                           tabIndex={isFutureDate ? -1 : 0}
                           title={
-                            isFutureDate 
-                              ? `Cannot edit future date: ${dateString}` 
+                            isFutureDate
+                              ? `Cannot edit future date: ${dateString}`
                               : `Mark attendance for ${employee.name} on ${dateString}`
                           }
                           disabled={isFutureDate || popoverOpenCell === cellKey}
@@ -791,4 +819,4 @@ const AttendanceTable = ({
   );
 };
 
-export default AttendanceTable; 
+export default AttendanceTable;
