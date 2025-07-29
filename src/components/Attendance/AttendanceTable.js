@@ -35,15 +35,15 @@ const AttendanceTable = ({
 }) => {
   // Helper function to get attendance status for a specific date from the new API format
   const getAttendanceStatusForDate = (attendanceRecord, dayNumber) => {
-    if (!attendanceRecord?.days) return "A"; // Default to Absent if no data
+    if (!attendanceRecord?.days) return null; // Return null if no data (empty box)
 
     // Check if the day exists in the days object
     if (attendanceRecord.days[dayNumber]) {
       return attendanceRecord.days[dayNumber].statusCode;
     }
     
-    // Default to "A" (Absent) if no status code is available
-    return "A";
+    // Return null if no status code is available (empty box)
+    return null;
   };
 
   // Determine which data to use for rendering
@@ -82,7 +82,7 @@ const AttendanceTable = ({
 
         // Create attendance array for the employee using fetched data
         const attendanceArray = Array(dates.length)
-          .fill({ value: null, label: "" })
+          .fill({ value: null, label: null })
           .map((_, index) => {
             const day = index + 1;
             const status = getAttendanceStatusForDate(
@@ -90,7 +90,11 @@ const AttendanceTable = ({
               day.toString()
             );
 
-            // Map the status to the correct format
+            // If status is null, return empty object
+            if (status === null) {
+              return { value: null, label: null };
+            }
+
             let value;
             switch (status.toUpperCase()) {
               case "P":
@@ -149,13 +153,18 @@ const AttendanceTable = ({
         );
 
         const attendanceArray = Array(dates.length)
-          .fill({ value: null, label: "" })
+          .fill({ value: null, label: null })
           .map((_, index) => {
             const day = index + 1;
             const status = getAttendanceStatusForDate(
               empAttendanceRecord,
               day.toString()
             );
+
+            // If status is null, return empty object
+            if (status === null) {
+              return { value: null, label: null };
+            }
 
             let value;
             switch (status.toUpperCase()) {
@@ -742,10 +751,33 @@ const AttendanceTable = ({
                           {isFutureDateWithAbsent ? '' : attendanceForDay.label?.toUpperCase()}
                         </button>
                       ) : (
-                        // Show placeholder for future dates without attendance data
-                        <span className={`text-gray-400 ${isFutureDate ? 'cursor-not-allowed' : ''}`}>
-                          {isFutureDate ? '--' : ''}
-                        </span>
+                        // Show empty clickable box for unmarked attendance
+                        <button
+                          type="button"
+                          className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition border border-gray-300 hover:border-gray-400 hover:bg-gray-50 ${
+                            isFutureDate 
+                              ? 'cursor-not-allowed opacity-50' 
+                              : 'cursor-pointer focus:ring-2 focus:ring-blue-400'
+                          }`}
+                          style={{ background: "transparent" }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            // Only allow editing if it's not a future date
+                            if (!isFutureDate && onCellClick && (!popoverOpenCell || popoverOpenCell !== cellKey)) {
+                              onCellClick(employee, dateString, null, e);
+                            }
+                          }}
+                          tabIndex={isFutureDate ? -1 : 0}
+                          title={
+                            isFutureDate 
+                              ? `Cannot edit future date: ${dateString}` 
+                              : `Mark attendance for ${employee.name} on ${dateString}`
+                          }
+                          disabled={isFutureDate || popoverOpenCell === cellKey}
+                        >
+                          {/* Show empty box for unmarked attendance */}
+                          <span className="text-gray-400 text-xs">□</span>
+                        </button>
                       )}
                     </td>
                   );

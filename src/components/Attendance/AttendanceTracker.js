@@ -387,7 +387,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           name: employee.name,
           department: employee.departmentName,
           p_twd: "0/0",
-          attendance: Array(dates.length).fill({ value: null, label: "" }),
+          attendance: Array(dates.length).fill({ value: null, label: null }),
         };
       }
 
@@ -398,12 +398,12 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           if (attendanceRecord.days[dayNumber]) {
             return attendanceRecord.days[dayNumber].statusCode;
           }
-          return "A"; // Default to Absent if no status code is available
+          return null; // Return null if no status code is available (empty box)
         }
 
         // Fallback to old format
         const attendanceData = attendanceRecord.attendance;
-        if (!attendanceData) return "A";
+        if (!attendanceData) return null; // Return null if no attendance data
 
         const monthIndex = new Date(
           `${selectedMonth} 1, ${selectedYear}`
@@ -448,7 +448,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
           return "A";
         }
 
-        return "A"; // Default to Absent
+        return null; // Return null if no status found (empty box)
       };
 
       const attendanceArray = Array(dates.length)
@@ -456,6 +456,11 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         .map((_, index) => {
           const day = index + 1;
           const status = getAttendanceStatusForDate(day.toString());
+
+          // If status is null, return empty object
+          if (status === null) {
+            return { value: null, label: null };
+          }
 
           let value;
           switch (status.toUpperCase()) {
@@ -2775,7 +2780,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                 {cellPopoverStatus
                   ? statusOptions.find((opt) => opt.value === cellPopoverStatus)
                       ?.label
-                  : "-"}
+                  : "No attendance marked"}
               </span>
             </div>
             

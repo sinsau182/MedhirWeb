@@ -547,6 +547,21 @@ function EmployeeForm() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Keep sidebar expanded for HR pages
   const [previewModal, setPreviewModal] = useState({ show: false });
   const [activeSection, setActiveSection] = useState("personal");
+  const [showFloatingButtons, setShowFloatingButtons] = useState(false);
+  const originalButtonsRef = useRef(null);
+  const formRef = useRef(null);
+
+  // Function to scroll to original buttons
+  const scrollToOriginalButtons = () => {
+    if (originalButtonsRef.current) {
+      originalButtonsRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'end' 
+      });
+      // Hide floating buttons after scrolling
+      setTimeout(() => setShowFloatingButtons(false), 500);
+    }
+  };
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
@@ -1655,6 +1670,26 @@ function EmployeeForm() {
     if (activeSectionParam) setActiveSection(activeSectionParam);
   }, [activeMainTab, activeSectionParam]);
 
+  // Scroll detection for floating buttons
+  useEffect(() => {
+    const handleScroll = () => {
+      if (originalButtonsRef.current && formRef.current) {
+        const rect = originalButtonsRef.current.getBoundingClientRect();
+        const formRect = formRef.current.getBoundingClientRect();
+        
+        // Check if original buttons are visible within the form container viewport
+        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+        setShowFloatingButtons(!isVisible);
+      }
+    };
+
+    // Use window scroll since the form itself doesn't scroll
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleFileUpload = (documentType, file) => {
     if (file) {
       // Restrict file size to 5MB
@@ -2325,8 +2360,8 @@ function EmployeeForm() {
               </h1>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col mt-4">
-              <div className="bg-white rounded-2xl shadow-sm p-4 relative overflow-hidden flex-1">
+            <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col mt-4 relative">
+              <div className="bg-white rounded-2xl shadow-sm p-4 relative overflow-hidden flex flex-col min-h-[calc(100vh-200px)]">
                 {/* Section Tabs */}
                 <div className="relative z-10 flex gap-4 mb-8 border-b border-gray-100 pb-2">
                   {sections.map((section) => (
@@ -2373,7 +2408,7 @@ function EmployeeForm() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative z-10 flex flex-col min-h-[600px]"
+                  className="relative z-10 space-y-6 flex-1 pb-20"
                 >
                   {/* Personal Details Section */}
                   {activeSection === "personal" && (
@@ -4299,157 +4334,129 @@ function EmployeeForm() {
                     </div>
                   )}
 
-                  {/* Action Buttons - visible on all sections */}
-                  <div className="flex justify-between items-center mt-auto pt-6 border-t border-gray-100 gap-2">
-                    {/* Left: Back Button */}
-                    <div>
-                      {(() => {
-                        const sectionsArr = [
-                          "personal",
-                          "idProofs",
-                          "bank",
-                          "salary",
-                        ];
-                        const currentIndex = sectionsArr.indexOf(activeSection);
-                        if (currentIndex > 0) {
-                          return (
-                            <motion.button
-                              type="button"
-                              className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
-                              onClick={() =>
-                                setActiveSection(sectionsArr[currentIndex - 1])
-                              }
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                                    {/* Original Action Bar */}
+                  <div ref={originalButtonsRef} className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        {(() => {
+                          const sectionsArr = [
+                            "personal",
+                            "idProofs",
+                            "bank",
+                            "salary",
+                          ];
+                          const currentIndex = sectionsArr.indexOf(activeSection);
+                          if (currentIndex > 0) {
+                            return (
+                              <motion.button
+                                type="button"
+                                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                onClick={() =>
+                                  setActiveSection(sectionsArr[currentIndex - 1])
+                                }
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M15 19l-7-7 7-7"
-                                />
-                              </svg>
-                              Back
-                            </motion.button>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                    {/* Right: Cancel, Next, Save and Exit */}
-                    <div className="flex gap-2 items-center">
-                      <motion.button
-                        type="button"
-                        className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg flex items-center gap-2"
-                        onClick={() =>
-                          handleOpenModal("cancel", () => {
-                            handleCloseModal();
-                            router.push("/hradmin/employees");
-                          })
-                        }
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        Cancel
-                      </motion.button>
-                      {activeSection !== "salary" && (
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M15 19l-7-7 7-7"
+                                  />
+                                </svg>
+                                Back
+                              </motion.button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                      <div className="flex gap-3">
                         <motion.button
                           type="button"
-                          className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                          onClick={() => {
-                            // Move to next section/tab
-                            const sectionsArr = [
-                              "personal",
-                              "idProofs",
-                              "bank",
-                              "salary",
-                            ];
-                            const currentIndex =
-                              sectionsArr.indexOf(activeSection);
-                            if (currentIndex < sectionsArr.length - 1) {
-                              setActiveSection(sectionsArr[currentIndex + 1]);
-                            }
-                          }}
+                          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                          onClick={() =>
+                            handleOpenModal("cancel", () => {
+                              handleCloseModal();
+                              router.push("/hradmin/employees");
+                            })
+                          }
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <span>Next</span>
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M13 7l5 5m0 0l-5 5m5-5H6"
-                            />
-                          </svg>
+                          Cancel
                         </motion.button>
-                      )}
-                      <motion.button
-                        type="button"
-                        className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                        onClick={() =>
-                          handleOpenModal("saveExit", () => {
-                            handleCloseModal();
-                            handleSaveAndExit();
-                          })
-                        }
-                        disabled={loading}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {loading ? (
-                          <>
-                            <svg
-                              className="animate-spin h-4 w-4"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                fill="none"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                            <span>Saving...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Save and Exit</span>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </>
+                        {activeSection !== "salary" && (
+                          <motion.button
+                            type="button"
+                            className="px-6 py-2 border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                            onClick={() => {
+                              // Move to next section/tab
+                              const sectionsArr = [
+                                "personal",
+                                "idProofs",
+                                "bank",
+                                "salary",
+                              ];
+                              const currentIndex =
+                                sectionsArr.indexOf(activeSection);
+                              if (currentIndex < sectionsArr.length - 1) {
+                                setActiveSection(sectionsArr[currentIndex + 1]);
+                              }
+                            }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            Next
+                          </motion.button>
                         )}
-                      </motion.button>
+                        <motion.button
+                          type="button"
+                          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                          onClick={() =>
+                            handleOpenModal("saveExit", () => {
+                              handleCloseModal();
+                              handleSaveAndExit();
+                            })
+                          }
+                          disabled={loading}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {loading ? (
+                            <>
+                              <svg
+                                className="animate-spin h-4 w-4"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            "Save and Exit"
+                          )}
+                        </motion.button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -4702,6 +4709,139 @@ function EmployeeForm() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Floating Action Bar */}
+      {showFloatingButtons && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="absolute bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 z-20 px-6 py-4 flex-shrink-0"
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              {(() => {
+                const sectionsArr = [
+                  "personal",
+                  "idProofs",
+                  "bank",
+                  "salary",
+                ];
+                const currentIndex = sectionsArr.indexOf(activeSection);
+                if (currentIndex > 0) {
+                  return (
+                    <motion.button
+                      type="button"
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      onClick={() =>
+                        setActiveSection(sectionsArr[currentIndex - 1])
+                      }
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                      Back
+                    </motion.button>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+            <div className="flex gap-3">
+              <motion.button
+                type="button"
+                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                onClick={() =>
+                  handleOpenModal("cancel", () => {
+                    handleCloseModal();
+                    router.push("/hradmin/employees");
+                  })
+                }
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Cancel
+              </motion.button>
+              {activeSection !== "salary" && (
+                <motion.button
+                  type="button"
+                  className="px-6 py-2 border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                  onClick={() => {
+                    // Move to next section/tab
+                    const sectionsArr = [
+                      "personal",
+                      "idProofs",
+                      "bank",
+                      "salary",
+                    ];
+                    const currentIndex =
+                      sectionsArr.indexOf(activeSection);
+                    if (currentIndex < sectionsArr.length - 1) {
+                      setActiveSection(sectionsArr[currentIndex + 1]);
+                    }
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Next
+                </motion.button>
+              )}
+              <motion.button
+                type="button"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                onClick={() =>
+                  handleOpenModal("saveExit", () => {
+                    handleCloseModal();
+                    handleSaveAndExit();
+                  })
+                }
+                disabled={loading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  "Save and Exit"
+                )}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
       )}
     </div>
   );
