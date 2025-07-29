@@ -407,14 +407,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     }
   }, [isSingleEmployeeModalOpen, isAllEmployeesDateModalOpen, activeTab]);
 
-  // Reset dropdown states when All Employees Date modal opens
-  useEffect(() => {
-    if (isAllEmployeesDateModalOpen) {
-      // Don't reset any state when switching tabs - preserve all data
-      // Only reset search if needed
-      // setAllEmployeesSearch("");
-    }
-  }, [isAllEmployeesDateModalOpen]);
+
 
   // Callbacks
   const generateAttendanceData = useCallback(
@@ -708,6 +701,35 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     [searchInput, employees, generateAttendanceData]
   );
 
+  // Load existing data when All Employees Date modal opens
+  useEffect(() => {
+    if (isAllEmployeesDateModalOpen && selectedDateForAll) {
+      // Load existing attendance data for the currently selected date
+      const initialData = {};
+      const selectedDay = new Date(selectedDateForAll).getDate();
+      
+      filteredEmployees.forEach((employee) => {
+        // Check if we have attendance data for this employee and date
+        let existingStatus = null;
+        
+        if (attendance && attendance.monthlyAttendance) {
+          const employeeAttendance = attendance.monthlyAttendance.find(
+            (attRec) => attRec.employeeId === employee.id
+          );
+          
+          if (employeeAttendance && employeeAttendance.days) {
+            existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
+          }
+        }
+        
+        initialData[employee.id] = existingStatus;
+      });
+      
+      setAllEmployeesAttendanceData(initialData);
+      console.log('Modal opened - loaded existing attendance data for date:', selectedDateForAll, 'Data:', initialData);
+    }
+  }, [isAllEmployeesDateModalOpen, selectedDateForAll, attendance, filteredEmployees]);
+
   const departmentOptions = useMemo(() => {
     const departments = new Set();
     employees.forEach((employee) => {
@@ -919,12 +941,30 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   // All Employees Date Modal Functions
   const handleDateSelectForAll = (date) => {
     setSelectedDateForAll(date);
-    // Initialize attendance data for all employees
+    
+    // Load existing attendance data for the selected date
     const initialData = {};
+    const selectedDay = new Date(date).getDate();
+    
     filteredEmployees.forEach((employee) => {
-      initialData[employee.id] = null; // Use null instead of empty string
+      // Check if we have attendance data for this employee and date
+      let existingStatus = null;
+      
+      if (attendance && attendance.monthlyAttendance) {
+        const employeeAttendance = attendance.monthlyAttendance.find(
+          (attRec) => attRec.employeeId === employee.id
+        );
+        
+        if (employeeAttendance && employeeAttendance.days) {
+          existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
+        }
+      }
+      
+      initialData[employee.id] = existingStatus;
     });
+    
     setAllEmployeesAttendanceData(initialData);
+    console.log('Loaded existing attendance data for date:', date, 'Data:', initialData);
   };
 
   const setAllEmployeesStatus = (status) => {
