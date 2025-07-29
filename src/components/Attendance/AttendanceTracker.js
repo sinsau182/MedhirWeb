@@ -52,6 +52,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     message: manualAttendanceMessage,
   } = useSelector((state) => state.manualAttendance);
 
+
+
   // State variables
   const [searchInput, setSearchInput] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(
@@ -303,6 +305,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     selectedStatuses,
     role,
   ]);
+
+
 
   // Handle manual attendance success and error messages
   useEffect(() => {
@@ -1831,17 +1835,65 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             .filter((d) => !monthAttendanceData[d.day] && !d.isFuture)
                             .map((d) => d.day);
                         } else if (scope === "working") {
+                          // Get the employee's weekly offs configuration
+                          const weeklyOffs = selectedEmployeeForMonth?.weeklyOffs || [];
+                          
+                          // Helper function to check if a date is a holiday
+                          const isHoliday = (date) => {
+                            // Check if it's a weekly off
+                            if (weeklyOffs.includes(date.weekday)) {
+                              return true;
+                            }
+                            
+                            // Check if it's already marked as holiday in attendance data
+                            if (monthAttendanceData[date.day] === "H") {
+                              return true;
+                            }
+                            
+                            // Check if it's a future date
+                            if (date.isFuture) {
+                              return true;
+                            }
+                            
+                            return false;
+                          };
+                          
                           daysToApply = dates
-                            .filter(
-                              (d) => d.weekday !== "Sun" && d.weekday !== "Sat" && !d.isFuture
-                            )
+                            .filter((d) => !isHoliday(d))
                             .map((d) => d.day);
+                          
+                          // Debug logging
+                          console.log("All Working Days filter applied:");
+                          console.log("- Employee weekly offs:", weeklyOffs);
+                          console.log("- Days to apply:", daysToApply);
+                          console.log("- Total days in month:", dates.length);
                         } else if (scope === "weekends") {
+                          // Get the employee's weekly offs configuration
+                          const weeklyOffs = selectedEmployeeForMonth?.weeklyOffs || [];
+                          
+                          // Helper function to check if a date is a weekend/holiday
+                          const isWeekendOrHoliday = (date) => {
+                            // Check if it's a weekly off
+                            if (weeklyOffs.includes(date.weekday)) {
+                              return true;
+                            }
+                            
+                            // Check if it's already marked as holiday in attendance data
+                            if (monthAttendanceData[date.day] === "H") {
+                              return true;
+                            }
+                            
+                            return false;
+                          };
+                          
                           daysToApply = dates
-                            .filter(
-                              (d) => d.weekday === "Sun" || d.weekday === "Sat"
-                            )
+                            .filter((d) => isWeekendOrHoliday(d))
                             .map((d) => d.day);
+                          
+                          // Debug logging
+                          console.log("Weekends filter applied:");
+                          console.log("- Employee weekly offs:", weeklyOffs);
+                          console.log("- Days to apply:", daysToApply);
                         }
                         const newData = { ...monthAttendanceData };
                         daysToApply.forEach((day) => {
