@@ -66,7 +66,7 @@ const Leaves = () => {
     error: holidayError,
   } = useSelector((state) => state.publicHoliday);
   const calendarRef = useRef(null);
-  const [showLOPWarning, setShowLOPWarning] = useState(false);
+
   const [requestedDays, setRequestedDays] = useState(0);
 
   const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
@@ -211,13 +211,6 @@ const Leaves = () => {
     const totalDays = calculateRequestedDays(dates);
     setRequestedDays(totalDays);
 
-    // Check if requested days exceed available balance
-    if (leaveBalance && totalDays > leaveBalance.totalAvailableBalance) {
-      setShowLOPWarning(true);
-    } else {
-      setShowLOPWarning(false);
-    }
-
     setLeaveForm((prev) => ({ ...prev, dates }));
   };
 
@@ -229,8 +222,8 @@ const Leaves = () => {
   const handleCompOffSubmit = async (e) => {
     e.preventDefault();
 
-    if (!compOffForm.dates.length || !compOffForm.description) {
-      toast.error("Please select a date and provide a description");
+    if (!compOffForm.dates.length) {
+      toast.error("Please select a date");
       return;
     }
 
@@ -246,7 +239,7 @@ const Leaves = () => {
           compOffForm.dates[0]?.timeSlot ||
           compOffForm.dates[0]?.shiftType ||
           "FULL_DAY",
-        reason: compOffForm.description,
+        reason: compOffForm.description || "", // Allow empty description
       };
 
       const resultAction = await dispatch(applyCompOffLeave(formData));
@@ -280,21 +273,12 @@ const Leaves = () => {
         leaveForm.dates[0]?.timeSlot ||
         leaveForm.dates[0]?.shiftType ||
         "FULL_DAY",
-      reason: leaveForm.reason,
+      reason: leaveForm.reason || "", // Allow empty reason
     };
 
-    if (!formData.leaveDates.length || !formData.reason) {
-      toast.error("Please select at least one date and provide a reason");
+    if (!formData.leaveDates.length) {
+      toast.error("Please select at least one date");
       return;
-    }
-
-    if (showLOPWarning) {
-      const confirmLOP = window.confirm(
-        `Warning: You are requesting ${requestedDays} days of leave but only have ${leaveBalance.totalAvailableBalance} days available. \n\nExcess days will be marked as Loss of Pay (LOP). \n\nDo you want to continue?`
-      );
-      if (!confirmLOP) {
-        return;
-      }
     }
 
     try {
@@ -712,14 +696,6 @@ const Leaves = () => {
                         Dates with existing leave requests are disabled
                       </div>
                     )} */}
-                    {showLOPWarning && (
-                      <div className="mt-2 text-amber-600 text-sm flex items-center bg-amber-50 p-2 rounded border border-amber-200">
-                        <span className="mr-2">ℹ️</span>
-                        <span>
-                          Your requested days exceed your available balance.
-                        </span>
-                      </div>
-                    )}
                     {leaveForm.dates.length > 0 && (
                       <div className="mt-2 text-sm text-gray-600">
                         Requested:{" "}
@@ -735,7 +711,7 @@ const Leaves = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason for Leave
+                      Reason for Leave (Optional)
                     </label>
                     <textarea
                       name="reason"
@@ -743,7 +719,7 @@ const Leaves = () => {
                       onChange={handleLeaveFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide a reason for your leave request..."
+                      placeholder="Please provide a reason for your leave request (optional)..."
                     />
                   </div>
 
@@ -821,7 +797,7 @@ const Leaves = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                      Description (Optional)
                     </label>
                     <textarea
                       name="description"
@@ -829,7 +805,7 @@ const Leaves = () => {
                       onChange={handleCompOffFormChange}
                       rows={4}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
-                      placeholder="Please provide details about your comp-off request..."
+                      placeholder="Please provide details about your comp-off request (optional)..."
                     />
                   </div>
 
