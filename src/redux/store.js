@@ -28,6 +28,8 @@ import pipelineReducer from "./slices/pipelineSlice";
 import masterModulesReducer from "./slices/masterModulesSlice";
 import manualAttendanceReducer from "./slices/manualAttendanceSlice";
 import minioReducer from "./slices/minioSlice";
+import invoiceReducer from "./slices/invoiceSlice";
+import receiptReducer from "./slices/receiptSlice";
 // import assetCategoryReducer from './slices/assetCategorySlice';
 // import assetLocationReducer from './slices/assetLocationSlice';
 // import assetStatusReducer from './slices/assetStatusSlice';
@@ -74,7 +76,8 @@ export const store = configureStore({
     // customFields: customFieldsReducer,
     // idFormatting: idFormattingReducer,
     // assets: assetReducer,
-    
+    invoices: invoiceReducer,
+    receipts: receiptReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
