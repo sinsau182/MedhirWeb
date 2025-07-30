@@ -107,9 +107,8 @@ const DepartmentSelect = ({
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""
+              }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -147,11 +146,10 @@ const DepartmentSelect = ({
             {options.map((department) => (
               <div
                 key={department.departmentId}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.departmentId === department.departmentId
-                    ? "bg-blue-50"
-                    : ""
-                }`}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${value?.departmentId === department.departmentId
+                  ? "bg-blue-50"
+                  : ""
+                  }`}
                 onClick={() => {
                   onChange(department);
                   setIsOpen(false);
@@ -236,9 +234,8 @@ const DesignationSelect = ({
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""
+              }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -265,11 +262,10 @@ const DesignationSelect = ({
             {options.map((designation) => (
               <div
                 key={designation.designationId}
-                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                  value?.designationId === designation.designationId
-                    ? "bg-blue-50"
-                    : ""
-                }`}
+                className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${value?.designationId === designation.designationId
+                  ? "bg-blue-50"
+                  : ""
+                  }`}
                 onClick={() => {
                   onChange({
                     designationId: designation.designationId,
@@ -417,9 +413,8 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
             )}
           </div>
           <svg
-            className={`w-4 h-4 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""
+              }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -454,11 +449,10 @@ const ReportingManagerSelect = ({ label, options, value, onChange }) => {
                 filteredOptions.map((manager) => (
                   <div
                     key={manager.employeeId}
-                    className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${
-                      value?.employeeId === manager.employeeId
-                        ? "bg-blue-50"
-                        : ""
-                    }`}
+                    className={`px-4 py-2.5 cursor-pointer hover:bg-gray-100 ${value?.employeeId === manager.employeeId
+                      ? "bg-blue-50"
+                      : ""
+                      }`}
                     onClick={() => handleSelect(manager)}
                   >
                     <TruncatedText
@@ -547,6 +541,33 @@ function EmployeeForm() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Keep sidebar expanded for HR pages
   const [previewModal, setPreviewModal] = useState({ show: false });
   const [activeSection, setActiveSection] = useState("personal");
+  const [showFloatingButtons, setShowFloatingButtons] = useState(false);
+  const [formDimensions, setFormDimensions] = useState({ left: 0, width: 0 });
+  const originalButtonsRef = useRef(null);
+  const formRef = useRef(null);
+  const tabBarRef = useRef(null);
+
+  // Function to scroll to original buttons
+  const scrollToOriginalButtons = () => {
+    if (originalButtonsRef.current) {
+      originalButtonsRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end'
+      });
+      // Hide floating buttons after scrolling
+      setTimeout(() => setShowFloatingButtons(false), 500);
+    }
+  };
+
+  // Function to scroll to form top
+  const scrollToFormTop = () => {
+    if (formRef.current) {
+      formRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [managers, setManagers] = useState([]);
@@ -611,10 +632,10 @@ function EmployeeForm() {
             ...dept,
             name: dept.name
               ? dept.name
-                  .replace(/[bedjw]{5,}/g, "") // Remove 5+ consecutive debug chars
-                  .replace(/\|.*$/, "") // Remove everything after pipe
-                  .replace(/\s+/g, " ") // Normalize spaces
-                  .trim()
+                .replace(/[bedjw]{5,}/g, "") // Remove 5+ consecutive debug chars
+                .replace(/\|.*$/, "") // Remove everything after pipe
+                .replace(/\s+/g, " ") // Normalize spaces
+                .trim()
               : dept.name,
           }));
           setDepartments(cleanedDepartments);
@@ -760,9 +781,9 @@ function EmployeeForm() {
             joiningDate: parsedEmployee.joiningDate || "",
             reportingManager: parsedEmployee.reportingManager
               ? {
-                  employeeId: parsedEmployee.reportingManager,
-                  name: parsedEmployee.reportingManagerName,
-                }
+                employeeId: parsedEmployee.reportingManager,
+                name: parsedEmployee.reportingManagerName,
+              }
               : "",
             overtimeEligibile: Boolean(parsedEmployee.overtimeEligibile),
             weeklyOffs: Array.isArray(parsedEmployee.weeklyOffs)
@@ -1655,6 +1676,53 @@ function EmployeeForm() {
     if (activeSectionParam) setActiveSection(activeSectionParam);
   }, [activeMainTab, activeSectionParam]);
 
+  // Enhanced scroll detection using IntersectionObserver
+  useEffect(() => {
+    if (!originalButtonsRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // Show floating buttons when original buttons are NOT intersecting (not visible)
+          setShowFloatingButtons(!entry.isIntersecting);
+        });
+      },
+      {
+        // Root margin to trigger slightly before the buttons come into view
+        rootMargin: '0px 0px -10px 0px',
+        // Threshold of 0 means trigger as soon as any part becomes visible
+        threshold: 0
+      }
+    );
+
+    observer.observe(originalButtonsRef.current);
+
+    return () => {
+      if (originalButtonsRef.current) {
+        observer.unobserve(originalButtonsRef.current);
+      }
+    };
+  }, []);
+
+  // Update form dimensions on window resize
+  useEffect(() => {
+    const updateFormDimensions = () => {
+      if (formRef.current) {
+        const rect = formRef.current.getBoundingClientRect();
+        setFormDimensions({
+          left: rect.left,
+          width: rect.width
+        });
+      }
+    };
+
+    // Update on mount and resize
+    updateFormDimensions();
+    window.addEventListener('resize', updateFormDimensions);
+
+    return () => window.removeEventListener('resize', updateFormDimensions);
+  }, []);
+
   const handleFileUpload = (documentType, file) => {
     if (file) {
       // Restrict file size to 5MB
@@ -1720,10 +1788,10 @@ function EmployeeForm() {
   const checkIdProofsCompletion = () => {
     return Boolean(
       formData.idProofs.aadharNo?.trim() &&
-        formData.idProofs.panNo?.trim() &&
-        formData.idProofs.passport?.trim() &&
-        formData.idProofs.drivingLicense?.trim() &&
-        formData.idProofs.voterId?.trim()
+      formData.idProofs.panNo?.trim() &&
+      formData.idProofs.passport?.trim() &&
+      formData.idProofs.drivingLicense?.trim() &&
+      formData.idProofs.voterId?.trim()
     );
   };
 
@@ -2299,6 +2367,13 @@ function EmployeeForm() {
   const filterAccountHolderNameInput = (value) =>
     value.replace(/[^A-Za-z ]/g, "");
 
+  // Helper to scroll tab bar into view
+  const scrollTabBarIntoView = () => {
+    if (tabBarRef.current) {
+      tabBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Sidebar
@@ -2307,9 +2382,8 @@ function EmployeeForm() {
       />
 
       <div
-        className={`flex-1 transition-all duration-300 ${
-          isSidebarCollapsed ? "ml-16" : "ml-56"
-        }`}
+        className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? "ml-16" : "ml-56"
+          }`}
       >
         <HradminNavbar />
 
@@ -2325,19 +2399,18 @@ function EmployeeForm() {
               </h1>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col mt-4">
-              <div className="bg-white rounded-2xl shadow-sm p-4 relative overflow-hidden flex-1">
+            <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col mt-4 relative">
+              <div className="bg-white rounded-2xl shadow-sm p-4 relative overflow-hidden flex flex-col min-h-[calc(100vh-200px)]">
                 {/* Section Tabs */}
-                <div className="relative z-10 flex gap-4 mb-8 border-b border-gray-100 pb-2">
+                <div ref={tabBarRef} className="relative z-10 flex gap-4 mb-8 border-b border-gray-100 pb-2">
                   {sections.map((section) => (
                     <motion.button
                       key={section.id}
                       type="button"
-                      className={`flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${
-                        activeSection === section.id
-                          ? "bg-blue-50 text-blue-600 shadow-sm"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={`flex items-center gap-2 px-6 py-3 text-sm font-medium rounded-xl transition-all duration-200 relative ${activeSection === section.id
+                        ? "bg-blue-50 text-blue-600 shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50"
+                        }`}
                       onClick={() => setActiveSection(section.id)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -2346,11 +2419,10 @@ function EmployeeForm() {
                         <span className="text-lg">{section.icon}</span>
                       ) : (
                         <section.icon
-                          className={`w-4 h-4 ${
-                            activeSection === section.id
-                              ? "text-blue-500"
-                              : "text-gray-400"
-                          }`}
+                          className={`w-4 h-4 ${activeSection === section.id
+                            ? "text-blue-500"
+                            : "text-gray-400"
+                            }`}
                         />
                       )}
                       {section.label}
@@ -2373,7 +2445,7 @@ function EmployeeForm() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative z-10 flex flex-col min-h-[600px]"
+                  className="relative z-10 space-y-6 flex-1 pb-20"
                 >
                   {/* Personal Details Section */}
                   {activeSection === "personal" && (
@@ -2567,21 +2639,18 @@ function EmployeeForm() {
                                       key={option.value}
                                       value={option.value}
                                       className={({ active, selected }) =>
-                                        `cursor-pointer select-none relative py-2 pl-10 pr-4 ${
-                                          active ? "bg-gray-100" : ""
-                                        } ${
-                                          selected
-                                            ? "font-semibold text-blue-600"
-                                            : "text-gray-900"
+                                        `cursor-pointer select-none relative py-2 pl-10 pr-4 ${active ? "bg-gray-100" : ""
+                                        } ${selected
+                                          ? "font-semibold text-blue-600"
+                                          : "text-gray-900"
                                         }`
                                       }
                                     >
                                       {({ selected }) => (
                                         <>
                                           <span
-                                            className={`block truncate ${
-                                              selected ? "font-semibold" : ""
-                                            }`}
+                                            className={`block truncate ${selected ? "font-semibold" : ""
+                                              }`}
                                           >
                                             {option.label}
                                           </span>
@@ -2611,12 +2680,11 @@ function EmployeeForm() {
                             </label>
                             <input
                               type="tel"
-                              className={`${inputClass} ${
-                                validationErrors.phone &&
+                              className={`${inputClass} ${validationErrors.phone &&
                                 (fieldTouched.phone || anyPersonalFieldFilled)
-                                  ? "border-red-500"
-                                  : ""
-                              }`}
+                                ? "border-red-500"
+                                : ""
+                                }`}
                               placeholder="Enter phone number"
                               value={formData.employee.phone || ""}
                               onChange={(e) =>
@@ -2650,13 +2718,12 @@ function EmployeeForm() {
                             </label>
                             <input
                               type="tel"
-                              className={`${inputClass} ${
-                                validationErrors.alternatePhone &&
+                              className={`${inputClass} ${validationErrors.alternatePhone &&
                                 (fieldTouched.alternatePhone ||
                                   anyPersonalFieldFilled)
-                                  ? "border-red-500"
-                                  : ""
-                              }`}
+                                ? "border-red-500"
+                                : ""
+                                }`}
                               placeholder="Enter alternate phone"
                               value={formData.employee.alternatePhone || ""}
                               onChange={(e) =>
@@ -2691,13 +2758,12 @@ function EmployeeForm() {
                             <div className="relative">
                               <input
                                 type="email"
-                                className={`${inputClass} ${
-                                  validationErrors.emailPersonal &&
+                                className={`${inputClass} ${validationErrors.emailPersonal &&
                                   (fieldTouched.emailPersonal ||
                                     anyPersonalFieldFilled)
-                                    ? "border-red-500"
-                                    : ""
-                                }`}
+                                  ? "border-red-500"
+                                  : ""
+                                  }`}
                                 placeholder="Enter personal email"
                                 value={formData.employee.emailPersonal || ""}
                                 onChange={(e) =>
@@ -2762,13 +2828,12 @@ function EmployeeForm() {
                             Current Address
                           </label>
                           <textarea
-                            className={`${inputClass} ${
-                              validationErrors.currentAddress &&
+                            className={`${inputClass} ${validationErrors.currentAddress &&
                               (fieldTouched.currentAddress ||
                                 anyPersonalFieldFilled)
-                                ? "border-red-500"
-                                : ""
-                            }`}
+                              ? "border-red-500"
+                              : ""
+                              }`}
                             rows="2"
                             placeholder="Enter current address"
                             value={formData.employee.currentAddress || ""}
@@ -2833,13 +2898,12 @@ function EmployeeForm() {
                             Permanent Address
                           </label>
                           <textarea
-                            className={`${inputClass} ${
-                              validationErrors.permanentAddress &&
+                            className={`${inputClass} ${validationErrors.permanentAddress &&
                               (fieldTouched.permanentAddress ||
                                 anyPersonalFieldFilled)
-                                ? "border-red-500"
-                                : ""
-                            }`}
+                              ? "border-red-500"
+                              : ""
+                              }`}
                             rows="2"
                             placeholder="Enter permanent address"
                             value={formData.employee.permanentAddress || ""}
@@ -2904,12 +2968,12 @@ function EmployeeForm() {
                               const weeklyHolidays =
                                 selectedDepartment.weeklyHolidays
                                   ? Array.isArray(
-                                      selectedDepartment.weeklyHolidays
-                                    )
+                                    selectedDepartment.weeklyHolidays
+                                  )
                                     ? selectedDepartment.weeklyHolidays
                                     : selectedDepartment.weeklyHolidays.split(
-                                        ","
-                                      )
+                                      ","
+                                    )
                                   : [];
                               handleInputChange(
                                 "employee",
@@ -2963,13 +3027,12 @@ function EmployeeForm() {
                           <div className="relative">
                             <input
                               type="email"
-                              className={`${inputClass} ${
-                                validationErrors.emailOfficial &&
+                              className={`${inputClass} ${validationErrors.emailOfficial &&
                                 (fieldTouched.emailOfficial ||
                                   anyPersonalFieldFilled)
-                                  ? "border-red-500"
-                                  : ""
-                              }`}
+                                ? "border-red-500"
+                                : ""
+                                }`}
                               placeholder="Enter official email"
                               value={formData.employee.emailOfficial || ""}
                               onChange={(e) =>
@@ -3031,13 +3094,12 @@ function EmployeeForm() {
                             </label>
                             <input
                               type="date"
-                              className={`${inputClass} ${
-                                validationErrors.joiningDate &&
+                              className={`${inputClass} ${validationErrors.joiningDate &&
                                 (fieldTouched.joiningDate ||
                                   anyPersonalFieldFilled)
-                                  ? "border-red-500"
-                                  : ""
-                              }`}
+                                ? "border-red-500"
+                                : ""
+                                }`}
                               value={formData.employee.joiningDate || ""}
                               onChange={(e) =>
                                 handleInputChange(
@@ -3121,13 +3183,12 @@ function EmployeeForm() {
                               </label>
                               <input
                                 type="text"
-                                className={`${inputClass} ${
-                                  validationErrors.uanNumber &&
+                                className={`${inputClass} ${validationErrors.uanNumber &&
                                   (fieldTouched.uanNumber ||
                                     anyPersonalFieldFilled)
-                                    ? "border-red-500"
-                                    : ""
-                                }`}
+                                  ? "border-red-500"
+                                  : ""
+                                  }`}
                                 value={formData.employee.uanNumber || ""}
                                 onChange={(e) =>
                                   handleInputChange(
@@ -3181,13 +3242,12 @@ function EmployeeForm() {
                               </label>
                               <input
                                 type="text"
-                                className={`${inputClass} ${
-                                  validationErrors.esicNumber &&
+                                className={`${inputClass} ${validationErrors.esicNumber &&
                                   (fieldTouched.esicNumber ||
                                     anyPersonalFieldFilled)
-                                    ? "border-red-500"
-                                    : ""
-                                }`}
+                                  ? "border-red-500"
+                                  : ""
+                                  }`}
                                 value={formData.employee.esicNumber || ""}
                                 onChange={(e) =>
                                   handleInputChange(
@@ -3229,14 +3289,14 @@ function EmployeeForm() {
                             key === "aadharNo"
                               ? "aadharImgUrl"
                               : key === "panNo"
-                              ? "pancardImgUrl"
-                              : key === "passport"
-                              ? "passportImgUrl"
-                              : key === "drivingLicense"
-                              ? "drivingLicenseImgUrl"
-                              : key === "voterId"
-                              ? "voterIdImgUrl"
-                              : "";
+                                ? "pancardImgUrl"
+                                : key === "passport"
+                                  ? "passportImgUrl"
+                                  : key === "drivingLicense"
+                                    ? "drivingLicenseImgUrl"
+                                    : key === "voterId"
+                                      ? "voterIdImgUrl"
+                                      : "";
                           const value = formData.idProofs[key] || "";
                           const hasFile = !!formData.idProofs[imgField];
                           const isTouched = idProofsTouched[key];
@@ -3272,13 +3332,12 @@ function EmployeeForm() {
                           return (
                             <div
                               key={key}
-                              className={`flex flex-col md:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md transition-all duration-200 ${
-                                showError
-                                  ? "ring-2 ring-red-200 border-red-400"
-                                  : hasFile
+                              className={`flex flex-col md:flex-row items-start gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md transition-all duration-200 ${showError
+                                ? "ring-2 ring-red-200 border-red-400"
+                                : hasFile
                                   ? "ring-2 ring-blue-100"
                                   : ""
-                              }`}
+                                }`}
                             >
                               <div className="flex-1">
                                 <label className="block text-sm font-semibold text-gray-800 mb-1">
@@ -3358,11 +3417,11 @@ function EmployeeForm() {
                                       >
                                         {formData.idProofs[imgField].type ===
                                           "application/pdf" ||
-                                        (typeof formData.idProofs[imgField] ===
-                                          "string" &&
-                                          formData.idProofs[imgField].endsWith(
-                                            ".pdf"
-                                          )) ? (
+                                          (typeof formData.idProofs[imgField] ===
+                                            "string" &&
+                                            formData.idProofs[imgField].endsWith(
+                                              ".pdf"
+                                            )) ? (
                                           <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">
                                             PDF
                                           </span>
@@ -3719,11 +3778,11 @@ function EmployeeForm() {
                             className={
                               inputClass +
                               (bankAccountError("accountNumber") ||
-                              ((bankTouched.accountNumber ||
-                                anyBankFieldFilled) &&
-                                validateAccountNumber(
-                                  formData.bankDetails.accountNumber
-                                ))
+                                ((bankTouched.accountNumber ||
+                                  anyBankFieldFilled) &&
+                                  validateAccountNumber(
+                                    formData.bankDetails.accountNumber
+                                  ))
                                 ? " border-red-500"
                                 : "")
                             }
@@ -3766,11 +3825,11 @@ function EmployeeForm() {
                             className={
                               inputClass +
                               (bankAccountError("accountHolderName") ||
-                              ((bankTouched.accountHolderName ||
-                                anyBankFieldFilled) &&
-                                validateAccountHolderName(
-                                  formData.bankDetails.accountHolderName
-                                ))
+                                ((bankTouched.accountHolderName ||
+                                  anyBankFieldFilled) &&
+                                  validateAccountHolderName(
+                                    formData.bankDetails.accountHolderName
+                                  ))
                                 ? " border-red-500"
                                 : "")
                             }
@@ -3814,8 +3873,8 @@ function EmployeeForm() {
                             className={
                               inputClass +
                               (bankAccountError("ifscCode") ||
-                              ((bankTouched.ifscCode || anyBankFieldFilled) &&
-                                validateIFSC(formData.bankDetails.ifscCode))
+                                ((bankTouched.ifscCode || anyBankFieldFilled) &&
+                                  validateIFSC(formData.bankDetails.ifscCode))
                                 ? " border-red-500"
                                 : "")
                             }
@@ -3852,8 +3911,8 @@ function EmployeeForm() {
                             className={
                               inputClass +
                               (bankAccountError("bankName") ||
-                              ((bankTouched.bankName || anyBankFieldFilled) &&
-                                validateBankName(formData.bankDetails.bankName))
+                                ((bankTouched.bankName || anyBankFieldFilled) &&
+                                  validateBankName(formData.bankDetails.bankName))
                                 ? " border-red-500"
                                 : "")
                             }
@@ -3992,11 +4051,11 @@ function EmployeeForm() {
                               <div className="flex items-center gap-3 w-full justify-center">
                                 {formData.bankDetails.passbookImgUrl.type ===
                                   "application/pdf" ||
-                                (typeof formData.bankDetails.passbookImgUrl ===
-                                  "string" &&
-                                  formData.bankDetails.passbookImgUrl.endsWith(
-                                    ".pdf"
-                                  )) ? (
+                                  (typeof formData.bankDetails.passbookImgUrl ===
+                                    "string" &&
+                                    formData.bankDetails.passbookImgUrl.endsWith(
+                                      ".pdf"
+                                    )) ? (
                                   <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">
                                     PDF
                                   </span>
@@ -4038,11 +4097,11 @@ function EmployeeForm() {
                                     .passbookImgUrl instanceof File
                                     ? formData.bankDetails.passbookImgUrl.name
                                     : typeof formData.bankDetails
-                                        .passbookImgUrl === "string"
-                                    ? formData.bankDetails.passbookImgUrl
+                                      .passbookImgUrl === "string"
+                                      ? formData.bankDetails.passbookImgUrl
                                         .split("/")
                                         .pop()
-                                    : ""}
+                                      : ""}
                                 </span>
                                 <button
                                   type="button"
@@ -4102,8 +4161,8 @@ function EmployeeForm() {
                               className={
                                 inputClass +
                                 (upiError("upiId") ||
-                                ((bankTouched.upiId || anyUPIFieldFilled) &&
-                                  validateUPI(formData.bankDetails.upiId))
+                                  ((bankTouched.upiId || anyUPIFieldFilled) &&
+                                    validateUPI(formData.bankDetails.upiId))
                                   ? " border-red-500"
                                   : "")
                               }
@@ -4139,11 +4198,11 @@ function EmployeeForm() {
                               className={
                                 inputClass +
                                 (upiError("upiContactName") ||
-                                ((bankTouched.upiContactName ||
-                                  anyUPIFieldFilled) &&
-                                  validateUPIName(
-                                    formData.bankDetails.upiContactName
-                                  ))
+                                  ((bankTouched.upiContactName ||
+                                    anyUPIFieldFilled) &&
+                                    validateUPIName(
+                                      formData.bankDetails.upiContactName
+                                    ))
                                   ? " border-red-500"
                                   : "")
                               }
@@ -4207,13 +4266,12 @@ function EmployeeForm() {
                               <input
                                 type="number"
                                 min="0"
-                                className={`${inputClass} pl-8 ${
-                                  field === "monthlyCtc" ||
+                                className={`${inputClass} pl-8 ${field === "monthlyCtc" ||
                                   field === "allowances" ||
                                   field === "hra"
-                                    ? "bg-gray-50"
-                                    : ""
-                                }`}
+                                  ? "bg-gray-50"
+                                  : ""
+                                  }`}
                                 value={formData.salaryDetails[field] || ""}
                                 onChange={(e) => {
                                   let val = e.target.value.replace(
@@ -4299,157 +4357,133 @@ function EmployeeForm() {
                     </div>
                   )}
 
-                  {/* Action Buttons - visible on all sections */}
-                  <div className="flex justify-between items-center mt-auto pt-6 border-t border-gray-100 gap-2">
-                    {/* Left: Back Button */}
-                    <div>
-                      {(() => {
-                        const sectionsArr = [
-                          "personal",
-                          "idProofs",
-                          "bank",
-                          "salary",
-                        ];
-                        const currentIndex = sectionsArr.indexOf(activeSection);
-                        if (currentIndex > 0) {
-                          return (
-                            <motion.button
-                              type="button"
-                              className="px-6 py-3 rounded-xl bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-all duration-200 shadow-lg flex items-center gap-2"
-                              onClick={() =>
-                                setActiveSection(sectionsArr[currentIndex - 1])
-                              }
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                  {/* Original Action Bar */}
+                  <div ref={originalButtonsRef} className="border-t border-gray-200 bg-gray-50 px-6 py-4" style={{ display: showFloatingButtons ? 'none' : 'block' }}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        {(() => {
+                          const sectionsArr = [
+                            "personal",
+                            "idProofs",
+                            "bank",
+                            "salary",
+                          ];
+                          const currentIndex = sectionsArr.indexOf(activeSection);
+                          if (currentIndex > 0) {
+                            return (
+                              <motion.button
+                                type="button"
+                                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                onClick={() => {
+                                  setActiveSection(sectionsArr[currentIndex - 1]);
+                                  scrollTabBarIntoView();
+                                }}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth="2"
-                                  d="M15 19l-7-7 7-7"
-                                />
-                              </svg>
-                              Back
-                            </motion.button>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
-                    {/* Right: Cancel, Next, Save and Exit */}
-                    <div className="flex gap-2 items-center">
-                      <motion.button
-                        type="button"
-                        className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg flex items-center gap-2"
-                        onClick={() =>
-                          handleOpenModal("cancel", () => {
-                            handleCloseModal();
-                            router.push("/hradmin/employees");
-                          })
-                        }
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        Cancel
-                      </motion.button>
-                      {activeSection !== "salary" && (
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M15 19l-7-7 7-7"
+                                  />
+                                </svg>
+                                Back
+                              </motion.button>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                      <div className="flex gap-3">
                         <motion.button
                           type="button"
-                          className="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                          onClick={() => {
-                            // Move to next section/tab
-                            const sectionsArr = [
-                              "personal",
-                              "idProofs",
-                              "bank",
-                              "salary",
-                            ];
-                            const currentIndex =
-                              sectionsArr.indexOf(activeSection);
-                            if (currentIndex < sectionsArr.length - 1) {
-                              setActiveSection(sectionsArr[currentIndex + 1]);
-                            }
-                          }}
+                          className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg"
+
+                          onClick={() =>
+                            handleOpenModal("cancel", () => {
+                              handleCloseModal();
+                              router.push("/hradmin/employees");
+                            })
+                          }
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <span>Next</span>
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M13 7l5 5m0 0l-5 5m5-5H6"
-                            />
-                          </svg>
+                          Cancel
                         </motion.button>
-                      )}
-                      <motion.button
-                        type="button"
-                        className="px-8 py-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                        onClick={() =>
-                          handleOpenModal("saveExit", () => {
-                            handleCloseModal();
-                            handleSaveAndExit();
-                          })
-                        }
-                        disabled={loading}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {loading ? (
-                          <>
-                            <svg
-                              className="animate-spin h-4 w-4"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                fill="none"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
-                            </svg>
-                            <span>Saving...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Save and Exit</span>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </>
+                        {activeSection !== "salary" && (
+                          <motion.button
+                            type="button"
+                            className="px-6 py-2 border border-blue-800 rounded-lg text-white bg-blue-700 hover:bg-blue-800"
+
+                            onClick={() => {
+                              // Move to next section/tab
+                              const sectionsArr = [
+                                "personal",
+                                "idProofs",
+                                "bank",
+                                "salary",
+                              ];
+                              const currentIndex =
+                                sectionsArr.indexOf(activeSection);
+                              if (currentIndex < sectionsArr.length - 1) {
+                                setActiveSection(sectionsArr[currentIndex + 1]);
+                                scrollTabBarIntoView();
+                              }
+                            }}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            Next
+                          </motion.button>
                         )}
-                      </motion.button>
+                        <motion.button
+                          type="button"
+                          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                          onClick={() =>
+                            handleOpenModal("saveExit", () => {
+                              handleCloseModal();
+                              handleSaveAndExit();
+                            })
+                          }
+                          disabled={loading}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          {loading ? (
+                            <>
+                              <svg
+                                className="animate-spin h-4 w-4"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
+                              </svg>
+                              <span>Saving...</span>
+                            </>
+                          ) : (
+                            "Save and Exit"
+                          )}
+                        </motion.button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -4702,6 +4736,148 @@ function EmployeeForm() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Floating Action Bar */}
+      {showFloatingButtons && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="fixed bottom-0 bg-gray-50 border-t border-gray-200 z-20 px-6 py-4 flex-shrink-0 shadow-lg"
+          style={{
+            left: `${formDimensions.left}px`,
+            width: `${formDimensions.width}px`,
+            maxWidth: '100vw'
+          }}
+        >
+          <div className="flex justify-between items-center">
+            <div>
+              {(() => {
+                const sectionsArr = [
+                  "personal",
+                  "idProofs",
+                  "bank",
+                  "salary",
+                ];
+                const currentIndex = sectionsArr.indexOf(activeSection);
+                if (currentIndex > 0) {
+                  return (
+                    <motion.button
+                      type="button"
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      onClick={() => {
+                        setActiveSection(sectionsArr[currentIndex - 1]);
+                        scrollTabBarIntoView();
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                      Back
+                    </motion.button>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+            <div className="flex gap-3">
+              <motion.button
+                type="button"
+                className="px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 border border-red-600 transition-all duration-200 shadow-lg"
+                onClick={() =>
+                  handleOpenModal("cancel", () => {
+                    handleCloseModal();
+                    router.push("/hradmin/employees");
+                  })
+                }
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Cancel
+              </motion.button>
+              {activeSection !== "salary" && (
+                <motion.button
+                  type="button"
+                  className="px-6 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 transition-all duration-200 shadow-lg"
+
+
+                  onClick={() => {
+                    // Move to next section/tab
+                    const sectionsArr = [
+                      "personal",
+                      "idProofs",
+                      "bank",
+                      "salary",
+                    ];
+                    const currentIndex =
+                      sectionsArr.indexOf(activeSection);
+                    if (currentIndex < sectionsArr.length - 1) {
+                      setActiveSection(sectionsArr[currentIndex + 1]);
+                      scrollTabBarIntoView();
+                    }
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Next
+                </motion.button>
+              )}
+              <motion.button
+                type="button"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                onClick={() =>
+                  handleOpenModal("saveExit", () => {
+                    handleCloseModal();
+                    handleSaveAndExit();
+                  })
+                }
+                disabled={loading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {loading ? (
+                  <>
+                    <svg
+                      className="animate-spin h-4 w-4"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  "Save and Exit"
+                )}
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
       )}
     </div>
   );

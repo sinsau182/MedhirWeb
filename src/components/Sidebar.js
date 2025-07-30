@@ -675,12 +675,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              ${item.label === "Customers" || item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                              ${item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
                             `}
                             aria-label={item.label}
-                            title={item.label === "Customers" || item.label === "Account Settings" ? "This feature is in progress" : ""}
+                            title={item.label === "Account Settings" ? "This feature is in progress" : ""}
                             onClick={(e) => {
-                              if (item.label === "Customers" || item.label === "Account Settings") {
+                              if (item.label === "Account Settings") {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 return;

@@ -706,7 +706,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     if (isAllEmployeesDateModalOpen) {
       // Always set today's date as default when modal opens
       const today = new Date();
-      setSelectedDateForAll(today);
+      const todayString = today.toISOString().slice(0, 10); // Format as YYYY-MM-DD
+      setSelectedDateForAll(todayString);
       
       // Load existing attendance data for today's date
       const initialData = {};
@@ -730,7 +731,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       });
       
       setAllEmployeesAttendanceData(initialData);
-      console.log('Modal opened - loaded existing attendance data for today:', today, 'Data:', initialData);
+      console.log('Modal opened - loaded existing attendance data for today:', todayString, 'Data:', initialData);
     }
   }, [isAllEmployeesDateModalOpen, attendance, filteredEmployees]);
 
@@ -944,11 +945,17 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
   // All Employees Date Modal Functions
   const handleDateSelectForAll = (date) => {
-    setSelectedDateForAll(date);
+    // Ensure we store only the date part (YYYY-MM-DD)
+    let dateToStore = date;
+    if (date && date.includes('T')) {
+      dateToStore = date.split('T')[0];
+    }
+    
+    setSelectedDateForAll(dateToStore);
     
     // Load existing attendance data for the selected date
     const initialData = {};
-    const selectedDay = new Date(date).getDate();
+    const selectedDay = new Date(dateToStore).getDate();
     
     filteredEmployees.forEach((employee) => {
       // Check if we have attendance data for this employee and date
@@ -968,7 +975,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     });
     
     setAllEmployeesAttendanceData(initialData);
-    console.log('Loaded existing attendance data for date:', date, 'Data:', initialData);
+    console.log('Loaded existing attendance data for date:', dateToStore, 'Data:', initialData);
   };
 
   const setAllEmployeesStatus = (status) => {
@@ -987,13 +994,21 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   };
 
   const handleSaveAllEmployeesAttendance = () => {
-    if (!selectedDateForAll) {
-      toast.error("Please select a date");
-      return;
+    // Default to today's date if no date is selected
+    let dateToUse = selectedDateForAll;
+    if (!dateToUse) {
+      const today = new Date();
+      dateToUse = today.toISOString().slice(0, 10); // Format as YYYY-MM-DD
+    }
+
+    // Ensure we only send the date part (YYYY-MM-DD) to the API
+    // If dateToUse is a full ISO string, extract just the date part
+    if (dateToUse && dateToUse.includes('T')) {
+      dateToUse = dateToUse.split('T')[0];
     }
 
     // Check if selected date is in the future
-    const selectedDate = new Date(selectedDateForAll);
+    const selectedDate = new Date(dateToUse);
     selectedDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
@@ -1025,9 +1040,11 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
     // Create payload in the new format
     const payload = {
-      date: selectedDateForAll,
+      date: dateToUse,
       employeeStatuses,
     };
+
+    console.log('Sending payload to API:', payload); // Debug log
 
     dispatch(markAllEmployeesDateAttendance(payload)).then((result) => {
       if (!result.error) {
@@ -1038,8 +1055,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         // Refresh attendance data
         dispatch(
           fetchAllEmployeeAttendanceOneMonth({
-          month: new Date(selectedDateForAll).getMonth() + 1, 
-          year: new Date(selectedDateForAll).getFullYear(), 
+          month: new Date(dateToUse).getMonth() + 1, 
+          year: new Date(dateToUse).getFullYear(), 
             role,
           })
         );
