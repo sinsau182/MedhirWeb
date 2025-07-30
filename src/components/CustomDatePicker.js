@@ -26,7 +26,10 @@ const CustomDatePicker = ({
   const inputRef = useRef(null);
   const calendarPopupRef = useRef(null);
 
-  const timeSlotOptions = [
+  // Show all options for leave, only Full Day for comp-off
+  const timeSlotOptions = isCompOff ? [
+    { value: 'FULL_DAY', label: 'Full Day' }
+  ] : [
     { value: 'FULL_DAY', label: 'Full Day' },
     { value: 'FIRST_HALF', label: 'First Half (Morning)' },
     { value: 'SECOND_HALF', label: 'Second Half (Evening)' }
@@ -36,8 +39,6 @@ const CustomDatePicker = ({
   const handleShiftTypeChange = (e) => {
     const newShiftType = e.target.value;
     setTimeSlot(newShiftType);
-    // Do NOT update all selected dates' shiftType here
-    // Only new selections will use the current dropdown value
     if (onShiftTypeChange) {
       onShiftTypeChange({
         ...e,
@@ -124,7 +125,14 @@ const CustomDatePicker = ({
 
   const isDateDisabled = (date) => {
     if (!date) return true;
-    if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+    
+    // Calculate the cutoff date (first day of previous month)
+    const today = new Date();
+    const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    
+    // Allow dates from the first day of previous month onwards
+    if (date < previousMonth) return true;
+    
     if (disabledDates.some(disabledDate => isSameDay(new Date(disabledDate), date))) return true;
     if (frozenDates.some(frozenDate => isSameDay(frozenDate, date))) return true;
 
@@ -136,7 +144,9 @@ const CustomDatePicker = ({
 
     // Weekly holidays
     if (departmentInfo?.weeklyHolidays) {
-      const weekDays = departmentInfo.weeklyHolidays.split(',').map(day => day.trim());
+      const weekDays = Array.isArray(departmentInfo.weeklyHolidays)
+        ? departmentInfo.weeklyHolidays
+        : departmentInfo.weeklyHolidays.split(',').map(day => day.trim());
       const dayName = format(date, 'EEEE');
       if (weekDays.includes(dayName)) return true;
     }
@@ -175,6 +185,44 @@ const CustomDatePicker = ({
     return selectedDateObjects.some(selected => isSameDay(selected.date, date));
   };
 
+  const isDateWithLeaveApplied = (date) => {
+    // Check if the date is in the disabledDates array (which contains dates with leave applied)
+    return disabledDates.some(disabledDate => isSameDay(new Date(disabledDate), date));
+  };
+
+  const getDateClassName = (date) => {
+    if (!date) return 'invisible';
+    
+    let baseClasses = 'relative p-1.5 text-center cursor-pointer rounded-md transition-all duration-200';
+    
+    if (isDateDisabled(date)) {
+      if (isDateWithLeaveApplied(date)) {
+        // Date with leave applied - show in blue
+        return `${baseClasses} bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-not-allowed`;
+      }
+      
+      // Check if it's a weekly off
+      if (!isCompOff && weeklyOffs && weeklyOffs.length > 0) {
+        const dayName = format(date, 'EEEE'); // 'Sunday', 'Monday', etc.
+        if (weeklyOffs.includes(dayName)) {
+          return `${baseClasses} text-gray-300 cursor-not-allowed`;
+        }
+      }
+      
+      return `${baseClasses} text-gray-300 cursor-not-allowed`;
+    }
+    
+    if (isDateSelected(date)) {
+      return `${baseClasses} bg-blue-500 text-white hover:bg-blue-600`;
+    }
+    
+    if (frozenDates.some(frozenDate => isSameDay(frozenDate, date))) {
+      return `${baseClasses} bg-gray-100 text-gray-700`;
+    }
+    
+    return `${baseClasses} hover:bg-blue-50 text-gray-700`;
+  };
+
   const handleDateClick = (date) => {
     if (isDateDisabled(date)) return;
 
@@ -183,6 +231,11 @@ const CustomDatePicker = ({
     const restrictedDays = restrictions?.restrictedDays || [];
     const allowedValue = restrictions?.allowedValue;
     const dayName = format(date, 'EEE');
+
+    // Check if date is already selected
+    const isAlreadySelected = selectedDateObjects.some(selected => 
+      isSameDay(selected.date, date)
+    );
 
     // Debug log for click
     console.log('[CustomDatePicker] handleDateClick:', {
@@ -194,11 +247,6 @@ const CustomDatePicker = ({
       frozenDates,
       isAlreadySelected
     });
-
-    // Check if date is already selected
-    const isAlreadySelected = selectedDateObjects.some(selected => 
-      isSameDay(selected.date, date)
-    );
 
     if (isAlreadySelected) {
       // Allow removing any selected date (not just start or end)
@@ -300,18 +348,26 @@ const CustomDatePicker = ({
   return (
     <div className="relative" ref={calendarRef}>
       <div className="w-full space-y-2">
-        {/* Time Slot Selector - Always visible */}
-        <select
-          value={timeSlot || "Full Day"}
-          onChange={handleShiftTypeChange}
-          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-        >
-          {timeSlotOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        {/* Time Slot Selector - Dynamic based on isCompOff */}
+        {isCompOff ? (
+          /* Static display for comp-off */
+          <div className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 font-medium">
+            Full Day
+          </div>
+        ) : (
+          /* Dropdown for leave applications */
+          <select
+            value={timeSlot || "FULL_DAY"}
+            onChange={handleShiftTypeChange}
+            className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+          >
+            {timeSlotOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Date Picker Trigger */}
         <div
@@ -407,21 +463,15 @@ const CustomDatePicker = ({
                 {getDaysInMonth(currentMonth).map((date, index) => (
                   <div
                     key={index}
-                    className={`
-                      relative p-1.5 text-center cursor-pointer rounded-md transition-all duration-200
-                      ${!date ? 'invisible' : ''}
-                      ${isDateDisabled(date) ? 'text-gray-300 cursor-not-allowed' : 
-                        isDateSelected(date) ? 'bg-blue-500 text-white hover:bg-blue-600' :
-                        'hover:bg-blue-50 text-gray-700'
-                      }
-                      ${frozenDates.some(frozenDate => isSameDay(frozenDate, date)) ? 'bg-gray-100' : ''}
-                    `}
+                    className={getDateClassName(date)}
                     onClick={(e) => {
                       e.stopPropagation();
                       date && handleDateClick(date);
                     }}
                     onMouseEnter={() => setHoverDate(date)}
                     onMouseLeave={() => setHoverDate(null)}
+                    title={date && isDateWithLeaveApplied(date) ? "Leave already applied for this date" : 
+                           date && !isCompOff && weeklyOffs && weeklyOffs.length > 0 && weeklyOffs.includes(format(date, 'EEEE')) ? "Weekly off" : ""}
                   >
                     {date ? (
                       <>

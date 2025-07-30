@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { Search, UserPlus, Calendar } from "lucide-react";
+import { Search, UserPlus, Calendar, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
@@ -69,9 +70,21 @@ function Employees() {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const handleViewDoc = (imageUrl) => {
-    setSelectedImage(imageUrl);
-    setIsModalOpen(true);
+  const handleViewDoc = async (imageUrl) => {
+    // Check if it's a Minio URL (starts with http)
+    if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+      try {
+        // For Minio URLs, fetch the image securely and open in new tab
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: imageUrl })).unwrap();
+        window.open(dataUrl, '_blank');
+      } catch (error) {
+        toast.error('Failed to preview document.');
+      }
+    } else {
+      // For regular URLs, keep the existing modal behavior
+      setSelectedImage(imageUrl);
+      setIsModalOpen(true);
+    }
   };
 
   const closeModal = () => {
@@ -102,7 +115,7 @@ function Employees() {
           { key: "emailOfficial", label: "Email(Off.)" },
           { key: "joiningDate", label: "DOJ" },
           { key: "designationName", label: "Designation" },
-          { key: "assignTo", label: "Members" },
+          // { key: "assignTo", label: "Members" },
           { key: "currentAddress", label: "Current Address" },
         ];
       case "ID Proofs":
@@ -136,7 +149,7 @@ function Employees() {
           { key: "bankName", label: "Bank Name" },
           { key: "branchName", label: "Branch Name" },
           { key: "upiId", label: "UPI ID" },
-          { key: "upiPhoneNumber", label: "UPI Number" },
+          { key: "upiContactName", label: "UPI Number" },
           { key: "passbookDoc", label: "Passbook Doc" },
         ];
       case "Leaves Policy":
@@ -346,9 +359,42 @@ function Employees() {
                       <tr>
                         <td
                           colSpan={headers.length}
-                          className="text-center py-3 text-sm text-gray-500"
+                          className="text-center py-16"
                         >
-                          No employees found
+                          <div className="flex flex-col items-center justify-center">
+                            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+                              <Users className="w-10 h-10 text-indigo-500" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                              No Employees Found
+                            </h3>
+                            <p className="text-gray-600 text-center max-w-md mb-6">
+                              {searchInput
+                                ? `No employees found matching "${searchInput}". Try adjusting your search terms.`
+                                : "You haven't added any employees yet. Start by adding your first employee to manage your workforce and track their information."}
+                            </p>
+                            {searchInput ? (
+                              <button
+                                onClick={() => setSearchInput("")}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
+                              >
+                                Clear Search
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() =>
+                                  router.push({
+                                    pathname: "/hradmin/addNewEmployee",
+                                    query: { activeMainTab: activeTab },
+                                  })
+                                }
+                                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 flex items-center gap-2"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                Add Your First Employee
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -401,8 +447,8 @@ function Employees() {
       {/* Add Modal for Document View */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white rounded-lg p-4 max-w-full max-h-full overflow-auto flex flex-col items-center justify-center">
+            <div className="flex justify-between items-center mb-4 w-full max-w-2xl">
               <h3 className="text-lg font-semibold">Passbook Document</h3>
               <button
                 onClick={closeModal}
@@ -423,11 +469,21 @@ function Employees() {
                 </svg>
               </button>
             </div>
-            <img
-              src={selectedImage}
-              alt="Passbook Document"
-              className="max-w-full h-auto"
-            />
+            {selectedImage && selectedImage.toLowerCase().endsWith('.pdf') ? (
+              <iframe
+                src={selectedImage}
+                title="Passbook PDF"
+                className="w-full max-w-2xl"
+                style={{ minHeight: '60vh', maxHeight: '90vh' }}
+              />
+            ) : (
+              <img
+                src={selectedImage}
+                alt="Passbook Document"
+                className="h-auto w-auto max-w-2xl max-h-[80vh] object-contain rounded shadow"
+                style={{ display: 'block', margin: '0 auto' }}
+              />
+            )}
           </div>
         </div>
       )}

@@ -11,7 +11,7 @@ export const fetchLeaveTypes = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
 
       if (!token) {
         return rejectWithValue("No authentication token found");

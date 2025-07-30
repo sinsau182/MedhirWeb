@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { addReceipt } from "../../redux/slices/receiptSlice";
+import { fetchProjectCustomerList, fetchInvoicesByProject } from "@/redux/slices/receiptSlice";
+
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
   const [formData, setFormData] = useState({
@@ -16,7 +20,8 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     attachment: null,
     linkedInvoices: [],
   });
-
+const dispatch = useDispatch();
+  const { projectCustomerList, invoicesByProject } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
@@ -54,29 +59,50 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     return allInvoices[customerName] || [];
   };
   
+  // useEffect(() => {
+  //   if (initialData) {
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       projectName: initialData.projectName || '',
+  //       customerName: initialData.client || '',
+  //       amount: initialData.amount || ''
+  //     }));
+  //   }
+  // }, [initialData]);
   useEffect(() => {
-    if (initialData) {
-      setFormData(prev => ({
-        ...prev,
-        projectName: initialData.projectName || '',
-        customerName: initialData.client || '',
-        amount: initialData.amount || ''
-      }));
-    }
-  }, [initialData]);
+  if (initialData) {
+    setFormData(prev => ({
+      ...prev,
+      projectName: initialData.projectName || '',
+      customerName: initialData.client || '',
+      customerId: initialData.customerId || '',
+      projectId: initialData.projectId || '',
+      amount: initialData.amount || '',
+      amountReceived: initialData.amount || '',
+      // If initialData.linkedInvoices exists, map to formData.linkedInvoices
+      linkedInvoices: initialData.linkedInvoices
+        ? initialData.linkedInvoices.map(li => ({
+            invoiceNumber: li.invoiceNumber || li.invoiceId || li.number,
+            amountAllocated: li.amountAllocated || li.allocatedAmount || li.payment,
+          }))
+        : [],
+    }));
+  }
+}, [initialData]);
+
+useEffect(() => {
+  dispatch(fetchProjectCustomerList());
+}, [dispatch]);
+
+
 
   useEffect(() => {
-    const customerInvoices = getInvoicesForCustomer(formData.customerName);
-    let invoicesWithPayments = customerInvoices.map(inv => ({ ...inv, payment: 0 }));
-
-    if (initialData && initialData.client === formData.customerName) {
-      invoicesWithPayments = invoicesWithPayments.map(inv => 
-        inv.id === initialData.id ? { ...inv, payment: initialData.amount } : inv
-      );
+    if (formData.leadId && invoicesByProject[formData.leadId]) {
+      const apiInvoices = invoicesByProject[formData.leadId];
+      let invoicesWithPayments = apiInvoices.map(inv => ({ ...inv, payment: 0 }));
+      setInvoicesToLink(invoicesWithPayments);
     }
-    
-    setInvoicesToLink(invoicesWithPayments);
-  }, [formData.customerName, initialData]);
+  }, [formData.leadId, invoicesByProject]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -114,8 +140,8 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     }
     const customerInvoices = getInvoicesForCustomer(formData.customerName);
     const initialInvoices = customerInvoices.map(inv => {
-      const linked = formData.linkedInvoices.find(li => li.id === inv.id);
-      return { ...inv, payment: linked ? linked.payment : 0 };
+      const linked = formData.linkedInvoices.find(li => li.invoiceNumber === inv.number);
+      return { ...inv, payment: linked ? linked.amountAllocated : 0 };
     });
     setInvoicesToLink(initialInvoices);
     setIsInvoiceLinkModalOpen(true);
@@ -141,8 +167,10 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
   };
   
   const handleSaveInvoiceLinks = () => {
+    // Save as per backend structure: { invoiceNumber, amountAllocated }
     const linked = invoicesToLink.filter(inv => inv.payment > 0).map(inv => ({
-      id: inv.id, number: inv.number, payment: inv.payment,
+      invoiceNumber: inv.number,
+      amountAllocated: inv.payment,
     }));
     setFormData(prev => ({ ...prev, linkedInvoices: linked }));
     setIsInvoiceLinkModalOpen(false);
@@ -157,17 +185,65 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateForm()) {
-      const finalLinkedInvoices = invoicesToLink
-        .filter(inv => inv.payment > 0)
-        .map(inv => ({ id: inv.id, number: inv.number, payment: inv.payment }));
-        
-      onSubmit({ ...formData, amount: parseFloat(formData.amount), linkedInvoices: finalLinkedInvoices });
-    }
-  };
 
+const [selectedOption, setSelectedOption] = useState(null);
+const [isOpen, setIsOpen] = useState(false);
+
+
+// const handleSubmit = (e) => {
+//   e.preventDefault();
+//   if (validateForm()) {
+//     const finalLinkedInvoices = invoicesToLink
+//       .filter((inv) => inv.payment > 0)
+//       .map((inv) => ({
+//         id: inv.id,
+//         number: inv.number,
+//         payment: inv.payment,
+//       }));
+
+//     const receiptData = {
+//       ...formData,
+//       amount: parseFloat(formData.amount),
+//       linkedInvoices: finalLinkedInvoices,
+//     };
+
+//     // Call the backend via Redux slice (send plain object, not FormData)
+//     dispatch(addReceipt(receiptData));
+//   }
+// };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (validateForm()) {
+    const selectedCustomer = customers.find(c => c.name === formData.customerName);
+    // Use linkedInvoices as per backend structure
+    const receiptData = {
+      ...formData,
+      customerId: formData.customerId, // ✅ directly use the one already set from dropdown
+      projectId: formData.leadId,      // ✅ use leadId as projectId
+      customerName: formData.customerName,
+      projectName: formData.projectName,
+      amountReceived: parseFloat(formData.amount),
+      amount: parseFloat(formData.amount),
+      linkedInvoices: formData.linkedInvoices, // Already in correct structure
+      attachment: formData.attachment ? formData.attachment.name : null,
+      receiptDate: formData.receiptDate,
+      paymentMethod: formData.paymentMethod,
+      receiptNumber: formData.receiptNumber,
+      paymentTransactionId:
+        formData.reference ||
+        formData.chequeNumber ||
+        formData.upiTransactionId ||
+        '',
+    };
+    try {
+      await dispatch(addReceipt(receiptData)).unwrap();
+      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+    } catch (error) {
+      setErrors({ submit: error?.message || 'Failed to add receipt' });
+    }
+  }
+};
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
   const totalAllocatedInModal = invoicesToLink.reduce((sum, inv) => sum + (inv.payment || 0), 0);
@@ -186,16 +262,122 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left Panel */}
               <div className="space-y-6">
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                  <input type="text" name="projectName" value={formData.projectName} onChange={handleChange} className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Office Renovation" />
+                  <input type="text"
+                   name="projectName"
+                    value={formData.projectName} 
+                    onChange={handleChange} 
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Office Renovation"
+                     />
+                </div> */}
+                {/* <div className="relative inline-block w-full mb-4">
+  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+  <button
+    type="button"
+    onClick={() => setIsOpen(!isOpen)}
+    className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+  >
+    {selectedOption?.projectName || "Select Project"}
+    <span className="float-right">
+      <svg
+        className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </span>
+  </button>
+
+  {isOpen && (
+    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
+      {projectCustomerList.map((project) => (
+        <li
+          key={project.projectId}
+          onClick={() => {
+            setSelectedOption(project);
+            setIsOpen(false);
+            setFormData((prev) => ({
+              ...prev,
+              projectName: project.projectName,
+              projectId: project.projectId,
+              customerId: project.customerId,
+              customerName: project.customerName,
+            }));
+          }}
+          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+        >
+          {project.projectName}
+        </li>
+      ))}
+    </ul>
+  )}
+                </div> */}
+                
+                <div className="relative inline-block w-full">
+  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+  <button
+    type="button"
+    onClick={() => setIsOpen(!isOpen)}
+    className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+  >
+    {selectedOption?.projectName || "Select Project"}
+    <span className="float-right">
+      <svg className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </span>
+  </button>
+
+  {isOpen && (
+    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
+      {projectCustomerList.map((project) => (
+        <li
+          key={project.projectId}
+          onClick={async () => {
+            setSelectedOption(project);
+            setFormData(prev => ({
+              ...prev,
+              projectName: project.projectName,
+              customerName: project.customerName,
+              customerId: project.customerId,
+              leadId: project.projectId,
+              linkedInvoices: [],
+            }));
+            setInvoicesToLink([]);
+            setIsOpen(false);
+            // Fetch invoices for this project
+            dispatch(fetchInvoicesByProject(project.projectId));
+          }}
+          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+        >
+          {project.projectName}
+        </li>
+      ))}
+    </ul>
+  )}
                 </div>
+
+
+
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
-                  <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>
+                  {/* <select name="customerName" value={formData.customerName} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}>
                     <option value="">Select customer</option>
                     {customers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
+                  </select> */}
+                  <input
+  type="text"
+  name="customerName"
+  value={formData.customerName}
+  readOnly
+  className={`w-full px-4 py-3 text-base border rounded-lg bg-gray-100 cursor-not-allowed ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}
+  placeholder="Auto-filled from Project"
+/>
+
                   {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
                 </div>
                 <div>
@@ -277,7 +459,7 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-2">Invoice #</th>
+                          <th className="text-left py-2">Invoice </th>
                           <th className="text-right py-2">Amount</th>
                           <th className="text-right py-2">Amount Received</th>
                           <th className="text-right py-2">Amount Remaining</th>
@@ -289,9 +471,9 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
                           const amountRemaining = inv.totalAmount - inv.amountReceived;
                           return (
                             <tr key={inv.id} className="border-b">
-                              <td className="py-3">{inv.number}</td>
+                              <td className="py-3">{inv.invoiceNumber}</td>
                               <td className="text-right py-3">{formatCurrency(inv.totalAmount)}</td>
-                              <td className="text-right py-3">{formatCurrency(inv.amountReceived)}</td>
+                              <td className="text-right py-3">{formatCurrency(inv.amountReceived || 0)}</td>
                               <td className="text-right py-3 font-semibold">{formatCurrency(amountRemaining)}</td>
                               <td className="py-2 pl-4">
                                 <div className="relative">

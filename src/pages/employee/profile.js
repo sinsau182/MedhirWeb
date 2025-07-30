@@ -4,6 +4,10 @@ import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
+import MinioImage from "@/components/ui/MinioImage";
+import { useMinioImage } from "@/hooks/useMinioImage";
+import { useDispatch } from "react-redux";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import {
   FiUser,
   FiBook,
@@ -22,12 +26,18 @@ import { FaCalendarCheck } from "react-icons/fa";
 import { X } from "lucide-react";
 import getConfig from "next/config";
 import { clearSession } from "@/utils/sessionManager";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 function EmployeeProfilePage() {
   const router = useRouter();
   const { id } = router.query; // Get ID from URL query parameter
+  const dispatch = useDispatch();
 
   const { publicRuntimeConfig } = getConfig();
+
+  // Minio slice integration - automatically handles image fetching and caching
+  // When any image is clicked, it will trigger the Minio slice to fetch the image
+  // with proper authentication and caching
 
   const [loading, setLoading] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -38,6 +48,24 @@ function EmployeeProfilePage() {
   const [isEditable, setIsEditable] = useState(true); // Controls if editing is allowed based on updateStatus
   const [showPendingChangesModal, setShowPendingChangesModal] = useState(false);
   const [pendingChanges, setPendingChanges] = useState(null);
+  const [passbookPreview, setPassbookPreview] = useState({
+    open: false,
+    url: null,
+    file: null,
+  });
+  const [pdfControls, setPdfControls] = useState({ rotate: 0, zoom: 1 });
+  const [idProofPreview, setIdProofPreview] = useState({
+    open: false,
+    url: null,
+    file: null,
+    title: "",
+  });
+  const [uploadedIdProofPreview, setUploadedIdProofPreview] = useState({
+    open: false,
+    url: null,
+    file: null,
+    title: "",
+  });
 
   // Main state for form data, used during editing
   const [formData, setFormData] = useState({
@@ -66,21 +94,643 @@ function EmployeeProfilePage() {
       bankName: "",
       branchName: "",
       upiId: "",
-      upiPhone: "",
+      upiContactName: "",
       passbookDoc: null, // Stores File object or null/URL string
     },
     // Add statutory, salary etc. if they become editable
   });
+
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState({});
+  const [fieldTouched, setFieldTouched] = useState({});
+  const [personalValidationErrors, setPersonalValidationErrors] = useState({});
+  const [personalFieldTouched, setPersonalFieldTouched] = useState({});
+  const [emailSuggestions, setEmailSuggestions] = useState([]);
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+  const [idProofValidationErrors, setIdProofValidationErrors] = useState({});
+  const [idProofFieldTouched, setIdProofFieldTouched] = useState({});
+  const [idProofFieldModified, setIdProofFieldModified] = useState({});
+
+  useEffect(() => {
+    // Clear all validation errors when not in edit mode
+    if (!isPageInEditMode) {
+      setIdProofValidationErrors({});
+      setIdProofFieldTouched({});
+      setIdProofFieldModified({});
+      return;
+    }
+
+    // Check if user is actually editing id proof fields
+    const isEditingIdProofs = Object.keys(idProofFieldTouched).some(
+      (key) => idProofFieldTouched[key]
+    );
+    if (!isEditingIdProofs) return;
+
+    const idProofFields = [
+      { key: "aadharNo", fileKey: "aadharImage" },
+      { key: "panNo", fileKey: "panImage" },
+      { key: "passport", fileKey: "passportImage" },
+      { key: "drivingLicense", fileKey: "drivingLicenseImage" },
+      { key: "voterId", fileKey: "voterIdImage" },
+    ];
+
+    let newErrors = {};
+    idProofFields.forEach(({ key, fileKey }) => {
+      const number = formData.idProofs[key];
+      const file = formData.idProofs[fileKey];
+
+      // Only validate if:
+      // 1. The field has been touched by the user
+      // 2. AND there's a number entered
+      // 3. AND the number is different from the original (or there's a new file)
+      const originalNumber = employeeById?.idProofs?.[key];
+      const hasNewFile = file instanceof File;
+      const hasNumberChanged = number !== originalNumber;
+
+      if (
+        idProofFieldTouched[key] &&
+        number &&
+        number.trim() !== "" &&
+        (hasNumberChanged || hasNewFile)
+      ) {
+        const numberError = validateIdProofField(key, number);
+        const conditionalError = validateIdProofConditional(key);
+        newErrors[key] = numberError || conditionalError || "";
+      }
+    });
+    setIdProofValidationErrors((prev) => ({ ...prev, ...newErrors }));
+  }, [isPageInEditMode]); // Remove idProofFieldTouched dependency to prevent infinite loop
+
+  
+  // Validation functions
+  const validateAccountNumber = (value) => {
+    if (!value || value.trim() === "") return "Account number is required";
+    if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
+    if (value.length < 9 || value.length > 18)
+      return "Account number must be 9-18 digits";
+    return "";
+  };
+
+  const validateAccountHolderName = (value) => {
+    if (!value || value.trim() === "") return "Account holder name is required";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed";
+    if (value.trim().length < 2) return "Must be at least 2 characters";
+    if (value.trim().length > 50) return "Maximum 50 characters allowed";
+    return "";
+  };
+
+  const validateIFSC = (value) => {
+    if (!value || value.trim() === "") return "IFSC code is required";
+    if (!/^[A-Z]{4}0[0-9]{6}$/.test(value.toUpperCase()))
+      return "Invalid IFSC format (e.g., SBIN0001234)";
+    return "";
+  };
+
+  const validateBankName = (value) => {
+    if (!value || value.trim() === "") return "Bank name is required";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed";
+    if (value.trim().length < 2) return "Must be at least 2 characters";
+    if (value.trim().length > 50) return "Maximum 50 characters allowed";
+    return "";
+  };
+
+  const validateBranchName = (value) => {
+    if (!value || value.trim() === "") return "Branch name is required";
+    if (!/^[A-Za-z0-9 ]+$/.test(value))
+      return "Only alphabets, numbers and spaces allowed";
+    if (value.trim().length < 2) return "Must be at least 2 characters";
+    if (value.trim().length > 50) return "Maximum 50 characters allowed";
+    return "";
+  };
+
+  const validateUPI = (value) => {
+    if (!value || value.trim() === "") return "UPI ID is required";
+    if (!/^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/.test(value))
+      return "Invalid UPI ID format (e.g., user@upi)";
+    if (value.length > 50) return "Maximum 50 characters allowed";
+    return "";
+  };
+
+  const validateUPIContactName = (value) => {
+    if (!value || value.trim() === "") return "UPI contact name is required";
+    if (!/^[A-Za-z ]+$/.test(value)) return "Only alphabets and spaces allowed";
+    if (value.trim().length < 2) return "Must be at least 2 characters";
+    if (value.trim().length > 30) return "Maximum 30 characters allowed";
+    return "";
+  };
+
+  // Input filtering functions
+  const filterAccountNumber = (value) => {
+    return value.replace(/[^0-9]/g, "").slice(0, 18);
+  };
+
+  const filterAccountHolderName = (value) => {
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 50);
+  };
+
+  const filterIFSC = (value) => {
+    return value
+      .replace(/[^A-Za-z0-9]/g, "")
+      .slice(0, 11)
+      .toUpperCase();
+  };
+
+  const filterBankName = (value) => {
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 50);
+  };
+
+  const filterBranchName = (value) => {
+    return value.replace(/[^A-Za-z0-9 ]/g, "").slice(0, 50);
+  };
+
+  const filterUPI = (value) => {
+    return value.replace(/[^a-zA-Z0-9._@-]/g, "").slice(0, 50);
+  };
+
+  const filterUPIContactName = (value) => {
+    return value.replace(/[^A-Za-z ]/g, "").slice(0, 30);
+  };
+
+  // Validate all bank fields
+  const validateBankDetails = (data) => {
+    return {
+      accountNumber: validateAccountNumber(data.accountNumber),
+      accountHolderName: validateAccountHolderName(data.accountHolderName),
+      ifscCode: validateIFSC(data.ifscCode),
+      bankName: validateBankName(data.bankName),
+      branchName: validateBranchName(data.branchName),
+      upiId: validateUPI(data.upiId),
+      upiContactName: validateUPIContactName(data.upiContactName),
+    };
+  };
+
+  // On blur handler for bank fields
+  const handleBankFieldBlur = (field) => {
+    setFieldTouched((prev) => ({ ...prev, [field]: true }));
+    const errors = validateBankDetails(formData.bank);
+
+    // Add core bank field validation
+    const coreBankFields = [
+      "accountNumber",
+      "accountHolderName",
+      "ifscCode",
+      "bankName",
+      "branchName",
+    ];
+    const hasAnyCoreBankField = coreBankFields.some((fieldKey) => {
+      const currentValue = formData.bank[fieldKey];
+      const originalValue = employeeById?.bankDetails?.[fieldKey];
+      return (
+        currentValue &&
+        currentValue.trim() !== "" &&
+        currentValue !== originalValue
+      );
+    });
+
+    if (hasAnyCoreBankField) {
+      coreBankFields.forEach((fieldKey) => {
+        const currentValue = formData.bank[fieldKey];
+        if (!currentValue || currentValue.trim() === "") {
+          const fieldLabels = {
+            accountNumber: "Account Number",
+            accountHolderName: "Account Holder Name",
+            ifscCode: "IFSC Code",
+            bankName: "Bank Name",
+            branchName: "Branch Name",
+          };
+          errors[
+            fieldKey
+          ] = `${fieldLabels[fieldKey]} is required when filling bank details.`;
+        }
+      });
+
+      // Mark core bank fields as touched so errors are displayed
+      const touchedFields = {};
+      coreBankFields.forEach((fieldKey) => {
+        touchedFields[fieldKey] = true;
+      });
+      setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+    }
+
+    setValidationErrors((prev) => ({ ...prev, ...errors }));
+  };
+
+  // On change handler for bank fields to provide real-time validation
+  const handleBankFieldChange = (field, value) => {
+    // Update the form data first
+    handleInputChange("bank", field, value);
+
+    // Then validate if this is a core bank field
+    const coreBankFields = [
+      "accountNumber",
+      "accountHolderName",
+      "ifscCode",
+      "bankName",
+      "branchName",
+    ];
+    if (coreBankFields.includes(field)) {
+      const hasAnyCoreBankField = coreBankFields.some((fieldKey) => {
+        const currentValue =
+          fieldKey === field ? value : formData.bank[fieldKey];
+        const originalValue = employeeById?.bankDetails?.[fieldKey];
+        return (
+          currentValue &&
+          currentValue.trim() !== "" &&
+          currentValue !== originalValue
+        );
+      });
+
+      if (hasAnyCoreBankField) {
+        const errors = validateBankDetails({
+          ...formData.bank,
+          [field]: value,
+        });
+        coreBankFields.forEach((fieldKey) => {
+          const currentValue =
+            fieldKey === field ? value : formData.bank[fieldKey];
+          if (!currentValue || currentValue.trim() === "") {
+            const fieldLabels = {
+              accountNumber: "Account Number",
+              accountHolderName: "Account Holder Name",
+              ifscCode: "IFSC Code",
+              bankName: "Bank Name",
+              branchName: "Branch Name",
+            };
+            errors[
+              fieldKey
+            ] = `${fieldLabels[fieldKey]} is required when filling bank details.`;
+          }
+        });
+        setValidationErrors((prev) => ({ ...prev, ...errors }));
+
+        // Mark core bank fields as touched so errors are displayed
+        const touchedFields = {};
+        coreBankFields.forEach((fieldKey) => {
+          touchedFields[fieldKey] = true;
+        });
+        setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+      } else {
+        // If no core fields are filled, clear the validation errors for core fields
+        const errors = validateBankDetails({
+          ...formData.bank,
+          [field]: value,
+        });
+        coreBankFields.forEach((fieldKey) => {
+          delete errors[fieldKey];
+        });
+        setValidationErrors((prev) => ({ ...prev, ...errors }));
+      }
+    }
+  };
+
+  // Helper functions for file handling
+  const isPDF = (file) => {
+    if (file instanceof File) {
+      return file.type === "application/pdf";
+    }
+    if (typeof file === "string") {
+      return (
+        file.toLowerCase().endsWith(".pdf") || file.includes("application/pdf")
+      );
+    }
+    return false;
+  };
+
+  const validateFileUpload = (file) => {
+    const allowedTypes = [
+      "application/pdf",
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+    ];
+    const maxSize = 1 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      return "Only PDF, JPG, JPEG, and PNG files are allowed.";
+    }
+
+    if (file.size > maxSize) {
+      return "File size must be less than 1MB.";
+    }
+
+    return null; // No error
+  };
+
+  const handlePassbookUpload = (file) => {
+    const error = validateFileUpload(file);
+    if (error) {
+      toast.error(error);
+      return false;
+    }
+
+    handleInputChange("bank", "passbookDoc", file);
+    toast.success("Passbook document uploaded successfully!");
+    return true;
+  };
+
+  const openPassbookPreview = async () => {
+    const currentPassbook =
+      formData.bank.passbookDoc instanceof File
+        ? formData.bank.passbookDoc
+        : employeeById?.bankDetails?.passbookImgUrl;
+  
+    if (!currentPassbook) {
+      toast.error("No passbook document available to preview.");
+      return;
+    }
+  
+    // If it's a File, create object URL
+    if (currentPassbook instanceof File) {
+      const previewUrl = URL.createObjectURL(currentPassbook);
+      const accountNumber =
+        formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+      const title = accountNumber
+        ? `Passbook Document - ${accountNumber}`
+        : "Passbook Document";
+      
+      const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = title;
+        newWindow.focus();
+      }
+    } else {
+      // For Minio URLs, use the Minio slice to fetch the image with authentication
+      try {
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: currentPassbook })).unwrap();
+        
+        const accountNumber =
+          formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+        const title = accountNumber
+          ? `Passbook Document - ${accountNumber}`
+          : "Passbook Document";
+        
+        // Open the fetched image in new window
+        const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = title;
+          newWindow.focus();
+        }
+      } catch (error) {
+        console.error('Error fetching passbook image:', error);
+        toast.error("Failed to load passbook document. Please try again.");
+      }
+    }
+  };
+  
+
+  const openIdProofPreview = async (documentType, imgUrlKey) => {
+    const currentDocument =
+      formData.idProofs[`${documentType}Image`] instanceof File
+        ? formData.idProofs[`${documentType}Image`]
+        : employeeById?.idProofs?.[imgUrlKey];
+  
+    if (!currentDocument) {
+      toast.error(`No ${documentType} document available to preview.`);
+      return;
+    }
+  
+    // If it's a File, create object URL
+    if (currentDocument instanceof File) {
+      const previewUrl = URL.createObjectURL(currentDocument);
+      
+      const documentTitles = {
+        aadhar: "Aadhar Card",
+        pan: "PAN Card",
+        passport: "Passport",
+        drivingLicense: "Driving License",
+        voterId: "Voter ID",
+      };
+      
+      const numberField =
+        documentType === "aadhar"
+          ? "aadharNo"
+          : documentType === "pan"
+          ? "panNo"
+          : documentType === "passport"
+          ? "passport"
+          : documentType === "drivingLicense"
+          ? "drivingLicense"
+          : documentType === "voterId"
+          ? "voterId"
+          : "";
+      
+      const documentNumber =
+        formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+      
+      const title = documentTitles[documentType] || documentType;
+      const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+      
+      const newWindow = window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fullTitle;
+        newWindow.focus();
+      }
+    } else {
+      // For Minio URLs, use the Minio slice to fetch the image with authentication
+      try {
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: currentDocument })).unwrap();
+        
+        const documentTitles = {
+          aadhar: "Aadhar Card",
+          pan: "PAN Card",
+          passport: "Passport",
+          drivingLicense: "Driving License",
+          voterId: "Voter ID",
+        };
+        
+        const numberField =
+          documentType === "aadhar"
+            ? "aadharNo"
+            : documentType === "pan"
+            ? "panNo"
+            : documentType === "passport"
+            ? "passport"
+            : documentType === "drivingLicense"
+            ? "drivingLicense"
+            : documentType === "voterId"
+            ? "voterId"
+            : "";
+        
+        const documentNumber =
+          formData.idProofs[numberField] || employeeById?.idProofs?.[numberField];
+        
+        const title = documentTitles[documentType] || documentType;
+        const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+        
+        // Open the fetched image in new window
+        const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = fullTitle;
+          newWindow.focus();
+        }
+      } catch (error) {
+        console.error('Error fetching ID proof image:', error);
+        toast.error(`Failed to load ${documentType} document. Please try again.`);
+      }
+    }
+  };
+  
+
+  const openUploadedIdProofPreview = (documentType, file) => {
+    if (!file || !(file instanceof File)) {
+      toast.error(`No ${documentType} document available to preview.`);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+
+    const documentTitles = {
+      aadhar: "Aadhar Card",
+      pan: "PAN Card",
+      passport: "Passport",
+      drivingLicense: "Driving License",
+      voterId: "Voter ID",
+    };
+
+    // Get the document number
+    const numberField =
+      documentType === "aadhar"
+        ? "aadharNo"
+        : documentType === "pan"
+        ? "panNo"
+        : documentType === "passport"
+        ? "passport"
+        : documentType === "drivingLicense"
+        ? "drivingLicense"
+        : documentType === "voterId"
+        ? "voterId"
+        : "";
+
+    const documentNumber = formData.idProofs[numberField];
+    const title = documentTitles[documentType] || documentType;
+    const fullTitle = documentNumber ? `${title} - ${documentNumber}` : title;
+
+    setUploadedIdProofPreview({
+      open: true,
+      url: previewUrl,
+      file: file,
+      title: fullTitle,
+    });
+    setPdfControls({ rotate: 0, zoom: 1 });
+  };
+
+  const openUploadedPassbookPreview = (file) => {
+    if (!file || !(file instanceof File)) {
+      toast.error("No passbook document available to preview.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+
+    // Get the account number
+    const accountNumber =
+      formData.bank.accountNumber || employeeById?.bankDetails?.accountNumber;
+    const title = accountNumber
+      ? `Passbook Document - ${accountNumber}`
+      : "Passbook Document";
+
+    setPassbookPreview({
+      open: true,
+      url: previewUrl,
+      file: file,
+    });
+    setPdfControls({ rotate: 0, zoom: 1 });
+  };
+
+  const handleIdProofUpload = (documentType, file) => {
+    const error = validateFileUpload(file);
+    if (error) {
+      toast.error(error);
+      return false;
+    }
+
+    handleInputChange("idProofs", `${documentType}Image`, file);
+
+    // Trigger validation for the corresponding number field
+    const numberField =
+      documentType === "aadhar"
+        ? "aadharNo"
+        : documentType === "pan"
+        ? "panNo"
+        : documentType === "passport"
+        ? "passport"
+        : documentType === "drivingLicense"
+        ? "drivingLicense"
+        : documentType === "voterId"
+        ? "voterId"
+        : "";
+
+    if (numberField) {
+      setIdProofFieldTouched((prev) => ({ ...prev, [numberField]: true }));
+      setIdProofFieldModified((prev) => ({ ...prev, [numberField]: true }));
+
+      // Validate the number field immediately
+      const numberValue = formData.idProofs[numberField] || "";
+      const originalNumber = employeeById?.idProofs?.[numberField];
+      const hasNumberChanged = numberValue !== originalNumber;
+      
+      if (!numberValue.trim()) {
+        setIdProofValidationErrors((prev) => ({
+          ...prev,
+          [numberField]: "This number is required when uploading a document.",
+        }));
+      } else {
+        // Check if number format is valid
+        const numberError = validateIdProofField(numberField, numberValue);
+        if (numberError) {
+          setIdProofValidationErrors((prev) => ({
+            ...prev,
+            [numberField]: numberError,
+          }));
+        } else {
+          // Clear validation error if number is valid
+          setIdProofValidationErrors((prev) => ({
+            ...prev,
+            [numberField]: "",
+          }));
+        }
+      }
+    }
+
+    // Show appropriate success message
+    const documentName = documentType.charAt(0).toUpperCase() + documentType.slice(1);
+    
+    if (numberField) {
+      const numberValue = formData.idProofs[numberField] || "";
+      const originalNumber = employeeById?.idProofs?.[numberField];
+      const hasNumberChanged = numberValue !== originalNumber;
+      
+      if (hasNumberChanged) {
+        toast.success(
+          `${documentName} document uploaded successfully! The new number will be verified with this document.`
+        );
+      } else {
+        toast.success(
+          `${documentName} document uploaded successfully!`
+        );
+      }
+    }
+    
+    return true;
+  };
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
   // --- Data Fetching ---
   const fetchByEmployeeId = useCallback(async () => {
     const employeeIdToFetch = sessionStorage.getItem("employeeId");
+    const token = getItemFromSessionStorage("token");
+    const apiURL = publicRuntimeConfig.apiURL; // Get API URL once
     setLoading(true);
     try {
       const response = await fetch(
-        `${publicRuntimeConfig.apiURL}/employee/id/${employeeIdToFetch}`
+        `${apiURL}/employee/id/${employeeIdToFetch}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -91,8 +741,14 @@ function EmployeeProfilePage() {
       // Fetch manager name if reporting manager exists
       if (data.reportingManager) {
         try {
+          const token = getItemFromSessionStorage("token");
           const managerResponse = await fetch(
-            `${publicRuntimeConfig.apiURL}/employee/id/${data.reportingManager}`
+            `${apiURL}/employee/id/${data.reportingManager}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
           );
           if (managerResponse.ok) {
             const managerData = await managerResponse.json();
@@ -119,7 +775,7 @@ function EmployeeProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [publicRuntimeConfig.apiURL]); // Add dependencies that the function uses
+  }, []); // Remove publicRuntimeConfig.apiURL dependency to prevent infinite loop
 
   const fetchPendingChanges = () => {
     if (!employeeById?.pendingUpdateRequest) {
@@ -130,6 +786,7 @@ function EmployeeProfilePage() {
     const changes = {
       personalInfo: [],
       bankDetails: [],
+      identityDocuments: [],
       documents: [],
     };
 
@@ -191,6 +848,17 @@ function EmployeeProfilePage() {
 
     // Compare bank details
     if (
+      employeeById.pendingUpdateRequest.accountHolderName &&
+      employeeById.pendingUpdateRequest.accountHolderName !==
+        employeeById.bankDetails?.accountHolderName
+    ) {
+      changes.bankDetails.push({
+        field: "Account Holder Name",
+        oldValue: employeeById.bankDetails?.accountHolderName,
+        newValue: employeeById.pendingUpdateRequest.accountHolderName,
+      });
+    }
+    if (
       employeeById.pendingUpdateRequest.accountNumber &&
       employeeById.pendingUpdateRequest.accountNumber !==
         employeeById.bankDetails?.accountNumber
@@ -235,14 +903,80 @@ function EmployeeProfilePage() {
       });
     }
     if (
-      employeeById.pendingUpdateRequest.upiPhoneNumber &&
-      employeeById.pendingUpdateRequest.upiPhoneNumber !==
-        employeeById.bankDetails?.upiPhoneNumber
+      employeeById.pendingUpdateRequest.upiContactName &&
+      employeeById.pendingUpdateRequest.upiContactName !==
+        employeeById.bankDetails?.upiContactName
     ) {
       changes.bankDetails.push({
-        field: "UPI Phone",
-        oldValue: employeeById.bankDetails?.upiPhoneNumber,
-        newValue: employeeById.pendingUpdateRequest.upiPhoneNumber,
+        field: "UPI Contact Name",
+        oldValue: employeeById.bankDetails?.upiContactName,
+        newValue: employeeById.pendingUpdateRequest.upiContactName,
+      });
+    }
+    if (
+      employeeById.pendingUpdateRequest.upiId &&
+      employeeById.pendingUpdateRequest.upiId !==
+        employeeById.bankDetails?.upiId
+    ) {
+      changes.bankDetails.push({
+        field: "UPI ID",
+        oldValue: employeeById.bankDetails?.upiId,
+        newValue: employeeById.pendingUpdateRequest.upiId,
+      });
+    }
+    // Compare identity document numbers
+    if (
+      employeeById.pendingUpdateRequest.aadharNo &&
+      employeeById.pendingUpdateRequest.aadharNo !==
+        employeeById.idProofs?.aadharNo
+    ) {
+      changes.identityDocuments.push({
+        field: "Aadhar Number",
+        oldValue: employeeById.idProofs?.aadharNo,
+        newValue: employeeById.pendingUpdateRequest.aadharNo,
+      });
+    }
+    if (
+      employeeById.pendingUpdateRequest.panNo &&
+      employeeById.pendingUpdateRequest.panNo !== employeeById.idProofs?.panNo
+    ) {
+      changes.identityDocuments.push({
+        field: "PAN Number",
+        oldValue: employeeById.idProofs?.panNo,
+        newValue: employeeById.pendingUpdateRequest.panNo,
+      });
+    }
+    if (
+      employeeById.pendingUpdateRequest.passport &&
+      employeeById.pendingUpdateRequest.passport !==
+        employeeById.idProofs?.passport
+    ) {
+      changes.identityDocuments.push({
+        field: "Passport Number",
+        oldValue: employeeById.idProofs?.passport,
+        newValue: employeeById.pendingUpdateRequest.passport,
+      });
+    }
+    if (
+      employeeById.pendingUpdateRequest.drivingLicense &&
+      employeeById.pendingUpdateRequest.drivingLicense !==
+        employeeById.idProofs?.drivingLicense
+    ) {
+      changes.identityDocuments.push({
+        field: "Driving License Number",
+        oldValue: employeeById.idProofs?.drivingLicense,
+        newValue: employeeById.pendingUpdateRequest.drivingLicense,
+      });
+    }
+    if (
+      employeeById.pendingUpdateRequest.voterId &&
+      employeeById.pendingUpdateRequest.voterId !==
+        employeeById.idProofs?.voterId
+    ) {
+      changes.identityDocuments.push({
+        field: "Voter ID Number",
+        oldValue: employeeById.idProofs?.voterId,
+        newValue: employeeById.pendingUpdateRequest.voterId,
       });
     }
 
@@ -339,7 +1073,7 @@ function EmployeeProfilePage() {
   // Fetch data on component mount
   useEffect(() => {
     fetchByEmployeeId();
-  }, [fetchByEmployeeId]);
+  }, []); // Remove fetchByEmployeeId dependency to prevent infinite loop
 
   // --- Input Handling ---
   const handleInputChange = (section, field, value) => {
@@ -407,7 +1141,7 @@ function EmployeeProfilePage() {
             bankName: currentData?.bankDetails?.bankName || "",
             branchName: currentData?.bankDetails?.branchName || "",
             upiId: currentData?.bankDetails?.upiId || "",
-            upiPhone: currentData?.bankDetails?.upiPhoneNumber || "",
+            upiContactName: currentData?.bankDetails?.upiContactName || "",
             // Keep passbookDoc if it's a File, otherwise reset
             passbookDoc:
               formData.bank.passbookDoc instanceof File
@@ -434,8 +1168,58 @@ function EmployeeProfilePage() {
   // Add a function to handle canceling edits
   const handleCancelClick = () => {
     setIsPageInEditMode(false);
-    // Optionally re-fetch data to reset form
-    fetchByEmployeeId();
+    
+    // Clear all validation states
+    setValidationErrors({});
+    setFieldTouched({});
+    setIdProofValidationErrors({});
+    setIdProofFieldTouched({});
+    setIdProofFieldModified({});
+    setPersonalValidationErrors({});
+    setPersonalFieldTouched({});
+    setEmailSuggestions([]);
+    setShowEmailSuggestions(false);
+    
+    // Reset form data to original values (clearing all uploaded files and changes)
+    if (employeeById) {
+      setFormData({
+        employee: {
+          fatherName: employeeById?.fathersName || "",
+          gender: employeeById?.gender || "",
+          phone1: employeeById?.phone || "",
+          phone2: employeeById?.alternatePhone || "",
+          email: { personal: employeeById?.emailPersonal || "" },
+          currentAddress: employeeById?.currentAddress || "",
+          permanentAddress: employeeById?.permanentAddress || "",
+          profileImage: null, // Clear any uploaded profile image
+        },
+        idProofs: {
+          aadharNo: employeeById?.idProofs?.aadharNo || "",
+          panNo: employeeById?.idProofs?.panNo || "",
+          passport: employeeById?.idProofs?.passport || "",
+          drivingLicense: employeeById?.idProofs?.drivingLicense || "",
+          voterId: employeeById?.idProofs?.voterId || "",
+          // Clear all uploaded ID proof files
+          aadharImage: null,
+          panImage: null,
+          passportImage: null,
+          drivingLicenseImage: null,
+          voterIdImage: null,
+        },
+        bank: {
+          accountNumber: employeeById?.bankDetails?.accountNumber || "",
+          accountHolderName: employeeById?.bankDetails?.accountHolderName || "",
+          ifscCode: employeeById?.bankDetails?.ifscCode || "",
+          bankName: employeeById?.bankDetails?.bankName || "",
+          branchName: employeeById?.bankDetails?.branchName || "",
+          upiId: employeeById?.bankDetails?.upiId || "",
+          upiContactName: employeeById?.bankDetails?.upiContactName || "",
+          passbookDoc: null, // Clear any uploaded passbook document
+        },
+      });
+    }
+    
+    toast.info("All changes have been cancelled. Form has been reset to original values.");
   };
 
   // Add a function to check if any changes have been made
@@ -480,7 +1264,12 @@ function EmployeeProfilePage() {
     if (formData.bank.ifscCode !== employeeById.bankDetails?.ifscCode) {
       return true;
     }
-    if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {
+    if (formData.bank.upiId !== employeeById.bankDetails?.upiId) {
+      return true;
+    }
+    if (
+      formData.bank.upiContactName !== employeeById.bankDetails?.upiContactName
+    ) {
       return true;
     }
 
@@ -507,12 +1296,27 @@ function EmployeeProfilePage() {
       return true;
     }
 
+    // Add these checks:
+    if (formData.idProofs.aadharNo !== employeeById.idProofs?.aadharNo)
+      return true;
+    if (formData.idProofs.panNo !== employeeById.idProofs?.panNo) return true;
+    if (formData.idProofs.passport !== employeeById.idProofs?.passport)
+      return true;
+    if (
+      formData.idProofs.drivingLicense !== employeeById.idProofs?.drivingLicense
+    )
+      return true;
+    if (formData.idProofs.voterId !== employeeById.idProofs?.voterId)
+      return true;
+
     // No changes detected
     return false;
   };
 
-  // Update the handleSaveAllClick function to check for changes
+  // Update the handleSaveAllClick function to add validation for ID proofs
   const handleSaveAllClick = async () => {
+    console.log("Save button clicked");
+    
     if (!isEditable) {
       toast.error("Cannot save while an update request is pending.");
       return;
@@ -523,12 +1327,294 @@ function EmployeeProfilePage() {
     }
 
     // Check if any changes have been made
-    if (!hasChangesBeenMade()) {
+    const hasChanges = hasChangesBeenMade();
+    console.log("Has changes:", hasChanges);
+    
+    if (!hasChanges) {
       toast.info("No changes have been made. Nothing to save.");
       setIsPageInEditMode(false);
       return;
     }
 
+    // --- ID Proofs: If number is filled or changed, require file ---
+    const idProofFields = [
+      { key: "aadharNo", fileKey: "aadharImage", urlKey: "aadharImgUrl" },
+      { key: "panNo", fileKey: "panImage", urlKey: "pancardImgUrl" },
+      { key: "passport", fileKey: "passportImage", urlKey: "passportImgUrl" },
+      {
+        key: "drivingLicense",
+        fileKey: "drivingLicenseImage",
+        urlKey: "drivingLicenseImgUrl",
+      },
+      { key: "voterId", fileKey: "voterIdImage", urlKey: "voterIdImgUrl" },
+    ];
+    let idProofValidationErrors = {};
+    let firstMissingFileField = null;
+    let hasAnyIdProofChanges = false;
+    
+    idProofFields.forEach(({ key, fileKey, urlKey }) => {
+      const number = formData.idProofs[key];
+      const file = formData.idProofs[fileKey];
+      const originalNumber = employeeById?.idProofs?.[key];
+      const hasNumberChanged = number !== originalNumber;
+      
+      // Check if any ID proof field has been modified
+      if (hasNumberChanged || file instanceof File) {
+        hasAnyIdProofChanges = true;
+      }
+      
+      // If number is filled, always require document upload (either new or existing)
+      if (number && number.trim() !== "") {
+        const hasNewFile = file instanceof File;
+        const hasExistingFile = employeeById?.idProofs?.[urlKey] && employeeById.idProofs[urlKey].trim() !== "";
+        
+        if (hasNumberChanged) {
+          // If number changed, require a new document upload for verification
+          if (!hasNewFile) {
+            idProofValidationErrors[key] = "Document upload is required to verify the new number.";
+            if (!firstMissingFileField) firstMissingFileField = key;
+          } else {
+            idProofValidationErrors[key] = "";
+          }
+        } else {
+          // If number didn't change, require either new file or existing file
+          if (!hasNewFile && !hasExistingFile) {
+            idProofValidationErrors[key] = "Please upload the document for this number.";
+            if (!firstMissingFileField) firstMissingFileField = key;
+          } else {
+            idProofValidationErrors[key] = "";
+          }
+        }
+      } else {
+        idProofValidationErrors[key] = "";
+      }
+    });
+    
+    setIdProofValidationErrors(idProofValidationErrors);
+
+    // Mark fields as touched so errors are displayed
+    const touchedFields = {};
+    idProofFields.forEach(({ key }) => {
+      touchedFields[key] = true;
+    });
+    setIdProofFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+
+    if (firstMissingFileField) {
+      // Scroll to the field
+      const el = document.querySelector(`[name='${firstMissingFileField}']`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      toast.error("Please upload the required documents for verification before saving.");
+      return;
+    }
+
+    // --- Bank Details: If any of the five core fields is filled, all five are required ---
+    const coreBankFields = [
+      { key: "accountNumber", label: "Account Number" },
+      { key: "accountHolderName", label: "Account Holder Name" },
+      { key: "ifscCode", label: "IFSC Code" },
+      { key: "bankName", label: "Bank Name" },
+      { key: "branchName", label: "Branch Name" },
+    ];
+
+    // Check if any of the four core bank fields has been filled
+    const hasAnyCoreBankField = coreBankFields.some((field) => {
+      const currentValue = formData.bank[field.key];
+      const originalValue = employeeById?.bankDetails?.[field.key];
+      return (
+        currentValue &&
+        currentValue.trim() !== "" &&
+        currentValue !== originalValue
+      );
+    });
+
+    // If any core field is filled, validate all four are required
+    if (hasAnyCoreBankField) {
+      let bankValidationErrors = {};
+      let firstMissingBankField = null;
+
+      coreBankFields.forEach(({ key, label }) => {
+        const currentValue = formData.bank[key];
+        if (!currentValue || currentValue.trim() === "") {
+          bankValidationErrors[
+            key
+          ] = `${label} is required when filling bank details.`;
+          if (!firstMissingBankField) firstMissingBankField = key;
+        } else {
+          bankValidationErrors[key] = "";
+        }
+      });
+
+      setValidationErrors((prev) => ({ ...prev, ...bankValidationErrors }));
+
+      // Mark all core bank fields as touched so errors are displayed
+      const touchedFields = {};
+      coreBankFields.forEach(({ key }) => {
+        touchedFields[key] = true;
+      });
+      setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+
+      if (firstMissingBankField) {
+        // Scroll to the first missing field
+        const el = document.querySelector(`[name='${firstMissingBankField}']`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+    }
+
+    // --- Comprehensive Validation Check: Prevent API call if any validation errors exist ---
+    // Run validation only on fields that have been touched or changed
+    const additionalBankValidationErrors = {};
+    
+    // Only validate bank fields that have been touched or changed
+    const bankFieldsToValidate = [
+      "accountNumber",
+      "accountHolderName", 
+      "ifscCode",
+      "bankName",
+      "branchName",
+      "upiId",
+      "upiContactName"
+    ];
+    
+    bankFieldsToValidate.forEach(field => {
+      const currentValue = formData.bank[field];
+      const originalValue = employeeById?.bankDetails?.[field];
+      const hasChanged = currentValue !== originalValue;
+      const hasBeenTouched = fieldTouched[field];
+      
+      // Only validate if field has been touched or changed
+      if (hasChanged || hasBeenTouched) {
+        switch (field) {
+          case "accountNumber":
+            additionalBankValidationErrors[field] = validateAccountNumber(currentValue);
+            break;
+          case "accountHolderName":
+            additionalBankValidationErrors[field] = validateAccountHolderName(currentValue);
+            break;
+          case "ifscCode":
+            additionalBankValidationErrors[field] = validateIFSC(currentValue);
+            break;
+          case "bankName":
+            additionalBankValidationErrors[field] = validateBankName(currentValue);
+            break;
+          case "branchName":
+            additionalBankValidationErrors[field] = validateBranchName(currentValue);
+            break;
+          case "upiId":
+            additionalBankValidationErrors[field] = validateUPI(currentValue);
+            break;
+          case "upiContactName":
+            additionalBankValidationErrors[field] = validateUPIContactName(currentValue);
+            break;
+        }
+      }
+    });
+    
+    // Only validate personal fields that have been touched or changed
+    const personalValidationErrors = {};
+    const personalFieldsToValidate = [
+      { key: "email", originalKey: "emailPersonal", validateFn: validateEmail },
+      { key: "phone1", originalKey: "phone", validateFn: validatePhone },
+      { key: "phone2", originalKey: "alternatePhone", validateFn: validatePhone }
+    ];
+    
+    personalFieldsToValidate.forEach(({ key, originalKey, validateFn }) => {
+      const currentValue = key === "email" ? formData.employee.email.personal : formData.employee[key];
+      const originalValue = key === "email" ? employeeById?.emailPersonal : employeeById?.[originalKey];
+      const hasChanged = currentValue !== originalValue;
+      const hasBeenTouched = personalFieldTouched[key];
+      
+      // Only validate if field has been touched or changed
+      if (hasChanged || hasBeenTouched) {
+        personalValidationErrors[key] = validateFn(currentValue);
+      }
+    });
+
+    // Check ID proof validation for numbers
+    const idProofNumberValidationErrors = {};
+    idProofFields.forEach(({ key }) => {
+      const value = formData.idProofs[key];
+      if (value) {
+        switch (key) {
+          case "aadharNo":
+            idProofNumberValidationErrors[key] = validateAadharNumber(value);
+            break;
+          case "panNo":
+            idProofNumberValidationErrors[key] = validatePANNumber(value);
+            break;
+          case "passport":
+            idProofNumberValidationErrors[key] = validatePassportNumber(value);
+            break;
+          case "drivingLicense":
+            idProofNumberValidationErrors[key] =
+              validateDrivingLicenseNumber(value);
+            break;
+          case "voterId":
+            idProofNumberValidationErrors[key] = validateVoterIdNumber(value);
+            break;
+        }
+      }
+    });
+
+    // Combine all validation errors
+    const allValidationErrors = {
+      ...validationErrors,
+      ...additionalBankValidationErrors,
+      ...personalValidationErrors,
+      ...idProofNumberValidationErrors,
+      ...idProofValidationErrors,
+    };
+
+    // Update validation errors state with all validation results
+    setValidationErrors(allValidationErrors);
+    setIdProofValidationErrors((prev) => ({
+      ...prev,
+      ...idProofNumberValidationErrors,
+    }));
+
+    // Check if there are any validation errors
+    const hasValidationErrors = Object.values(allValidationErrors).some(
+      (error) => error && error.trim() !== ""
+    );
+
+    console.log("Validation errors:", allValidationErrors);
+    console.log("Has validation errors:", hasValidationErrors);
+
+    if (hasValidationErrors) {
+      // Find the first field with an error to scroll to
+      const firstErrorField = Object.keys(allValidationErrors).find(
+        (key) =>
+          allValidationErrors[key] && allValidationErrors[key].trim() !== ""
+      );
+
+      if (firstErrorField) {
+        // Mark only fields with errors as touched so errors are displayed
+        const touchedFields = {};
+        const idProofTouchedFields = {};
+        
+        Object.keys(allValidationErrors).forEach((field) => {
+          if (allValidationErrors[field] && allValidationErrors[field].trim() !== "") {
+            // Check if it's an ID proof field
+            if (["aadharNo", "panNo", "passport", "drivingLicense", "voterId"].includes(field)) {
+              idProofTouchedFields[field] = true;
+            } else {
+              touchedFields[field] = true;
+            }
+          }
+        });
+        
+        setFieldTouched((prev) => ({ ...prev, ...touchedFields }));
+        setIdProofFieldTouched((prev) => ({ ...prev, ...idProofTouchedFields }));
+
+        // Scroll to the first field with an error
+        const el = document.querySelector(`[name='${firstErrorField}']`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      return; // Prevent API call
+    }
+
+    console.log("Proceeding to API call");
     setLoading(true);
     try {
       // Create a payload with only the changed fields
@@ -576,8 +1662,34 @@ function EmployeeProfilePage() {
       if (formData.bank.branchName !== employeeById.bankDetails?.branchName) {
         payload.branchName = formData.bank.branchName;
       }
-      if (formData.bank.upiPhone !== employeeById.bankDetails?.upiPhoneNumber) {
-        payload.upiPhoneNumber = formData.bank.upiPhone;
+      if (formData.bank.upiId !== employeeById.bankDetails?.upiId) {
+        payload.upiId = formData.bank.upiId;
+      }
+      if (
+        formData.bank.upiContactName !==
+        employeeById.bankDetails?.upiContactName
+      ) {
+        payload.upiContactName = formData.bank.upiContactName; // ✅ CORRECT
+      }
+
+      // Include ID proof fields that have changed
+      if (formData.idProofs.aadharNo !== employeeById.idProofs?.aadharNo) {
+        payload.aadharNo = formData.idProofs.aadharNo;
+      }
+      if (formData.idProofs.panNo !== employeeById.idProofs?.panNo) {
+        payload.panNo = formData.idProofs.panNo;
+      }
+      if (formData.idProofs.passport !== employeeById.idProofs?.passport) {
+        payload.passport = formData.idProofs.passport;
+      }
+      if (
+        formData.idProofs.drivingLicense !==
+        employeeById.idProofs?.drivingLicense
+      ) {
+        payload.drivingLicense = formData.idProofs.drivingLicense;
+      }
+      if (formData.idProofs.voterId !== employeeById.idProofs?.voterId) {
+        payload.voterId = formData.idProofs.voterId;
       }
 
       // Create FormData for the request
@@ -615,11 +1727,15 @@ function EmployeeProfilePage() {
         formDataPayload.append("voterIdImage", formData.idProofs.voterIdImage);
       }
 
+      const token = getItemFromSessionStorage("token");
       const response = await fetch(
         `${publicRuntimeConfig.apiURL}/employee/update-request`,
         {
           method: "PUT",
           body: formDataPayload,
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
@@ -636,6 +1752,16 @@ function EmployeeProfilePage() {
           result.message || "Update request submitted successfully."
         );
         setIsPageInEditMode(false);
+        // Clear all validation states on successful save
+        setValidationErrors({});
+        setFieldTouched({});
+        setIdProofValidationErrors({});
+        setIdProofFieldTouched({});
+        setIdProofFieldModified({});
+        setPersonalValidationErrors({});
+        setPersonalFieldTouched({});
+        setEmailSuggestions([]);
+        setShowEmailSuggestions(false);
         fetchByEmployeeId();
       } else {
         toast.error(result.message || `Failed: ${response.statusText}`);
@@ -680,6 +1806,292 @@ function EmployeeProfilePage() {
       </div>
     );
   }
+
+  // Validation functions
+  const validatePhone = (value) => {
+    if (!value || value.trim() === "") return "Phone number is required";
+    if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
+    if (value.length !== 10) return "Phone number must be exactly 10 digits";
+    return "";
+  };
+
+  const validateEmail = (value) => {
+    if (!value || value.trim() === "") return "Email is required";
+    if (/\s/.test(value)) return "Email cannot contain spaces";
+    if (value.trim().length < 3) return "Email must be at least 3 characters";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return "Invalid email format";
+    return "";
+  };
+
+  const generateEmailSuggestions = (input) => {
+    if (!input || !input.includes("@")) return [];
+
+    const [localPart] = input.split("@");
+    if (!localPart) return [];
+
+    const commonDomains = [
+      "gmail.com",
+      "yahoo.com",
+      "outlook.com",
+      "hotmail.com",
+      "company.com",
+    ];
+    return commonDomains.map((domain) => `${localPart}@${domain}`);
+  };
+
+  const handleEmailInput = (value) => {
+    handleNestedInputChange("employee", "email", "personal", value);
+
+    // Generate suggestions
+    const suggestions = generateEmailSuggestions(value);
+    setEmailSuggestions(suggestions);
+    setShowEmailSuggestions(suggestions.length > 0 && value.includes("@"));
+
+    // Validate on input
+    const error = validateEmail(value);
+    setPersonalValidationErrors((prev) => ({ ...prev, email: error }));
+  };
+
+  const selectEmailSuggestion = (suggestion) => {
+    handleNestedInputChange("employee", "email", "personal", suggestion);
+    setShowEmailSuggestions(false);
+    setPersonalValidationErrors((prev) => ({ ...prev, email: "" }));
+  };
+
+  const handlePersonalFieldBlur = (field) => {
+    setPersonalFieldTouched((prev) => ({ ...prev, [field]: true }));
+
+    let error = "";
+    switch (field) {
+      case "phone1":
+        error = validatePhone(formData.employee.phone1);
+        break;
+      case "phone2":
+        // Alternate phone is optional, but if filled must be valid
+        if (
+          formData.employee.phone2 &&
+          formData.employee.phone2.trim() !== ""
+        ) {
+          error = validatePhone(formData.employee.phone2);
+        }
+        break;
+      case "email":
+        error = validateEmail(formData.employee.email.personal);
+        break;
+      case "currentAddress":
+        if (
+          !formData.employee.currentAddress ||
+          formData.employee.currentAddress.trim() === ""
+        ) {
+          error = "Current address is required";
+        } else if (formData.employee.currentAddress.trim().length < 5) {
+          error = "Current address must be at least 5 characters";
+        }
+        break;
+      case "permanentAddress":
+        if (
+          !formData.employee.permanentAddress ||
+          formData.employee.permanentAddress.trim() === ""
+        ) {
+          error = "Permanent address is required";
+        } else if (formData.employee.permanentAddress.trim().length < 5) {
+          error = "Permanent address must be at least 5 characters";
+        }
+        break;
+    }
+
+    setPersonalValidationErrors((prev) => ({ ...prev, [field]: error }));
+    setShowEmailSuggestions(false);
+  };
+
+  // ID Proof validation functions
+  const validateAadharNumber = (value) => {
+    if (!value || value.trim() === "") return "Aadhar number is required";
+    if (!/^[0-9]+$/.test(value)) return "Only numbers allowed";
+    if (value.length !== 12) return "Aadhar number must be exactly 12 digits";
+    return "";
+  };
+
+  const validatePANNumber = (value) => {
+    if (!value || value.trim() === "") return "PAN number is required";
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value.toUpperCase()))
+      return "Invalid PAN format (e.g., ABCDE1234F)";
+    return "";
+  };
+
+  const validatePassportNumber = (value) => {
+    if (!value || value.trim() === "") return "Passport number is required";
+    if (!/^[A-Z][0-9]{7}$/.test(value.toUpperCase()))
+      return "Passport number must be 1 letter followed by 7 digits (e.g., K1234567)";
+    return "";
+  };
+
+  const validateDrivingLicenseNumber = (value) => {
+    if (!value || value.trim() === "")
+      return "Driving license number is required";
+    if (!/^[A-Z]{2}[0-9]{2}[0-9]{11}$/.test(value.toUpperCase()))
+      return "Format: 2 letters, 2 digits, 11 digits (e.g., AB1212345678901)";
+    return "";
+  };
+
+  const validateVoterIdNumber = (value) => {
+    if (!value || value.trim() === "") return "Voter ID number is required";
+    if (!/^[A-Z]{3}[0-9]{7}$/.test(value.toUpperCase()))
+      return "Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)";
+    return "";
+  };
+
+  const validateIdProofField = (field, value) => {
+    switch (field) {
+      case "aadharNo":
+        return validateAadharNumber(value);
+      case "panNo":
+        return validatePANNumber(value);
+      case "passport":
+        return validatePassportNumber(value);
+      case "drivingLicense":
+        return validateDrivingLicenseNumber(value);
+      case "voterId":
+        return validateVoterIdNumber(value);
+      default:
+        return "";
+    }
+  };
+
+  const validateIdProofConditional = (field) => {
+    const numberValue = formData.idProofs[field];
+    const originalNumber = employeeById?.idProofs?.[field];
+    const hasNumberChanged = numberValue !== originalNumber;
+
+    // Map field names to their corresponding file field names and URL keys
+    const fieldMap = {
+      aadharNo: { fileKey: "aadharImage", urlKey: "aadharImgUrl" },
+      panNo: { fileKey: "panImage", urlKey: "pancardImgUrl" },
+      passport: { fileKey: "passportImage", urlKey: "passportImgUrl" },
+      drivingLicense: {
+        fileKey: "drivingLicenseImage",
+        urlKey: "drivingLicenseImgUrl",
+      },
+      voterId: { fileKey: "voterIdImage", urlKey: "voterIdImgUrl" },
+    };
+
+    const { fileKey, urlKey } = fieldMap[field];
+    const hasNewFile = formData.idProofs[fileKey] instanceof File;
+    const hasExistingFile =
+      employeeById?.idProofs?.[urlKey] &&
+      employeeById.idProofs[urlKey].trim() !== "";
+    const hasFile = hasNewFile || hasExistingFile;
+    const hasNumber = numberValue && numberValue.trim() !== "";
+
+    if (hasFile && !hasNumber) {
+      const fieldLabels = {
+        aadharNo: "Aadhar number",
+        panNo: "PAN number",
+        passport: "Passport number",
+        drivingLicense: "Driving license number",
+        voterId: "Voter ID number",
+      };
+      return `Please enter the ${fieldLabels[field]} for the uploaded document`;
+    }
+    
+    if (hasNumber) {
+      if (hasNumberChanged) {
+        // If number changed, require a new document upload for verification
+        if (!hasNewFile) {
+          const fieldLabels = {
+            aadharNo: "Aadhar document",
+            panNo: "PAN document",
+            passport: "Passport document",
+            drivingLicense: "Driving license document",
+            voterId: "Voter ID document",
+          };
+          return `Document upload is required to verify the new ${fieldLabels[field].toLowerCase()}. This is mandatory for saving changes.`;
+        }
+      } else {
+        // If number didn't change, require either new file or existing file
+        if (!hasFile) {
+          const fieldLabels = {
+            aadharNo: "Aadhar document",
+            panNo: "PAN document",
+            passport: "Passport document",
+            drivingLicense: "Driving license document",
+            voterId: "Voter ID document",
+          };
+          return `Please upload the ${fieldLabels[field]} for verification.`;
+        }
+      }
+    }
+    
+    return "";
+  };
+
+  const handleIdProofFieldBlur = (field) => {
+    setIdProofFieldTouched((prev) => ({ ...prev, [field]: true }));
+
+    // Validate the number format
+    const numberError = validateIdProofField(field, formData.idProofs[field]);
+
+    // Validate conditional requirement
+    const conditionalError = validateIdProofConditional(field);
+
+    const finalError = numberError || conditionalError;
+    setIdProofValidationErrors((prev) => ({ ...prev, [field]: finalError }));
+  };
+
+  const handleIdProofNumberChange = (field, value) => {
+    // Auto-uppercase for PAN, Passport, Driving License, Voter ID
+    let processedValue = value;
+    if (field !== "aadharNo") {
+      processedValue = value.toUpperCase();
+    }
+
+    handleInputChange("idProofs", field, processedValue);
+
+    // Mark field as touched and validate in real-time
+    setIdProofFieldTouched((prev) => ({ ...prev, [field]: true }));
+
+    // Validate the number format immediately
+    const numberError = validateIdProofField(field, processedValue);
+
+    // Validate conditional requirement
+    const conditionalError = validateIdProofConditional(field);
+
+    const finalError = numberError || conditionalError;
+    setIdProofValidationErrors((prev) => ({ ...prev, [field]: finalError }));
+  };
+
+  // Helper function to extract filename after underscore
+  const getDisplayFileName = (fullFileName) => {
+    if (!fullFileName) return "";
+
+    // Split by underscore
+    const parts = fullFileName.split("_");
+
+    // Find the first part that doesn't look like a numeric ID
+    // (numeric IDs are typically long numbers)
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      // Check if this part looks like a filename (contains letters, spaces, dots, etc.)
+      // and not just a long numeric ID
+      if (part && !/^\d{10,}$/.test(part)) {
+        // Return this part and all remaining parts joined
+        return parts.slice(i).join("_");
+      }
+    }
+
+    // If all parts look like numeric IDs, return the last part
+    return parts[parts.length - 1] || fullFileName;
+  };
+
+  // Helper function to truncate filename if too long
+  const truncateFileName = (fileName, maxLength = 20) => {
+    if (!fileName) return "";
+    if (fileName.length <= maxLength) return fileName;
+    return fileName.substring(0, maxLength - 3) + "...";
+  };
+
+  // Add this useEffect after state declarations and before return
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -745,10 +2157,7 @@ function EmployeeProfilePage() {
                         <FiSettings className="w-5 h-5" />
                       </button>
                       {showProfileMenu && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
-                          <button className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                            <FiSettings className="w-4 h-4 mr-2" /> Settings
-                          </button>
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1">
                           <button
                             onClick={handleLogout}
                             className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center"
@@ -774,10 +2183,12 @@ function EmployeeProfilePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : employeeById?.employeeImgUrl ? (
-                            <img
+                            <MinioImage
                               src={employeeById.employeeImgUrl}
                               alt="Profile"
                               className="w-full h-full object-cover"
+                              fallbackSrc="/avatar.jpg"
+                              onClick={() => console.log('Profile image clicked')}
                             />
                           ) : (
                             <FiUser className="w-16 h-16 text-gray-300" />
@@ -806,6 +2217,12 @@ function EmployeeProfilePage() {
                             onChange={(e) => {
                               const file = e.target.files[0];
                               if (file) {
+                                if (file.size > 1024 * 1024 * 1) {
+                                  toast.error(
+                                    "File size must be less than 1MB"
+                                  );
+                                  return;
+                                }
                                 handleInputChange(
                                   "employee",
                                   "profileImage",
@@ -918,7 +2335,7 @@ function EmployeeProfilePage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* --- Profile Info Sections --- */}
               <div className="p-6 bg-gray-50">
                 <div className="grid grid-cols-1 lg:grid-cols-11 gap-6">
@@ -960,20 +2377,45 @@ function EmployeeProfilePage() {
                                 Phone
                               </label>
                               {isPageInEditMode ? (
-                                <input
-                                  type="tel"
-                                  value={formData.employee.phone1}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "employee",
-                                      "phone1",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                                  pattern="[0-9]{10}"
-                                  disabled={!isEditable}
-                                />
+                                <div>
+                                  <input
+                                    type="tel"
+                                    value={formData.employee.phone1}
+                                    onChange={(e) => {
+                                      const value = e.target.value
+                                        .replace(/[^0-9]/g, "")
+                                        .slice(0, 10);
+                                      handleInputChange(
+                                        "employee",
+                                        "phone1",
+                                        value
+                                      );
+                                    }}
+                                    onBlur={() =>
+                                      handlePersonalFieldBlur("phone1")
+                                    }
+                                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                      personalFieldTouched.phone1 &&
+                                      personalValidationErrors.phone1
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
+                                    pattern="[0-9]{10}"
+                                    disabled={!isEditable}
+                                    placeholder="10-digit number"
+                                    maxLength={10}
+                                    inputMode="numeric"
+                                  />
+                                  {personalFieldTouched.phone1 &&
+                                    personalValidationErrors.phone1 && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {personalValidationErrors.phone1}
+                                      </p>
+                                    )}
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Enter 10-digit mobile number
+                                  </p>
+                                </div>
                               ) : (
                                 <p className="text-base text-gray-900">
                                   {employeeById?.phone || "-"}
@@ -986,21 +2428,45 @@ function EmployeeProfilePage() {
                                 Alternate Phone
                               </label>
                               {isPageInEditMode ? (
-                                <input
-                                  type="tel"
-                                  value={formData.employee.phone2 || ""}
-                                  onChange={(e) =>
-                                    handleInputChange(
-                                      "employee",
-                                      "phone2",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                                  pattern="[0-9]{10}"
-                                  placeholder="10-digit number"
-                                  disabled={!isEditable}
-                                />
+                                <div>
+                                  <input
+                                    type="tel"
+                                    value={formData.employee.phone2 || ""}
+                                    onChange={(e) => {
+                                      const value = e.target.value
+                                        .replace(/[^0-9]/g, "")
+                                        .slice(0, 10);
+                                      handleInputChange(
+                                        "employee",
+                                        "phone2",
+                                        value
+                                      );
+                                    }}
+                                    onBlur={() =>
+                                      handlePersonalFieldBlur("phone2")
+                                    }
+                                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                      personalFieldTouched.phone2 &&
+                                      personalValidationErrors.phone2
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
+                                    pattern="[0-9]{10}"
+                                    placeholder="10-digit number (optional)"
+                                    disabled={!isEditable}
+                                    maxLength={10}
+                                    inputMode="numeric"
+                                  />
+                                  {personalFieldTouched.phone2 &&
+                                    personalValidationErrors.phone2 && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {personalValidationErrors.phone2}
+                                      </p>
+                                    )}
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Optional: Enter 10-digit mobile number
+                                  </p>
+                                </div>
                               ) : (
                                 <p className="text-base text-gray-900">
                                   {employeeById?.alternatePhone || "-"}
@@ -1013,20 +2479,60 @@ function EmployeeProfilePage() {
                                 Personal Email
                               </label>
                               {isPageInEditMode ? (
-                                <input
-                                  type="email"
-                                  value={formData.employee.email.personal}
-                                  onChange={(e) =>
-                                    handleNestedInputChange(
-                                      "employee",
-                                      "email",
-                                      "personal",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                                  disabled={!isEditable}
-                                />
+                                <div className="relative">
+                                  <input
+                                    type="email"
+                                    value={formData.employee.email.personal}
+                                    onChange={(e) =>
+                                      handleEmailInput(e.target.value)
+                                    }
+                                    onBlur={() =>
+                                      handlePersonalFieldBlur("email")
+                                    }
+                                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                      personalFieldTouched.email &&
+                                      personalValidationErrors.email
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
+                                    disabled={!isEditable}
+                                    placeholder="Enter your email address"
+                                  />
+                                  {personalFieldTouched.email &&
+                                    personalValidationErrors.email && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {personalValidationErrors.email}
+                                      </p>
+                                    )}
+
+                                  {/* Email Suggestions Dropdown */}
+                                  {/* {showEmailSuggestions &&
+                                    emailSuggestions.length > 0 && (
+                                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto">
+                                        {emailSuggestions.map(
+                                          (suggestion, index) => (
+                                            <button
+                                              key={index}
+                                              type="button"
+                                              onClick={() =>
+                                                selectEmailSuggestion(
+                                                  suggestion
+                                                )
+                                              }
+                                              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0 flex items-center"
+                                            >
+                                              <span className="text-gray-700">
+                                                {suggestion}
+                                              </span>
+                                              <span className="ml-auto text-xs text-gray-400">
+                                                Tap to select
+                                              </span>
+                                            </button>
+                                          )
+                                        )}
+                                      </div>
+                                    )} */}
+                                </div>
                               ) : (
                                 <p className="text-base text-gray-900">
                                   {employeeById?.emailPersonal || "-"}
@@ -1120,124 +2626,293 @@ function EmployeeProfilePage() {
                           </h3>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {isPageInEditMode && (
+                        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                          <p className="text-sm text-orange-700">
+                            <strong>Important:</strong> When you change any document number, you must upload the corresponding document for verification. 
+                            Document upload is mandatory for saving changes. Changed numbers will be marked with Verification Required.
+                          </p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[
                           {
                             label: "Aadhar No.",
                             key: "aadharNo",
                             imgUrlKey: "aadharImgUrl",
                             fileKey: "aadharImage",
+                            documentType: "aadhar",
                           },
                           {
                             label: "PAN No.",
                             key: "panNo",
                             imgUrlKey: "pancardImgUrl",
                             fileKey: "panImage",
+                            documentType: "pan",
                           },
                           {
                             label: "Passport",
                             key: "passport",
                             imgUrlKey: "passportImgUrl",
                             fileKey: "passportImage",
+                            documentType: "passport",
                           },
                           {
                             label: "Driving License",
                             key: "drivingLicense",
                             imgUrlKey: "drivingLicenseImgUrl",
                             fileKey: "drivingLicenseImage",
+                            documentType: "drivingLicense",
                           },
                           {
                             label: "Voter ID",
                             key: "voterId",
                             imgUrlKey: "voterIdImgUrl",
                             fileKey: "voterIdImage",
+                            documentType: "voterId",
                           },
-                        ].map(({ label, key, imgUrlKey, fileKey }) => (
-                          <div
-                            key={key}
-                            className="bg-gray-50 p-3 rounded-lg space-y-1"
-                          >
-                            <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                              {label}
-                            </label>
-                            {/* Always show the number as read-only */}
-                            <p className="text-base text-gray-900">
-                              {employeeById?.idProofs?.[key] || "-"}
-                            </p>
-                            <div className="pt-2 border-t border-gray-200 mt-2">
+                        ].map(
+                          ({
+                            label,
+                            key,
+                            imgUrlKey,
+                            fileKey,
+                            documentType,
+                          }) => (
+                            <div
+                              key={key}
+                              className={`p-3 rounded-lg space-y-1 min-w-0 ${
+                                idProofFieldTouched[key] &&
+                                idProofValidationErrors[key]
+                                  ? "bg-red-50 border-2 border-red-300"
+                                  : "bg-gray-50"
+                              }`}
+                            >
+                              <label className="text-sm text-gray-600 mb-1.5 block font-medium flex items-center justify-between">
+                                <span>{label}</span>
+                                {isPageInEditMode && formData.idProofs[key] && formData.idProofs[key] !== employeeById?.idProofs?.[key] && (
+                                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                                    Verification Required
+                                  </span>
+                                )}
+                                {isPageInEditMode && formData.idProofs[key] && formData.idProofs[key] !== employeeById?.idProofs?.[key] && !formData.idProofs[fileKey] && (
+                                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full ml-1">
+                                    Upload Required
+                                  </span>
+                                )}
+                              </label>
+                              {/* Number field - Editable in edit mode */}
                               {isPageInEditMode ? (
                                 <div>
-                                  {!formData.idProofs[fileKey] && (
-                                    <label
-                                      htmlFor={`upload-${key}`}
-                                      className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
-                                        isEditable
-                                          ? "cursor-pointer"
-                                          : "opacity-50 cursor-not-allowed"
-                                      }`}
-                                    >
-                                      <FiUpload className="w-3 h-3 mr-1" />{" "}
-                                      Upload
-                                    </label>
-                                  )}
                                   <input
-                                    type="file"
-                                    id={`upload-${key}`}
-                                    className="hidden"
-                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    type="text"
+                                    name={key}
+                                    value={formData.idProofs[key] || ""}
+                                    onChange={(e) =>
+                                      handleIdProofNumberChange(
+                                        key,
+                                        e.target.value
+                                      )
+                                    }
+                                    onBlur={() => handleIdProofFieldBlur(key)}
+                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                      idProofFieldTouched[key] &&
+                                      idProofValidationErrors[key]
+                                        ? "border-red-500"
+                                        : ""
+                                    }`}
                                     disabled={!isEditable}
-                                    onChange={(e) => {
-                                      const file = e.target.files[0];
-                                      if (file) {
-                                        handleInputChange(
-                                          "idProofs",
-                                          fileKey,
-                                          file
-                                        );
-                                      }
-                                    }}
+                                    placeholder={
+                                      key === "aadharNo"
+                                        ? "12-digit number"
+                                        : key === "panNo"
+                                        ? "ABCDE1234F"
+                                        : key === "passport"
+                                        ? "Passport number"
+                                        : key === "drivingLicense"
+                                        ? "License number"
+                                        : "Voter ID number"
+                                    }
+                                    maxLength={
+                                      key === "aadharNo"
+                                        ? 12
+                                        : key === "panNo"
+                                        ? 10
+                                        : key === "passport"
+                                        ? 8
+                                        : key === "drivingLicense"
+                                        ? 15
+                                        : 10
+                                    }
                                   />
-                                  {formData.idProofs[fileKey] instanceof
-                                    File && (
-                                    <div className="mt-2 flex items-center text-sm">
-                                      <span className="text-gray-600 mr-2 truncate">
-                                        {formData.idProofs[fileKey].name}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleInputChange(
-                                            "idProofs",
-                                            fileKey,
-                                            null
-                                          )
-                                        }
-                                        className="text-red-500 hover:text-red-700"
-                                        disabled={!isEditable}
-                                      >
-                                        <X className="w-4 h-4" />
-                                      </button>
-                                    </div>
+                                  {idProofFieldTouched[key] &&
+                                    idProofValidationErrors[key] && (
+                                      <p className="text-xs text-red-500 mt-1">
+                                        {idProofValidationErrors[key]}
+                                      </p>
+                                    )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between">
+                                  <p className="text-base text-gray-900 truncate flex-1 mr-2">
+                                    {employeeById?.idProofs?.[key] || "-"}
+                                  </p>
+                                  {employeeById?.idProofs?.[imgUrlKey] && (
+                                    <button
+                                      onClick={() =>
+                                        openIdProofPreview(
+                                          documentType,
+                                          imgUrlKey
+                                        )
+                                      }
+                                      className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0"
+                                    >
+                                      <FiEye className="w-4 h-4 mr-1" /> View
+                                    </button>
                                   )}
                                 </div>
-                              ) : employeeById?.idProofs?.[imgUrlKey] ? (
-                                <a
-                                  href={employeeById.idProofs[imgUrlKey]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                >
-                                  <FiEye className="w-4 h-4 mr-1" /> View
-                                  Document
-                                </a>
-                              ) : (
-                                <p className="text-xs text-gray-500">
-                                  No document
-                                </p>
                               )}
+                              <div className="pt-2 border-t border-gray-200 mt-2">
+                                {isPageInEditMode ? (
+                                  <div>
+                                    {!formData.idProofs[fileKey] && (
+                                      <label
+                                        htmlFor={`upload-${key}`}
+                                        className={`inline-flex items-center px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 ${
+                                          isEditable
+                                            ? "cursor-pointer"
+                                            : "opacity-50 cursor-not-allowed"
+                                        }`}
+                                      >
+                                        <FiUpload className="w-3 h-3 mr-1" />{" "}
+                                        Upload
+                                      </label>
+                                    )}
+                                    <input
+                                      type="file"
+                                      id={`upload-${key}`}
+                                      className="hidden"
+                                      accept=".pdf,.jpg,.jpeg,.png"
+                                      disabled={!isEditable}
+                                      onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                          handleIdProofUpload(
+                                            documentType,
+                                            file
+                                          );
+                                        }
+                                      }}
+                                    />
+                                    {formData.idProofs[fileKey] instanceof
+                                      File && (
+                                      <div className="mt-2 flex items-center text-sm">
+                                        <div className="flex items-center space-x-3">
+                                          {isPDF(formData.idProofs[fileKey]) ? (
+                                            <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
+                                              <span className="text-sm text-red-600 font-bold">
+                                                PDF
+                                              </span>
+                                            </div>
+                                          ) : (
+                                            <img
+                                              src={URL.createObjectURL(
+                                                formData.idProofs[fileKey]
+                                              )}
+                                              alt={`${label} preview`}
+                                              className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                                            />
+                                          )}
+                                          <div className="flex flex-col">
+                                            <span className="text-gray-700 font-medium truncate max-w-[120px]">
+                                              {truncateFileName(
+                                                getDisplayFileName(
+                                                  formData.idProofs[fileKey]
+                                                    .name
+                                                )
+                                              )}
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                              {(
+                                                formData.idProofs[fileKey]
+                                                  .size /
+                                                1024 /
+                                                1024
+                                              ).toFixed(2)}{" "}
+                                              MB
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2 ml-3">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              openUploadedIdProofPreview(
+                                                documentType,
+                                                formData.idProofs[fileKey]
+                                              )
+                                            }
+                                            className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                                            disabled={!isEditable}
+                                          >
+                                            <FiEye className="w-4 h-4" />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleInputChange(
+                                                "idProofs",
+                                                fileKey,
+                                                null
+                                              )
+                                            }
+                                            className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                            disabled={!isEditable}
+                                          >
+                                            <X className="w-4 h-4" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      PDF, JPG, JPEG, PNG (max 5MB)
+                                    </p>
+                                  </div>
+                                ) : employeeById?.idProofs?.[imgUrlKey] ? (
+                                  <div className="flex items-center space-x-2">
+                                    {isPDF(employeeById.idProofs[imgUrlKey]) ? (
+                                      <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                        <span className="text-xs text-red-600 font-medium">
+                                          PDF
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <MinioImage
+                                        src={employeeById.idProofs[imgUrlKey]}
+                                        alt={`${label} preview`}
+                                        className="w-8 h-8 object-cover rounded border border-gray-300"
+                                        fallbackSrc="/placeholder-image.jpg"
+                                      />
+                                    )}
+                                    <span className="text-sm text-gray-700 truncate">
+                                      {truncateFileName(
+                                        getDisplayFileName(
+                                          employeeById.idProofs[imgUrlKey]
+                                            .split("/")
+                                            .pop()
+                                        )
+                                      )}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-500">
+                                    No document
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -1340,6 +3015,48 @@ function EmployeeProfilePage() {
                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-6">
+                        {/* Account Holder Name - Editable */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            Account Holder Name
+                          </label>
+                          {isPageInEditMode ? (
+                            <input
+                              type="text"
+                              name="accountHolderName"
+                              value={formData.bank.accountHolderName}
+                              onChange={(e) =>
+                                handleBankFieldChange(
+                                  "accountHolderName",
+                                  filterAccountHolderName(e.target.value)
+                                )
+                              }
+                              onBlur={() =>
+                                handleBankFieldBlur("accountHolderName")
+                              }
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.accountHolderName &&
+                                validationErrors.accountHolderName
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              disabled={!isEditable}
+                              maxLength={50}
+                              placeholder="Enter account holder name"
+                            />
+                          ) : (
+                            <p className="text-base text-gray-900">
+                              {employeeById?.bankDetails?.accountHolderName ||
+                                "-"}
+                            </p>
+                          )}
+                          {fieldTouched.accountHolderName &&
+                            validationErrors.accountHolderName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.accountHolderName}
+                              </p>
+                            )}
+                        </div>
                         {/* Account Number - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
@@ -1348,22 +3065,38 @@ function EmployeeProfilePage() {
                           {isPageInEditMode ? (
                             <input
                               type="text"
+                              name="accountNumber"
                               value={formData.bank.accountNumber}
                               onChange={(e) =>
-                                handleInputChange(
-                                  "bank",
+                                handleBankFieldChange(
                                   "accountNumber",
-                                  e.target.value
+                                  filterAccountNumber(e.target.value)
                                 )
                               }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                              onBlur={() =>
+                                handleBankFieldBlur("accountNumber")
+                              }
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.accountNumber &&
+                                validationErrors.accountNumber
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
                               disabled={!isEditable}
+                              maxLength={18}
+                              inputMode="numeric"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
                               {employeeById?.bankDetails?.accountNumber || "-"}
                             </p>
                           )}
+                          {fieldTouched.accountNumber &&
+                            validationErrors.accountNumber && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.accountNumber}
+                              </p>
+                            )}
                         </div>
                         {/* IFSC Code - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
@@ -1373,22 +3106,36 @@ function EmployeeProfilePage() {
                           {isPageInEditMode ? (
                             <input
                               type="text"
+                              name="ifscCode"
                               value={formData.bank.ifscCode}
                               onChange={(e) =>
-                                handleInputChange(
-                                  "bank",
+                                handleBankFieldChange(
                                   "ifscCode",
-                                  e.target.value
+                                  filterIFSC(e.target.value)
                                 )
                               }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                              onBlur={() => handleBankFieldBlur("ifscCode")}
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.ifscCode &&
+                                validationErrors.ifscCode
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
                               disabled={!isEditable}
+                              maxLength={11}
+                              placeholder="e.g., SBIN0001234"
                             />
                           ) : (
                             <p className="text-base text-gray-900">
                               {employeeById?.bankDetails?.ifscCode || "-"}
                             </p>
                           )}
+                          {fieldTouched.ifscCode &&
+                            validationErrors.ifscCode && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.ifscCode}
+                              </p>
+                            )}
                         </div>
                         {/* Bank Name - Editable */}
                         <div className="bg-gray-50 p-3 rounded-lg">
@@ -1398,22 +3145,35 @@ function EmployeeProfilePage() {
                           {isPageInEditMode ? (
                             <input
                               type="text"
+                              name="bankName"
                               value={formData.bank.bankName}
                               onChange={(e) =>
-                                handleInputChange(
-                                  "bank",
+                                handleBankFieldChange(
                                   "bankName",
-                                  e.target.value
+                                  filterBankName(e.target.value)
                                 )
                               }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                              onBlur={() => handleBankFieldBlur("bankName")}
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.bankName &&
+                                validationErrors.bankName
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
                               disabled={!isEditable}
+                              maxLength={50}
                             />
                           ) : (
                             <p className="text-base text-gray-900">
                               {employeeById?.bankDetails?.bankName || "-"}
                             </p>
                           )}
+                          {fieldTouched.bankName &&
+                            validationErrors.bankName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.bankName}
+                              </p>
+                            )}
                         </div>
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
@@ -1422,64 +3182,52 @@ function EmployeeProfilePage() {
                           {isPageInEditMode ? (
                             <input
                               type="text"
+                              name="branchName"
                               value={formData.bank.branchName}
                               onChange={(e) =>
-                                handleInputChange(
-                                  "bank",
+                                handleBankFieldChange(
                                   "branchName",
-                                  e.target.value
+                                  filterBranchName(e.target.value)
                                 )
                               }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
+                              onBlur={() => handleBankFieldBlur("branchName")}
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.branchName &&
+                                validationErrors.branchName
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
                               disabled={!isEditable}
+                              maxLength={50}
                             />
                           ) : (
                             <p className="text-base text-gray-900">
                               {employeeById?.bankDetails?.branchName || "-"}
                             </p>
                           )}
-                        </div>
-                        {/* UPI Phone - Editable */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            UPI Phone
-                          </label>
-                          {isPageInEditMode ? (
-                            <input
-                              type="tel"
-                              value={formData.bank.upiPhone}
-                              onChange={(e) =>
-                                handleInputChange(
-                                  "bank",
-                                  "upiPhone",
-                                  e.target.value
-                                )
-                              }
-                              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100"
-                              pattern="[0-9]{10}"
-                              placeholder="10-digit number"
-                              disabled={!isEditable}
-                            />
-                          ) : (
-                            <p className="text-base text-gray-900">
-                              {employeeById?.bankDetails?.upiPhoneNumber || "-"}
-                            </p>
-                          )}
-                        </div>
-                        {/* UPI ID - Read Only */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            UPI ID
-                          </label>
-                          <p className="text-base text-gray-900">
-                            {employeeById?.bankDetails?.upiId || "-"}
-                          </p>
+                          {fieldTouched.branchName &&
+                            validationErrors.branchName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.branchName}
+                              </p>
+                            )}
                         </div>
                         {/* Passbook Upload - Enabled in Edit Mode */}
                         <div className="border-t pt-4 mt-4">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Bank Passbook
-                          </label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-sm text-gray-600 font-medium">
+                              Bank Passbook
+                            </label>
+                            {!isPageInEditMode &&
+                              employeeById?.bankDetails?.passbookImgUrl && (
+                                <button
+                                  onClick={openPassbookPreview}
+                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center flex-shrink-0"
+                                >
+                                  <FiEye className="w-4 h-4 mr-1" /> View
+                                </button>
+                              )}
+                          </div>
                           {isPageInEditMode ? (
                             <div>
                               <label
@@ -1504,58 +3252,197 @@ function EmployeeProfilePage() {
                                 onChange={(e) => {
                                   const file = e.target.files[0];
                                   if (file) {
-                                    handleInputChange(
-                                      "bank",
-                                      "passbookDoc",
-                                      file
-                                    );
+                                    handlePassbookUpload(file);
                                   }
                                 }}
                               />
                               {formData.bank.passbookDoc instanceof File && (
                                 <div className="mt-2 flex items-center text-sm">
-                                  <span className="text-gray-600 mr-2 truncate">
-                                    {formData.bank.passbookDoc.name}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleInputChange(
-                                        "bank",
-                                        "passbookDoc",
-                                        null
-                                      )
-                                    }
-                                    className="text-red-500 hover:text-red-700"
-                                    disabled={!isEditable}
-                                  >
-                                    {" "}
-                                    <X className="w-4 h-4" />{" "}
-                                  </button>
+                                  <div className="flex items-center space-x-3">
+                                    {isPDF(formData.bank.passbookDoc) ? (
+                                      <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 shadow-sm">
+                                        <span className="text-sm text-red-600 font-bold">
+                                          PDF
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={URL.createObjectURL(
+                                          formData.bank.passbookDoc
+                                        )}
+                                        alt="Passbook preview"
+                                        className="w-12 h-12 object-cover rounded-lg border-2 border-gray-300 shadow-sm"
+                                      />
+                                    )}
+                                    <div className="flex flex-col">
+                                      <span className="text-gray-700 font-medium truncate max-w-[150px]">
+                                        {truncateFileName(
+                                          getDisplayFileName(
+                                            formData.bank.passbookDoc.name
+                                          )
+                                        )}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {(
+                                          formData.bank.passbookDoc.size /
+                                          1024 /
+                                          1024
+                                        ).toFixed(2)}{" "}
+                                        MB
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2 ml-3">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openUploadedPassbookPreview(
+                                          formData.bank.passbookDoc
+                                        )
+                                      }
+                                      className="text-blue-600 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                                      disabled={!isEditable}
+                                    >
+                                      <FiEye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleInputChange(
+                                          "bank",
+                                          "passbookDoc",
+                                          null
+                                        )
+                                      }
+                                      className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                      disabled={!isEditable}
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </div>
                               )}
+                              <p className="text-xs text-gray-500 mt-2">
+                                Accepted formats: PDF, JPG, JPEG, PNG (max 5MB)
+                              </p>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-between mt-2 bg-gray-50 p-3 rounded-lg">
-                              <p className="text-base text-gray-900 truncate">
-                                {employeeById?.bankDetails?.passbookImgUrl
-                                  ? employeeById.bankDetails.passbookImgUrl
-                                      .split("/")
-                                      .pop()
-                                  : "Not uploaded"}
-                              </p>
-                              {employeeById?.bankDetails?.passbookImgUrl && (
-                                <a
-                                  href={employeeById.bankDetails.passbookImgUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                                >
-                                  <FiEye className="w-4 h-4 mr-1" /> View
-                                </a>
+                            <div className="flex items-center space-x-3 mt-2 bg-gray-50 p-3 rounded-lg">
+                              {employeeById?.bankDetails?.passbookImgUrl ? (
+                                <>
+                                  {isPDF(
+                                    employeeById.bankDetails.passbookImgUrl
+                                  ) ? (
+                                    <div className="w-8 h-8 bg-red-100 flex items-center justify-center rounded border border-red-300">
+                                      <span className="text-xs text-red-600 font-medium">
+                                        PDF
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <MinioImage
+                                      src={
+                                        employeeById.bankDetails.passbookImgUrl
+                                      }
+                                      alt="Passbook preview"
+                                      className="w-8 h-8 object-cover rounded border border-gray-300"
+                                      fallbackSrc="/placeholder-image.jpg"
+                                    />
+                                  )}
+                                  <span className="text-sm text-gray-700 truncate">
+                                    {truncateFileName(
+                                      getDisplayFileName(
+                                        employeeById.bankDetails.passbookImgUrl
+                                          .split("/")
+                                          .pop()
+                                      )
+                                    )}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-sm text-gray-500">
+                                  No document uploaded
+                                </span>
                               )}
                             </div>
                           )}
+                        </div>
+                        {/* UPI ID - Editable */}
+                        <div className="border-t border-gray-200 mt-6"></div>
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            UPI ID
+                          </label>
+                          {isPageInEditMode ? (
+                            <input
+                              type="text"
+                              value={formData.bank.upiId}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "bank",
+                                  "upiId",
+                                  filterUPI(e.target.value)
+                                )
+                              }
+                              onBlur={() => handleBankFieldBlur("upiId")}
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.upiId && validationErrors.upiId
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              disabled={!isEditable}
+                              maxLength={50}
+                              placeholder="e.g., user@upi"
+                            />
+                          ) : (
+                            <p className="text-base text-gray-900">
+                              {employeeById?.bankDetails?.upiId || "-"}
+                            </p>
+                          )}
+                          {fieldTouched.upiId && validationErrors.upiId && (
+                            <p className="text-xs text-red-500 mt-1">
+                              {validationErrors.upiId}
+                            </p>
+                          )}
+                        </div>
+                        {/* UPI Contact Name - Editable */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
+                            UPI Contact Name
+                          </label>
+                          {isPageInEditMode ? (
+                            <input
+                              type="text"
+                              value={formData.bank.upiContactName}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "bank",
+                                  "upiContactName",
+                                  filterUPIContactName(e.target.value)
+                                )
+                              }
+                              onBlur={() =>
+                                handleBankFieldBlur("upiContactName")
+                              }
+                              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white disabled:bg-gray-100 ${
+                                fieldTouched.upiContactName &&
+                                validationErrors.upiContactName
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                              disabled={!isEditable}
+                              maxLength={30}
+                            />
+                          ) : (
+                            <p className="text-base text-gray-900">
+                              {employeeById?.bankDetails?.upiContactName || "-"}
+                            </p>
+                          )}
+                          {fieldTouched.upiContactName &&
+                            validationErrors.upiContactName && (
+                              <p className="text-xs text-red-500 mt-1">
+                                {validationErrors.upiContactName}
+                              </p>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -1633,6 +3520,31 @@ function EmployeeProfilePage() {
                   </div>
                 </div>
               ))}
+              {/* Identity Document Changes */}
+              {pendingChanges.identityDocuments.map((field, index) => (
+                <div
+                  key={field.field + index}
+                  className="border rounded p-3 bg-gray-50 text-sm"
+                >
+                  <p className="font-medium text-gray-700 mb-1">
+                    {field.field}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-xs text-gray-500">Old Value:</p>
+                      <p className="text-gray-800 break-words">
+                        {field.oldValue || "(empty)"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">New Value:</p>
+                      <p className="text-green-700 break-words">
+                        {field.newValue || "(empty)"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
               {/* Document Updates */}
               {pendingChanges.documents.map((doc, index) => (
                 <div
@@ -1645,17 +3557,33 @@ function EmployeeProfilePage() {
                       <p className="text-xs text-gray-500">Old Value:</p>
                       {doc.isImage ? (
                         doc.oldValue ? (
-                          <a
-                            href={doc.oldValue}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={doc.oldValue}
-                              alt={`Old ${doc.field}`}
-                              className="h-16 rounded border"
-                            />
-                          </a>
+                          doc.oldValue.toLowerCase().endsWith('.pdf') ? (
+                            <div className="flex flex-col items-center">
+                              <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 mb-1">
+                                <span className="text-sm text-red-600 font-bold">PDF</span>
+                              </div>
+                              <a
+                                href={doc.oldValue}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-red-600 hover:text-red-800"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                          ) : (
+                            <a
+                              href={doc.oldValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={doc.oldValue}
+                                alt={`Old ${doc.field}`}
+                                className="h-16 rounded border"
+                              />
+                            </a>
+                          )
                         ) : (
                           <span className="italic text-gray-400">(empty)</span>
                         )
@@ -1669,19 +3597,37 @@ function EmployeeProfilePage() {
                       <p className="text-xs text-gray-500">New Value:</p>
                       {doc.isImage ? (
                         doc.newValue ? (
-                          <a
-                            href={doc.newValue}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={doc.newValue}
-                              alt={`New ${doc.field}`}
-                              className="h-16 rounded border"
-                            />
-                          </a>
+                          doc.newValue.toLowerCase().endsWith('.pdf') ? (
+                            <div className="flex flex-col items-center">
+                              <div className="w-12 h-12 bg-red-100 flex items-center justify-center rounded-lg border-2 border-red-300 mb-1">
+                                <span className="text-sm text-red-600 font-bold">PDF</span>
+                              </div>
+                              <a
+                                href={doc.newValue}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-red-600 hover:text-red-800"
+                              >
+                                View PDF
+                              </a>
+                            </div>
+                          ) : (
+                            <a
+                              href={doc.newValue}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <img
+                                src={doc.newValue}
+                                alt={`New ${doc.field}`}
+                                className="h-16 rounded border"
+                              />
+                            </a>
+                          )
                         ) : (
-                          <span className="italic text-gray-400">(empty)</span>
+                          <p className="text-green-700 break-words">
+                            {doc.newValue || "(empty)"}
+                          </p>
                         )
                       ) : (
                         <p className="text-green-700 break-words">
@@ -1701,6 +3647,639 @@ function EmployeeProfilePage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Passbook Preview Modal */}
+      {passbookPreview.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {formData.bank.accountNumber ||
+                employeeById?.bankDetails?.accountNumber
+                  ? `Passbook Document - ${
+                      formData.bank.accountNumber ||
+                      employeeById?.bankDetails?.accountNumber
+                    }`
+                  : "Passbook Document Preview"}
+              </h3>
+              <button
+                onClick={() => {
+                  setPassbookPreview({ open: false, url: null, file: null });
+                  setPdfControls({ rotate: 0, zoom: 1 });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {isPDF(passbookPreview.file || passbookPreview.url) ? (
+              <>
+                {/* PDF Toolbar */}
+                <div className="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg px-4 py-2">
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Rotate Left"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Rotate Right"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Zoom Out"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <span className="text-sm text-gray-600 min-w-[60px] text-center">
+                    {Math.round(pdfControls.zoom * 100)}%
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Zoom In"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setPdfControls({ rotate: 0, zoom: 1 })}
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Reset"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex-1"></div>
+                  <a
+                    href={passbookPreview.url}
+                    download="passbook.pdf"
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Download PDF"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
+                    </svg>
+                  </a>
+                </div>
+
+                {/* PDF Preview Area */}
+                <div className="flex-1 bg-gray-100 rounded-lg overflow-auto">
+                  <div
+                    className="flex justify-center items-center p-4"
+                    style={{
+                      minHeight: "400px",
+                      transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
+                      transition: "transform 0.2s",
+                    }}
+                  >
+                    <iframe
+                      src={`${passbookPreview.url}#toolbar=0`}
+                      title="Passbook PDF"
+                      className="w-full h-full min-h-[400px] border-none rounded"
+                      style={{ background: "white" }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Image Preview */
+              <div className="flex-1 flex justify-center items-center bg-gray-100 rounded-lg overflow-auto">
+                <img
+                  src={passbookPreview.url}
+                  alt="Passbook preview"
+                  className="max-w-full max-h-full object-contain rounded"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ID Proof Preview Modal */}
+      {idProofPreview.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {idProofPreview.title} Preview
+              </h3>
+              <button
+                onClick={() => {
+                  setIdProofPreview({
+                    open: false,
+                    url: null,
+                    file: null,
+                    title: "",
+                  });
+                  setPdfControls({ rotate: 0, zoom: 1 });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {isPDF(idProofPreview.file || idProofPreview.url) ? (
+              <>
+                {/* PDF Toolbar */}
+                <div className="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg px-4 py-2">
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Rotate Left"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Rotate Right"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Zoom Out"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <span className="text-sm text-gray-600 min-w-[60px] text-center">
+                    {Math.round(pdfControls.zoom * 100)}%
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Zoom In"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setPdfControls({ rotate: 0, zoom: 1 })}
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Reset"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex-1"></div>
+                  <a
+                    href={idProofPreview.url}
+                    download={`${idProofPreview.title
+                      .toLowerCase()
+                      .replace(" ", "_")}.pdf`}
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Download PDF"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
+                    </svg>
+                  </a>
+                </div>
+
+                {/* PDF Preview Area */}
+                <div className="flex-1 bg-gray-100 rounded-lg overflow-auto">
+                  <div
+                    className="flex justify-center items-center p-4"
+                    style={{
+                      minHeight: "400px",
+                      transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
+                      transition: "transform 0.2s",
+                    }}
+                  >
+                    <iframe
+                      src={`${idProofPreview.url}#toolbar=0`}
+                      title={`${idProofPreview.title} PDF`}
+                      className="w-full h-full min-h-[400px] border-none rounded"
+                      style={{ background: "white" }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Image Preview */
+              <div className="flex-1 flex justify-center items-center bg-gray-100 rounded-lg overflow-auto">
+                <img
+                  src={idProofPreview.url}
+                  alt={`${idProofPreview.title} preview`}
+                  className="max-w-full max-h-full object-contain rounded"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Uploaded ID Proof Preview Modal */}
+      {uploadedIdProofPreview.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {uploadedIdProofPreview.title} Preview (Uploaded)
+              </h3>
+              <button
+                onClick={() => {
+                  setUploadedIdProofPreview({
+                    open: false,
+                    url: null,
+                    file: null,
+                    title: "",
+                  });
+                  setPdfControls({ rotate: 0, zoom: 1 });
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {isPDF(uploadedIdProofPreview.file) ? (
+              <>
+                {/* PDF Toolbar */}
+                <div className="flex items-center gap-4 mb-4 bg-gray-50 rounded-lg px-4 py-2">
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate - 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Rotate Left"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11V7a5 5 0 015-5 5 5 0 015 5v4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 11l-4 4m0 0l4 4m-4-4h18"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({ ...c, rotate: c.rotate + 90 }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Rotate Right"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13v4a5 5 0 01-5 5 5 5 0 01-5-5v-4"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M17 13l4-4m0 0l-4-4m4 4H3"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.max(0.5, c.zoom - 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Zoom Out"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M20 12H4"
+                      />
+                    </svg>
+                  </button>
+                  <span className="text-sm text-gray-600 min-w-[60px] text-center">
+                    {Math.round(pdfControls.zoom * 100)}%
+                  </span>
+                  <button
+                    onClick={() =>
+                      setPdfControls((c) => ({
+                        ...c,
+                        zoom: Math.min(2, c.zoom + 0.1),
+                      }))
+                    }
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Zoom In"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setPdfControls({ rotate: 0, zoom: 1 })}
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Reset"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                  </button>
+                  <div className="flex-1"></div>
+                  <a
+                    href={uploadedIdProofPreview.url}
+                    download={uploadedIdProofPreview.file.name}
+                    className="text-gray-600 hover:text-blue-600 p-2 rounded hover:bg-gray-100"
+                    title="Download PDF"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"
+                      />
+                    </svg>
+                  </a>
+                </div>
+
+                {/* PDF Preview Area */}
+                <div className="flex-1 bg-gray-100 rounded-lg overflow-auto">
+                  <div
+                    className="flex justify-center items-center p-4"
+                    style={{
+                      minHeight: "400px",
+                      transform: `rotate(${pdfControls.rotate}deg) scale(${pdfControls.zoom})`,
+                      transition: "transform 0.2s",
+                    }}
+                  >
+                    <iframe
+                      src={`${uploadedIdProofPreview.url}#toolbar=0`}
+                      title={`${uploadedIdProofPreview.title} PDF`}
+                      className="w-full h-full min-h-[400px] border-none rounded"
+                      style={{ background: "white" }}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Image Preview */
+              <div className="flex-1 flex justify-center items-center bg-gray-100 rounded-lg overflow-auto">
+                <img
+                  src={uploadedIdProofPreview.url}
+                  alt={`${uploadedIdProofPreview.title} preview`}
+                  className="max-w-full max-h-full object-contain rounded"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

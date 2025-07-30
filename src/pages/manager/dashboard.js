@@ -59,15 +59,8 @@ const Overview = () => {
 
   const dispatch = useDispatch();
   const { employees, loading } = useSelector((state) => state.employees);
-  // const {
-  //   expensesRequests,
-  //   incomeRequests,
-  // } = useSelector((state) => state.requestDetails);
 
-  useEffect(() => {
-    // dispatch(fetchExpenseRequests());
-    // dispatch(fetchIncomeRequests());
-  }, [dispatch]);
+  useEffect(() => {}, [dispatch]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -229,7 +222,7 @@ const Overview = () => {
   }, [fetchPendingRequests, fetchProfileUpdates]);
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
 
       <Sidebar
@@ -241,9 +234,10 @@ const Overview = () => {
       {/* Main Content */}
 
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
+        style={{ minHeight: 0, display: "flex", flexDirection: "column" }}
       >
         {/* Navbar */}
 
@@ -251,7 +245,7 @@ const Overview = () => {
 
         {/* Page Content */}
 
-        <div className="pt-24 px-6">
+        <div className="pt-24 px-6 flex-1 flex flex-col min-h-0">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
               Manager Dashboard
@@ -552,6 +546,7 @@ const Overview = () => {
               activeTab={activeTab}
               onTabChange={handleTabChange}
               onActionComplete={refreshRequests}
+              role="MANAGER"
             />
           )}
         </div>

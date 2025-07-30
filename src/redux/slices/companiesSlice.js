@@ -45,7 +45,7 @@ export const createCompany = createAsyncThunk(
   async (companyData, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(API_BASE_URL, {
+      const response = await fetch(API_BASE_URL + "/with-head", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

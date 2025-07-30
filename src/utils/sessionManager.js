@@ -22,6 +22,9 @@ export const clearSession = () => {
   sessionStorage.removeItem("employeeId");
   sessionStorage.removeItem("passwordChanged");
   sessionStorage.removeItem("departmentName");
+  sessionStorage.removeItem("employeeCompanyId");
+  sessionStorage.removeItem("currentCompany");
+  sessionStorage.removeItem("isSuperadmin");
 };
 
 export const isTokenExpired = () => {

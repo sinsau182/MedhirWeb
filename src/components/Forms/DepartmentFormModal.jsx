@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { createDepartment, fetchDepartments } from "@/redux/slices/departmentSlice";
 import { fetchLeavePolicies } from "@/redux/slices/leavePolicySlice";
 import { toast } from "sonner";
+import { fetchMasterModules } from "@/redux/slices/masterModulesSlice";
 
 const weekDays = [
   { value: "Sunday", label: "Sunday" },
@@ -25,12 +26,16 @@ export default function DepartmentFormModal({
 }) {
   const dispatch = useDispatch();
   const { policies } = useSelector((state) => state.leavePolicy);
+  const { modules: masterModules, loading: masterModulesLoading } = useSelector(
+    (state) => state.masterModules
+  );
   const [form, setForm] = useState({
     name: initialValues.name || "",
     description: initialValues.description || "",
     
     leavePolicy: initialValues.leavePolicy || "",
     weeklyHolidays: initialValues.weeklyHolidays || [],
+    assignedModules: initialValues.assignedModules || [],
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -38,6 +43,7 @@ export default function DepartmentFormModal({
 
   useEffect(() => {
     dispatch(fetchLeavePolicies());
+    dispatch(fetchMasterModules());
   }, [dispatch]);
 
   useEffect(() => {
@@ -48,11 +54,21 @@ export default function DepartmentFormModal({
         
         leavePolicy: initialValues.leavePolicy || "",
         weeklyHolidays: initialValues.weeklyHolidays || [],
+        assignedModules: initialValues.assignedModules || [],
       });
       setErrors({});
     }
     prevIsOpen.current = isOpen;
   }, [isOpen, initialValues]);
+
+  const masterModulesOptions = Array.isArray(masterModules) && masterModules.length > 0
+    ? masterModules
+        .filter(module => module && module.moduleId && module.moduleName) // Filter out invalid modules
+        .map((module) => ({
+          value: module.moduleId,
+          label: module.moduleName,
+        }))
+    : [];
 
   const leavePolicyOptions = (policies || []).map((policy) => ({
     value: policy.leavePolicyId,
@@ -84,11 +100,12 @@ export default function DepartmentFormModal({
   };
 
   const handleMultiSelectChange = (selectedOption, actionMeta) => {
-    setForm((prev) => ({ ...prev, weeklyHolidays: selectedOption }));
-    if (errors.weeklyHolidays) {
+    const { name } = actionMeta;
+    setForm((prev) => ({ ...prev, [name]: selectedOption }));
+    if (errors[name]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
-        delete newErrors.weeklyHolidays;
+        delete newErrors[name];
         return newErrors;
       });
     }
@@ -101,6 +118,8 @@ export default function DepartmentFormModal({
     
     if (!form.weeklyHolidays || form.weeklyHolidays.length === 0)
       newErrors.weeklyHolidays = "Weekly holidays are required";
+    if (!form.assignedModules || form.assignedModules.length === 0)
+      newErrors.assignedModules = "At least one module is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -115,8 +134,14 @@ export default function DepartmentFormModal({
         description: form.description || "",
         
         leavePolicy: form.leavePolicy.value,
-        weeklyHolidays: form.weeklyHolidays.map((d) => d.value).join(","),
+        weeklyHolidays: form.weeklyHolidays.map((d) => d.value),
         companyId,
+        assignedModules: Array.isArray(form.assignedModules) 
+          ? form.assignedModules.map((module) => ({
+              moduleId: module.value,
+              moduleName: module.label,
+            }))
+          : [],
       };
       await dispatch(createDepartment(departmentData)).unwrap();
       toast.success("Department added successfully!");
@@ -127,6 +152,7 @@ export default function DepartmentFormModal({
         
         leavePolicy: "",
         weeklyHolidays: [],
+        assignedModules: [],
       });
       setErrors({});
       setLoading(false);
@@ -212,6 +238,22 @@ export default function DepartmentFormModal({
               onChange={handleMultiSelectChange}
             />
             {errors.weeklyHolidays && <div className="text-red-500 text-xs mt-1">{errors.weeklyHolidays}</div>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Assigned Modules <span className="text-red-500">*</span>
+            </label>
+            <Select
+              name="assignedModules"
+              isMulti
+              options={masterModulesOptions}
+              className="react-select"
+              classNamePrefix="select"
+              placeholder="Select modules"
+              value={form.assignedModules}
+              onChange={handleMultiSelectChange}
+            />
+            {errors.assignedModules && <div className="text-red-500 text-xs mt-1">{errors.assignedModules}</div>}
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button

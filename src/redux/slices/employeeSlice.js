@@ -13,7 +13,7 @@ export const fetchEmployees = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const response = await fetch(
         `${API_BASE_URL}/companies/${company}/employees`,
         {
@@ -28,7 +28,9 @@ export const fetchEmployees = createAsyncThunk(
       }
       return await response.json();
     } catch (error) {
-      toast.error("Error fetching employees:", error);
+      const message = error.message || "Error fetching employees";
+      toast.error(message);
+      return rejectWithValue(message);
     }
   }
 );
@@ -81,8 +83,9 @@ export const updateEmployee = createAsyncThunk(
 
       return response.data;
     } catch (error) {
-      toast.error("Error updating employee:", error);
-      // return rejectWithValue(error.response?.data || error.message);
+      const message = error.response?.data?.message || error.message || "Failed to update employee";
+      toast.error("Error updating employee:", message);
+      return rejectWithValue(message);
     }
   }
 );
@@ -133,10 +136,24 @@ const employeesSlice = createSlice({
         state.loading = false;
         state.err = action.payload;
       })
+      .addCase(createEmployee.pending, (state) => {
+        state.loading = true;
+        state.err = null;
+      })
       .addCase(createEmployee.fulfilled, (state, action) => {
+        state.loading = false;
         state.employees.push(action.payload);
       })
+      .addCase(createEmployee.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.payload;
+      })
+      .addCase(updateEmployee.pending, (state) => {
+        state.loading = true;
+        state.err = null;
+      })
       .addCase(updateEmployee.fulfilled, (state, action) => {
+        state.loading = false;
         const index = state.employees.findIndex(
           (e) => e._id === action.payload._id
         );
@@ -144,10 +161,23 @@ const employeesSlice = createSlice({
           state.employees[index] = action.payload;
         }
       })
+      .addCase(updateEmployee.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.payload;
+      })
+      .addCase(deleteEmployee.pending, (state) => {
+        state.loading = true;
+        state.err = null;
+      })
       .addCase(deleteEmployee.fulfilled, (state, action) => {
+        state.loading = false;
         state.employees = state.employees.filter(
           (e) => e._id !== action.payload
         );
+      })
+      .addCase(deleteEmployee.rejected, (state, action) => {
+        state.loading = false;
+        state.err = action.payload;
       })
       .addMatcher(
         (action) => action.type.endsWith("/rejected"),

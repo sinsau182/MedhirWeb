@@ -195,3 +195,53 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Hide scrollbar but keep scrolling functionality */
+.sidebar-nav {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* Internet Explorer 10+ */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: calc(
+    100vh - 120px
+  ) !important; /* Ensure it doesn't exceed viewport height */
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
+}
+
+/* Ensure sidebar container doesn't overflow */
+.sidebar-container {
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}

@@ -1,5 +1,6 @@
 import React from "react";
-import { Search } from "lucide-react";
+import { Search, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const AttendanceTable = ({
   dates,
@@ -22,47 +23,26 @@ const AttendanceTable = ({
   selectedYear,
   statusFilterRef,
   setIsStatusFilterOpen,
+  onCellClick,
+  setSelectedStatuses,
+  popoverOpenCell,
+  // Calendar props
+  isCalendarOpen,
+  toggleCalendar,
+  calendarRef,
+  handleMonthSelection,
+  isSingleEmployeeModalOpen,
 }) => {
   // Helper function to get attendance status for a specific date from the new API format
-  const getAttendanceStatusForDate = (attendanceRecord, dateString) => {
-    const attendanceData = attendanceRecord?.attendance;
-    if (!attendanceData) return null;
+  const getAttendanceStatusForDate = (attendanceRecord, dayNumber) => {
+    if (!attendanceRecord?.days) return null; // Return null if no data (empty box)
 
-    // Check present dates
-    if (attendanceData.presentDates?.includes(dateString)) {
-      return "P";
+    // Check if the day exists in the days object
+    if (attendanceRecord.days[dayNumber]) {
+      return attendanceRecord.days[dayNumber].statusCode;
     }
 
-    // Check full leave dates
-    if (attendanceData.fullLeaveDates?.includes(dateString)) {
-      return "PL";
-    }
-
-    // Check half day leave dates
-    if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
-      return "P/A";
-    }
-
-    // Check full comp-off dates
-    if (attendanceData.fullCompoffDates?.includes(dateString)) {
-      return "P";
-    }
-
-    // Check half comp-off dates
-    if (attendanceData.halfCompoffDates?.includes(dateString)) {
-      return "P/A";
-    }
-
-    // Check weekly off dates
-    if (attendanceData.weeklyOffDates?.includes(dateString)) {
-      return "H";
-    }
-
-    // Check absent dates
-    if (attendanceData.absentDates?.includes(dateString)) {
-      return "A";
-    }
-
+    // Return null if no status code is available (empty box)
     return null;
   };
 
@@ -70,12 +50,17 @@ const AttendanceTable = ({
   let dataToRender = filteredEmployees;
 
   // If we have attendance data from the API and status filters are applied
-  if (attendance && attendance.length > 0 && selectedStatuses.length > 0) {
+  if (
+    attendance &&
+    attendance.monthlyAttendance &&
+    attendance.monthlyAttendance.length > 0 &&
+    selectedStatuses.length > 0
+  ) {
     // Filter filteredEmployees based on the attendance status on the summaryDate
     dataToRender = filteredEmployees
       .filter((employee) => {
         // Find the employee's attendance record from the fetched data
-        const empAttendanceRecord = attendance.find(
+        const empAttendanceRecord = attendance.monthlyAttendance.find(
           (attRec) => attRec.employeeId === employee.id
         );
         if (!empAttendanceRecord) return false; // Employee not in fetched attendance data
@@ -83,15 +68,9 @@ const AttendanceTable = ({
         // Get the attendance status for the summaryDate (current date or selected date)
         let statusForSummaryDate = null;
         if (summaryDate) {
-          const monthIndex = new Date(
-            `${selectedMonth} 1, ${selectedYear}`
-          ).getMonth();
-          const dateString = `${selectedYear}-${String(
-            monthIndex + 1
-          ).padStart(2, "0")}-${String(summaryDate).padStart(2, "0")}`;
           statusForSummaryDate = getAttendanceStatusForDate(
             empAttendanceRecord,
-            dateString
+            summaryDate.toString()
           );
         }
 
@@ -102,38 +81,31 @@ const AttendanceTable = ({
       })
       .map((employee) => {
         // Map the employee data, ensuring attendance array uses fetched data
-        const empAttendanceRecord = attendance.find(
+        const empAttendanceRecord = attendance.monthlyAttendance.find(
           (attRec) => attRec.employeeId === employee.id
         );
 
         // Create attendance array for the employee using fetched data
         const attendanceArray = Array(dates.length)
-          .fill({ value: null, label: "" })
+          .fill({ value: null, label: null })
           .map((_, index) => {
             const day = index + 1;
-            const monthIndex = new Date(
-              `${selectedMonth} 1, ${selectedYear}`
-            ).getMonth();
-            const dateString = `${selectedYear}-${String(
-              monthIndex + 1
-            ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
             const status = getAttendanceStatusForDate(
               empAttendanceRecord,
-              dateString
+              day.toString()
             );
 
-            if (!status) {
-              return { value: null, label: "" };
+            // If status is null, return empty object
+            if (status === null) {
+              return { value: null, label: null };
             }
 
-            // Map the status to the correct format
             let value;
             switch (status.toUpperCase()) {
               case "P":
                 value = true;
                 break;
-              case "PL":
+              case "L":
                 value = true;
                 break;
               case "A":
@@ -148,14 +120,8 @@ const AttendanceTable = ({
               case "PH":
                 value = "holiday";
                 break;
-              case "PH/A":
+              case "P/L":
                 value = "half";
-                break;
-              case "LOP":
-                value = "absent";
-                break;
-              case "P/LOP":
-                value = "present";
                 break;
               default:
                 value = null;
@@ -171,37 +137,34 @@ const AttendanceTable = ({
   } else if (
     selectedStatuses.length === 0 &&
     attendance &&
-    attendance.length > 0
+    attendance.monthlyAttendance &&
+    attendance.monthlyAttendance.length > 0
   ) {
     // If no status filters are applied, but we have fetched attendance data (e.g., due to date selection)
     // We still need to use the data from the 'attendance' state, but without filtering by status
     dataToRender = filteredEmployees
       .filter((employee) =>
-        attendance.some((attRec) => attRec.employeeId === employee.id)
+        attendance.monthlyAttendance.some(
+          (attRec) => attRec.employeeId === employee.id
+        )
       )
       .map((employee) => {
-        const empAttendanceRecord = attendance.find(
+        const empAttendanceRecord = attendance.monthlyAttendance.find(
           (attRec) => attRec.employeeId === employee.id
         );
 
         const attendanceArray = Array(dates.length)
-          .fill({ value: null, label: "" })
+          .fill({ value: null, label: null })
           .map((_, index) => {
             const day = index + 1;
-            const monthIndex = new Date(
-              `${selectedMonth} 1, ${selectedYear}`
-            ).getMonth();
-            const dateString = `${selectedYear}-${String(
-              monthIndex + 1
-            ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
             const status = getAttendanceStatusForDate(
               empAttendanceRecord,
-              dateString
+              day.toString()
             );
 
-            if (!status) {
-              return { value: null, label: "" };
+            // If status is null, return empty object
+            if (status === null) {
+              return { value: null, label: null };
             }
 
             let value;
@@ -209,7 +172,7 @@ const AttendanceTable = ({
               case "P":
                 value = true;
                 break;
-              case "PL":
+              case "L":
                 value = true;
                 break;
               case "A":
@@ -224,14 +187,8 @@ const AttendanceTable = ({
               case "PH":
                 value = "holiday";
                 break;
-              case "PH/A":
+              case "P/L":
                 value = "half";
-                break;
-              case "LOP":
-                value = "absent";
-                break;
-              case "P/LOP":
-                value = "present";
                 break;
               default:
                 value = null;
@@ -246,7 +203,9 @@ const AttendanceTable = ({
       });
   } else if (
     selectedStatuses.length > 0 &&
-    (!attendance || attendance.length === 0)
+    (!attendance ||
+      !attendance.monthlyAttendance ||
+      attendance.monthlyAttendance.length === 0)
   ) {
     // If status filters are applied, but no attendance data was returned from the API for the selected date
     // This means no employee had the selected status on that date, so show empty table
@@ -268,11 +227,99 @@ const AttendanceTable = ({
         </div>
       )}
       {!selectedEmployeeId && selectedDate && (
-        <div className="mb-2 text-gray-700 font-medium text-base">
-          Showing attendance of the employees on{" "}
-          <span className="font-semibold">
-            {selectedDate} {selectedMonth} {selectedYear}
-          </span>
+        <div className="flex items-center gap-4 mb-2">
+          <div className="text-gray-700 font-medium text-base">
+            Showing attendance of the employees on{" "}
+            <span className="font-semibold">
+              {selectedDate} {selectedMonth} {selectedYear}
+            </span>
+          </div>
+          {/* Calendar - Hide when Single Employee Month is open */}
+          {!isSingleEmployeeModalOpen && (
+            <div className="relative" ref={calendarRef}>
+              <Badge
+                variant="outline"
+                className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                onClick={toggleCalendar}
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="font-medium text-sm">
+                  {selectedYear}-{selectedMonth}
+                </span>
+              </Badge>
+              {isCalendarOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                  <div className="p-3 border-b flex justify-between items-center">
+                    <div className="text-sm font-medium text-gray-700">
+                      {selectedYear}
+                    </div>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => {
+                        const newYear = e.target.value;
+                        if (newYear === "2024") {
+                          handleMonthSelection("Aug", newYear);
+                        } else {
+                          handleMonthSelection("Jan", newYear);
+                        }
+                      }}
+                      className="ml-2 border rounded px-2 py-1 text-sm"
+                    >
+                      {[2024, 2025].map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 p-3">
+                    {(() => {
+                      const currentYear = new Date().getFullYear();
+                      const currentMonthIdx = new Date().getMonth();
+                      let months = [
+                        "Jan",
+                        "Feb",
+                        "Mar",
+                        "Apr",
+                        "May",
+                        "Jun",
+                        "Jul",
+                        "Aug",
+                        "Sep",
+                        "Oct",
+                        "Nov",
+                        "Dec",
+                      ];
+                      let startIdx = 0;
+                      let endIdx = 11;
+                      if (parseInt(selectedYear) === 2024) {
+                        startIdx = 7;
+                        endIdx = 11;
+                      } else if (parseInt(selectedYear) === 2025) {
+                        startIdx = 0;
+                        endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                      }
+                      return months.slice(startIdx, endIdx + 1).map((month) => (
+                        <button
+                          key={month}
+                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                            month === selectedMonth.slice(0, 3)
+                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                              : "hover:bg-gray-50 text-gray-700"
+                          }`}
+                          onClick={() =>
+                            handleMonthSelection(month, selectedYear)
+                          }
+                        >
+                          {month}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       {/* Summary Cards in Single Row */}
@@ -283,8 +330,8 @@ const AttendanceTable = ({
             case "P":
               summaryKey = "totalPresent";
               break;
-            case "PL":
-              summaryKey = "totalPresentWithLeave";
+            case "L":
+              summaryKey = "totalApprovedLeave";
               break;
             case "A":
               summaryKey = "totalAbsent";
@@ -298,14 +345,8 @@ const AttendanceTable = ({
             case "PH":
               summaryKey = "totalPresentOnHoliday";
               break;
-            case "PH/A":
+            case "P/L":
               summaryKey = "totalHalfDayOnHoliday";
-              break;
-            case "LOP":
-              summaryKey = "totalLOP";
-              break;
-            case "P/LOP":
-              summaryKey = "totalPresentOnLOP";
               break;
             default:
               summaryKey = "";
@@ -476,30 +517,17 @@ const AttendanceTable = ({
                   ${isActive ? "" : "hover:bg-gray-200"}
                 `}
                 style={{
-                  background: isActive
-                    ? status.value === "P/A"
-                      ? "linear-gradient(90deg, #CCFFCC 50%, #FFCCCC 50%)"
-                      : status.color
-                    : "#f3f4f6",
-                  borderColor: isActive
-                    ? status.value === "P/A"
-                      ? "transparent"
-                      : status.color
-                    : "#e5e7eb",
+                  background: isActive ? status.color : "#f3f4f6",
+                  borderColor: isActive ? status.color : "#e5e7eb",
                   fontWeight: 400,
-                  boxShadow: isActive
-                    ? "0 2px 8px 0 rgba(0,0,0,0.04)"
-                    : "none",
+                  boxShadow: isActive ? "0 2px 8px 0 rgba(0,0,0,0.04)" : "none",
                   transition: "all 0.15s cubic-bezier(.4,0,.2,1)",
                 }}
               >
                 <div
                   className="w-3 h-3 rounded"
                   style={{
-                    background:
-                      status.value === "P/A"
-                        ? "linear-gradient(90deg, #CCFFCC 50%, #FFCCCC 50%)"
-                        : status.color,
+                    background: status.color,
                   }}
                 ></div>
                 <span>
@@ -591,7 +619,7 @@ const AttendanceTable = ({
                 </td>
 
                 {/* Scrollable Attendance Cells */}
-                {dates.map((date, index) => {
+                {dates.map((date, dateIdx) => {
                   const day = date.day;
                   const employeeAttendanceForMonth = filteredEmployees.find(
                     (emp) => emp.id === employee.id
@@ -599,27 +627,27 @@ const AttendanceTable = ({
 
                   let attendanceForDay = { value: null, label: "" }; // Default to no data
 
+                  // Check if this date is in the future
+                  const currentDate = new Date();
+                  const cellDate = new Date(
+                    selectedYear,
+                    new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth(),
+                    day
+                  );
+                  const isFutureDate = cellDate > currentDate;
+
                   // Determine the attendance data to display based on selectedDate and fetched attendance
                   if (selectedDate !== null) {
                     // If a specific date is selected, find the matching attendance record for that day in the fetched attendance
-                    const fetchedAttendanceForEmployee = Array.isArray(attendance)
-                      ? attendance?.find(
-                          (attRec) => attRec.employeeId === employee.id
-                        )
-                      : attendance;
-                    if (fetchedAttendanceForEmployee?.attendance) {
-                      // Create date string in YYYY-MM-DD format for the current day
-                      const monthIndex = new Date(
-                        `${selectedMonth} 1, ${selectedYear}`
-                      ).getMonth();
-                      const currentDateString = `${selectedYear}-${String(
-                        monthIndex + 1
-                      ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
+                    const fetchedAttendanceForEmployee =
+                      attendance?.monthlyAttendance?.find(
+                        (attRec) => attRec.employeeId === employee.id
+                      );
+                    if (fetchedAttendanceForEmployee) {
                       // Use the helper function to get status for this date
                       const status = getAttendanceStatusForDate(
                         fetchedAttendanceForEmployee,
-                        currentDateString
+                        day.toString()
                       );
 
                       if (status) {
@@ -628,7 +656,7 @@ const AttendanceTable = ({
                           case "P":
                             value = true;
                             break;
-                          case "PL":
+                          case "L":
                             value = true;
                             break;
                           case "A":
@@ -643,14 +671,8 @@ const AttendanceTable = ({
                           case "PH":
                             value = "holiday";
                             break;
-                          case "PH/A":
+                          case "P/L":
                             value = "half";
-                            break;
-                          case "LOP":
-                            value = "absent";
-                            break;
-                          case "P/LOP":
-                            value = "present";
                             break;
                           default:
                             value = null;
@@ -660,25 +682,107 @@ const AttendanceTable = ({
                     }
                   } else if (
                     employeeAttendanceForMonth &&
-                    employeeAttendanceForMonth.length > index
+                    employeeAttendanceForMonth.length > dateIdx
                   ) {
                     // If no specific date is selected, use the full month attendance from filteredEmployees
-                    attendanceForDay = employeeAttendanceForMonth[index];
+                    attendanceForDay = employeeAttendanceForMonth[dateIdx];
                   }
+
+                  // Build date string for this cell
+                  const monthIndex = new Date(
+                    `${selectedMonth} 1, ${selectedYear}`
+                  ).getMonth();
+                  const dateString = `${selectedYear}-${String(
+                    monthIndex + 1
+                  ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+                  const cellKey = `${employee.id}-${dateString}`;
+
+                  // Check if this is a future date with "A" status that should be hidden
+                  const isFutureDateWithAbsent =
+                    isFutureDate && attendanceForDay.label === "A";
 
                   return (
                     <td
-                      key={index}
+                      key={dateIdx}
                       data-date-cell
-                      className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${getAttendanceColor(
-                        attendanceForDay.label
-                      )}`}
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent row click
-                        handleDateClick(day);
-                      }}
+                      className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${
+                        isFutureDateWithAbsent
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : getAttendanceColor(attendanceForDay.label)
+                      }`}
                     >
-                      {attendanceForDay.label?.toUpperCase()}
+                      {attendanceForDay.label ? (
+                        <button
+                          type="button"
+                          className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition ${
+                            isFutureDate
+                              ? "cursor-not-allowed opacity-50"
+                              : "focus:ring-2 focus:ring-blue-400 hover:shadow-sm cursor-pointer"
+                          }`}
+                          style={{ background: "transparent" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Only allow editing if it's not a future date
+                            if (
+                              !isFutureDate &&
+                              onCellClick &&
+                              (!popoverOpenCell || popoverOpenCell !== cellKey)
+                            ) {
+                              onCellClick(
+                                employee,
+                                dateString,
+                                attendanceForDay.label,
+                                e
+                              );
+                            }
+                          }}
+                          tabIndex={isFutureDate ? -1 : 0}
+                          title={
+                            isFutureDate
+                              ? `Cannot edit future date: ${dateString}`
+                              : `Edit attendance for ${employee.name} on ${dateString}`
+                          }
+                          disabled={isFutureDate || popoverOpenCell === cellKey}
+                        >
+                          {/* Hide "A" text for future dates, show all other statuses */}
+                          {isFutureDateWithAbsent
+                            ? ""
+                            : attendanceForDay.label?.toUpperCase()}
+                        </button>
+                      ) : (
+                        // Show empty clickable box for unmarked attendance
+                        <button
+                          type="button"
+                          className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition border border-gray-50 hover:border-gray-400 hover:bg-gray-50 ${
+                            isFutureDate
+                              ? "cursor-not-allowed opacity-50"
+                              : "cursor-pointer focus:ring-2 focus:ring-blue-400"
+                          }`}
+                          style={{ background: "transparent" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Only allow editing if it's not a future date
+                            if (
+                              !isFutureDate &&
+                              onCellClick &&
+                              (!popoverOpenCell || popoverOpenCell !== cellKey)
+                            ) {
+                              onCellClick(employee, dateString, null, e);
+                            }
+                          }}
+                          tabIndex={isFutureDate ? -1 : 0}
+                          title={
+                            isFutureDate
+                              ? `Cannot edit future date: ${dateString}`
+                              : `Mark attendance for ${employee.name} on ${dateString}`
+                          }
+                          disabled={isFutureDate || popoverOpenCell === cellKey}
+                        >
+                          {/* Show empty box for unmarked attendance */}
+                          <span className="text-gray-400 text-xs">-</span>
+                        </button>
+                      )}
                     </td>
                   );
                 })}
@@ -691,4 +795,4 @@ const AttendanceTable = ({
   );
 };
 
-export default AttendanceTable; 
+export default AttendanceTable;

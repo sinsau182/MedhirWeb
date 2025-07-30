@@ -32,6 +32,7 @@ export default function DesignationFormModal({
     department: getDepartmentOption(initialValues.department) || getDepartmentOption(defaultDepartment) || "",
     manager: initialValues.manager || false,
     overtimeEligible: initialValues.overtimeEligible || false,
+    admin: initialValues.admin || false,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,7 @@ export default function DesignationFormModal({
         department: getDepartmentOption(initialValues.department) || getDepartmentOption(defaultDepartment) || "",
         manager: initialValues.manager || false,
         overtimeEligible: initialValues.overtimeEligible || false,
+        admin: initialValues.admin || false,
       });
       setErrors({});
     }
@@ -97,6 +99,7 @@ export default function DesignationFormModal({
         department: form.department.value,
         manager: form.manager,
         overtimeEligible: form.overtimeEligible,
+        admin: form.admin,
         companyId,
       };
       await dispatch(createDesignation(designationData)).unwrap();
@@ -108,6 +111,7 @@ export default function DesignationFormModal({
         department: "",
         manager: false,
         overtimeEligible: false,
+        admin: false,
       });
       setErrors({});
       setLoading(false);
@@ -197,6 +201,16 @@ export default function DesignationFormModal({
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
               />
               Overtime Eligible
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="admin"
+                checked={form.admin}
+                onChange={handleChange}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+              Is Module Admin
             </label>
           </div>
           <div className="flex justify-end gap-3 pt-2">

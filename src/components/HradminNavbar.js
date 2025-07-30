@@ -18,6 +18,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { toast } from "sonner";
 import getConfig from "next/config";
 import { clearSession } from "@/utils/sessionManager";
+import { jwtDecode } from "jwt-decode";
 
 const Navbar = () => {
   const router = useRouter();
@@ -43,7 +44,7 @@ const Navbar = () => {
       // If no current company in session, use last selected from localStorage
       setSelectedCompany(lastSelectedCompany);
       sessionStorage.setItem("currentCompany", lastSelectedCompany);
-      sessionStorage.setItem("currentCompanyId", lastSelectedCompanyId);
+      // sessionStorage.setItem("employeeCompanyId", lastSelectedCompanyId);
     }
 
     if (storedColor) {
@@ -87,61 +88,46 @@ const Navbar = () => {
     router.push("/employee/profile");
   };
 
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const token = getItemFromSessionStorage("token", null);
-        const employeeId = sessionStorage.getItem("employeeId");
-        const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.data && Array.isArray(response.data)) {
-          setCompanies(response.data); // Store the full company objects
-          
-          // Only set default company if no lastSelectedCompany exists in localStorage
-          const lastSelectedCompany = localStorage.getItem("lastSelectedCompany");
-          if (!lastSelectedCompany) {
-            if (
-              !response.data.some(
-                (company) => company.companyName === selectedCompany
-              )
-            ) {
-              setSelectedCompany(response.data[0].companyName);
-              sessionStorage.setItem("currentCompany", response.data[0].companyName);
-              sessionStorage.setItem("currentCompanyId", response.data[0].companyId);
-              sessionStorage.setItem("currentCompanyColor", response.data[0].colorCode);
-              
-              // Also set in localStorage for future reference
-              localStorage.setItem("lastSelectedCompany", response.data[0].companyName);
-              localStorage.setItem("lastSelectedCompanyId", response.data[0].companyId);
-              localStorage.setItem("lastSelectedCompanyColor", response.data[0].colorCode);
-            }
-          }
-        }
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message || "Error fetching companies"
-        );
-      }
-    };
-
-    if (currentRole === "HRADMIN") {
-      fetchCompanies();
+  const handleLogoClick = () => {
+    const currentRole = sessionStorage.getItem("currentRole");
+    
+    // Navigate to appropriate dashboard based on role
+    switch (currentRole) {
+      case "HRADMIN":
+        router.push("/hradmin/dashboard");
+        break;
+      case "MANAGER":
+        router.push("/manager/dashboard");
+        break;
+      case "EMPLOYEE":
+        router.push("/employee/dashboard");
+        break;
+      case "ACCOUNTANT":
+        router.push("/account/customers");
+        break;
+      case "PROJECTMANAGER":
+        router.push("/project_Manager/expense");
+        break;
+      case "SALES":
+        router.push("/Sales/LeadManagement");
+        break;
+      case "SALESMANAGER":
+        router.push("/SalesManager/dashboard");
+        break;
+      default:
+        router.push("/employee/dashboard");
+        break;
     }
-  }, [selectedCompany, currentRole, publicRuntimeConfig.apiURL]);
+  };
 
   useEffect(() => {
     const fetchEmployeeDataFromToken = () => {
       try {
         const token = getItemFromSessionStorage("token", null);
         if (token) {
-          const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
+          const decodedToken = jwtDecode(token); // Decode the JWT token
           setEmployeeData(decodedToken);
+          console.log(decodedToken)
         }
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -202,7 +188,7 @@ const Navbar = () => {
         // Store current company in sessionStorage
         sessionStorage.setItem("currentCompany", companyName);
         sessionStorage.setItem("currentCompanyColor", selectedCompanyData.colorCode);
-        sessionStorage.setItem("currentCompanyId", selectedCompanyData.companyId);
+        // sessionStorage.setItem("employeeCompanyId", selectedCompanyData.companyId);
 
         // Store last selected company in localStorage
         localStorage.setItem("lastSelectedCompany", companyName);
@@ -222,68 +208,23 @@ const Navbar = () => {
       <nav className="flex justify-between items-center p-3 shadow-md w-full">
         {/* Logo and Role Badges */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center">
-            <div className="relative w-8 h-8 mr-2">
-              <div className="absolute w-2 h-6 bg-black transform -skew-x-12 left-0"></div>
-              <div className="absolute w-2 h-6 bg-black transform skew-x-12 right-0"></div>
-              <div className="absolute w-2 h-6 bg-black left-1/2 transform -translate-x-1/2"></div>
+          <div 
+            className="cursor-pointer"
+            onClick={handleLogoClick}
+            title="Go to Dashboard"
+          >
+            <div className="flex flex-col">
+              <span className="text-4xl font-black text-gray-900 tracking-[0.2em] uppercase">
+                MEDHIR
+              </span>
             </div>
-            <span className="text-2xl font-bold text-black tracking-wide">
-              MEDHIR
-            </span>
           </div>
-          <RoleToggle />
+          {/* <RoleToggle /> */}
         </div>
 
         {/* Right Section: Profile */}
         <div className="flex items-center gap-2 relative">
-          {/* Company Dropdown */}
-          {currentRole === "HRADMIN" && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-10 px-6 flex items-center justify-between rounded-full border border-gray-300 shadow-md hover:shadow-lg transition-all duration-200 bg-white hover:bg-gray-100 mr-4"
-                >
-                  <span className="text-sm font-semibold text-gray-700">
-                    {selectedCompany}
-                  </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="ml-2 h-4 w-4 text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="start" forceMount>
-                {companies.map((company) => (
-                  <DropdownMenuItem
-                    key={company.companyId}
-                    onClick={() => handleCompanyChange(company.companyName)}
-                    className={`cursor-pointer ${
-                      company.companyName === selectedCompany
-                        ? "font-semibold text-violet-600"
-                        : ""
-                    }`}
-                  >
-                    {company.companyName}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {/* Company Name - Only for manager role */}
-          {(currentRole === "MANAGER" || currentRole === "EMPLOYEE") && employeeData && (
+          {employeeData && (
             <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 mr-4">
               <span className="text-base font-semibold text-blue-900">
                 {employeeData.companyName}

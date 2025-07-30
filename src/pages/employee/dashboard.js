@@ -55,7 +55,7 @@ const Overview = () => {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         isCollapsed={isSidebarCollapsed}
@@ -65,15 +65,15 @@ const Overview = () => {
 
       {/* Main Content */}
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300`}
+        } transition-all duration-300 overflow-hidden`}
       >
         {/* Navbar */}
         <HradminNavbar />
 
         {/* Main Content Area */}
-        <div className="p-5 bg-gray-100 h-full">
+        <div className="p-5 bg-gray-100 h-[calc(100vh-64px)] overflow-y-auto">
           {/* Page Heading */}
           <div className="mb-10 pt-16">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
@@ -105,7 +105,7 @@ const Overview = () => {
                   (typeof error === "string" && error.includes("400")) ||
                   (typeof error === "object" && error?.status === 400) ? (
                     <div className="text-center py-4 text-gray-500">
-                      Please add department to view Leave Balance
+                      Your leave balance will be available once your profile is configured.
                     </div>
                   ) : (
                     <div className="text-center py-4 text-red-500">

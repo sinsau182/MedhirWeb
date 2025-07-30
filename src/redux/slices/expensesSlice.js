@@ -30,20 +30,43 @@ export const fetchExpenseByEmployeeId = createAsyncThunk(
         }
     }
 );
-    
+
+// Fetch all expenses
+export const fetchAllExpenses = createAsyncThunk(
+    "expenses/fetchAllExpenses",
+    async (_, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const response = await fetch(`${API_BASE_URL}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Something went wrong"); // backend error
+            }
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Network Error");
+        }
+    }
+);
 
 export const createExpense = createAsyncThunk(
     "expenses/createExpense",
     async (expenseData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}/employee`, {
+            const response = await fetch(`${API_BASE_URL}`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
                 },
-                body: JSON.stringify(expenseData)
+                body: expenseData
             });
 
             const data = await response.json(); // always parse the response
@@ -107,7 +130,18 @@ export const expensesSlice = createSlice({
                 state.loading = false;
                 state.error = action.error.message;
             })
-
+            .addCase(fetchAllExpenses.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchAllExpenses.fulfilled, (state, action) => {
+                state.loading = false;
+                state.expenses = action.payload;
+            })
+            .addCase(fetchAllExpenses.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.error.message;
+            })
             .addCase(createExpense.pending, (state) => {
                 state.loading = true;
                 state.error = null;

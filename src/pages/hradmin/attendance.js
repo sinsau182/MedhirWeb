@@ -14,23 +14,16 @@ function Attendance() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Get query parameters for filtering
+  const { selectedDate, selectedMonth, selectedYear, selectedStatuses } = router.query;
+
   const { employees = [], loading: employeesLoading } = useSelector(
     (state) => state.employees || {}
   );
 
   useEffect(() => {
-    try {
-      const role = sessionStorage.getItem("currentRole");
-      if (!role || role !== "HRADMIN") {
-        router.push("/login");
-        return;
-      }
-      setIsLoading(false);
-    } catch (err) {
-      setError("Authentication error");
-      setIsLoading(false);
-    }
-  }, [router]);
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchEmployees()).catch((err) => {
@@ -68,9 +61,14 @@ function Attendance() {
         } transition-all duration-300`}
       >
         <HradminNavbar />
-        <AttendanceTracker 
-          employees={employees} 
-          employeesLoading={employeesLoading} 
+        <AttendanceTracker
+          employees={employees}
+          employeesLoading={employeesLoading}
+          role="HRADMIN"
+          initialSelectedDate={selectedDate ? parseInt(selectedDate) : null}
+          initialSelectedMonth={selectedMonth || null}
+          initialSelectedYear={selectedYear || null}
+          initialSelectedStatuses={selectedStatuses ? selectedStatuses.split(',') : []}
         />
       </div>
     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
-import { Search } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import withAuth from "@/components/withAuth";
@@ -100,11 +100,28 @@ const ManagerEmployees = () => {
                 <tbody className="divide-y divide-gray-100">
                   {filteredEmployees.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={8}
-                        className="text-center py-3 text-sm text-gray-500"
-                      >
-                        No team members found
+                      <td colSpan={9} className="text-center py-16">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                            <Users className="w-10 h-10 text-blue-500" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Team Members Found</h3>
+                          <p className="text-gray-600 text-center max-w-md mb-6">
+                            {searchInput ? (
+                              `No team members found matching "${searchInput}". Try adjusting your search terms.`
+                            ) : (
+                              "You don't have any team members assigned yet. Team members will appear here once they are added to your team."
+                            )}
+                          </p>
+                          {searchInput && (
+                            <button
+                              onClick={() => setSearchInput("")}
+                              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
+                            >
+                              Clear Search
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ) : (

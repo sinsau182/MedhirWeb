@@ -132,109 +132,70 @@ const EmployeeAttendance = () => {
       ).getDate();
 
       const formattedData = [];
+      // Initialize summary counts from the response statusCounts
       const summaryCounts = {
-        Present: 0,
-        "Present with Leave": 0,
-        "Present on Holiday": 0,
-        "Half Day on Holiday": 0,
-        "Half Day": 0,
+        Present: attendance.statusCounts?.P || 0,
+        "Approved Leave": attendance.statusCounts?.AL || 0,
+        "Present on Holiday": 0, // Will be calculated from days
+        "Half Day": 0, // Will be calculated from days
+        "Approved half day Leave": 0, // Will be calculated from days
         "On Leave": 0,
-        Holiday: 0,
+        Holiday: attendance.statusCounts?.H || 0,
         Weekend: 0,
-        "Loss of Pay": 0,
-        Absent: 0,
-        "No Data": 0,
+        Absent: attendance.statusCounts?.A || 0,
       };
 
       // Helper function to determine attendance status for a given date
-      const getAttendanceStatusForDate = (dateString) => {
-        // Check present dates
-        if (attendance.presentDates?.includes(dateString)) {
-          return "P";
+      const getAttendanceStatusForDate = (dayNumber) => {
+        // Check if the day exists in the days object
+        if (attendance.days && attendance.days[dayNumber]) {
+          return attendance.days[dayNumber].statusCode;
         }
-
-        // Check full leave dates
-        if (attendance.fullLeaveDates?.includes(dateString)) {
-          return "PL";
-        }
-
-        // Check half day leave dates
-        if (attendance.halfDayLeaveDates?.includes(dateString)) {
-          return "P/A";
-        }
-
-        // Check full comp-off dates
-        if (attendance.fullCompoffDates?.includes(dateString)) {
-          return "P";
-        }
-
-        // Check half comp-off dates
-        if (attendance.halfCompoffDates?.includes(dateString)) {
-          return "P/A";
-        }
-
-        // Check weekly off dates
-        if (attendance.weeklyOffDates?.includes(dateString)) {
-          return "H";
-        }
-
-        // Check absent dates
-        if (attendance.absentDates?.includes(dateString)) {
-          return "A";
-        }
-
+        
+        // Return null if no status code is available (empty box)
         return null;
       };
 
       for (let day = 1; day <= daysInMonth; day++) {
-        // Create date string in YYYY-MM-DD format
-        const dateString = `${selectedYear}-${String(monthIndex + 1).padStart(
-          2,
-          "0"
-        )}-${String(day).padStart(2, "0")}`;
-        const status = getAttendanceStatusForDate(dateString);
+        // Get status code for the current day
+        const status = getAttendanceStatusForDate(day.toString());
 
         let fullStatus = "No Data";
         let leaveType = null;
 
-        switch (status) {
-          case "P":
-            fullStatus = "Present";
-            break;
-          case "PL":
-            fullStatus = "Present with Leave";
-            break;
-          case "A":
-            fullStatus = "Absent";
-            break;
-          // case "L":
-          //   fullStatus = "On Leave";
-          //   leaveType = "Full Day";
-          //   break;
-          case "H":
-            fullStatus = "Holiday";
-            break;
-          case "W":
-            fullStatus = "Weekend";
-            break;
-          case "PH":
-            fullStatus = "Present on Holiday";
-            leaveType = "On Holiday";
-            break;
-          case "PH/A":
-            fullStatus = "Half Day on Holiday";
-            leaveType = "Half Day on Holiday";
-            break;
-          case "P/A":
-            fullStatus = "Half Day";
-            leaveType = "Half Day";
-            break;
-          case "LOP":
-            fullStatus = "Loss of Pay";
-            leaveType = "Loss of Pay";
-            break;
-          default:
-            fullStatus = "No Data";
+        // Only process status if it's not null
+        if (status) {
+          switch (status) {
+            case "P":
+              fullStatus = "Present";
+              break;
+            case "L":
+              fullStatus = "Approved Leave";
+              break;
+            case "A":
+              fullStatus = "Absent";
+              break;
+            case "H":
+              fullStatus = "Holiday";
+              break;
+            case "W":
+              fullStatus = "Weekend";
+              break;
+            case "PH":
+              fullStatus = "Present on Holiday";
+              leaveType = "On Holiday";
+              break;
+            case "P/A":
+              fullStatus = "Half Day";
+              leaveType = "Half Day";
+              break;
+            case "P/L":
+              fullStatus = "Approved half day Leave";
+              leaveType = "Approved half day Leave";
+              break;
+            default:
+              fullStatus = "No Data"; // Keep as "No Data" for unknown status codes
+          }
         }
 
         formattedData.push({
@@ -249,7 +210,11 @@ const EmployeeAttendance = () => {
           totalWorkingMinutes: attendance?.totalWorkingMinutes || 0,
         });
 
-        summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
+        // Update summary counts for statuses that need to be calculated from days
+        if (fullStatus === "Present on Holiday" || fullStatus === "Half Day" || 
+            fullStatus === "Approved half day Leave") {
+          summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
+        }
       }
       setAttendanceData(formattedData);
       setMonthlySummary(summaryCounts);
@@ -336,7 +301,6 @@ const EmployeeAttendance = () => {
       }
 
       const data = await response.json();
-      console.log(data);
 
       // Store the daily attendance data
       setDailyAttendanceData(data);
@@ -374,7 +338,7 @@ const EmployeeAttendance = () => {
     );
     
     // Only fetch daily attendance data for present dates
-    if (selectedDayData && selectedDayData.status === "Present") {
+    if (selectedDayData && (selectedDayData.status === "Present" || selectedDayData.status === "Approved half day Leave")) {
       fetchAttendanceData(day);
     } else {
       // Clear daily attendance data for non-present dates
@@ -404,14 +368,6 @@ const EmployeeAttendance = () => {
     const [hours, minutes, seconds] = timeString.split(':').map(Number);
     return hours * 60 + minutes + seconds / 60;
   };
-
-  // Helper function to calculate additional time since last checkout
-  // const calculateAdditionalTime = (lastCheckout) => {
-  //   if (!lastCheckout) return 0;
-  //   const lastCheckoutTime = new Date(lastCheckout);
-  //   const timeDiff = currentTime.getTime() - lastCheckoutTime.getTime();
-  //   return timeDiff / (1000 * 60); // Convert to minutes
-  // };
 
   // Helper function to calculate additional time since latest checkin
   const calculateAdditionalTimeFromLatestCheckin = (latestCheckin) => {
@@ -466,9 +422,9 @@ const EmployeeAttendance = () => {
             </CardHeader>
             <CardContent>
               <div className="w-full">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                   {/* Present */}
-                  <div className="flex flex-col bg-green-100 p-3 rounded-lg">
+                  <div className="flex flex-col bg-[#CCFFCC] p-3 rounded-lg">
                     <span className="font-medium text-green-800">
                       Present (P)
                     </span>
@@ -476,17 +432,17 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Present"] || 0}
                     </span>
                   </div>
-                  {/* Present with Leave */}
-                  <div className="flex flex-col bg-lime-100 p-3 rounded-lg">
-                    <span className="font-medium text-green-800">
-                      Present with Leave (PL)
+                  {/* Approved Leave */}
+                  <div className="flex flex-col bg-[#E5E5CC] p-3 rounded-lg">
+                    <span className="font-medium text-yellow-800">
+                      Approved Leave (AL)
                     </span>
                     <span className="text-2xl font-bold">
-                      {monthlySummary["Present with Leave"] || 0}
+                      {monthlySummary["Approved Leave"] || 0}
                     </span>
                   </div>
                   {/* Half Day */}
-                  <div className="flex flex-col bg-yellow-100 p-3 rounded-lg">
+                  <div className="flex flex-col bg-[#FFFFCC] p-3 rounded-lg">
                     <span className="font-medium text-yellow-800">
                       Half Day (P/A)
                     </span>
@@ -494,15 +450,24 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Half Day"] || 0}
                     </span>
                   </div>
+                  {/* Approved half day Leave */}
+                  <div className="flex flex-col bg-[#ffcc80] p-3 rounded-lg">
+                    <span className="font-medium text-orange-800">
+                      Approved half day Leave (P/L)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Approved half day Leave"] || 0}
+                    </span>
+                  </div>
                   {/* Absent */}
-                  <div className="flex flex-col bg-red-200 p-3 rounded-lg">
+                  <div className="flex flex-col bg-[#FFCCCC] p-3 rounded-lg">
                     <span className="font-medium text-red-900">Absent (A)</span>
                     <span className="text-2xl font-bold">
                       {monthlySummary["Absent"] || 0}
                     </span>
                   </div>
                   {/* Holiday */}
-                  <div className="flex flex-col bg-gray-200 p-3 rounded-lg">
+                  <div className="flex flex-col bg-[#E0E0E0] p-3 rounded-lg">
                     <span className="font-medium text-gray-700">
                       Holiday (H)
                     </span>
@@ -511,33 +476,15 @@ const EmployeeAttendance = () => {
                     </span>
                   </div>
                   {/* Present on Holiday */}
-                  <div className="flex flex-col bg-blue-100 p-3 rounded-lg">
-                    <span className="font-medium text-blue-800">
+                  <div className="flex flex-col bg-[#5cbf85] p-3 rounded-lg">
+                    <span className="font-medium text-white">
                       Present on Holiday (PH)
                     </span>
                     <span className="text-2xl font-bold">
                       {monthlySummary["Present on Holiday"] || 0}
                     </span>
                   </div>
-                  {/* Half Day on Holiday */}
-                  <div className="flex flex-col bg-orange-200 p-3 rounded-lg">
-                    <span className="font-medium text-orange-800">
-                      Half Day on Holiday (PH/A)
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {monthlySummary["Half Day on Holiday"] || 0}
-                    </span>
-                  </div>
-                  {/* Loss of Pay */}
-                  <div className="flex flex-col bg-purple-100 p-3 rounded-lg">
-                    <span className="font-medium text-purple-800">
-                      Loss of Pay (LOP)
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {monthlySummary["Loss of Pay"] || 0}
-                    </span>
-                  </div>
-                  {/* No Data removed */}
+
                 </div>
               </div>
             </CardContent>
@@ -684,20 +631,14 @@ const EmployeeAttendance = () => {
                   </div>
                 ) : error ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
-                    <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
+                    <CalendarIcon className="h-8 w-8  text-muted-foreground/60" />
                     <p className="text-lg font-medium">
                       Error loading attendance data
                     </p>
                     <p className="text-sm text-muted-foreground/80">{error}</p>
                   </div>
                 ) : !attendance ||
-                  (!attendance.presentDates &&
-                    !attendance.fullLeaveDates &&
-                    !attendance.halfDayLeaveDates &&
-                    !attendance.fullCompoffDates &&
-                    !attendance.halfCompoffDates &&
-                    !attendance.weeklyOffDates &&
-                    !attendance.absentDates) ? (
+                  (!attendance.days && !attendance.statusCounts) ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center text-muted-foreground">
                     <CalendarIcon className="h-8 w-8 mb-2 text-muted-foreground/60" />
                     <p className="text-lg font-medium">
@@ -723,39 +664,47 @@ const EmployeeAttendance = () => {
                         switch (status) {
                           case "Present":
                             bgColorClass =
-                              "bg-green-100 hover:bg-green-200 text-green-800";
+                              "bg-[#CCFFCC] hover:bg-[#B8FFB8] text-green-800";
                             break;
-                          case "Present with Leave":
+                          case "Approved Leave":
                             bgColorClass =
-                              "bg-lime-100 hover:bg-lime-200 text-lime-800";
+                              "bg-[#E5E5CC] hover:bg-[#D4D4B8] text-yellow-800";
                             break;
                           case "Absent":
                             bgColorClass =
-                              "bg-red-200 hover:bg-red-300 text-red-900";
+                              "bg-[#FFCCCC] hover:bg-[#FFB8B8] text-red-900";
                             break;
                           case "Half Day":
                             bgColorClass =
-                              "bg-yellow-100 hover:bg-yellow-200 text-yellow-800";
+                              "bg-[#FFFFCC] hover:bg-[#FFFFB8] text-yellow-800";
                             break;
                           case "Holiday":
                             bgColorClass =
-                              "bg-gray-200 hover:bg-gray-300 text-gray-700";
+                              "bg-[#E0E0E0] hover:bg-[#D4D4D4] text-gray-700";
                             break;
                           case "Present on Holiday":
                             bgColorClass =
-                              "bg-blue-100 hover:bg-blue-200 text-blue-800";
+                              "bg-[#5cbf85] hover:bg-[#4CAF50] text-white";
                             break;
                           case "Half Day on Holiday":
                             bgColorClass =
-                              "bg-orange-200 hover:bg-orange-300 text-orange-800";
+                              "bg-[#ffcc80] hover:bg-[#FFB74D] text-orange-800";
                             break;
                           case "Loss of Pay":
                             bgColorClass =
-                              "bg-purple-100 hover:bg-purple-200 text-purple-800";
+                              "bg-[#e57373] hover:bg-[#EF5350] text-white";
+                            break;
+                          case "Present Half Day on Loss of Pay":
+                            bgColorClass =
+                              "bg-[#A89EF6] hover:bg-[#9C7CF6] text-white";
                             break;
                           case "Weekend":
                             bgColorClass =
                               "bg-gray-300 hover:bg-gray-400 text-gray-600";
+                            break;
+                          case "No Data":
+                            bgColorClass =
+                              "bg-white hover:bg-gray-50 text-gray-400 border border-gray-200";
                             break;
                           default:
                             bgColorClass = "hover:bg-gray-200";
@@ -829,7 +778,7 @@ const EmployeeAttendance = () => {
                     ).toFixed(1);
 
                     // Check if this is a present date and has daily attendance data
-                    const isPresentDate = status === "Present" && (dailyAttendanceData || (date && dailyAttendanceData));
+                    const isPresentDate = (status === "Present" || status === "Approved half day Leave") && (dailyAttendanceData || (date && dailyAttendanceData));
                     
                     // Get check-in and check-out times for present dates
                     const attendanceDataForDate = dailyAttendanceData || selectedDayData?.dailyAttendanceData;
@@ -850,21 +799,21 @@ const EmployeeAttendance = () => {
                           <span
                             className={`${
                               status === "Present"
-                                ? "bg-green-100 text-green-800"
-                                : status === "Present with Leave"
-                                ? "bg-lime-100 text-lime-800"
+                                ? "bg-[#CCFFCC] text-green-800"
+                                : status === "Approved Leave"
+                                ? "bg-[#E5E5CC] text-yellow-800"
                                 : status === "Absent"
-                                ? "bg-red-200 text-red-900"
+                                ? "bg-[#FFCCCC] text-red-900"
                                 : status === "Half Day"
-                                ? "bg-yellow-100 text-yellow-800"
+                                ? "bg-[#FFFFCC] text-yellow-800"
                                 : status === "Holiday"
-                                ? "bg-gray-200 text-gray-700"
+                                ? "bg-[#E0E0E0] text-gray-700"
                                 : status === "Present on Holiday"
-                                ? "bg-blue-100 text-blue-800"
-                                : status === "Half Day on Holiday"
-                                ? "bg-orange-200 text-orange-800"
-                                : status === "Loss of Pay"
-                                ? "bg-purple-100 text-purple-800"
+                                ? "bg-[#5cbf85] text-white"
+                                : status === "Approved half day Leave"
+                                ? "bg-[#ffcc80] text-orange-800"
+                                : status === "No Data"
+                                ? "bg-white text-gray-400 border border-gray-200"
                                 : "bg-gray-100 text-gray-700"
                             } text-xs font-semibold px-2 py-1 rounded-full`}
                           >
@@ -982,7 +931,7 @@ const EmployeeAttendance = () => {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center">
           <CheckCircle2 className="h-5 w-5 mr-2" />
           <span>Reason saved successfully!</span>
         </div>

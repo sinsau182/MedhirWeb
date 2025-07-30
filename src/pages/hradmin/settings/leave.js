@@ -22,11 +22,11 @@ import {
   updatePublicHoliday,
   deletePublicHoliday,
 } from "@/redux/slices/publicHolidaySlice";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import withAuth from "@/components/withAuth";
 
 const LeaveSettings = () => {
-  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState("Leave Types");
@@ -213,15 +213,17 @@ const LeaveSettings = () => {
       // Refresh the leave types list
       dispatch(fetchLeaveTypes());
     } catch (error) {
-      if (error.message?.toLowerCase().includes("already exists")) {
-        showNotification("error", "Leave type already exists");
-        setTimeout(() => {
-          setShowLeaveTypeModal(false);
-          dispatch(fetchLeaveTypes()); // Refresh the list
-        }, 2000);
-      } else {
-        showNotification("error", error.message || "Failed to add leave type");
-      }
+      console.log(error);
+      toast.error(error)
+      // if (error.message?.toLowerCase().includes("already exists")) {
+      //   showNotification("error", "Leave type already exists");
+      //   setTimeout(() => {
+      //     setShowLeaveTypeModal(false);
+      //     dispatch(fetchLeaveTypes()); // Refresh the list
+      //   }, 2000);
+      // } else {
+      //   showNotification("error", error.message || "Failed to add leave type");
+      // }
     }
   };
 
@@ -303,17 +305,18 @@ const LeaveSettings = () => {
       // Refresh data instead of page reload
       dispatch(fetchLeaveTypes());
     } catch (error) {
-      if (error.message?.includes("already exists")) {
-        showNotification("error", "Leave type already exists");
-        setTimeout(() => {
-          setShowLeaveTypeEditModal(false);
-        }, 2000);
-      } else {
-        showNotification(
-          "error",
-          error.message || "Failed to update leave type"
-        );
-      }
+      toast.error(error);
+    //   if (error.message?.includes("already exists")) {
+    //     showNotification("error", "Leave type already exists");
+    //     setTimeout(() => {
+    //       setShowLeaveTypeEditModal(false);
+    //     }, 2000);
+    //   } else {
+    //     showNotification(
+    //       "error",
+    //       error.message || "Failed to update leave type"
+    //     );
+    //   }
     }
   };
 
@@ -399,7 +402,9 @@ const LeaveSettings = () => {
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
     } catch (error) {
-      showNotification("error", error.message || "Failed to add leave policy");
+      console.log(error);
+      // showNotification("error", error.message || "Failed to add leave policy");
+      toast.error(error);
     }
   };
 
@@ -476,10 +481,7 @@ const LeaveSettings = () => {
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
     } catch (error) {
-      showNotification(
-        "error",
-        error.message || "Failed to update leave policy"
-      );
+      toast.error(error);
     }
   };
 
@@ -512,10 +514,7 @@ const LeaveSettings = () => {
       // Refresh the policies list
       dispatch(fetchLeavePolicies());
     } catch (error) {
-      showNotification(
-        "error",
-        error.message || "Failed to delete leave policy"
-      );
+      toast.error(error);
     }
   };
 
@@ -599,7 +598,7 @@ const LeaveSettings = () => {
       // Refresh data instead of page reload
       dispatch(fetchLeaveTypes());
     } catch (error) {
-      showNotification("error", error.message || "Failed to delete leave type");
+      toast.error(error);
     }
   };
 
@@ -669,19 +668,20 @@ const LeaveSettings = () => {
         });
       }, 2000);
     } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: error || "Failed to add public holiday. Please try again.",
-      });
+      toast.error(error);
+      // setNotification({
+      //   show: true,
+      //   type: "error",
+      //   message: error || "Failed to add public holiday. Please try again.",
+      // });
 
-      setTimeout(() => {
-        setNotification({
-          show: false,
-          type: "",
-          message: "",
-        });
-      }, 2000);
+      // setTimeout(() => {
+      //   setNotification({
+      //     show: false,
+      //     type: "",
+      //     message: "",
+      //   });
+      // }, 2000);
     }
   };
 
@@ -748,10 +748,7 @@ const LeaveSettings = () => {
       // Refresh data instead of page reload
       dispatch(fetchPublicHolidays());
     } catch (error) {
-      showNotification(
-        "error",
-        error.message || "Failed to update public holiday"
-      );
+      toast.error(error);
     }
   };
 
@@ -772,10 +769,7 @@ const LeaveSettings = () => {
       // Refresh data instead of page reload
       dispatch(fetchPublicHolidays());
     } catch (error) {
-      showNotification(
-        "error",
-        error.message || "Failed to delete public holiday"
-      );
+      toast.error(error);
     }
   };
 
@@ -1021,15 +1015,6 @@ const LeaveSettings = () => {
                       <tr>
                         <td colSpan="2" className="px-6 py-4 text-center">
                           Loading...
-                        </td>
-                      </tr>
-                    ) : policyError ? (
-                      <tr>
-                        <td
-                          colSpan="2"
-                          className="px-6 py-4 text-center text-red-500"
-                        >
-                          {policyError}
                         </td>
                       </tr>
                     ) : policies.length === 0 ? (
@@ -1649,15 +1634,6 @@ const LeaveSettings = () => {
                           Loading...
                         </td>
                       </tr>
-                    ) : holidayError ? (
-                      <tr>
-                        <td
-                          colSpan="3"
-                          className="px-6 py-4 text-center text-red-500"
-                        >
-                          {holidayError}
-                        </td>
-                      </tr>
                     ) : holidays.length === 0 ? (
                       <tr>
                         <td colSpan="3" className="px-6 py-8 text-center">
@@ -2178,7 +2154,7 @@ const LeaveSettings = () => {
 
           {/* Notification */}
           {notification.show && (
-            <div className="fixed bottom-4 right-4 z-50">
+            <div className="fixed top-4 right-4 z-50">
               <div
                 className={`flex items-center gap-2 px-4 py-2 rounded-md ${
                   notification.type === "success"

@@ -60,27 +60,6 @@ const AddExpense = () => {
     if (formErrors.file) {
       setFormErrors((prev) => ({ ...prev, file: "" }));
     }
-
-    /* Future implementation - for handling file upload with base64
-    const file = e.target.files[0];
-    if (file) {
-      // Create a FileReader to read the file as base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        // Get the base64 string
-        const base64String = reader.result.split(',')[1];
-        setForm((prev) => ({ 
-          ...prev, 
-          file: {
-            name: file.name,
-            type: file.type,
-            data: base64String
-          }
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-    */
   };
 
   // Validate form
@@ -154,14 +133,7 @@ const AddExpense = () => {
         category: form.category,
         vendor: form.vendor,
         gstCredit: form.gstCredit,
-        file: form.file, // Currently sending just the filename as string
-        /* Future implementation - for sending file data
-        file: form.file ? {
-          fileName: form.file.name,
-          fileType: form.file.type,
-          fileData: form.file.data
-        } : null,
-        */
+        file: form.file,
         totalAmount: parseFloat(form.totalAmount),
         amountRequested: form.amountRequested
           ? parseFloat(form.amountRequested)

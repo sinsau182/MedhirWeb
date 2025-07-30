@@ -11,20 +11,29 @@ import {
   FaClock,
   FaChevronDown,
   FaTrash,
-  FaTimes
+  FaTimes,
+  FaMagic,
 } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
-import KanbanBoard from "@/components/Sales/KanbanBoard";
+import KanbanBoardClientOnly from "@/components/Sales/KanbanBoardClientOnly";
 import {
   fetchLeads,
   updateLead,
   createLead,
+  moveLeadToPipeline,
 } from "@/redux/slices/leadsSlice";
-import { addStage, removeStage } from "@/redux/slices/pipelineSlice";
+import {
+  addStage,
+  removeStage,
+  fetchPipelines,
+  createPipeline,
+  deletePipeline,
+  initializePipelineStages,
+} from "@/redux/slices/pipelineSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
 import {
@@ -34,8 +43,9 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
-import AdvancedScheduleActivityModal from '@/components/Sales/AdvancedScheduleActivityModal';
+} from "@/components/ui/table";
+import AdvancedScheduleActivityModal from "@/components/Sales/AdvancedScheduleActivityModal";
+import Tooltip from "@/components/ui/ToolTip";
 
 const defaultLeadData = {
   name: "",
@@ -71,29 +81,80 @@ const defaultLeadData = {
   bookingFormFileName: null,
 };
 
-const DeletePipelineModal = ({ isOpen, onClose, stages, onDeleteStages }) => {
+const DeletePipelineModal = ({ isOpen, onClose }) => {
+  const dispatch = useDispatch();
+  const { pipelines } = useSelector((state) => state.pipelines);
+  const { leads } = useSelector((state) => state.leads);
   const [selectedStages, setSelectedStages] = useState([]);
+  const [warning, setWarning] = useState("");
 
-  const handleStageToggle = (stage) => {
-    setSelectedStages(prev => 
-      prev.includes(stage) 
-        ? prev.filter(s => s !== stage)
-        : [...prev, stage]
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(fetchPipelines());
+      setSelectedStages([]);
+      setWarning("");
+    }
+  }, [isOpen, dispatch]);
+
+  // Check if any selected stage has leads
+  useEffect(() => {
+    if (selectedStages.length > 0) {
+      const hasLeads = selectedStages.some((stageId) =>
+        leads.some((lead) => lead.stageId === stageId)
+      );
+      if (hasLeads) {
+        setWarning(
+          "Cannot delete: One or more selected pipeline stages contain leads. Please move or delete all leads in these stages first."
+        );
+      } else {
+        setWarning("");
+      }
+    } else {
+      setWarning("");
+    }
+  }, [selectedStages, leads]);
+
+  const handleStageToggle = (stageId) => {
+    setSelectedStages((prev) =>
+      prev.includes(stageId)
+        ? prev.filter((id) => id !== stageId)
+        : [...prev, stageId]
     );
   };
 
-  const handleDelete = () => {
-    if (selectedStages.length === 0) {
-      toast.error("Please select at least one stage to delete");
-      return;
+  const handleDelete = async () => {
+    // Prevent deletion if warning is present
+    if (warning) return;
+    if (selectedStages.length === 0) return;
+    const results = await Promise.all(
+      selectedStages.map((id) => dispatch(deletePipeline(id)))
+    );
+    let hadLeadsError = false;
+    results.forEach((result) => {
+      if (result.type && result.type.endsWith("rejected")) {
+        const errorMsg = result.payload || result.error?.message || "";
+        if (
+          typeof errorMsg === "string" &&
+          errorMsg.toLowerCase().includes("lead")
+        ) {
+          hadLeadsError = true;
+        }
+      }
+    });
+    if (hadLeadsError) {
+      toast.error(
+        "Cannot delete pipeline: it contains leads. Please move or delete all leads in this stage first."
+      );
     }
-    onDeleteStages(selectedStages);
     setSelectedStages([]);
     onClose();
+    dispatch(fetchPipelines());
+    // Refresh leads to get the updated grouped format
+    dispatch(fetchLeads());
   };
 
   const handleSelectAll = () => {
-    setSelectedStages(stages);
+    setSelectedStages(pipelines.map((p) => p.stageId));
   };
 
   const handleDeselectAll = () => {
@@ -106,17 +167,26 @@ const DeletePipelineModal = ({ isOpen, onClose, stages, onDeleteStages }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-800">Delete Pipeline Stages</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <h2 className="text-xl font-bold text-gray-800">
+            Delete Pipeline Stages
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
             <FaTimes />
           </button>
         </div>
-        
         <div className="p-6">
           <p className="text-sm text-gray-600 mb-4">
-            Select the pipeline stages you want to delete. This action cannot be undone.
+            Select one or more pipeline stages to delete. This action cannot be
+            undone.
           </p>
-          
+          {warning && (
+            <div className="mb-4 p-3 rounded bg-red-100 border border-red-300 text-red-700 text-sm font-semibold">
+              {warning}
+            </div>
+          )}
           <div className="flex gap-2 mb-4">
             <button
               onClick={handleSelectAll}
@@ -131,22 +201,23 @@ const DeletePipelineModal = ({ isOpen, onClose, stages, onDeleteStages }) => {
               Deselect All
             </button>
           </div>
-
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {stages.map((stage) => (
-              <label key={stage} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+            {pipelines.map((stage) => (
+              <label
+                key={stage.stageId}
+                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+              >
                 <input
                   type="checkbox"
-                  checked={selectedStages.includes(stage)}
-                  onChange={() => handleStageToggle(stage)}
+                  checked={selectedStages.includes(stage.stageId)}
+                  onChange={() => handleStageToggle(stage.stageId)}
                   className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
-                <span className="text-sm font-medium">{stage}</span>
+                <span className="text-sm font-medium">{stage.name}</span>
               </label>
             ))}
           </div>
         </div>
-
         <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
           <button
             onClick={onClose}
@@ -156,190 +227,17 @@ const DeletePipelineModal = ({ isOpen, onClose, stages, onDeleteStages }) => {
           </button>
           <button
             onClick={handleDelete}
-            disabled={selectedStages.length === 0}
+            disabled={selectedStages.length === 0 || !!warning}
             className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
-            Delete {selectedStages.length > 0 ? `(${selectedStages.length})` : ''}
+            Delete{" "}
+            {selectedStages.length > 0 ? `(${selectedStages.length})` : ""}
           </button>
         </div>
       </div>
     </div>
   );
 };
-
-// MOCK DATA: Replace with your own if needed
-const MOCK_LEADS = [
-  {
-    leadId: 'LEAD101',
-    name: 'John Doe',
-    contactNumber: '1234567890',
-    email: 'john@example.com',
-    projectType: 'Residential',
-    propertyType: 'Apartment',
-    address: '123 Main St',
-    area: '1200',
-    budget: '1500000',
-    designStyle: 'Modern',
-    leadSource: 'Website',
-    preferredContact: 'Phone',
-    notes: 'Interested in 2BHK',
-    status: 'New',
-    rating: 2,
-    salesRep: 'Alice',
-    designer: 'Bob',
-    callDescription: null,
-    callHistory: [],
-    nextCall: null,
-    quotedAmount: null,
-    finalQuotation: null,
-    signupAmount: null,
-    paymentDate: null,
-    paymentMode: null,
-    panNumber: null,
-    discount: null,
-    reasonForLost: null,
-    reasonForJunk: null,
-    submittedBy: 'MANAGER',
-    paymentDetailsFileName: null,
-    bookingFormFileName: null,
-  },
-  {
-    leadId: 'LEAD102',
-    name: 'Jane Smith',
-    contactNumber: '9876543210',
-    email: 'jane@example.com',
-    projectType: 'Commercial',
-    propertyType: 'Office',
-    address: '456 Market St',
-    area: '2000',
-    budget: '3000000',
-    designStyle: 'Contemporary',
-    leadSource: 'Referral',
-    preferredContact: 'Email',
-    notes: 'Needs open workspace',
-    status: 'Contacted',
-    rating: 3,
-    salesRep: 'Charlie',
-    designer: 'Dana',
-    callDescription: null,
-    callHistory: [],
-    nextCall: null,
-    quotedAmount: null,
-    finalQuotation: null,
-    signupAmount: null,
-    paymentDate: null,
-    paymentMode: null,
-    panNumber: null,
-    discount: null,
-    reasonForLost: null,
-    reasonForJunk: null,
-    submittedBy: 'MANAGER',
-    paymentDetailsFileName: null,
-    bookingFormFileName: null,
-  },
-  {
-    leadId: 'LEAD103',
-    name: 'Mike Johnson',
-    contactNumber: '5551234567',
-    email: 'mike@example.com',
-    projectType: 'Residential',
-    propertyType: 'Villa',
-    address: '789 Oak Ave',
-    area: '3000',
-    budget: '5000000',
-    designStyle: 'Traditional',
-    leadSource: 'Social Media',
-    preferredContact: 'Phone',
-    notes: 'Looking for luxury villa design',
-    status: 'Qualified',
-    rating: 3,
-    salesRep: 'Eve',
-    designer: 'Frank',
-    callDescription: null,
-    callHistory: [],
-    nextCall: null,
-    quotedAmount: null,
-    finalQuotation: null,
-    signupAmount: null,
-    paymentDate: null,
-    paymentMode: null,
-    panNumber: null,
-    discount: null,
-    reasonForLost: null,
-    reasonForJunk: null,
-    submittedBy: 'MANAGER',
-    paymentDetailsFileName: null,
-    bookingFormFileName: null,
-  },
-  {
-    leadId: 'LEAD104',
-    name: 'Sarah Wilson',
-    contactNumber: '4449876543',
-    email: 'sarah@example.com',
-    projectType: 'Commercial',
-    propertyType: 'Retail',
-    address: '321 Business Blvd',
-    area: '1500',
-    budget: '2000000',
-    designStyle: 'Minimalist',
-    leadSource: 'Cold Call',
-    preferredContact: 'Email',
-    notes: 'Boutique store design needed',
-    status: 'Quoted',
-    rating: 2,
-    salesRep: 'Grace',
-    designer: 'Henry',
-    callDescription: null,
-    callHistory: [],
-    nextCall: null,
-    quotedAmount: '1800000',
-    finalQuotation: null,
-    signupAmount: null,
-    paymentDate: null,
-    paymentMode: null,
-    panNumber: null,
-    discount: null,
-    reasonForLost: null,
-    reasonForJunk: null,
-    submittedBy: 'MANAGER',
-    paymentDetailsFileName: null,
-    bookingFormFileName: null,
-  },
-  {
-    leadId: 'LEAD105',
-    name: 'David Brown',
-    contactNumber: '7778889999',
-    email: 'david@example.com',
-    projectType: 'Residential',
-    propertyType: 'Penthouse',
-    address: '555 Luxury Tower',
-    area: '4000',
-    budget: '8000000',
-    designStyle: 'Luxury',
-    leadSource: 'Website',
-    preferredContact: 'Phone',
-    notes: 'Penthouse renovation project',
-    status: 'Converted',
-    rating: 3,
-    salesRep: 'Ivy',
-    designer: 'Jack',
-    callDescription: null,
-    callHistory: [],
-    nextCall: null,
-    quotedAmount: '7500000',
-    finalQuotation: '7500000',
-    signupAmount: '2000000',
-    paymentDate: '2024-01-15',
-    paymentMode: 'Bank Transfer',
-    panNumber: 'ABCDE1234F',
-    discount: '500000',
-    reasonForLost: null,
-    reasonForJunk: null,
-    submittedBy: 'MANAGER',
-    paymentDetailsFileName: null,
-    bookingFormFileName: null,
-  },
-];
 
 const LeadsTable = ({ leads }) => (
   <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
@@ -361,8 +259,16 @@ const LeadsTable = ({ leads }) => (
             <TableCell>{lead.contactNumber}</TableCell>
             <TableCell>{lead.email}</TableCell>
             <TableCell>{lead.status}</TableCell>
-            <TableCell>{lead.salesRep || <span className="text-gray-400">Unassigned</span>}</TableCell>
-            <TableCell>{lead.designer || <span className="text-gray-400">Unassigned</span>}</TableCell>
+            <TableCell>
+              {lead.salesRep || (
+                <span className="text-gray-400">Unassigned</span>
+              )}
+            </TableCell>
+            <TableCell>
+              {lead.designer || (
+                <span className="text-gray-400">Unassigned</span>
+              )}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -371,406 +277,519 @@ const LeadsTable = ({ leads }) => (
 );
 
 const LeadManagementContent = ({ role }) => {
-  // const dispatch = useDispatch();
-  // const { leads, loading, error } = useSelector((state) => state.leads);
-  // const { stages: kanbanStatuses } = useSelector((state) => state.pipeline);
+  const dispatch = useDispatch();
+  const { pipelines } = useSelector((state) => state.pipelines);
+  const { leads } = useSelector((state) => state.leads);
 
-  // Use local state for leads and pipeline stages
-  const [leads, setLeads] = useState(MOCK_LEADS);
-  const [kanbanStatuses, setKanbanStatuses] = useState([
-    'New',
-    'Contacted',
-    'Qualified',
-    'Quoted',
-    'Converted',
-    'Lost',
-    'Junk',
-  ]);
-
-  // Deduplicate leads by leadId (keep first occurrence)
-  const dedupedLeads = React.useMemo(() => {
-    const seen = new Set();
-    return leads.filter(lead => {
-      if (lead && lead.leadId && !seen.has(lead.leadId)) {
-        seen.add(lead.leadId);
-        return true;
-      }
-      return false;
-    });
-  }, [leads]);
-
-  const [showAddLeadModal, setShowAddLeadModal] = useState(false);
-  const [editingLead, setEditingLead] = useState(null);
-  const [filterText, setFilterText] = useState("");
-
-  // Modal states
-  const [showConvertModal, setShowConvertModal] = useState(false);
-  const [leadToConvertId, setLeadToConvertId] = useState(null);
-  const [showLostReasonModal, setShowLostReasonModal] = useState(false);
-  const [leadToMarkLost, setLeadToMarkLost] = useState(null);
-  const [showJunkReasonModal, setShowJunkReasonModal] = useState(false);
-  const [leadToMarkJunkId, setLeadToMarkJunkId] = useState(null);
-  const [newStageName, setNewStageName] = useState("");
+  // Add pipeline modal state
   const [isAddingStage, setIsAddingStage] = useState(false);
-  const [showPipelineDropdown, setShowPipelineDropdown] = useState(false);
+  const [newStageName, setNewStageName] = useState("");
+  const [newStageColor, setNewStageColor] = useState("#3b82f6");
+  const [newStageIsForm, setNewStageIsForm] = useState(false);
+  const [newStageFormType, setNewStageFormType] = useState("");
+
+  // Delete pipeline modal state
   const [showDeletePipelineModal, setShowDeletePipelineModal] = useState(false);
-  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'table'
-  const [pendingConversion, setPendingConversion] = useState(null); // {lead, fromStatus}
-  const [pendingLost, setPendingLost] = useState(null); // {lead, fromStatus}
-  const [pendingJunk, setPendingJunk] = useState(null); // {lead, fromStatus}
-  const [showScheduleActivityModal, setShowScheduleActivityModal] = useState(false);
-  const [leadToScheduleActivity, setLeadToScheduleActivity] = useState(null);
+  const [selectedPipelinesToDelete, setSelectedPipelinesToDelete] = useState(
+    []
+  );
 
-  // Remove backend fetch
-  // useEffect(() => {
-  //   dispatch(fetchLeads());
-  // }, [dispatch]);
+  // Add lead modal state
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false);
+  const [showPipelineDropdown, setShowPipelineDropdown] = useState(false);
 
-  // Remove backend pipeline fetch
-  // useEffect(() => {
-  //   ...
-  // }, [showPipelineDropdown]);
+  // Pipeline action confirmation modal state
+  const [pipelineAction, setPipelineAction] = useState(null); // 'add' or 'delete' or null
 
-  // All lead operations now update local state
+  // Advanced Schedule Activity Modal state
+  const [showAdvancedScheduleModal, setShowAdvancedScheduleModal] =
+    useState(false);
+  const [selectedLeadForActivity, setSelectedLeadForActivity] = useState(null);
+
+  // Modal states for formType pipelines
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showJunkModal, setShowJunkModal] = useState(false);
+  const [showLostModal, setShowLostModal] = useState(false);
+  const [selectedLead, setSelectedLead] = useState(null);
+
+  // Initialize pipeline state
+  const [isInitializing, setIsInitializing] = useState(false);
+
+  // Fetch pipelines and all leads on mount
+  useEffect(() => {
+    dispatch(fetchPipelines());
+    dispatch(fetchLeads());
+  }, [dispatch]);
+
+
+
+  // Group leads by pipelineId for Kanban board
   const leadsByStatus = useMemo(() => {
     const grouped = {};
-    kanbanStatuses.forEach(status => {
-      grouped[status] = [];
-    });
-    const filteredLeads = dedupedLeads.filter(lead =>
-      Object.values(lead).some(value =>
-        String(value).toLowerCase().includes(filterText.toLowerCase())
-      )
-    );
-    filteredLeads.forEach(lead => {
-      if (grouped[lead.status]) {
-        grouped[lead.status].push(lead);
-      } else {
-        if (!grouped[lead.status]) {
-            grouped[lead.status] = [];
-        }
-        grouped[lead.status].push(lead);
-      }
-    });
-    return grouped;
-  }, [dedupedLeads, filterText, kanbanStatuses]);
 
+    // Check if leads is in the new grouped format
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
+      // New format: leads grouped by stageId
+      leads.forEach((stageGroup) => {
+        const stageId = stageGroup.stageId;
+        const stageLeads = stageGroup.leads || [];
+        
+        // Find the pipeline/stage name for this stageId
+        const pipeline = pipelines.find(p => 
+          p.stageId === stageId || p.pipelineId === stageId
+        );
+        
+        if (pipeline) {
+          grouped[pipeline.name] = stageLeads;
+        } else {
+          // Create a fallback name if pipeline not found
+          grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
+        }
+      });
+    } else {
+      // Old format: individual leads with pipelineId/stageId
+      const usedLeadIds = new Set();
+
+      pipelines.forEach((pipeline) => {
+        const matchingLeads = leads.filter((lead) => {
+          if (usedLeadIds.has(lead.leadId)) {
+            return false;
+          }
+
+          const leadPipelineId = lead.pipelineId || lead.stageId;
+          const pipelineId = pipeline.pipelineId || pipeline.stageId;
+          const isMatch = String(leadPipelineId) === String(pipelineId);
+
+          if (isMatch) {
+            usedLeadIds.add(lead.leadId);
+          }
+
+          return isMatch;
+        });
+
+        grouped[pipeline.name] = matchingLeads;
+      });
+
+      // Handle leads without pipelineId
+      const leadsWithoutPipeline = leads.filter((lead) => {
+        if (usedLeadIds.has(lead.leadId)) {
+          return false;
+        }
+        const leadPipelineId = lead.pipelineId || lead.stageId;
+        return !leadPipelineId || leadPipelineId === null || leadPipelineId === undefined;
+      });
+
+      if (leadsWithoutPipeline.length > 0) {
+        const newStage = pipelines.find((p) => p.name.toLowerCase() === "new") || pipelines[0];
+        if (newStage) {
+          if (!grouped[newStage.name]) {
+            grouped[newStage.name] = [];
+          }
+          grouped[newStage.name] = [...grouped[newStage.name], ...leadsWithoutPipeline];
+        }
+      }
+    }
+
+    return grouped;
+  }, [pipelines, leads]);
+
+
+
+  // Add pipeline handler
+  const handleAddStage = () => {
+    if (!newStageName) {
+      toast.error("Stage name is required");
+      return;
+    }
+    if (newStageIsForm && !newStageFormType) {
+      toast.error("Form type is required when 'Is Form' is enabled");
+      return;
+    }
+    dispatch(
+      createPipeline({
+        name: newStageName,
+        color: newStageColor,
+        isFormRequired: newStageIsForm,
+        formType: newStageIsForm ? newStageFormType : null,
+      })
+    );
+    setNewStageName("");
+    setNewStageColor("#3b82f6");
+    setNewStageIsForm(false);
+    setNewStageFormType("");
+    setIsAddingStage(false);
+    // Refresh leads to get the updated grouped format
+    dispatch(fetchLeads());
+  };
+
+  // Delete pipeline handler
+  const handleDeleteStages = (pipelineIds) => {
+    pipelineIds.forEach((id) => {
+      dispatch(deletePipeline(id));
+    });
+    dispatch(fetchPipelines());
+    // Refresh leads to get the updated grouped format
+    dispatch(fetchLeads());
+    setShowDeletePipelineModal(false);
+    setSelectedPipelinesToDelete([]);
+  };
+
+  // Handle schedule activity
+  const handleScheduleActivity = (lead) => {
+    setSelectedLeadForActivity(lead);
+    setShowAdvancedScheduleModal(true);
+  };
+
+  // Handle initialize pipeline stages
+  const handleInitializePipeline = async () => {
+    setIsInitializing(true);
+    try {
+      await dispatch(initializePipelineStages());
+      toast.success("Default pipeline stages initialized successfully!");
+      dispatch(fetchPipelines());
+      dispatch(fetchLeads());
+    } catch (error) {
+      toast.error("Failed to initialize pipeline stages");
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  // Drag-and-drop handler for Kanban board
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    if (!over || active.id === over.id) {
-      console.log('DragEnd: No valid drop target or same position', { active, over });
+    if (!over || !active) {
+      console.log("No over or active element");
       return;
     }
+
     const leadId = active.id;
-    const newStatus = over.id;
-    const oldLead = leads.find(l => l.leadId === leadId);
-    console.log('DragEnd:', { leadId, newStatus, oldLead });
-    if (newStatus === 'Converted') {
-      setPendingConversion({ lead: oldLead, fromStatus: oldLead.status });
-      setLeadToConvertId(leadId);
-      setShowConvertModal(true);
-      console.log('Opening Convert Modal', { leadId, newStatus });
-    } else if (newStatus === 'Lost') {
-      setPendingLost({ lead: oldLead, fromStatus: oldLead.status });
-      setLeadToMarkLost(oldLead);
-      setShowLostReasonModal(true);
-      console.log('Opening Lost Modal', { leadId, newStatus });
-    } else if (newStatus === 'Junk') {
-      setPendingJunk({ lead: oldLead, fromStatus: oldLead.status });
-      setLeadToMarkJunkId(leadId);
-      setShowJunkReasonModal(true);
-      console.log('Opening Junk Modal', { leadId, newStatus });
-    } else {
-    setLeads(prevLeads => prevLeads.map(l =>
-      l.leadId === leadId ? { ...l, status: newStatus } : l
-    ));
-      console.log('Moved lead to new status', { leadId, newStatus });
-    }
-  };
+    const newPipelineName = over.id;
 
-  const handleEdit = (lead) => {
-    setEditingLead(lead);
-    setShowAddLeadModal(true);
-  };
-
-  const handleConvert = (lead) => {
-    setLeadToConvertId(lead.leadId);
-    setShowConvertModal(true);
-  };
-
-  const handleMarkLost = (lead) => {
-    setLeadToMarkLost(lead);
-    setShowLostReasonModal(true);
-  };
-
-  const handleMarkJunk = (lead) => {
-    setLeadToMarkJunkId(lead.leadId);
-    setShowJunkReasonModal(true);
-  };
-
-  const handleOpenAddLeadForm = (status) => {
-    const newLeadData = { ...defaultLeadData };
-    if (typeof status === 'string') {
-      newLeadData.status = status;
-    }
-    setEditingLead(newLeadData);
-    setShowAddLeadModal(true);
-  };
-
-  const handleAddLeadSubmit = (formData) => {
-    const leadData = {
-      ...defaultLeadData,
-      ...formData,
-      status: formData.status || "New",
-      submittedBy: role,
-    };
-    if (editingLead && editingLead.leadId) {
-      setLeads(prevLeads => prevLeads.map(l =>
-        l.leadId === editingLead.leadId ? { ...l, ...leadData } : l
-      ));
-    } else {
-      // Assign a new unique leadId
-      const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
-      setLeads(prevLeads => [
-        ...prevLeads,
-        { ...leadData, leadId: newId },
-      ]);
-    }
-    setShowAddLeadModal(false);
-  };
-
-  const handleAddStage = () => {
-    if (newStageName && !kanbanStatuses.includes(newStageName)) {
-      setKanbanStatuses(prev => [...prev, newStageName]);
-      setNewStageName("");
-      setIsAddingStage(false);
-    }
-  };
-
-  const handleCancelAddStage = () => {
-    setNewStageName("");
-    setIsAddingStage(false);
-  };
-
-  const handlePipelineAction = (action) => {
-    setShowPipelineDropdown(false);
-    if (action === 'add') {
-      setIsAddingStage(true);
-    } else if (action === 'delete') {
-      setShowDeletePipelineModal(true);
-    }
-  };
-
-  const handleDeleteStages = (stagesToDelete) => {
-    // Check if any leads are currently in the stages being deleted
-    const leadsInStages = dedupedLeads.filter(lead => stagesToDelete.includes(lead.status));
-    if (leadsInStages.length > 0) {
-      toast.error(`Cannot delete stages with active leads. Please move ${leadsInStages.length} lead(s) to other stages first.`);
+    if (!leadId || !newPipelineName) {
+      console.log("Missing leadId or newPipelineName");
       return;
     }
-    setKanbanStatuses(prev => prev.filter(stage => !stagesToDelete.includes(stage)));
-    toast.success(`Successfully deleted ${stagesToDelete.length} stage(s)`);
-  };
 
-  const handleConvertModalClose = () => {
-    setShowConvertModal(false);
-    setLeadToConvertId(null);
-    setPendingConversion(null);
-  };
+    // Find the new pipeline by name
+    const newPipeline = pipelines.find((p) => p.name === newPipelineName);
 
-  const handleConvertSuccess = (updatedLead) => {
-    setLeads(prevLeads => prevLeads.map(l =>
-      l.leadId === updatedLead.leadId ? { ...l, ...updatedLead, status: 'Converted' } : l
-    ));
-    handleConvertModalClose();
-  };
+    if (!newPipeline) {
+      console.log("Pipeline not found for name:", newPipelineName);
+      return;
+    }
 
-  const handleLostModalClose = () => {
-    setShowLostReasonModal(false);
-    setLeadToMarkLost(null);
-    setPendingLost(null);
-  };
-
-  const handleLostSuccess = (updatedLead) => {
-    setLeads(prevLeads => prevLeads.map(l =>
-      l.leadId === updatedLead.leadId ? { ...l, ...updatedLead, status: 'Lost' } : l
-    ));
-    handleLostModalClose();
-  };
-
-  const handleJunkModalClose = () => {
-    setShowJunkReasonModal(false);
-    setLeadToMarkJunkId(null);
-    setPendingJunk(null);
-  };
-
-  const handleJunkSuccess = (updatedLead) => {
-    setLeads(prevLeads => prevLeads.map(l =>
-      l.leadId === updatedLead.leadId ? { ...l, ...updatedLead, status: 'Junk' } : l
-    ));
-    handleJunkModalClose();
-  };
-
-  const handleScheduleActivity = (lead) => {
-    setLeadToScheduleActivity(lead);
-    setShowScheduleActivityModal(true);
-  };
-
-  const handleScheduleActivitySuccess = (activity) => {
-    setLeads(prevLeads => prevLeads.map(l => {
-      if (l.leadId === leadToScheduleActivity.leadId) {
-        const activities = Array.isArray(l.activities) ? [...l.activities] : [];
-        activities.push({ ...activity, createdAt: new Date().toISOString() });
-        return { ...l, activities, updatedAt: new Date().toISOString() };
+    // Find the lead in the grouped format
+    let lead = null;
+    let currentPipelineId = null;
+    
+    // Check if leads is in the new grouped format
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
+      // New format: find lead in grouped structure
+      for (const stageGroup of leads) {
+        const foundLead = stageGroup.leads.find(l => l.leadId === leadId);
+        if (foundLead) {
+          lead = foundLead;
+          currentPipelineId = stageGroup.stageId;
+          break;
+        }
       }
-      return l;
-    }));
-    setShowScheduleActivityModal(false);
-    setLeadToScheduleActivity(null);
-    toast.success('Activity scheduled successfully!');
+    } else {
+      // Old format: find lead directly
+      lead = leads.find((l) => l.leadId === leadId);
+      currentPipelineId = lead?.pipelineId || lead?.stageId;
+    }
+
+    if (!lead) {
+      console.log("Lead not found for ID:", leadId);
+      return;
+    }
+
+    const newPipelineId = newPipeline.pipelineId || newPipeline.stageId;
+
+    console.log("Pipeline comparison:", {
+      currentPipelineId,
+      newPipelineId,
+      isDifferent: String(currentPipelineId) !== String(newPipelineId),
+    });
+
+    if (String(currentPipelineId) !== String(newPipelineId)) {
+      // If pipeline requires a form, open the modal instead of moving directly
+      if (newPipeline.formType === "CONVERTED") {
+        setSelectedLead({ ...lead, pipelineId: newPipelineId });
+        setShowConvertModal(true);
+        return;
+      } else if (newPipeline.formType === "JUNK") {
+        setSelectedLead({ ...lead, pipelineId: newPipelineId });
+        setShowJunkModal(true);
+        return;
+      } else if (newPipeline.formType === "LOST") {
+        setSelectedLead({ ...lead, pipelineId: newPipelineId });
+        setShowLostModal(true);
+        return;
+      }
+
+      // Otherwise, move lead directly
+      console.log("Moving lead directly via API:", { leadId, newPipelineId });
+      dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
+    } else {
+      console.log("Pipeline is the same, no move needed");
+    }
+  };
+
+  // Confirmation modal for pipeline actions
+  const PipelineActionConfirmModal = () =>
+    pipelineAction && (
+      <div className="fixed inset-0 bg-black bg-opacity-30 z-50 flex justify-center items-center p-4">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            {pipelineAction === "add" ? "Add Pipeline" : "Delete Pipeline"}
+          </h3>
+          <p className="mb-6 text-gray-700">
+            {pipelineAction === "add"
+              ? "Do you want to add a new pipeline stage?"
+              : "Do you want to delete pipeline stages?"}
+          </p>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={() => setPipelineAction(null)}
+              className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                if (pipelineAction === "add") setIsAddingStage(true);
+                if (pipelineAction === "delete")
+                  setShowDeletePipelineModal(true);
+                setPipelineAction(null);
+              }}
+              className={`px-4 py-2 text-sm rounded-md ${
+                pipelineAction === "add"
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-red-600 text-white hover:bg-red-700"
+              } font-semibold shadow`}
+            >
+              {pipelineAction === "add" ? "Add Pipeline" : "Delete Pipeline"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+
+  // Add lead handler for AddLeadModal
+  const handleAddLead = async (leadData) => {
+    await dispatch(createLead(leadData));
+    // Refresh leads to get the updated grouped format
+    dispatch(fetchLeads());
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-6">
-          <button
-            onClick={() => handleOpenAddLeadForm()}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg shadow hover:bg-purple-700 flex items-center min-w-24 justify-center"
-          >
-            New
-          </button>
-          <div className="flex items-center space-x-1">
-            <h2 className="text-xl font-semibold text-gray-700">Pipeline</h2>
-            <div className="relative pipeline-dropdown">
-              <button 
-                onClick={() => setShowPipelineDropdown(!showPipelineDropdown)} 
-                className="text-gray-500 hover:text-gray-700 p-1 flex items-center gap-1 transition-colors duration-200"
-              >
-                <FaCog />
-                <FaChevronDown className={`text-xs transition-transform duration-200 ${showPipelineDropdown ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showPipelineDropdown && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-40 transform opacity-100 scale-100 transition-all duration-200">
-                  <button
-                    onClick={() => handlePipelineAction('add')}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors duration-150"
-                  >
-                    <FaPlus className="text-xs" />
-                    Add Pipeline
-                  </button>
-                  <button
-                    onClick={() => handlePipelineAction('delete')}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2 transition-colors duration-150"
-                  >
-                    <FaTrash className="text-xs" />
-                    Delete Pipeline
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+          <Tooltip content="Add a new lead to the pipeline">
+            <button
+              onClick={() => setShowAddLeadModal(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
+            >
+              New Lead
+            </button>
+          </Tooltip>
 
-        <div className="flex items-center space-x-4">
-          <div className="relative w-72">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-              className="border p-2 rounded-md shadow-sm w-full pl-10 bg-white"
-            />
-          </div>
-          {/* View toggle icons */}
-          <div className="flex items-center space-x-1 bg-gray-200 p-1 rounded-md">
-            <button
-              className={`p-2 rounded-md transition-colors ${viewMode === 'kanban' ? 'bg-white shadow text-purple-700' : 'hover:bg-white/50 text-gray-600'}`}
-              onClick={() => setViewMode('kanban')}
-              title="Kanban Board View"
-            >
-              <FaThLarge size={18} />
-            </button>
-            <button
-              className={`p-2 rounded-md transition-colors ${viewMode === 'table' ? 'bg-white shadow text-purple-700' : 'hover:bg-white/50 text-gray-600'}`}
-              onClick={() => setViewMode('table')}
-              title="Table View"
-            >
-              <FaListUl size={18} />
-            </button>
-          </div>
         </div>
       </div>
-
-      {/* {loading && <p className="text-center">Loading opportunities...</p>}
-      {error && <p className="text-center text-red-500">Error: {error.message || "Could not fetch opportunities."}</p>} */}
-
-      {viewMode === 'kanban' ? (
-      <KanbanBoard
+      <KanbanBoardClientOnly
         leadsByStatus={leadsByStatus}
-        onDragEnd={handleDragEnd}
-        statuses={kanbanStatuses}
-        onEdit={handleEdit}
-        onConvert={handleConvert}
-        onMarkLost={handleMarkLost}
-        onMarkJunk={handleMarkJunk}
-        onAddLead={handleOpenAddLeadForm}
-        isAddingStage={isAddingStage}
-        newStageName={newStageName}
-        setNewStageName={setNewStageName}
-        onAddStage={handleAddStage}
-        onCancelAddStage={handleCancelAddStage}
+        statuses={pipelines.map((p) => p.name)}
+        kanbanStatuses={pipelines}
         onScheduleActivity={handleScheduleActivity}
+        onDragEnd={handleDragEnd}
+        // Debug props
+        debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
       />
-      ) : (
-        <LeadsTable leads={dedupedLeads} />
-      )}
-
-      <AddLeadModal
-        isOpen={showAddLeadModal}
-        onClose={() => setShowAddLeadModal(false)}
-        onSubmit={handleAddLeadSubmit}
-        initialData={editingLead || defaultLeadData}
-        isManagerView={false}
-      />
-
-      {/* Only show ConvertLeadModal for drag-to-Converted or explicit convert */}
-      {showConvertModal && (
-        <ConvertLeadModal
-          lead={pendingConversion?.lead}
-          onClose={handleConvertModalClose}
-          onSuccess={pendingConversion ? handleConvertSuccess : undefined}
-        />
-      )}
-      {showLostReasonModal && (
-        <LostLeadModal
-          lead={pendingLost?.lead}
-          onClose={handleLostModalClose}
-          onSuccess={pendingLost ? handleLostSuccess : undefined}
-        />
-      )}
-      {showJunkReasonModal && (
-        <JunkReasonModal
-          lead={pendingJunk?.lead}
-          onClose={handleJunkModalClose}
-          onSuccess={pendingJunk ? handleJunkSuccess : undefined}
-        />
-      )}
-      
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}
         onClose={() => setShowDeletePipelineModal(false)}
-        stages={kanbanStatuses}
-        onDeleteStages={handleDeleteStages}
       />
-
+      {isAddingStage && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-30">
+          <div
+            className="w-full max-w-md bg-gray-50 rounded-xl shadow-xl p-6 m-8 flex flex-col"
+            style={{ minHeight: "auto", maxHeight: "90vh" }}
+          >
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Add Pipeline
+              </h3>
+              <div className="flex flex-col gap-3">
+                <label className="text-xs font-medium text-gray-700">
+                  Pipeline Name
+                </label>
+                <input
+                  type="text"
+                  value={newStageName}
+                  onChange={(e) => setNewStageName(e.target.value)}
+                  placeholder="Enter pipeline name..."
+                  className="p-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                {newStageName === "" && (
+                  <span className="text-xs text-red-500 mt-1">
+                    Pipeline name is required.
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-3 mt-3">
+                <label className="text-xs font-medium text-gray-700">
+                  Pipeline Color
+                </label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {[
+                    "#3b82f6",
+                    "#6366f1",
+                    "#10b981",
+                    "#f59e42",
+                    "#22d3ee",
+                    "#ef4444",
+                    "#a3a3a3",
+                  ].map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewStageColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-150 ${
+                        newStageColor === color
+                          ? "border-blue-600 ring-2 ring-blue-200"
+                          : "border-gray-200"
+                      }`}
+                      style={{ background: color }}
+                      aria-label={`Select color ${color}`}
+                    >
+                      {newStageColor === color && (
+                        <span className="w-3 h-3 bg-white rounded-full border border-blue-600"></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-3">
+                <label className="text-xs font-medium text-gray-700">
+                  Is Form
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setNewStageIsForm((prev) => !prev)}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                    newStageIsForm ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                  aria-pressed={newStageIsForm}
+                >
+                  <span
+                    className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ${
+                      newStageIsForm ? "translate-x-6" : ""
+                    }`}
+                  ></span>
+                </button>
+                <span className="text-xs text-gray-500">
+                  {newStageIsForm ? "Yes" : "No"}
+                </span>
+              </div>
+              {newStageIsForm && (
+                <div className="flex flex-col gap-3 mt-3">
+                  <label className="text-xs font-medium text-gray-700">
+                    Form Type
+                  </label>
+                  <select
+                    value={newStageFormType}
+                    onChange={(e) => setNewStageFormType(e.target.value)}
+                    className="p-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select form type...</option>
+                    <option value="CONVERTED">Converted</option>
+                    <option value="JUNK">Junk</option>
+                    <option value="LOST">Lost</option>
+                    <option value="ONBOARDING">Onboarding</option>
+                    <option value="APPROVAL">Approval</option>
+                    <option value="CUSTOM">Custom</option>
+                  </select>
+                  {newStageFormType === "" && (
+                    <span className="text-xs text-red-500 mt-1">
+                      Form type is required.
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 mt-6 justify-end">
+              <button
+                onClick={() => {
+                  setNewStageName("");
+                  setNewStageIsForm(false);
+                  setNewStageColor("#3b82f6");
+                  setNewStageFormType("");
+                  setIsAddingStage(false);
+                }}
+                className="px-4 py-2 text-sm rounded-md border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddStage}
+                disabled={
+                  !newStageName || (newStageIsForm && !newStageFormType)
+                }
+                className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Add Pipeline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <PipelineActionConfirmModal />
+      <AddLeadModal
+        isOpen={showAddLeadModal}
+        onClose={() => setShowAddLeadModal(false)}
+        onSubmit={handleAddLead}
+        // Add other props as needed
+      />
       <AdvancedScheduleActivityModal
-        isOpen={showScheduleActivityModal}
-        onClose={() => { setShowScheduleActivityModal(false); setLeadToScheduleActivity(null); }}
-        lead={leadToScheduleActivity}
-        onSuccess={handleScheduleActivitySuccess}
+        isOpen={showAdvancedScheduleModal}
+        onClose={() => {
+          setShowAdvancedScheduleModal(false);
+          setSelectedLeadForActivity(null);
+        }}
+        lead={selectedLeadForActivity}
+      />
+      <ConvertLeadModal
+        lead={showConvertModal ? selectedLead : null}
+        onClose={() => setShowConvertModal(false)}
+        onSuccess={() => {
+          setShowConvertModal(false);
+          setSelectedLead(null);
+          // Refresh leads to get the updated grouped format
+          dispatch(fetchLeads());
+        }}
+      />
+      <JunkReasonModal
+        lead={showJunkModal ? selectedLead : null}
+        onClose={() => setShowJunkModal(false)}
+        onSuccess={() => {
+          setShowJunkModal(false);
+          setSelectedLead(null);
+          // Refresh leads to get the updated grouped format
+          dispatch(fetchLeads());
+        }}
+      />
+      <LostLeadModal
+        lead={showLostModal ? selectedLead : null}
+        onClose={() => setShowLostModal(false)}
+        onSuccess={() => {
+          setShowLostModal(false);
+          setSelectedLead(null);
+          // Refresh leads to get the updated grouped format
+          dispatch(fetchLeads());
+        }}
       />
     </div>
   );

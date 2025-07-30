@@ -44,7 +44,7 @@ const COLORS = [
 ];
 
 const Overview = () => {
-  const companyId = sessionStorage.getItem("currentCompanyId");
+  const companyId = sessionStorage.getItem("employeeCompanyId");
   // Get router instance
   const router = useRouter();
 
@@ -69,11 +69,7 @@ const Overview = () => {
       totalAbsent: 0,
     });
 
-  // Animation state for Total Employees card
-  const [loadingNumbers, setLoadingNumbers] = useState(true);
-  const [displayedTotal, setDisplayedTotal] = useState(0);
-  const [displayedPresent, setDisplayedPresent] = useState(0);
-  const [displayedAbsent, setDisplayedAbsent] = useState(0);
+  console.log(currentDayAttendanceSummary);
 
   const dispatch = useDispatch();
   // Update the useSelector hook
@@ -85,108 +81,85 @@ const Overview = () => {
     loading: attendanceLoading,
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
-  // Get state from Redux
-  // const {
-  //   expensesRequests,
-  //   incomeRequests,
-  // } = useSelector((state) => state.requestDetails);
-
 
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
-    // dispatch(fetchExpenseRequests());
-    // dispatch(fetchIncomeRequests());
   }, [dispatch, companyId]);
 
   // Add useEffect to fetch current day's attendance and calculate summary
   useEffect(() => {
     const today = new Date();
-    const currentDay = today.getDate();
     const currentMonth = today.toLocaleString("default", { month: "short" });
     const currentYear = today.getFullYear().toString();
 
-    // Fetch attendance data for the current day
+    // Fetch attendance data for the current month
     dispatch(
       fetchAllEmployeeAttendanceOneMonth({
         month: currentMonth,
         year: currentYear,
-        date: currentDay, // Fetch only for the current day
+        role: "HRADMIN",
       })
     );
   }, [dispatch, companyId]); // Dependency on dispatch
 
   // Calculate current day summary whenever attendance data changes
   useEffect(() => {
-    if (attendance && attendance.length > 0) {
+    if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0) {
       let presentCount = 0;
       let absentCount = 0;
       const today = new Date();
-      const currentDay = today.getDate().toString(); // Need day as string key
-
-      attendance.forEach((employeeRecord) => {
-        const status = employeeRecord.dailyAttendance?.[currentDay];
-        if (status === "P") {
-          presentCount++;
-        } else if (status === "A" || status === "LOP") {
-          // Consider LOP as Absent for this summary? Adjust if needed.
-          absentCount++;
+      const currentDay = today.getDate();
+      const totalEmployees = employees?.length ?? 0;
+      
+      // Process each employee's attendance for today
+      attendance.monthlyAttendance.forEach((employeeRecord) => {
+        if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
+          const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
+          
+          // Only count actual "Present" status as present
+          if (dayStatus === 'P') {
+            presentCount++;
+          }
+          // Count only "Absent" status as absent
+          else if (dayStatus === 'A') {
+            absentCount++;
+          }
+          // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
         }
       });
+
+      // Ensure present + absent doesn't exceed total employees
+      const totalCounted = presentCount + absentCount;
+      if (totalCounted > totalEmployees) {
+        // If we have more counted than total employees, adjust the counts proportionally
+        const ratio = totalEmployees / totalCounted;
+        presentCount = Math.round(presentCount * ratio);
+        absentCount = Math.round(absentCount * ratio);
+        
+        // Ensure we don't exceed total employees
+        if (presentCount + absentCount > totalEmployees) {
+          // If still exceeding, prioritize present count
+          if (presentCount > absentCount) {
+            presentCount = totalEmployees - absentCount;
+          } else {
+            absentCount = totalEmployees - presentCount;
+          }
+        }
+      }
 
       setCurrentDayAttendanceSummary({
         totalPresent: presentCount,
         totalAbsent: absentCount,
       });
     } else {
-      // If no attendance data fetched (e.g. empty response), reset summary
+      // If no attendance data fetched, reset summary
       setCurrentDayAttendanceSummary({
         totalPresent: 0,
         totalAbsent: 0,
       });
     }
-  }, [attendance]); // Dependency on attendance state
-
-  useEffect(() => {
-    setLoadingNumbers(true);
-    const timer = setTimeout(() => {
-      setLoadingNumbers(false);
-    }, 1000); // 1 second loading
-    return () => clearTimeout(timer);
-  }, [employees, currentDayAttendanceSummary]);
-
-  // Count up animation for numbers
-  useEffect(() => {
-    if (!loadingNumbers) {
-      let total = employees?.length ?? 0;
-      let present = currentDayAttendanceSummary.totalPresent;
-      let absent = currentDayAttendanceSummary.totalAbsent;
-      let duration = 500; // ms
-      let steps = 20;
-      let stepTime = duration / steps;
-      let i = 0;
-      let totalStep = total / steps;
-      let presentStep = present / steps;
-      let absentStep = absent / steps;
-      const interval = setInterval(() => {
-        i++;
-        setDisplayedTotal(Math.round(Math.min(total, i * totalStep)));
-        setDisplayedPresent(Math.round(Math.min(present, i * presentStep)));
-        setDisplayedAbsent(Math.round(Math.min(absent, i * absentStep)));
-        if (i >= steps) {
-          setDisplayedTotal(total);
-          setDisplayedPresent(present);
-          setDisplayedAbsent(absent);
-          clearInterval(interval);
-        }
-      }, stepTime);
-      return () => clearInterval(interval);
-    } else {
-      setDisplayedTotal(0);
-      setDisplayedPresent(0);
-      setDisplayedAbsent(0);
-    }
-  }, [loadingNumbers, employees, currentDayAttendanceSummary]);
+  }, [attendance, employees]); // Added employees as dependency
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -210,6 +183,14 @@ const Overview = () => {
       const currentMonth = today.toLocaleString("default", { month: "long" }); // Use long month for consistency with attendance page state
       const currentYear = today.getFullYear().toString();
 
+      // Map status to specific status codes only
+      let statusFilter = '';
+      if (status === 'P') {
+        statusFilter = 'P'; // Only Present
+      } else if (status === 'A') {
+        statusFilter = 'A'; // Only Absent
+      }
+
       // Navigate to attendance page with selected date and status filter
       router.push({
         pathname: "/hradmin/attendance",
@@ -217,7 +198,7 @@ const Overview = () => {
           selectedDate: currentDay,
           selectedMonth: currentMonth,
           selectedYear: currentYear,
-          selectedStatuses: status, // 'P' or 'A'
+          selectedStatuses: statusFilter,
         },
       });
     },
@@ -227,7 +208,7 @@ const Overview = () => {
   const fetchProfileUpdates = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -252,7 +233,7 @@ const Overview = () => {
   const fetchPendingRequests = useCallback(async () => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const company = sessionStorage.getItem("currentCompanyId");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const response = await axios.get(
         `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`,
         {
@@ -288,31 +269,9 @@ const Overview = () => {
     fetchProfileUpdates();
   }, [fetchPendingRequests, fetchProfileUpdates, companyId]);
 
-  const data = [
-    { name: "Mon", present: 80, absent: 10, leave: 5 },
+  const data = [];
 
-    { name: "Tue", present: 85, absent: 8, leave: 4 },
-
-    { name: "Wed", present: 82, absent: 12, leave: 3 },
-
-    { name: "Thu", present: 84, absent: 9, leave: 5 },
-
-    { name: "Fri", present: 78, absent: 15, leave: 6 },
-  ];
-
-  const departmentData = [
-    { name: "Engineering", value: 25 },
-
-    { name: "Sales", value: 18 },
-
-    { name: "Marketing", value: 12 },
-
-    { name: "HR", value: 8 },
-
-    { name: "Finance", value: 10 },
-
-    { name: "Product", value: 15 },
-  ];
+  const departmentData = [];
 
   const overviewData = [
     {
@@ -359,7 +318,7 @@ const Overview = () => {
   );
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
 
       <Sidebar
@@ -371,9 +330,10 @@ const Overview = () => {
       {/* Main Content */}
 
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
         } transition-all duration-300`}
+        style={{ minHeight: 0, display: "flex", flexDirection: "column" }}
       >
         {/* Navbar */}
 
@@ -381,7 +341,7 @@ const Overview = () => {
 
         {/* Page Content */}
 
-        <div className="pt-24 px-6">
+        <div className="pt-24 px-6 flex-1 flex flex-col min-h-0">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800 text-left">
               Company Overview Dashboard
@@ -414,7 +374,7 @@ const Overview = () => {
                       {/* Total Employees */}
                       <div className="flex flex-col items-center justify-center flex-1">
                         <span className="text-7xl font-extrabold text-gray-800 leading-tight">
-                          {displayedTotal}
+                          {employees?.length ?? 0}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
                           Total
@@ -428,7 +388,7 @@ const Overview = () => {
                           className="text-7xl font-extrabold text-green-700 leading-tight cursor-pointer hover:underline transition"
                           onClick={() => handleAttendanceCountClick("P")}
                         >
-                          {displayedPresent}
+                          {currentDayAttendanceSummary.totalPresent}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
                           Present
@@ -442,7 +402,7 @@ const Overview = () => {
                           className="text-7xl font-extrabold text-red-400 leading-tight cursor-pointer hover:underline transition"
                           onClick={() => handleAttendanceCountClick("A")}
                         >
-                          {displayedAbsent}
+                          {currentDayAttendanceSummary.totalAbsent}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
                           Absent
@@ -746,11 +706,14 @@ const Overview = () => {
           )}
 
           {showRequestDetails && ( // Replace requestToggle with showRequestDetails
-            <RequestDetails
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              onActionComplete={refreshRequests}
-            />
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <RequestDetails
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+                onActionComplete={refreshRequests}
+                role="HRADMIN"
+              />
+            </div>
           )}
         </div>
       </div>

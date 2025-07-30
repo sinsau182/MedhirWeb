@@ -6,15 +6,15 @@ const API_BASE_URL = publicRuntimeConfig.attendanceURL + "/attendance-summary";
 
 export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchAllEmployeeAttendanceOneMonth",
-    async ({ month, year }, { rejectWithValue }) => {
+    async ({ month, year, role }, { rejectWithValue }) => {
 
         let url = "";
         const employeeId = sessionStorage.getItem("employeeId");
-        const companyId = sessionStorage.getItem("currentCompanyId");
+        const companyId = sessionStorage.getItem("employeeCompanyId");
         const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
         const numericMonth = monthIndex + 1;
 
-        if(sessionStorage.getItem("currentRole") === "MANAGER"){
+        if(role === "MANAGER"){
             url = `${API_BASE_URL}/manager/${employeeId}/${year}/${numericMonth}`;
         }else{
             url = `${API_BASE_URL}/hr/${companyId}/${year}/${numericMonth}`;
@@ -57,10 +57,9 @@ const fetchOneEmployeeAttendanceAllMonth = createAsyncThunk(
 
 export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchOneEmployeeAttendanceOneMonth",
-    async ({ month, year }, { rejectWithValue }) => {
+    async ({ employeeId, month, year }, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const employeeId = sessionStorage.getItem("employeeId");
             
             // Convert month name to numeric month (1-12)
             const monthIndex = new Date(`${month} 1, ${year}`).getMonth();

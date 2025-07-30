@@ -12,12 +12,10 @@ import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 
 function PayrollManagement() {
-  const selectedCompanyId = sessionStorage.getItem("currentCompanyId");
+  const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
 
   const { attendance } = useSelector((state) => state.attendances);
-
-  console.log(attendance);
 
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,6 +135,7 @@ function PayrollManagement() {
       fetchAllEmployeeAttendanceOneMonth({
         month: selectedMonth,
         year: selectedYear,
+        role: "HRADMIN",
       })
     );
   }, [dispatch, selectedMonth, selectedYear]);
@@ -199,14 +198,13 @@ function PayrollManagement() {
       handleOvertimeSave(employeeId);
     }
   };
-
-  console.log(tdsData.tdsRate);
+  
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
+          <thead className="top-0 bg-gray-50">
             <tr>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 EMPLOYEE ID
@@ -258,13 +256,12 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const employeeAttendance = attendance?.find(
+                // Fix: Use new attendance response format
+                const employeeAttendance = attendance?.monthlyAttendance?.find(
                   (record) => record.employeeId === employee.employeeId
                 );
-                
-                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
-                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
-                const paidDays = presentDays + fullLeaveDays || 0;
+                // Use paidDays from the new response, fallback to 0
+                const paidDays = employeeAttendance?.paidDays ?? 0;
 
                 const basic = parseFloat(
                   (
@@ -314,7 +311,7 @@ function PayrollManagement() {
                 const deductions = parseFloat(
                   (tds + advanceAdjusted + profTax).toFixed(0)
                 );
-                const netPay = parseFloat(
+                const netPay = Math.max(0, parseFloat(
                   (
                     basic +
                     hra +
@@ -323,7 +320,7 @@ function PayrollManagement() {
                     reimbursement -
                     deductions
                   ).toFixed(0)
-                );
+                ));
 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
@@ -387,9 +384,9 @@ function PayrollManagement() {
                       ) : (
                         <div
                           className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
-                          onClick={() =>
-                            handleOvertimeEdit(employee.employeeId, overtimePay)
-                          }
+                          // onClick={() =>
+                          //   handleOvertimeEdit(employee.employeeId, overtimePay)
+                          // }
                         >
                           ₹{overtimePay}
                           <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
@@ -461,10 +458,10 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                const employeeAttendance = attendance?.find(record => record.employeeId === employee.employeeId);
-                const presentDays = employeeAttendance?.attendance?.presentDates?.length || 0;
-                const fullLeaveDays = employeeAttendance?.attendance?.fullLeaveDates?.length || 0;
-                const paidDays = presentDays + fullLeaveDays || 0;
+                // Fix: Use new attendance response format
+                const employeeAttendance = attendance?.monthlyAttendance?.find(record => record.employeeId === employee.employeeId);
+                // Use paidDays from the new response, fallback to 0
+                const paidDays = employeeAttendance?.paidDays ?? 0;
                 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
@@ -634,9 +631,7 @@ function PayrollManagement() {
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Status
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                Receipt
-              </th>
+
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -669,14 +664,6 @@ function PayrollManagement() {
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.status}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    <button
-                      onClick={() => alert("No uploaded receipt")}
-                      className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors duration-200"
-                    >
-                      View Receipt
-                    </button>
                   </td>
                 </tr>
               ))}
@@ -752,20 +739,20 @@ function PayrollManagement() {
   );
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden">
       <Sidebar
         isCollapsed={isSidebarCollapsed}
         toggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <div
-        className={`flex-1 ${
+        className={`flex-1 relative ${
           isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300`}
+        } transition-all duration-300 overflow-hidden`}
       >
         <HradminNavbar />
 
-        <div className="p-6 mt-16">
+        <div className="p-6 mt-16 h-[calc(100vh-64px)] overflow-y-auto">
           {/* Header with Search and Title */}
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-xl font-semibold text-gray-800">
@@ -843,8 +830,8 @@ function PayrollManagement() {
           </div>
 
           {/* Tabs */}
-          <div className="bg-gray-50">
-            <div className="flex">
+          <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
+            <div className="flex min-w-max">
               {[
                 "Salary Statement",
                 "Deductions",
@@ -856,7 +843,7 @@ function PayrollManagement() {
                   key={section}
                   className={`px-8 py-4 text-sm font-medium transition-colors relative ${
                     selectedSection === section
-                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg z-10"
+                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg"
                       : "text-gray-500 hover:text-gray-700"
                   }`}
                   onClick={() => setSelectedSection(section)}

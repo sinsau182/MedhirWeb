@@ -1,39 +1,68 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa"; // Import the icons
-import { Grid2x2 } from "lucide-react";
+import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa";
+import { Grid2x2, ChevronDown, LogOut } from "lucide-react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 
 export default function SuperadminHeaders() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   // Update activeTab based on the current route
   useEffect(() => {
-    const path = router.pathname.split("/").pop(); // Get the last part of the route
-    setActiveTab(path.charAt(0).toUpperCase() + path.slice(1)); // Capitalize first letter
+    const path = router.pathname.split("/").pop();
+    setActiveTab(path.charAt(0).toUpperCase() + path.slice(1));
   }, [router.pathname]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    // Clear all session storage
+    sessionStorage.clear();
+    // Clear localStorage
+    localStorage.clear();
+    // Show success message
+    toast.success("Logged out successfully");
+    // Redirect to login
     router.push("/login");
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full bg-[#F5F9FE] shadow-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] px-10 py-4 flex justify-between items-start z-50 border-b border-gray-300">
-      <h1 className="text-2xl font-serif text-[#4a4a4a] tracking-wide">
-        MEDHIR
-      </h1>
+    <header className="fixed top-0 left-0 right-0 w-full bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex justify-between items-center z-50">
+      <div className="flex items-center gap-4">
+        <div className="cursor-pointer">
+          <div className="flex flex-col">
+            <span className="text-4xl font-black text-gray-900 tracking-[0.2em] uppercase">
+              MEDHIR
+            </span>
+          </div>
+        </div>
+      </div>
+      
       <nav className="flex flex-grow justify-center space-x-20 text-lg font-medium">
-        {["Companies", "Modules"].map((item, index) => (
+        {[].map((item, index) => (
           <Link key={index} href={`/superadmin/${item.toLowerCase()}`} passHref>
             <button
               onClick={() => setActiveTab(item)}
-              className={`hover:text-[#4876D6] ${
+              className={`hover:text-blue-600 transition-colors duration-200 ${
                 activeTab === item
-                  ? "text-black bg-[#E3ECFB] rounded-md px-2 py-1"
-                  : "text-[#333333]"
+                  ? "text-blue-600 bg-blue-50 rounded-lg px-3 py-2"
+                  : "text-gray-600"
               }`}
               style={{
                 fontSize: "16px",
@@ -44,13 +73,13 @@ export default function SuperadminHeaders() {
             >
               {item === "Companies" && (
                 <FaBuilding
-                  className="inline-block text-black opacity-80"
+                  className="inline-block text-current"
                   style={{ fontSize: "16px", verticalAlign: "middle" }}
                 />
               )}
               {item === "Modules" && (
                 <Grid2x2
-                  className="inline-block w-5 h-5 text-gray-800"
+                  className="inline-block w-5 h-5 text-current"
                   style={{ fontSize: "16px", verticalAlign: "middle" }}
                 />
               )}
@@ -60,22 +89,40 @@ export default function SuperadminHeaders() {
         ))}
       </nav>
 
-      <div className="relative">
+      <div className="relative" ref={dropdownRef}>
         <button
-          className="flex items-center gap-2 text-black font-medium"
+          className="flex items-center gap-3 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200 font-medium"
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         >
-          <FaUserCircle className="text-2xl" />
-          Super Admin
+          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <FaUserCircle className="w-4 h-4 text-blue-600" />
+          </div>
+          <span>Super Admin</span>
+          <ChevronDown 
+            className={`w-4 h-4 transition-transform duration-200 ${
+              isDropdownOpen ? "rotate-180" : ""
+            }`} 
+          />
         </button>
+        
         {isDropdownOpen && (
-          <div className="absolute top-14 right-0 w-40 bg-white shadow-md rounded-md py-2">
-            <button
-              className="w-full text-left px-4 py-2 hover:bg-gray-100"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
+          <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+            <div className="px-4 py-3 border-b border-gray-100">
+              <p className="text-sm font-medium text-gray-900">Super Admin</p>
+              <p className="text-xs text-gray-500">Administrator</p>
+            </div>
+            
+
+            
+            <div className="border-t border-gray-100 pt-1">
+              <button
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-150"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         )}
       </div>

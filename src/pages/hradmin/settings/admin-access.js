@@ -74,33 +74,33 @@ function AdminAccess() {
     }, [publicRuntimeConfig.apiURL]);
 
   // Fetch companies
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const token = getItemFromSessionStorage("token", null);
-        const employeeId = sessionStorage.getItem("employeeId");
-        const response = await axios.get(
-          `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  // useEffect(() => {
+  //   const fetchCompanies = async () => {
+  //     try {
+  //       const token = getItemFromSessionStorage("token", null);
+  //       const employeeId = sessionStorage.getItem("employeeId");
+  //       const response = await axios.get(
+  //         `${publicRuntimeConfig.apiURL}/hradmin/companies/${employeeId}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
 
-        if (response.data && Array.isArray(response.data)) {
-          setCompanies(response.data);
-          // Set the first company as default
-          setSelectedCompany(response.data[0]);
-          fetchUsers(response.data[0].companyId);
-        }
-      } catch (error) {
-        toast.error("Error fetching companies:", error);
-      }
-    };
+  //       if (response.data && Array.isArray(response.data)) {
+  //         setCompanies(response.data);
+  //         // Set the first company as default
+  //         setSelectedCompany(response.data[0]);
+  //         fetchUsers(response.data[0].companyId);
+  //       }
+  //     } catch (error) {
+  //       toast.error("Error fetching companies:", error);
+  //     }
+  //   };
 
-    fetchCompanies();
-  }, [fetchUsers, publicRuntimeConfig.apiURL]);
+  //   fetchCompanies();
+  // }, [fetchUsers, publicRuntimeConfig.apiURL]);
 
   // Handle company selection
   const handleCompanyChange = (companyId) => {
@@ -138,7 +138,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       // Use the selected company from local state instead of sessionStorage
-      const companyId = sessionStorage.getItem("currentCompanyId");
+      const companyId = sessionStorage.getItem("employeeCompanyId");
 
       const response = await axios.put(
         `${publicRuntimeConfig.apiURL}/hradmin/employees/${user.employeeId}/roles`,
@@ -179,7 +179,7 @@ function AdminAccess() {
     try {
       const token = getItemFromSessionStorage("token", null);
       // Use the selected company from local state instead of sessionStorage
-      const companyId = sessionStorage.getItem("currentCompanyId");
+      const companyId = sessionStorage.getItem("employeeCompanyId");
 
       const response = await axios.put(
         `${publicRuntimeConfig.apiURL}/hradmin/employees/${userToUnassign.employeeId}/roles`,

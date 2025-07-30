@@ -1,8 +1,28 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaBuilding, FaUser, FaPlus, FaTrash, FaPaperclip, FaFilePdf, FaFileImage, FaTimes } from "react-icons/fa";
+import { FaBuilding, FaUser, FaPlus, FaTrash, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaSave } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchVendors } from "../../redux/slices/vendorSlice";
+import { fetchVendors, updateVendorCredit } from "../../redux/slices/vendorSlice";
 import { addBill } from "../../redux/slices/BillSlice";
+
+const AutoGrowTextarea = ({ className, ...props }) => {
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+      if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      }
+  }, [props.value]);
+
+  return (
+      <textarea
+          ref={textareaRef}
+          rows="1"
+          className={`${className} resize-none overflow-hidden`}
+          {...props}
+      />
+  );
+};
 
 const mockCompanies = [
   {
@@ -35,33 +55,22 @@ const BillForm = ({ onCancel }) => {
   const [billDate, setBillDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState("");
   const [reference, setReference] = useState("");
-  const [billLines, setBillLines] = useState([
-    {
-      item: "Office Supplies",
-      description: "Stationery items",
-      hsn: "998349",
-      qty: 10,
-      uom: "PCS",
-      rate: 500,
-      gst: 18,
-    },
-    {
-      item: "Software License",
-      description: "Annual subscription",
-      hsn: "997331",
-      qty: 1,
-      uom: "NOS",
-      rate: 25000,
-      gst: 18,
-    },
-  ]);
+  const [billLines, setBillLines] = useState([]);
   const [showDeleteIdx, setShowDeleteIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
+
+  // Set activeTab to 'billLines' if no vendor is selected
+  useEffect(() => {
+    if (!selectedVendor) {
+      setActiveTab('billLines');
+    }
+  }, [selectedVendor]);
   const [attachments, setAttachments] = useState([]);
   const [previewFile, setPreviewFile] = useState(null);
   const inputRef = useRef(null);
   const mainCardRef = useRef(null);
+  const [vendorCredits, setVendorCredits] = useState([]);
 
   // const [tdsApplied, setTdsApplied] = useState(false);
   // const [tdsRate, setTdsRate] = useState(2);
@@ -134,6 +143,20 @@ const BillForm = ({ onCancel }) => {
   };
   const handlePreviewAttachment = (file) => {
     setPreviewFile(file);
+  };
+
+  const handleAddVendorCredit = () => {
+    setVendorCredits(prev => [...prev, { id: Date.now(), creditDate: new Date().toISOString().slice(0, 10), creditAmount: '', creditDescription: '' }]);
+  };
+
+  const handleVendorCreditChange = (id, field, value) => {
+    setVendorCredits(prev => prev.map(vc =>
+      vc.id === id ? { ...vc, [field]: value } : vc
+    ));
+  };
+
+  const handleRemoveVendorCredit = (id) => {
+    setVendorCredits(prev => prev.filter(vc => vc.id !== id));
   };
 
   // Handle form submission
@@ -209,6 +232,24 @@ const BillForm = ({ onCancel }) => {
       console.error('Error creating bill:', error);
     }
   };
+
+
+
+  const handleVendorCreditSubmit = () => {
+    console.log(vendorCredits);
+
+    // vendorCredits.forEach(credit => {
+    //   const vendorCreditData = {
+    //     vendorId: selectedVendor.vendorId,
+    //     creditDate: credit.creditDate,
+    //     creditAmount: credit.creditAmount,
+    //     creditDescription: credit.creditDescription
+    //   };
+      dispatch(updateVendorCredit({vendorId: selectedVendor.vendorId, vendorCredits: vendorCredits}));
+    // }); 
+  }
+
+  console.log(selectedVendor);
 
   // Render
   return (
@@ -386,6 +427,17 @@ const BillForm = ({ onCancel }) => {
             >
               Attachments
             </button>
+            {selectedVendor && <button
+              type="button"
+              className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
+                activeTab === 'vendorCredit'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+              onClick={() => setActiveTab('vendorCredit')}
+            >
+              Vendor Credit
+            </button>}
           </div>
         </div>
 
@@ -393,31 +445,31 @@ const BillForm = ({ onCancel }) => {
         <div className="min-h-[400px]">
           {activeTab === 'billLines' && (
             <div className="space-y-6">
-              <button 
+              {/* <button 
                 type="button" 
                 className="flex items-center gap-2 border border-blue-300 bg-blue-50 text-blue-600 rounded-lg px-4 py-2 font-medium hover:bg-gray-50 transition-colors" 
                 onClick={handleAddLine}
               >
                 <FaPlus className="text-sm text-blue-600" /> Add Line Item
-              </button>
+              </button> */}
               
               {errors.billLines && <div className="text-xs text-red-500">{errors.billLines}</div>}
               
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Item</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">HSN</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">UoM</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rate</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">GST %</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">GST Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                  <tr className="border-b border-gray-200">
+                      <th className="w-[15%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Item</th>
+                      <th className="w-[20%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">HSN</th>
+                      <th className="w-[5%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+                      <th className="w-[5%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">UoM</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rate</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">GST %</th>
+                      <th className="w-[8%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">GST Amount</th>
+                      <th className="w-[10%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="w-[5%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -431,8 +483,8 @@ const BillForm = ({ onCancel }) => {
                       return (
                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
-                            <input 
-                              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            <AutoGrowTextarea 
+                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`item${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`} 
                               value={line.item} 
                               onChange={e => handleLineChange(idx, 'item', e.target.value)} 
                               placeholder="Enter item"
@@ -440,8 +492,8 @@ const BillForm = ({ onCancel }) => {
                             {errors[`item${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`item${idx}`]}</div>}
                           </td>
                           <td className="px-4 py-3">
-                            <input 
-                              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                            <AutoGrowTextarea 
+                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
                               value={line.description} 
                               onChange={e => handleLineChange(idx, 'description', e.target.value)} 
                               placeholder="Description"
@@ -449,7 +501,7 @@ const BillForm = ({ onCancel }) => {
                           </td>
                           <td className="px-4 py-3">
                             <input
-                              className="w-24 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
                               value={line.hsn}
                               onChange={e => handleLineChange(idx, 'hsn', e.target.value)}
                               placeholder="HSN Code"
@@ -459,7 +511,7 @@ const BillForm = ({ onCancel }) => {
                             <input 
                               type="number" 
                               min="1" 
-                              className="w-20 border border-gray-300 rounded px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                              className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`qty${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`} 
                               value={line.qty} 
                               onChange={e => handleLineChange(idx, 'qty', e.target.value)} 
                             />
@@ -467,7 +519,7 @@ const BillForm = ({ onCancel }) => {
                           </td>
                           <td className="px-4 py-3">
                             <input
-                              className="w-20 border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
                               value={line.uom}
                               onChange={e => handleLineChange(idx, 'uom', e.target.value)}
                               placeholder="e.g., PCS"
@@ -479,7 +531,7 @@ const BillForm = ({ onCancel }) => {
                               <input 
                                 type="number" 
                                 min="0" 
-                                className="w-24 border border-gray-300 rounded px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`rate${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`}
                                 value={line.rate} 
                                 onChange={e => handleLineChange(idx, 'rate', e.target.value)} 
                               />
@@ -487,7 +539,7 @@ const BillForm = ({ onCancel }) => {
                             {errors[`rate${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`rate${idx}`]}</div>}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-medium">
-                            ₹{amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center">
@@ -495,7 +547,7 @@ const BillForm = ({ onCancel }) => {
                                 type="number" 
                                 min="0" 
                                 max="100" 
-                                className="w-16 border border-gray-300 rounded px-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${errors[`gst${idx}`] ? 'ring-red-500' : 'focus:ring-blue-500'}`}
                                 value={line.gst} 
                                 onChange={e => handleLineChange(idx, 'gst', e.target.value)} 
                               />
@@ -504,10 +556,10 @@ const BillForm = ({ onCancel }) => {
                             {errors[`gst${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`gst${idx}`]}</div>}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-medium">
-                            ₹{gstAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ₹{gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-right text-sm font-semibold">
-                            ₹{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button 
@@ -522,6 +574,19 @@ const BillForm = ({ onCancel }) => {
                       );
                     })}
                   </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan="11" className="pt-4">
+                        <button 
+                          type="button" 
+                          onClick={handleAddLine}
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          <FaPlus /> Add line item
+                        </button>
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
 
@@ -529,22 +594,22 @@ const BillForm = ({ onCancel }) => {
               <div className="bg-gray-50 rounded-lg mt-6 p-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-gray-700">Subtotal (before GST):</span>
-                  <span className="text-gray-900 font-medium">₹{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-gray-900 font-medium">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-gray-700">Total GST:</span>
-                  <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
                 {selectedVendor && selectedVendor.tdsPercentage && (
                   <div className="flex justify-between items-center mb-1 text-red-600">
                     <span className="font-medium">TDS/TCS Deducted ({selectedVendor?.tdsPercentage}%):</span>
-                    <span className="font-medium">- ₹{tdsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    <span className="font-medium">- ₹{tdsAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                   </div>
                 )}
                 <hr className="my-2" />
                 <div className="flex justify-between items-center mt-2">
                   <span className="font-bold text-lg">Final Amount:</span>
-                  <span className="font-bold text-lg">₹{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="font-bold text-lg">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>
@@ -624,6 +689,84 @@ const BillForm = ({ onCancel }) => {
               )}
             </div>
           )}
+            {activeTab === 'vendorCredit' && (
+            <div className="space-y-6">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full table-fixed">
+                        <thead>
+                            <tr className="border-b border-gray-200">
+                                <th className="w-1/4 px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th className="w-2/4 px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                                <th className="w-1/4 px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                            {vendorCredits.map((credit) => (
+                                <tr key={credit.id}>
+                                    <td className="px-4 py-3">
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={credit.creditAmount}
+                                            onChange={(e) => handleVendorCreditChange(credit.id, 'creditAmount', e.target.value)}
+                                            className="w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Credit description"
+                                            value={credit.creditDescription}
+                                            onChange={(e) => handleVendorCreditChange(credit.id, 'creditDescription', e.target.value)}
+                                            className="w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveVendorCredit(credit.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                        <tfoot className="mt-6 px-4 py-4">
+  <tr>
+    <td colSpan={100}>
+      <div className="flex justify-between items-center">
+        <button
+          type="button"
+          onClick={handleAddVendorCredit}
+          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium ml-4"
+        >
+          <FaPlus /> Add Vendor Credit
+        </button>
+
+        <button
+          type="button"
+          onClick={handleVendorCreditSubmit}
+          className="flex items-center gap-2 text-sm bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium"
+        >
+          <FaSave /> Save Vendor Credit
+        </button>
+      </div>
+    </td>
+  </tr>
+</tfoot>
+
+
+                    </table>
+                </div>
+                {vendorCredits.length === 0 && (
+                    <div className="text-center py-16 text-gray-500">
+                        <p>No vendor credits have been added yet.</p>
+                    </div>
+                )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -631,7 +774,7 @@ const BillForm = ({ onCancel }) => {
       <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 sticky bottom-0 z-20">
         <div className="flex justify-between items-center">
           <div className="text-lg font-bold">
-            Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString()}</span>
+            Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString('en-IN')}</span>
           </div>
           <div className="flex gap-3">
             <button 

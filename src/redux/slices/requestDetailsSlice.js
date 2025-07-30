@@ -6,24 +6,21 @@ const { publicRuntimeConfig } = getConfig();
 // Async thunks for fetching data
 export const fetchPendingLeaveRequests = createAsyncThunk(
   "requestDetails/fetchPendingLeaveRequests",
-  async (_, { rejectWithValue }) => {
+  async ({ role }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
-      const company = sessionStorage.getItem("currentCompanyId");
-      const currentRole = sessionStorage.getItem("currentRole");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
         return rejectWithValue("Authentication token not found");
       }
 
-
       let url = "";
-      if (currentRole === "MANAGER") {
+      if (role === "MANAGER") {
         url = `${publicRuntimeConfig.apiURL}/manager/leave/status/Pending/${employeeId}`;
       } else {
         url = `${publicRuntimeConfig.apiURL}/leave/status/${company}/Pending`;
       }
-
 
       const response = await axios.get(url, {
         headers: {
@@ -59,11 +56,10 @@ export const fetchPendingLeaveRequests = createAsyncThunk(
 
 export const fetchProfileUpdates = createAsyncThunk(
   "requestDetails/fetchProfileUpdates",
-  async (_, { rejectWithValue }) => {
+  async ({ role }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
-      const company = sessionStorage.getItem("currentCompanyId");
-      const currentRole = sessionStorage.getItem("currentRole");
+      const company = sessionStorage.getItem("employeeCompanyId");
       const employeeId = sessionStorage.getItem("employeeId");
       if (!token) {
         return rejectWithValue("Authentication token not found");
@@ -72,7 +68,7 @@ export const fetchProfileUpdates = createAsyncThunk(
       console.log(employeeId);
 
       let url = "";
-      if (currentRole === "MANAGER") {
+      if (role === "MANAGER") {
         url = `${publicRuntimeConfig.apiURL}/manager/${employeeId}/members/update-requests`;
       } else {
         url = `${publicRuntimeConfig.apiURL}/hradmin/company/${company}/update-requests`;
@@ -140,11 +136,10 @@ export const updateLeaveStatus = createAsyncThunk(
 
 export const updateProfileRequestStatus = createAsyncThunk(
   "requestDetails/updateProfileRequestStatus",
-  async ({ employeeId, status }, { rejectWithValue }) => {
+  async ({ employeeId, status, role }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token");
       const managerId = sessionStorage.getItem("employeeId");
-      const currentRole = sessionStorage.getItem("currentRole");
       if (!token) {
         return rejectWithValue("Authentication token not found");
       }
@@ -153,7 +148,7 @@ export const updateProfileRequestStatus = createAsyncThunk(
       formData.append("status", status);
 
       let url = "";
-      if (currentRole === "MANAGER") {
+      if (role === "MANAGER") {
         url = `${publicRuntimeConfig.apiURL}/manager/${managerId}/members/${employeeId}/update-requests`;
       } else {
         url = `${publicRuntimeConfig.apiURL}/hradmin/update-requests/${employeeId}`;
@@ -184,14 +179,13 @@ export const updateProfileRequestStatus = createAsyncThunk(
 
 export const fetchExpenseRequests = createAsyncThunk(
   "expenses/fetchExpenseRequests",
-  async (_, { rejectWithValue }) => {
+  async ({ role }, { rejectWithValue }) => {
       try {
-        const currentRole = sessionStorage.getItem("currentRole");
         const employeeId = sessionStorage.getItem("employeeId");
-        const companyId = sessionStorage.getItem("currentCompanyId");
+        const companyId = sessionStorage.getItem("employeeCompanyId");
 
         let url = "";
-        if (currentRole === "MANAGER") {
+        if (role === "MANAGER") {
           url = `${publicRuntimeConfig.apiURL}/expenses/manager/${employeeId}/status/Pending`;
         } else {
           url = `${publicRuntimeConfig.apiURL}/expenses/company/${companyId}/status/Pending`;
@@ -218,14 +212,13 @@ export const fetchExpenseRequests = createAsyncThunk(
 
 export const fetchIncomeRequests = createAsyncThunk(
   "incomes/fetchIncomeRequests",
-  async (_, { rejectWithValue }) => {
+  async ({ role }, { rejectWithValue }) => {
       try {
-        const currentRole = sessionStorage.getItem("currentRole");
         const employeeId = sessionStorage.getItem("employeeId");
-        const companyId = sessionStorage.getItem("currentCompanyId");
+        const companyId = sessionStorage.getItem("employeeCompanyId");
 
         let url = "";
-        if (currentRole === "MANAGER") {
+        if (role === "MANAGER") {
           url = `${publicRuntimeConfig.apiURL}/income/manager/${employeeId}/status/Pending`;
         } else {
           url = `${publicRuntimeConfig.apiURL}/income/company/${companyId}/status/Pending`;
@@ -252,12 +245,10 @@ export const fetchIncomeRequests = createAsyncThunk(
 
 export const updateExpenseRequestStatus = createAsyncThunk(
   "expenses/updateExpenseRequestStatus",
-  async ({ expenseId, status, remarks }, { rejectWithValue }) => {
+  async ({ expenseId, status, remarks, role }, { rejectWithValue }) => {
     try {
-      const currentRole = sessionStorage.getItem("currentRole");
-
       let url = "";
-      if (currentRole === "MANAGER") {
+      if (role === "MANAGER") {
         url = `${publicRuntimeConfig.apiURL}/expenses/manager/updateStatus/${expenseId}`;
       } else {
         url = `${publicRuntimeConfig.apiURL}/expenses/updateStatus/${expenseId}`;
@@ -279,12 +270,10 @@ export const updateExpenseRequestStatus = createAsyncThunk(
 
 export const updateIncomeRequestStatus = createAsyncThunk(
   "incomes/updateIncomeRequestStatus",
-  async ({ incomeId, status, remarks }, { rejectWithValue }) => {
+  async ({ incomeId, status, remarks, role }, { rejectWithValue }) => {
     try {
-      const currentRole = sessionStorage.getItem("currentRole");
-
       let url = "";
-      if (currentRole === "MANAGER") {
+      if (role === "MANAGER") {
         url = `${publicRuntimeConfig.apiURL}/income/manager/updateStatus/${incomeId}`;
       } else {
         url = `${publicRuntimeConfig.apiURL}/income/updateStatus/${incomeId}`;

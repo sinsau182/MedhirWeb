@@ -22,6 +22,20 @@ import incomesReducer from "./slices/incomesSlice";
 import attendancesReducer from "./slices/attendancesSlice";
 import vendorReducer from "./slices/vendorSlice";
 import billsReducer from "./slices/BillSlice";
+import paymentsReducer from "./slices/paymentSlice";
+import purchaseOrderReducer from "./slices/PurchaseOrderSlice";
+import pipelineReducer from "./slices/pipelineSlice";
+import masterModulesReducer from "./slices/masterModulesSlice";
+import manualAttendanceReducer from "./slices/manualAttendanceSlice";
+import minioReducer from "./slices/minioSlice";
+import invoiceReducer from "./slices/invoiceSlice";
+import receiptReducer from "./slices/receiptSlice";
+// import assetCategoryReducer from './slices/assetCategorySlice';
+// import assetLocationReducer from './slices/assetLocationSlice';
+// import assetStatusReducer from './slices/assetStatusSlice';
+// import customFieldsReducer from './slices/customFieldsSlice';
+// import idFormattingReducer from './slices/idFormattingSlice';
+// import assetReducer from './slices/assetSlice';
 
 
 export const store = configureStore({
@@ -29,6 +43,7 @@ export const store = configureStore({
     companies: companiesReducer, // Manages company-related state
     employees: employeesReducer, // Manages employee-related state
     modules: modulesReducer, // Manages module-related state
+    masterModules: masterModulesReducer, // Manages master modules state
     auth: authReducer, // Manages authentication state
     expenses: expensesReducer, // Manages expense-related state
     leave: leaveReducer, // Manages leave-related state
@@ -45,10 +60,24 @@ export const store = configureStore({
     allEmployees: allEmployeesSlice,
     managerEmployee: managerEmployeeSlice,
     leads: leadsReducer,
+    pipelines: pipelineReducer,
     incomes: incomesReducer,
     attendances: attendancesReducer,
     vendors: vendorReducer,
     bills: billsReducer,
+    payments: paymentsReducer,
+    purchaseOrders: purchaseOrderReducer,
+    pipelines: pipelineReducer,
+    manualAttendance: manualAttendanceReducer,
+    minio: minioReducer,
+    // assetCategories: assetCategoryReducer,
+    // assetLocations: assetLocationReducer,
+    // assetStatuses: assetStatusReducer,
+    // customFields: customFieldsReducer,
+    // idFormatting: idFormattingReducer,
+    // assets: assetReducer,
+    invoices: invoiceReducer,
+    receipts: receiptReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
