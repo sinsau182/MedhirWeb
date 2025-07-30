@@ -75,4 +75,4 @@ function Attendance() {
   );
 }
 
-export default withAuth(Attendance); 
+export default withAuth(Attendance);
