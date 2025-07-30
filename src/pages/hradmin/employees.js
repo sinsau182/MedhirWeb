@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Search, UserPlus, Calendar, Users } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,8 +8,6 @@ import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
 import { toast } from "react-hot-toast";
-import { jwtDecode } from "jwt-decode";
-import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 
 function Employees() {
   const [activeTab, setActiveTab] = useState("Basic");
@@ -21,18 +19,9 @@ function Employees() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
-  const [loggedInEmployeeId, setLoggedInEmployeeId] = useState(sessionStorage.getItem("employeeId"));
-  
-  // Get logged-in user's roles
-  const token = getItemFromSessionStorage("token");
-  const decodedToken = jwtDecode(token);
-  const loggedInUserRoles = decodedToken.roles;
-  const isCompanyHead = loggedInUserRoles.includes("COMPANY_HEAD");
-  
   console.log(employees)
 
   useEffect(() => {
-    setLoggedInEmployeeId(sessionStorage.getItem("employeeId"));
     const fetchData = async () => {
       try {
         await dispatch(fetchEmployees()).unwrap();
@@ -41,16 +30,10 @@ function Employees() {
       }
     };
     fetchData();
-  }, [dispatch, loggedInEmployeeId]);
+  }, [dispatch]);
 
   const handleRowClick = (employee) => {
     try {
-      // Check if the employee is the logged-in user (but allow COMPANY_HEAD to edit their own record)
-      if (employee.employeeId === loggedInEmployeeId && !isCompanyHead) {
-        toast.error("You cannot edit your own employee record from this page. Please use the profile page instead.");
-        return;
-      }
-
       // Map the active tab to the corresponding section in the Add New Employee form
       let activeSection = "personal"; // Default to personal section
 
@@ -416,23 +399,17 @@ function Employees() {
                         </td>
                       </tr>
                     ) : (
-                      filteredEmployees.map((employee) => {
-                        const isOwnRecord = employee.employeeId === loggedInEmployeeId && !isCompanyHead;
-                        return (
-                          <tr
-                            key={employee.employeeId}
-                            className={`${
-                              isOwnRecord 
-                                ? "bg-gray-100 cursor-not-allowed opacity-75" 
-                                : "hover:bg-gray-50 cursor-pointer"
-                            }`}
-                            onClick={() => !isOwnRecord && handleRowClick(employee)}
-                            onMouseEnter={() =>
-                              setHoveredEmployeeId(employee.employeeId)
-                            }
-                            onMouseLeave={() => setHoveredEmployeeId(null)}
-                          >
-                          {headers.map((header, index) => {
+                      filteredEmployees.map((employee) => (
+                        <tr
+                          key={employee.employeeId}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => handleRowClick(employee)}
+                          onMouseEnter={() =>
+                            setHoveredEmployeeId(employee.employeeId)
+                          }
+                          onMouseLeave={() => setHoveredEmployeeId(null)}
+                        >
+                          {headers.map((header) => {
                             const cellValue = getCellValue(
                               employee,
                               header.key
@@ -454,18 +431,11 @@ function Employees() {
                                     {cellValue}
                                   </span>
                                 )}
-                                {/* Show indicator for own record in the first column (only for non-COMPANY_HEAD users) */}
-                                {index === 0 && employee.employeeId === loggedInEmployeeId && !isCompanyHead && (
-                                  <span className="absolute top-1 right-1 text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
-                                    You
-                                  </span>
-                                )}
                               </td>
                             );
                           })}
                         </tr>
-                      );
-                    })
+                      ))
                     )}
                   </tbody>
                 </table>
