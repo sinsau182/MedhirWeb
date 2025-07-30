@@ -962,7 +962,7 @@ const EmployeeAttendance = () => {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-md shadow-lg z-50 flex items-center">
           <CheckCircle2 className="h-5 w-5 mr-2" />
           <span>Reason saved successfully!</span>
         </div>
