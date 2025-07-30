@@ -1913,10 +1913,22 @@ function EmployeeForm() {
       try {
         const token = getItemFromSessionStorage("token", null);
         const companyId = sessionStorage.getItem("employeeCompanyId");
+        
+        // Add guards to ensure required values are available
+        if (!token || !companyId || !publicRuntimeConfig.apiURL) {
+          console.log('Missing required values for fetchManagers:', { 
+            hasToken: !!token, 
+            hasCompanyId: !!companyId, 
+            hasApiURL: !!publicRuntimeConfig.apiURL 
+          });
+          return;
+        }
+        
         const params = {};
         if (employeeId) {
           params.excludeEmployeeId = employeeId;
         }
+        
         const response = await axios.get(
           `${publicRuntimeConfig.apiURL}/employees/managers/${companyId}`,
           {
@@ -1937,14 +1949,20 @@ function EmployeeForm() {
           toast.error("Invalid managers data received");
         }
       } catch (error) {
+        console.error('fetchManagers error:', error);
         toast.error(
           error.response?.data?.message || "Failed to fetch managers"
         );
       }
     };
 
-    fetchManagers();
-  }, [publicRuntimeConfig.apiURL, employeeId]);
+    // Add a small delay to ensure component is fully mounted
+    const timeoutId = setTimeout(() => {
+      fetchManagers();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [publicRuntimeConfig.apiURL, employeeId, company]);
 
   const handleDepartmentAdded = (newDepartment) => {
     // Refetch departments and select the new one

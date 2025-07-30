@@ -111,34 +111,32 @@ const Overview = () => {
 
   // Calculate current day summary whenever attendance data changes
   useEffect(() => {
-    if (attendance && attendance.length > 0) {
+    if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0) {
       let presentCount = 0;
       let absentCount = 0;
       const today = new Date();
       const currentDay = today.getDate();
-      const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
-      const currentYear = today.getFullYear();
       
-      // Create the date string in YYYY-MM-DD format
-      const currentDateString = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(currentDay).padStart(2, "0")}`;
-
-      attendance.forEach((employeeRecord) => {
-        const attendanceData = employeeRecord?.attendance;
-        if (attendanceData) {
-          // Check if employee is present on current date
-          if (attendanceData.presentDates?.includes(currentDateString) ||
-              attendanceData.fullLeaveDates?.includes(currentDateString) ||
-              attendanceData.fullCompoffDates?.includes(currentDateString)) {
+      // Process each employee's attendance for today
+      attendance.monthlyAttendance.forEach((employeeRecord) => {
+        if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
+          const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
+          
+          // Check if employee is present (P, AL, PH, etc.)
+          if (dayStatus === 'P' || dayStatus === 'AL' || dayStatus === 'PH' || dayStatus === 'PH/A') {
             presentCount++;
           }
-          // Check if employee is absent on current date
-          else if (attendanceData.absentDates?.includes(currentDateString)) {
+          // Check if employee is absent (A, LOP, etc.)
+          else if (dayStatus === 'A' || dayStatus === 'LOP') {
             absentCount++;
           }
-          // If not in any array, consider as absent (or you could exclude from count)
+          // If no status or other status, consider as absent
           else {
             absentCount++;
           }
+        } else {
+          // No attendance record for today, consider as absent
+          absentCount++;
         }
       });
 
@@ -147,7 +145,7 @@ const Overview = () => {
         totalAbsent: absentCount,
       });
     } else {
-      // If no attendance data fetched (e.g. empty response), reset summary
+      // If no attendance data fetched, reset summary
       setCurrentDayAttendanceSummary({
         totalPresent: 0,
         totalAbsent: 0,
@@ -218,6 +216,14 @@ const Overview = () => {
       const currentMonth = today.toLocaleString("default", { month: "long" }); // Use long month for consistency with attendance page state
       const currentYear = today.getFullYear().toString();
 
+      // Map status to specific status codes only
+      let statusFilter = '';
+      if (status === 'P') {
+        statusFilter = 'P'; // Only Present
+      } else if (status === 'A') {
+        statusFilter = 'A'; // Only Absent
+      }
+
       // Navigate to attendance page with selected date and status filter
       router.push({
         pathname: "/hradmin/attendance",
@@ -225,7 +231,7 @@ const Overview = () => {
           selectedDate: currentDay,
           selectedMonth: currentMonth,
           selectedYear: currentYear,
-          selectedStatuses: status, // 'P' or 'A'
+          selectedStatuses: statusFilter,
         },
       });
     },

@@ -38,7 +38,15 @@ function buildManualAttendancePayload(employeeId, dateStatusMap) {
   };
 }
 
-function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
+function AttendanceTracker({ 
+  employees = [], 
+  employeesLoading = false, 
+  role,
+  initialSelectedDate = null,
+  initialSelectedMonth = null,
+  initialSelectedYear = null,
+  initialSelectedStatuses = []
+}) {
   const dispatch = useDispatch();
 
   const { attendance, loading, err } = useSelector(
@@ -55,22 +63,22 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   // State variables
   const [searchInput, setSearchInput] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toLocaleString("default", { month: "long" })
+    initialSelectedMonth || new Date().toLocaleString("default", { month: "long" })
   );
   const [selectedYear, setSelectedYear] = useState(
-    new Date().getFullYear().toString()
+    initialSelectedYear || new Date().getFullYear().toString()
   );
   const [activeTab, setActiveTab] = useState("Attendance Tracker");
   const [dates, setDates] = useState([]);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedStatuses, setSelectedStatuses] = useState([]);
+  const [selectedStatuses, setSelectedStatuses] = useState(initialSelectedStatuses);
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const statusFilterRef = useRef(null);
   const calendarRef = useRef(null);
   const departmentFilterRef = useRef(null);
 
   const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(today.getDate());
+  const [selectedDate, setSelectedDate] = useState(initialSelectedDate || today.getDate());
 
   const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [isDepartmentFilterOpen, setIsDepartmentFilterOpen] = useState(false);
@@ -2281,7 +2289,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
         {/* All Employees Date Playcard - moved here! */}
         {isAllEmployeesDateModalOpen && (
-          <div className="absolute inset-0 z-40 flex flex-col w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up">
+          <div className="absolute inset-0 flex flex-col w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               {/* Title */}

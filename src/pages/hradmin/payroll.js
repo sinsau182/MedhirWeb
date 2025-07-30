@@ -631,9 +631,7 @@ function PayrollManagement() {
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Status
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                Receipt
-              </th>
+
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -666,14 +664,6 @@ function PayrollManagement() {
                   </td>
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.status}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
-                    <button
-                      onClick={() => alert("No uploaded receipt")}
-                      className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors duration-200"
-                    >
-                      View Receipt
-                    </button>
                   </td>
                 </tr>
               ))}
