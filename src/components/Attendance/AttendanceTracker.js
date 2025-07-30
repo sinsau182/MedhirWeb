@@ -133,13 +133,11 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
   // Function to switch between tabs without losing data
   const switchToSingleEmployeeTab = () => {
-    console.log('Switching to Single Employee Month tab - preserving state');
     setIsAllEmployeesDateModalOpen(false);
     setIsSingleEmployeeModalOpen(true);
   };
 
   const switchToAllEmployeesTab = () => {
-    console.log('Switching to All Employees Date tab - preserving state');
     setIsSingleEmployeeModalOpen(false);
     setIsAllEmployeesDateModalOpen(true);
   };
@@ -282,14 +280,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       const availableOptions = getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus);
       const currentScopeExists = availableOptions.some(opt => opt.value === singleEmployeeApplyToScope);
       
-      console.log('Status changed to:', singleEmployeeMarkAsStatus);
-      console.log('Available options:', availableOptions);
-      console.log('Current scope:', singleEmployeeApplyToScope);
-      console.log('Current scope exists:', currentScopeExists);
-      
       // If current scope is not available for the new status, reset to first available option
       if (!currentScopeExists && availableOptions.length > 0) {
-        console.log('Resetting scope to:', availableOptions[0].value);
         setSingleEmployeeApplyToScope(availableOptions[0].value);
       }
     }
@@ -731,7 +723,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       });
       
       setAllEmployeesAttendanceData(initialData);
-      console.log('Modal opened - loaded existing attendance data for today:', todayString, 'Data:', initialData);
     }
   }, [isAllEmployeesDateModalOpen, attendance, filteredEmployees]);
 
@@ -975,7 +966,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     });
     
     setAllEmployeesAttendanceData(initialData);
-    console.log('Loaded existing attendance data for date:', dateToStore, 'Data:', initialData);
   };
 
   const setAllEmployeesStatus = (status) => {
@@ -1043,8 +1033,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       date: dateToUse,
       employeeStatuses,
     };
-
-    console.log('Sending payload to API:', payload); // Debug log
 
     dispatch(markAllEmployeesDateAttendance(payload)).then((result) => {
       if (!result.error) {
@@ -1911,9 +1899,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             'Sunday': 'Sun'
                           };
                           
-                          console.log('Employee weekly off days:', employeeWeeklyOffDays);
-                          console.log('Available dates:', dates.map(d => ({ day: d.day, weekday: d.weekday })));
-                          
                           daysToApply = dates
                             .filter((d) => {
                               // Check if this day is not a weekly off day for this employee
@@ -1928,8 +1913,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                               return !isWeeklyOffDay && !d.isFuture;
                             })
                             .map((d) => d.day);
-                          
-                          console.log('Days to apply:', daysToApply);
                         } else if (scope === "weekends") {
                           daysToApply = dates
                             .filter(
@@ -1967,7 +1950,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             })
                             .map((d) => d.day);
                           
-                          console.log('Holidays filter applied - Days to apply:', daysToApply);
                         }
                         const newData = { ...monthAttendanceData };
                         daysToApply.forEach((day) => {
@@ -2147,12 +2129,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                   <DropdownMenuRadioGroup
                                     value={value || ""}
                                     onValueChange={(val) => {
-                                      console.log(
-                                        "Calendar day status changed to:",
-                                        val,
-                                        "for day:",
-                                        day
-                                      );
                                       setDayStatus(day, val || null);
                                     }}
                                   >
@@ -2169,12 +2145,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                          console.log(
-                                            "Calendar dropdown item clicked:",
-                                            opt.value,
-                                            "for day:",
-                                            day
-                                          );
                                             setDayStatus(day, opt.value);
                                           }}
                                         >
@@ -2634,10 +2604,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                       value={allEmployeesMarkAsStatus}
                       onValueChange={(value) => {
                       setAllEmployeesMarkAsStatus(value);
-                        console.log(
-                          "All Employees Mark As Status changed to:",
-                          value
-                        );
                       }}
                     >
                       {statusOptions.map((opt) => (
@@ -2647,10 +2613,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log(
-                              "All Employees Mark As dropdown item clicked:",
-                              opt.value
-                            );
                             setAllEmployeesMarkAsStatus(opt.value);
                           }}
                         >
@@ -2675,11 +2637,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                   className="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
                   onClick={() => {
                     const status = allEmployeesMarkAsStatus;
-                    console.log("Apply button clicked - Status:", status);
-                    console.log(
-                      "Current markAsStatus state:",
-                      allEmployeesMarkAsStatus
-                    );
                     
                     if (!status) {
                       toast.error("Please select a status.");
@@ -2823,12 +2780,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                   allEmployeesAttendanceData[employee.id] || ""
                                 }
                                 onValueChange={(val) => {
-                                  console.log(
-                                    "Employee status changed to:",
-                                    val,
-                                    "for employee:",
-                                    employee.id
-                                  );
                                 setEmployeeStatus(employee.id, val || null);
                                 }}
                               >
@@ -2845,12 +2796,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      console.log(
-                                        "Employee dropdown item clicked:",
-                                        opt.value,
-                                        "for employee:",
-                                        employee.id
-                                      );
                                       setEmployeeStatus(employee.id, opt.value);
                                     }}
                                   >
