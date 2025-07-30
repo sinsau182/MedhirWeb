@@ -123,11 +123,11 @@ const Overview = () => {
           const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
           
           // Check if employee is present (P, AL, PH, etc.)
-          if (dayStatus === 'P' || dayStatus === 'AL' || dayStatus === 'PH' || dayStatus === 'PH/A') {
+          if (dayStatus === 'P' || dayStatus === 'AL' || dayStatus === 'PH' || dayStatus === 'P/L') {
             presentCount++;
           }
-          // Check if employee is absent (A, LOP, etc.)
-          else if (dayStatus === 'A' || dayStatus === 'LOP') {
+          // Check if employee is absent (A, etc.)
+          else if (dayStatus === 'A') {
             absentCount++;
           }
           // If no status or other status, consider as absent

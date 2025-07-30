@@ -120,14 +120,8 @@ const AttendanceTable = ({
               case "PH":
                 value = "holiday";
                 break;
-              case "PH/A":
+              case "P/L":
                 value = "half";
-                break;
-              case "LOP":
-                value = "absent";
-                break;
-              case "P/LOP":
-                value = "present";
                 break;
               default:
                 value = null;
@@ -193,14 +187,8 @@ const AttendanceTable = ({
               case "PH":
                 value = "holiday";
                 break;
-              case "PH/A":
+              case "P/L":
                 value = "half";
-                break;
-              case "LOP":
-                value = "absent";
-                break;
-              case "P/LOP":
-                value = "present";
                 break;
               default:
                 value = null;
@@ -357,14 +345,8 @@ const AttendanceTable = ({
             case "PH":
               summaryKey = "totalPresentOnHoliday";
               break;
-            case "PH/A":
+            case "P/L":
               summaryKey = "totalHalfDayOnHoliday";
-              break;
-            case "LOP":
-              summaryKey = "totalLOP";
-              break;
-            case "P/LOP":
-              summaryKey = "totalPresentOnLOP";
               break;
             default:
               summaryKey = "";
@@ -689,14 +671,8 @@ const AttendanceTable = ({
                           case "PH":
                             value = "holiday";
                             break;
-                          case "PH/A":
+                          case "P/L":
                             value = "half";
-                            break;
-                          case "LOP":
-                            value = "absent";
-                            break;
-                          case "P/LOP":
-                            value = "present";
                             break;
                           default:
                             value = null;

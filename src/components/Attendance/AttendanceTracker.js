@@ -178,11 +178,9 @@ function AttendanceTracker({
     { value: "L", label: "Approved Leave", color: "#E5E5CC" },
     { value: "PH", label: "Present on Holiday", color: "#5cbf85" },
     { value: "P/A", label: "Half Day", color: "#FFFFCC" },
-    { value: "PH/A", label: "Half Day on Holiday", color: "#ffcc80" },
+    { value: "P/L", label: "Approved half day Leave", color: "#ffcc80" },
     { value: "A", label: "Absent", color: "#FFCCCC" },
-    { value: "LOP", label: "Loss of Pay", color: "#e57373" },
     { value: "H", label: "Holiday", color: "#E0E0E0" },
-    { value: "P/LOP", label: "Present on Loss of Pay", color: "#A89EF6" },
   ];
 
   const applyToOptions = [
@@ -197,14 +195,6 @@ function AttendanceTracker({
   const getSingleEmployeeApplyToOptions = (selectedStatus) => {
     // For Present on Holiday (PH), only show options that apply to holidays
     if (selectedStatus === "PH") {
-      return [
-        { value: "unmarked", label: "All Unmarked Days" },
-        { value: "holidays", label: "All Holidays" },
-      ];
-    }
-    
-    // For Half Day on Holiday (PH/A), only show options that apply to holidays
-    if (selectedStatus === "PH/A") {
       return [
         { value: "unmarked", label: "All Unmarked Days" },
         { value: "holidays", label: "All Holidays" },
@@ -527,14 +517,8 @@ function AttendanceTracker({
             case "PH":
               value = "holiday";
               break;
-            case "PH/A":
+            case "P/L":
               value = "half";
-              break;
-            case "LOP":
-              value = "absent";
-              break;
-            case "P/LOP":
-              value = "present";
               break;
             default:
               value = null;
@@ -595,9 +579,7 @@ function AttendanceTracker({
     if (upperStatus === "A") return "bg-[#FFCCCC]";
     if (upperStatus === "H") return "bg-[#E0E0E0]";
     if (upperStatus === "PH") return "bg-[#5cbf85]";
-    if (upperStatus === "PH/A") return "bg-[#ffcc80]";
-    if (upperStatus === "LOP") return "bg-[#e57373]";
-    if (upperStatus === "P/LOP") return "bg-[#A89EF6]";
+    if (upperStatus === "P/L") return "bg-[#ffcc80]";
     if (upperStatus === "WEEKEND") return "bg-gray-300";
     return "";
   }, []);
@@ -1104,8 +1086,6 @@ function AttendanceTracker({
       let totalHoliday = 0;
       let totalPresentOnHoliday = 0;
       let totalHalfDayOnHoliday = 0;
-      let totalLOP = 0;
-      let totalPresentOnLOP = 0;
       let totalApprovedLeave = 0;
 
       const dataForSummary =
@@ -1144,14 +1124,8 @@ function AttendanceTracker({
               case "PH":
                 totalPresentOnHoliday++;
                 break;
-              case "PH/A":
+              case "P/L":
                 totalHalfDayOnHoliday++;
-                break;
-              case "LOP":
-                totalLOP++;
-                break;
-              case "P/LOP":
-                totalPresentOnLOP++;
                 break;
             }
           }
@@ -1177,14 +1151,8 @@ function AttendanceTracker({
                 case "PH":
                   totalPresentOnHoliday++;
                   break;
-                case "PH/A":
+                case "P/L":
                   totalHalfDayOnHoliday++;
-                  break;
-                case "LOP":
-                  totalLOP++;
-                  break;
-                case "P/LOP":
-                  totalPresentOnLOP++;
                   break;
               }
             }
@@ -1199,8 +1167,6 @@ function AttendanceTracker({
         totalHoliday,
         totalPresentOnHoliday,
         totalHalfDayOnHoliday,
-        totalLOP,
-        totalPresentOnLOP,
         totalApprovedLeave,
       };
     },

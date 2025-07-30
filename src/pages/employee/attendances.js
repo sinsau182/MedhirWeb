@@ -137,14 +137,12 @@ const EmployeeAttendance = () => {
         Present: attendance.statusCounts?.P || 0,
         "Approved Leave": attendance.statusCounts?.AL || 0,
         "Present on Holiday": 0, // Will be calculated from days
-        "Half Day on Holiday": 0, // Will be calculated from days
         "Half Day": 0, // Will be calculated from days
+        "Approved half day Leave": 0, // Will be calculated from days
         "On Leave": 0,
         Holiday: attendance.statusCounts?.H || 0,
         Weekend: 0,
-        "Loss of Pay": attendance.statusCounts?.LOP || 0,
         Absent: attendance.statusCounts?.A || 0,
-        "Present Half Day on Loss of Pay": 0, // Will be calculated from days
       };
 
       // Helper function to determine attendance status for a given date
@@ -187,21 +185,13 @@ const EmployeeAttendance = () => {
               fullStatus = "Present on Holiday";
               leaveType = "On Holiday";
               break;
-            case "PH/A":
-              fullStatus = "Half Day on Holiday";
-              leaveType = "Half Day on Holiday";
-              break;
             case "P/A":
               fullStatus = "Half Day";
               leaveType = "Half Day";
               break;
-            case "LOP":
-              fullStatus = "Loss of Pay";
-              leaveType = "Loss of Pay";
-              break;
-            case "P/LOP":
-              fullStatus = "Present Half Day on Loss of Pay";
-              leaveType = "Present Half Day on Loss of Pay";
+            case "P/L":
+              fullStatus = "Approved half day Leave";
+              leaveType = "Approved half day Leave";
               break;
             default:
               fullStatus = "No Data"; // Keep as "No Data" for unknown status codes
@@ -221,8 +211,8 @@ const EmployeeAttendance = () => {
         });
 
         // Update summary counts for statuses that need to be calculated from days
-        if (fullStatus === "Present on Holiday" || fullStatus === "Half Day on Holiday" || 
-            fullStatus === "Half Day" || fullStatus === "Present Half Day on Loss of Pay") {
+        if (fullStatus === "Present on Holiday" || fullStatus === "Half Day" || 
+            fullStatus === "Approved half day Leave") {
           summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
         }
       }
@@ -348,7 +338,7 @@ const EmployeeAttendance = () => {
     );
     
     // Only fetch daily attendance data for present dates
-    if (selectedDayData && (selectedDayData.status === "Present" || selectedDayData.status === "Present Half Day on Loss of Pay")) {
+    if (selectedDayData && (selectedDayData.status === "Present" || selectedDayData.status === "Approved half day Leave")) {
       fetchAttendanceData(day);
     } else {
       // Clear daily attendance data for non-present dates
@@ -460,6 +450,15 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Half Day"] || 0}
                     </span>
                   </div>
+                  {/* Approved half day Leave */}
+                  <div className="flex flex-col bg-[#ffcc80] p-3 rounded-lg">
+                    <span className="font-medium text-orange-800">
+                      Approved half day Leave (P/L)
+                    </span>
+                    <span className="text-2xl font-bold">
+                      {monthlySummary["Approved half day Leave"] || 0}
+                    </span>
+                  </div>
                   {/* Absent */}
                   <div className="flex flex-col bg-[#FFCCCC] p-3 rounded-lg">
                     <span className="font-medium text-red-900">Absent (A)</span>
@@ -485,33 +484,7 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Present on Holiday"] || 0}
                     </span>
                   </div>
-                  {/* Half Day on Holiday */}
-                  <div className="flex flex-col bg-[#ffcc80] p-3 rounded-lg">
-                    <span className="font-medium text-orange-800">
-                      Half Day on Holiday (PH/A)
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {monthlySummary["Half Day on Holiday"] || 0}
-                    </span>
-                  </div>
-                  {/* Loss of Pay */}
-                  <div className="flex flex-col bg-[#e57373] p-3 rounded-lg">
-                    <span className="font-medium text-white">
-                      Loss of Pay (LOP)
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {monthlySummary["Loss of Pay"] || 0}
-                    </span>
-                  </div>
-                  {/* Present Half Day on Loss of Pay */}
-                  <div className="flex flex-col bg-[#A89EF6] p-3 rounded-lg">
-                    <span className="font-medium text-white">
-                      Present Half Day on Loss of Pay (P/LOP)
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {monthlySummary["Present Half Day on Loss of Pay"] || 0}
-                    </span>
-                  </div>
+
                 </div>
               </div>
             </CardContent>
@@ -805,7 +778,7 @@ const EmployeeAttendance = () => {
                     ).toFixed(1);
 
                     // Check if this is a present date and has daily attendance data
-                    const isPresentDate = (status === "Present" || status === "Present Half Day on Loss of Pay") && (dailyAttendanceData || (date && dailyAttendanceData));
+                    const isPresentDate = (status === "Present" || status === "Approved half day Leave") && (dailyAttendanceData || (date && dailyAttendanceData));
                     
                     // Get check-in and check-out times for present dates
                     const attendanceDataForDate = dailyAttendanceData || selectedDayData?.dailyAttendanceData;
@@ -837,12 +810,8 @@ const EmployeeAttendance = () => {
                                 ? "bg-[#E0E0E0] text-gray-700"
                                 : status === "Present on Holiday"
                                 ? "bg-[#5cbf85] text-white"
-                                : status === "Half Day on Holiday"
+                                : status === "Approved half day Leave"
                                 ? "bg-[#ffcc80] text-orange-800"
-                                : status === "Loss of Pay"
-                                ? "bg-[#e57373] text-white"
-                                : status === "Present Half Day on Loss of Pay"
-                                ? "bg-[#A89EF6] text-white"
                                 : status === "No Data"
                                 ? "bg-white text-gray-400 border border-gray-200"
                                 : "bg-gray-100 text-gray-700"
