@@ -19,7 +19,6 @@ function Employees() {
   const router = useRouter();
   const dispatch = useDispatch();
   const { employees, loading, err } = useSelector((state) => state.employees);
-  console.log(employees)
 
   useEffect(() => {
     const fetchData = async () => {
