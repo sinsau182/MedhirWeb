@@ -701,7 +701,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             {!isCollapsed && (
                               <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                            {item.label === "Customers" || item.label === "Account Settings" ? (
+                            {item.label === "Account Settings" ? (
                               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                                 This feature is in progress
                               </div>
