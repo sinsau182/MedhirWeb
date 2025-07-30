@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaBuilding, FaUser, FaPlus, FaTrash, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaSave } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchVendors, updateVendorCredit } from "../../redux/slices/vendorSlice";
-import { addBill } from "../../redux/slices/BillSlice";
+import { addBill, updateBill } from "../../redux/slices/BillSlice";
 
 const AutoGrowTextarea = ({ className, ...props }) => {
   const textareaRef = useRef(null);
@@ -39,9 +39,12 @@ const mockCompanies = [
   },
 ];
 
-const BillForm = ({ onCancel }) => {
+const BillForm = ({ bill, onCancel }) => {
   const companyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
+  const isEditMode = !!bill;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   useEffect(() => {
     dispatch(fetchVendors());
   }, [dispatch]);
@@ -55,10 +58,45 @@ const BillForm = ({ onCancel }) => {
   const [billDate, setBillDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState("");
   const [reference, setReference] = useState("");
-  const [billLines, setBillLines] = useState([]);
+  const [billLines, setBillLines] = useState([{ item: '', description: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18 }]);
   const [showDeleteIdx, setShowDeleteIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
+
+  // Pre-fill form data when bill prop is provided (edit mode)
+  useEffect(() => {
+    if (bill) {
+      setBillNumber(bill.billNumber || '');
+      setBillDate(bill.billDate || new Date().toISOString().slice(0, 10));
+      setDueDate(bill.dueDate || '');
+      setReference(bill.billReference || '');
+      
+      // Set bill lines if they exist
+      if (bill.billLineItems && bill.billLineItems.length > 0) {
+        const mappedLines = bill.billLineItems.map(line => ({
+          item: line.productOrService || '',
+          description: line.description || '',
+          hsn: line.hsnOrSac || '',
+          qty: line.quantity || 1,
+          uom: line.uom || 'PCS',
+          rate: line.rate || 0,
+          gst: line.gstPercent || 18
+        }));
+        setBillLines(mappedLines);
+      } else {
+        // If no bill lines exist, add at least one empty line to pass validation
+        setBillLines([{ item: '', description: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18 }]);
+      }
+      
+      // Set selected vendor if vendorId exists
+      if (bill.vendorId && vendors.length > 0) {
+        const vendor = vendors.find(v => v.vendorId === bill.vendorId);
+        if (vendor) {
+          setSelectedVendor(vendor);
+        }
+      }
+    }
+  }, [bill, vendors]);
 
   // Set activeTab to 'billLines' if no vendor is selected
   useEffect(() => {
@@ -160,12 +198,14 @@ const BillForm = ({ onCancel }) => {
   };
 
   // Handle form submission
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) {
       console.log("Validation failed");
       console.log(errors);
       return;
     }
+
+    setIsSubmitting(true);
 
     // Map form data to match the request body structure
     const billData = {
@@ -205,31 +245,52 @@ const BillForm = ({ onCancel }) => {
       finalAmount: total
     };
 
-    // Create FormData
-    const formData = new FormData();
-    
-    // Add bill data as text
-    formData.append('bill', JSON.stringify(billData));
-    
-    // Add attachments as files
-    attachments.forEach((file, index) => {
-      formData.append('attachment', file);
-    });
-
-    // Here you would typically send the formData to your API
-    console.log('FormData to be sent:', formData);
-    
-    // Example API call (uncomment and modify as needed):
-    // dispatch(addBill(formData));
-    
-    // For now, just log the structured data
-    console.log('Structured bill data:', billData);
-
     try {
-      dispatch(addBill(formData));
-      onCancel();
+      if (isEditMode) {
+        // For edit mode, we need to include the billId and updatedAt
+        const updateData = {
+          ...billData,
+          billId: bill.billId || bill.id,
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Create FormData for update
+        const formData = new FormData();
+        formData.append('bill', JSON.stringify(updateData));
+        
+        // Add attachments as files
+        attachments.forEach((file, index) => {
+          formData.append('attachment', file);
+        });
+        
+        // Pass both FormData and billId for update
+        const result = await dispatch(updateBill({ formData, billId: bill.billId || bill.id })).unwrap();
+        if (result) {
+          console.log('Bill updated successfully:', result);
+          onCancel();
+        }
+      } else {
+        // Create FormData for new bill
+        const formData = new FormData();
+        formData.append('bill', JSON.stringify(billData));
+        
+        // Add attachments as files
+        attachments.forEach((file, index) => {
+          formData.append('attachment', file);
+        });
+        
+        const result = await dispatch(addBill(formData)).unwrap();
+        if (result) {
+          console.log('Bill created successfully:', result);
+          onCancel();
+        }
+      }
     } catch (error) {
-      console.error('Error creating bill:', error);
+      console.error('Error saving bill:', error);
+      // You can add toast notification here for better user feedback
+      alert(`Error saving bill: ${error.message || 'Unknown error occurred'}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -775,27 +836,44 @@ const BillForm = ({ onCancel }) => {
         <div className="flex justify-between items-center">
           <div className="text-lg font-bold">
             Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString('en-IN')}</span>
+            {isEditMode && <span className="text-sm text-gray-500 ml-2">(Edit Mode)</span>}
           </div>
           <div className="flex gap-3">
             <button 
               type="button" 
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              className={`px-6 py-2 border border-gray-300 rounded-lg transition-colors ${
+                isSubmitting 
+                  ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+                  : 'text-gray-700 bg-white hover:bg-gray-50'
+              }`}
+              onClick={onCancel}
+              disabled={isSubmitting}
             >
               Discard
             </button>
+            {/*<button 
+              type="button" 
+              className={`px-6 py-2 border border-blue-300 rounded-lg transition-colors ${
+                isSubmitting 
+                  ? 'text-blue-400 bg-blue-50 cursor-not-allowed' 
+                  : 'text-blue-700 bg-blue-50 hover:bg-blue-100'
+              }`}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : (isEditMode ? 'Update Bill' : 'Save Bill')}
+            </button>*/}
             <button 
               type="button" 
-              className="px-6 py-2 border border-blue-300 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors" 
+              className={`px-6 py-2 rounded-lg transition-colors font-medium ${
+                isSubmitting 
+                  ? 'bg-blue-400 text-white cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
               onClick={handleSubmit}
+              disabled={isSubmitting}
             >
-              Save Bill
-            </button>
-            <button 
-              type="button" 
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium" 
-              onClick={handleSubmit}
-            >
-              Confirm & Validate
+              {isSubmitting ? 'Saving...' : (isEditMode ? 'Update & Validate' : 'Confirm & Validate')}
             </button>
           </div>
         </div>
