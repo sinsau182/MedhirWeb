@@ -1929,7 +1929,6 @@ function EmployeeForm() {
         );
 
         if (response.data && Array.isArray(response.data)) {
-          console.log("API Response - Managers:", response.data);
           setManagers(response.data);
           if (response.data.length === 0) {
             toast.warning("No managers found for this department");

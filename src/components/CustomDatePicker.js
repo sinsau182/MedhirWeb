@@ -26,7 +26,10 @@ const CustomDatePicker = ({
   const inputRef = useRef(null);
   const calendarPopupRef = useRef(null);
 
-  const timeSlotOptions = [
+  // Show all options for leave, only Full Day for comp-off
+  const timeSlotOptions = isCompOff ? [
+    { value: 'FULL_DAY', label: 'Full Day' }
+  ] : [
     { value: 'FULL_DAY', label: 'Full Day' },
     { value: 'FIRST_HALF', label: 'First Half (Morning)' },
     { value: 'SECOND_HALF', label: 'Second Half (Evening)' }
@@ -36,8 +39,6 @@ const CustomDatePicker = ({
   const handleShiftTypeChange = (e) => {
     const newShiftType = e.target.value;
     setTimeSlot(newShiftType);
-    // Do NOT update all selected dates' shiftType here
-    // Only new selections will use the current dropdown value
     if (onShiftTypeChange) {
       onShiftTypeChange({
         ...e,
@@ -87,11 +88,19 @@ const CustomDatePicker = ({
     const restrictions = leavePolicy?.leaveAllocations?.[0]?.restrictions?.[0];
     const restrictedDays = restrictions?.restrictedDays || [];
     const allowedValue = restrictions?.allowedValue;
+    console.log('[CustomDatePicker] leavePolicy:', leavePolicy);
+    console.log('[CustomDatePicker] restrictedDays:', restrictedDays);
+    console.log('[CustomDatePicker] allowedValue:', allowedValue);
+    console.log('[CustomDatePicker] selectedDateObjects:', selectedDateObjects);
+    console.log('[CustomDatePicker] frozenDates:', frozenDates);
     if (restrictedDays.length) {
       const selectedRestricted = selectedDateObjects.filter(selected =>
         restrictedDays.includes(format(selected.date, 'EEE'))
       );
+      console.log('[CustomDatePicker] selected restricted days:', selectedRestricted.map(d => d.date));
     }
+    // Debug log for weeklyOffs
+    console.log('[CustomDatePicker] weeklyOffs:', weeklyOffs, isCompOff ? '(ignored for comp-off)' : '');
   }, [leavePolicy, selectedDateObjects, frozenDates, weeklyOffs, isCompOff]);
 
   const getDaysInMonth = (date) => {
@@ -153,6 +162,15 @@ const CustomDatePicker = ({
         );
         const willDisable = restrictedSelected.length >= restrictions.allowedValue &&
             !restrictedSelected.some(selected => isSameDay(selected.date, date));
+        
+        console.log('[CustomDatePicker] isDateDisabled check for restricted day:', {
+          date: format(date, 'dd MMM yyyy'),
+          dayName,
+          restrictedSelectedCount: restrictedSelected.length,
+          allowedValue: restrictions.allowedValue,
+          willDisable,
+          isAlreadySelected: restrictedSelected.some(selected => isSameDay(selected.date, date))
+        });
         
         if (willDisable) {
           return true;
@@ -219,6 +237,17 @@ const CustomDatePicker = ({
       isSameDay(selected.date, date)
     );
 
+    // Debug log for click
+    console.log('[CustomDatePicker] handleDateClick:', {
+      date,
+      dayName,
+      restrictedDays,
+      allowedValue,
+      selectedDateObjects,
+      frozenDates,
+      isAlreadySelected
+    });
+
     if (isAlreadySelected) {
       // Allow removing any selected date (not just start or end)
       newSelectedDates = selectedDateObjects.filter(selected => !isSameDay(selected.date, date));
@@ -228,6 +257,11 @@ const CustomDatePicker = ({
         const restrictedSelected = newSelectedDates.filter(selected => 
           restrictions.restrictedDays.includes(format(selected.date, 'EEE'))
         );
+        console.log('[CustomDatePicker] Removing restricted day:', {
+          restrictedSelectedCount: restrictedSelected.length,
+          allowedValue,
+          willUnfreeze: restrictedSelected.length < allowedValue
+        });
         // Only unfreeze if we're now below the limit
         if (restrictedSelected.length < allowedValue) {
           const month = date.getMonth();
@@ -258,6 +292,11 @@ const CustomDatePicker = ({
             const restrictedSelected = selectedDateObjects.filter(selected => 
               restrictions.restrictedDays.includes(format(selected.date, 'EEE'))
             );
+            console.log('[CustomDatePicker] Selecting restricted day:', {
+              restrictedSelectedCount: restrictedSelected.length,
+              allowedValue,
+              willFreeze: restrictedSelected.length + 1 >= allowedValue
+            });
             if (restrictedSelected.length >= allowedValue) {
               toast.error(`You can only select up to ${allowedValue} restricted day(s)`);
               return;
@@ -276,6 +315,7 @@ const CustomDatePicker = ({
                   newFrozen.push(dObj);
                 }
               }
+              console.log('[CustomDatePicker] Freezing restricted days:', newFrozen.map(d => format(d, 'dd MMM yyyy')));
               setFrozenDates(prev => ([...prev, ...newFrozen]));
             }
           }
@@ -308,18 +348,26 @@ const CustomDatePicker = ({
   return (
     <div className="relative" ref={calendarRef}>
       <div className="w-full space-y-2">
-        {/* Time Slot Selector - Always visible */}
-        <select
-          value={timeSlot || "Full Day"}
-          onChange={handleShiftTypeChange}
-          className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-        >
-          {timeSlotOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        {/* Time Slot Selector - Dynamic based on isCompOff */}
+        {isCompOff ? (
+          /* Static display for comp-off */
+          <div className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-sm text-gray-700 font-medium">
+            Full Day
+          </div>
+        ) : (
+          /* Dropdown for leave applications */
+          <select
+            value={timeSlot || "FULL_DAY"}
+            onChange={handleShiftTypeChange}
+            className="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+          >
+            {timeSlotOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Date Picker Trigger */}
         <div
