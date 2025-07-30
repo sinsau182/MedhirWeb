@@ -395,8 +395,8 @@ const Leaves = () => {
                   </div>
                   <div className="flex justify-between">
                     <p className="text-gray-600">Leaves taken in this year</p>
-                    <p className="text-red-500 font-medium">
-                      -{formatNumber(leaveBalance.leavesTakenThisYear)}
+                    <p className="text-gray-800 font-medium">
+                      {formatNumber(leaveBalance.leavesTakenThisYear)}
                     </p>
                   </div>
                   <hr className="my-4" />
