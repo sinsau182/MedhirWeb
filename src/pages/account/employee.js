@@ -8,14 +8,22 @@ import { toast } from 'sonner';
 import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllExpenses } from '../../redux/slices/expensesSlice';
+import MinioImage from "@/components/ui/MinioImage";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 
 const Employee = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('expenses');
   const [showAddForm, setShowAddForm] = useState(null);
-  const [modalImageUrl, setModalImageUrl] = useState(null);
   const dispatch = useDispatch();
   const { expenses, loading, error } = useSelector(state => state.expenses);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Expenses data:', expenses);
+    console.log('Loading:', loading);
+    console.log('Error:', error);
+  }, [expenses, loading, error]);
   
   useEffect(() => {
     if (showAddForm === null) {
@@ -31,7 +39,10 @@ const Employee = () => {
   const handleExpenseSubmit = (expenseData) => {
     toast.success('Expense added successfully!');
     setShowAddForm(null);
-    dispatch(fetchAllExpenses()); // Refresh expenses list after adding a new expense
+    // Refresh expenses list after adding a new expense
+    setTimeout(() => {
+      dispatch(fetchAllExpenses());
+    }, 1000); // Small delay to ensure backend has processed the request
   };
 
   const tabs = [
@@ -146,34 +157,60 @@ const Employee = () => {
                         </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <span
-                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                            expense.receiptInvoiceUrl !== null
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}
-                          style={{ cursor: expense.receiptInvoiceUrl ? 'pointer' : 'default' }}
-                          onClick={() => {
-                            if (expense.receiptInvoiceUrl) setModalImageUrl(expense.receiptInvoiceUrl);
-                          }}
-                        >
-                          {expense.receiptInvoiceUrl !== null ? '📎' : '-'}
-                        </span>
+                        {expense.receiptInvoiceUrl ? (
+                          <MinioImage
+                            src={expense.receiptInvoiceUrl}
+                            alt="Receipt"
+                            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium bg-green-100 text-green-800 cursor-pointer hover:bg-green-200 transition-colors"
+                            fallbackSrc="/placeholder-image.jpg"
+                            onClick={async () => {
+                              try {
+                                const result = await dispatch(fetchImageFromMinio({ url: expense.receiptInvoiceUrl })).unwrap();
+                                if (result.dataUrl) {
+                                  window.open(result.dataUrl, '_blank');
+                                } else {
+                                  // Fallback to direct URL if authentication failed
+                                  window.open(expense.receiptInvoiceUrl, '_blank');
+                                }
+                              } catch (error) {
+                                console.error('Receipt preview error:', error);
+                                window.open(expense.receiptInvoiceUrl, '_blank');
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                            -
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <span
-                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                            expense.paymentProof === 'Yes'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}
-                          style={{ cursor: expense.paymentProofUrl ? 'pointer' : 'default' }}
-                          onClick={() => {
-                            if (expense.paymentProofUrl) setModalImageUrl(expense.paymentProofUrl);
-                          }}
-                        >
-                          {expense.paymentProofUrl !== null ? '📎' : '-'}
-                        </span>
+                        {expense.paymentProofUrl ? (
+                          <MinioImage
+                            src={expense.paymentProofUrl}
+                            alt="Payment Proof"
+                            className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors"
+                            fallbackSrc="/placeholder-image.jpg"
+                            onClick={async () => {
+                              try {
+                                const result = await dispatch(fetchImageFromMinio({ url: expense.paymentProofUrl })).unwrap();
+                                if (result.dataUrl) {
+                                  window.open(result.dataUrl, '_blank');
+                                } else {
+                                  // Fallback to direct URL if authentication failed
+                                  window.open(expense.paymentProofUrl, '_blank');
+                                }
+                              } catch (error) {
+                                console.error('Payment proof preview error:', error);
+                                window.open(expense.paymentProofUrl, '_blank');
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                            -
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -232,23 +269,7 @@ const Employee = () => {
           {renderContent()}
         </div>
       </div>
-      {modalImageUrl && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-lg w-full relative">
-            <button
-              className="absolute top-2 right-2 text-gray-600 hover:text-red-500 text-2xl"
-              onClick={() => setModalImageUrl(null)}
-            >
-              &times;
-            </button>
-            <img
-              src={modalImageUrl}
-              alt="Payment Proof"
-              className="max-w-full max-h-[70vh] mx-auto"
-            />
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

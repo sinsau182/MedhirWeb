@@ -225,27 +225,20 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
                     {paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}
                   </select>
                 </div>
-                {['Bank Transfer', 'Cheque'].includes(formData.paymentMethod) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account <span className="text-red-500">*</span></label>
-                    <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
-                      <option value="">Select bank account</option>
-                      {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account <span className="text-red-500">*</span></label>
+                  <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
+                    <option value="">Select bank account</option>
+                    {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
+                  </select>
+                </div>
                 {formData.paymentMethod === 'Cheque' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cheque Number <span className="text-red-500">*</span></label>
                     <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter cheque number" />
                   </div>
                 )}
-                {formData.paymentMethod === 'UPI' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">UPI Transaction ID <span className="text-red-500">*</span></label>
-                    <input type="text" name="upiTransactionId" value={formData.upiTransactionId} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter UPI transaction ID" />
-                  </div>
-                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Payment trans. ID</label>
                   <input type="text" name="reference" value={formData.reference} onChange={handleChange} className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Bank transaction ID" />

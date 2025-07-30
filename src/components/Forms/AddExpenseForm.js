@@ -109,7 +109,7 @@ const AddExpenseForm = ({ onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
       console.log("Validation failed");
@@ -152,10 +152,12 @@ const AddExpenseForm = ({ onSubmit, onCancel }) => {
       }
 
       try {
-        dispatch(createExpense(expenseData))
-        onCancel(); // Close the form after successful submission
+        const result = await dispatch(createExpense(expenseData)).unwrap();
+        console.log('Expense created successfully:', result);
+        onSubmit(); // Call onSubmit after successful creation
       } catch(error) {
-          console.error("Error creating expense:", err);
+          console.error("Error creating expense:", error);
+          toast.error('Failed to create expense. Please try again.');
           // setErrors({ submit: 'Failed to create expense. Please try again.' });
         }
     }

@@ -37,6 +37,8 @@ export const fetchAllExpenses = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
+            console.log('Fetching all expenses from:', `${API_BASE_URL}`);
+            
             const response = await fetch(`${API_BASE_URL}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -44,13 +46,17 @@ export const fetchAllExpenses = createAsyncThunk(
                 }
             });
 
+            console.log('Fetch response status:', response.status);
             const data = await response.json();
+            console.log('Fetched expenses:', data);
 
             if (!response.ok) {
+                console.error('Fetch API Error:', data);
                 return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
             return data;
         } catch (error) {
+            console.error('Fetch Network Error:', error);
             return rejectWithValue(error.message || "Network Error");
         }
     }
@@ -61,6 +67,9 @@ export const createExpense = createAsyncThunk(
     async (expenseData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
+            console.log('Creating expense with data:', expenseData);
+            console.log('API URL:', `${API_BASE_URL}`);
+            
             const response = await fetch(`${API_BASE_URL}`, {
                 method: "POST",
                 headers: {
@@ -69,13 +78,17 @@ export const createExpense = createAsyncThunk(
                 body: expenseData
             });
 
+            console.log('Response status:', response.status);
             const data = await response.json(); // always parse the response
+            console.log('Response data:', data);
 
             if (!response.ok) {
+                console.error('API Error:', data);
                 return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
             return data;
         } catch (error) {
+            console.error('Network Error:', error);
             return rejectWithValue(error.message || "Network error");
         }
     }

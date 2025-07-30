@@ -20,6 +20,10 @@ export const fetchImageFromMinio = createAsyncThunk(
   async ({ url }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      console.log('Minio fetch - URL:', url);
+      console.log('Minio fetch - Token:', token ? 'Token exists' : 'No token');
+      console.log('Minio fetch - Token length:', token ? token.length : 0);
+      console.log('Minio fetch - Endpoint:', `${MINIO_BASE_URL}/fetch-image?url=${encodeURIComponent(url)}`);
 
       const response = await fetch(`${MINIO_BASE_URL}/fetch-image?url=${encodeURIComponent(url)}`, {
         headers: {
@@ -28,14 +32,33 @@ export const fetchImageFromMinio = createAsyncThunk(
         }
       });
 
+      console.log('Minio fetch - Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error("Failed to fetch image from Minio");
+        const errorText = await response.text();
+        console.error('Minio fetch - Error response:', errorText);
+        
+        // Handle 401 authentication errors gracefully
+        if (response.status === 401) {
+          console.log('Authentication failed, returning null for graceful fallback');
+          return {
+            originalUrl: url,
+            dataUrl: null,
+            blob: null,
+            contentType: null,
+            error: 'Authentication required'
+          };
+        }
+        
+        throw new Error(`Failed to fetch image from Minio: ${response.status} ${errorText}`);
       }
 
       const blob = await response.blob();
       
       // Convert blob to data URL for easy use in components
       const dataUrl = URL.createObjectURL(blob);
+      
+      console.log('Minio fetch - Success, dataUrl created');
       
       return {
         originalUrl: url,
@@ -44,6 +67,7 @@ export const fetchImageFromMinio = createAsyncThunk(
         contentType: response.headers.get('content-type') || 'image/jpeg',
       };
     } catch (error) {
+      console.error('Minio fetch - Error:', error);
       return rejectWithValue(error.message);
     }
   }
