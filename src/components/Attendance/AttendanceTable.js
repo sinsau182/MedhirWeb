@@ -105,7 +105,7 @@ const AttendanceTable = ({
               case "P":
                 value = true;
                 break;
-              case "AL":
+              case "L":
                 value = true;
                 break;
               case "A":
@@ -178,7 +178,7 @@ const AttendanceTable = ({
               case "P":
                 value = true;
                 break;
-              case "AL":
+              case "L":
                 value = true;
                 break;
               case "A":
@@ -342,7 +342,7 @@ const AttendanceTable = ({
             case "P":
               summaryKey = "totalPresent";
               break;
-            case "AL":
+            case "L":
               summaryKey = "totalApprovedLeave";
               break;
             case "A":
@@ -674,7 +674,7 @@ const AttendanceTable = ({
                           case "P":
                             value = true;
                             break;
-                          case "AL":
+                          case "L":
                             value = true;
                             break;
                           case "A":

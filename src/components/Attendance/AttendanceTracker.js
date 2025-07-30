@@ -175,7 +175,7 @@ function AttendanceTracker({
   // Constants/Options
   const statusOptions = [
     { value: "P", label: "Present", color: "#CCFFCC" },
-    { value: "AL", label: "Approved Leave", color: "#E5E5CC" },
+    { value: "L", label: "Approved Leave", color: "#E5E5CC" },
     { value: "PH", label: "Present on Holiday", color: "#5cbf85" },
     { value: "P/A", label: "Half Day", color: "#FFFFCC" },
     { value: "PH/A", label: "Half Day on Holiday", color: "#ffcc80" },
@@ -465,7 +465,7 @@ function AttendanceTracker({
 
         // Check full leave dates
         if (attendanceData.fullLeaveDates?.includes(dateString)) {
-          return "AL";
+          return "L";
         }
 
         // Check half day leave dates
@@ -512,7 +512,7 @@ function AttendanceTracker({
             case "P":
               value = true;
               break;
-            case "AL":
+            case "L":
               value = true;
               break;
             case "A":
@@ -590,7 +590,7 @@ function AttendanceTracker({
     if (status === null) return "bg-gray-100";
     const upperStatus = status.toUpperCase();
     if (upperStatus === "P") return "bg-[#CCFFCC]";
-    if (upperStatus === "AL") return "bg-[#E5E5CC]";
+    if (upperStatus === "L") return "bg-[#E5E5CC]";
     if (upperStatus === "P/A") return "bg-[#FFFFCC]";
     if (upperStatus === "A") return "bg-[#FFCCCC]";
     if (upperStatus === "H") return "bg-[#E0E0E0]";
@@ -823,7 +823,7 @@ function AttendanceTracker({
 
           // Check full leave dates
           if (attendanceData.fullLeaveDates?.includes(dateString)) {
-              return "AL";
+              return "L";
           }
 
           // Check half day leave dates
@@ -1129,7 +1129,7 @@ function AttendanceTracker({
               case "P":
                 totalPresent++;
                 break;
-              case "AL":
+              case "L":
                 totalApprovedLeave++;
                 break;
               case "A":
@@ -1162,7 +1162,7 @@ function AttendanceTracker({
                 case "P":
                   totalPresent++;
                   break;
-                case "AL":
+                case "L":
                   totalApprovedLeave++;
                   break;
                 case "A":
@@ -1494,7 +1494,7 @@ function AttendanceTracker({
                                         dateString
                                       )
                                     ) {
-                                      return "AL";
+                                      return "L";
                                     }
 
                                     // Check half day leave dates

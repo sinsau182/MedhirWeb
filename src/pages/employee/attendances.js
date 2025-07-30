@@ -171,7 +171,7 @@ const EmployeeAttendance = () => {
             case "P":
               fullStatus = "Present";
               break;
-            case "AL":
+            case "L":
               fullStatus = "Approved Leave";
               break;
             case "A":
