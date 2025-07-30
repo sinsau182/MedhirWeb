@@ -30,8 +30,75 @@ import {
 } from "@/redux/slices/requestDetailsSlice";
 import { fetchEmployeeDetails } from "@/redux/slices/payslipSlice";
 
+// Add Minio image system imports
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
+import { FaFileAlt, FaDownload } from "react-icons/fa";
+
+// --- Minio Image Preview Component ---
+const MinioImagePreview = ({ url, alt, className, onError }) => {
+  const dispatch = useDispatch();
+  const [imageSrc, setImageSrc] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    if (!url) {
+      setHasError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    const loadImage = async () => {
+      try {
+        setIsLoading(true);
+        setHasError(false);
+        
+        // Use Minio system for authenticated image access
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+        setImageSrc(dataUrl);
+      } catch (error) {
+        console.error('Failed to load image:', error);
+        setHasError(true);
+        if (onError) onError();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadImage();
+  }, [url, dispatch, onError]);
+
+  if (isLoading) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-gray-100`}>
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (hasError || !imageSrc) {
+    return (
+      <div className={`${className} flex items-center justify-center bg-gray-100 text-gray-400`}>
+        <span className="text-xs">Image not available</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      className={className}
+      onError={() => {
+        setHasError(true);
+        if (onError) onError();
+      }}
+    />
+  );
+};
+
 // --- Simple Modal Component --- (Can be replaced with shadcn Dialog if available)
-const ChangesModal = ({ isOpen, onClose, changes }) => {
+const ChangesModal = ({ isOpen, onClose, changes, onOpenFile, onDownloadFile }) => {
   if (!isOpen || !changes || changes.length === 0) return null;
 
   return (
@@ -66,44 +133,51 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
                               </svg>
                               <span className="text-xs text-gray-600 font-medium">PDF Document</span>
                             </div>
-                            <a
-                              href={change.oldValue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-red-600 hover:text-red-800 flex items-center justify-center"
-                            >
-                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                              </svg>
-                              View PDF
-                            </a>
+                            <div className="flex items-center gap-2 justify-center">
+                              <button
+                                onClick={() => onOpenFile(change.oldValue, change.oldValue.split("/").pop())}
+                                className="text-xs text-red-600 hover:text-red-800 flex items-center justify-center"
+                              >
+                                <FaFileAlt className="w-3 h-3 mr-1" />
+                                View PDF
+                              </button>
+                              <button
+                                onClick={() => onDownloadFile(change.oldValue)}
+                                className="text-xs text-gray-500 hover:text-blue-600 flex items-center justify-center"
+                                title="Download"
+                              >
+                                <FaDownload className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <>
-                            <a
-                              href={change.oldValue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
-                              <img
-                                src={change.oldValue}
+                            <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4 relative">
+                              <MinioImagePreview
+                                url={change.oldValue}
                                 alt={`Old ${change.fieldName}`}
-                                className="w-full h-32 object-contain rounded border bg-white p-2"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "/placeholder-image.png";
+                                className="w-full h-full object-contain rounded bg-white p-2"
+                                onError={() => {
+                                  // Fallback to placeholder
                                 }}
                               />
-                            </a>
-                            <a
-                              href={change.oldValue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800"
-                            >
-                              View Full Image
-                            </a>
+                            </div>
+                            <div className="flex items-center gap-2 justify-center">
+                              <button
+                                onClick={() => onOpenFile(change.oldValue, change.oldValue.split("/").pop())}
+                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center justify-center"
+                              >
+                                <FaFileAlt className="w-3 h-3 mr-1" />
+                                View Full Image
+                              </button>
+                              <button
+                                onClick={() => onDownloadFile(change.oldValue)}
+                                className="text-xs text-gray-500 hover:text-blue-600 flex items-center justify-center"
+                                title="Download"
+                              >
+                                <FaDownload className="w-3 h-3" />
+                              </button>
+                            </div>
                           </>
                         )}
                       </div>
@@ -145,44 +219,51 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
                               </svg>
                               <span className="text-xs text-gray-600 font-medium">PDF Document</span>
                             </div>
-                            <a
-                              href={change.newValue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-red-600 hover:text-red-800 flex items-center justify-center"
-                            >
-                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                              </svg>
-                              View PDF
-                            </a>
+                            <div className="flex items-center gap-2 justify-center">
+                              <button
+                                onClick={() => onOpenFile(change.newValue, change.newValue.split("/").pop())}
+                                className="text-xs text-red-600 hover:text-red-800 flex items-center justify-center"
+                              >
+                                <FaFileAlt className="w-3 h-3 mr-1" />
+                                View PDF
+                              </button>
+                              <button
+                                onClick={() => onDownloadFile(change.newValue)}
+                                className="text-xs text-gray-500 hover:text-blue-600 flex items-center justify-center"
+                                title="Download"
+                              >
+                                <FaDownload className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <>
-                            <a
-                              href={change.newValue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
-                              <img
-                                src={change.newValue}
+                            <div className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4 relative">
+                              <MinioImagePreview
+                                url={change.newValue}
                                 alt={`New ${change.fieldName}`}
-                                className="w-full h-32 object-contain rounded border bg-white p-2"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = "/placeholder-image.png";
+                                className="w-full h-full object-contain rounded bg-white p-2"
+                                onError={() => {
+                                  // Fallback to placeholder
                                 }}
                               />
-                            </a>
-                            <a
-                              href={change.newValue}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800"
-                            >
-                              View Full Image
-                            </a>
+                            </div>
+                            <div className="flex items-center gap-2 justify-center">
+                              <button
+                                onClick={() => onOpenFile(change.newValue, change.newValue.split("/").pop())}
+                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center justify-center"
+                              >
+                                <FaFileAlt className="w-3 h-3 mr-1" />
+                                View Full Image
+                              </button>
+                              <button
+                                onClick={() => onDownloadFile(change.newValue)}
+                                className="text-xs text-gray-500 hover:text-blue-600 flex items-center justify-center"
+                                title="Download"
+                              >
+                                <FaDownload className="w-3 h-3" />
+                              </button>
+                            </div>
                           </>
                         )}
                       </div>
@@ -208,6 +289,7 @@ const ChangesModal = ({ isOpen, onClose, changes }) => {
     </div>
   );
 };
+
 ChangesModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
@@ -218,15 +300,16 @@ ChangesModal.propTypes = {
       newValue: PropTypes.string,
     })
   ),
+  onOpenFile: PropTypes.func,
+  onDownloadFile: PropTypes.func,
 };
-// --- End Modal Component ---
 
+// --- End Modal Component ---
 const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUpdateChanges, setSelectedUpdateChanges] = useState([]);
   const [employeeDetails, setEmployeeDetails] = useState({});
-
   // Get state from Redux
   const {
     pendingLeaves,
@@ -242,19 +325,14 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     approvingLeaveId,
     rejectingLeaveId,
   } = useSelector((state) => state.requestDetails);
-
   const { employeeData } = useSelector((state) => state.payslip);
-
   // Placeholder for expense and advance requests (not implemented in the slice)
-
   const [isLoadingExpense, setIsLoadingExpense] = useState(false);
   const [isLoadingIncome, setIsLoadingIncome] = useState(false);
-
   const [approvingExpenseId, setApprovingExpenseId] = useState(null);
   const [rejectingExpenseId, setRejectingExpenseId] = useState(null);
   const [approvingIncomeId, setApprovingIncomeId] = useState(null);
   const [rejectingIncomeId, setRejectingIncomeId] = useState(null);
-
   // Function to open the modal
   const handleViewDetails = (changes) => {
     if (changes && changes.length > 0) {
@@ -264,7 +342,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
       toast.info("No specific field changes available for this request.");
     }
   };
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     try {
@@ -279,18 +356,15 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
       return "Invalid Date";
     }
   };
-
   // Fetch data on component mount
   useEffect(() => {
     dispatch(fetchPendingLeaveRequests({ role }));
     dispatch(fetchProfileUpdates({ role }));
-
     // Cleanup function
     return () => {
       dispatch(clearErrors());
     };
   }, [dispatch, role]);
-
   // Fetch expenses when the expense tab is active
   // useEffect(() => {
   //   if (activeTab === "expenseRequests") {
@@ -300,7 +374,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
   //     dispatch(fetchIncomeRequests({ role }));
   //   }
   // }, [activeTab, dispatch, role]);
-
   // Fetch employee details for expense and income requests
   useEffect(() => {
     const fetchEmployeeInfo = async () => {
@@ -335,17 +408,46 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
         }
       }
     };
-
     fetchEmployeeInfo();
-  }, [activeTab, expensesRequests, incomeRequests, dispatch, employeeData]);
-
+  }, [activeTab, expensesRequests, incomeRequests, employeeDetails, dispatch, employeeData]);
+  // Add Minio file handling functions
+  const handleDownloadFile = async (url) => {
+    try {
+      // Use Minio system for authenticated file access
+      const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();            // Create a temporary link to download the file
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();            const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = url.split("/").pop().split("?")[0];            document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);            // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      toast.error('Failed to download file. Please try again.');
+    }
+  };
+  const handleOpenFile = async (url, fileName) => {
+    try {
+      // Use Minio system for authenticated file access
+      const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();            // Open file in new window
+      const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fileName || 'File Preview';
+        newWindow.focus();
+      }
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      toast.error('Failed to open file. Please try again.');
+    }
+  };
   // --- Approve/Reject Logic for Profile Updates ---
   const handleApproveProfileUpdate = async (employeeId) => {
     if (!employeeId) {
       toast.error("Employee ID missing.");
       return;
     }
-
     try {
       const resultAction = await dispatch(
         updateProfileRequestStatus({
@@ -354,7 +456,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           role,
         })
       );
-
       if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
         toast.success(`Profile update for ${employeeId} approved.`);
         // Re-fetch the list to remove the approved item
@@ -369,13 +470,11 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   const handleRejectProfileUpdate = async (employeeId) => {
     if (!employeeId) {
       toast.error("Employee ID missing.");
       return;
     }
-
     try {
       const resultAction = await dispatch(
         updateProfileRequestStatus({
@@ -384,7 +483,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           role,
         })
       );
-
       if (updateProfileRequestStatus.fulfilled.match(resultAction)) {
         toast.success(`Profile update for ${employeeId} rejected.`);
         // Re-fetch the list to remove the rejected item
@@ -399,7 +497,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   const handleApprove = async (leaveId) => {
     try {
       const resultAction = await dispatch(
@@ -409,7 +506,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           remarks: "approved successfully",
         })
       );
-
       if (updateLeaveStatus.fulfilled.match(resultAction)) {
         toast.success("Request approved successfully");
         // Refresh the list after successful approval
@@ -424,7 +520,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   const handleReject = async (leaveId) => {
     try {
       const resultAction = await dispatch(
@@ -434,7 +529,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           remarks: "Request rejected by HR",
         })
       );
-
       if (updateLeaveStatus.fulfilled.match(resultAction)) {
         toast.success("Request rejected successfully");
         // Refresh the list after successful rejection
@@ -449,7 +543,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   // Handle expense approval
   const handleApproveExpense = async (expenseId) => {
     try {
@@ -462,7 +555,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           role,
         })
       );
-
       if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Expense approved successfully");
         // Refresh the expense requests list
@@ -479,7 +571,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   // Handle expense rejection
   const handleRejectExpense = async (expenseId) => {
     try {
@@ -492,7 +583,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           role,
         })
       );
-
       if (updateExpenseRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Expense rejected successfully");
         // Refresh the expense requests list
@@ -509,7 +599,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   // Handle income approval
   const handleApproveIncome = async (incomeId) => {
     try {
@@ -522,7 +611,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           role,
         })
       );
-
       if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Income approved successfully");
         // Refresh the income requests list
@@ -539,7 +627,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   // Handle income rejection
   const handleRejectIncome = async (incomeId) => {
     try {
@@ -552,7 +639,6 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           role,
         })
       );
-
       if (updateIncomeRequestStatus.fulfilled.match(resultAction)) {
         toast.success("Income rejected successfully");
         // Refresh the income requests list
@@ -569,11 +655,8 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
     }
     if (onActionComplete) onActionComplete();
   };
-
   // Updated combined loading state
-  const isLoading =
-    loading || profileLoading || isLoadingExpense || isLoadingIncome;
-
+  const isLoading =    loading || profileLoading || isLoadingExpense || isLoadingIncome;
   return (
     <div className="bg-[#F7FBFE] p-6 rounded-xl shadow-md transition-all duration-200">
       <h2 className="text-xl font-semibold text-blue-800 mb-5 pl-2">
@@ -725,8 +808,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                           </div>
                         ) : (
                           <span className="text-gray-400 italic">N/A</span>
-                        )}    
-                      </td>
+                        )}                          </td>
                       <td className="py-4 text-sm">
                         {request.leaveDates && request.leaveDates.length > 0 ? (
                           <>
@@ -866,8 +948,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                           </div>
                         ) : (
                           <span className="text-gray-400 italic">N/A</span>
-                        )}    
-                      </td>
+                        )}                          </td>
                       <td className="px-5 py-4 text-sm">
                         {(() => {
                           switch (request.shiftType) {
@@ -1049,9 +1130,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Receipt
                   </th>
-                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Actions
-                  </th> */}
+                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">                    Actions                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -1141,12 +1220,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                   <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
                     Reason
                   </th>
-                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Repayment Plan
-                  </th>
-                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">
-                    Actions
-                  </th> */}
+                  {/* <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">                    Repayment Plan                  </th>                  <th className="py-4 px-5 text-left text-sm font-medium border-b border-gray-100">                    Actions                  </th> */}
                 </tr>
               </thead>
               <tbody>
@@ -1178,10 +1252,7 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
                         {employeeDetails[request.submittedBy]?.department || "Loading..."}
                       </td>
                       <td className="px-5 py-4 text-sm">{request.amount}</td>
-                      {/* <td className="px-5 py-4 text-sm">{request.reason}</td>
-                      <td className="px-5 py-4 text-sm">
-                        {request.repaymentPlan}
-                      </td> */}
+                      {/* <td className="px-5 py-4 text-sm">{request.reason}</td>                      <td className="px-5 py-4 text-sm">                        {request.repaymentPlan}                      </td> */}
                       <td className="px-5 py-4 text-sm font-medium space-x-3">
                         <Button
                           size="sm"
@@ -1218,17 +1289,17 @@ const RequestDetails = ({ activeTab, onTabChange, onActionComplete, role }) => {
           </div>
         </TabsContent>
       </Tabs>
-
       {/* Modal for showing changes */}
       <ChangesModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         changes={selectedUpdateChanges}
+        onOpenFile={handleOpenFile}
+        onDownloadFile={handleDownloadFile}
       />
     </div>
   );
 };
-
 RequestDetails.propTypes = {
   activeTab: PropTypes.string,
   onTabChange: PropTypes.func,

@@ -122,21 +122,19 @@ const Overview = () => {
         if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
           const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
           
-          // Check if employee is present (P, AL, PH, etc.)
-          if (dayStatus === 'P' || dayStatus === 'AL' || dayStatus === 'PH' || dayStatus === 'P/L') {
+          // Only count actual "Present" status as present
+          if (dayStatus === 'P') {
             presentCount++;
           }
-          // Check if employee is absent (A, etc.)
+          // Count only "Absent" status as absent
           else if (dayStatus === 'A') {
             absentCount++;
           }
-          // If no status or other status, consider as absent
-          else {
-            absentCount++;
-          }
+          // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
+          // This includes employees with no attendance marked for today
         } else {
-          // No attendance record for today, consider as absent
-          absentCount++;
+          // No attendance record for today, don't count as absent
+          // This prevents counting employees with no attendance data as absent
         }
       });
 
