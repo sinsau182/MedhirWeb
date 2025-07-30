@@ -60,11 +60,6 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     dispatch(fetchVendors());
   }, [dispatch]);
 
-  // console.log(selectedVendor);
-
-  // console.log(availableBills);
-  // console.log(vendorBills);
-
   const companies = ['ABC Enterprises Ltd.', 'XYZ India Pvt Ltd.', 'Tech Solutions Pvt Ltd.'];
   const journals = ['Cash Payment Journal', 'Bank Payment Journal', 'Cheque Payment Journal'];
   const paymentMethods = ['Bank Transfer', 'Cheque', 'Cash'];
@@ -244,10 +239,6 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(finalPaymentAmount);
-    console.log(selectedVendor.totalCredit);
-    console.log(finalPaymentAmount-selectedVendor.totalCredit < 0 ? 0 : finalPaymentAmount-selectedVendor.totalCredit);
-    console.log(validateForm());
     if (validateForm()) {
       // Format the payment data according to the API structure
       const paymentData = {
@@ -278,38 +269,13 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
         formDataToSend.append(`attachments`, file);
       });
 
-      // console.log('Dispatching addPayment with FormData');
-      // console.log('FormData entries:');
-      // for (let [key, value] of formDataToSend.entries()) {
-      //   if (value instanceof File) {
-      //     console.log(`${key}: [File] ${value.name}`);
-      //   } else {
-      //     console.log(`${key}:`, value);
-      //   }
-      // }
-
       try {
         dispatch(addPayment(formDataToSend));
-        
-        // console.log('Payment result:', result);
-        
-        // if (addPayment.fulfilled.match(result)) {
-        //   // Success - call the onSubmit callback if provided
-        //   console.log('Payment successful:', result.payload);
-        //   alert('Payment processed successfully!');
-        //   if (onSubmit) {
-        //     onSubmit(result.payload);
-        //   }
         onCancel();
         } catch (error){
           // Handle error
           console.error('Payment failed:', result.payload);
-          // alert(`Payment failed: ${result.payload || 'Unknown error'}`);
         }
-      // } catch (error) {
-      //   console.error('Payment submission error:', error);
-      //   alert(`Payment submission error: ${error.message}`);
-      // }
     } else {
       console.log(errors);
     }
@@ -334,11 +300,6 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
   const formatCurrency = (num) =>
     '₹' + (num || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // const filteredVendors = vendors.filter(vendor =>
-  //   vendor.vendorName.toLowerCase().includes((vendorSearch || '').toLowerCase()) ||
-  //   vendor.gstin.toLowerCase().includes((vendorSearch || '').toLowerCase())
-  // );
-
   // Close vendor dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -349,9 +310,6 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // console.log(formData);
-  // console.log(availableBills);
 
   return (
     <div className="w-full px-0">

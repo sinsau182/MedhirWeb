@@ -675,12 +675,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              ${item.label === "Customers" || item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                              ${item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
                             `}
                             aria-label={item.label}
-                            title={item.label === "Customers" || item.label === "Account Settings" ? "This feature is in progress" : ""}
+                            title={item.label === "Account Settings" ? "This feature is in progress" : ""}
                             onClick={(e) => {
-                              if (item.label === "Customers" || item.label === "Account Settings") {
+                              if (item.label === "Account Settings") {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 return;
@@ -701,7 +701,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             {!isCollapsed && (
                               <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                            {item.label === "Customers" || item.label === "Account Settings" ? (
+                            {item.label === "Account Settings" ? (
                               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                                 This feature is in progress
                               </div>

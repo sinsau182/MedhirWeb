@@ -160,7 +160,7 @@ export const applyLeave = createAsyncThunk(
         missingFields.push('leaveDates');
       }
       if (!leaveData.shiftType) missingFields.push('shiftType');
-      if (!leaveData.reason) missingFields.push('reason');
+      // Reason is now optional - removed from required fields
 
       if (missingFields.length > 0) {
         console.log('[LeaveSlice] applyLeave validation failed:', {
@@ -266,7 +266,7 @@ export const applyCompOffLeave = createAsyncThunk(
         missingFields.push('leaveDates');
       }
       if (!formData.shiftType) missingFields.push('shiftType');
-      if (!formData.reason) missingFields.push('reason');
+      // Reason is now optional - removed from required fields
 
       if (missingFields.length > 0) {
         console.log('[LeaveSlice] applyCompOffLeave validation failed:', {

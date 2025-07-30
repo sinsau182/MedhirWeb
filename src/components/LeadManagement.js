@@ -56,7 +56,6 @@ const LeadManagement = ({ role }) => {
   const dispatch = useDispatch();
 
   const { leads, loading, error } = useSelector((state) => state.leads);
-  console.log(leads);
 
   const [showForm, setShowForm] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
@@ -138,7 +137,6 @@ const LeadManagement = ({ role }) => {
             });
           }
         } catch (error) {
-          console.error("Error decoding token in LeadManagement:", error);
           setUserInfo({ name: "Error User" });
         }
       };
@@ -225,7 +223,6 @@ const LeadManagement = ({ role }) => {
 
   // Handler for Sales: 'In Progress' -> 'Verified'
   const handleMarkVerified = (lead) => {
-    console.log("Marking lead as Verified:", lead.leadId);
     dispatch(
       updateLead({
         leadId: lead.leadId,
@@ -264,7 +261,6 @@ const LeadManagement = ({ role }) => {
   const handleJunkSubmit = (leadId, reason) => {
     const leadToMarkJunk = leads.find((lead) => lead.leadId === leadId);
     if (!leadToMarkJunk) {
-      console.error("Lead not found for junk marking:", leadId);
       return;
     }
     
@@ -322,7 +318,6 @@ const LeadManagement = ({ role }) => {
       return;
     }
     if (isFormReadOnly) {
-      console.warn("Attempted to submit read-only form.");
       return;
     }
 
@@ -376,7 +371,6 @@ const LeadManagement = ({ role }) => {
           ...cleanPayload,
           leadId: editingLead.leadId, // Ensure we're using leadId for updates
         };
-        console.log(updatePayload);
         await dispatch(updateLead(updatePayload)).unwrap();
       } else {
         // Create new lead
@@ -392,7 +386,6 @@ const LeadManagement = ({ role }) => {
       setInitialFormDataOnEdit(null);
       setIsFormReadOnly(false);
     } catch (error) {
-      console.error("Error saving lead:", error);
       alert("Failed to save lead. Please try again.");
     }
   };
@@ -864,7 +857,6 @@ const LeadManagement = ({ role }) => {
 
   // Action Handler: 'Assigned' -> 'In Progress'
   const handleStartWorking = (leadId) => {
-    console.log("Start working on lead:", leadId);
     dispatch(
       updateLead({
         leadId: leadId,
@@ -928,7 +920,6 @@ const LeadManagement = ({ role }) => {
     const currentLead = leads.find(lead => lead.leadId === leadId);
     
     if (!currentLead) {
-      console.error("Lead not found for conversion:", leadId);
       return;
     }
 
@@ -957,7 +948,6 @@ const LeadManagement = ({ role }) => {
       bookingFormFileName: conversionData.bookingFormFile?.name || null,
     };
 
-    console.log("Updating lead with payload:", updatePayload);
     dispatch(updateLead(updatePayload)).then(() => {
       dispatch(fetchLeads()); // Refresh leads after update
       setShowConvertModal(false);

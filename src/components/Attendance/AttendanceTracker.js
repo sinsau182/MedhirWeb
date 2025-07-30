@@ -133,13 +133,11 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
   // Function to switch between tabs without losing data
   const switchToSingleEmployeeTab = () => {
-    console.log('Switching to Single Employee Month tab - preserving state');
     setIsAllEmployeesDateModalOpen(false);
     setIsSingleEmployeeModalOpen(true);
   };
 
   const switchToAllEmployeesTab = () => {
-    console.log('Switching to All Employees Date tab - preserving state');
     setIsSingleEmployeeModalOpen(false);
     setIsAllEmployeesDateModalOpen(true);
   };
@@ -282,14 +280,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       const availableOptions = getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus);
       const currentScopeExists = availableOptions.some(opt => opt.value === singleEmployeeApplyToScope);
       
-      console.log('Status changed to:', singleEmployeeMarkAsStatus);
-      console.log('Available options:', availableOptions);
-      console.log('Current scope:', singleEmployeeApplyToScope);
-      console.log('Current scope exists:', currentScopeExists);
-      
       // If current scope is not available for the new status, reset to first available option
       if (!currentScopeExists && availableOptions.length > 0) {
-        console.log('Resetting scope to:', availableOptions[0].value);
         setSingleEmployeeApplyToScope(availableOptions[0].value);
       }
     }
@@ -706,7 +698,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     if (isAllEmployeesDateModalOpen) {
       // Always set today's date as default when modal opens
       const today = new Date();
-      setSelectedDateForAll(today);
+      const todayString = today.toISOString().slice(0, 10); // Format as YYYY-MM-DD
+      setSelectedDateForAll(todayString);
       
       // Load existing attendance data for today's date
       const initialData = {};
@@ -730,7 +723,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
       });
       
       setAllEmployeesAttendanceData(initialData);
-      console.log('Modal opened - loaded existing attendance data for today:', today, 'Data:', initialData);
     }
   }, [isAllEmployeesDateModalOpen, attendance, filteredEmployees]);
 
@@ -944,11 +936,17 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
   // All Employees Date Modal Functions
   const handleDateSelectForAll = (date) => {
-    setSelectedDateForAll(date);
+    // Ensure we store only the date part (YYYY-MM-DD)
+    let dateToStore = date;
+    if (date && date.includes('T')) {
+      dateToStore = date.split('T')[0];
+    }
+    
+    setSelectedDateForAll(dateToStore);
     
     // Load existing attendance data for the selected date
     const initialData = {};
-    const selectedDay = new Date(date).getDate();
+    const selectedDay = new Date(dateToStore).getDate();
     
     filteredEmployees.forEach((employee) => {
       // Check if we have attendance data for this employee and date
@@ -968,7 +966,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
     });
     
     setAllEmployeesAttendanceData(initialData);
-    console.log('Loaded existing attendance data for date:', date, 'Data:', initialData);
   };
 
   const setAllEmployeesStatus = (status) => {
@@ -987,13 +984,21 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
   };
 
   const handleSaveAllEmployeesAttendance = () => {
-    if (!selectedDateForAll) {
-      toast.error("Please select a date");
-      return;
+    // Default to today's date if no date is selected
+    let dateToUse = selectedDateForAll;
+    if (!dateToUse) {
+      const today = new Date();
+      dateToUse = today.toISOString().slice(0, 10); // Format as YYYY-MM-DD
+    }
+
+    // Ensure we only send the date part (YYYY-MM-DD) to the API
+    // If dateToUse is a full ISO string, extract just the date part
+    if (dateToUse && dateToUse.includes('T')) {
+      dateToUse = dateToUse.split('T')[0];
     }
 
     // Check if selected date is in the future
-    const selectedDate = new Date(selectedDateForAll);
+    const selectedDate = new Date(dateToUse);
     selectedDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
@@ -1025,7 +1030,7 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
 
     // Create payload in the new format
     const payload = {
-      date: selectedDateForAll,
+      date: dateToUse,
       employeeStatuses,
     };
 
@@ -1038,8 +1043,8 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
         // Refresh attendance data
         dispatch(
           fetchAllEmployeeAttendanceOneMonth({
-          month: new Date(selectedDateForAll).getMonth() + 1, 
-          year: new Date(selectedDateForAll).getFullYear(), 
+          month: new Date(dateToUse).getMonth() + 1, 
+          year: new Date(dateToUse).getFullYear(), 
             role,
           })
         );
@@ -1894,9 +1899,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             'Sunday': 'Sun'
                           };
                           
-                          console.log('Employee weekly off days:', employeeWeeklyOffDays);
-                          console.log('Available dates:', dates.map(d => ({ day: d.day, weekday: d.weekday })));
-                          
                           daysToApply = dates
                             .filter((d) => {
                               // Check if this day is not a weekly off day for this employee
@@ -1911,8 +1913,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                               return !isWeeklyOffDay && !d.isFuture;
                             })
                             .map((d) => d.day);
-                          
-                          console.log('Days to apply:', daysToApply);
                         } else if (scope === "weekends") {
                           daysToApply = dates
                             .filter(
@@ -1950,7 +1950,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                             })
                             .map((d) => d.day);
                           
-                          console.log('Holidays filter applied - Days to apply:', daysToApply);
                         }
                         const newData = { ...monthAttendanceData };
                         daysToApply.forEach((day) => {
@@ -2130,12 +2129,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                   <DropdownMenuRadioGroup
                                     value={value || ""}
                                     onValueChange={(val) => {
-                                      console.log(
-                                        "Calendar day status changed to:",
-                                        val,
-                                        "for day:",
-                                        day
-                                      );
                                       setDayStatus(day, val || null);
                                     }}
                                   >
@@ -2152,12 +2145,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                          console.log(
-                                            "Calendar dropdown item clicked:",
-                                            opt.value,
-                                            "for day:",
-                                            day
-                                          );
                                             setDayStatus(day, opt.value);
                                           }}
                                         >
@@ -2617,10 +2604,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                       value={allEmployeesMarkAsStatus}
                       onValueChange={(value) => {
                       setAllEmployeesMarkAsStatus(value);
-                        console.log(
-                          "All Employees Mark As Status changed to:",
-                          value
-                        );
                       }}
                     >
                       {statusOptions.map((opt) => (
@@ -2630,10 +2613,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            console.log(
-                              "All Employees Mark As dropdown item clicked:",
-                              opt.value
-                            );
                             setAllEmployeesMarkAsStatus(opt.value);
                           }}
                         >
@@ -2658,11 +2637,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                   className="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
                   onClick={() => {
                     const status = allEmployeesMarkAsStatus;
-                    console.log("Apply button clicked - Status:", status);
-                    console.log(
-                      "Current markAsStatus state:",
-                      allEmployeesMarkAsStatus
-                    );
                     
                     if (!status) {
                       toast.error("Please select a status.");
@@ -2806,12 +2780,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                   allEmployeesAttendanceData[employee.id] || ""
                                 }
                                 onValueChange={(val) => {
-                                  console.log(
-                                    "Employee status changed to:",
-                                    val,
-                                    "for employee:",
-                                    employee.id
-                                  );
                                 setEmployeeStatus(employee.id, val || null);
                                 }}
                               >
@@ -2828,12 +2796,6 @@ function AttendanceTracker({ employees = [], employeesLoading = false, role }) {
                                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      console.log(
-                                        "Employee dropdown item clicked:",
-                                        opt.value,
-                                        "for employee:",
-                                        employee.id
-                                      );
                                       setEmployeeStatus(employee.id, opt.value);
                                     }}
                                   >

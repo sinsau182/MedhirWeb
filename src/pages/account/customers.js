@@ -1,23 +1,199 @@
 // Updated customers page with PRD implementation
-import { useState } from 'react';
-import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft } from 'react-icons/fa';
-import Sidebar from "../../components/Sidebar";
-import HradminNavbar from "../../components/HradminNavbar";
+import { useState, useEffect, use } from 'react';
+import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
+import SearchBarWithFilter from '../../components/SearchBarWithFilter';
+import MainLayout from '@/components/MainLayout'; // Import MainLayout
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchReceipts } from '@/redux/slices/receiptSlice';
+import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
+
+const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
+  if (!invoice) return null;
+
+  // Find receipts associated with this invoice
+  const relatedReceipts = allReceipts.filter(receipt => receipt.refInvoice && receipt.refInvoice.includes(invoice.invoiceNo));
+
+  const amountRemaining = invoice.totalAmount - invoice.amountReceived;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-800">Invoice Preview: {invoice.id}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+            <FaTimes />
+          </button>
+        </div>
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Invoice Details</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><strong>Project:</strong> {invoice.project?.projectName}</div>
+              <div><strong>Customer:</strong> {invoice.customer?.customerName}</div>
+              <div><strong>Invoice Date:</strong> {invoice.invoiceDate}</div>
+              <div><strong>Status:</strong> <span className={`font-semibold ${invoice.status === 'Received' ? 'text-green-600' : invoice.status === 'Partial received' ? 'text-yellow-600' : 'text-red-600'}`}>{invoice.status}</span></div>
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Amount Summary</h3>
+            <div className="flex justify-around text-center">
+              <div>
+                <div className="text-gray-500">Total Amount</div>
+                <div className="text-xl font-bold text-gray-800">₹{invoice.totalAmount.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">Amount Received</div>
+                <div className="text-xl font-bold text-green-600">₹{invoice.amountReceived.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">Amount Remaining</div>
+                <div className="text-xl font-bold text-red-600">₹{amountRemaining.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Linked Receipts</h3>
+            {relatedReceipts.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left py-2 px-3">Receipt #</th>
+                    <th className="text-left py-2 px-3">Date</th>
+                    <th className="text-right py-2 px-3">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {relatedReceipts.map(r => (
+                    <tr key={r.id} className="border-b">
+                      <td className="py-2 px-3 font-medium text-blue-600">{r.receiptNumber}</td>
+                      <td className="py-2 px-3">{r.date}</td>
+                      <td className="text-right py-2 px-3 font-semibold">₹{r.amountReceived.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                No receipts generated for this invoice yet.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ReceiptPreviewModal = ({ receipt, onClose }) => {
+  if (!receipt) return null;
+
+  // Prefer linkedInvoices if present, else fallback to allocations for backward compatibility
+  const invoiceLinks = receipt.linkedInvoices && receipt.linkedInvoices.length > 0
+    ? receipt.linkedInvoices.map(link => ({
+        invoiceNumber: link.invoiceNumber || link.invoiceId || link.number,
+        amountAllocated: link.amountAllocated || link.allocatedAmount || link.payment,
+      }))
+    : (receipt.allocations || []).map(link => ({
+        invoiceNumber: link.invoiceId || link.number,
+        amountAllocated: link.allocatedAmount || link.payment,
+      }));
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-800">Receipt Preview: {receipt.receiptNumber}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+            <FaTimes />
+          </button>
+        </div>
+        <div className="p-6 max-h-[70vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
+            <div><strong>Customer:</strong> {receipt.customer?.customerName || receipt.client}</div>
+            <div><strong>Project:</strong> {receipt.project?.projectName || receipt.project}</div>
+            <div><strong>Receipt Date:</strong> {receipt.receiptDate}</div>
+            <div><strong>Payment Method:</strong> {receipt.paymentMethod}</div>
+            <div><strong>Receipt No.:</strong> {receipt.receiptNumber}</div>
+            <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransactionId}</span></div>
+            <div className="flex items-center">
+              <strong>Status:</strong> 
+              <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${
+                receipt.status === 'Received' ? 'bg-green-100 text-green-800' :
+                receipt.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>{receipt.status}</span>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-4">
+                <span className="text-lg font-semibold">Total Amount Received:</span>
+                <span className="text-2xl font-bold text-green-600">₹{receipt.amountReceived}</span>
+            </div>
+
+            <h4 className="text-md font-semibold text-gray-700 mb-2">Invoice Allocations</h4>
+            {invoiceLinks.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="text-left py-2 px-3">Invoice #</th>
+                    <th className="text-right py-2 px-3">Allocated Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {invoiceLinks.map((alloc, index) => (
+                    <tr key={index}>
+                      <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceNumber}</td>
+                      <td className="text-right py-2 px-3 font-semibold">₹{alloc.amountAllocated}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-center py-4 text-gray-500">
+                No invoices linked to this receipt.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Customers = () => {
+  const dispatch = useDispatch();
+  const { receipts, loading, error } = useSelector(state => state.receipts);
+  const { invoices } = useSelector(state => state.invoices);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
+  const [invoiceForReceipt, setInvoiceForReceipt] = useState(null);
+  const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
+  const [selectedReceiptForPreview, setSelectedReceiptForPreview] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const [invoices, setInvoices] = useState([
-    { id: 'INV-001', client: 'Client A', date: '2024-07-29', amount: 1200.00, status: 'Paid' },
-    { id: 'INV-002', client: 'Client B', date: '2024-07-28', amount: 800.00, status: 'Overdue' }
-  ]);
-  const [receipts, setReceipts] = useState([
-    { id: 'REC-001', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card' }
-  ]);
+  useEffect(() => {
+    dispatch(fetchReceipts());
+  }, [dispatch]);
+  
+  useEffect(() => {
+    dispatch(fetchInvoices());
+  }, [dispatch]);
+
+  // const [invoices, setInvoices] = useState([
+  //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
+  //   { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
+  //   { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
+  // ]);
+  // const [receipts, setReceipts] = useState([
+  //   { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
+  //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
+  // ]);
   const [clients, setClients] = useState([
     { id: 1, name: 'Client A', company: 'Tech Corp', email: 'client.a@example.com', phone: '555-1234', status: 'Active' }
   ]);
@@ -29,17 +205,52 @@ const Customers = () => {
     else if (activeTab === 'receipts') setShowAddForm('receipt');
     else if (activeTab === 'clients') setShowAddForm('client');
   };
-  const handleBackFromForm = () => setShowAddForm(null);
-
-  const handleInvoiceSubmit = (data) => {
-    setInvoices(prev => [...prev, { id: data.invoiceNumber, client: data.client, date: data.invoiceDate, amount: data.totalAmount, status: 'Draft' }]);
-    toast.success('Invoice added!');
+  const handleBackFromForm = () => {
     setShowAddForm(null);
+    setInvoiceForReceipt(null);
   };
+
+  const handleGenerateReceiptClick = (invoice) => {
+    setInvoiceForReceipt(invoice);
+    setShowAddForm('receipt');
+  };
+
+  // const handleInvoiceSubmit = (data) => {
+  //   setInvoices(prev => [...prev, { 
+  //     id: data.invoiceNumber, 
+  //     projectName: data.projectName,
+  //     client: data.customerName, 
+  //     date: data.invoiceDate, 
+  //     totalAmount: data.totalAmount, 
+  //     amountReceived: 0,
+  //     status: 'Due',
+  //     receiptGenerated: 'No'
+  //   }]);
+  //   toast.success('Invoice added!');
+  //   setShowAddForm(null);
+  // };
+
+const handleInvoiceSubmit = (data) => {
+  dispatch(createInvoice(data))
+    .unwrap()
+    .then(() => {
+      toast.success('Invoice added!');
+      dispatch(fetchInvoices());
+      setShowAddForm(null);
+    })
+    .catch((err) => {
+      toast.error('Failed to add invoice: ' + (err?.message || 'Unknown error'));
+    });
+};
+
+
   const handleReceiptSubmit = (data) => {
-    setReceipts(prev => [...prev, { id: data.receiptNumber, client: data.client, date: data.receiptDate, amount: data.amount, method: data.paymentMethod }]);
+    setActiveTab('receipts'); // Switch to Receipts tab FIRST
+    setShowAddForm(null);     // Then close the form
+    setInvoiceForReceipt(null);
+    dispatch(fetchReceipts()); // Refresh receipts list
+    dispatch(fetchInvoices()); // Refresh invoices list so amountReceived is updated
     toast.success('Receipt added!');
-    setShowAddForm(null);
   };
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
@@ -69,7 +280,7 @@ const Customers = () => {
     let formComponent;
     switch (showAddForm) {
       case 'invoice': formComponent = <AddInvoiceForm {...commonProps} onSubmit={handleInvoiceSubmit} />; break;
-      case 'receipt': formComponent = <AddReceiptForm {...commonProps} onSubmit={handleReceiptSubmit} />; break;
+      case 'receipt': formComponent = <AddReceiptForm {...commonProps} onSubmit={handleReceiptSubmit} initialData={invoiceForReceipt} />; break;
       case 'client': formComponent = <AddClientForm {...commonProps} onSubmit={handleClientSubmit} />; break;
       default: return null;
     }
@@ -93,136 +304,139 @@ const Customers = () => {
     let table;
     switch (activeTab) {
       case 'invoice':
-        table = invoices.length === 0 ? (
-          <div className="bg-white rounded-lg shadow border border-gray-200">
-            <div className="flex flex-col items-center justify-center py-16 px-8">
-              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                <FaFileInvoiceDollar className="w-10 h-10 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Invoices Found</h3>
-              <p className="text-gray-600 text-center max-w-md mb-6">
-                You haven&apos;t created any invoices yet. Start by adding your first invoice to bill your clients and track payments.
-              </p>
-              <button
-                onClick={() => setShowAddForm('invoice')}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-              >
-                <FaPlus className="w-4 h-4" />
-                Create Your First Invoice
-              </button>
-            </div>
-          </div>
-        ) : (
-          <table className="min-w-full bg-white">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+        table = (
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice no.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Remaining</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {invoices.map(invoice => (
-                <tr key={invoice.id}>
-                  <td className="px-6 py-4 text-sm">{invoice.id}</td>
-                  <td className="px-6 py-4 text-sm">{invoice.client}</td>
-                  <td className="px-6 py-4 text-sm">{invoice.date}</td>
-                  <td className="px-6 py-4 text-sm">${invoice.amount.toFixed(2)}</td>
-                  <td className="px-6 py-4"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${invoice.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{invoice.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Receipt Generated</th> */}
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+              {invoices.map(invoice => {
+                const amountRemaining = invoice.totalAmount - invoice.amountReceived;
+                return (
+                  <tr key={invoice.id}>
+                    <td className="px-6 py-4 text-sm font-medium text-blue-600">{invoice.invoiceNumber}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.project?.projectName}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.customer?.customerName}</td>
+                    <td className="px-6 py-4 text-sm">${invoice.totalAmount.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm text-green-600">${invoice.amountReceived.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-red-600">${amountRemaining.toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        invoice.status === 'Received' ? 'bg-green-100 text-green-800' :
+                        invoice.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    {/* <td className="px-6 py-4 text-sm text-center">
+                      <span className={`font-medium ${invoice.receiptGenerated === 'Yes' ? 'text-green-600' : 'text-gray-500'}`}>
+                        {invoice.receiptGenerated}
+                      </span>
+                    </td> */}
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => setSelectedInvoiceForPreview(invoice)} className="text-gray-500 hover:text-blue-600">
+                        <FaEye />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+                </tbody>
+              </table>
         );
         break;
       case 'receipts':
-        table = receipts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow border border-gray-200">
-            <div className="flex flex-col items-center justify-center py-16 px-8">
-              <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6">
-                <FaReceipt className="w-10 h-10 text-green-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Receipts Found</h3>
-              <p className="text-gray-600 text-center max-w-md mb-6">
-                You haven&apos;t recorded any receipts yet. Start by adding your first receipt to track customer payments and maintain payment history.
-              </p>
-              <button
-                onClick={() => setShowAddForm('receipt')}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
-              >
-                <FaPlus className="w-4 h-4" />
-                Record Your First Receipt
-              </button>
-            </div>
-          </div>
-        ) : (
-          <table className="min-w-full bg-white">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+        const filteredReceipts = receipts.filter(r =>
+          (r.receiptNumber && r.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.project?.projectName && r.project.projectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.customer?.customerName && r.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.paymentMethod && r.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.paymentTransactionId && r.paymentTransactionId.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        table = (
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Receipt No.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {receipts.map(r => (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment trans. Id</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Invoice Generated</th> */}
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+              {filteredReceipts.map(r => (
                 <tr key={r.id}>
-                  <td className="px-6 py-4 text-sm">{r.id}</td>
-                  <td className="px-6 py-4 text-sm">{r.client}</td>
-                  <td className="px-6 py-4 text-sm">{r.date}</td>
-                  <td className="px-6 py-4 text-sm">${r.amount.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-sm">{r.method}</td>
-                </tr>
+                  <td className="px-6 py-4 text-sm font-medium text-blue-600 whitespace-nowrap max-w-xs truncate">{r.receiptNumber}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.project?.projectName}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.customer?.customerName}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.receiptDate}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-green-600">₹{r.amountReceived}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.paymentMethod}</td>
+                  <td className="px-6 py-4 text-sm font-mono whitespace-nowrap max-w-xs truncate">{r.paymentTransactionId}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      r.status === 'Received' ? 'bg-green-100 text-green-800' :
+                      r.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
+                  {/* <td className="px-6 py-4 text-sm text-center">
+                    <span className={`font-medium ${r.invoiceGenerated === 'Yes' ? 'text-green-600' : 'text-gray-500'}`}>
+                      {r.invoiceGenerated}
+                    </span>
+                  </td> */}
+                  <td className="px-6 py-4 text-center">
+                    <button onClick={() => setSelectedReceiptForPreview(r)} className="text-gray-500 hover:text-blue-600">
+                      <FaEye />
+                    </button>
+                  </td>
+                  </tr>
               ))}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
         );
         break;
       case 'clients':
-        table = clients.length === 0 ? (
-          <div className="bg-white rounded-lg shadow border border-gray-200">
-            <div className="flex flex-col items-center justify-center py-16 px-8">
-              <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6">
-                <FaUsers className="w-10 h-10 text-purple-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No Clients Found</h3>
-              <p className="text-gray-600 text-center max-w-md mb-6">
-                You haven&apos;t added any clients yet. Start by adding your first client to manage customer relationships and track business transactions.
-              </p>
-              <button
-                onClick={() => setShowAddForm('client')}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center gap-2"
-              >
-                <FaPlus className="w-4 h-4" />
-                Add Your First Client
-              </button>
-            </div>
-          </div>
-        ) : (
-          <table className="min-w-full bg-white">
-             <thead className="bg-gray-100">
-              <tr>
+        table = (
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
               {clients.map(c => (
                 <tr key={c.id}>
                   <td className="px-6 py-4 text-sm">{c.name}</td>
                   <td className="px-6 py-4 text-sm">{c.company}</td>
                   <td className="px-6 py-4 text-sm">{c.email}</td>
                   <td className="px-6 py-4"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{c.status}</span></td>
-                </tr>
+                  </tr>
               ))}
-            </tbody>
-          </table>
+                </tbody>
+              </table>
         );
         break;
       default: return null;
@@ -230,50 +444,56 @@ const Customers = () => {
     
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input type="text" placeholder={`Search ${activeTab}...`} className="pl-10 pr-4 py-2 border rounded-lg w-64" />
-          </div>
-        </div>
         <div className="overflow-x-auto">{table}</div>
       </div>
     );
   };
 
   return (
-    <div className="flex h-screen">
-      <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} currentRole={"employee"} />
-      <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-56"} transition-all duration-300 overflow-x-auto`}>
-        <HradminNavbar />
-        <div className="p-6 pt-24">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
-            <p className="text-gray-600">Manage customer relationships and transactions</p>
-          </div>
-          <div className="flex items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
+    <MainLayout>
+      <div className="space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
+          <p className="text-gray-600">Manage customer relationships and transactions</p>
+      </div>
+        <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
+          <div className="flex items-center">
             <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm mr-6 text-sm" style={{ minWidth: 120 }}>
               <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
             </button>
             <nav className="flex space-x-6">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabClick(tab.id)}
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
                   className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
                   style={{ minWidth: 110 }}
-                >
-                  <tab.icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-          {renderContent()}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
         </div>
+          <SearchBarWithFilter onSearch={setSearchTerm} />
       </div>
-    </div>
+        {renderContent()}
+        {selectedInvoiceForPreview && (
+          <InvoicePreviewModal 
+            invoice={selectedInvoiceForPreview} 
+            receipts={receipts}
+            onClose={() => setSelectedInvoiceForPreview(null)} 
+          />
+        )}
+        {selectedReceiptForPreview && (
+          <ReceiptPreviewModal
+            receipt={selectedReceiptForPreview}
+            onClose={() => setSelectedReceiptForPreview(null)}
+          />
+        )}
+      </div>
+    </MainLayout>
   );
 };
 
-export default Customers;
+export default Customers; 

@@ -262,7 +262,7 @@ const AccountantExpenseForm = ({ expense, onClose }) => {
         setIsRejectionModalOpen(true);
         return;
     }
-    console.log({ ...form, status, expenseId: generatedExpenseId });
+      console.log({ ...form, status, expenseId: generatedExpenseId });
     toast.success(`Expense has been marked as ${status}.`);
     onClose();
   };

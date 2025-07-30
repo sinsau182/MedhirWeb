@@ -64,18 +64,15 @@ const KanbanBoard = ({
 
   const handleDragStart = (event) => {
     const { active } = event;
-    // console.log('Drag start event:', event);
     
     // Find the lead being dragged
     const leadId = active.id;
     const allLeads = Object.values(leadsByStatus).flat();
     const draggedLead = allLeads.find(lead => lead.leadId === leadId);
-    // console.log('Dragged lead:', draggedLead);
     setActiveLead(draggedLead);
   };
 
   const handleDragEnd = (event) => {
-    // console.log('KanbanBoard handleDragEnd called:', event);
     setActiveLead(null);
     onDragEnd(event);
   };
@@ -89,7 +86,6 @@ const KanbanBoard = ({
     >
       <div className="flex space-x-4 overflow-x-auto pb-4">
         {Array.isArray(statuses) && statuses.map((statusName, idx) => {
-          // Find the stage object for this status
           const stageObj = (rest.kanbanStatuses || []).find(s => s.name === statusName);
           return (
             <KanbanColumn
