@@ -2925,16 +2925,7 @@ function EmployeeProfilePage() {
                         </h3>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <label className="text-sm text-gray-600 mb-1.5 block font-medium">
-                            Annual CTC
-                          </label>
-                          <p className="text-base text-gray-900">
-                            ₹
-                            {employeeById?.salaryDetails?.annualCtc?.toLocaleString() ||
-                              "-"}
-                          </p>
-                        </div>
+
                         <div className="bg-gray-50 p-3 rounded-lg">
                           <label className="text-sm text-gray-600 mb-1.5 block font-medium">
                             Monthly CTC

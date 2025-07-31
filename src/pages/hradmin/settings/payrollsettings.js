@@ -6,36 +6,24 @@ import withAuth from "@/components/withAuth";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchTDS,
   fetchPTAX,
-  saveTDS,
   savePTAX,
-  resetTdsForm,
   resetPtaxForm,
 } from "@/redux/slices/payrollSettingsSlice";
 
 const PayrollSettings = () => {
   const dispatch = useDispatch();
   const {
-    tdsData,
     ptaxData,
     loading,
     error,
-    isTdsConfigured,
     isPtaxConfigured,
   } = useSelector((state) => state.payrollSettings);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [showTdsModal, setShowTdsModal] = useState(false);
   const [showProfessionalTaxModal, setShowProfessionalTaxModal] =
     useState(false);
-  const [isEditingTDS, setIsEditingTDS] = useState(false);
   const [isEditingPTax, setIsEditingPTax] = useState(false);
-
-  const [tdsForm, setTdsForm] = useState({
-    tdsRate: "",
-    description: "",
-  });
 
   const [ptaxForm, setPtaxForm] = useState({
     monthlySalaryThreshold: "",
@@ -44,7 +32,6 @@ const PayrollSettings = () => {
     description: "",
   });
 
-  const [isTdsFormChanged, setIsTdsFormChanged] = useState(false);
   const [isProfessionalTaxFormChanged, setIsProfessionalTaxFormChanged] =
     useState(false);
   const [notification, setNotification] = useState({
@@ -54,7 +41,6 @@ const PayrollSettings = () => {
   });
 
   useEffect(() => {
-    dispatch(fetchTDS());
     dispatch(fetchPTAX());
   }, [dispatch]);
 
@@ -73,31 +59,6 @@ const PayrollSettings = () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [notification.show]);
-
-  const handleTdsSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const resultAction = await dispatch(saveTDS(tdsForm));
-      if (saveTDS.fulfilled.match(resultAction)) {
-        setShowTdsModal(false);
-        setNotification({
-          show: true,
-          type: "success",
-          message: `TDS settings ${
-            isTdsConfigured ? "updated" : "created"
-          } successfully!`,
-        });
-      } else {
-        throw new Error(resultAction.error.message);
-      }
-    } catch (error) {
-      setNotification({
-        show: true,
-        type: "error",
-        message: error.message,
-      });
-    }
-  };
 
   const handlePTaxSubmit = async (e) => {
     e.preventDefault();
@@ -124,17 +85,6 @@ const PayrollSettings = () => {
     }
   };
 
-  const handleEditTDS = () => {
-    if (tdsData) {
-      setTdsForm({
-        tdsRate: tdsData.tdsRate,
-        description: tdsData.description,
-      });
-    }
-    setIsEditingTDS(true);
-    setShowTdsModal(true);
-  };
-
   const handleEditPTax = () => {
     if (ptaxData) {
       setPtaxForm({
@@ -148,16 +98,6 @@ const PayrollSettings = () => {
     setShowProfessionalTaxModal(true);
   };
 
-  const handleCloseTdsModal = () => {
-    setShowTdsModal(false);
-    setIsEditingTDS(false);
-    setTdsForm({
-      tdsRate: "",
-      description: "",
-    });
-    dispatch(resetTdsForm());
-  };
-
   const handleClosePtaxModal = () => {
     setShowProfessionalTaxModal(false);
     setIsEditingPTax(false);
@@ -169,30 +109,6 @@ const PayrollSettings = () => {
     });
     dispatch(resetPtaxForm());
   };
-
-  // Update the TDS Settings Card
-  const renderTdsSettings = () => (
-    <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-gray-800">TDS Settings</h3>
-        <button
-          onClick={handleEditTDS}
-          className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-md hover:bg-blue-700 transition-colors text-sm"
-        >
-          {isTdsConfigured ? "Edit" : "Configure"}
-        </button>
-      </div>
-      {isTdsConfigured && tdsData ? (
-        <div className="space-y-2">
-          <p className="text-gray-600 text-2xl">Rate: {tdsData.tdsRate}%</p>
-        </div>
-      ) : (
-        <p className="text-gray-600 text-sm">
-          No TDS settings configured. Click Configure to set up TDS settings.
-        </p>
-      )}
-    </div>
-  );
 
   // Update the Professional Tax Settings Card
   const renderPTaxSettings = () => (
@@ -228,16 +144,6 @@ const PayrollSettings = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  // Add handlers for Payroll Settings form changes
-  const handleTdsFormChange = (e) => {
-    setIsTdsFormChanged(true);
-    const { name, value } = e.target;
-    setTdsForm({
-      ...tdsForm,
-      [name]: value,
-    });
-  };
-
   const handleProfessionalTaxFormChange = (e) => {
     setIsProfessionalTaxFormChanged(true);
     const { name, value } = e.target;
@@ -264,75 +170,8 @@ const PayrollSettings = () => {
           </h1>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {renderTdsSettings()}
             {renderPTaxSettings()}
           </div>
-
-          {/* TDS Modal */}
-          {showTdsModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {isTdsConfigured
-                      ? "Edit TDS Settings"
-                      : "Configure TDS Settings"}
-                  </h2>
-                  <button
-                    onClick={handleCloseTdsModal}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-                <form onSubmit={handleTdsSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      TDS Rate (%)
-                    </label>
-                    <input
-                      type="number"
-                      name="tdsRate"
-                      value={tdsForm.tdsRate}
-                      onChange={handleTdsFormChange}
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                      min="0"
-                      max="100"
-                      step="0.01"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      name="description"
-                      value={tdsForm.description}
-                      onChange={handleTdsFormChange}
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="3"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={handleCloseTdsModal}
-                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
-                      {isTdsConfigured ? "Update" : "Save"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
 
           {/* Professional Tax Modal */}
           {showProfessionalTaxModal && (
