@@ -51,6 +51,29 @@ export const createPurchaseOrder = createAsyncThunk(
     }
 );
 
+// update purchase order
+export const updatePurchaseOrder = createAsyncThunk(
+    "purchase-orders/updatePurchaseOrder",
+    async ({ purchaseOrderId, purchaseOrder }, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const response = await fetch(`${API_BASE_URL}/${purchaseOrderId}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: purchaseOrder,
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                return rejectWithValue(data.message);
+            }
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.response.data.message);
+        }
+    }
+);
 
 export const purchaseOrderSlice = createSlice({
     name: "purchase-orders",
@@ -79,6 +102,20 @@ export const purchaseOrderSlice = createSlice({
             state.purchaseOrders.push(action.payload);
         });
         builder.addCase(createPurchaseOrder.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload;
+        });
+        builder.addCase(updatePurchaseOrder.pending, (state) => {
+            state.loading = true;
+        });
+        builder.addCase(updatePurchaseOrder.fulfilled, (state, action) => {
+            state.loading = false;
+            const index = state.purchaseOrders.findIndex(po => po.purchaseOrderId === action.payload.purchaseOrderId);
+            if (index !== -1) {
+                state.purchaseOrders[index] = action.payload;
+            }
+        });
+        builder.addCase(updatePurchaseOrder.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload;
         });

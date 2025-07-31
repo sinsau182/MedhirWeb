@@ -20,6 +20,11 @@ function MyApp({ Component, pageProps }) {
   const [version, setVersion] = useState(null);
 
   useEffect(() => {
+    // Set app version in localStorage only in browser environment
+    if (typeof window !== "undefined") {
+      localStorage.setItem("appVersion", "1.0.0");
+    }
+
     // Load version from public/meta.json at runtime
     fetch("/meta.json")
       .then((res) => res.json())
@@ -58,10 +63,29 @@ function MyApp({ Component, pageProps }) {
 
   return (
     <CacheBuster
-      currentVersion={version}
+      currentVersion={version || "1.0.0"}
       isEnabled={process.env.NODE_ENV === "production"}
-      metaFileDirectory="/"
-      loadingComponent={<div>Loading new version...</div>}
+      loadingComponent={
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '18px',
+          zIndex: 9999
+        }}>
+          🔄 Loading new version... Please wait
+        </div>
+      }
+      onCacheClear={() => {
+        console.log("🔁 Version mismatch detected. Cache cleared. Reloading...");
+      }}
     >
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>

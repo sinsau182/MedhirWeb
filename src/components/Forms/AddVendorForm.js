@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaBuilding, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaCreditCard, FaFileAlt, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { addVendor } from '../../redux/slices/vendorSlice';
+import { addVendor, updateVendor } from '../../redux/slices/vendorSlice';
 import { toast } from 'sonner';
 
 const steps = [
@@ -10,7 +10,7 @@ const steps = [
   { label: 'Compliance & Banking' },
 ];
 
-const AddVendorForm = ({ onSubmit, onCancel }) => {
+const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.vendors);
   const [step, setStep] = useState(1);
@@ -19,6 +19,9 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
   const sentinelRef = useRef(null);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const tagsDropdownRef = useRef(null);
+
+  // Determine if we're in edit mode
+  const isEditMode = !!vendor;
 
   const [tdsApplied, setTdsApplied] = useState(false);
   const [tdsRate, setTdsRate] = useState(2);
@@ -59,6 +62,47 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
       upiId: ''
     }
   });
+
+  // Pre-fill form data when vendor prop is provided (edit mode)
+  useEffect(() => {
+    if (vendor) {
+      setFormData({
+        vendorName: vendor.vendorName || '',
+        companyId: vendor.companyId || sessionStorage.getItem("employeeCompanyId"),
+        companyType: vendor.companyType || 'Company',
+        vendorCategory: vendor.vendorCategory || '',
+        gstin: vendor.gstin || '',
+        tdsPercentage: vendor.tdsPercentage || '',
+        pan: vendor.pan || '',
+        taxTreatment: vendor.taxTreatment || '',
+        vendorTags: vendor.vendorTags || [],
+        contactName: vendor.contactName || '',
+        email: vendor.email || '',
+        mobile: vendor.mobile || '',
+        phone: vendor.phone || '',
+        addressLine1: vendor.addressLine1 || '',
+        addressLine2: vendor.addressLine2 || '',
+        city: vendor.city || '',
+        state: vendor.state || '',
+        pinCode: vendor.pinCode || '',
+        bankDetails: {
+          accountHolderName: vendor.bankDetails?.accountHolderName || '',
+          branchName: vendor.bankDetails?.branchName || '',
+          bankName: vendor.bankDetails?.bankName || '',
+          accountType: vendor.bankDetails?.accountType || '',
+          accountNumber: vendor.bankDetails?.accountNumber || '',
+          ifscCode: vendor.bankDetails?.ifscCode || '',
+          upiId: vendor.bankDetails?.upiId || ''
+        }
+      });
+      
+      // Set TDS related state
+      if (vendor.tdsPercentage) {
+        setTdsApplied(true);
+        setTdsRate(parseFloat(vendor.tdsPercentage));
+      }
+    }
+  }, [vendor]);
 
   const [errors, setErrors] = useState({});
   const [collapsedSections, setCollapsedSections] = useState({
@@ -215,11 +259,13 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
     //   newErrors.gstin = 'Invalid GSTIN format';
     // }
 
-    if (!formData.pan.trim()) {
-      newErrors.pan = 'PAN is required';
-    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.pan)) {
-      newErrors.pan = 'Invalid PAN format';
-    }
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+
+if (!formData.pan.trim()) {
+  newErrors.pan = 'PAN is required';
+} else if (!panRegex.test(formData.pan)) {
+  newErrors.pan = 'Invalid PAN format (e.g., ABCDE1234F)';
+}
 
     if (!formData.taxTreatment.trim()) {
       newErrors.taxTreatment = 'GST treatment is required';
@@ -291,11 +337,11 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
       newErrors['bankDetails.ifscCode'] = 'Invalid IFSC code format';
     }
 
-    if (!formData.bankDetails.upiId.trim()) {
-      newErrors['bankDetails.upiId'] = 'UPI ID is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.bankDetails.upiId)) {
-      newErrors['bankDetails.upiId'] = 'Invalid UPI ID format';
-    }
+   if (!formData.bankDetails.upiId.trim()) {
+  newErrors['bankDetails.upiId'] = 'UPI ID is required';
+} else if (!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(formData.bankDetails.upiId)) {
+  newErrors['bankDetails.upiId'] = 'Invalid UPI ID format';
+}
 
     // Confirm Account Number validation
     if (!confirmAccountNumber.trim()) {
@@ -314,18 +360,29 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
     if (validateForm()) {
       const submitData = {
         ...formData,
-        vendorId: `V${Date.now()}`, // Generate vendor ID
+        vendorId: vendor?.vendorId || `V${Date.now()}`, // Use existing ID or generate new
         status: 'Active',
-        createdAt: new Date().toISOString(),
+        createdAt: vendor?.createdAt || new Date().toISOString(),
+        updatedAt: isEditMode ? new Date().toISOString() : undefined,
         // Convert tdsPercentage to double type
         tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null
       };
       
       try {
-        const result = await dispatch(addVendor(submitData)).unwrap();
-        if (result) {
-          toast.success('Vendor added successfully!');
-          onCancel();
+        if (isEditMode) {
+          const result = await dispatch(updateVendor(submitData)).unwrap();
+          if (result) {
+            toast.success('Vendor updated successfully!');
+            if (onSubmit) onSubmit(submitData);
+            onCancel();
+          }
+        } else {
+          const result = await dispatch(addVendor(submitData)).unwrap();
+          if (result) {
+            toast.success('Vendor added successfully!');
+            if (onSubmit) onSubmit(submitData);
+            onCancel();
+          }
         }
       } catch (err) {
         toast.error(err);
@@ -475,7 +532,7 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
                   value={formData.gstin}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter GSTIN"
+                  placeholder="  eg :E22ABCDE1234F1Z5"
                   maxLength={15}
                   disabled={formData.taxTreatment !== 'Registered'}
                 />
@@ -951,7 +1008,8 @@ const AddVendorForm = ({ onSubmit, onCancel }) => {
               onClick={handleSubmit}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
-              Submit
+              
+              {isEditMode ? 'Update ' : 'Submit'}
             </button>
           )}
         </div>

@@ -75,6 +75,30 @@ export const addBill = createAsyncThunk(
   }
 );
 
+// update bill
+export const updateBill = createAsyncThunk(
+  "bills/updateBill",
+  async ({ formData, billId }, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`${API_BASE_URL}/${billId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 export const BillSlice = createSlice({
   name: "bills",
   initialState: {
@@ -118,6 +142,22 @@ export const BillSlice = createSlice({
       state.bills.push(action.payload);
     });
     builder.addCase(addBill.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    });
+    builder.addCase(updateBill.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(updateBill.fulfilled, (state, action) => {
+      state.loading = false;
+      // Update the bill in the bills array
+      const index = state.bills.findIndex(b => b.billId === action.payload.billId);
+      if (index !== -1) {
+        state.bills[index] = action.payload;
+      }
+    });
+    builder.addCase(updateBill.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload;
     });

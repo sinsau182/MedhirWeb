@@ -25,6 +25,12 @@ const Vendor = () => {
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [selectedAttachments, setSelectedAttachments] = useState([]);
   const [selectedBillVendor, setSelectedBillVendor] = useState('');
+  // State for selected vendor for editing
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  // State for selected bill for editing
+  const [selectedBill, setSelectedBill] = useState(null);
+  // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
+  // Only support creation of new purchase orders
 
     useEffect(() => {
       dispatch(fetchVendors());
@@ -39,7 +45,7 @@ const Vendor = () => {
   };
   const [activeTab, setActiveTab] = useState('bills'); // Default to bills tab
   const [showAddForm, setShowAddForm] = useState(null); // 'bill' | 'refund' | 'payment' | 'vendor' | null
-
+const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Refetch vendors when form is closed and we're on vendors tab
   useEffect(() => {
     if (showAddForm === null && activeTab === 'vendors') {
@@ -57,12 +63,14 @@ const Vendor = () => {
   // Context-aware Add button handler
   const handleAddClick = () => {
     if (activeTab === 'bills') {
+      setSelectedBill(null); // Clear selected bill for new bill
       setShowAddForm('bill');
     } else if (activeTab === 'purchaseOrders') {
       setShowAddForm('po');
     } else if (activeTab === 'payments') {
       setShowAddForm('payment');
     } else if (activeTab === 'vendors') {
+      setSelectedVendor(null); // Clear selected vendor for new vendor
       setShowAddForm('vendor');
     }
   };
@@ -71,6 +79,9 @@ const Vendor = () => {
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
+    setSelectedVendor(null);
+    setSelectedBill(null);
+     setEditingPO(null);
   };
 
   // Handle attachment icon click
@@ -79,6 +90,11 @@ const Vendor = () => {
     setSelectedAttachments(attachments);
     setSelectedBillVendor(bill.vendorName);
     setShowAttachmentModal(true);
+  };
+  // Handle PO row click for editing
+  const handlePORowClick = (po) => {
+    setEditingPO(po);
+    setShowAddForm('po');
   };
 
   // Close attachment modal
@@ -99,7 +115,7 @@ const Vendor = () => {
       paymentMethod: paymentData.paymentMethod,
       journal: paymentData.journal,
       amount: paymentData.totalAmount,
-      currency: paymentData.currency,
+     
       status: 'Draft',
       tdsApplied: paymentData.tdsApplied ? 'Yes' : 'No',
       company: paymentData.company,
@@ -111,70 +127,55 @@ const Vendor = () => {
   };
 
   const handleBillSubmit = (billData) => {
-    setBills(prev => [...prev, {
-      id: prev.length + 1,
-      billNo: billData.billReference || `VB-${String(prev.length + 1001).padStart(4, '0')}`,
-      vendorName: billData.vendor,
-      billDate: billData.billDate,
-      dueDate: billData.dueDate,
-      gstin: billData.gstin,
-      gstTreatment: billData.gstTreatment,
-      totalAmount: billData.billLines.reduce((sum, line) => sum + line.total, 0),
-      status: billData.status || 'Draft',
-      paymentStatus: 'Unpaid',
-      company: billData.company,
-      journal: billData.journal,
-      referencePo: billData.billReference,
-      reverseCharge: billData.reverseCharge ? 'Yes' : 'No',
-      attachments: 'No'
-    }]);
+    // The AddBillForm now handles the Redux dispatch internally
+    // We just need to refresh the bills list and close the form
+    dispatch(fetchBills());
     setShowAddForm(null);
-    console.log('Bill added successfully:', billData);
+    setSelectedBill(null);
+    console.log('Bill operation completed:', billData);
   };
 
   const handleVendorSubmit = (vendorData) => {
-    setVendorsList(prev => [...prev, {
-      id: prev.length + 1,
-      vendorName: vendorData.vendorName,
-      companyType: vendorData.companyType,
-      gstin: vendorData.gstin,
-      pan: vendorData.pan,
-      phone: vendorData.mobile,
-      email: vendorData.email,
-      city: vendorData.city,
-      state: vendorData.state,
-      paymentTerms: vendorData.paymentTerms,
-      vendorTags: vendorData.vendorTags,
-      status: vendorData.status
-    }]);
-    toast.success('Vendor added successfully!');
+    // The form submission is handled by the AddVendorForm component itself
+    // This function is called after successful submission
     dispatch(fetchVendors());
     setShowAddForm(null);
-    console.log('Vendor added successfully:', vendorData);
+    setSelectedVendor(null);
+    console.log('Vendor operation completed:', vendorData);
   };
 
   const handlePurchaseOrderSubmit = (poData) => {
-    const newPO = {
-      id: purchaseOrders.length + 1,
-      poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
-      vendorName: poData.vendorName,
-      vendorGstin: poData.vendorGstin,
-      orderDate: poData.orderDate,
-      deliveryDate: poData.deliveryDate,
-      status: poData.status || 'Draft',
-      subtotal: poData.subtotal,
-      totalGst: poData.totalGst,
-      grandTotal: poData.grandTotal,
-      currency: poData.currency,
-      company: poData.company,
-      items: poData.items,
-      notes: poData.notes
-    };
-    
-    dispatch(fetchPurchaseOrders());
-    toast.success('Purchase Order created successfully!');
-    setShowAddForm(null);
-    console.log('Purchase Order created successfully:', poData);
+    if (editingPO) {
+      // Update existing PO
+      dispatch(fetchPurchaseOrders());
+      toast.success('Purchase Order updated successfully!');
+      setShowAddForm(null);
+      setEditingPO(null);
+      console.log('Purchase Order updated successfully:', poData);
+    } else {
+      // Create new PO
+      const newPO = {
+        id: purchaseOrders.length + 1,
+        poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
+        vendorName: poData.vendorName,
+        vendorGstin: poData.vendorGstin,
+        orderDate: poData.orderDate,
+        deliveryDate: poData.deliveryDate,
+        status: poData.status || 'Draft',
+        subtotal: poData.subtotal,
+        totalGst: poData.totalGst,
+        grandTotal: poData.grandTotal,
+        currency: poData.currency,
+        company: poData.company,
+        items: poData.items,
+        notes: poData.notes
+      };
+      
+      dispatch(fetchPurchaseOrders());
+      toast.success('Purchase Order created successfully!');
+      setShowAddForm(null);
+      console.log('Purchase Order created successfully:', poData);
+    }
   };
 
   const tabs = [
@@ -208,27 +209,34 @@ const Vendor = () => {
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add New Bill</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedBill ? 'Edit Bill' : 'Add New Bill'}
+              </h2>
             </div>
             <AddBillForm
+              bill={selectedBill}
               onSubmit={handleBillSubmit}
               onSuccess={() => {
-                toast.success('Bill added successfully!');
+                toast.success(selectedBill ? 'Bill updated successfully!' : 'Bill added successfully!');
               }}
               onCancel={handleBackFromForm}
             />
           </div>
         );
-        case 'po':
+           case 'po':
           return (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center mb-4">
                 <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                   <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
                 </button>
-                <h2 className="text-xl font-bold text-gray-900">Create Purchase Order</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingPO ? 'Edit Purchase Order' : 'Create Purchase Order'}
+                </h2>
               </div>
               <AddPurchaseOrderForm
+                mode={editingPO ? 'edit' : 'add'}
+                initialData={editingPO}
                 onSubmit={handlePurchaseOrderSubmit}
                 onCancel={handleBackFromForm}
               />
@@ -256,12 +264,15 @@ const Vendor = () => {
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add New Vendor</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedVendor ? 'Edit Vendor' : 'Add New Vendor'}
+              </h2>
             </div>
             <AddVendorForm
+              vendor={selectedVendor}
               onSubmit={handleVendorSubmit}
               onSuccess={() => {
-                toast.success('Vendor added successfully!');
+                toast.success(selectedVendor ? 'Vendor updated successfully!' : 'Vendor added successfully!');
               }}
               onCancel={handleBackFromForm}
             />
@@ -328,7 +339,14 @@ const Vendor = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {bills.map((bill) => (
-                    <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={bill.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedBill(bill);
+                        setShowAddForm('bill');
+                      }}
+                    >
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{bill.billNumber || 'N/A'}</span>
                       </td>
@@ -440,12 +458,16 @@ const Vendor = () => {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Currency</th>
+                       
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {purchaseOrders.map((po) => (
-                      <tr key={po.id} className="hover:bg-gray-50 transition-colors">
+                      <tr 
+                        key={po.id} 
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handlePORowClick(po)}
+                      >
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>
                         </td>
@@ -476,7 +498,7 @@ const Vendor = () => {
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.currency}</td>
+                
                       </tr>
                     ))}
                   </tbody>
@@ -648,7 +670,14 @@ const Vendor = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {vendors.map((vendor) => (
-                    <tr key={vendor.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                    <tr
+                      key={vendor.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedVendor(vendor);
+                        setShowAddForm('vendor');
+                      }}
+                    >
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
                       </td>

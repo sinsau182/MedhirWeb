@@ -52,6 +52,31 @@ export const addVendor = createAsyncThunk(
   }
 );
 
+// Update vendor
+export const updateVendor = createAsyncThunk(
+  "vendors/updateVendor",
+  async (vendor, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`${API_BASE_URL}/${vendor.vendorId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(vendor),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 // add vendorBills
 export const addVendorBills = createAsyncThunk(
   "vendors/addVendorBills",
@@ -130,6 +155,21 @@ export const vendorSlice = createSlice({
       state.vendors.push(action.payload);
     });
     builder.addCase(addVendor.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    });
+    builder.addCase(updateVendor.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateVendor.fulfilled, (state, action) => {
+      state.loading = false;
+      // Update the vendor in the vendors array
+      const index = state.vendors.findIndex(v => v.vendorId === action.payload.vendorId);
+      if (index !== -1) {
+        state.vendors[index] = action.payload;
+      }
+    });
+    builder.addCase(updateVendor.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload;
     });
