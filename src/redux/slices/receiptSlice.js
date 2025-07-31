@@ -174,12 +174,15 @@ export const fetchInvoicesByProject = createAsyncThunk(
 );
 
 
+
+
 const receiptSlice = createSlice({
   name: "receipts",
   initialState: {
     receipts: [],
     projectCustomerList: [],
     invoicesByProject: {}, // Add this to store invoices by projectId
+    receiptsByProject: [], // Add this to store receipts by project name
     loading: false,
     error: null,
   },
@@ -234,6 +237,18 @@ const receiptSlice = createSlice({
         }
       })
       .addCase(fetchInvoicesByProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchReceiptsByProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchReceiptsByProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.receiptsByProject = action.payload;
+      })
+      .addCase(fetchReceiptsByProject.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
