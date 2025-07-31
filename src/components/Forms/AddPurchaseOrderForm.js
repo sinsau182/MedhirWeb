@@ -550,21 +550,37 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       </div>
       
       {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-                <div className="text-lg font-bold">
-                    Grand Total: <span className="text-blue-600">₹{grandTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex gap-2">
-                   <button type="button" onClick={() => setShowPreview(true)} className="bg-white border border-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-100">Preview</button>
-                   <button type="button" onClick={onCancel} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
-                   <button type="button" onClick={handleSubmit} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">{mode === 'edit' ? 'Update PO' : 'Save PO'}</button>
-                </div>
-            </div>
-        </div>
+    <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 sticky bottom-0 z-20">
+    <div className="flex justify-between items-center">
+      <div className="text-lg font-bold">
+        Grand Total: <span className="text-blue-600">₹{grandTotal.toLocaleString('en-IN')}</span>
+        {mode === 'edit' }
       </div>
-
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => setShowPreview(true)}
+          className="px-6 py-2 border border-gray-300 rounded-lg transition-colors bg-white text-gray-800 font-bold hover:bg-gray-50"
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-2 border border-gray-300 rounded-lg transition-colors bg-gray-200 text-gray-800 font-bold hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="px-6 py-2 rounded-lg transition-colors font-medium bg-blue-600 text-white font-bold hover:bg-blue-700"
+        >
+          {mode === 'edit' ? 'Update PO' : 'Save PO'}
+        </button>
+      </div>
+    </div>
+  </div>
       {/* PO Preview Modal */}
       {showPreview && (
         <PurchaseOrderPreview 

@@ -836,7 +836,7 @@ const BillForm = ({ bill, onCancel }) => {
         <div className="flex justify-between items-center">
           <div className="text-lg font-bold">
             Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString('en-IN')}</span>
-            {isEditMode && <span className="text-sm text-gray-500 ml-2">(Edit Mode)</span>}
+           
           </div>
           <div className="flex gap-3">
             <button 
