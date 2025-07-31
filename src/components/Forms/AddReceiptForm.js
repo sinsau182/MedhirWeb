@@ -350,7 +350,7 @@ const handleSubmit = async (e) => {
       toast.success('Receipt added successfully!');
       // Add small delay to prevent duplicate messages
       setTimeout(() => {
-        if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
       }, 100);
     } catch (error) {
       console.error('Receipt submission error:', error);

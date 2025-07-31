@@ -202,7 +202,7 @@ const Customers = () => {
   const handleAddClick = () => {
     if (activeTab === 'invoice') setShowAddForm('invoice');
     else if (activeTab === 'receipts') setShowAddForm('receipt');
-    else if (activeTab === 'customers') setShowAddForm('customers');
+    else if (activeTab === 'clients') setShowAddForm('client');
   };
   const handleBackFromForm = () => {
     setShowAddForm(null);
