@@ -9,14 +9,13 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         projectId: '', // NEW
         customerName: '',
         customerId: '', // NEW
-        siteAddress: '',
+        address: '',
         invoiceNumber: '',
         invoiceDate: new Date().toISOString().split('T')[0],
         dueDate: '',
         invoiceLines: [
             { id: 1, item: '', hsn: '', quantity: 1, uom: 'NOS', rate: 0, gst: 18 }
         ],
-        discount: 0,
     });
 
     const [errors, setErrors] = useState({});
@@ -34,7 +33,8 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         projectId: p.projectId,
         projectName: p.projectName,
         customerId: p.customerId,
-        customerName: p.customerName
+        customerName: p.customerName,
+        address: p.address
     })) || [];
 
     useEffect(() => {
@@ -54,6 +54,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                 projectId: selected ? selected.projectId : '', // set projectId
                 customerName: selected ? selected.customerName : '',
                 customerId: selected ? selected.customerId : '', // set customerId
+                address: selected ? selected.address : '', // set address
             };
         });
         if (errors.projectName) setErrors(prev => ({ ...prev, projectName: '' }));
@@ -107,7 +108,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const calculateLineTotal = (line) => (line.quantity * line.rate) * (1 + line.gst / 100);
     const calculateSubtotal = () => formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate), 0);
     const calculateTotalGST = () => formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * line.gst / 100), 0);
-    const calculateTotal = () => calculateSubtotal() + calculateTotalGST() - formData.discount;
+    const calculateTotal = () => calculateSubtotal() + calculateTotalGST();
 
     const validateForm = () => {
         const newErrors = {};
@@ -191,7 +192,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                         </div>
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Site Address</label>
-                            <textarea name="siteAddress" value={formData.siteAddress} onChange={handleChange} rows="2" className="w-full px-4 py-3 text-base border rounded-lg border-gray-300" placeholder="Enter site address or location"></textarea>
+                            <textarea name="siteAddress" value={formData.address} onChange={handleChange} rows="2" className="w-full px-4 py-3 text-base border rounded-lg border-gray-300" placeholder="Enter site address or location"></textarea>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number <span className="text-red-500">*</span></label>
@@ -274,7 +275,6 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                             <div className="w-80 space-y-2">
                                 <div className="flex justify-between text-sm"><span className="text-gray-600">Subtotal:</span><span className="font-medium">{formatCurrency(calculateSubtotal())}</span></div>
                                 <div className="flex justify-between text-sm"><span className="text-gray-600">Total GST:</span><span className="font-medium">{formatCurrency(calculateTotalGST())}</span></div>
-                                <div className="flex justify-between text-sm items-center"><span className="text-gray-600">Discount:</span><input type="number" name="discount" value={formData.discount} onChange={handleChange} className="w-28 px-2 py-1 text-base text-right border rounded-lg border-gray-300" placeholder="0.00" /></div>
                                 <div className="border-t border-gray-300 pt-2 flex justify-between font-semibold"><span>Total Amount:</span><span className="text-lg">{formatCurrency(calculateTotal())}</span></div>
                             </div>
                         </div>

@@ -3,6 +3,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Getting Started
 
 First, run the development server:
+and include the .env file with key and their values
+NEXT_PUBLIC_API_URL="api-service-url-address"
+NEXT_PUBLIC_ATTENDANCE_URL="attendance-service-url-address"
 
 ```bash
 npm run dev

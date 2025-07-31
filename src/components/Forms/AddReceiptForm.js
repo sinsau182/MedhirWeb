@@ -99,6 +99,7 @@ useEffect(() => {
   useEffect(() => {
     if (formData.leadId && invoicesByProject[formData.leadId]) {
       const apiInvoices = invoicesByProject[formData.leadId];
+      console.log('API Invoices loaded:', apiInvoices);
       let invoicesWithPayments = apiInvoices.map(inv => ({ ...inv, payment: 0 }));
       setInvoicesToLink(invoicesWithPayments);
     }
@@ -216,6 +217,15 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   if (validateForm()) {
     const selectedCustomer = customers.find(c => c.name === formData.customerName);
+    
+    // Convert current invoicesToLink allocations to linkedInvoices format
+    const currentLinkedInvoices = invoicesToLink
+      .filter(inv => inv.payment > 0)
+      .map(inv => ({
+        invoiceNumber: inv.invoiceNumber || inv.number || inv.invoiceNo,
+        amountAllocated: inv.payment,
+      }));
+    
     // Use linkedInvoices as per backend structure
     const receiptData = {
       ...formData,
@@ -225,7 +235,7 @@ const handleSubmit = async (e) => {
       projectName: formData.projectName,
       amountReceived: parseFloat(formData.amount),
       amount: parseFloat(formData.amount),
-      linkedInvoices: formData.linkedInvoices, // Already in correct structure
+      linkedInvoices: currentLinkedInvoices, // Use current allocations from invoicesToLink
       attachment: formData.attachment ? formData.attachment.name : null,
       receiptDate: formData.receiptDate,
       paymentMethod: formData.paymentMethod,
@@ -236,10 +246,17 @@ const handleSubmit = async (e) => {
         formData.upiTransactionId ||
         '',
     };
+    
+    // Debug: Log the data being sent
+    console.log('Receipt Data being sent:', receiptData);
+    console.log('Linked Invoices:', currentLinkedInvoices);
+    console.log('Invoices to Link:', invoicesToLink);
+    
     try {
       await dispatch(addReceipt(receiptData)).unwrap();
       if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
     } catch (error) {
+      console.error('Receipt submission error:', error);
       setErrors({ submit: error?.message || 'Failed to add receipt' });
     }
   }
@@ -407,27 +424,20 @@ const handleSubmit = async (e) => {
                     {paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}
                   </select>
                 </div>
-                {['Bank Transfer', 'Cheque'].includes(formData.paymentMethod) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account <span className="text-red-500">*</span></label>
-                    <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
-                      <option value="">Select bank account</option>
-                      {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account <span className="text-red-500">*</span></label>
+                  <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
+                    <option value="">Select bank account</option>
+                    {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
+                  </select>
+                </div>
                 {formData.paymentMethod === 'Cheque' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cheque Number <span className="text-red-500">*</span></label>
                     <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter cheque number" />
                   </div>
                 )}
-                {formData.paymentMethod === 'UPI' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">UPI Transaction ID <span className="text-red-500">*</span></label>
-                    <input type="text" name="upiTransactionId" value={formData.upiTransactionId} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter UPI transaction ID" />
-                  </div>
-                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Payment trans. ID</label>
                   <input type="text" name="reference" value={formData.reference} onChange={handleChange} className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Bank transaction ID" />

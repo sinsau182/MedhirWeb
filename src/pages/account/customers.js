@@ -33,7 +33,7 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
               <div><strong>Project:</strong> {invoice.project?.projectName}</div>
               <div><strong>Customer:</strong> {invoice.customer?.customerName}</div>
               <div><strong>Invoice Date:</strong> {invoice.invoiceDate}</div>
-              <div><strong>Status:</strong> <span className={`font-semibold ${invoice.status === 'Received' ? 'text-green-600' : invoice.status === 'Partial received' ? 'text-yellow-600' : 'text-red-600'}`}>{invoice.status}</span></div>
+              <div><strong>Status:</strong> <span className={`font-semibold ${invoice.status?.toLowerCase() === 'received' || invoice.status?.toLowerCase() === 'paid' ? 'text-green-600' : invoice.status?.toLowerCase() === 'partial received' || invoice.status?.toLowerCase() === 'partial paid' || invoice.status?.toLowerCase() === 'partially paid' || invoice.status?.toLowerCase() === 'partiallypaid' ? 'text-yellow-600' : 'text-red-600'}`}>{invoice.status}</span></div>
             </div>
           </div>
           
@@ -122,8 +122,8 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
             <div className="flex items-center">
               <strong>Status:</strong> 
               <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${
-                receipt.status === 'Received' ? 'bg-green-100 text-green-800' :
-                receipt.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                receipt.status?.toLowerCase() === 'received' || receipt.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
+                receipt.status?.toLowerCase() === 'partial received' || receipt.status?.toLowerCase() === 'partial paid' || receipt.status?.toLowerCase() === 'partially paid' ? 'bg-yellow-100 text-yellow-800' :
                 'bg-red-100 text-red-800'
               }`}>{receipt.status}</span>
             </div>
@@ -332,8 +332,8 @@ const handleInvoiceSubmit = (data) => {
                     <td className="px-6 py-4 text-sm font-semibold text-red-600">${amountRemaining.toFixed(2)}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        invoice.status === 'Received' ? 'bg-green-100 text-green-800' :
-                        invoice.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
+                        invoice.status?.toLowerCase() === 'received' || invoice.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
+                        invoice.status?.toLowerCase() === 'partial received' || invoice.status?.toLowerCase() === 'partial paid' || invoice.status?.toLowerCase() === 'partially paid' || invoice.status?.toLowerCase() === 'partiallypaid' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }`}>
                         {invoice.status}

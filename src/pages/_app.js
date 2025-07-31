@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import CacheBuster from 'react-cache-buster';
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Provider } from "react-redux";
 import { store } from "../redux/store";
@@ -16,12 +17,23 @@ const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
+  const [version, setVersion] = useState(null);
+
+  useEffect(() => {
+    // Load version from public/meta.json at runtime
+    fetch("/meta.json")
+      .then((res) => res.json())
+      .then((data) => {
+        setVersion(data.version);
+      })
+      .catch((err) => {
+        console.error("Failed to load meta.json", err);
+      });
+  }, []);
 
   useEffect(() => {
     const activityEvents = ["mousemove", "keydown", "click", "scroll"];
-    const handleActivity = () => {
-      updateSessionActivity();
-    };
+    const handleActivity = () => updateSessionActivity();
 
     activityEvents.forEach((event) =>
       window.addEventListener(event, handleActivity)
@@ -32,7 +44,7 @@ function MyApp({ Component, pageProps }) {
         clearSession();
         router.push("/login");
       }
-    }, 60 * 1000); // check every minute
+    }, 60 * 1000);
 
     return () => {
       activityEvents.forEach((event) =>
@@ -42,20 +54,29 @@ function MyApp({ Component, pageProps }) {
     };
   }, [router]);
 
+  if (!version) return null; // or a loading spinner
+
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-        <Toaster 
-          position="top-right"
-          richColors
-          closeButton
-          duration={4000}
-        />
-      </QueryClientProvider>
-    </Provider>
+    <CacheBuster
+      currentVersion={version}
+      isEnabled={process.env.NODE_ENV === "production"}
+      metaFileDirectory="/"
+      loadingComponent={<div>Loading new version...</div>}
+    >
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+          <Toaster
+            position="top-right"
+            richColors
+            closeButton
+            duration={4000}
+          />
+        </QueryClientProvider>
+      </Provider>
+    </CacheBuster>
   );
 }
 
