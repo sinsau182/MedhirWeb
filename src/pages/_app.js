@@ -12,6 +12,7 @@ import {
 } from "@/utils/sessionManager";
 import "../styles/globals.css";
 import Layout from '../components/Layout';
+import VersionDisplay from '../components/VersionDisplay';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,10 @@ function MyApp({ Component, pageProps }) {
       .then((res) => res.json())
       .then((data) => {
         setVersion(data.version);
+        // Add version to page title for easy identification
+        if (typeof window !== "undefined") {
+          localStorage.setItem("appVersion", data.version);
+        }
       })
       .catch((err) => {
         console.error("Failed to load meta.json", err);
@@ -65,41 +70,59 @@ function MyApp({ Component, pageProps }) {
     <CacheBuster
       currentVersion={version || "1.0.0"}
       isEnabled={process.env.NODE_ENV === "production"}
-      loadingComponent={
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '18px',
-          zIndex: 9999
-        }}>
-          🔄 Loading new version... Please wait
-        </div>
-      }
+      loadingComponent={<div>Loading...</div>}
       onCacheClear={() => {
         console.log("🔁 Version mismatch detected. Cache cleared. Reloading...");
+        console.log("📊 Cache buster stats:", {
+          oldVersion: localStorage.getItem('appVersion'),
+          newVersion: version,
+          timestamp: new Date().toISOString()
+        });
+      }}
+      onError={(error) => {
+        console.error("Cache buster error:", error);
+      }}
+      onVersionCheck={(oldVersion, newVersion) => {
+        console.log("🔍 CacheBuster version check:", { oldVersion, newVersion });
       }}
     >
-      <Provider store={store}>
-        <QueryClientProvider client={queryClient}>
-          <Layout>
-            <Component {...pageProps} />
-          </Layout>
-          <Toaster
-            position="top-right"
-            richColors
-            closeButton
-            duration={4000}
-          />
-        </QueryClientProvider>
-      </Provider>
+              <Provider store={store}>
+          <QueryClientProvider client={queryClient}>
+            <Layout>
+              <Component {...pageProps} />
+            </Layout>
+            <VersionDisplay />
+            {/* Test button for cache buster - remove in production */}
+            {process.env.NODE_ENV === "development" && (
+              <button
+                onClick={() => {
+                  localStorage.setItem('appVersion', '0.1.0'); // Set old version
+                  window.location.reload(); // Force reload to trigger cache buster
+                }}
+                style={{
+                  position: 'fixed',
+                  bottom: '20px',
+                  right: '20px',
+                  zIndex: 9999,
+                  padding: '10px',
+                  backgroundColor: '#ff4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Test Cache Buster
+              </button>
+            )}
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              duration={4000}
+            />
+          </QueryClientProvider>
+        </Provider>
     </CacheBuster>
   );
 }

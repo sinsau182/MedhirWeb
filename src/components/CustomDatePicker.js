@@ -15,6 +15,7 @@ const CustomDatePicker = ({
   departmentInfo = null,
   leavePolicy = null,
   weeklyOffs = [],
+  joiningDate = null,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -93,6 +94,21 @@ const CustomDatePicker = ({
     console.log('[CustomDatePicker] allowedValue:', allowedValue);
     console.log('[CustomDatePicker] selectedDateObjects:', selectedDateObjects);
     console.log('[CustomDatePicker] frozenDates:', frozenDates);
+    console.log('[CustomDatePicker] joiningDate:', joiningDate);
+    
+    // Debug log for date conditions
+    const today = new Date();
+    const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    console.log('[CustomDatePicker] previousMonth cutoff:', previousMonth);
+    console.log('[CustomDatePicker] today:', today);
+    
+    // Debug log for joining date logic
+    if (joiningDate) {
+      const joiningDateObj = new Date(joiningDate);
+      console.log('[CustomDatePicker] joiningDate:', joiningDateObj);
+      console.log('[CustomDatePicker] joiningDate is before previousMonth cutoff:', joiningDateObj < previousMonth);
+      console.log('[CustomDatePicker] joiningDate is after previousMonth cutoff:', joiningDateObj >= previousMonth);
+    }
     if (restrictedDays.length) {
       const selectedRestricted = selectedDateObjects.filter(selected =>
         restrictedDays.includes(format(selected.date, 'EEE'))
@@ -101,7 +117,7 @@ const CustomDatePicker = ({
     }
     // Debug log for weeklyOffs
     console.log('[CustomDatePicker] weeklyOffs:', weeklyOffs, isCompOff ? '(ignored for comp-off)' : '');
-  }, [leavePolicy, selectedDateObjects, frozenDates, weeklyOffs, isCompOff]);
+  }, [leavePolicy, selectedDateObjects, frozenDates, weeklyOffs, isCompOff, joiningDate]);
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -130,8 +146,14 @@ const CustomDatePicker = ({
     const today = new Date();
     const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     
-    // Allow dates from the first day of previous month onwards
+    // Check if date is before the previous month cutoff FIRST
     if (date < previousMonth) return true;
+    
+    // Only check joining date if the date would be selectable under the old rule
+    if (joiningDate) {
+      const joiningDateObj = new Date(joiningDate);
+      if (date < joiningDateObj) return true;
+    }
     
     if (disabledDates.some(disabledDate => isSameDay(new Date(disabledDate), date))) return true;
     if (frozenDates.some(frozenDate => isSameDay(frozenDate, date))) return true;
@@ -190,7 +212,7 @@ const CustomDatePicker = ({
     return disabledDates.some(disabledDate => isSameDay(new Date(disabledDate), date));
   };
 
-  const getDateClassName = (date) => {
+    const getDateClassName = (date) => {
     if (!date) return 'invisible';
     
     let baseClasses = 'relative p-1.5 text-center cursor-pointer rounded-md transition-all duration-200';
@@ -199,6 +221,21 @@ const CustomDatePicker = ({
       if (isDateWithLeaveApplied(date)) {
         // Date with leave applied - show in blue
         return `${baseClasses} bg-blue-100 text-blue-700 hover:bg-blue-200 cursor-not-allowed`;
+      }
+      
+      // Check if it's before previous month cutoff FIRST - show in gray
+      const today = new Date();
+      const previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      if (date < previousMonth) {
+        return `${baseClasses} text-gray-300 cursor-not-allowed`;
+      }
+      
+      // Only show red for joining date if the date would be selectable under old rule
+      if (joiningDate) {
+        const joiningDateObj = new Date(joiningDate);
+        if (date < joiningDateObj) {
+          return `${baseClasses} text-red-300 cursor-not-allowed`;
+        }
       }
       
       // Check if it's a weekly off
@@ -471,6 +508,8 @@ const CustomDatePicker = ({
                     onMouseEnter={() => setHoverDate(date)}
                     onMouseLeave={() => setHoverDate(null)}
                     title={date && isDateWithLeaveApplied(date) ? "Leave already applied for this date" : 
+                           date && date < new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1) ? "Cannot apply leave before previous month" :
+                           date && joiningDate && date < new Date(joiningDate) ? "Cannot apply leave before joining date" :
                            date && !isCompOff && weeklyOffs && weeklyOffs.length > 0 && weeklyOffs.includes(format(date, 'EEEE')) ? "Weekly off" : ""}
                   >
                     {date ? (
