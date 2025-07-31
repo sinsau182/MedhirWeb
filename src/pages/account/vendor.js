@@ -45,7 +45,7 @@ const Vendor = () => {
   };
   const [activeTab, setActiveTab] = useState('bills'); // Default to bills tab
   const [showAddForm, setShowAddForm] = useState(null); // 'bill' | 'refund' | 'payment' | 'vendor' | null
-
+const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Refetch vendors when form is closed and we're on vendors tab
   useEffect(() => {
     if (showAddForm === null && activeTab === 'vendors') {
@@ -81,6 +81,7 @@ const Vendor = () => {
     setShowAddForm(null);
     setSelectedVendor(null);
     setSelectedBill(null);
+     setEditingPO(null);
   };
 
   // Handle attachment icon click
@@ -89,6 +90,11 @@ const Vendor = () => {
     setSelectedAttachments(attachments);
     setSelectedBillVendor(bill.vendorName);
     setShowAttachmentModal(true);
+  };
+  // Handle PO row click for editing
+  const handlePORowClick = (po) => {
+    setEditingPO(po);
+    setShowAddForm('po');
   };
 
   // Close attachment modal
@@ -139,11 +145,37 @@ const Vendor = () => {
   };
 
   const handlePurchaseOrderSubmit = (poData) => {
-    // The AddPurchaseOrderForm now handles the Redux dispatch internally
-    // We just need to refresh the purchase orders list and close the form
-    dispatch(fetchPurchaseOrders());
-    setShowAddForm(null);
-    console.log('Purchase Order operation completed:', poData);
+    if (editingPO) {
+      // Update existing PO
+      dispatch(fetchPurchaseOrders());
+      toast.success('Purchase Order updated successfully!');
+      setShowAddForm(null);
+      setEditingPO(null);
+      console.log('Purchase Order updated successfully:', poData);
+    } else {
+      // Create new PO
+      const newPO = {
+        id: purchaseOrders.length + 1,
+        poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
+        vendorName: poData.vendorName,
+        vendorGstin: poData.vendorGstin,
+        orderDate: poData.orderDate,
+        deliveryDate: poData.deliveryDate,
+        status: poData.status || 'Draft',
+        subtotal: poData.subtotal,
+        totalGst: poData.totalGst,
+        grandTotal: poData.grandTotal,
+        currency: poData.currency,
+        company: poData.company,
+        items: poData.items,
+        notes: poData.notes
+      };
+      
+      dispatch(fetchPurchaseOrders());
+      toast.success('Purchase Order created successfully!');
+      setShowAddForm(null);
+      console.log('Purchase Order created successfully:', poData);
+    }
   };
 
   const tabs = [
@@ -191,7 +223,7 @@ const Vendor = () => {
             />
           </div>
         );
-        case 'po':
+           case 'po':
           return (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center mb-4">
@@ -199,14 +231,13 @@ const Vendor = () => {
                   <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
                 </button>
                 <h2 className="text-xl font-bold text-gray-900">
-                  Create Purchase Order
+                  {editingPO ? 'Edit Purchase Order' : 'Create Purchase Order'}
                 </h2>
               </div>
               <AddPurchaseOrderForm
+                mode={editingPO ? 'edit' : 'add'}
+                initialData={editingPO}
                 onSubmit={handlePurchaseOrderSubmit}
-                onSuccess={() => {
-                  toast.success('Purchase Order created successfully!');
-                }}
                 onCancel={handleBackFromForm}
               />
             </div>
@@ -435,6 +466,7 @@ const Vendor = () => {
                       <tr 
                         key={po.id} 
                         className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handlePORowClick(po)}
                       >
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>

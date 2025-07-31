@@ -3,9 +3,9 @@ import { FaBuilding, FaPaperclip, FaPlus, FaTrash, FaShippingFast, FaFilePdf, Fa
 import PurchaseOrderPreview from '../Previews/PurchaseOrderPreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
-import { createPurchaseOrder } from '../../redux/slices/PurchaseOrderSlice';
+import { createPurchaseOrder, updatePurchaseOrder } from '../../redux/slices/PurchaseOrderSlice';
 
-const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
+const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = null }) => {
   const companyId = sessionStorage.getItem('employeeCompanyId');
   const dispatch = useDispatch();
   const { vendors, loading: vendorsLoading, error } = useSelector((state) => state.vendors);
@@ -14,26 +14,65 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
     dispatch(fetchVendors());
   }, [dispatch]);
 
+  // Transform API data to form format for edit mode
+  const transformApiDataToFormData = (apiData) => {
+    if (!apiData) return null;
+    
+    return {
+      poNumber: apiData.purchaseOrderNumber || `PO-${Date.now().toString().slice(-6)}`,
+      vendor: null, // Will be set when vendors are loaded
+      orderDate: apiData.purchaseOrderDate || new Date().toISOString().split('T')[0],
+      deliveryDate: apiData.purchaseOrderDeliveryDate || '',
+      notes: apiData.notes || '',
+      company: null, // Will be set based on company address
+      shippingAddress: apiData.companyAddress || '',
+      items: apiData.purchaseOrderLineItems ? apiData.purchaseOrderLineItems.map((item, index) => ({
+        id: index + 1,
+        itemName: item.itemName || '',
+        description: item.description || '',
+        hsnCode: item.hsnOrSac || '',
+        gstRate: item.gstPercent || 18,
+        quantity: item.quantity || 1,
+        rate: item.rate || 0,
+        unit: item.uom || 'PCS'
+      })) : [{
+        id: 1,
+        itemName: 'Sample Item',
+        description: 'A sample item for this PO.',
+        hsnCode: '998877',
+        gstRate: 18,
+        quantity: 2,
+        rate: 150,
+        unit: 'PCS'
+      }],
+      attachments: []
+    };
+  };
 
-  const [formData, setFormData] = useState({
-    poNumber: `PO-${Date.now().toString().slice(-6)}`,
-    vendor: null,
-    orderDate: new Date().toISOString().split('T')[0],
-    deliveryDate: '',
-    notes: '',
-    company: null,
-    shippingAddress: '',
-    items: [{
-      id: 1,
-      itemName: 'Sample Item',
-      description: 'A sample item for this PO.',
-      hsnCode: '998877',
-      gstRate: 18,
-      quantity: 2,
-      rate: 150,
-      unit: 'PCS'
-    }],
-    attachments: []
+  const [formData, setFormData] = useState(() => {
+    if (mode === 'edit' && initialData) {
+      return transformApiDataToFormData(initialData);
+    }
+    return {
+      poNumber: `PO-${Date.now().toString().slice(-6)}`,
+      vendor: null,
+      orderDate: new Date().toISOString().split('T')[0],
+      deliveryDate: '',
+      notes: '',
+      company: null,
+      shippingAddress: '',
+      items: [{
+        id: 1,
+        itemName: 'Sample Item',
+        description: 'A sample item for this PO.',
+        hsnCode: '998877',
+        gstRate: 18,
+        quantity: 2,
+        rate: 150,
+        unit: 'PCS'
+      }],
+      attachments: []
+    };
   });
 
   const [errors, setErrors] = useState({});
@@ -44,12 +83,27 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
 
-  // // In a real app, this would come from an API
-  // const [vendors] = useState([
-  //   { id: 1, name: 'Acme Ltd.', gstin: '27ABCDE1234F1Z5', address: '123 Business Park, Mumbai' },
-  //   { id: 2, name: 'XYZ India', gstin: '29XYZE5678K9Z2', address: '456 Tech Park, Pune' },
-  //   { id: 3, name: 'Tech Solutions', gstin: '29TECH5678K9Z3', address: '789 Innovation Hub, Bangalore' },
-  // ]);
+  // Set selected vendor when vendors are loaded and we're in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialData && vendors.length > 0) {
+      const vendor = vendors.find(v => v.vendorId === initialData.vendorId);
+      setSelectedVendor(vendor);
+    }
+  }, [mode, initialData, vendors]);
+
+  // Set company when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialData && initialData.companyAddress) {
+      const company = companies.find(c => c.address.includes(initialData.companyAddress) || initialData.companyAddress.includes(c.name));
+      if (company) {
+        setFormData(prev => ({
+          ...prev,
+          company: company,
+          shippingAddress: initialData.companyAddress
+        }));
+      }
+    }
+  }, [mode, initialData]);
 
   const [companies] = useState([
     { id: 1, name: 'ABC Pvt Ltd', gstin: '27AABCU9876A1Z5', address: '1st Floor, Innovation Tower,\nCybercity, Ebene,\nMauritius' },
@@ -158,7 +212,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-    const handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!validateForm()) {
       console.log("Validation failed");
@@ -166,67 +220,69 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
       return;
     }
 
-    if (validateForm()) {
-      // Calculate TDS amount
-      const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
-        (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
+    // Calculate TDS amount
+    const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
+      (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
 
-      // Prepare the purchase order data matching your API structure
-      const poData = {
-        purchaseOrderId: formData.poNumber,
-        purchaseOrderNumber: formData.poNumber,
-        companyId: companyId,
-        companyAddress: formData.shippingAddress,
-        vendorId: selectedVendor.vendorId,
-        gstin: selectedVendor.gstin,
-        vendorAddress: selectedVendor.addressLine1,
-        tdsPercentage: selectedVendor.tdsPercentage || 0,
-        purchaseOrderDate: formData.orderDate,
-        purchaseOrderDeliveryDate: formData.deliveryDate,
-        purchaseOrderLineItems: formData.items.map(item => {
-          const qty = Number(item.quantity) || 0;
-          const rate = Number(item.rate) || 0;
-          const gstRate = Number(item.gstRate) || 0;
-          const amount = qty * rate;
-          const gstAmount = amount * (gstRate / 100);
-          const totalAmount = amount + gstAmount;
-          
-          return {
-            itemName: item.itemName,
-            description: item.description,
-            hsnOrSac: item.hsnCode,
-            quantity: qty,
-            uom: item.unit,
-            rate: rate,
-            amount: amount,
-            gstPercent: gstRate,
-            gstAmount: gstAmount,
-            totalAmount: totalAmount
-          };
-        }),
-        totalBeforeGST: subtotal,
-        totalGST: totalGst,
-        tdsApplied: tdsAmount,
-        finalAmount: grandTotal - tdsAmount
-      };
+    // Prepare the purchase order data matching your API structure
+    const poData = {
+      purchaseOrderId: formData.poNumber,
+      purchaseOrderNumber: formData.poNumber,
+      companyId: companyId,
+      companyAddress: formData.shippingAddress,
+      vendorId: selectedVendor.vendorId,
+      gstin: selectedVendor.gstin,
+      vendorAddress: selectedVendor.addressLine1,
+      tdsPercentage: selectedVendor.tdsPercentage || 0,
+      purchaseOrderDate: formData.orderDate,
+      purchaseOrderDeliveryDate: formData.deliveryDate,
+      purchaseOrderLineItems: formData.items.map(item => {
+        const qty = Number(item.quantity) || 0;
+        const rate = Number(item.rate) || 0;
+        const gstRate = Number(item.gstRate) || 0;
+        const amount = qty * rate;
+        const gstAmount = amount * (gstRate / 100);
+        const totalAmount = amount + gstAmount;
+        
+        return {
+          itemName: item.itemName,
+          description: item.description,
+          hsnOrSac: item.hsnCode,
+          quantity: qty,
+          uom: item.unit,
+          rate: rate,
+          amount: amount,
+          gstPercent: gstRate,
+          gstAmount: gstAmount,
+          totalAmount: totalAmount
+        };
+      }),
+      totalBeforeGST: subtotal,
+      totalGST: totalGst,
+      tdsApplied: tdsAmount,
+      finalAmount: grandTotal - tdsAmount
+    };
 
-      console.log('Purchase Order Data:', poData);
+    console.log('Purchase Order Data:', poData);
 
-      // Create FormData for multipart upload
-      const formDataToSend = new FormData();
-      formDataToSend.append('purchaseOrder', JSON.stringify(poData));
-      
-      // Add attachments as separate files
-      formData.attachments.forEach((file, index) => {
-        formDataToSend.append('attachment', file);
-      });
+    // Create FormData for multipart upload
+    const formDataToSend = new FormData();
+    formDataToSend.append('purchaseOrder', JSON.stringify(poData));
+    
+    // Add attachments as separate files
+    formData.attachments.forEach((file, index) => {
+      formDataToSend.append('attachment', file);
+    });
 
-      try {
+    try {
+      if (mode === 'add') {
         dispatch(createPurchaseOrder(formDataToSend));
-        onCancel();
-      } catch (error) {
-        console.error('Error creating purchase order:', error);
+      } else if (mode === 'edit') {
+        dispatch(updatePurchaseOrder({ purchaseOrderId: initialData.purchaseOrderId, purchaseOrder: formDataToSend }));
       }
+      onCancel();
+    } catch (error) {
+      console.error('Error creating purchase order:', error);
     }
   };
 
@@ -503,7 +559,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                 <div className="flex gap-2">
                    <button type="button" onClick={() => setShowPreview(true)} className="bg-white border border-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-100">Preview</button>
                    <button type="button" onClick={onCancel} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
-                   <button type="button" onClick={handleSubmit} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Save PO</button>
+                   <button type="button" onClick={handleSubmit} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">{mode === 'edit' ? 'Update PO' : 'Save PO'}</button>
                 </div>
             </div>
         </div>
