@@ -14,6 +14,7 @@ import {
   resetLeaveBalanceState,
 } from "@/redux/slices/leaveBalanceSlice";
 import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
+import { fetchEmployeeDetails } from "@/redux/slices/payslipSlice";
 import { toast } from "sonner";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
@@ -65,6 +66,7 @@ const Leaves = () => {
     loading: holidayLoading,
     error: holidayError,
   } = useSelector((state) => state.publicHoliday);
+  const { employeeData } = useSelector((state) => state.payslip);
   const calendarRef = useRef(null);
 
   const [requestedDays, setRequestedDays] = useState(0);
@@ -145,6 +147,7 @@ const Leaves = () => {
     dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
     dispatch(fetchPublicHolidays());
     dispatch(fetchEmployeeLeavePolicy(employeeId));
+    dispatch(fetchEmployeeDetails(employeeId)); // Fetch employee details for joining date
 
     return () => {
       dispatch(clearErrors());
@@ -689,6 +692,7 @@ const Leaves = () => {
                       leavePolicy={leavePolicy}
                       weeklyOffs={weeklyOffs}
                       disabledDates={getDisabledDates()}
+                      joiningDate={employeeData?.joiningDate}
                     />
                     {/* {getDisabledDates().length > 0 && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center">
@@ -786,6 +790,7 @@ const Leaves = () => {
                         }));
                       }}
                       disabledDates={getDisabledDates()}
+                      joiningDate={employeeData?.joiningDate}
                     />
                     {/* {getDisabledDates().length > 0 && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center">
