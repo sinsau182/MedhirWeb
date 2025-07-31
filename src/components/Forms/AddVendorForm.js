@@ -103,6 +103,11 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
       }
     }
   }, [vendor]);
+  useEffect(() => {
+  if (isEditMode && formData.bankDetails.accountNumber) {
+    setConfirmAccountNumber(formData.bankDetails.accountNumber);
+  }
+}, [isEditMode, formData.bankDetails.accountNumber]);
 
   const [errors, setErrors] = useState({});
   const [collapsedSections, setCollapsedSections] = useState({
