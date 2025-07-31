@@ -123,7 +123,9 @@ function AttendanceTracker({
     setIsAllEmployeesDateModalOpen(false);
     setSelectedEmployeeForMonth(null);
     setMonthAttendanceData({});
+    setOriginalMonthAttendanceData({});
     setAllEmployeesAttendanceData({});
+    setOriginalAllEmployeesAttendanceData({});
     setAllEmployeesSearch("");
     setSingleEmployeeMarkAsStatus("");
     setSingleEmployeeApplyToScope("");
@@ -149,6 +151,42 @@ function AttendanceTracker({
     setIsSingleEmployeeModalOpen(false);
     setIsAllEmployeesDateModalOpen(true);
   };
+
+  // Function to check if there are changes in Single Employee Month modal
+  const hasSingleEmployeeChanges = () => {
+    const currentKeys = Object.keys(monthAttendanceData);
+    const originalKeys = Object.keys(originalMonthAttendanceData);
+    
+    // Check if any keys are different
+    if (currentKeys.length !== originalKeys.length) return true;
+    
+    // Check if any values are different
+    for (const key of currentKeys) {
+      if (monthAttendanceData[key] !== originalMonthAttendanceData[key]) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  // Function to check if there are changes in All Employees Date modal
+  const hasAllEmployeesChanges = () => {
+    const currentKeys = Object.keys(allEmployeesAttendanceData);
+    const originalKeys = Object.keys(originalAllEmployeesAttendanceData);
+    
+    // Check if any keys are different
+    if (currentKeys.length !== originalKeys.length) return true;
+    
+    // Check if any values are different
+    for (const key of currentKeys) {
+      if (allEmployeesAttendanceData[key] !== originalAllEmployeesAttendanceData[key]) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
   
   // Single Employee Month Modal State
   const [isSingleEmployeeModalOpen, setIsSingleEmployeeModalOpen] =
@@ -156,6 +194,7 @@ function AttendanceTracker({
   const [selectedEmployeeForMonth, setSelectedEmployeeForMonth] =
     useState(null);
   const [monthAttendanceData, setMonthAttendanceData] = useState({});
+  const [originalMonthAttendanceData, setOriginalMonthAttendanceData] = useState({}); // Track original data for change detection
   const [monthYear, setMonthYear] = useState({
     month: new Date().toLocaleString("default", { month: "long" }),
     year: new Date().getFullYear().toString(),
@@ -170,6 +209,7 @@ function AttendanceTracker({
   const [allEmployeesAttendanceData, setAllEmployeesAttendanceData] = useState(
     {}
   );
+  const [originalAllEmployeesAttendanceData, setOriginalAllEmployeesAttendanceData] = useState({}); // Track original data for change detection
   const [allEmployeesSearch, setAllEmployeesSearch] = useState("");
 
   // Constants/Options
@@ -842,6 +882,7 @@ function AttendanceTracker({
         });
         
         setMonthAttendanceData(initialData);
+        setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
       } else {
         // If no existing data, initialize with empty values
         const dates = generateMonthDates(monthYear.month, monthYear.year);
@@ -850,6 +891,7 @@ function AttendanceTracker({
           initialData[day] = null; // Use null instead of empty string
         });
         setMonthAttendanceData(initialData);
+        setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
       }
       })
       .catch((error) => {
@@ -861,6 +903,7 @@ function AttendanceTracker({
         initialData[day] = null; // Use null instead of empty string
       });
       setMonthAttendanceData(initialData);
+      setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
     });
   };
 
@@ -912,6 +955,7 @@ function AttendanceTracker({
         setIsSingleEmployeeModalOpen(false);
         setSelectedEmployeeForMonth(null);
         setMonthAttendanceData({});
+        setOriginalMonthAttendanceData({}); // Reset original data after successful save
         // Refresh attendance data
         dispatch(
           fetchAllEmployeeAttendanceOneMonth({
@@ -956,6 +1000,7 @@ function AttendanceTracker({
     });
     
     setAllEmployeesAttendanceData(initialData);
+    setOriginalAllEmployeesAttendanceData(initialData); // Set original data for change tracking
   };
 
   const setAllEmployeesStatus = (status) => {
@@ -1028,6 +1073,7 @@ function AttendanceTracker({
       if (!result.error) {
         setIsAllEmployeesDateModalOpen(false);
         setAllEmployeesAttendanceData({});
+        setOriginalAllEmployeesAttendanceData({}); // Reset original data after successful save
         setAllEmployeesSearch("");
         toast.success("Attendance marked successfully for all employees");
         // Refresh attendance data
@@ -1642,7 +1688,7 @@ function AttendanceTracker({
       {/* Content Area (relative for overlays) */}
       <div className="relative" id="attendance-table-container">
         {isSingleEmployeeModalOpen ? (
-          <div className="bg-white rounded-2xl shadow-xl p-4 w-full h-full flex flex-col border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl p-4 w-full h-full flex flex-col border border-gray-100 z-40">
             {/* Modern Header - More Compact */}
             <div className="pb-4 mb-4 border-b border-gray-100">
               {/* Employee Info Row - Top */}
@@ -2165,7 +2211,7 @@ function AttendanceTracker({
                       </button>
                       <button
                         onClick={handleSaveMonthAttendance}
-                        disabled={manualAttendanceLoading}
+                        disabled={manualAttendanceLoading || !hasSingleEmployeeChanges()}
                         className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {manualAttendanceLoading ? (
@@ -2255,7 +2301,7 @@ function AttendanceTracker({
 
         {/* All Employees Date Playcard - moved here! */}
         {isAllEmployeesDateModalOpen && (
-          <div className="absolute inset-0 flex flex-col w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up">
+          <div className="absolute inset-0 flex flex-col w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up z-40">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               {/* Title */}
@@ -2811,7 +2857,7 @@ function AttendanceTracker({
                 </button>
                 <button
                   onClick={handleSaveAllEmployeesAttendance}
-                  disabled={manualAttendanceLoading}
+                  disabled={manualAttendanceLoading || !hasAllEmployeesChanges()}
                   className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {manualAttendanceLoading ? (

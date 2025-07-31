@@ -110,43 +110,27 @@ const Overview = () => {
       let absentCount = 0;
       const today = new Date();
       const currentDay = today.getDate();
-      const totalEmployees = employees?.length ?? 0;
       
-      // Process each employee's attendance for today
+      // Process each employee's attendance for today using the same logic as Attendance Management page
       attendance.monthlyAttendance.forEach((employeeRecord) => {
         if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
           const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
           
-          // Only count actual "Present" status as present
-          if (dayStatus === 'P') {
-            presentCount++;
+          // Use the exact same logic as Attendance Management page
+          switch (dayStatus?.toUpperCase()) {
+            case "P":
+              presentCount++;
+              break;
+            case "A":
+              absentCount++;
+              break;
+            // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
+            default:
+              // Don't count other statuses
+              break;
           }
-          // Count only "Absent" status as absent
-          else if (dayStatus === 'A') {
-            absentCount++;
-          }
-          // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
         }
       });
-
-      // Ensure present + absent doesn't exceed total employees
-      const totalCounted = presentCount + absentCount;
-      if (totalCounted > totalEmployees) {
-        // If we have more counted than total employees, adjust the counts proportionally
-        const ratio = totalEmployees / totalCounted;
-        presentCount = Math.round(presentCount * ratio);
-        absentCount = Math.round(absentCount * ratio);
-        
-        // Ensure we don't exceed total employees
-        if (presentCount + absentCount > totalEmployees) {
-          // If still exceeding, prioritize present count
-          if (presentCount > absentCount) {
-            presentCount = totalEmployees - absentCount;
-          } else {
-            absentCount = totalEmployees - presentCount;
-          }
-        }
-      }
 
       setCurrentDayAttendanceSummary({
         totalPresent: presentCount,
@@ -159,7 +143,7 @@ const Overview = () => {
         totalAbsent: 0,
       });
     }
-  }, [attendance, employees]); // Added employees as dependency
+  }, [attendance]); // Removed employees dependency as we're using the same logic as Attendance Management
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);

@@ -439,16 +439,17 @@ const AttendanceTable = ({
                       {isActive && (
                         <button
                           type="button"
-                          className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none"
+                          className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none w-5 h-5 flex items-center justify-center text-base font-bold rounded-full hover:bg-red-100 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             setSelectedStatuses((prev) =>
                               prev.filter((s) => s !== status)
                             );
                           }}
                           aria-label={`Remove ${found ? found.label : status}`}
                         >
-                          &times;
+                          ×
                         </button>
                       )}
                     </span>
@@ -459,7 +460,7 @@ const AttendanceTable = ({
           </button>
 
           {isStatusFilterOpen && (
-            <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg">
+            <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-50">
               <div className="p-2 max-h-48 overflow-y-auto">
                 {statusOptions.map((status) => (
                   <label
