@@ -291,16 +291,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
       case 'bills':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search bills..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-            </div>
             {bills.length === 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -417,16 +407,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         case 'purchaseOrders':
           return (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <div className="relative">
-                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search purchase orders..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
-                </div>
-              </div>
               {purchaseOrders.length === 0 ? (
                 <div className="bg-white rounded-lg shadow border border-gray-200">
                   <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -510,16 +490,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
       case 'payments':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search payments..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-            </div>
             {payments.length === 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -624,16 +594,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
       case 'vendors':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search vendors..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-            </div>
             {vendors.length === 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -740,39 +700,48 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
 
         {/* Main Content Area */}
         <div className="mt-20 p-6">
-          {/* Vendors heading and Add Button + Tabs as a single block, pushed down together */}
-          <div className="mb-0">
+          <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Vendors</h1>
-            <div className="flex items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
-              {/* Add Button */}
+          </div>
+
+          <div className="flex justify-between items-center mb-6">
+            <nav className="flex space-x-6">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setShowAddForm(null); // Always reset form on tab switch
+                  }}
+                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none py-1 ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  style={{ minWidth: 110 }}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="flex items-center space-x-4">
               <button
                 onClick={handleAddClick}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm mr-6 text-sm"
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
                 style={{ minWidth: 120 }}
               >
                 {getAddButtonIcon()} <span>{getAddButtonLabel()}</span>
               </button>
-              {/* Tabs */}
-              <nav className="flex space-x-6">
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setShowAddForm(null); // Always reset form on tab switch
-                    }}
-                    className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none py-1 ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                    style={{ minWidth: 110 }}
-                  >
-                    <tab.icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab}...`}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                />
+              </div>
             </div>
           </div>
 

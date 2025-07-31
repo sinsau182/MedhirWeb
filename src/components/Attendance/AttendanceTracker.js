@@ -318,7 +318,7 @@ function AttendanceTracker({
       const availableOptions = getSingleEmployeeApplyToOptions(singleEmployeeMarkAsStatus);
       const currentScopeExists = availableOptions.some(opt => opt.value === singleEmployeeApplyToScope);
       
-      // If current scope is not available for the new status, reset to first available option
+      // If current scope is not applicable for the new status, reset to first available option
       if (!currentScopeExists && availableOptions.length > 0) {
         setSingleEmployeeApplyToScope(availableOptions[0].value);
       }
@@ -1895,14 +1895,16 @@ function AttendanceTracker({
                         );
                         let daysToApply = [];
                         if (scope === "all") {
-                          daysToApply = dates.map((d) => d.day);
+                          daysToApply = dates
+                            .filter((d) => monthAttendanceData[d.day] !== "NA")
+                            .map((d) => d.day);
                         } else if (scope === "except_holiday") {
                           daysToApply = dates
-                            .filter((d) => monthAttendanceData[d.day] !== "H")
+                            .filter((d) => monthAttendanceData[d.day] !== "H" && monthAttendanceData[d.day] !== "NA")
                             .map((d) => d.day);
                         } else if (scope === "unmarked") {
                           daysToApply = dates
-                            .filter((d) => !monthAttendanceData[d.day] && !d.isFuture)
+                            .filter((d) => !monthAttendanceData[d.day] && monthAttendanceData[d.day] !== "NA" && !d.isFuture)
                             .map((d) => d.day);
                         } else if (scope === "working") {
                           // Get employee's weekly off days from API response
@@ -1930,13 +1932,13 @@ function AttendanceTracker({
                                 }
                                 return matches;
                               });
-                              return !isWeeklyOffDay && !d.isFuture;
+                              return !isWeeklyOffDay && !d.isFuture && monthAttendanceData[d.day] !== "NA";
                             })
                             .map((d) => d.day);
                         } else if (scope === "weekends") {
                           daysToApply = dates
                             .filter(
-                              (d) => d.weekday === "Sun" || d.weekday === "Sat"
+                              (d) => (d.weekday === "Sun" || d.weekday === "Sat") && monthAttendanceData[d.day] !== "NA"
                             )
                             .map((d) => d.day);
                         } else if (scope === "holidays") {
@@ -1965,8 +1967,8 @@ function AttendanceTracker({
                               // Check if it's already marked as holiday in attendance data
                               const isMarkedHoliday = monthAttendanceData[d.day] === "H";
                               
-                              // Include if it's a weekly off or marked holiday
-                              return isWeeklyOffDay || isMarkedHoliday;
+                              // Include if it's a weekly off or marked holiday, but not NA
+                              return (isWeeklyOffDay || isMarkedHoliday) && monthAttendanceData[d.day] !== "NA";
                             })
                             .map((d) => d.day);
                           
@@ -2080,85 +2082,78 @@ function AttendanceTracker({
                                 : "bg-white border-gray-200 hover:border-blue-400 hover:shadow-sm"
                               }`}
                             >
-                            <div className="font-bold text-gray-800 text-base mb-2">
-                              {day}
-                            </div>
-                              {!isFuture && (
+                              <div className="font-bold text-gray-800 text-base mb-2">
+                                {day}
+                              </div>
+                              {!isFuture && value !== "NA" && (
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     {(() => {
-                                    const selected = statusOptions.find(
-                                      (opt) => opt.value === value
-                                    );
-                                    const bgColor = selected
-                                      ? selected.color
-                                      : "#fff";
-                                    const textColor = selected
-                                      ? isColorLight(selected.color)
-                                        ? "text-gray-800"
-                                        : "text-white"
-                                      : "text-gray-400";
+                                      const selected = statusOptions.find(
+                                        (opt) => opt.value === value
+                                      );
+                                      const bgColor = selected
+                                        ? selected.color
+                                        : "#fff";
                                       return (
                                         <button
-                                          className={`w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors ${textColor}`}
+                                          className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                                           style={{ backgroundColor: bgColor }}
                                         >
                                           <span className="flex items-center gap-2">
                                             {selected ? (
-                                            <span
-                                              className="inline-block w-3 h-3 rounded-full"
-                                              style={{
-                                                backgroundColor: selected.color,
-                                              }}
-                                            ></span>
+                                              <span
+                                                className="inline-block w-3 h-3 rounded-full"
+                                                style={{
+                                                  backgroundColor: selected.color,
+                                                }}
+                                              ></span>
                                             ) : (
                                               <span className="text-gray-400 text-xs">□</span>
                                             )}
                                             <span>
-                                            {selected
-                                              ? selected.label
-                                              : "Empty"}
+                                              {selected ? selected.label : "Empty"}
                                             </span>
                                           </span>
-                                        <svg
-                                          className={`w-4 h-4 ml-2 flex-shrink-0 ${
-                                            isColorLight(bgColor)
-                                              ? "text-gray-600"
-                                              : "text-white"
-                                          }`}
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 9l-7 7-7-7"
-                                          />
+                                          <svg
+                                            className={`w-4 h-4 ml-2 flex-shrink-0 ${
+                                              isColorLight(bgColor)
+                                                ? "text-gray-600"
+                                                : "text-white"
+                                            }`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M19 9l-7 7-7-7"
+                                            />
                                           </svg>
-          </button>
+                                        </button>
                                       );
                                     })()}
                                   </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  side="top"
-                                  className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
-                                >
-                                  <DropdownMenuRadioGroup
-                                    value={value || ""}
-                                    onValueChange={(val) => {
-                                      setDayStatus(day, val || null);
-                                    }}
+                                  <DropdownMenuContent
+                                    align="end"
+                                    side="top"
+                                    className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
                                   >
-                                    <DropdownMenuRadioItem
-                                      value=""
-                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
+                                    <DropdownMenuRadioGroup
+                                      value={value || ""}
+                                      onValueChange={(val) => {
+                                        setDayStatus(day, val || null);
+                                      }}
                                     >
+                                      <DropdownMenuRadioItem
+                                        value=""
+                                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
+                                      >
                                         Empty
                                       </DropdownMenuRadioItem>
-                                    {statusOptions.map((opt) => (
+                                      {statusOptions.filter(opt => opt.value !== "NA").map((opt) => (
                                         <DropdownMenuRadioItem 
                                           key={opt.value} 
                                           value={opt.value} 
@@ -2168,16 +2163,24 @@ function AttendanceTracker({
                                             setDayStatus(day, opt.value);
                                           }}
                                         >
-                                        <span
-                                          className="inline-block w-3 h-3 rounded-full"
-                                          style={{ backgroundColor: opt.color }}
-                                        ></span>
+                                          <span
+                                            className="inline-block w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: opt.color }}
+                                          ></span>
                                           {opt.label}
                                         </DropdownMenuRadioItem>
                                       ))}
                                     </DropdownMenuRadioGroup>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
+                              )}
+                              {!isFuture && value === "NA" && (
+                                <div className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
+                                  <span className="flex items-center gap-2">
+                                    <span className="text-gray-900 font-medium">NA</span>
+                                    <span>Not Applicable</span>
+                                  </span>
+                                </div>
                               )}
                             </div>
                           );
@@ -2663,10 +2666,14 @@ function AttendanceTracker({
                       return;
                     }
                     
-                    // Apply the selected status to all employees
+                    // Apply the selected status to all employees except those with "NA" status
                     const newData = { ...allEmployeesAttendanceData };
                     filteredEmployeesForModal.forEach((employee) => {
-                      newData[employee.id] = status;
+                      const currentStatus = allEmployeesAttendanceData[employee.id];
+                      // Only apply if the current status is not "NA"
+                      if (currentStatus !== "NA") {
+                        newData[employee.id] = status;
+                      }
                     });
                     
                     setAllEmployeesAttendanceData(newData);
@@ -2733,63 +2740,72 @@ function AttendanceTracker({
                           {employee.department}
                         </td>
                         <td className="py-2 px-2">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              {(() => {
-                                const value =
-                                  allEmployeesAttendanceData[employee.id] || null;
-                                const selected = statusOptions.find(
-                                  (opt) => opt.value === value
-                                );
-                                const bgColor = selected
-                                  ? selected.color
-                                  : "#fff";
-                                const textColor = selected
-                                  ? isColorLight(selected.color)
-                                    ? "text-gray-800"
-                                    : "text-white"
-                                  : "text-gray-400";
-                                return (
-                                  <button
-                                    className={`w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors ${textColor}`}
-                                    style={{ backgroundColor: bgColor }}
-                                  >
-                                    <span className="flex items-center gap-2">
-                                      {selected ? (
-                                        <span
-                                          className="inline-block w-3 h-3 rounded-full"
-                                          style={{
-                                            backgroundColor: selected.color,
-                                          }}
-                                        ></span>
-                                      ) : (
-                                        <span className="text-gray-400 text-xs">□</span>
-                                      )}
-                                      <span>
-                                        {selected ? selected.label : "Empty"}
-                                      </span>
-                                    </span>
-                                    <svg
-                                      className={`w-4 h-4 ml-2 flex-shrink-0 ${
-                                        isColorLight(bgColor)
-                                          ? "text-gray-600"
-                                          : "text-white"
-                                      }`}
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M19 9l-7 7-7-7"
-                                      />
-                                    </svg>
-                                  </button>
-                                );
-                              })()}
-                            </DropdownMenuTrigger>
+                          {(() => {
+                            const value = allEmployeesAttendanceData[employee.id] || null;
+                            const isNaStatus = value === "NA";
+                            
+                            if (isNaStatus) {
+                              return (
+                                <div className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
+                                  <span className="flex items-center gap-2">
+                                    <span className="text-gray-900 font-medium">NA</span>
+                                    <span>Not Applicable</span>
+                                  </span>
+                                </div>
+                              );
+                            }
+                            
+                            return (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  {(() => {
+                                    const selected = statusOptions.find(
+                                      (opt) => opt.value === value
+                                    );
+                                    const bgColor = selected
+                                      ? selected.color
+                                      : "#fff";
+                                    return (
+                                      <button
+                                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                        style={{ backgroundColor: bgColor }}
+                                      >
+                                        <span className="flex items-center gap-2">
+                                          {selected ? (
+                                            <span
+                                              className="inline-block w-3 h-3 rounded-full"
+                                              style={{
+                                                backgroundColor: selected.color,
+                                              }}
+                                            ></span>
+                                          ) : (
+                                            <span className="text-gray-400 text-xs">□</span>
+                                          )}
+                                          <span>
+                                            {selected ? selected.label : "Empty"}
+                                          </span>
+                                        </span>
+                                        <svg
+                                          className={`w-4 h-4 ml-2 flex-shrink-0 ${
+                                            isColorLight(bgColor)
+                                              ? "text-gray-600"
+                                              : "text-white"
+                                          }`}
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                          />
+                                        </svg>
+                                      </button>
+                                    );
+                                  })()}
+                                </DropdownMenuTrigger>
                             <DropdownMenuContent
                               align="end"
                               side="top"
@@ -2809,7 +2825,7 @@ function AttendanceTracker({
                                 >
                                   Empty
                                 </DropdownMenuRadioItem>
-                                {statusOptions.map((opt) => (
+                                {statusOptions.filter(opt => opt.value !== "NA").map((opt) => (
                                   <DropdownMenuRadioItem 
                                     key={opt.value} 
                                     value={opt.value} 
@@ -2829,6 +2845,8 @@ function AttendanceTracker({
                               </DropdownMenuRadioGroup>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                            );
+                          })()}
                         </td>
                       </tr>
                     ))}

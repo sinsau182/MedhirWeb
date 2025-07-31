@@ -435,40 +435,40 @@ const handleInvoiceSubmit = (data) => {
   return (
     <MainLayout>
       <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
-          <p className="text-gray-600">Manage customer relationships and transactions</p>
-      </div>
-        <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
-          <div className="flex items-center">
-            <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm mr-6 text-sm" style={{ minWidth: 120 }}>
-              <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
-            </button>
-            <nav className="flex space-x-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
+        </div>
+        <div className="flex justify-between items-center mb-6">
+          <nav className="flex space-x-6">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                  style={{ minWidth: 110 }}
+                className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                style={{ minWidth: 110 }}
               >
                 <tab.icon className="w-5 h-5" />
                 <span>{tab.label}</span>
               </button>
             ))}
           </nav>
-        </div>
-          <div className="flex items-center bg-white rounded-md shadow-sm p-2">
-            <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="flex-1 outline-none"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          
+          <div className="flex items-center space-x-4">
+            <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}>
+              <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
+            </button>
+            <div className="flex items-center bg-white rounded-md shadow-sm p-2">
+              <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
-      </div>
+        </div>
         {renderContent()}
         {selectedInvoiceForPreview && (
           <InvoicePreviewModal 
