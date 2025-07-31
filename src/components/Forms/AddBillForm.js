@@ -648,7 +648,7 @@ const BillForm = ({ bill, onCancel }) => {
                 >
                   Bill Lines
                 </button>
-                <button 
+                {/* <button 
                   type="button" 
                   className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
                     activeTab === 'otherInfo' 
@@ -658,7 +658,7 @@ const BillForm = ({ bill, onCancel }) => {
                   onClick={() => setActiveTab('otherInfo')}
                 >
                   Other Info
-                </button>
+                </button> */}
                 <button 
                   type="button" 
                   className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
@@ -858,13 +858,13 @@ const BillForm = ({ bill, onCancel }) => {
                 </div>
               )}
               
-              {activeTab === 'otherInfo' && (
+              {/* {activeTab === 'otherInfo' && (
                 <div className="text-center py-16 text-gray-500">
                   <div className="text-4xl mb-4">⚙️</div>
                   <p className="text-lg font-medium">Other Info</p>
                   <p className="text-sm mt-2">Additional fields coming soon...</p>
                 </div>
-              )}
+              )} */}
               
               {activeTab === 'attachments' && (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-500">
