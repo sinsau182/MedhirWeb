@@ -1,4 +1,3 @@
-import CacheBuster from 'react-cache-buster';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Provider } from "react-redux";
@@ -12,7 +11,9 @@ import {
 } from "@/utils/sessionManager";
 import "../styles/globals.css";
 import Layout from '../components/Layout';
-import VersionDisplay from '../components/VersionDisplay';
+// import VersionDisplay from '../components/VersionDisplay';
+import CustomCacheBuster from '../components/CustomCacheBuster';
+import CacheBusterLoading from '../components/CacheBusterLoading';
 
 const queryClient = new QueryClient();
 
@@ -21,19 +22,15 @@ function MyApp({ Component, pageProps }) {
   const [version, setVersion] = useState(null);
 
   useEffect(() => {
-    // Set app version in localStorage only in browser environment
-    if (typeof window !== "undefined") {
-      localStorage.setItem("appVersion", "1.0.0");
-    }
-
     // Load version from public/meta.json at runtime
     fetch("/meta.json")
       .then((res) => res.json())
       .then((data) => {
+        console.log("📦 Fetched version from meta.json:", data.version);
         setVersion(data.version);
         // Add version to page title for easy identification
         if (typeof window !== "undefined") {
-          localStorage.setItem("appVersion", data.version);
+          document.title = `Nayati UI v${data.version}`;
         }
       })
       .catch((err) => {
@@ -67,23 +64,20 @@ function MyApp({ Component, pageProps }) {
   if (!version) return null; // or a loading spinner
 
   return (
-    <CacheBuster
+    <CustomCacheBuster
       currentVersion={version || "1.0.0"}
       isEnabled={process.env.NODE_ENV === "production"}
-      loadingComponent={<div>Loading...</div>}
-      onCacheClear={() => {
-        console.log("🔁 Version mismatch detected. Cache cleared. Reloading...");
-        console.log("📊 Cache buster stats:", {
-          oldVersion: localStorage.getItem('appVersion'),
-          newVersion: version,
+      loadingComponent={<CacheBusterLoading />}
+      onVersionMismatch={(oldVersion, newVersion) => {
+        console.log("🔁 CustomCacheBuster version mismatch detected!");
+        console.log("📊 CustomCacheBuster stats:", {
+          oldVersion,
+          newVersion,
           timestamp: new Date().toISOString()
         });
       }}
       onError={(error) => {
-        console.error("Cache buster error:", error);
-      }}
-      onVersionCheck={(oldVersion, newVersion) => {
-        console.log("🔍 CacheBuster version check:", { oldVersion, newVersion });
+        console.error("CustomCacheBuster error:", error);
       }}
     >
               <Provider store={store}>
@@ -91,30 +85,76 @@ function MyApp({ Component, pageProps }) {
             <Layout>
               <Component {...pageProps} />
             </Layout>
-            <VersionDisplay />
-            {/* Test button for cache buster - remove in production */}
-            {process.env.NODE_ENV === "development" && (
-              <button
-                onClick={() => {
-                  localStorage.setItem('appVersion', '0.1.0'); // Set old version
-                  window.location.reload(); // Force reload to trigger cache buster
-                }}
-                style={{
-                  position: 'fixed',
-                  bottom: '20px',
-                  right: '20px',
-                  zIndex: 9999,
-                  padding: '10px',
-                  backgroundColor: '#ff4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
-              >
-                Test Cache Buster
-              </button>
-            )}
+            {/* <VersionDisplay /> */}
+            {/* Test buttons - only in development */}
+            {/* {process.env.NODE_ENV === "development" && (
+              <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+                <button
+                  onClick={() => {
+                    console.log("🔴 Test CustomCacheBuster - Clear localStorage");
+                    localStorage.removeItem('appVersion');
+                    console.log("🗑️ Cleared localStorage.appVersion");
+                    console.log("🔄 Reloading page...");
+                    window.location.reload();
+                  }}
+                  style={{
+                    padding: '10px',
+                    backgroundColor: '#ff4444',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    marginBottom: '10px',
+                    display: 'block'
+                  }}
+                >
+                  Test CustomCacheBuster
+                </button>
+                <button
+                  onClick={() => {
+                    console.log("🔍 CustomCacheBuster Debug State:", {
+                      localStorage: localStorage.getItem('appVersion'),
+                      version: version,
+                      NODE_ENV: process.env.NODE_ENV
+                    });
+                    console.log("📋 All localStorage keys:", Object.keys(localStorage));
+                  }}
+                  style={{
+                    padding: '10px',
+                    backgroundColor: '#4444ff',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    display: 'block',
+                    marginBottom: '10px',
+                    display: 'block'
+                  }}
+                >
+                  Debug State
+                </button>
+                <button
+                  onClick={() => {
+                    // Force a version mismatch by setting an old version
+                    localStorage.setItem('appVersion', '0.1.0');
+                    console.log("🔧 Force version mismatch: set appVersion to 0.1.0");
+                    console.log("🔄 Reloading to trigger CustomCacheBuster...");
+                    window.location.reload();
+                  }}
+                  style={{
+                    padding: '10px',
+                    backgroundColor: '#44ff44',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '5px',
+                    cursor: 'pointer',
+                    display: 'block'
+                  }}
+                >
+                  Force Version Mismatch
+                </button>
+              </div>
+            )} */}
             <Toaster
               position="top-right"
               richColors
@@ -123,7 +163,7 @@ function MyApp({ Component, pageProps }) {
             />
           </QueryClientProvider>
         </Provider>
-    </CacheBuster>
+    </CustomCacheBuster>
   );
 }
 
