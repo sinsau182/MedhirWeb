@@ -8,7 +8,8 @@ const API_BASE_URL = publicRuntimeConfig.apiURL + "/receipts";
 // Helper to get token and throw if missing
 function getTokenOrThrow() {
   const token = getItemFromSessionStorage("token", null);
-  if (!token) throw new Error("Authentication token not found. Please log in again.");
+  if (!token)
+    throw new Error("Authentication token not found. Please log in again.");
   return token;
 }
 
@@ -72,7 +73,9 @@ export const fetchReceiptsByProject = createAsyncThunk(
       });
       const data = await response.json();
       if (!response.ok) {
-        return rejectWithValue(data.message || "Failed to fetch receipts by project");
+        return rejectWithValue(
+          data.message || "Failed to fetch receipts by project"
+        );
       }
       return data;
     } catch (error) {
@@ -87,15 +90,20 @@ export const fetchUnallocatedReceipts = createAsyncThunk(
   async (projectId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${API_BASE_URL}/unallocated/project/${projectId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/unallocated/project/${projectId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const data = await response.json();
       if (!response.ok) {
-        return rejectWithValue(data.message || "Failed to fetch unallocated receipts");
+        return rejectWithValue(
+          data.message || "Failed to fetch unallocated receipts"
+        );
       }
       return data;
     } catch (error) {
@@ -135,12 +143,15 @@ export const fetchProjectCustomerList = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/leads/project-customer/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${publicRuntimeConfig.apiURL}/leads/project-customer/all`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const data = await response.json();
       if (!response.ok) return rejectWithValue(data.message);
       return data;
@@ -156,15 +167,20 @@ export const fetchInvoicesByProject = createAsyncThunk(
   async (projectId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/invoices/project/${projectId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${publicRuntimeConfig.apiURL}/invoices/project/${projectId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const data = await response.json();
       if (!response.ok) {
-        return rejectWithValue(data.message || "Failed to fetch invoices by project");
+        return rejectWithValue(
+          data.message || "Failed to fetch invoices by project"
+        );
       }
       return data;
     } catch (error) {
@@ -172,9 +188,6 @@ export const fetchInvoicesByProject = createAsyncThunk(
     }
   }
 );
-
-
-
 
 const receiptSlice = createSlice({
   name: "receipts",
@@ -214,7 +227,7 @@ const receiptSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-       .addCase(fetchProjectCustomerList.pending, (state) => {
+      .addCase(fetchProjectCustomerList.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -252,7 +265,6 @@ const receiptSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-    
   },
 });
 // export { fetchProjectCustomerList };
