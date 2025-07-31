@@ -53,7 +53,7 @@ const BillUploadUI = ({ onFileUpload, onCancel, onProcess, isProcessing, uploade
                     <div className="flex flex-col items-center">
                         <img src={uploadedImage} alt="Uploaded Bill" className="max-h-40 mb-4 rounded-md shadow-sm" />
                         <span className="text-green-600 font-semibold">File ready for processing.</span>
-                        <span className="text-sm text-gray-500">Click the 'Process' button below.</span>
+                        <span className="text-sm text-gray-500">Click the Process button below.</span>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center">
