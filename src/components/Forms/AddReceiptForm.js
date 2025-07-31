@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'sonner';
 import { addReceipt } from "../../redux/slices/receiptSlice";
-import { fetchProjectCustomerList, fetchInvoicesByProject } from "@/redux/slices/receiptSlice";
+import { fetchProjectCustomerList, fetchInvoicesByProject, fetchReceiptsByProject } from "@/redux/slices/receiptSlice";
 
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
@@ -21,13 +22,20 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     linkedInvoices: [],
   });
 const dispatch = useDispatch();
-  const { projectCustomerList, invoicesByProject } = useSelector((state) => state.receipts);
+  const { projectCustomerList, invoicesByProject, receiptsByProject } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
   const [isInvoiceLinkModalOpen, setIsInvoiceLinkModalOpen] = useState(false);
   const [invoicesToLink, setInvoicesToLink] = useState([]);
   const [activeTab, setActiveTab] = useState('linking');
+  
+  // New state for project-specific data
+  const [projectReceiptData, setProjectReceiptData] = useState({
+    totalAmountReceived: 0,
+    totalUnallocatedAmount: 0,
+    previousReceipts: []
+  });
 
   // Static data - in real app, these would come from APIs
   const customers = [
@@ -94,13 +102,51 @@ useEffect(() => {
   dispatch(fetchProjectCustomerList());
 }, [dispatch]);
 
+// Calculate project-specific receipt data when receiptsByProject changes
+useEffect(() => {
+  if (receiptsByProject) {
+    if (receiptsByProject.length > 0) {
+      const totalReceived = receiptsByProject.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+      const totalAllocated = receiptsByProject.reduce((sum, receipt) => {
+        const allocated = receipt.linkedInvoices ? 
+          receipt.linkedInvoices.reduce((invSum, inv) => invSum + (inv.amountAllocated || 0), 0) : 0;
+        return sum + allocated;
+      }, 0);
+      
+      // Use backend's totalUnallocatedAmount if available, otherwise calculate
+      const unallocatedAmount = receiptsByProject.totalUnallocatedAmount || (totalReceived - totalAllocated);
+      
+      setProjectReceiptData({
+        totalAmountReceived: totalReceived,
+        totalUnallocatedAmount: unallocatedAmount,
+        previousReceipts: receiptsByProject
+      });
+    } else {
+      // First receipt for this project - no previous receipts
+      setProjectReceiptData({
+        totalAmountReceived: 0,
+        totalUnallocatedAmount: 0,
+        previousReceipts: []
+      });
+    }
+    
+    // Remove auto-population - user must manually enter amount
+  }
+}, [receiptsByProject]);
 
 
   useEffect(() => {
     if (formData.leadId && invoicesByProject[formData.leadId]) {
       const apiInvoices = invoicesByProject[formData.leadId];
       console.log('API Invoices loaded:', apiInvoices);
-      let invoicesWithPayments = apiInvoices.map(inv => ({ ...inv, payment: 0 }));
+      
+      // Filter out invoices that are already fully paid
+      const unpaidInvoices = apiInvoices.filter(inv => {
+        const amountRemaining = inv.totalAmount - (inv.amountReceived || 0);
+        return amountRemaining > 0; // Only include invoices with remaining amount > 0
+      });
+      
+      let invoicesWithPayments = unpaidInvoices.map(inv => ({ ...inv, payment: 0 }));
       setInvoicesToLink(invoicesWithPayments);
     }
   }, [formData.leadId, invoicesByProject]);
@@ -140,7 +186,14 @@ useEffect(() => {
       return;
     }
     const customerInvoices = getInvoicesForCustomer(formData.customerName);
-    const initialInvoices = customerInvoices.map(inv => {
+    
+    // Filter out invoices that are already fully paid
+    const unpaidInvoices = customerInvoices.filter(inv => {
+      const amountRemaining = inv.totalAmount - (inv.amountReceived || 0);
+      return amountRemaining > 0; // Only include invoices with remaining amount > 0
+    });
+    
+    const initialInvoices = unpaidInvoices.map(inv => {
       const linked = formData.linkedInvoices.find(li => li.invoiceNumber === inv.number);
       return { ...inv, payment: linked ? linked.amountAllocated : 0 };
     });
@@ -156,14 +209,30 @@ useEffect(() => {
     
     let newPayment = parseFloat(paymentAmount) || 0;
     if (newPayment < 0) newPayment = 0;
-    if (newPayment > amountRemaining) newPayment = amountRemaining;
+    if (newPayment > amountRemaining) {
+      newPayment = amountRemaining;
+      toast.error(`Cannot allocate more than remaining amount: ₹${amountRemaining.toLocaleString()}`);
+    }
     invoice.payment = newPayment;
     
     const totalAllocated = updatedInvoices.reduce((sum, inv) => sum + (inv.payment || 0), 0);
     if (totalAllocated > receiptAmount) {
       invoice.payment -= (totalAllocated - receiptAmount);
       if (invoice.payment < 0) invoice.payment = 0;
+      toast.error(`Total allocation cannot exceed receipt amount: ₹${receiptAmount.toLocaleString()}`);
     }
+    
+    // Check for duplicate invoice numbers
+    const currentInvoiceNumber = invoice.invoiceNumber || invoice.number;
+    const duplicateInvoices = updatedInvoices.filter((inv, idx) => 
+      idx !== index && (inv.invoiceNumber === currentInvoiceNumber || inv.number === currentInvoiceNumber)
+    );
+    
+    if (duplicateInvoices.length > 0) {
+      toast.error('Invoice number already exists!');
+      return;
+    }
+    
     setInvoicesToLink(updatedInvoices);
   };
   
@@ -179,9 +248,33 @@ useEffect(() => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.customerName) newErrors.customerName = 'Customer name is required';
-    if (!formData.receiptNumber.trim()) newErrors.receiptNumber = 'Receipt number is required';
-    if (!formData.amount || parseFloat(formData.amount) <= 0) newErrors.amount = 'Valid amount is required';
+    if (!formData.customerName) {
+      newErrors.customerName = 'Customer name is required';
+      toast.error('Customer name is required');
+    }
+    if (!formData.receiptNumber.trim()) {
+      newErrors.receiptNumber = 'Receipt number is required';
+      toast.error('Receipt number is required');
+    } else if (checkReceiptNumberExists(formData.receiptNumber.trim())) {
+      newErrors.receiptNumber = 'Receipt number already exists';
+      toast.error('Receipt number already exists');
+    }
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      newErrors.amount = 'Valid amount is required';
+      toast.error('Valid amount is required');
+    }
+    
+    // Validate cheque number if payment method is Cheque
+    if (formData.paymentMethod === 'Cheque') {
+      if (!formData.chequeNumber || !formData.chequeNumber.trim()) {
+        newErrors.chequeNumber = 'Cheque number is required';
+        toast.error('Cheque number is required');
+      } else if (!validateChequeNumber(formData.chequeNumber.trim())) {
+        newErrors.chequeNumber = 'Cheque number must be exactly 6 digits';
+        toast.error('Cheque number must be exactly 6 digits');
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -254,14 +347,37 @@ const handleSubmit = async (e) => {
     
     try {
       await dispatch(addReceipt(receiptData)).unwrap();
-      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+      toast.success('Receipt added successfully!');
+      // Add small delay to prevent duplicate messages
+      setTimeout(() => {
+        if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+      }, 100);
     } catch (error) {
       console.error('Receipt submission error:', error);
+      toast.error(error?.message || 'Failed to add receipt');
       setErrors({ submit: error?.message || 'Failed to add receipt' });
     }
   }
 };
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+
+  // Validate cheque number format
+  function validateChequeNumber(chequeNumber) {
+    const regex = /^\d{6}$/;
+    return regex.test(chequeNumber);
+  }
+
+  // Check if receipt number already exists
+  function checkReceiptNumberExists(receiptNumber) {
+    if (!receiptsByProject || receiptsByProject.length === 0) return false;
+    return receiptsByProject.some(receipt => receipt.receiptNumber === receiptNumber);
+  }
+
+  // Check if invoice number already exists
+  function checkInvoiceNumberExists(invoiceNumber) {
+    if (!invoicesToLink || invoicesToLink.length === 0) return false;
+    return invoicesToLink.some(invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber);
+  }
 
   const totalAllocatedInModal = invoicesToLink.reduce((sum, inv) => sum + (inv.payment || 0), 0);
   const receiptAmount = parseFloat(formData.amount) || 0;
@@ -367,6 +483,8 @@ const handleSubmit = async (e) => {
             setIsOpen(false);
             // Fetch invoices for this project
             dispatch(fetchInvoicesByProject(project.projectId));
+            // Fetch receipts for this project
+            dispatch(fetchReceiptsByProject(project.projectId));
           }}
           className="px-4 py-2 cursor-pointer hover:bg-gray-100"
         >
@@ -376,9 +494,6 @@ const handleSubmit = async (e) => {
     </ul>
   )}
                 </div>
-
-
-
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
@@ -434,7 +549,8 @@ const handleSubmit = async (e) => {
                 {formData.paymentMethod === 'Cheque' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cheque Number <span className="text-red-500">*</span></label>
-                    <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter cheque number" />
+                    <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.chequeNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="Enter 6-digit cheque number" />
+                    {errors.chequeNumber && <p className="text-red-500 text-sm mt-1">{errors.chequeNumber}</p>}
                   </div>
                 )}
 
@@ -463,7 +579,7 @@ const handleSubmit = async (e) => {
                 <div>
                   <div className="grid grid-cols-2 gap-4 mb-6 text-center">
                       <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency(receiptAmount - totalAllocatedInModal)}</div></div>
+                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency((projectReceiptData.previousReceipts.length > 0 ? (projectReceiptData.totalUnallocatedAmount + (parseFloat(formData.amount) || 0)) : (parseFloat(formData.amount) || 0)) - totalAllocatedInModal)}</div></div>
                   </div>
                   {invoicesToLink.length > 0 ? (
                     <table className="w-full text-sm">
@@ -499,7 +615,11 @@ const handleSubmit = async (e) => {
                   ) : (
                     <div className="text-center py-10">
                       <FaLink className="mx-auto text-4xl text-gray-300" />
-                      <p className="mt-4 text-gray-500">Select a customer to see their outstanding invoices.</p>
+                      <p className="mt-4 text-gray-500">
+                        {formData.customerName 
+                          ? "All invoices for this customer are already fully paid." 
+                          : "Select a customer to see their outstanding invoices."}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -557,7 +677,7 @@ const handleSubmit = async (e) => {
             <div className="p-6 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-4 mb-4 text-center">
                     <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                    <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount - totalAllocatedInModal)}</div></div>
+                    <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold">{formatCurrency((projectReceiptData.previousReceipts.length > 0 ? (projectReceiptData.totalUnallocatedAmount + (parseFloat(formData.amount) || 0)) : (parseFloat(formData.amount) || 0)) - totalAllocatedInModal)}</div></div>
                 </div>
                 <table className="w-full text-sm">
                     <thead>

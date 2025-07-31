@@ -48,7 +48,7 @@ function MyApp({ Component, pageProps }) {
         <Layout>
           <Component {...pageProps} />
         </Layout>
-        <Toaster />
+        <Toaster closeButton={true} />
       </QueryClientProvider>
     </Provider>
   );

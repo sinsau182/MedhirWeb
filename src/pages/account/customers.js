@@ -3,7 +3,6 @@ import { useState, useEffect, use } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
-import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
@@ -195,7 +194,7 @@ const Customers = () => {
   //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
   // ]);
   const [clients, setClients] = useState([
-    { id: 1, name: 'Client A', company: 'Tech Corp', email: 'client.a@example.com', phone: '555-1234', status: 'Active' }
+    { id: 1, name: 'Customer A', company: 'Tech Corp', email: 'client.a@example.com', phone: '555-1234', status: 'Active' }
   ]);
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -203,7 +202,7 @@ const Customers = () => {
   const handleAddClick = () => {
     if (activeTab === 'invoice') setShowAddForm('invoice');
     else if (activeTab === 'receipts') setShowAddForm('receipt');
-    else if (activeTab === 'clients') setShowAddForm('client');
+    else if (activeTab === 'customers') setShowAddForm('customers');
   };
   const handleBackFromForm = () => {
     setShowAddForm(null);
@@ -254,21 +253,21 @@ const handleInvoiceSubmit = (data) => {
   };
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
-    toast.success('Client added!');
+    toast.success('Customer added!');
     setShowAddForm(null);
   };
 
   const tabs = [
     { id: 'invoice', label: 'Invoice', icon: FaFileInvoiceDollar },
     { id: 'receipts', label: 'Receipts', icon: FaReceipt },
-    { id: 'clients', label: 'Clients', icon: FaUsers },
+    { id: 'clients', label: 'Customers', icon: FaUsers },
   ];
   
   const getAddButtonLabel = () => {
     switch (activeTab) {
       case 'invoice': return 'Add Invoice';
       case 'receipts': return 'Add Receipt';
-      case 'clients': return 'Add Client';
+      case 'clients': return 'Add Customers';
       default: return 'Add';
     }
   };
@@ -368,15 +367,13 @@ const handleInvoiceSubmit = (data) => {
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
                   <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Receipt No.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt No.</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment trans. Id</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Invoice Generated</th> */}
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -390,20 +387,6 @@ const handleInvoiceSubmit = (data) => {
                   <td className="px-6 py-4 text-sm font-semibold text-green-600">₹{r.amountReceived}</td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.paymentMethod}</td>
                   <td className="px-6 py-4 text-sm font-mono whitespace-nowrap max-w-xs truncate">{r.paymentTransactionId}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      r.status === 'Received' ? 'bg-green-100 text-green-800' :
-                      r.status === 'Partial received' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  {/* <td className="px-6 py-4 text-sm text-center">
-                    <span className={`font-medium ${r.invoiceGenerated === 'Yes' ? 'text-green-600' : 'text-gray-500'}`}>
-                      {r.invoiceGenerated}
-                    </span>
-                  </td> */}
                   <td className="px-6 py-4 text-center">
                     <button onClick={() => setSelectedReceiptForPreview(r)} className="text-gray-500 hover:text-blue-600">
                       <FaEye />
@@ -475,7 +458,16 @@ const handleInvoiceSubmit = (data) => {
             ))}
           </nav>
         </div>
-          <SearchBarWithFilter onSearch={setSearchTerm} />
+          <div className="flex items-center bg-white rounded-md shadow-sm p-2">
+            <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="flex-1 outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
       </div>
         {renderContent()}
         {selectedInvoiceForPreview && (
