@@ -117,7 +117,7 @@ const BillForm = ({ bill, onCancel }) => {
   // Calculate totals
   const subtotal = billLines.reduce((sum, l) => sum + l.qty * l.rate, 0);
   const totalGST = billLines.reduce((sum, l) => sum + l.qty * l.rate * (l.gst / 100), 0);
-  const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? (subtotal + totalGST) * (selectedVendor.tdsPercentage / 100) : 0;
+  const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? (subtotal ) * (selectedVendor.tdsPercentage / 100) : 0;
   const total = subtotal + totalGST - tdsAmount;
 
   // Validation helpers
@@ -466,17 +466,7 @@ const BillForm = ({ bill, onCancel }) => {
             >
               Bill Lines
             </button>
-            <button 
-              type="button" 
-              className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
-                activeTab === 'otherInfo' 
-                  ? 'border-blue-600 text-blue-600' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`} 
-              onClick={() => setActiveTab('otherInfo')}
-            >
-              Other Info
-            </button>
+           
             <button 
               type="button" 
               className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
@@ -676,14 +666,7 @@ const BillForm = ({ bill, onCancel }) => {
             </div>
           )}
           
-          {activeTab === 'otherInfo' && (
-            <div className="text-center py-16 text-gray-500">
-              <div className="text-4xl mb-4">⚙️</div>
-              <p className="text-lg font-medium">Other Info</p>
-              <p className="text-sm mt-2">Additional fields coming soon...</p>
-            </div>
-          )}
-          
+                  
           {activeTab === 'attachments' && (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500">
               <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-pointer">
