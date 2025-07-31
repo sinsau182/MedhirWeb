@@ -530,7 +530,7 @@ if (!formData.pan.trim()) {
               </div> */}
               {/* GSTIN */}
               <div>
-                <label className={`block text-sm font-medium mb-2 flex items-center ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>GSTIN <span className="text-gray-400 ml-1"><FaInfoCircle title="15-digit Goods and Services Tax Identification Number" /></span></label>
+                <label className={`text-sm font-medium mb-2 flex items-center ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>GSTIN <span className="text-gray-400 ml-1"><FaInfoCircle title="15-digit Goods and Services Tax Identification Number" /></span></label>
                 <input
                   type="text"
                   name="gstin"

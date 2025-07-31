@@ -3439,7 +3439,7 @@ function EmployeeForm() {
                                             formData.idProofs[imgField].endsWith(
                                               ".pdf"
                                             )) ? (
-                                          <span className="inline-block w-16 h-16 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500">
+                                          <span className="inline-block w-16 h-16 bg-gray-200 items-center justify-center rounded border border-gray-300 text-gray-500">
                                             PDF
                                           </span>
                                         ) : (
@@ -4073,7 +4073,7 @@ function EmployeeForm() {
                                     formData.bankDetails.passbookImgUrl.endsWith(
                                       ".pdf"
                                     )) ? (
-                                  <span className="inline-block w-12 h-12 bg-gray-200 flex items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">
+                                  <span className="inline-block w-12 h-12 bg-gray-200 items-center justify-center rounded border border-gray-300 text-gray-500 text-xs">
                                     PDF
                                   </span>
                                 ) : (

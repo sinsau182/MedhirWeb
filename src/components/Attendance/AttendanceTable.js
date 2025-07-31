@@ -703,6 +703,9 @@ const AttendanceTable = ({
                   const isFutureDateWithAbsent =
                     isFutureDate && attendanceForDay.label === "A";
 
+                  // Check if this cell has "NA" status
+                  const isNaStatus = attendanceForDay.label === "NA";
+
                   return (
                     <td
                       key={dateIdx}
@@ -710,6 +713,8 @@ const AttendanceTable = ({
                       className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${
                         isFutureDateWithAbsent
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : isNaStatus
+                          ? "bg-gray-50 text-gray-900 cursor-not-allowed"
                           : getAttendanceColor(attendanceForDay.label)
                       }`}
                     >
@@ -717,16 +722,17 @@ const AttendanceTable = ({
                         <button
                           type="button"
                           className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition ${
-                            isFutureDate
+                            isFutureDate || isNaStatus
                               ? "cursor-not-allowed opacity-50"
                               : "focus:ring-2 focus:ring-blue-400 hover:shadow-sm cursor-pointer"
                           }`}
                           style={{ background: "transparent" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Only allow editing if it's not a future date
+                            // Only allow editing if it's not a future date and not NA status
                             if (
                               !isFutureDate &&
+                              !isNaStatus &&
                               onCellClick &&
                               (!popoverOpenCell || popoverOpenCell !== cellKey)
                             ) {
@@ -738,13 +744,15 @@ const AttendanceTable = ({
                               );
                             }
                           }}
-                          tabIndex={isFutureDate ? -1 : 0}
+                          tabIndex={isFutureDate || isNaStatus ? -1 : 0}
                           title={
                             isFutureDate
                               ? `Cannot edit future date: ${dateString}`
+                              : isNaStatus
+                              ? `Cannot edit NA status: ${dateString}`
                               : `Edit attendance for ${employee.name} on ${dateString}`
                           }
-                          disabled={isFutureDate || popoverOpenCell === cellKey}
+                          disabled={isFutureDate || isNaStatus || popoverOpenCell === cellKey}
                         >
                           {/* Hide "A" text for future dates, show all other statuses */}
                           {isFutureDateWithAbsent

@@ -5,7 +5,6 @@ import { AddExpenseForm } from '../../components/Forms';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { toast } from 'sonner';
-import SearchBarWithFilter from '../../components/SearchBarWithFilter';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllExpenses } from '../../redux/slices/expensesSlice';
 
@@ -14,6 +13,7 @@ const Employee = () => {
   const [activeTab, setActiveTab] = useState('expenses');
   const [showAddForm, setShowAddForm] = useState(null);
   const [modalImageUrl, setModalImageUrl] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const dispatch = useDispatch();
   const { expenses, loading, error } = useSelector(state => state.expenses);
   
@@ -201,33 +201,42 @@ const Employee = () => {
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Employees</h1>
           </div>
-          <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
-            <div className="flex items-center">
+          <div className="flex justify-between items-center mb-6">
+            <nav className="flex space-x-6">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search reimbursements..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
               <button
                 onClick={handleAddClick}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm mr-6 text-sm"
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm"
               >
-                <FaPlus className="w-4 h-4" />
+                <FaPlus className="w-3 h-3" />
                 <span>Add Reimb.</span>
               </button>
-              <nav className="flex space-x-6">
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleTabClick(tab.id)}
-                    className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <tab.icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
             </div>
-            <SearchBarWithFilter />
           </div>
           {renderContent()}
         </div>
