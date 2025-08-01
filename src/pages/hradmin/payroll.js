@@ -25,12 +25,16 @@ function PayrollManagement() {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isCalculatePayrollClicked, setIsCalculatePayrollClicked] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toLocaleString("default", { month: "long" })
-  );
-  const [selectedYear, setSelectedYear] = useState(
-    new Date().getFullYear().toString()
-  );
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const currentDate = new Date();
+    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    return latestAvailableMonth.toLocaleString("default", { month: "long" });
+  });
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const currentDate = new Date();
+    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    return latestAvailableMonth.getFullYear().toString();
+  });
 
 
 
@@ -39,12 +43,13 @@ function PayrollManagement() {
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
   const { publicRuntimeConfig } = getConfig();
 
-  // Check if selected month is current month
-  const isCurrentMonth = () => {
+  // Check if selected month is the latest available month (current month - 1)
+  const isLatestAvailableMonth = () => {
     const currentDate = new Date();
-    const currentMonth = currentDate.toLocaleString("default", { month: "long" });
-    const currentYear = currentDate.getFullYear().toString();
-    return selectedMonth === currentMonth && selectedYear === currentYear;
+    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const latestMonth = latestAvailableMonth.toLocaleString("default", { month: "long" });
+    const latestYear = latestAvailableMonth.getFullYear().toString();
+    return selectedMonth === latestMonth && selectedYear === latestYear;
   };
 
   const handleMonthSelection = (month, year) => {
@@ -97,7 +102,7 @@ function PayrollManagement() {
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="top-0 bg-gray-50">
+          <thead className="sticky top-0 bg-gray-50">
             <tr>
               {showCheckboxes && (
                 <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
@@ -608,22 +613,22 @@ function PayrollManagement() {
                 Payroll Management
               </h1>
               <button
-                disabled={!isCurrentMonth()}
+                disabled={!isLatestAvailableMonth()}
                 onClick={() => {
-                  if (isCurrentMonth()) {
+                  if (isLatestAvailableMonth()) {
                     setIsCalculatePayrollClicked(true);
                     toast.success("Payroll calculation initiated!");
                   }
                 }}
                 className={`px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                  isCurrentMonth()
+                  isLatestAvailableMonth()
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
                 }`}
               >
                 Calculate Payroll
               </button>
-              {isCalculatePayrollClicked && isCurrentMonth() && (
+              {isCalculatePayrollClicked && isLatestAvailableMonth() && (
                 <button
                   onClick={() => {
                     if (showCheckboxes) {
@@ -651,7 +656,7 @@ function PayrollManagement() {
               )}
             </div>
             <div className="flex gap-4">
-              {(!isCurrentMonth() || isCalculatePayrollClicked) && (
+              {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
                 <div className="relative">
                   <input
                     type="text"
@@ -697,7 +702,7 @@ function PayrollManagement() {
                         "Nov",
                         "Dec",
                       ]
-                        .slice(0, new Date().getMonth() + 1)
+                        .slice(0, new Date().getMonth())
                         .map((month) => (
                           <button
                             key={month}
@@ -754,7 +759,7 @@ function PayrollManagement() {
             </div>
           </div>
 
-          {(!isCurrentMonth() || isCalculatePayrollClicked) && (
+          {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
             <>
               {selectedSection === "Salary Statement" && renderPayrollTable()}
               {selectedSection === "Deductions" && renderDeductionsTable()}

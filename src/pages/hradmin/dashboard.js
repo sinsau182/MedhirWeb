@@ -352,21 +352,21 @@ const Overview = () => {
                 item.label === "Total Employees" ? (
                   <div
                     key={index}
-                    className="relative bg-white/90 shadow-xl rounded-2xl flex flex-col items-center justify-between border border-gray-100 p-8 w-full max-w-xl mx-auto transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
-                    style={{ minHeight: "220px" }}
+                    className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 border border-gray-100"
+                    style={{ height: "250px", width: "350px" }}
                   >
-                    <div className="flex justify-between items-center w-full mb-6">
-                      <h2 className="text-lg font-bold text-gray-800">
+                    <div className="flex justify-between items-center w-full mb-8">
+                      <h2 className="text-xl font-semibold text-gray-800">
                         Today&apos;s Attendance
                       </h2>
-                      <div className="p-2 bg-blue-50 rounded-full">
-                        <FaUsers className="text-blue-600 text-xl" />
+                      <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-full">
+                        <FaUsers className="text-blue-600 text-2xl" />
                       </div>
                     </div>
-                    <div className="flex w-full justify-center items-end gap-0 text-center mt-2">
+                    <div className="flex w-full justify-between items-end gap-4 text-center">
                       {/* Total Employees */}
                       <div className="flex flex-col items-center justify-center flex-1">
-                        <span className="text-7xl font-extrabold text-gray-800 leading-tight">
+                        <span className="text-4xl font-bold text-gray-800 leading-tight">
                           {employees?.length ?? 0}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
@@ -374,11 +374,11 @@ const Overview = () => {
                         </span>
                       </div>
                       {/* Divider */}
-                      <div className="h-16 border-l border-gray-200 mx-4"></div>
+                      <div className="h-12 border-l border-gray-200"></div>
                       {/* Present */}
                       <div className="flex flex-col items-center justify-center flex-1">
                         <span
-                          className="text-7xl font-extrabold text-green-700 leading-tight cursor-pointer hover:underline transition"
+                          className="text-4xl font-bold text-green-700 leading-tight cursor-pointer hover:underline transition"
                           onClick={() => handleAttendanceCountClick("P")}
                         >
                           {currentDayAttendanceSummary.totalPresent}
@@ -388,11 +388,11 @@ const Overview = () => {
                         </span>
                       </div>
                       {/* Divider */}
-                      <div className="h-16 border-l border-gray-200 mx-4"></div>
+                      <div className="h-12 border-l border-gray-200"></div>
                       {/* Absent */}
                       <div className="flex flex-col items-center justify-center flex-1">
                         <span
-                          className="text-7xl font-extrabold text-red-400 leading-tight cursor-pointer hover:underline transition"
+                          className="text-4xl font-bold text-red-400 leading-tight cursor-pointer hover:underline transition"
                           onClick={() => handleAttendanceCountClick("A")}
                         >
                           {currentDayAttendanceSummary.totalAbsent}
@@ -408,8 +408,8 @@ const Overview = () => {
                   <div
                     key={index}
                     className="p-8 bg-white shadow-lg rounded-xl flex flex-col justify-between items-start hover:shadow-2xl hover:scale-105 transform transition-all duration-300 cursor-pointer border border-gray-100"
-                    style={{ height: "250px", width: "350px" }} // Adjust width if needed
-                    onClick={item.onClick} // Apply click handler
+                    style={{ height: "250px", width: "350px" }}
+                    onClick={item.onClick}
                   >
                     <div className="flex justify-between items-center w-full mb-8">
                       <p className="text-xl font-semibold text-gray-800">
