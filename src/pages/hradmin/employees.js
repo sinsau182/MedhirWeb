@@ -72,13 +72,15 @@ function Employees() {
 
   const handleViewDoc = async (imageUrl) => {
     // Check if it's a Minio URL (starts with http)
-    if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+    if (typeof imageUrl === "string" && imageUrl.startsWith("http")) {
       try {
         // For Minio URLs, fetch the image securely and open in new tab
-        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: imageUrl })).unwrap();
-        window.open(dataUrl, '_blank');
+        const { dataUrl } = await dispatch(
+          fetchImageFromMinio({ url: imageUrl })
+        ).unwrap();
+        window.open(dataUrl, "_blank");
       } catch (error) {
-        toast.error('Failed to preview document.');
+        toast.error("Failed to preview document.");
       }
     } else {
       // For regular URLs, keep the existing modal behavior
@@ -469,19 +471,19 @@ function Employees() {
                 </svg>
               </button>
             </div>
-            {selectedImage && selectedImage.toLowerCase().endsWith('.pdf') ? (
+            {selectedImage && selectedImage.toLowerCase().endsWith(".pdf") ? (
               <iframe
                 src={selectedImage}
                 title="Passbook PDF"
                 className="w-full max-w-2xl"
-                style={{ minHeight: '60vh', maxHeight: '90vh' }}
+                style={{ minHeight: "60vh", maxHeight: "90vh" }}
               />
             ) : (
               <img
                 src={selectedImage}
                 alt="Passbook Document"
                 className="h-auto w-auto max-w-2xl max-h-[80vh] object-contain rounded shadow"
-                style={{ display: 'block', margin: '0 auto' }}
+                style={{ display: "block", margin: "0 auto" }}
               />
             )}
           </div>
