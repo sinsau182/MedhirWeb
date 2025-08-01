@@ -12,8 +12,8 @@ import {
   fetchAllEmployeeAttendanceOneMonth,
   fetchOneEmployeeAttendanceOneMonth,
 } from "@/redux/slices/attendancesSlice";
-import {
-  markSingleEmployeeMonthAttendance,
+import { 
+  markSingleEmployeeMonthAttendance, 
   markAllEmployeesDateAttendance,
   markManualAttendance,
   clearError,
@@ -38,9 +38,9 @@ function buildManualAttendancePayload(employeeId, dateStatusMap) {
   };
 }
 
-function AttendanceTracker({
-  employees = [],
-  employeesLoading = false,
+function AttendanceTracker({ 
+  employees = [], 
+  employeesLoading = false, 
   role,
   initialSelectedDate = null,
   initialSelectedMonth = null,
@@ -91,17 +91,17 @@ function AttendanceTracker({
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  
   // Separate state for Single Employee Month Modal dropdowns
   const [singleEmployeeMarkAsStatus, setSingleEmployeeMarkAsStatus] =
     useState("");
   const [singleEmployeeApplyToScope, setSingleEmployeeApplyToScope] =
     useState("");
-
+  
   // Separate state for All Employees Date Modal dropdowns
   const [allEmployeesMarkAsStatus, setAllEmployeesMarkAsStatus] = useState("");
   const [allEmployeesApplyToScope, setAllEmployeesApplyToScope] = useState("");
-
+  
   // Add state for employee dropdown
   const [employeeDropdownSearch, setEmployeeDropdownSearch] = useState("");
   const [employeeDropdownInput, setEmployeeDropdownInput] = useState("");
@@ -109,7 +109,7 @@ function AttendanceTracker({
   // Add state for employee selection dropdown
   const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
   const employeeDropdownRef = useRef(null);
-
+  
   // Attendance cell popover state
   const [cellPopoverOpen, setCellPopoverOpen] = useState(false);
   const [cellPopoverEmployee, setCellPopoverEmployee] = useState(null);
@@ -124,7 +124,7 @@ function AttendanceTracker({
 
   // Ref to track if we're currently fetching employee data
   const isFetchingEmployeeDataRef = useRef(false);
-
+  
   // Universal close function for all modals and popups
   const closeAllModals = () => {
     setIsSingleEmployeeModalOpen(false);
@@ -168,17 +168,17 @@ function AttendanceTracker({
   const hasSingleEmployeeChanges = () => {
     const currentKeys = Object.keys(monthAttendanceData);
     const originalKeys = Object.keys(originalMonthAttendanceData);
-
+    
     // Check if any keys are different
     if (currentKeys.length !== originalKeys.length) return true;
-
+    
     // Check if any values are different
     for (const key of currentKeys) {
       if (monthAttendanceData[key] !== originalMonthAttendanceData[key]) {
         return true;
       }
     }
-
+    
     return false;
   };
 
@@ -186,10 +186,10 @@ function AttendanceTracker({
   const hasAllEmployeesChanges = () => {
     const currentKeys = Object.keys(allEmployeesAttendanceData);
     const originalKeys = Object.keys(originalAllEmployeesAttendanceData);
-
+    
     // Check if any keys are different
     if (currentKeys.length !== originalKeys.length) return true;
-
+    
     // Check if any values are different
     for (const key of currentKeys) {
       if (
@@ -199,10 +199,10 @@ function AttendanceTracker({
         return true;
       }
     }
-
+    
     return false;
   };
-
+  
   // Single Employee Month Modal State
   const [isSingleEmployeeModalOpen, setIsSingleEmployeeModalOpen] =
     useState(false);
@@ -259,7 +259,7 @@ function AttendanceTracker({
         { value: "holidays", label: "All Holidays" },
       ];
     }
-
+    
     // For regular statuses, show all options
     return [
       { value: "unmarked", label: "All Unmarked Days" },
@@ -307,15 +307,15 @@ function AttendanceTracker({
       if (cellPopoverOpen) {
         const popoverElement = document.querySelector("[data-cell-popover]");
         const clickedElement = event.target;
-
+        
         // Check if click is outside the popover
         if (popoverElement && !popoverElement.contains(clickedElement)) {
           // Don't close if clicking on dropdown elements
           const isDropdownElement =
             clickedElement.closest("[data-radix-popper-content-wrapper]") ||
             clickedElement.closest("[data-radix-popper-trigger]") ||
-            clickedElement.closest('[role="menuitemradio"]');
-
+                                   clickedElement.closest('[role="menuitemradio"]');
+          
           if (!isDropdownElement) {
             closePopover();
           }
@@ -338,7 +338,7 @@ function AttendanceTracker({
       const currentScopeExists = availableOptions.some(
         (opt) => opt.value === singleEmployeeApplyToScope
       );
-
+      
       // If current scope is not applicable for the new status, reset to first available option
       if (!currentScopeExists && availableOptions.length > 0) {
         setSingleEmployeeApplyToScope(availableOptions[0].value);
@@ -841,10 +841,10 @@ function AttendanceTracker({
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth();
     const currentDay = currentDate.getDate();
-
+    
     // Get the month index for the selected month
     const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
-
+    
     // Determine the date to select immediately
     let dateToSelect;
     if (year === currentYear.toString() && monthIndex === currentMonth) {
@@ -855,7 +855,7 @@ function AttendanceTracker({
       const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
       dateToSelect = daysInMonth;
     }
-
+    
     // Update all states immediately
     setSelectedMonth(month);
     setSelectedYear(year);
@@ -941,19 +941,19 @@ function AttendanceTracker({
       filteredEmployees.forEach((employee) => {
         // Check if we have attendance data for this employee and date
         let existingStatus = null;
-
-        const employeeAttendance = attendance.monthlyAttendance.find(
-          (attRec) => attRec.employeeId === employee.id
-        );
-
-        if (employeeAttendance && employeeAttendance.days) {
+        
+          const employeeAttendance = attendance.monthlyAttendance.find(
+            (attRec) => attRec.employeeId === employee.id
+          );
+          
+          if (employeeAttendance && employeeAttendance.days) {
           existingStatus =
             employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
         }
-
+        
         initialData[employee.id] = existingStatus;
       });
-
+      
       setAllEmployeesAttendanceData(initialData);
       setOriginalAllEmployeesAttendanceData(initialData);
     }
@@ -982,7 +982,7 @@ function AttendanceTracker({
     const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
     const dates = [];
-
+    
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, monthIndex, i);
       dates.push({
@@ -997,7 +997,7 @@ function AttendanceTracker({
 
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployeeForMonth(employee);
-
+    
     // Reset fetching state to allow the useEffect to handle data fetching
     isFetchingEmployeeDataRef.current = false;
   };
@@ -1055,7 +1055,7 @@ function AttendanceTracker({
         dispatch(
           fetchAllEmployeeAttendanceOneMonth({
             month: monthIndex + 1,
-            year: monthYear.year,
+          year: monthYear.year, 
             role,
           })
         );
@@ -1070,15 +1070,15 @@ function AttendanceTracker({
     if (date && date.includes("T")) {
       dateToStore = date.split("T")[0];
     }
-
+    
     setSelectedDateForAll(dateToStore);
-
+    
     // Clear existing data first - it will be populated when the useEffect fetches new data
     const initialData = {};
     filteredEmployees.forEach((employee) => {
       initialData[employee.id] = null;
     });
-
+    
     setAllEmployeesAttendanceData(initialData);
     setOriginalAllEmployeesAttendanceData(initialData);
   };
@@ -1117,7 +1117,7 @@ function AttendanceTracker({
     selectedDate.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-
+    
     if (selectedDate > today) {
       toast.error("Cannot mark attendance for future dates");
       return;
@@ -1125,15 +1125,15 @@ function AttendanceTracker({
 
     // Prepare data in new API format
     const employeeStatuses = [];
-
+    
     Object.entries(allEmployeesAttendanceData).forEach(
       ([employeeId, status]) => {
-        if (status) {
+      if (status) {
           employeeStatuses.push({
             employeeId,
             statusCode: status,
           });
-        }
+    }
       }
     );
 
@@ -1159,8 +1159,8 @@ function AttendanceTracker({
         // Refresh attendance data
         dispatch(
           fetchAllEmployeeAttendanceOneMonth({
-            month: new Date(dateToUse).getMonth() + 1,
-            year: new Date(dateToUse).getFullYear(),
+          month: new Date(dateToUse).getMonth() + 1, 
+          year: new Date(dateToUse).getFullYear(), 
             role,
           })
         );
@@ -1174,7 +1174,7 @@ function AttendanceTracker({
         employee.name
           .toLowerCase()
           .includes(allEmployeesSearch.toLowerCase()) ||
-        employee.id.toLowerCase().includes(allEmployeesSearch.toLowerCase()) ||
+      employee.id.toLowerCase().includes(allEmployeesSearch.toLowerCase()) ||
         (employee.department &&
           employee.department
             .toLowerCase()
@@ -1430,13 +1430,13 @@ function AttendanceTracker({
         // Show buttons when no modal is active
         <div className="flex gap-4 mb-6">
           <div className="relative" ref={employeeDropdownRef}>
-            <button
-              className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+          <button
+            className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen);
-              }}
-            >
+            }}
+          >
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -1449,8 +1449,8 @@ function AttendanceTracker({
                   strokeWidth={2}
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
-              </svg>
-              <span>Single Employee Month</span>
+            </svg>
+            <span>Single Employee Month</span>
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -1464,7 +1464,7 @@ function AttendanceTracker({
                   d="M19 9l-7 7-7-7"
                 />
               </svg>
-            </button>
+          </button>
 
             {/* Employee Selection Dropdown */}
             {isEmployeeDropdownOpen && (
@@ -1554,7 +1554,7 @@ function AttendanceTracker({
               </div>
             )}
           </div>
-
+          
           <button
             className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
             onClick={() => {
@@ -1576,7 +1576,7 @@ function AttendanceTracker({
             </svg>
             <span>All Employees Date</span>
           </button>
-        </div>
+                </div>
       ) : // No toggle interface when a modal is active - tabs are hidden
       null}
 
@@ -1879,7 +1879,7 @@ function AttendanceTracker({
                         <DropdownMenuRadioGroup
                           value={singleEmployeeMarkAsStatus}
                           onValueChange={(value) => {
-                            setSingleEmployeeMarkAsStatus(value);
+                          setSingleEmployeeMarkAsStatus(value);
                             console.log(
                               "Single Employee Mark As Status changed to:",
                               value
@@ -1887,9 +1887,9 @@ function AttendanceTracker({
                           }}
                         >
                           {statusOptions.map((opt) => (
-                            <DropdownMenuRadioItem
-                              key={opt.value}
-                              value={opt.value}
+                            <DropdownMenuRadioItem 
+                              key={opt.value} 
+                              value={opt.value} 
                               className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1910,7 +1910,7 @@ function AttendanceTracker({
                         </DropdownMenuRadioGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
+        </div>
 
                   {/* Apply To Dropdown */}
                   <div className="flex flex-col gap-1">
@@ -1956,9 +1956,9 @@ function AttendanceTracker({
                           {getSingleEmployeeApplyToOptions(
                             singleEmployeeMarkAsStatus
                           ).map((opt) => (
-                            <DropdownMenuRadioItem
-                              key={opt.value}
-                              value={opt.value}
+                            <DropdownMenuRadioItem 
+                              key={opt.value} 
+                              value={opt.value} 
                               className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                             >
                               {opt.label}
@@ -1967,14 +1967,14 @@ function AttendanceTracker({
                         </DropdownMenuRadioGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
+      </div>
 
                   {/* Apply Button */}
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-gray-600">
                       &nbsp;
                     </label>
-                    <button
+          <button
                       className="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
                       onClick={() => {
                         const status = singleEmployeeMarkAsStatus;
@@ -2013,7 +2013,7 @@ function AttendanceTracker({
                           // Get employee's weekly off days from API response
                           const employeeWeeklyOffDays =
                             selectedEmployeeForMonth?.weeklyOffDays || [];
-
+                          
                           // Create mapping from full day names to abbreviated day names
                           const dayNameMapping = {
                             Monday: "Mon",
@@ -2024,20 +2024,20 @@ function AttendanceTracker({
                             Saturday: "Sat",
                             Sunday: "Sun",
                           };
-
+                          
                           daysToApply = dates
                             .filter((d) => {
                               // Check if this day is not a weekly off day for this employee
                               const isWeeklyOffDay = employeeWeeklyOffDays.some(
                                 (offDay) => {
-                                  const mappedDay = dayNameMapping[offDay];
-                                  const matches = mappedDay === d.weekday;
-                                  if (matches) {
+                                const mappedDay = dayNameMapping[offDay];
+                                const matches = mappedDay === d.weekday;
+                                if (matches) {
                                     console.log(
                                       `Day ${d.day} (${d.weekday}) is a weekly off day (${offDay})`
                                     );
-                                  }
-                                  return matches;
+                                }
+                                return matches;
                                 }
                               );
                               return (
@@ -2059,7 +2059,7 @@ function AttendanceTracker({
                           // Get employee's weekly off days from API response
                           const employeeWeeklyOffDays =
                             selectedEmployeeForMonth?.weeklyOffDays || [];
-
+                          
                           // Create mapping from full day names to abbreviated day names
                           const dayNameMapping = {
                             Monday: "Mon",
@@ -2070,21 +2070,21 @@ function AttendanceTracker({
                             Saturday: "Sat",
                             Sunday: "Sun",
                           };
-
+                          
                           daysToApply = dates
                             .filter((d) => {
                               // Check if this day is a weekly off day for this employee
                               const isWeeklyOffDay = employeeWeeklyOffDays.some(
                                 (offDay) => {
-                                  const mappedDay = dayNameMapping[offDay];
-                                  return mappedDay === d.weekday;
+                                const mappedDay = dayNameMapping[offDay];
+                                return mappedDay === d.weekday;
                                 }
                               );
-
+                              
                               // Check if it's already marked as holiday in attendance data
                               const isMarkedHoliday =
                                 monthAttendanceData[d.day] === "H";
-
+                              
                               // Include if it's a weekly off or marked holiday, but not NA
                               return (
                                 (isWeeklyOffDay || isMarkedHoliday) &&
@@ -2108,14 +2108,14 @@ function AttendanceTracker({
             </div>
 
             {/* Show calendar directly since employee is already selected */}
-            <div className="animate-fade-in-up space-y-3">
-              {/* Compact Calendar Grid */}
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
+              <div className="animate-fade-in-up space-y-3">
+                {/* Compact Calendar Grid */}
+                <div className="bg-white border border-gray-200 rounded-lg p-3">
                 <h4 className="font-semibold text-gray-800 text-sm mb-2">
                   Mark Attendance for {monthYear.month} {monthYear.year}
                 </h4>
-                <div className="grid grid-cols-7 gap-2">
-                  {/* Day Headers */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {/* Day Headers */}
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                     (day) => (
                       <div
@@ -2126,8 +2126,8 @@ function AttendanceTracker({
                       </div>
                     )
                   )}
-                  {/* Calendar Days */}
-                  {(() => {
+                    {/* Calendar Days */}
+                    {(() => {
                     const dates = generateMonthDates(
                       monthYear.month,
                       monthYear.year
@@ -2139,28 +2139,28 @@ function AttendanceTracker({
                         ).getMonth() + 1
                       ).padStart(2, "0")}-01`
                     );
-                    const firstDayOfWeek = firstDate.getDay();
-                    const daysInMonth = dates.length;
+                      const firstDayOfWeek = firstDate.getDay();
+                      const daysInMonth = dates.length;
                     const totalCells =
                       Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
-                    const cells = [];
-                    let dateIdx = 0;
-                    for (let i = 0; i < totalCells; i++) {
-                      if (i < firstDayOfWeek || dateIdx >= daysInMonth) {
-                        // Blank cell
+                      const cells = [];
+                      let dateIdx = 0;
+                      for (let i = 0; i < totalCells; i++) {
+                        if (i < firstDayOfWeek || dateIdx >= daysInMonth) {
+                          // Blank cell
                         cells.push(
                           <div
                             key={`empty-${i}`}
                             className="p-4 min-h-[60px] bg-white border border-gray-200 rounded"
                           />
                         );
-                      } else {
+                        } else {
                         const { day, isWeekend, isFuture, weekday } =
                           dates[dateIdx];
-                        // Use selectedEmployeeForMonth.weeklyOffDays (array of weekday names) for week offs
+                          // Use selectedEmployeeForMonth.weeklyOffDays (array of weekday names) for week offs
                         const weeklyOffDays =
                           selectedEmployeeForMonth?.weeklyOffDays || [];
-
+                        
                         // Create mapping from full day names to abbreviated day names
                         const dayNameMapping = {
                           Monday: "Mon",
@@ -2176,113 +2176,113 @@ function AttendanceTracker({
                           const mappedDay = dayNameMapping[offDay];
                           return mappedDay === weekday;
                         });
-
-                        // Get existing attendance data for this day
-                        let value = monthAttendanceData[day] || null;
-
-                        // If no existing data and it's a week off, set to Holiday
-                        if (!value && isWeekOff) {
+                          
+                          // Get existing attendance data for this day
+                          let value = monthAttendanceData[day] || null;
+                          
+                          // If no existing data and it's a week off, set to Holiday
+                          if (!value && isWeekOff) {
                           value =
                             statusOptions.find((opt) => opt.value === "H")
                               ?.value || null;
-                        }
-
-                        // If value changed for week off, update state (only on first render for that day)
-                        if (isWeekOff && !monthAttendanceData[day]) {
-                          setTimeout(() => setDayStatus(day, value), 0);
-                        }
-                        cells.push(
-                          <div
-                            key={day}
-                            className={`flex flex-col items-center justify-center p-2 border rounded min-h-[60px] transition-all ${
-                              isFuture
+                          }
+                          
+                          // If value changed for week off, update state (only on first render for that day)
+                          if (isWeekOff && !monthAttendanceData[day]) {
+                            setTimeout(() => setDayStatus(day, value), 0);
+                          }
+                          cells.push(
+                            <div
+                              key={day}
+                              className={`flex flex-col items-center justify-center p-2 border rounded min-h-[60px] transition-all ${
+                                isFuture
                                 ? "bg-gray-50 text-gray-400 cursor-not-allowed border-gray-100"
-                                : isWeekOff
+                                  : isWeekOff
                                 ? "bg-blue-50 border-blue-200 hover:border-blue-300"
                                 : "bg-white border-gray-200 hover:border-blue-400 hover:shadow-sm"
-                            }`}
-                          >
-                            <div className="font-bold text-gray-800 text-base mb-2">
-                              {day}
-                            </div>
-                            {!isFuture && value !== "NA" && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  {(() => {
-                                    const selected = statusOptions.find(
-                                      (opt) => opt.value === value
-                                    );
-                                    const bgColor = selected
-                                      ? selected.color
-                                      : "#fff";
-                                    return (
-                                      <button
-                                        className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                                        style={{ backgroundColor: bgColor }}
-                                      >
-                                        <span className="flex items-center gap-2">
-                                          {selected ? (
-                                            <span
-                                              className="inline-block w-3 h-3 rounded-full"
-                                              style={{
-                                                backgroundColor: selected.color,
-                                              }}
-                                            ></span>
-                                          ) : (
+                              }`}
+                            >
+                              <div className="font-bold text-gray-800 text-base mb-2">
+                                {day}
+                              </div>
+                              {!isFuture && value !== "NA" && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    {(() => {
+                                      const selected = statusOptions.find(
+                                        (opt) => opt.value === value
+                                      );
+                                      const bgColor = selected
+                                        ? selected.color
+                                        : "#fff";
+                                      return (
+                                        <button
+                                          className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                          style={{ backgroundColor: bgColor }}
+                                        >
+                                          <span className="flex items-center gap-2">
+                                            {selected ? (
+                                              <span
+                                                className="inline-block w-3 h-3 rounded-full"
+                                                style={{
+                                                  backgroundColor: selected.color,
+                                                }}
+                                              ></span>
+                                            ) : (
                                             <span className="text-gray-400 text-xs">
                                               □
                                             </span>
-                                          )}
-                                          <span>
+                                            )}
+                                            <span>
                                             {selected
                                               ? selected.label
                                               : "Empty"}
+                                            </span>
                                           </span>
-                                        </span>
-                                        <svg
-                                          className={`w-4 h-4 ml-2 flex-shrink-0 ${
-                                            isColorLight(bgColor)
-                                              ? "text-gray-600"
-                                              : "text-white"
-                                          }`}
-                                          fill="none"
-                                          stroke="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 9l-7 7-7-7"
-                                          />
-                                        </svg>
-                                      </button>
-                                    );
-                                  })()}
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  side="top"
-                                  className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
-                                >
-                                  <DropdownMenuRadioGroup
-                                    value={value || ""}
-                                    onValueChange={(val) => {
-                                      setDayStatus(day, val || null);
-                                    }}
+                                          <svg
+                                            className={`w-4 h-4 ml-2 flex-shrink-0 ${
+                                              isColorLight(bgColor)
+                                                ? "text-gray-600"
+                                                : "text-white"
+                                            }`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M19 9l-7 7-7-7"
+                                            />
+                                          </svg>
+                                        </button>
+                                      );
+                                    })()}
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    side="top"
+                                    className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
                                   >
-                                    <DropdownMenuRadioItem
-                                      value=""
-                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
+                                    <DropdownMenuRadioGroup
+                                      value={value || ""}
+                                      onValueChange={(val) => {
+                                        setDayStatus(day, val || null);
+                                      }}
                                     >
-                                      Empty
-                                    </DropdownMenuRadioItem>
+                                      <DropdownMenuRadioItem
+                                        value=""
+                                        className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
+                                      >
+                                        Empty
+                                      </DropdownMenuRadioItem>
                                     {statusOptions
                                       .filter((opt) => opt.value !== "NA")
                                       .map((opt) => (
-                                        <DropdownMenuRadioItem
-                                          key={opt.value}
-                                          value={opt.value}
+                                        <DropdownMenuRadioItem 
+                                          key={opt.value} 
+                                          value={opt.value} 
                                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -2298,34 +2298,34 @@ function AttendanceTracker({
                                           {opt.label}
                                         </DropdownMenuRadioItem>
                                       ))}
-                                  </DropdownMenuRadioGroup>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                            {!isFuture && value === "NA" && (
-                              <div className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
-                                <span className="flex items-center gap-2">
+                                    </DropdownMenuRadioGroup>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                              {!isFuture && value === "NA" && (
+                                <div className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
+                                  <span className="flex items-center gap-2">
                                   <span className="text-gray-900 font-medium">
                                     NA
                                   </span>
-                                  <span>Not Applicable</span>
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                        dateIdx++;
+                                    <span>Not Applicable</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                          dateIdx++;
+                        }
                       }
-                    }
-                    return cells;
-                  })()}
-                </div>
-              </div>
+                      return cells;
+                    })()}
+                  </div>
+      </div>
 
-              {/* Compact Footer */}
-              {selectedEmployeeForMonth && (
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600">
+                {/* Compact Footer */}
+                {selectedEmployeeForMonth && (
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm text-gray-600">
                     <span className="font-medium">
                       {
                         Object.values(monthAttendanceData).filter(
@@ -2334,23 +2334,23 @@ function AttendanceTracker({
                       }
                     </span>{" "}
                     days marked
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={closeAllModals}
-                      className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-base font-medium hover:bg-gray-100 hover:border-gray-400 transition-colors shadow-sm"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveMonthAttendance}
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={closeAllModals}
+                        className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-base font-medium hover:bg-gray-100 hover:border-gray-400 transition-colors shadow-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveMonthAttendance}
                       disabled={
                         manualAttendanceLoading || !hasSingleEmployeeChanges()
                       }
-                      className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {manualAttendanceLoading ? (
-                        <>
+                        className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {manualAttendanceLoading ? (
+                          <>
                           <svg
                             className="animate-spin -ml-1 mr-1 h-4 w-4 text-white inline"
                             xmlns="http://www.w3.org/2000/svg"
@@ -2370,40 +2370,40 @@ function AttendanceTracker({
                               fill="currentColor"
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
-                          </svg>
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Attendance"
-                      )}
-                    </button>
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Attendance"
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
           </div>
         ) : activeTab === "Attendance Tracker" ? (
-          <AttendanceTable
-            dates={dates}
-            statusOptions={statusOptions}
-            selectedStatuses={selectedStatuses}
-            isStatusFilterOpen={isStatusFilterOpen}
-            toggleStatus={toggleStatus}
-            searchInput={searchInput}
-            setSearchInput={setSearchInput}
-            selectedDate={selectedDate}
-            handleDateClick={handleDateClick}
-            filteredEmployees={filteredEmployees}
-            getAttendanceColor={getAttendanceColor}
-            attendance={attendance}
-            summaryDate={summaryDate}
-            summary={summary}
-            selectedEmployeeId={selectedEmployeeId}
-            handleEmployeeRowClick={handleEmployeeRowClick}
-            selectedMonth={selectedMonth}
-            selectedYear={selectedYear}
-            statusFilterRef={statusFilterRef}
-            setIsStatusFilterOpen={setIsStatusFilterOpen}
+        <AttendanceTable
+          dates={dates}
+          statusOptions={statusOptions}
+          selectedStatuses={selectedStatuses}
+          isStatusFilterOpen={isStatusFilterOpen}
+          toggleStatus={toggleStatus}
+          searchInput={searchInput}
+          setSearchInput={setSearchInput}
+          selectedDate={selectedDate}
+          handleDateClick={handleDateClick}
+          filteredEmployees={filteredEmployees}
+          getAttendanceColor={getAttendanceColor}
+          attendance={attendance}
+          summaryDate={summaryDate}
+          summary={summary}
+          selectedEmployeeId={selectedEmployeeId}
+          handleEmployeeRowClick={handleEmployeeRowClick}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          statusFilterRef={statusFilterRef}
+          setIsStatusFilterOpen={setIsStatusFilterOpen}
             onCellClick={(employee, date, status, event) =>
               handleCellClick(employee, date, status, event)
             }
@@ -2415,24 +2415,24 @@ function AttendanceTracker({
             calendarRef={calendarRef}
             handleMonthSelection={handleMonthSelection}
             isSingleEmployeeModalOpen={isSingleEmployeeModalOpen}
-          />
-        ) : (
-          <LeaveTable
-            searchInput={searchInput}
-            setSearchInput={setSearchInput}
-            departmentOptions={departmentOptions}
-            selectedDepartments={selectedDepartments}
-            isDepartmentFilterOpen={isDepartmentFilterOpen}
-            toggleDepartment={toggleDepartment}
-            filteredAndSearchedLeaveData={filteredAndSearchedLeaveData}
-            calculateLeaveSummary={calculateLeaveSummary}
-            selectedEmployeeId={selectedEmployeeId}
-            setSelectedEmployeeId={setSelectedEmployeeId}
-            departmentFilterRef={departmentFilterRef}
-            setIsDepartmentFilterOpen={setIsDepartmentFilterOpen}
-            setSelectedDepartments={setSelectedDepartments}
-          />
-        )}
+        />
+      ) : (
+        <LeaveTable
+          searchInput={searchInput}
+          setSearchInput={setSearchInput}
+          departmentOptions={departmentOptions}
+          selectedDepartments={selectedDepartments}
+          isDepartmentFilterOpen={isDepartmentFilterOpen}
+          toggleDepartment={toggleDepartment}
+          filteredAndSearchedLeaveData={filteredAndSearchedLeaveData}
+          calculateLeaveSummary={calculateLeaveSummary}
+          selectedEmployeeId={selectedEmployeeId}
+          setSelectedEmployeeId={setSelectedEmployeeId}
+          departmentFilterRef={departmentFilterRef}
+          setIsDepartmentFilterOpen={setIsDepartmentFilterOpen}
+          setSelectedDepartments={setSelectedDepartments}
+        />
+      )}
 
         {/* All Employees Date Playcard - moved here! */}
         {isAllEmployeesDateModalOpen && (
@@ -2533,7 +2533,7 @@ function AttendanceTracker({
                         onChange={(e) => {
                           const newYear = parseInt(e.target.value);
                           const currentYear = new Date().getFullYear();
-
+                          
                           // Check if selected year is in the future
                           if (newYear > currentYear) {
                             toast.error(
@@ -2541,7 +2541,7 @@ function AttendanceTracker({
                             );
                             return;
                           }
-
+                          
                           const currentDate = selectedDateForAll
                             ? new Date(selectedDateForAll)
                             : new Date();
@@ -2612,7 +2612,7 @@ function AttendanceTracker({
                         const isSelected =
                           selectedDateForAll &&
                           new Date(selectedDateForAll).getMonth() === index;
-
+                        
                         // Check if this month/year combination is in the future
                         const currentDate = new Date();
                         const currentYear = currentDate.getFullYear();
@@ -2626,9 +2626,9 @@ function AttendanceTracker({
                             index > currentMonth);
 
                         return (
-                          <button
+                <button
                             key={month}
-                            onClick={() => {
+                  onClick={() => {
                               if (isFutureMonth) {
                                 toast.error(
                                   "Cannot select future months for attendance"
@@ -2688,7 +2688,7 @@ function AttendanceTracker({
                             }
                           >
                             {month}
-                          </button>
+                </button>
                         );
                       })}
                     </div>
@@ -2716,7 +2716,7 @@ function AttendanceTracker({
                             const isSelected =
                               selectedDateForAll &&
                               new Date(selectedDateForAll).getDate() === day;
-
+                            
                             // Check if this date is in the future
                             const currentDate = new Date();
                             currentDate.setHours(0, 0, 0, 0); // Reset time to start of day
@@ -2816,13 +2816,13 @@ function AttendanceTracker({
                     <DropdownMenuRadioGroup
                       value={allEmployeesMarkAsStatus}
                       onValueChange={(value) => {
-                        setAllEmployeesMarkAsStatus(value);
+                      setAllEmployeesMarkAsStatus(value);
                       }}
                     >
                       {statusOptions.map((opt) => (
-                        <DropdownMenuRadioItem
-                          key={opt.value}
-                          value={opt.value}
+                        <DropdownMenuRadioItem 
+                          key={opt.value} 
+                          value={opt.value} 
                           className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2850,12 +2850,12 @@ function AttendanceTracker({
                   className="px-4 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
                   onClick={() => {
                     const status = allEmployeesMarkAsStatus;
-
+                    
                     if (!status) {
                       toast.error("Please select a status.");
                       return;
                     }
-
+                    
                     // Apply the selected status to all employees except those with "NA" status
                     const newData = { ...allEmployeesAttendanceData };
                     filteredEmployeesForModal.forEach((employee) => {
@@ -2866,7 +2866,7 @@ function AttendanceTracker({
                         newData[employee.id] = status;
                       }
                     });
-
+                    
                     setAllEmployeesAttendanceData(newData);
                     toast.success(
                       `Applied ${
@@ -2935,7 +2935,7 @@ function AttendanceTracker({
                             const value =
                               allEmployeesAttendanceData[employee.id] || null;
                             const isNaStatus = value === "NA";
-
+                            
                             if (isNaStatus) {
                               return (
                                 <div className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
@@ -2948,7 +2948,7 @@ function AttendanceTracker({
                                 </div>
                               );
                             }
-
+                            
                             return (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -3004,56 +3004,56 @@ function AttendanceTracker({
                                     );
                                   })()}
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                  align="end"
-                                  side="top"
-                                  className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
-                                >
-                                  <DropdownMenuRadioGroup
-                                    value={
+                            <DropdownMenuContent
+                              align="end"
+                              side="top"
+                              className="w-[280px] rounded-md shadow-lg border border-gray-200 bg-white max-h-64 overflow-y-auto"
+                            >
+                              <DropdownMenuRadioGroup
+                                value={
                                       allEmployeesAttendanceData[employee.id] ||
                                       ""
-                                    }
-                                    onValueChange={(val) => {
+                                }
+                                onValueChange={(val) => {
                                       setEmployeeStatus(
                                         employee.id,
                                         val || null
                                       );
-                                    }}
-                                  >
-                                    <DropdownMenuRadioItem
-                                      value=""
-                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
-                                    >
-                                      Empty
-                                    </DropdownMenuRadioItem>
+                                }}
+                              >
+                                <DropdownMenuRadioItem
+                                  value=""
+                                  className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer text-gray-400"
+                                >
+                                  Empty
+                                </DropdownMenuRadioItem>
                                     {statusOptions
                                       .filter((opt) => opt.value !== "NA")
                                       .map((opt) => (
-                                        <DropdownMenuRadioItem
-                                          key={opt.value}
-                                          value={opt.value}
-                                          className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
+                                  <DropdownMenuRadioItem 
+                                    key={opt.value} 
+                                    value={opt.value} 
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                             setEmployeeStatus(
                                               employee.id,
                                               opt.value
                                             );
-                                          }}
-                                        >
-                                          <span
-                                            className="inline-block w-3 h-3 rounded-full"
+                                    }}
+                                  >
+                                    <span
+                                      className="inline-block w-3 h-3 rounded-full"
                                             style={{
                                               backgroundColor: opt.color,
                                             }}
-                                          ></span>
-                                          {opt.label}
-                                        </DropdownMenuRadioItem>
-                                      ))}
-                                  </DropdownMenuRadioGroup>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                    ></span>
+                                    {opt.label}
+                                  </DropdownMenuRadioItem>
+                                ))}
+                              </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                             );
                           })()}
                         </td>
@@ -3143,7 +3143,7 @@ function AttendanceTracker({
             <div className="text-sm font-bold text-gray-700 mb-2">
               {cellPopoverDate}
             </div>
-
+            
             {/* Current Status */}
             <div className="flex items-center gap-2 mb-4">
               {cellPopoverStatus ? (
@@ -3163,7 +3163,7 @@ function AttendanceTracker({
                   : "No attendance marked"}
               </span>
             </div>
-
+            
             {/* Change to Dropdown */}
             <div className="w-full mb-4">
               <label className="block text-xs text-gray-500 mb-1">
@@ -3182,7 +3182,7 @@ function AttendanceTracker({
                 ))}
               </select>
             </div>
-
+            
             <div className="flex justify-end gap-2 mt-2 w-full">
               <button
                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
@@ -3207,4 +3207,4 @@ function AttendanceTracker({
   );
 }
 
-export default AttendanceTracker;
+export default AttendanceTracker; 

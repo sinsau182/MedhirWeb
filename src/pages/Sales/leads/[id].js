@@ -55,6 +55,9 @@ import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import { jwtDecode } from "jwt-decode";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+// Add Minio image system imports
+import MinioImage from "@/components/ui/MinioImage";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -236,6 +239,7 @@ const OdooDetailBody = ({
   const [expandedActivities, setExpandedActivities] = useState({});
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showAllActivityLogs, setShowAllActivityLogs] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState({});
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
 
@@ -253,21 +257,21 @@ const OdooDetailBody = ({
 
   // --- Assigned Team Edit State ---
   const [isEditingTeam, setIsEditingTeam] = useState(false);
-  const [assignedSalesRep, setAssignedSalesRep] = useState(lead.salesRep || "");
-  const [assignedDesigner, setAssignedDesigner] = useState(lead.designer || "");
-  const [assignedSalesRepId, setAssignedSalesRepId] = useState(
-    lead.salesRepId || ""
-  );
-  const [assignedDesignerId, setAssignedDesignerId] = useState(
-    lead.designerId || ""
-  );
+  const [assignedSalesRep, setAssignedSalesRep] = useState("");
+  const [assignedDesigner, setAssignedDesigner] = useState("");
+  const [assignedSalesRepId, setAssignedSalesRepId] = useState("");
+  const [assignedDesignerId, setAssignedDesignerId] = useState("");
 
   useEffect(() => {
-    setAssignedSalesRep(lead.salesRep || "");
-    setAssignedDesigner(lead.designer || "");
-    setAssignedSalesRepId(lead.salesRepId || "");
-    setAssignedDesignerId(lead.designerId || "");
-  }, [lead]);
+    // Convert employee IDs to names for display
+    const salesRepEmployee = managerEmployees.find(emp => emp.employeeId === lead.salesRep);
+    const designerEmployee = managerEmployees.find(emp => emp.employeeId === lead.designer);
+    
+    setAssignedSalesRep(salesRepEmployee?.name || "");
+    setAssignedDesigner(designerEmployee?.name || "");
+    setAssignedSalesRepId(lead.salesRep || "");
+    setAssignedDesignerId(lead.designer || "");
+  }, [lead, managerEmployees]);
   // --- End Assigned Team Edit State ---
 
   useEffect(() => {
@@ -287,20 +291,102 @@ const OdooDetailBody = ({
   };
 
   const handleDownloadFile = async (url) => {
-    const response = await fetch(url);
-    const blob = await response.blob();
+    try {
+      // Use Minio system for authenticated file access
+      const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+      
+      // Create a temporary link to download the file
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = url.split("/").pop().split("?")[0];
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      toast.error('Failed to download file. Please try again.');
+    }
+  };
 
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = url.split("/").pop().split("?")[0];
+  const handleOpenFile = async (url, fileName) => {
+    try {
+      // Use Minio system for authenticated file access
+      const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+      
+      // Open file in new window
+      const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fileName || 'File Preview';
+        newWindow.focus();
+      }
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      toast.error('Failed to open file. Please try again.');
+    }
+  };
 
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const toggleNoteExpansion = (noteId) => {
+    setExpandedNotes(prev => ({
+      ...prev,
+      [noteId]: !prev[noteId]
+    }));
+  };
 
-    // Clean up blob URL
-    URL.revokeObjectURL(blobUrl);
+  const renderNoteContent = (content, noteId) => {
+    const isExpanded = expandedNotes[noteId];
+    const isLongNote = content.length > 60;
+    
+    if (!isLongNote) {
+      return <span>{content}</span>;
+    }
+    
+    // Split content into 60-character chunks
+    const chunks = [];
+    for (let i = 0; i < content.length; i += 60) {
+      chunks.push(content.slice(i, i + 60));
+    }
+    
+    const visibleChunks = isExpanded ? chunks : chunks.slice(0, 1);
+    
+    return (
+      <div className="space-y-1">
+        <div className="whitespace-pre-wrap">
+          {visibleChunks.map((chunk, index) => (
+            <div key={index} className="text-sm">
+              {chunk}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => toggleNoteExpansion(noteId)}
+          className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+        >
+          {isExpanded ? (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              Show Less
+            </>
+          ) : (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+              Show More
+            </>
+          )}
+        </button>
+      </div>
+    );
   };
 
   const handleSaveContact = async () => {
@@ -560,7 +646,7 @@ const OdooDetailBody = ({
                   field: "leadSource",
                   type: "select",
                   options: sources,
-                  required: true,
+                  required: false,
                 },
                 { label: "Design Style", field: "designStyle", type: "text" },
               ].map(({ label, field, type, options, required, optional }) => (
@@ -740,9 +826,9 @@ const OdooDetailBody = ({
                             {formatRelativeTime(note.time)}
                           </span>
                         </p>
-                        <p className="text-sm group-hover:text-blue-600">
-                          {note.content}
-                        </p>
+                        <div className="text-sm group-hover:text-blue-600">
+                          {renderNoteContent(note.content, `note-${note.noteId || idx}`)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -765,9 +851,11 @@ const OdooDetailBody = ({
                       const completedActivities = activities
                         .filter((a) => a.status === "done")
                         .sort(
-                          (a, b) =>
-                            new Date(b.dueDate || b.updatedAt || b.createdAt) -
-                            new Date(a.dueDate || a.updatedAt || a.createdAt)
+                          (a, b) => {
+                            const dateA = new Date(`${a.dueDate}T${a.dueTime || '00:00'}`);
+                            const dateB = new Date(`${b.dueDate}T${b.dueTime || '00:00'}`);
+                            return dateB - dateA;
+                          }
                         );
                       
                       const visibleActivities = showAllActivityLogs
@@ -841,10 +929,23 @@ const OdooDetailBody = ({
                                     })
                                   : ""}
                               </div>
+                              {activity.attachment && (
+                                <div className="text-sm mb-2">
+                                  <button
+                                    onClick={() => handleOpenFile(activity.attachment, activity.title)}
+                                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span className="text-xs">View File</span>
+                                  </button>
+                                </div>
+                              )}
                               {activity.notes && (
                                 <div className="text-sm">
                                   <span className="font-semibold">Notes:</span>{" "}
-                                  {activity.notes}
+                                  {renderNoteContent(activity.notes, activity.id)}
                                 </div>
                               )}
                             </div>
@@ -885,55 +986,74 @@ const OdooDetailBody = ({
                   </h3>
                   {activities
                     .filter((activity) => activity.attachment)
+                    .sort((a, b) => {
+                      const dateA = new Date(`${a.dueDate}T${a.dueTime || '00:00'}`);
+                      const dateB = new Date(`${b.dueDate}T${b.dueTime || '00:00'}`);
+                      return dateB - dateA;
+                    })
                     .map((activity) => (
                       <div
                         key={activity.id}
                         className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 mb-2 border"
                       >
-                        <div>
-                          <a
-                            href={activity.attachment}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-gray-800 hover:text-blue-600 flex items-center gap-2"
-                          >
-                            <span className="inline-block mr-2">
-                              {/* You can use a file icon here */}
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M4 4v16h16V8l-6-6H4z" />
+                        <div className="flex items-center gap-3">
+                          {/* File Icon */}
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            {activity.attachment.toLowerCase().includes('.pdf') ? (
+                              <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                               </svg>
-                            </span>
-                            {activity.attachmentName ||
-                              activity.attachment.split("/").pop()}
-                          </a>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Uploaded by {activity.user || "Unknown"}{" "}
-                            {/* {activity.createdAt
-                                        ? new Date(activity.createdAt).toLocaleDateString("en-GB", {
-                                            day: "2-digit",
-                                            month: "short",
-                                            year: "numeric",
-                                          })
-                                        : "Unknown date"} */}
+                            ) : activity.attachment.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                              <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          
+                          {/* File Info */}
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 hover:text-blue-600 flex items-center gap-2">
+                              {activity.attachmentName || activity.attachment.split("/").pop()}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Uploaded by {activity.user || "Unknown"}
+                            </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() =>
-                            handleDownloadFile(activity.attachment)
-                          }
-                          className="text-gray-500 hover:text-blue-600 p-2"
-                        >
-                          <FaDownload className="w-4 h-4" />
-                        </button>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                          {/* View Button */}
+                          <button
+                            onClick={() => handleOpenFile(activity.attachment, activity.attachmentName || activity.attachment.split("/").pop())}
+                            className="text-blue-600 hover:text-blue-800 p-2"
+                            title="View File"
+                          >
+                            <FaFileAlt className="w-4 h-4" />
+                          </button>
+                          
+                          {/* Download Button */}
+                          <button
+                            onClick={() => handleDownloadFile(activity.attachment)}
+                            className="text-gray-500 hover:text-blue-600 p-2"
+                            title="Download File"
+                          >
+                            <FaDownload className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
-                  <div className="border-b border-gray-200 mb-6"></div>
+                  {activities.filter((activity) => activity.attachment).length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="text-gray-400 text-6xl mb-4">📎</div>
+                      <p className="text-gray-500 text-lg">No files available</p>
+                      <p className="text-gray-400 text-sm mt-2">No attachments have been uploaded for this lead</p>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === "status" && (
@@ -982,22 +1102,17 @@ const OdooDetailBody = ({
                               {lead.signupAmount || "N/A"}
                             </div>
                             <div>
-                              <strong>PAN Number:</strong>{" "}
-                              {lead.panNumber || "N/A"}
-                            </div>
-                            <div>
                               <strong>Discount:</strong>{" "}
                               {lead.discount || "N/A"}
                             </div>
                             <div>
                               <strong>Payment Proof:</strong>{" "}
                               {lead.paymentDetailsFileName ? (
-                                <a
-                                  href={lead.paymentDetailsFileName}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <span style={{ wordBreak: "break-all" }}>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenFile(lead.paymentDetailsFileName, lead.paymentDetailsFileName.split("/").pop())}
+                                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                                  >
                                     {(() => {
                                       const name = lead.paymentDetailsFileName
                                         .split("/")
@@ -1007,8 +1122,15 @@ const OdooDetailBody = ({
                                         name
                                       );
                                     })()}
-                                  </span>
-                                </a>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadFile(lead.paymentDetailsFileName)}
+                                    className="text-gray-500 hover:text-blue-600 p-1"
+                                    title="Download"
+                                  >
+                                    <FaDownload className="w-3 h-3" />
+                                  </button>
+                                </div>
                               ) : (
                                 "No file uploaded"
                               )}
@@ -1024,22 +1146,25 @@ const OdooDetailBody = ({
                               {lead.paymentMode || "N/A"}
                             </div>
                             <div>
-                              <strong>Payment Transaction ID:</strong>{" "}
-                              {lead.paymentTransactionId || "N/A"}
+                              <strong>PAN Number:</strong>{" "}
+                              {lead.panNumber || "N/A"}
                             </div>
                             <div>
                               <strong>Project Timeline:</strong>{" "}
                               {lead.projectTimeline || "N/A"}
                             </div>
                             <div>
+                              <strong>Discount:</strong>{" "}
+                              {lead.discount || "N/A"}
+                            </div>
+                            <div>
                               <strong>Booking Form:</strong>{" "}
                               {lead.bookingFormFileName ? (
-                                <a
-                                  href={lead.bookingFormFileName}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <span style={{ wordBreak: "break-all" }}>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenFile(lead.bookingFormFileName, lead.bookingFormFileName.split("/").pop())}
+                                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                                  >
                                     {(() => {
                                       const name = lead.bookingFormFileName
                                         .split("/")
@@ -1049,8 +1174,15 @@ const OdooDetailBody = ({
                                         name
                                       );
                                     })()}
-                                  </span>
-                                </a>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadFile(lead.bookingFormFileName)}
+                                    className="text-gray-500 hover:text-blue-600 p-1"
+                                    title="Download"
+                                  >
+                                    <FaDownload className="w-3 h-3" />
+                                  </button>
+                                </div>
                               ) : (
                                 "No file uploaded"
                               )}
@@ -1324,9 +1456,9 @@ const OdooDetailBody = ({
                                 </span>
                                 {/* Optional: show notes/content if present */}
                                 {log.metadata?.notes && (
-                                  <span className="text-sm text-gray-600 mt-1">
-                                    {log.metadata.notes}
-                                  </span>
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {renderNoteContent(log.metadata.notes, `history-${log.id || idx}`)}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -1553,7 +1685,9 @@ const OdooDetailBody = ({
                         : "text-gray-400 font-medium"
                     }
                   >
-                    {lead.salesRep || "Unassigned"}
+                    {lead.salesRep ? 
+                      (managerEmployees.find(emp => emp.employeeId === lead.salesRep)?.name || lead.salesRep) 
+                      : "Unassigned"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1565,7 +1699,9 @@ const OdooDetailBody = ({
                         : "text-gray-400 font-medium"
                     }
                   >
-                    {lead.designer || "Unassigned"}
+                    {lead.designer ? 
+                      (managerEmployees.find(emp => emp.employeeId === lead.designer)?.name || lead.designer) 
+                      : "Unassigned"}
                   </span>
                 </div>
               </div>

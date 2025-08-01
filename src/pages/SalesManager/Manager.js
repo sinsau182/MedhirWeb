@@ -34,6 +34,7 @@ import {
   deletePipeline,
   initializePipelineStages,
 } from "@/redux/slices/pipelineSlice";
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
 import {
@@ -51,19 +52,6 @@ import ViewToggle from "@/components/Sales/ViewToggle";
 import SearchBar from "@/components/Sales/SearchBar";
 import DeletePipelineModal from "@/components/Sales/DeletePipelineModal";
 import LeadsTable from "../../components/Sales/LeadsTable";
-
-const salesPersons = [
-  { id: "MED101", name: "Alice" },
-  { id: "MED102", name: "Bob" },
-  { id: "MED103", name: "Charlie" },
-  { id: "MED104", name: "Dana" },
-];
-const designers = [
-  { id: "MED101", name: "Bob" },
-  { id: "MED102", name: "Dana" },
-  { id: "MED103", name: "Frank" },
-  { id: "MED104", name: "Jack" },
-];
 
 const defaultLeadData = {
   name: "",
@@ -104,6 +92,7 @@ const ManagerContent = ({ role }) => {
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
   const { leads, loading, error } = useSelector((state) => state.leads);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
   // Add pipeline modal state
   const [isAddingStage, setIsAddingStage] = useState(false);
@@ -160,6 +149,7 @@ const ManagerContent = ({ role }) => {
   useEffect(() => {
     dispatch(fetchPipelines());
     dispatch(fetchLeads());
+    dispatch(fetchManagerEmployees());
   }, [dispatch]);
 
 
@@ -596,8 +586,10 @@ const ManagerContent = ({ role }) => {
         onSubmit={handleAddLeadSubmit}
         initialData={editingLead || defaultLeadData}
         isManagerView={true}
-        salesPersons={salesPersons}
-        designers={designers}
+        salesPersons={managerEmployees}
+        designers={managerEmployees}
+        salesPersonsLoading={managerEmployeesLoading}
+        designersLoading={managerEmployeesLoading}
       />
 
       {showConvertModalManager && (

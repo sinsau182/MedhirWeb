@@ -1,10 +1,21 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useRouter } from "next/router";
+import {
+  fetchLeads,
+  updateLead,
+  createLead,
+} from "@/redux/slices/leadsSlice";
+import { fetchPipelines, createPipeline, deletePipeline } from "@/redux/slices/pipelineSlice";
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
+import MainLayout from "@/components/MainLayout";
+import { toast } from "sonner";
+import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
+import LostLeadModal from "@/components/Sales/LostLeadModal";
+import JunkReasonModal from "@/components/Sales/JunkReasonModal";
+import AddLeadModal from "@/components/Sales/AddLeadModal";
+import AdvancedScheduleActivityModal from "@/components/Sales/AdvancedScheduleActivityModal";
+import KanbanBoard from "@/components/Sales/KanbanBoard";
 import {
   FaPlus,
   FaCog,
@@ -18,37 +29,58 @@ import {
   FaChevronDown,
   FaTrash,
   FaTimes,
-  FaWrench,
+  FaChevronLeft,
+  FaChevronRight,
+  FaEdit,
+  FaEye,
+  FaEyeSlash,
+  FaCheck,
+  FaStar,
+  FaRegStar,
+  FaRegCheckCircle,
+  FaRegClock,
+  FaRegSmile,
+  FaRegFrown,
+  FaRegMeh,
+  FaRegAngry,
+  FaRegSurprise,
+  FaRegHeart,
+  FaRegComment,
+  FaRegBookmark,
+  FaRegShareSquare,
+  FaRegThumbsUp,
+  FaRegThumbsDown,
+  FaRegEye,
+  FaRegEyeSlash,
+  FaRegBell,
+  FaRegBellSlash,
+  FaRegCalendar,
+  FaRegCalendarAlt,
+  FaRegCalendarCheck,
+  FaRegCalendarMinus,
+  FaRegCalendarPlus,
+  FaRegCalendarTimes,
+  FaRegHourglass,
+  FaRegHourglassHalf,
+  FaRegHourglassStart,
+  FaRegHourglassEnd,
+  FaRegStopwatch,
+  FaRegTimer,
+  FaRegAlarmClock,
+  FaRegAlarmExclamation,
+  FaRegAlarmSnooze,
+  FaRegAlarmPlus,
+  FaRegAlarmOff,
+  FaRegAlarmOn,
+  FaRegAlarmCheck,
+  FaRegAlarmEdit,
   FaStream,
   FaTasks,
   FaUserShield,
   FaSitemap,
-  FaChevronLeft,
-  FaChevronRight,
   FaRobot,
   FaEnvelopeOpenText,
-  FaCopy,
-  FaPlay,
-  FaQuestionCircle,
-  FaRocket,
 } from "react-icons/fa";
-import { useSelector, useDispatch } from "react-redux";
-import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
-import LostLeadModal from "@/components/Sales/LostLeadModal";
-import JunkReasonModal from "@/components/Sales/JunkReasonModal";
-import AddLeadModal from "@/components/Sales/AddLeadModal";
-import KanbanBoard from "@/components/Sales/KanbanBoard";
-import { fetchLeads, updateLead, createLead } from "@/redux/slices/leadsSlice";
-import {
-  addStage,
-  removeStage,
-  fetchPipelines,
-  createPipeline,
-  deletePipeline,
-  reorderPipelines,
-} from "@/redux/slices/pipelineSlice";
-import MainLayout from "@/components/MainLayout";
-import { toast } from "sonner";
 import {
   Table,
   TableHeader,
@@ -56,44 +88,27 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from "@/components/ui/table";
-import AdvancedScheduleActivityModal from "@/components/Sales/AdvancedScheduleActivityModal";
-import { useRouter } from "next/router";
-import Tooltip from "@/components/ui/ToolTip";
-
-// Add these imports for settings functionality
+} from '@/components/ui/table';
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-  useDraggable,
-  useDroppable,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-const salesPersons = [
-  { id: 1, name: "Alice" },
-  { id: 2, name: "Bob" },
-  { id: 3, name: "Charlie" },
-  { id: 4, name: "Dana" },
-];
-const designers = [
-  { id: 1, name: "Bob" },
-  { id: 2, name: "Dana" },
-  { id: 3, name: "Frank" },
-  { id: 4, name: "Jack" },
-];
+// Remove hardcoded arrays - will use dynamic data from Redux
+// const salesPersons = [
+//   { id: 1, name: "Alice" },
+//   { id: 2, name: "Bob" },
+//   { id: 3, name: "Charlie" },
+//   { id: 4, name: "Dana" },
+// ];
+// const designers = [
+//   { id: 1, name: "Bob" },
+//   { id: 2, name: "Dana" },
+//   { id: 3, name: "Frank" },
+//   { id: 4, name: "Jack" },
+// ];
 
 const defaultLeadData = {
   name: "",
@@ -3455,11 +3470,13 @@ const SettingContent = ({ role }) => {
   // Get data from Redux store instead of local state
   const { leads: allLeads } = useSelector((state) => state.leads);
   const { pipelines } = useSelector((state) => state.pipelines);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
   // Fetch data on component mount
   useEffect(() => {
     dispatch(fetchPipelines());
     dispatch(fetchLeads()); // Assuming fetchLeads gets all leads
+    dispatch(fetchManagerEmployees());
   }, [dispatch]);
 
   // Map Redux pipeline structure to the one expected by the settings components
@@ -3674,7 +3691,7 @@ const SettingContent = ({ role }) => {
 
         // Try to delete each stage and check for errors
         for (const stage of stagesData) {
-          const result = await dispatch(deletePipeline(stage.id));
+          const result = await dispatch(deletePipeline(stage.stageId));
 
           // Check if the action was rejected
           if (deletePipeline.rejected.match(result)) {
@@ -4015,8 +4032,10 @@ const SettingContent = ({ role }) => {
         }}
         onSubmit={handleAddLeadSubmit}
         editingLead={editingLead}
-        salesPersons={salesPersons}
-        designers={designers}
+        salesPersons={managerEmployees}
+        designers={managerEmployees}
+        salesPersonsLoading={managerEmployeesLoading}
+        designersLoading={managerEmployeesLoading}
         kanbanStatuses={kanbanStatuses}
       />
 

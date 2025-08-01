@@ -82,6 +82,9 @@ const Overview = () => {
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
 
+  console.log(attendance);
+  console.log(employees);
+
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -105,55 +108,43 @@ const Overview = () => {
 
   // Calculate current day summary whenever attendance data changes
   useEffect(() => {
-    if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0) {
+    if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0 && employees && employees.length > 0) {
       let presentCount = 0;
       let absentCount = 0;
       const today = new Date();
       const currentDay = today.getDate();
-      const totalEmployees = employees?.length ?? 0;
       
-      // Process each employee's attendance for today
+      // Create a set of valid employee IDs from the employees object for faster lookup
+      const validEmployeeIds = new Set(employees.map(emp => emp.id));
+      
+      // Process each employee's attendance for today, but only for employees that exist in the employees object
       attendance.monthlyAttendance.forEach((employeeRecord) => {
-        if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
-          const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
-          
-          // Only count actual "Present" status as present
-          if (dayStatus === 'P') {
-            presentCount++;
+        // Only process if this employee exists in the employees list
+        if (validEmployeeIds.has(employeeRecord.employeeId)) {
+          if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
+            const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
+            
+            // Only count actual "Present" status as present
+            if (dayStatus === 'P') {
+              presentCount++;
+            }
+            // Count only "Absent" status as absent
+            else if (dayStatus === 'A') {
+              absentCount++;
+            }
+            // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
           }
-          // Count only "Absent" status as absent
-          else if (dayStatus === 'A') {
-            absentCount++;
-          }
-          // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
         }
       });
 
-      // Ensure present + absent doesn't exceed total employees
-      const totalCounted = presentCount + absentCount;
-      if (totalCounted > totalEmployees) {
-        // If we have more counted than total employees, adjust the counts proportionally
-        const ratio = totalEmployees / totalCounted;
-        presentCount = Math.round(presentCount * ratio);
-        absentCount = Math.round(absentCount * ratio);
-        
-        // Ensure we don't exceed total employees
-        if (presentCount + absentCount > totalEmployees) {
-          // If still exceeding, prioritize present count
-          if (presentCount > absentCount) {
-            presentCount = totalEmployees - absentCount;
-          } else {
-            absentCount = totalEmployees - presentCount;
-          }
-        }
-      }
+      console.log('Filtered attendance counts - Valid employees:', validEmployeeIds.size, 'Present:', presentCount, 'Absent:', absentCount);
 
       setCurrentDayAttendanceSummary({
         totalPresent: presentCount,
         totalAbsent: absentCount,
       });
     } else {
-      // If no attendance data fetched, reset summary
+      // If no attendance data fetched or no employees, reset summary
       setCurrentDayAttendanceSummary({
         totalPresent: 0,
         totalAbsent: 0,
