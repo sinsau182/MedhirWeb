@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/router";
+import { fetchLeads, updateLead, createLead } from "@/redux/slices/leadsSlice";
 import {
-  fetchLeads,
-  updateLead,
-  createLead,
-} from "@/redux/slices/leadsSlice";
-import { fetchPipelines, createPipeline, deletePipeline } from "@/redux/slices/pipelineSlice";
+  fetchPipelines,
+  createPipeline,
+  deletePipeline,
+} from "@/redux/slices/pipelineSlice";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -91,7 +91,7 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -3474,7 +3474,8 @@ const SettingContent = ({ role }) => {
   // Get data from Redux store instead of local state
   const { leads: allLeads } = useSelector((state) => state.leads);
   const { pipelines } = useSelector((state) => state.pipelines);
-  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } =
+    useSelector((state) => state.managerEmployee);
 
   // Fetch data on component mount
   useEffect(() => {
