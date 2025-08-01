@@ -110,13 +110,21 @@ export const addReceipt = createAsyncThunk(
   async (receiptData, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
+      
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+      
+      // Don't set Content-Type for FormData, let browser handle it
+      const isFormData = receiptData instanceof FormData;
+      if (!isFormData) {
+        headers["Content-Type"] = "application/json";
+      }
+      
       const response = await fetch(`${API_BASE_URL}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(receiptData),
+        headers,
+        body: isFormData ? receiptData : JSON.stringify(receiptData),
       });
       const data = await response.json();
       if (!response.ok) {

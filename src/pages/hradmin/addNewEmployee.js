@@ -747,6 +747,8 @@ function EmployeeForm() {
       allowances: "",
       employerPfContribution: "",
       employeePfContribution: "",
+      phoneReimbursements: "",
+      fuelReimbursements: "",
     },
   });
 
@@ -828,6 +830,8 @@ function EmployeeForm() {
               parsedEmployee.salaryDetails?.employerPfContribution || "",
             employeePfContribution:
               parsedEmployee.salaryDetails?.employeePfContribution || "",
+            phoneReimbursements: parsedEmployee.salaryDetails?.phoneReimbursements || "",
+            fuelReimbursements: parsedEmployee.salaryDetails?.fuelReimbursements || "",
           },
         }));
 
@@ -870,11 +874,12 @@ function EmployeeForm() {
       monthly -
       parseFloat(basic) -
       parseFloat(hra) -
-      parseFloat(pfContributions.employee)
+      parseFloat(pfContributions.employee) -
+      parseFloat(pfContributions.employer)
     );
     
     // Add excess PF amount to allowances
-    const totalAllowances = (baseAllowances + parseFloat(pfContributions.excessAmount || 0)).toFixed(2);
+    const totalAllowances = (baseAllowances).toFixed(2);
 
     return {
       hra,
@@ -4386,6 +4391,79 @@ function EmployeeForm() {
                             </div>
                           </>
                         )}
+
+                        {/* Reimbursement Fields */}
+                        <div className={inputGroupClass}>
+                          <label className={inputLabelClass}>Phone Reimbursement</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              ₹
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              className={inputClass + " pl-8"}
+                              placeholder="Enter phone reimbursement amount"
+                              value={formData.salaryDetails.phoneReimbursements || ""}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(
+                                  /[^\d.]/g,
+                                  ""
+                                ); // Remove all except digits and dot
+                                if (val.startsWith(".")) val = ""; // Prevent leading dot
+                                if (val && parseFloat(val) < 0) val = ""; // Prevent negative
+                                // Prevent negative or plus sign in pasted value
+                                if (val.includes("-") || val.includes("+"))
+                                  val = val.replace(/[-+]/g, "");
+                                handleInputChange(
+                                  "salaryDetails",
+                                  "phoneReimbursements",
+                                  val
+                                );
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "-" || e.key === "+")
+                                  e.preventDefault();
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className={inputGroupClass}>
+                          <label className={inputLabelClass}>Fuel Reimbursement</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              ₹
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              className={inputClass + " pl-8"}
+                              placeholder="Enter fuel reimbursement amount"
+                              value={formData.salaryDetails.fuelReimbursements || ""}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(
+                                  /[^\d.]/g,
+                                  ""
+                                ); // Remove all except digits and dot
+                                if (val.startsWith(".")) val = ""; // Prevent leading dot
+                                if (val && parseFloat(val) < 0) val = ""; // Prevent negative
+                                // Prevent negative or plus sign in pasted value
+                                if (val.includes("-") || val.includes("+"))
+                                  val = val.replace(/[-+]/g, "");
+                                handleInputChange(
+                                  "salaryDetails",
+                                  "fuelReimbursements",
+                                  val
+                                );
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "-" || e.key === "+")
+                                  e.preventDefault();
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

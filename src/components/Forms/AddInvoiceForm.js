@@ -20,6 +20,8 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
     const [errors, setErrors] = useState({});
     const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
+    const [selectedOption, setSelectedOption] = useState(null);
+    const [isOpen, setIsOpen] = useState(false);
 
     // Remove static customers and projects arrays
     // const customers = [...];
@@ -171,12 +173,46 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                         <span className="ml-2 text-red-500">*</span>
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
+                        <div className="relative inline-block w-full">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                            <select name="projectName" value={formData.projectName} onChange={handleProjectChange} className="w-full px-4 py-3 text-base border rounded-lg border-gray-300">
-                                <option value="">Select project</option>
-                                {projects.map(p => (<option key={p.projectId} value={p.projectName}>{p.projectName}</option>))}
-                            </select>
+                            <button
+                                type="button"
+                                onClick={() => setIsOpen(!isOpen)}
+                                className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            >
+                                {selectedOption?.projectName || "Select Project"}
+                                <span className="float-right">
+                                    <svg className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </span>
+                            </button>
+
+                            {isOpen && (
+                                <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
+                                    {projects.map((project) => (
+                                        <li
+                                            key={project.projectId}
+                                            onClick={() => {
+                                                setSelectedOption(project);
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    projectName: project.projectName,
+                                                    projectId: project.projectId,
+                                                    customerName: project.customerName,
+                                                    customerId: project.customerId,
+                                                    address: project.address,
+                                                }));
+                                                setIsOpen(false);
+                                                if (errors.projectName) setErrors(prev => ({ ...prev, projectName: '' }));
+                                            }}
+                                            className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                                        >
+                                            {project.projectName}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Customer name <span className="text-red-500">*</span></label>

@@ -664,7 +664,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             </div>
                           </div>
                         ) : (
-                          <div
+                          <Link
+                            href={item.link}
+                            prefetch={true}
                             className={`
                               group flex items-center px-2 py-2 
                               transition-all duration-300 ease-in-out
@@ -675,19 +677,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              ${item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                              cursor-pointer
                             `}
                             aria-label={item.label}
-                            title={item.label === "Account Settings" ? "This feature is in progress" : ""}
-                            onClick={(e) => {
-                              if (item.label === "Account Settings") {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                return;
-                              }
-                              // For other items, navigate to the link
-                              router.push(item.link);
-                            }}
                           >
                             <span
                               className={`text-base flex-shrink-0 ${
@@ -701,12 +693,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             {!isCollapsed && (
                               <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                            {item.label === "Account Settings" ? (
-                              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                                This feature is in progress
-                              </div>
-                            ) : null}
-                          </div>
+                          </Link>
                         )}
                       </div>
                     );

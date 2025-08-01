@@ -141,6 +141,8 @@ function Employees() {
           { key: "allowances", label: "Other Allowances" },
           { key: "employerPfContribution", label: "Employer PF" },
           { key: "employeePfContribution", label: "Employee PF" },
+          { key: "phoneReimbursements", label: "Phone Reimbursements" },
+          { key: "fuelReimbursements", label: "Fuel Reimbursements" }
         ];
       case "Bank Details":
         return [
