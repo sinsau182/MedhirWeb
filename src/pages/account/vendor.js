@@ -31,7 +31,7 @@ const Vendor = () => {
   const [selectedBill, setSelectedBill] = useState(null);
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
-
+   const [previewFile, setPreviewFile] = useState(null);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
@@ -96,7 +96,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     setEditingPO(po);
     setShowAddForm('po');
   };
-
+   const handlePreviewAttachment = (fileUrl) => {
+    setPreviewFile(fileUrl);
+  };
+   
   // Close attachment modal
   const closeAttachmentModal = () => {
     setShowAttachmentModal(false);
@@ -324,7 +327,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                      <th className="px-1 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -383,7 +386,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                               ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
                               : 'bg-gray-100 text-gray-500'
                           }`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
                                 bill.attachmentUrls === 'Yes' || 
                                 bill.attachmentUrls === true) {
@@ -436,9 +440,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                       
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -464,21 +467,30 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            po.status === 'Approved' 
-                              ? 'bg-green-100 text-green-800' 
-                              : po.status === 'Draft'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {po.status}
-                          </span>
-                        </td>
+                        
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
                         </td>
-                
+
+                 <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <span 
+                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                             (po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
+                                  }`}
+                             onClick={(e) => {
+                               e.stopPropagation();
+                                          if ((po.attachmentUrls && po.attachmentUrls.length > 0) || po.attachmentUrls === 'Yes' ||po.attachmentUrls === true) {
+                                           handlePreviewAttachment(po.attachmentUrls);
+                                                }
+                                             }}
+                                          >
+                                {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                   po.attachmentUrls === 'Yes' || 
+                                   po.attachmentUrls === true ? '📎' : '-'}
+                             </span>
+                      </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -626,6 +638,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
+                    <th className="px-4  py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">  Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -749,6 +762,40 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           {renderContent()}
         </div>
       </div>
+   {/*attachment of purhase order*/}
+    {previewFile && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+    onClick={() => setPreviewFile(null)}
+  >
+    <div
+      className="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+        onClick={() => setPreviewFile(null)}
+      >
+        ✕
+      </button>
+      <div className="flex flex-col items-center">
+        {/\.(pdf)$/i.test(previewFile) ? (
+          <iframe
+            src={previewFile}
+            className="w-full h-96 border rounded"
+            title="Attachment Preview"
+          />
+        ) : (
+          <img
+            src={previewFile}
+            alt="Attachment Preview"
+            className="max-h-96 rounded border"
+          />
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Attachment Modal */}
       {showAttachmentModal && (

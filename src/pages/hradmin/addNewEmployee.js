@@ -2240,13 +2240,13 @@ function EmployeeForm() {
   }
 
   // Add validation functions for bank details
-  const validateAccountNumber = (value, required = true) => {
-    if (!value || value.trim() === "")
-      return required ? "Account number is required." : "";
-    if (!/^[0-9]{9,18}$/.test(value))
-      return "Account number must be 9-18 digits.";
-    return "";
-  };
+const validateAccountNumber = (value, required = true) => {
+  if (!value || value.trim() === "")
+    return required ? "Account number is required." : "";
+  if (!/^[0-9]{9,18}$/.test(value))
+    return "Account number must be 9-18 digits.";
+  return "";
+};
   const validateAccountHolderName = (value, required = true) => {
     if (!value || value.trim() === "")
       return required ? "Account holder name is required." : "";
@@ -2255,13 +2255,15 @@ function EmployeeForm() {
     if (value.trim().length < 2) return "Must be at least 2 characters.";
     return "";
   };
-  const validateIFSC = (value, required = true) => {
-    if (!value || value.trim() === "")
-      return required ? "IFSC code is required." : "";
-    if (!/^[A-Z]{4}0[0-9A-Z]{6}$/.test(value.trim().toUpperCase()))
-      return "Invalid IFSC code format (e.g., SBIN0001234).";
-    return "";
-  };
+ //  IFSC Code (11 chars, e.g., SBIN0008754)
+const validateIFSC = (value, required = true) => {
+  if (!value || value.trim() === "")
+    return required ? "IFSC code is required." : "";
+  if (!/^[A-Z]{4}0[0-9A-Z]{6}$/.test(value.trim().toUpperCase()))
+    return "Invalid IFSC code format (e.g., SBIN0008754).";
+  return "";
+};
+
   const validateBankName = (value, required = true) => {
     if (!value || value.trim() === "")
       return required ? "Bank name is required." : "";
