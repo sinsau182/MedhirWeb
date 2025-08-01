@@ -117,6 +117,9 @@ function AttendanceTracker({
   const cellPopoverAnchorRef = useRef(null);
   const [popoverOpenCell, setPopoverOpenCell] = useState(null);
   
+  // Ref to track if we're currently fetching employee data
+  const isFetchingEmployeeDataRef = useRef(false);
+  
   // Universal close function for all modals and popups
   const closeAllModals = () => {
     setIsSingleEmployeeModalOpen(false);
@@ -139,6 +142,10 @@ function AttendanceTracker({
     setIsDepartmentFilterOpen(false);
     setPopoverOpenCell(null);
     setCellPopoverOpen(false);
+    // Reset fetching state
+    isFetchingEmployeeDataRef.current = false;
+    // Reset selected date for All Employees modal
+    setSelectedDateForAll(null);
   };
 
   // Function to switch between tabs without losing data
@@ -437,6 +444,155 @@ function AttendanceTracker({
     }
   }, [isSingleEmployeeModalOpen, isAllEmployeesDateModalOpen, activeTab]);
 
+  // Fetch employee attendance data when month/year changes in Single Employee modal
+  useEffect(() => {
+    if (selectedEmployeeForMonth && isSingleEmployeeModalOpen && !isFetchingEmployeeDataRef.current) {
+      isFetchingEmployeeDataRef.current = true;
+      
+      // Fetch existing attendance data for this employee and month/year
+      dispatch(
+        fetchOneEmployeeAttendanceOneMonth({
+          employeeId: selectedEmployeeForMonth.id,
+          month: monthYear.month,
+          year: monthYear.year,
+        })
+      )
+        .then((result) => {
+          isFetchingEmployeeDataRef.current = false;
+          
+          if (!result.error && result.payload) {
+            // Merge API response data with employee data
+            const attendanceData = result.payload;
+            const updatedEmployee = {
+              ...selectedEmployeeForMonth,
+              weeklyOffDays: attendanceData.weeklyOffDays || [],
+              statusCounts: attendanceData.statusCounts || {}
+            };
+            
+            // Only update employee if the data actually changed
+            if (JSON.stringify(updatedEmployee) !== JSON.stringify(selectedEmployeeForMonth)) {
+              setSelectedEmployeeForMonth(updatedEmployee);
+            }
+            
+            // Initialize attendance data with existing data
+            const dates = generateMonthDates(monthYear.month, monthYear.year);
+            const initialData = {};
+            
+            // Helper function to get attendance status for a specific date
+            const getAttendanceStatusForDate = (dayNumber) => {
+              if (!attendanceData) return null; // Return null if no attendance data
+
+              // Handle new format with days object
+              if (attendanceData.days) {
+                if (attendanceData.days[dayNumber]) {
+                  return attendanceData.days[dayNumber].statusCode;
+                }
+                return null; // Return null if no status code is available (empty box)
+              }
+
+              // Fallback to old format
+              const monthIndex = new Date(
+                `${monthYear.month} 1, ${monthYear.year}`
+              ).getMonth();
+              const dateString = `${monthYear.year}-${String(
+                monthIndex + 1
+              ).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
+
+              // Check present dates
+              if (attendanceData.presentDates?.includes(dateString)) {
+                return "P";
+              }
+
+              // Check full leave dates
+              if (attendanceData.fullLeaveDates?.includes(dateString)) {
+                return "L";
+              }
+
+              // Check half day leave dates
+              if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
+                return "P/A";
+              }
+
+              // Check full comp-off dates
+              if (attendanceData.fullCompoffDates?.includes(dateString)) {
+                return "P";
+              }
+
+              // Check half comp-off dates
+              if (attendanceData.halfCompoffDates?.includes(dateString)) {
+                return "P/A";
+              }
+
+              // Check weekly off dates
+              if (attendanceData.weeklyOffDates?.includes(dateString)) {
+                return "H";
+              }
+
+              // Check absent dates
+              if (attendanceData.absentDates?.includes(dateString)) {
+                return "A";
+              }
+
+              return null; // Return null if no status found (empty box)
+            };
+
+            dates.forEach(({ day }) => {
+              const status = getAttendanceStatusForDate(day.toString());
+              initialData[day] = status || null; // Use null instead of empty string
+            });
+            
+            setMonthAttendanceData(initialData);
+            setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
+          } else {
+            // If no existing data, initialize with empty values
+            const dates = generateMonthDates(monthYear.month, monthYear.year);
+            const initialData = {};
+            dates.forEach(({ day }) => {
+              initialData[day] = null; // Use null instead of empty string
+            });
+            
+            setMonthAttendanceData(initialData);
+            setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
+          }
+        })
+        .catch((error) => {
+          isFetchingEmployeeDataRef.current = false;
+          console.error("Error fetching employee attendance:", error);
+          // Initialize with empty values on error
+          const dates = generateMonthDates(monthYear.month, monthYear.year);
+          const initialData = {};
+          dates.forEach(({ day }) => {
+            initialData[day] = null; // Use null instead of empty string
+          });
+          
+          setMonthAttendanceData(initialData);
+          setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
+        });
+    }
+  }, [monthYear.month, monthYear.year, selectedEmployeeForMonth?.id, isSingleEmployeeModalOpen, dispatch]);
+
+  // Fetch attendance data when selected date changes in All Employees Date modal
+  useEffect(() => {
+    if (isAllEmployeesDateModalOpen && selectedDateForAll) {
+      const selectedDate = new Date(selectedDateForAll);
+      const month = selectedDate.getMonth() + 1; // getMonth() returns 0-11
+      const year = selectedDate.getFullYear();
+      
+      console.log('Fetching attendance data for:', selectedDateForAll, 'Month:', month, 'Year:', year);
+      
+      // Fetch attendance data for the selected month/year
+      dispatch(
+        fetchAllEmployeeAttendanceOneMonth({
+          month,
+          year,
+          role,
+        })
+      );
+    }
+  }, [selectedDateForAll, isAllEmployeesDateModalOpen, dispatch, role]);
+
+
+
 
 
   // Callbacks
@@ -725,36 +881,42 @@ function AttendanceTracker({
 
   // Load existing data when All Employees Date modal opens
   useEffect(() => {
-    if (isAllEmployeesDateModalOpen) {
-      // Always set today's date as default when modal opens
+    if (isAllEmployeesDateModalOpen && !selectedDateForAll) {
+      // Only set today's date as default when modal opens and no date is selected
       const today = new Date();
       const todayString = today.toISOString().slice(0, 10); // Format as YYYY-MM-DD
       setSelectedDateForAll(todayString);
+    }
+  }, [isAllEmployeesDateModalOpen, selectedDateForAll]);
+
+  // Populate attendance data when attendance data is fetched for All Employees Date modal
+  useEffect(() => {
+    if (isAllEmployeesDateModalOpen && selectedDateForAll && attendance && attendance.monthlyAttendance) {
+      const selectedDate = new Date(selectedDateForAll);
+      const selectedDay = selectedDate.getDate();
       
-      // Load existing attendance data for today's date
+      console.log('Populating attendance data for day:', selectedDay, 'Date:', selectedDateForAll);
+      
       const initialData = {};
-      const selectedDay = today.getDate();
-      
       filteredEmployees.forEach((employee) => {
         // Check if we have attendance data for this employee and date
         let existingStatus = null;
         
-        if (attendance && attendance.monthlyAttendance) {
-          const employeeAttendance = attendance.monthlyAttendance.find(
-            (attRec) => attRec.employeeId === employee.id
-          );
-          
-          if (employeeAttendance && employeeAttendance.days) {
-            existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
-          }
+        const employeeAttendance = attendance.monthlyAttendance.find(
+          (attRec) => attRec.employeeId === employee.id
+        );
+        
+        if (employeeAttendance && employeeAttendance.days) {
+          existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
         }
         
         initialData[employee.id] = existingStatus;
       });
       
       setAllEmployeesAttendanceData(initialData);
+      setOriginalAllEmployeesAttendanceData(initialData);
     }
-  }, [isAllEmployeesDateModalOpen, attendance, filteredEmployees]);
+  }, [attendance, selectedDateForAll, isAllEmployeesDateModalOpen, filteredEmployees]);
 
   const departmentOptions = useMemo(() => {
     const departments = new Set();
@@ -790,121 +952,8 @@ function AttendanceTracker({
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployeeForMonth(employee);
     
-    // Fetch existing attendance data for this employee
-    const monthIndex = new Date(
-      `${monthYear.month} 1, ${monthYear.year}`
-    ).getMonth();
-    const numericMonth = monthIndex + 1;
-    
-    dispatch(
-      fetchOneEmployeeAttendanceOneMonth({
-      employeeId: employee.id,
-      month: monthYear.month,
-        year: monthYear.year,
-      })
-    )
-      .then((result) => {
-      if (!result.error && result.payload) {
-        // Merge API response data with employee data
-        const attendanceData = result.payload;
-        const updatedEmployee = {
-          ...employee,
-          weeklyOffDays: attendanceData.weeklyOffDays || [],
-          statusCounts: attendanceData.statusCounts || {}
-        };
-        setSelectedEmployeeForMonth(updatedEmployee);
-        
-        // Initialize attendance data with existing data
-        const dates = generateMonthDates(monthYear.month, monthYear.year);
-        const initialData = {};
-        
-        // Helper function to get attendance status for a specific date
-          const getAttendanceStatusForDate = (dayNumber) => {
-            if (!attendanceData) return null; // Return null if no attendance data
-
-            // Handle new format with days object
-            if (attendanceData.days) {
-              if (attendanceData.days[dayNumber]) {
-                return attendanceData.days[dayNumber].statusCode;
-              }
-              return null; // Return null if no status code is available (empty box)
-            }
-
-            // Fallback to old format
-            const monthIndex = new Date(
-              `${monthYear.month} 1, ${monthYear.year}`
-            ).getMonth();
-            const dateString = `${monthYear.year}-${String(
-              monthIndex + 1
-            ).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
-
-          // Check present dates
-          if (attendanceData.presentDates?.includes(dateString)) {
-            return "P";
-          }
-
-          // Check full leave dates
-          if (attendanceData.fullLeaveDates?.includes(dateString)) {
-              return "L";
-          }
-
-          // Check half day leave dates
-          if (attendanceData.halfDayLeaveDates?.includes(dateString)) {
-            return "P/A";
-          }
-
-          // Check full comp-off dates
-          if (attendanceData.fullCompoffDates?.includes(dateString)) {
-            return "P";
-          }
-
-          // Check half comp-off dates
-          if (attendanceData.halfCompoffDates?.includes(dateString)) {
-            return "P/A";
-          }
-
-          // Check weekly off dates
-          if (attendanceData.weeklyOffDates?.includes(dateString)) {
-            return "H";
-          }
-
-          // Check absent dates
-          if (attendanceData.absentDates?.includes(dateString)) {
-            return "A";
-          }
-
-            return null; // Return null if no status found (empty box)
-        };
-
-        dates.forEach(({ day }) => {
-            const status = getAttendanceStatusForDate(day.toString());
-          initialData[day] = status || null; // Use null instead of empty string
-        });
-        
-        setMonthAttendanceData(initialData);
-        setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
-      } else {
-        // If no existing data, initialize with empty values
-        const dates = generateMonthDates(monthYear.month, monthYear.year);
-        const initialData = {};
-        dates.forEach(({ day }) => {
-          initialData[day] = null; // Use null instead of empty string
-        });
-        setMonthAttendanceData(initialData);
-        setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
-      }
-      })
-      .catch((error) => {
-      console.error("Error fetching employee attendance:", error);
-      // Initialize with empty values on error
-      const dates = generateMonthDates(monthYear.month, monthYear.year);
-      const initialData = {};
-      dates.forEach(({ day }) => {
-        initialData[day] = null; // Use null instead of empty string
-      });
-      setMonthAttendanceData(initialData);
-      setOriginalMonthAttendanceData(initialData); // Set original data for change tracking
-    });
+    // Reset fetching state to allow the useEffect to handle data fetching
+    isFetchingEmployeeDataRef.current = false;
   };
 
   const setAllDaysStatus = (status) => {
@@ -978,29 +1027,14 @@ function AttendanceTracker({
     
     setSelectedDateForAll(dateToStore);
     
-    // Load existing attendance data for the selected date
+    // Clear existing data first - it will be populated when the useEffect fetches new data
     const initialData = {};
-    const selectedDay = new Date(dateToStore).getDate();
-    
     filteredEmployees.forEach((employee) => {
-      // Check if we have attendance data for this employee and date
-      let existingStatus = null;
-      
-      if (attendance && attendance.monthlyAttendance) {
-        const employeeAttendance = attendance.monthlyAttendance.find(
-          (attRec) => attRec.employeeId === employee.id
-        );
-        
-        if (employeeAttendance && employeeAttendance.days) {
-          existingStatus = employeeAttendance.days[selectedDay.toString()]?.statusCode || null;
-        }
-      }
-      
-      initialData[employee.id] = existingStatus;
+      initialData[employee.id] = null;
     });
     
     setAllEmployeesAttendanceData(initialData);
-    setOriginalAllEmployeesAttendanceData(initialData); // Set original data for change tracking
+    setOriginalAllEmployeesAttendanceData(initialData);
   };
 
   const setAllEmployeesStatus = (status) => {
@@ -1435,165 +1469,8 @@ function AttendanceTracker({
                             setIsEmployeeDropdownOpen(false);
                             setSelectedEmployeeForMonth(employee);
                             switchToSingleEmployeeTab();
-                            // Fetch existing attendance data for this employee
-                            const monthIndex = new Date(
-                              `${monthYear.month} 1, ${monthYear.year}`
-                            ).getMonth();
-                            const numericMonth = monthIndex + 1;
-
-                            dispatch(
-                              fetchOneEmployeeAttendanceOneMonth({
-                                employeeId: employee.id,
-                                month: monthYear.month,
-                                year: monthYear.year,
-                              })
-                            )
-                              .then((result) => {
-                                if (!result.error && result.payload) {
-                                  // Merge API response data with employee data
-                                  const attendanceData = result.payload;
-                                  const updatedEmployee = {
-                                    ...employee,
-                                    weeklyOffDays: attendanceData.weeklyOffDays || [],
-                                    statusCounts: attendanceData.statusCounts || {}
-                                  };
-                                  setSelectedEmployeeForMonth(updatedEmployee);
-                                  
-                                  // Initialize attendance data with existing data
-                                  const dates = generateMonthDates(
-                                    monthYear.month,
-                                    monthYear.year
-                                  );
-                                  const initialData = {};
-
-                                  // Helper function to get attendance status for a specific date
-                                  const getAttendanceStatusForDate = (
-                                    dayNumber
-                                  ) => {
-                                    if (!attendanceData) return null; // Return null if no attendance data
-
-                                    // Handle new format with days object
-                                    if (attendanceData.days) {
-                                      if (attendanceData.days[dayNumber]) {
-                                        return attendanceData.days[dayNumber].statusCode;
-                                      }
-                                      return null; // Return null if no status code is available (empty box)
-                                    }
-
-                                    // Fallback to old format
-                                    const monthIndex = new Date(
-                                      `${monthYear.month} 1, ${monthYear.year}`
-                                    ).getMonth();
-                                    const dateString = `${
-                                      monthYear.year
-                                    }-${String(monthIndex + 1).padStart(
-                                      2,
-                                      "0"
-                                    )}-${String(dayNumber).padStart(2, "0")}`;
-
-                                    // Check present dates
-                                    if (
-                                      attendanceData.presentDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "P";
-                                    }
-
-                                    // Check full leave dates
-                                    if (
-                                      attendanceData.fullLeaveDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "L";
-                                    }
-
-                                    // Check half day leave dates
-                                    if (
-                                      attendanceData.halfDayLeaveDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "P/A";
-                                    }
-
-                                    // Check full comp-off dates
-                                    if (
-                                      attendanceData.fullCompoffDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "P";
-                                    }
-
-                                    // Check half comp-off dates
-                                    if (
-                                      attendanceData.halfCompoffDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "P/A";
-                                    }
-
-                                    // Check weekly off dates
-                                    if (
-                                      attendanceData.weeklyOffDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "H";
-                                    }
-
-                                    // Check absent dates
-                                    if (
-                                      attendanceData.absentDates?.includes(
-                                        dateString
-                                      )
-                                    ) {
-                                      return "A";
-                                    }
-
-                                    return null; // Return null if no status found (empty box)
-                                  };
-
-                                  dates.forEach(({ day }) => {
-                                    const status = getAttendanceStatusForDate(
-                                      day.toString()
-                                    );
-                                    initialData[day] = status || null; // Use null instead of empty string
-                                  });
-
-                                  setMonthAttendanceData(initialData);
-                                } else {
-                                  // If no existing data, initialize with empty values
-                                  const dates = generateMonthDates(
-                                    monthYear.month,
-                                    monthYear.year
-                                  );
-                                  const initialData = {};
-                                  dates.forEach(({ day }) => {
-                                    initialData[day] = null; // Use null instead of empty string
-                                  });
-                                  setMonthAttendanceData(initialData);
-                                }
-                              })
-                              .catch((error) => {
-                                console.error(
-                                  "Error fetching employee attendance:",
-                                  error
-                                );
-                                // Initialize with empty values on error
-                                const dates = generateMonthDates(
-                                  monthYear.month,
-                                  monthYear.year
-                                );
-                                const initialData = {};
-                                dates.forEach(({ day }) => {
-                                  initialData[day] = null; // Use null instead of empty string
-                                });
-                                setMonthAttendanceData(initialData);
-                              });
+                            // Reset fetching state to allow the useEffect to handle data fetching
+                            isFetchingEmployeeDataRef.current = false;
                           }}
                         >
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
@@ -1739,6 +1616,145 @@ function AttendanceTracker({
               {/* Controls Row - Only show when employee is selected */}
               {selectedEmployeeForMonth && (
                 <div className="flex items-center gap-3 mb-4">
+
+                  {/* Month Selector */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      Month
+                    </label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-2 px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs font-medium transition-colors h-[28px]">
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                          <span>
+                            {monthYear.month} {monthYear.year}
+                          </span>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        className="w-64 p-3 rounded-lg shadow-lg border border-gray-200"
+                      >
+                        {/* Year Selector */}
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                          <div className="text-sm font-medium text-gray-700">
+                            {monthYear.year}
+                          </div>
+                          <select
+                            value={monthYear.year}
+                            onChange={(e) => {
+                              const newYear = parseInt(e.target.value);
+                              const currentYear = new Date().getFullYear();
+                              
+                              // Check if selected year is in the future
+                              if (newYear > currentYear) {
+                                toast.error("Cannot select future years for attendance");
+                                return;
+                              }
+                              
+                              setMonthYear(prev => ({ ...prev, year: newYear.toString() }));
+                            }}
+                            className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            {(() => {
+                              const currentYear = new Date().getFullYear();
+                              const years = [];
+                              // Only show current year and past years
+                              for (let year = currentYear; year >= 2024; year--) {
+                                years.push(year);
+                              }
+                              return years.map((year) => (
+                                <option key={year} value={year}>
+                                  {year}
+                                </option>
+                              ));
+                            })()}
+                          </select>
+                        </div>
+
+                        {/* Month Grid */}
+                        <div className="grid grid-cols-3 gap-1">
+                          {[
+                            "Jan",
+                            "Feb",
+                            "Mar",
+                            "Apr",
+                            "May",
+                            "Jun",
+                            "Jul",
+                            "Aug",
+                            "Sep",
+                            "Oct",
+                            "Nov",
+                            "Dec",
+                          ].map((month, index) => {
+                            const monthNames = [
+                              "January", "February", "March", "April", "May", "June",
+                              "July", "August", "September", "October", "November", "December"
+                            ];
+                            const fullMonthName = monthNames[index];
+                            const isSelected = monthYear.month === fullMonthName;
+                            
+                            // Check if this month/year combination is in the future
+                            const currentDate = new Date();
+                            const currentYear = currentDate.getFullYear();
+                            const currentMonth = currentDate.getMonth();
+                            const isFutureMonth = parseInt(monthYear.year) > currentYear || 
+                                           (parseInt(monthYear.year) === currentYear && index > currentMonth);
+
+                            return (
+                              <button
+                                key={month}
+                                onClick={() => {
+                                  if (isFutureMonth) {
+                                    toast.error("Cannot select future months for attendance");
+                                    return;
+                                  }
+                                  setMonthYear(prev => ({ ...prev, month: fullMonthName }));
+                                }}
+                                className={`p-2 text-sm rounded-md transition-colors ${
+                                  isSelected
+                                    ? "bg-blue-100 text-blue-600 font-medium"
+                                    : isFutureMonth
+                                    ? "text-gray-300 cursor-not-allowed"
+                                    : "hover:bg-gray-100 text-gray-700"
+                                }`}
+                                disabled={isFutureMonth}
+                                title={isFutureMonth ? "Cannot select future months" : ""}
+                              >
+                                {month}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
 
                   {/* Mark As Dropdown */}
                   <div className="flex flex-col gap-1">
@@ -2411,11 +2427,20 @@ function AttendanceTracker({
                           const currentDate = selectedDateForAll
                             ? new Date(selectedDateForAll)
                             : new Date();
-                          const newDate = new Date(
-                            newYear,
-                            currentDate.getMonth(),
-                            currentDate.getDate()
-                          );
+                          
+                          // Get the current day, but ensure it's valid for the new year/month
+                          let currentDay = currentDate.getDate();
+                          const currentMonth = currentDate.getMonth();
+                          
+                          // Check if the current day exists in the new year/month combination
+                          const daysInNewMonth = new Date(newYear, currentMonth + 1, 0).getDate();
+                          if (currentDay > daysInNewMonth) {
+                            // If the current day doesn't exist in the new month, use the last day of that month
+                            currentDay = daysInNewMonth;
+                          }
+                          
+                          const newDate = new Date(newYear, currentMonth, currentDay);
+                          
                           // Format date without timezone issues
                           const formattedDate = `${newYear}-${String(
                             newDate.getMonth() + 1
@@ -2466,8 +2491,8 @@ function AttendanceTracker({
                         const currentDate = new Date();
                         const currentYear = currentDate.getFullYear();
                         const currentMonth = currentDate.getMonth();
-                        const isFutureMonth = (currentYear === selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear) > currentYear || 
-                                           ((currentYear === selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear) === currentYear && index > currentMonth);
+                        const selectedYear = selectedDateForAll ? new Date(selectedDateForAll).getFullYear() : currentYear;
+                        const isFutureMonth = selectedYear > currentYear || (selectedYear === currentYear && index > currentMonth);
 
                         return (
                 <button
@@ -2480,17 +2505,28 @@ function AttendanceTracker({
                               const currentDate = selectedDateForAll
                                 ? new Date(selectedDateForAll)
                                 : new Date();
-                              const newDate = new Date(
-                                currentDate.getFullYear(),
-                                index,
-                                currentDate.getDate()
-                              );
+                              
+                              // Get the current day, but ensure it's valid for the new month
+                              let currentDay = currentDate.getDate();
+                              const currentYear = currentDate.getFullYear();
+                              
+                              // Check if the current day exists in the new month
+                              const daysInNewMonth = new Date(currentYear, index + 1, 0).getDate();
+                              if (currentDay > daysInNewMonth) {
+                                // If the current day doesn't exist in the new month, use the last day of that month
+                                currentDay = daysInNewMonth;
+                              }
+                              
+                              const newDate = new Date(currentYear, index, currentDay);
+                              
                               // Format date without timezone issues
                               const formattedDate = `${newDate.getFullYear()}-${String(
                                 newDate.getMonth() + 1
                               ).padStart(2, "0")}-${String(
                                 newDate.getDate()
                               ).padStart(2, "0")}`;
+                              
+                              console.log('Month clicked:', month, 'Formatted date:', formattedDate);
                               handleDateSelectForAll(formattedDate);
                             }}
                             className={`p-2 text-sm rounded-md transition-colors ${

@@ -4272,7 +4272,7 @@ function EmployeeForm() {
                           { label: "Monthly CTC", field: "monthlyCtc" },
                           { label: "Basic Salary", field: "basicSalary" },
                           { label: "HRA", field: "hra" },
-                          { label: "Allowances", field: "allowances" },
+                          { label: "Other Allowances", field: "allowances" },
                         ].map(({ label, field }) => (
                           <div key={field} className={inputGroupClass}>
                             <label className={inputLabelClass}>{label}</label>
