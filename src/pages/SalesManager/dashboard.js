@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import {
   FaUsers,
   FaBullseye,
@@ -142,20 +144,6 @@ const MOCK_DATA = {
     ],
   },
 };
-
-const salesPersons = [
-    { id: 1, name: 'Alice' },
-    { id: 2, name: 'Bob' },
-    { id: 3, name: 'Charlie' },
-    { id: 4, name: 'Dana' },
-  ];
-
-const designers = [
-  { id: 1, name: 'Bob' },
-  { id: 2, name: 'Dana' },
-  { id: 3, name: 'Frank' },
-  { id: 4, name: 'Jack' },
-];
 
 const defaultLeadData = {
   name: "",
@@ -325,7 +313,7 @@ function ActionCenter({ data, onAssign }) {
                                     onChange={(e) => setSelectedSalesRep(prev => ({...prev, [lead.id]: e.target.value}))}
                                 >
                                     <option value="">Assign to...</option>
-                                    {salesPersons.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                                    {/* salesPersons.map(p => <option key={p.id} value={p.name}>{p.name}</option>) */}
                                 </select>
                                 <button 
                                     onClick={() => handleAssign(lead.id)}
@@ -471,6 +459,12 @@ function LeadSourcePerformance({ data }) {
 function MainDashboard() {
     const [dashboardData, setDashboardData] = useState(MOCK_DATA);
     const [showAddLeadModal, setShowAddLeadModal] = useState(false);
+    const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(fetchManagerEmployees());
+    }, [dispatch]);
 
     const handleAssignLead = (leadId, repName) => {
         setDashboardData(prev => ({
@@ -595,8 +589,10 @@ function MainDashboard() {
                     onSubmit={handleAddLeadSubmit}
                     initialData={defaultLeadData}
                     isManagerView={true}
-                    salesPersons={salesPersons}
-                    designers={designers}
+                    salesPersons={managerEmployees}
+                    designers={managerEmployees}
+                    salesPersonsLoading={managerEmployeesLoading}
+                    designersLoading={managerEmployeesLoading}
                 />
             </div>
         </MainLayout>

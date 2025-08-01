@@ -25,6 +25,7 @@ import {
   createLead,
 } from "@/redux/slices/leadsSlice";
 import { addStage, removeStage } from "@/redux/slices/pipelineSlice";
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
 import {
@@ -36,18 +37,19 @@ import {
   TableCell,
 } from '@/components/ui/table';
 
-const salesPersons = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-  { id: 3, name: 'Charlie' },
-  { id: 4, name: 'Dana' },
-];
-const designers = [
-  { id: 1, name: 'Bob' },
-  { id: 2, name: 'Dana' },
-  { id: 3, name: 'Frank' },
-  { id: 4, name: 'Jack' },
-];
+// Remove hardcoded arrays - will use dynamic data from Redux
+// const salesPersons = [
+//   { id: 1, name: 'Alice' },
+//   { id: 2, name: 'Bob' },
+//   { id: 3, name: 'Charlie' },
+//   { id: 4, name: 'Dana' },
+// ];
+// const designers = [
+//   { id: 1, name: 'Bob' },
+//   { id: 2, name: 'Dana' },
+//   { id: 3, name: 'Frank' },
+//   { id: 4, name: 'Jack' },
+// ];
 
 const defaultLeadData = {
   name: "",
@@ -281,9 +283,12 @@ const LeadsTable = ({ leads }) => (
 );
 
 const ManagerContent = ({ role }) => {
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   // const { leads, loading, error } = useSelector((state) => state.leads);
   // const { stages: kanbanStatuses } = useSelector((state) => state.pipeline);
+
+  // Get manager employees from Redux
+  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
   // Use local state for leads and pipeline stages
   const [leads, setLeads] = useState(MOCK_LEADS);
@@ -329,6 +334,11 @@ const ManagerContent = ({ role }) => {
   const [pendingConversion, setPendingConversion] = useState(null); // {lead, fromStatus}
   const [pendingLost, setPendingLost] = useState(null); // {lead, fromStatus}
   const [pendingJunk, setPendingJunk] = useState(null); // {lead, fromStatus}
+
+  // Fetch manager employees on mount
+  useEffect(() => {
+    dispatch(fetchManagerEmployees());
+  }, [dispatch]);
 
   // Remove backend fetch
   // useEffect(() => {
@@ -584,8 +594,10 @@ const ManagerContent = ({ role }) => {
         onSubmit={handleAddLeadSubmit}
         initialData={editingLead || defaultLeadData}
         isManagerView={true}
-        salesPersons={salesPersons}
-        designers={designers}
+        salesPersons={managerEmployees}
+        designers={managerEmployees}
+        salesPersonsLoading={managerEmployeesLoading}
+        designersLoading={managerEmployeesLoading}
       />
 
       {showConvertModal && (
