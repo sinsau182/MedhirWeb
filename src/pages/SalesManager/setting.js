@@ -80,6 +80,9 @@ import {
   FaSitemap,
   FaRobot,
   FaEnvelopeOpenText,
+  FaPlay,
+  FaQuestionCircle,
+  FaRocket,
 } from "react-icons/fa";
 import {
   Table,
@@ -95,6 +98,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Tooltip } from "recharts";
 
 // Remove hardcoded arrays - will use dynamic data from Redux
 // const salesPersons = [
