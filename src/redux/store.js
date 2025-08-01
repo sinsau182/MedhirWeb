@@ -30,6 +30,7 @@ import manualAttendanceReducer from "./slices/manualAttendanceSlice";
 import minioReducer from "./slices/minioSlice";
 import invoiceReducer from "./slices/invoiceSlice";
 import receiptReducer from "./slices/receiptSlice";
+import payrollReducer from "./slices/payrollSlice";
 // import assetCategoryReducer from './slices/assetCategorySlice';
 // import assetLocationReducer from './slices/assetLocationSlice';
 // import assetStatusReducer from './slices/assetStatusSlice';
@@ -78,6 +79,7 @@ export const store = configureStore({
     // assets: assetReducer,
     invoices: invoiceReducer,
     receipts: receiptReducer,
+    payroll: payrollReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

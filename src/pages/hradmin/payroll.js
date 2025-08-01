@@ -10,13 +10,14 @@ import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import { generatePayroll, getPayroll } from "@/redux/slices/payrollSlice";
 
 function PayrollManagement() {
   const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
 
   const { attendance } = useSelector((state) => state.attendances);
-
+  const { payroll } = useSelector((state) => state.payroll);
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -25,12 +26,16 @@ function PayrollManagement() {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isCalculatePayrollClicked, setIsCalculatePayrollClicked] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toLocaleString("default", { month: "long" })
-  );
-  const [selectedYear, setSelectedYear] = useState(
-    new Date().getFullYear().toString()
-  );
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const currentDate = new Date();
+    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    return latestAvailableMonth.toLocaleString("default", { month: "long" });
+  });
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const currentDate = new Date();
+    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    return latestAvailableMonth.getFullYear().toString();
+  });
 
 
 
@@ -39,12 +44,13 @@ function PayrollManagement() {
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
   const { publicRuntimeConfig } = getConfig();
 
-  // Check if selected month is current month
-  const isCurrentMonth = () => {
+  // Check if selected month is the latest available month (current month - 1)
+  const isLatestAvailableMonth = () => {
     const currentDate = new Date();
-    const currentMonth = currentDate.toLocaleString("default", { month: "long" });
-    const currentYear = currentDate.getFullYear().toString();
-    return selectedMonth === currentMonth && selectedYear === currentYear;
+    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const latestMonth = latestAvailableMonth.toLocaleString("default", { month: "long" });
+    const latestYear = latestAvailableMonth.getFullYear().toString();
+    return selectedMonth === latestMonth && selectedYear === latestYear;
   };
 
   const handleMonthSelection = (month, year) => {
@@ -90,6 +96,25 @@ function PayrollManagement() {
     dispatch(fetchEmployees());
   }, [dispatch]);
 
+  useEffect(() => {
+    // Convert month name to month number
+    const monthMap = {
+      "January": 1, "February": 2, "March": 3, "April": 4,
+      "May": 5, "June": 6, "July": 7, "August": 8,
+      "September": 9, "October": 10, "November": 11, "December": 12
+    };
+    
+    const params = {
+      companyId: selectedCompanyId,
+      year: parseInt(selectedYear),
+      month: monthMap[selectedMonth]
+    };
+    
+    dispatch(getPayroll(params));
+  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
+
+  console.log(payroll);
+
 
   
 
@@ -97,7 +122,7 @@ function PayrollManagement() {
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="top-0 bg-gray-50">
+          <thead className="sticky top-0 bg-gray-50">
             <tr>
               {showCheckboxes && (
                 <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
@@ -162,16 +187,15 @@ function PayrollManagement() {
           <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
-                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                // Fix: Use new attendance response format
-                const employeeAttendance = attendance?.monthlyAttendance?.find(
-                  (record) => record.employeeId === employee.employeeId
-                );
-                // Use paidDays from the new response, fallback to 0
-                const paidDays = employeeAttendance?.paidDays ?? 0;
-
+                // Find corresponding payroll data for this employee
+                const payrollItem = payroll && Array.isArray(payroll) 
+                  ? payroll.find(item => item.employeeId === employee.employeeId)
+                  : null;
+                
                 return (
                   <tr key={index} className="hover:bg-gray-50">
                     {showCheckboxes && (
@@ -197,40 +221,40 @@ function PayrollManagement() {
                       {employee.name}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {paidDays}
+                      {payrollItem ? (payrollItem.paidDays || 0).toFixed(2) : '0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.salaryDetails.monthlyCtc}
+                      {payrollItem ? `₹${(payrollItem.monthlyCTC || 0).toFixed(2)}` : `₹${(employee.salaryDetails?.monthlyCtc || 0).toFixed(2)}`}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.thisMonth || 0}
+                      {payrollItem ? `₹${(payrollItem.thisMonthSalary || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.basic || 0}
+                      {payrollItem ? `₹${(payrollItem.basicThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.hra || 0}
+                      {payrollItem ? `₹${(payrollItem.hraThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.allowance || 0}
+                      {payrollItem ? `₹${(payrollItem.otherAllowancesThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.reimbursement || 0}
+                      {payrollItem ? `₹${((payrollItem.phoneReimbursement || 0) + (payrollItem.fuelReimbursement || 0)).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.employeePF || 0}
+                      {payrollItem ? `₹${(payrollItem.employeePFThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.employerPF || 0}
+                      {payrollItem ? `₹${(payrollItem.employerPFThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.deductions || 0}
+                      {payrollItem ? `₹${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.arrears || 0}
+                      {payrollItem ? `₹${(payrollItem.arrears || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.netPay || 0}
+                    <td className="py-2 px-2 text-xs text-gray-600 font-semibold">
+                      {payrollItem ? `₹${(payrollItem.netPay || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                   </tr>
                 );
@@ -608,22 +632,51 @@ function PayrollManagement() {
                 Payroll Management
               </h1>
               <button
-                disabled={!isCurrentMonth()}
-                onClick={() => {
-                  if (isCurrentMonth()) {
-                    setIsCalculatePayrollClicked(true);
-                    toast.success("Payroll calculation initiated!");
+                disabled={!isLatestAvailableMonth()}
+                onClick={async () => {
+                  if (isLatestAvailableMonth()) {
+                    try {
+                      // Convert month name to month number
+                      const monthMap = {
+                        "January": 1, "February": 2, "March": 3, "April": 4,
+                        "May": 5, "June": 6, "July": 7, "August": 8,
+                        "September": 9, "October": 10, "November": 11, "December": 12
+                      };
+                      
+                      const requestBody = {
+                        companyId: selectedCompanyId,
+                        year: parseInt(selectedYear),
+                        month: monthMap[selectedMonth]
+                      };
+                      
+                      // First, generate payroll
+                      await dispatch(generatePayroll(requestBody)).unwrap();
+                      toast.success("Payroll calculation completed!");
+                      
+                      // Then, fetch the generated payroll data
+                      const params = {
+                        companyId: selectedCompanyId,
+                        year: parseInt(selectedYear),
+                        month: monthMap[selectedMonth]
+                      };
+                      
+                      await dispatch(getPayroll(params)).unwrap();
+                      setIsCalculatePayrollClicked(true);
+                      toast.success("Payroll data loaded successfully!");
+                    } catch (error) {
+                      toast.error(error || "Failed to process payroll");
+                    }
                   }
                 }}
                 className={`px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                  isCurrentMonth()
+                  isLatestAvailableMonth()
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
                 }`}
               >
                 Calculate Payroll
               </button>
-              {isCalculatePayrollClicked && isCurrentMonth() && (
+              {isCalculatePayrollClicked && isLatestAvailableMonth() && (
                 <button
                   onClick={() => {
                     if (showCheckboxes) {
@@ -651,7 +704,7 @@ function PayrollManagement() {
               )}
             </div>
             <div className="flex gap-4">
-              {(!isCurrentMonth() || isCalculatePayrollClicked) && (
+              {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
                 <div className="relative">
                   <input
                     type="text"
@@ -697,7 +750,7 @@ function PayrollManagement() {
                         "Nov",
                         "Dec",
                       ]
-                        .slice(0, new Date().getMonth() + 1)
+                        .slice(0, new Date().getMonth())
                         .map((month) => (
                           <button
                             key={month}
@@ -754,7 +807,7 @@ function PayrollManagement() {
             </div>
           </div>
 
-          {(!isCurrentMonth() || isCalculatePayrollClicked) && (
+          {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
             <>
               {selectedSection === "Salary Statement" && renderPayrollTable()}
               {selectedSection === "Deductions" && renderDeductionsTable()}
