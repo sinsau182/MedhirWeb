@@ -1,8 +1,9 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye } from 'react-icons/fa';
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
+import VendorPreview from '../../components/Previews/VendorPreview';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
@@ -32,6 +33,9 @@ const Vendor = () => {
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
    const [previewFile, setPreviewFile] = useState(null);
+   // State for vendor preview modal
+   const [showVendorPreview, setShowVendorPreview] = useState(false);
+   const [previewVendorData, setPreviewVendorData] = useState(null);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
@@ -653,7 +657,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
-                    <th className="px-4  py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">  Preview</th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -694,6 +698,18 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewVendorData(vendor);
+                            setShowVendorPreview(true);
+                          }}
+                          className="text-gray-600 hover:text-blue-600"
+                        >
+                          <FaEye className="w-5 h-5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -856,6 +872,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           </div>
         </div>
       )}
+
+             {/* Vendor Preview Modal */}
+       {showVendorPreview && previewVendorData && (
+         <VendorPreview
+           vendorData={previewVendorData}
+           onClose={() => setShowVendorPreview(false)}
+         />
+       )}
     </div>
   );
 };
