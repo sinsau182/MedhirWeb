@@ -111,14 +111,12 @@ export const addReceipt = createAsyncThunk(
     try {
       const token = getTokenOrThrow();
       
-      // Check if receiptData is FormData (for file uploads) or plain object
-      const isFormData = receiptData instanceof FormData;
-      
       const headers = {
         Authorization: `Bearer ${token}`,
       };
       
-      // Don't set Content-Type for FormData, let the browser set it with boundary
+      // Don't set Content-Type for FormData, let browser handle it
+      const isFormData = receiptData instanceof FormData;
       if (!isFormData) {
         headers["Content-Type"] = "application/json";
       }
