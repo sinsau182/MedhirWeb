@@ -140,48 +140,53 @@ function PayrollManagement() {
                   />
                 </th>
               )}
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                EMPLOYEE ID
+                            <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
+                EMPLOYEE <br /> ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
                 NAME
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
+                MONTHLY <br /> CTC
+              </th>
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
                 PAID DAYS
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                MONTHLY CTC
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+                THIS MONTH <br /> SALARY
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                THIS MONTH
-              </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
                 BASIC
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
                 HRA
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                OTHER ALLOWANCES
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+                OTHER <br /> ALLOWANCES
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                REIMB.
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+               Fuel <br /> REIMB.
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                EMP. PF
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+                Phone <br /> REIMB.
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                EMPR. PF
-              </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                DEDUCTIONS
-              </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
                 ARREARS
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                NET PAY
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
+               EMPLOYEE <br /> PF
               </th>
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
+                EMPLOYER <br /> PF
+              </th>
+               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
+                 DEDUCTIONS
+               </th>
+               
+               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-blue-50">
+                 NET PAY
+               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -214,46 +219,50 @@ function PayrollManagement() {
                         />
                       </td>
                     )}
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
                       {employee.employeeId}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
                       {employee.name}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? (payrollItem.paidDays || 0).toFixed(2) : '0.00'}
-                    </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                   
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
                       {payrollItem ? `₹${(payrollItem.monthlyCTC || 0).toFixed(2)}` : `₹${(employee.salaryDetails?.monthlyCtc || 0).toFixed(2)}`}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                                         <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                       {payrollItem ? (payrollItem.paidDays || 0) : '0'}
+                     </td>
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
                       {payrollItem ? `₹${(payrollItem.thisMonthSalary || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
                       {payrollItem ? `₹${(payrollItem.basicThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
                       {payrollItem ? `₹${(payrollItem.hraThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
                       {payrollItem ? `₹${(payrollItem.otherAllowancesThisMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${((payrollItem.phoneReimbursement || 0) + (payrollItem.fuelReimbursement || 0)).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                      {payrollItem ? `₹${(payrollItem.fuelReimbursement || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.employeePFThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                      {payrollItem ? `₹${(payrollItem.phoneReimbursement || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.employerPFThisMonth || 0).toFixed(2)}` : '₹0.00'}
-                    </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
-                    </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
                       {payrollItem ? `₹${(payrollItem.arrears || 0).toFixed(2)}` : '₹0.00'}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 font-semibold">
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
+                      {payrollItem ? `₹${(payrollItem.employeePFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
+                      {payrollItem ? `₹${(payrollItem.employerPFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
+                      {payrollItem ? `₹${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.employerPFDeduction || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
+                    </td>
+                    <td className="py-2 px-2 text-xs text-gray-600 bg-blue-50 font-semibold">
                       {payrollItem ? `₹${(payrollItem.netPay || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                   </tr>
@@ -319,9 +328,15 @@ function PayrollManagement() {
           <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
-                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
+                // Find corresponding payroll data for this employee
+                const payrollItem = payroll && Array.isArray(payroll) 
+                  ? payroll.find(item => item.employeeId === employee.employeeId)
+                  : null;
+                
                 return (
                   <tr key={index} className="hover:bg-gray-50">
                     {showCheckboxes && (
@@ -350,22 +365,22 @@ function PayrollManagement() {
                       {employee.departmentName}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.employeePF || 0}
+                      {payrollItem ? `₹${(payrollItem.employeePFPerMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.employerPF || 0}
+                      {payrollItem ? `₹${(payrollItem.employerPFPerMonth || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.professionalTax || 0}
+                      {payrollItem ? `₹${(payrollItem.professionalTax || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.advanceAdjusted || 0}
+                      {payrollItem ? `₹${(payrollItem.advanceAdjusted || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.otherDeduction || 0}
+                      {payrollItem ? `₹${(payrollItem.otherDeductions || 0).toFixed(2)}` : '₹0.00'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      ₹{employee.netDeductions || 0}
+                      {payrollItem ? `₹${((payrollItem.employeePFPerMonth || 0) + (payrollItem.employerPFPerMonth || 0) + (payrollItem.professionalTax || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
                     </td>
                   </tr>
                 );
