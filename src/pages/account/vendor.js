@@ -96,8 +96,19 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     setEditingPO(po);
     setShowAddForm('po');
   };
-   const handlePreviewAttachment = (fileUrl) => {
-    setPreviewFile(fileUrl);
+  
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    const allowed = files.filter(f => /pdf|jpg|jpeg|png/i.test(f.type));
+    setFormData(prev => ({...prev, attachments: [...prev.attachments, ...allowed]}));
+  };
+
+  const handleRemoveAttachment = (idx) => {
+    setFormData(prev => ({...prev, attachments: prev.attachments.filter((_, i) => i !== idx)}));
+  };
+
+  const handlePreviewAttachment = (file) => {
+    setPreviewFile(file);
   };
    
   // Close attachment modal
@@ -478,12 +489,16 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                              (po.attachmentUrls && po.attachmentUrls.length > 0) || 
                                 po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
                                   }`}
-                             onClick={(e) => {
-                               e.stopPropagation();
-                                          if ((po.attachmentUrls && po.attachmentUrls.length > 0) || po.attachmentUrls === 'Yes' ||po.attachmentUrls === true) {
-                                           handlePreviewAttachment(po.attachmentUrls);
-                                                }
-                                             }}
+                            onClick={(e) => {
+  e.stopPropagation();
+  if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
+    setSelectedAttachments(po.attachmentUrls);
+    setShowAttachmentModal(true);
+  } else if (typeof po.attachmentUrls === 'string') {
+    setSelectedAttachments([po.attachmentUrls]);
+    setShowAttachmentModal(true);
+  }
+}}
                                           >
                                 {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
                                    po.attachmentUrls === 'Yes' || 
@@ -762,41 +777,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           {renderContent()}
         </div>
       </div>
-   {/*attachment of purhase order*/}
-    {previewFile && (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-    onClick={() => setPreviewFile(null)}
-  >
-    <div
-      className="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <button
-        className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
-        onClick={() => setPreviewFile(null)}
-      >
-        ✕
-      </button>
-      <div className="flex flex-col items-center">
-        {/\.(pdf)$/i.test(previewFile) ? (
-          <iframe
-            src={previewFile}
-            className="w-full h-96 border rounded"
-            title="Attachment Preview"
-          />
-        ) : (
-          <img
-            src={previewFile}
-            alt="Attachment Preview"
-            className="max-h-96 rounded border"
-          />
-        )}
-      </div>
-    </div>
-  </div>
-)}
-
+ 
       {/* Attachment Modal */}
       {showAttachmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
