@@ -132,11 +132,11 @@ function Employees() {
         return [
           { key: "employeeId", label: "Employee ID" },
           { key: "name", label: "Name" },
-          { key: "annualCtc", label: "Annual CTC" },
+          // { key: "annualCtc", label: "Annual CTC" },
           { key: "monthlyCtc", label: "Monthly CTC" },
           { key: "basicSalary", label: "Basic" },
           { key: "hra", label: "HRA" },
-          { key: "allowances", label: "Allowance" },
+          { key: "allowances", label: "Other Allowance" },
           { key: "employerPfContribution", label: "Employer PF" },
           { key: "employeePfContribution", label: "Employee PF" },
         ];

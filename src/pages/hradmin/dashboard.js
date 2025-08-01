@@ -69,8 +69,6 @@ const Overview = () => {
       totalAbsent: 0,
     });
 
-  console.log(currentDayAttendanceSummary);
-
   const dispatch = useDispatch();
   // Update the useSelector hook
   const { employees, loading: employeesLoading } = useSelector(
@@ -82,8 +80,6 @@ const Overview = () => {
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
 
-  console.log(attendance);
-  console.log(employees);
 
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
@@ -114,13 +110,20 @@ const Overview = () => {
       const today = new Date();
       const currentDay = today.getDate();
       
-      // Create a set of valid employee IDs from the employees object for faster lookup
-      const validEmployeeIds = new Set(employees.map(emp => emp.id));
+      // Get employee IDs from both sources
+      const employeeIdsFromEmployees = employees.map(emp => emp.employeeId);
+      const employeeIdsFromAttendance = attendance.monthlyAttendance.map(emp => emp.employeeId);
       
-      // Process each employee's attendance for today, but only for employees that exist in the employees object
+      // Find common employee IDs (employees that exist in both lists)
+      const commonEmployeeIds = employeeIdsFromEmployees.filter(id => 
+        employeeIdsFromAttendance.includes(id)
+      );
+      
+      
+      // Process attendance for only the common employee IDs
       attendance.monthlyAttendance.forEach((employeeRecord) => {
-        // Only process if this employee exists in the employees list
-        if (validEmployeeIds.has(employeeRecord.employeeId)) {
+        // Only process if this employee ID exists in both lists
+        if (commonEmployeeIds.includes(employeeRecord.employeeId)) {
           if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
             const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
             
@@ -137,7 +140,6 @@ const Overview = () => {
         }
       });
 
-      console.log('Filtered attendance counts - Valid employees:', validEmployeeIds.size, 'Present:', presentCount, 'Absent:', absentCount);
 
       setCurrentDayAttendanceSummary({
         totalPresent: presentCount,
