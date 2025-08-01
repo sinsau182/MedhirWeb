@@ -418,6 +418,12 @@ const handleInvoiceSubmit = (data) => {
     let table;
     switch (activeTab) {
       case 'invoice':
+        const filteredInvoices = invoices.filter(invoice =>
+          (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.project?.projectName && invoice.project.projectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.customer?.customerName && invoice.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.status && invoice.status.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
         table = (
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
@@ -434,7 +440,7 @@ const handleInvoiceSubmit = (data) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-              {invoices.map(invoice => {
+              {filteredInvoices.map(invoice => {
                 const amountRemaining = invoice.totalAmount - invoice.amountReceived;
                 return (
                   <tr key={invoice.id}>
@@ -581,9 +587,6 @@ const handleInvoiceSubmit = (data) => {
       </div>
         <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
           <div className="flex items-center">
-            <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm mr-6 text-sm" style={{ minWidth: 120 }}>
-              <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
-            </button>
             <nav className="flex space-x-6">
             {tabs.map(tab => (
               <button
@@ -598,15 +601,20 @@ const handleInvoiceSubmit = (data) => {
             ))}
           </nav>
         </div>
-          <div className="flex items-center bg-white rounded-md shadow-sm p-2">
-            <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="flex-1 outline-none"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div className="flex items-center space-x-4">
+            <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}>
+              <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
+            </button>
+            <div className="flex items-center bg-white rounded-md shadow-sm p-2 border border-gray-300">
+              <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 outline-none"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
       </div>
         {renderContent()}
