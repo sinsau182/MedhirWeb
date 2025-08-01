@@ -136,7 +136,7 @@ function Employees() {
           { key: "monthlyCtc", label: "Monthly CTC" },
           { key: "basicSalary", label: "Basic" },
           { key: "hra", label: "HRA" },
-          { key: "allowances", label: "Other Allowance" },
+          { key: "allowances", label: "Other Allowances" },
           { key: "employerPfContribution", label: "Employer PF" },
           { key: "employeePfContribution", label: "Employee PF" },
         ];
@@ -328,7 +328,7 @@ function Employees() {
                       {headers.map((header) => (
                         <th
                           key={header.key}
-                          className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                          className="text-left py-3 px-2 text-xs font-semibold text-gray-700 uppercase tracking-wider"
                         >
                           {header.label}
                         </th>
