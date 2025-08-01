@@ -242,6 +242,13 @@ function AttendanceTracker({
     { value: "H", label: "Holiday", color: "#E0E0E0" },
   ];
 
+  // Filtered status options for dropdown menus (only Present, Absent, Half Day)
+  const dropdownStatusOptions = [
+    { value: "P", label: "Present", color: "#CCFFCC" },
+    { value: "A", label: "Absent", color: "#FFCCCC" },
+    { value: "P/A", label: "Half Day", color: "#FFFFCC" },
+  ];
+
   const applyToOptions = [
     { value: "all", label: "All Days" },
     { value: "except_holiday", label: "All Except Holidays" },
@@ -252,15 +259,7 @@ function AttendanceTracker({
 
   // Function to get dynamic Apply To options based on selected status
   const getSingleEmployeeApplyToOptions = (selectedStatus) => {
-    // For Present on Holiday (PH), only show options that apply to holidays
-    if (selectedStatus === "PH") {
-      return [
-        { value: "unmarked", label: "All Unmarked Days" },
-        { value: "holidays", label: "All Holidays" },
-      ];
-    }
-
-    // For regular statuses, show all options
+    // For all editable statuses (P, A, P/A), show the same options
     return [
       { value: "unmarked", label: "All Unmarked Days" },
       { value: "working", label: "All Working Days" },
@@ -1886,7 +1885,7 @@ function AttendanceTracker({
                             );
                           }}
                         >
-                          {statusOptions.map((opt) => (
+                          {dropdownStatusOptions.map((opt) => (
                             <DropdownMenuRadioItem
                               key={opt.value}
                               value={opt.value}
@@ -1988,25 +1987,37 @@ function AttendanceTracker({
                           monthYear.year
                         );
                         let daysToApply = [];
+                        // Only apply filters to editable statuses: Present, Absent, Half Day, and empty cells
+                        const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
+                        
                         if (scope === "all") {
                           daysToApply = dates
-                            .filter((d) => monthAttendanceData[d.day] !== "NA")
+                            .filter((d) => {
+                              const currentStatus = monthAttendanceData[d.day];
+                              return editableStatuses.includes(currentStatus) && currentStatus !== "NA";
+                            })
                             .map((d) => d.day);
                         } else if (scope === "except_holiday") {
                           daysToApply = dates
                             .filter(
-                              (d) =>
-                                monthAttendanceData[d.day] !== "H" &&
-                                monthAttendanceData[d.day] !== "NA"
+                              (d) => {
+                                const currentStatus = monthAttendanceData[d.day];
+                                return editableStatuses.includes(currentStatus) && 
+                                       currentStatus !== "H" && 
+                                       currentStatus !== "NA";
+                              }
                             )
                             .map((d) => d.day);
                         } else if (scope === "unmarked") {
                           daysToApply = dates
                             .filter(
-                              (d) =>
-                                !monthAttendanceData[d.day] &&
-                                monthAttendanceData[d.day] !== "NA" &&
-                                !d.isFuture
+                              (d) => {
+                                const currentStatus = monthAttendanceData[d.day];
+                                return editableStatuses.includes(currentStatus) && 
+                                       !currentStatus && 
+                                       currentStatus !== "NA" &&
+                                       !d.isFuture;
+                              }
                             )
                             .map((d) => d.day);
                         } else if (scope === "working") {
@@ -2027,6 +2038,7 @@ function AttendanceTracker({
 
                           daysToApply = dates
                             .filter((d) => {
+                              const currentStatus = monthAttendanceData[d.day];
                               // Check if this day is not a weekly off day for this employee
                               const isWeeklyOffDay = employeeWeeklyOffDays.some(
                                 (offDay) => {
@@ -2041,18 +2053,22 @@ function AttendanceTracker({
                                 }
                               );
                               return (
+                                editableStatuses.includes(currentStatus) &&
                                 !isWeeklyOffDay &&
                                 !d.isFuture &&
-                                monthAttendanceData[d.day] !== "NA"
+                                currentStatus !== "NA"
                               );
                             })
                             .map((d) => d.day);
                         } else if (scope === "weekends") {
                           daysToApply = dates
                             .filter(
-                              (d) =>
-                                (d.weekday === "Sun" || d.weekday === "Sat") &&
-                                monthAttendanceData[d.day] !== "NA"
+                              (d) => {
+                                const currentStatus = monthAttendanceData[d.day];
+                                return (d.weekday === "Sun" || d.weekday === "Sat") &&
+                                       editableStatuses.includes(currentStatus) &&
+                                       currentStatus !== "NA";
+                              }
                             )
                             .map((d) => d.day);
                         } else if (scope === "holidays") {
@@ -2073,6 +2089,7 @@ function AttendanceTracker({
 
                           daysToApply = dates
                             .filter((d) => {
+                              const currentStatus = monthAttendanceData[d.day];
                               // Check if this day is a weekly off day for this employee
                               const isWeeklyOffDay = employeeWeeklyOffDays.some(
                                 (offDay) => {
@@ -2085,10 +2102,11 @@ function AttendanceTracker({
                               const isMarkedHoliday =
                                 monthAttendanceData[d.day] === "H";
 
-                              // Include if it's a weekly off or marked holiday, but not NA
+                              // Include if it's a weekly off or marked holiday, but only if it's editable
                               return (
+                                editableStatuses.includes(currentStatus) &&
                                 (isWeeklyOffDay || isMarkedHoliday) &&
-                                monthAttendanceData[d.day] !== "NA"
+                                currentStatus !== "NA"
                               );
                             })
                             .map((d) => d.day);
@@ -2205,7 +2223,44 @@ function AttendanceTracker({
                             <div className="font-bold text-gray-800 text-base mb-2">
                               {day}
                             </div>
-                            {!isFuture && value !== "NA" && (
+                            {!isFuture && value !== "NA" && (() => {
+                              // Check if this cell has read-only statuses (from backend)
+                              // Only Present, Absent, Half Day, and empty cells can be edited
+                              const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
+                              const isReadOnlyStatus = value && !editableStatuses.includes(value);
+                              
+                              if (isReadOnlyStatus) {
+                                // Render read-only cell (like NA but with original color)
+                                const selected = statusOptions.find((opt) => opt.value === value);
+                                const bgColor = selected ? selected.color : "#fff";
+                                return (
+                                  <div 
+                                    className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm cursor-not-allowed opacity-75"
+                                    style={{ backgroundColor: bgColor }}
+                                    title="Read only"
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      {selected ? (
+                                        <span
+                                          className="inline-block w-3 h-3 rounded-full"
+                                          style={{
+                                            backgroundColor: selected.color,
+                                          }}
+                                        ></span>
+                                      ) : (
+                                        <span className="text-gray-400 text-xs">
+                                          □
+                                        </span>
+                                      )}
+                                      <span>
+                                        {selected ? selected.label : "Empty"}
+                                      </span>
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              
+                              return (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   {(() => {
@@ -2277,7 +2332,7 @@ function AttendanceTracker({
                                     >
                                       Empty
                                     </DropdownMenuRadioItem>
-                                    {statusOptions
+                                    {dropdownStatusOptions
                                       .filter((opt) => opt.value !== "NA")
                                       .map((opt) => (
                                         <DropdownMenuRadioItem
@@ -2301,7 +2356,8 @@ function AttendanceTracker({
                                   </DropdownMenuRadioGroup>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            )}
+                              );
+                            })()}
                             {!isFuture && value === "NA" && (
                               <div className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
                                 <span className="flex items-center gap-2">
@@ -2819,7 +2875,7 @@ function AttendanceTracker({
                         setAllEmployeesMarkAsStatus(value);
                       }}
                     >
-                      {statusOptions.map((opt) => (
+                      {dropdownStatusOptions.map((opt) => (
                         <DropdownMenuRadioItem
                           key={opt.value}
                           value={opt.value}
@@ -2856,13 +2912,14 @@ function AttendanceTracker({
                       return;
                     }
 
-                    // Apply the selected status to all employees except those with "NA" status
+                    // Apply the selected status to all employees except those with read-only statuses
+                    const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
                     const newData = { ...allEmployeesAttendanceData };
                     filteredEmployeesForModal.forEach((employee) => {
                       const currentStatus =
                         allEmployeesAttendanceData[employee.id];
-                      // Only apply if the current status is not "NA"
-                      if (currentStatus !== "NA") {
+                      // Only apply if the current status is editable (not read-only)
+                      if (editableStatuses.includes(currentStatus)) {
                         newData[employee.id] = status;
                       }
                     });
@@ -2936,14 +2993,41 @@ function AttendanceTracker({
                               allEmployeesAttendanceData[employee.id] || null;
                             const isNaStatus = value === "NA";
 
-                            if (isNaStatus) {
+                            // Check if this cell has read-only statuses (from backend)
+                            // Only Present, Absent, Half Day, and empty cells can be edited
+                            const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
+                            const isReadOnlyStatus = value && !editableStatuses.includes(value);
+                            
+                            if (isNaStatus || isReadOnlyStatus) {
+                              // Render read-only cell (like NA but with original color for non-NA statuses)
+                              const selected = statusOptions.find((opt) => opt.value === value);
+                              const bgColor = selected ? selected.color : "#f3f4f6";
+                              const displayText = isNaStatus ? "NA" : (selected ? selected.label : "Empty");
+                              const subText = isNaStatus ? "Not Applicable" : "";
+                              
                               return (
-                                <div className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed opacity-75">
+                                <div 
+                                  className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm cursor-not-allowed opacity-75"
+                                  style={{ backgroundColor: bgColor }}
+                                  title="Read only"
+                                >
                                   <span className="flex items-center gap-2">
-                                    <span className="text-gray-900 font-medium">
-                                      NA
+                                    {selected ? (
+                                      <span
+                                        className="inline-block w-3 h-3 rounded-full"
+                                        style={{
+                                          backgroundColor: selected.color,
+                                        }}
+                                      ></span>
+                                    ) : (
+                                      <span className="text-gray-400 text-xs">
+                                        □
+                                      </span>
+                                    )}
+                                    <span className="font-medium">
+                                      {displayText}
                                     </span>
-                                    <span>Not Applicable</span>
+                                    {subText && <span>{subText}</span>}
                                   </span>
                                 </div>
                               );
@@ -3027,7 +3111,7 @@ function AttendanceTracker({
                                     >
                                       Empty
                                     </DropdownMenuRadioItem>
-                                    {statusOptions
+                                    {dropdownStatusOptions
                                       .filter((opt) => opt.value !== "NA")
                                       .map((opt) => (
                                         <DropdownMenuRadioItem
@@ -3175,7 +3259,7 @@ function AttendanceTracker({
                 className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 <option value="">Select status...</option>
-                {statusOptions.map((opt) => (
+                {dropdownStatusOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 const AttendanceTable = ({
   dates,
   statusOptions,
+  dropdownStatusOptions,
   selectedStatuses,
   isStatusFilterOpen,
   toggleStatus,
@@ -706,6 +707,12 @@ const AttendanceTable = ({
                   // Check if this cell has "NA" status
                   const isNaStatus = attendanceForDay.label === "NA";
 
+                  // Check if this cell has read-only statuses (from backend)
+                  // Only Present, Absent, Half Day, and empty cells can be edited
+                  const editableStatuses = ["P", "A", "P/A", null, ""];
+                  const isReadOnlyStatus = attendanceForDay.label && 
+                    !editableStatuses.includes(attendanceForDay.label.toUpperCase());
+
                   return (
                     <td
                       key={dateIdx}
@@ -722,17 +729,18 @@ const AttendanceTable = ({
                         <button
                           type="button"
                           className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition ${
-                            isFutureDate || isNaStatus
+                            isFutureDate || isNaStatus || isReadOnlyStatus
                               ? "cursor-not-allowed opacity-50"
                               : "focus:ring-2 focus:ring-blue-400 hover:shadow-sm cursor-pointer"
                           }`}
                           style={{ background: "transparent" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Only allow editing if it's not a future date and not NA status
+                            // Only allow editing if it's not a future date, not NA status, and not read-only status
                             if (
                               !isFutureDate &&
                               !isNaStatus &&
+                              !isReadOnlyStatus &&
                               onCellClick &&
                               (!popoverOpenCell || popoverOpenCell !== cellKey)
                             ) {
@@ -744,15 +752,17 @@ const AttendanceTable = ({
                               );
                             }
                           }}
-                          tabIndex={isFutureDate || isNaStatus ? -1 : 0}
+                          tabIndex={isFutureDate || isNaStatus || isReadOnlyStatus ? -1 : 0}
                           title={
                             isFutureDate
                               ? `Cannot edit future date: ${dateString}`
                               : isNaStatus
                               ? `Cannot edit NA status: ${dateString}`
+                              : isReadOnlyStatus
+                              ? `Read only`
                               : `Edit attendance for ${employee.name} on ${dateString}`
                           }
-                          disabled={isFutureDate || isNaStatus || popoverOpenCell === cellKey}
+                          disabled={isFutureDate || isNaStatus || isReadOnlyStatus || popoverOpenCell === cellKey}
                         >
                           {/* Hide "A" text for future dates, show all other statuses */}
                           {isFutureDateWithAbsent
