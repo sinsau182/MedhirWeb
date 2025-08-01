@@ -249,8 +249,10 @@ const handleInvoiceSubmit = (data) => {
     setInvoiceForReceipt(null);
     dispatch(fetchReceipts()); // Refresh receipts list
     dispatch(fetchInvoices()); // Refresh invoices list so amountReceived is updated
-    toast.success('Receipt added!');
+    // toast.success('Receipt added!');
   };
+
+
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
     toast.success('Customer added!');

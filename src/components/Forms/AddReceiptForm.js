@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
+import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaLink } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { addReceipt } from "../../redux/slices/receiptSlice";
@@ -18,14 +18,14 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     bankAccount: '',
     chequeNumber: '',
     upiTransactionId: '',
-    attachment: null,
+
     linkedInvoices: [],
   });
 const dispatch = useDispatch();
   const { projectCustomerList, invoicesByProject, receiptsByProject } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
-  const [attachmentPreview, setAttachmentPreview] = useState(null);
+
   const [isInvoiceLinkModalOpen, setIsInvoiceLinkModalOpen] = useState(false);
   const [invoicesToLink, setInvoicesToLink] = useState([]);
   const [activeTab, setActiveTab] = useState('linking');
@@ -157,24 +157,7 @@ useEffect(() => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, attachment: file }));
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (ev) => setAttachmentPreview(ev.target.result);
-        reader.readAsDataURL(file);
-      } else {
-        setAttachmentPreview(null);
-      }
-    }
-  };
 
-  const removeAttachment = () => {
-    setFormData(prev => ({ ...prev, attachment: null }));
-    setAttachmentPreview(null);
-  };
 
   const toggleAccountingSection = () => {
     setIsAccountingCollapsed(!isAccountingCollapsed);
@@ -319,17 +302,15 @@ const handleSubmit = async (e) => {
         amountAllocated: inv.payment,
       }));
     
-    // Use linkedInvoices as per backend structure
+    // Create receipt data object
     const receiptData = {
-      ...formData,
-      customerId: formData.customerId, // ✅ directly use the one already set from dropdown
-      projectId: formData.leadId,      // ✅ use leadId as projectId
+      customerId: formData.customerId,
+      projectId: formData.leadId,
       customerName: formData.customerName,
       projectName: formData.projectName,
       amountReceived: parseFloat(formData.amount),
       amount: parseFloat(formData.amount),
-      linkedInvoices: currentLinkedInvoices, // Use current allocations from invoicesToLink
-      attachment: formData.attachment ? formData.attachment.name : null,
+      linkedInvoices: currentLinkedInvoices,
       receiptDate: formData.receiptDate,
       paymentMethod: formData.paymentMethod,
       receiptNumber: formData.receiptNumber,
@@ -339,6 +320,8 @@ const handleSubmit = async (e) => {
         formData.upiTransactionId ||
         '',
     };
+    
+
     
     // Debug: Log the data being sent
     console.log('Receipt Data being sent:', receiptData);
@@ -569,9 +552,6 @@ const handleSubmit = async (e) => {
                 <button type="button" onClick={() => setActiveTab('linking')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'linking' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
                   Invoice Linking
                 </button>
-                <button type="button" onClick={() => setActiveTab('attachment')} className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'attachment' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-                  Attachment
-                </button>
               </nav>
             </div>
             <div className="p-6">
@@ -620,28 +600,6 @@ const handleSubmit = async (e) => {
                           ? "All invoices for this customer are already fully paid." 
                           : "Select a customer to see their outstanding invoices."}
                       </p>
-                    </div>
-                  )}
-                </div>
-              )}
-              {activeTab === 'attachment' && (
-                <div>
-                  {!formData.attachment ? (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
-                      <input type="file" onChange={handleFileChange} accept="image/*,.pdf" className="hidden" id="attachment-upload" />
-                      <label htmlFor="attachment-upload" className="cursor-pointer">
-                        <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                        <p className="text-lg font-medium text-gray-700 mb-2">Upload Payment Proof</p>
-                        <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                        <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF up to 10MB</p>
-                      </label>
-                    </div>
-                  ) : (
-                    <div className="border border-gray-300 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3"><div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">{formData.attachment.type.startsWith('image/') ? '🖼️' : '📄'}</div><div><p className="text-sm font-medium text-gray-900">{formData.attachment.name}</p><p className="text-xs text-gray-500">{(formData.attachment.size / 1024 / 1024).toFixed(2)} MB</p></div></div>
-                        <button type="button" onClick={removeAttachment} className="text-red-600 hover:text-red-800 p-1"><FaTimes /></button>
-                      </div>
                     </div>
                   )}
                 </div>
