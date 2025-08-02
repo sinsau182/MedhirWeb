@@ -22,7 +22,7 @@ export const generatePayroll = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "An error occurred");
+      return rejectWithValue(error.response?.data || { message: "An error occurred" });
     }
   }
 );
@@ -48,7 +48,7 @@ export const getPayroll = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "An error occurred");
+      return rejectWithValue(error.response?.data || { message: "An error occurred" });
     }
   }
 );
