@@ -14,10 +14,12 @@ import { fetchPurchaseOrders } from '../../redux/slices/PurchaseOrderSlice';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { useMinioFile } from '../../hooks/useMinioFile';
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
+  const { handleViewFile, handleDownloadFile } = useMinioFile();
   const { vendors, loading, error } = useSelector((state) => state.vendors);
   const { bills, loading: billsLoading, error: billsError } = useSelector((state) => state.bills);
   const { payments, loading: paymentsLoading, error: paymentsError } = useSelector((state) => state.payments);
@@ -841,18 +843,13 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => window.open(attachment, '_blank')}
+                          onClick={() => handleViewFile(attachment, typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`)}
                           className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                         >
                           View
                         </button>
                         <button
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = attachment;
-                            link.download = typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`;
-                            link.click();
-                          }}
+                          onClick={() => handleDownloadFile(attachment, typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`)}
                           className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
                         >
                           Download
