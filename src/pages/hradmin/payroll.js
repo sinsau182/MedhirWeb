@@ -27,6 +27,7 @@ function PayrollManagement() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isCalculatePayrollClicked, setIsCalculatePayrollClicked] = useState(false);
   const [payrollErrorDetails, setPayrollErrorDetails] = useState(null);
+  const [isCalculatingPayroll, setIsCalculatingPayroll] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const currentDate = new Date();
     const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
@@ -648,25 +649,15 @@ function PayrollManagement() {
                 Payroll Management
               </h1>
               <button
-                disabled={!isLatestAvailableMonth()}
+                disabled={!isLatestAvailableMonth() || isCalculatingPayroll}
                 onClick={async () => {
-                  // Test error message - remove this after testing
-                  if (process.env.NODE_ENV === 'development') {
-                    const testError = {
-                      status: 409,
-                      error: "Payroll Generation Incomplete",
-                      message: "Payroll generation failed for company: CID1948311433947254784, year: 2025, month: 7. Error: Failed to generate payroll for 22 employees. Please regenerate payroll after fixing the issues.",
-                      validationErrors: {
-                        failedEmployeeIds: "AUT100, AUT101, AUT102, AUT103, AUT104, AUT106, AUT107, AUT108, AUT109, AUT110, AUT111, AUT113, AUT114, AUT115, AUT116, AUT117, AUT118, AUT119, AUT120, AUT121, AUT123, AUT125",
-                        failureReasons: "Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed; Invalid attendance calculation - paid days validation failed"
-                      }
-                    };
-                    setPayrollErrorDetails(testError);
-                    return;
-                  }
-                  
-                                    if (isLatestAvailableMonth()) {
+                  if (isLatestAvailableMonth() && !isCalculatingPayroll) {
+                    setIsCalculatingPayroll(true);
+                    setPayrollErrorDetails(null); // Clear any previous errors
+                    
                     try {
+                      console.log("Starting payroll calculation...");
+                      
                       // Convert month name to month number
                       const monthMap = {
                         "January": 1, "February": 2, "March": 3, "April": 4,
@@ -680,48 +671,59 @@ function PayrollManagement() {
                         month: monthMap[selectedMonth]
                       };
                       
-                      // First, generate payroll
-                      await dispatch(generatePayroll(requestBody)).unwrap();
+                      console.log("Calling generatePayroll API with:", requestBody);
+                      
+                      // First, generate payroll (POST request)
+                      const generateResult = await dispatch(generatePayroll(requestBody)).unwrap();
+                      console.log("Generate payroll result:", generateResult);
                       toast.success("Payroll calculation completed!");
                       
-                      // Then, fetch the generated payroll data
+                      // Then, fetch the generated payroll data (GET request)
                       const params = {
                         companyId: selectedCompanyId,
                         year: parseInt(selectedYear),
                         month: monthMap[selectedMonth]
                       };
                       
-                      await dispatch(getPayroll(params)).unwrap();
+                      console.log("Calling getPayroll API with:", params);
+                      
+                      const getResult = await dispatch(getPayroll(params)).unwrap();
+                      console.log("Get payroll result:", getResult);
+                      
                       setIsCalculatePayrollClicked(true);
                       toast.success("Payroll data loaded successfully!");
-                                         } catch (error) {
-                       // Handle payroll generation errors professionally
-                       console.log("Payroll error:", error);
-                       
-                       // Check for different error structures
-                       const isPayrollError = 
-                         error?.status === 409 || 
-                         error?.error === "Payroll Generation Incomplete" ||
-                         error?.message?.includes("Payroll generation failed") ||
-                         error?.message?.includes("Failed to generate payroll");
-                       
-                       if (isPayrollError) {
-                         console.log("Showing payroll error message");
-                         setPayrollErrorDetails(error);
-                       } else {
-                         console.log("Showing generic error toast");
-                         toast.error(error?.message || "Failed to process payroll");
-                       }
-                     }
+                      
+                    } catch (error) {
+                      console.log("Payroll error:", error);
+                      
+                      // Check for different error structures
+                      const isPayrollError = 
+                        error?.status === 409 || 
+                        error?.error === "Payroll Generation Incomplete" ||
+                        error?.message?.includes("Payroll generation failed") ||
+                        error?.message?.includes("Failed to generate payroll") ||
+                        error?.validationErrors?.failedEmployeeIds;
+                      
+                      if (isPayrollError) {
+                        console.log("Showing payroll error message");
+                        console.log("Error details:", error);
+                        setPayrollErrorDetails(error);
+                      } else {
+                        console.log("Showing generic error toast");
+                        toast.error(error?.message || "Failed to process payroll");
+                      }
+                    } finally {
+                      setIsCalculatingPayroll(false);
+                    }
                   }
                 }}
                 className={`px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                  isLatestAvailableMonth()
+                  isLatestAvailableMonth() && !isCalculatingPayroll
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
                 }`}
               >
-                Calculate Payroll
+                {isCalculatingPayroll ? "Calculating..." : "Calculate Payroll"}
               </button>
               {isCalculatePayrollClicked && isLatestAvailableMonth() && (
                 <button
@@ -823,49 +825,55 @@ function PayrollManagement() {
             </div>
           </div>
 
-          {/* Payroll Error Message */}
+          {/* Payroll Error Message - Below Calculate Payroll Button */}
           {payrollErrorDetails && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-sm font-medium text-red-800 mb-2">
-                    Payroll Generation Incomplete
-                  </h3>
-                  <p className="text-xs text-red-600 mb-3">
-                    Failed to generate payroll for {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(',').length || 0} employees. 
-                    Attendance records need to be completed.
+            <div className="mt-4">
+              <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-4">
+                <h3 className="text-lg font-semibold text-red-600 mb-3">
+                  Payroll Generation Failed
+                </h3>
+                
+                <div className="mb-3">
+                  <p className="text-gray-700 mb-1">
+                    <strong>Reason:</strong> Attendance records incomplete for {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(',').length || 0} employees.
                   </p>
-                  
-                  {/* Employee IDs Display */}
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Affected Employee IDs:</p>
+                  <p className="text-sm text-gray-600">
+                    Complete attendance data for {selectedMonth} {selectedYear} to generate payroll.
+                  </p>
+                </div>
+                
+                <div className="mb-3">
+                  <p className="text-sm text-gray-700 mb-1">
+                    <strong>Affected Employees:</strong>
+                  </p>
+                  <div className="bg-gray-50 border border-gray-200 rounded p-2 max-h-24 overflow-y-auto">
                     <div className="flex flex-wrap gap-1">
                       {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(',').map((id, index) => (
-                        <span key={index} className="inline-block px-2 py-1 bg-gray-100 text-xs text-gray-700 rounded border">
+                        <span key={index} className="text-xs bg-white px-2 py-1 border rounded">
                           {id.trim()}
                         </span>
                       ))}
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        setPayrollErrorDetails(null);
-                        window.location.href = '/hradmin/attendance';
-                      }}
-                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                    >
-                      Go to Attendance
-                    </button>
-                  </div>
                 </div>
-                <button
-                  onClick={() => setPayrollErrorDetails(null)}
-                  className="text-gray-400 hover:text-gray-600 ml-2"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setPayrollErrorDetails(null);
+                      window.location.href = '/hradmin/attendance';
+                    }}
+                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  >
+                    Go to Attendance
+                  </button>
+                  <button
+                    onClick={() => setPayrollErrorDetails(null)}
+                    className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             </div>
           )}
