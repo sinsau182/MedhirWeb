@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
 import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import MinioImage from '@/components/ui/MinioImage';
 
 // Small preview component for attachments
 const AttachmentPreview = ({ fileUrl, onClick }) => {
@@ -177,6 +178,8 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
 };
 
 const ReceiptPreviewModal = ({ receipt, onClose }) => {
+  const dispatch = useDispatch();
+  
   if (!receipt) return null;
 
   // Prefer linkedInvoices if present, else fallback to allocations for backward compatibility
@@ -211,17 +214,27 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
               <button
                 onClick={async () => {
                   try {
-                    const result = await dispatch(fetchImageFromMinio({ url: receipt.receiptFileUrl || receipt.attachmentUrl })).unwrap();
-                    if (result.dataUrl) {
-                      window.open(result.dataUrl, '_blank');
+                    const { dataUrl } = await dispatch(fetchImageFromMinio({ url: receipt.receiptFileUrl || receipt.attachmentUrl })).unwrap();
+                    if (dataUrl) {
+                      window.open(dataUrl, '_blank', 'noopener,noreferrer');
                     } else {
-                      // Fallback to direct URL if authentication failed
-                      window.open(receipt.receiptFileUrl || receipt.attachmentUrl, '_blank');
+                      // Fallback to direct URL if authentication failed or access denied
+                      const directUrl = receipt.receiptFileUrl || receipt.attachmentUrl;
+                      if (directUrl) {
+                        window.open(directUrl, '_blank', 'noopener,noreferrer');
+                      } else {
+                        toast.error('Unable to open attachment');
+                      }
                     }
                   } catch (error) {
                     console.error('Receipt file preview error:', error);
                     // Fallback to direct URL
-                    window.open(receipt.receiptFileUrl || receipt.attachmentUrl, '_blank');
+                    const directUrl = receipt.receiptFileUrl || receipt.attachmentUrl;
+                    if (directUrl) {
+                      window.open(directUrl, '_blank', 'noopener,noreferrer');
+                    } else {
+                      toast.error('Unable to open attachment');
+                    }
                   }
                 }}
                 className="text-blue-600 hover:text-blue-800 ml-1 cursor-pointer"
@@ -519,15 +532,25 @@ const handleInvoiceSubmit = (data) => {
                         try {
                           const result = await dispatch(fetchImageFromMinio({ url: r.receiptFileUrl || r.attachmentUrl })).unwrap();
                           if (result.dataUrl) {
-                            window.open(result.dataUrl, '_blank');
+                            window.open(result.dataUrl, '_blank', 'noopener,noreferrer');
                           } else {
-                            // Fallback to direct URL if authentication failed
-                            window.open(r.receiptFileUrl || r.attachmentUrl, '_blank');
+                            // Fallback to direct URL if authentication failed or access denied
+                            const directUrl = r.receiptFileUrl || r.attachmentUrl;
+                            if (directUrl) {
+                              window.open(directUrl, '_blank', 'noopener,noreferrer');
+                            } else {
+                              toast.error('Unable to open attachment');
+                            }
                           }
                         } catch (error) {
                           console.error('Receipt file preview error:', error);
                           // Fallback to direct URL
-                          window.open(r.receiptFileUrl || r.attachmentUrl, '_blank');
+                          const directUrl = r.receiptFileUrl || r.attachmentUrl;
+                          if (directUrl) {
+                            window.open(directUrl, '_blank', 'noopener,noreferrer');
+                          } else {
+                            toast.error('Unable to open attachment');
+                          }
                         }
                       }}
                     />

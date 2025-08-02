@@ -38,15 +38,15 @@ export const fetchImageFromMinio = createAsyncThunk(
         const errorText = await response.text();
         console.error('Minio fetch - Error response:', errorText);
         
-        // Handle 401 authentication errors gracefully
-        if (response.status === 401) {
-          console.log('Authentication failed, returning null for graceful fallback');
+        // Handle 401 authentication errors and access denied errors gracefully
+        if (response.status === 401 || response.status === 403 || errorText.includes('Access Denied')) {
+          console.log('Authentication failed or access denied, returning null for graceful fallback');
           return {
             originalUrl: url,
             dataUrl: null,
             blob: null,
             contentType: null,
-            error: 'Authentication required'
+            error: 'Authentication required or access denied'
           };
         }
         
