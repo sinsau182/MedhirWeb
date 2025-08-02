@@ -321,43 +321,35 @@ const LeadManagementContent = ({ role }) => {
     dispatch(fetchLeads());
   }, [dispatch]);
 
+
+
   // Group leads by pipelineId for Kanban board
   const leadsByStatus = useMemo(() => {
     const grouped = {};
 
     // Filter out the "New" stage from pipelines
-    const filteredPipelines = pipelines.filter(
-      (p) => p.name.toLowerCase() !== "new"
-    );
+    const filteredPipelines = pipelines.filter((p) => p.name.toLowerCase() !== "new");
 
     // Check if leads is in the new grouped format
-    if (
-      Array.isArray(leads) &&
-      leads.length > 0 &&
-      leads[0].stageId &&
-      leads[0].leads
-    ) {
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
       // New format: leads grouped by stageId
       leads.forEach((stageGroup) => {
         const stageId = stageGroup.stageId;
         const stageLeads = stageGroup.leads || [];
-
+        
         // Find the pipeline/stage name for this stageId
-        const pipeline = filteredPipelines.find(
-          (p) => p.stageId === stageId || p.pipelineId === stageId
+        const pipeline = filteredPipelines.find(p => 
+          p.stageId === stageId || p.pipelineId === stageId
         );
-
+        
         if (pipeline) {
           grouped[pipeline.name] = stageLeads;
         } else {
           // Create a fallback name if pipeline not found (but only if it's not the "New" stage)
-          const originalPipeline = pipelines.find(
-            (p) => p.stageId === stageId || p.pipelineId === stageId
+          const originalPipeline = pipelines.find(p => 
+            p.stageId === stageId || p.pipelineId === stageId
           );
-          if (
-            originalPipeline &&
-            originalPipeline.name.toLowerCase() !== "new"
-          ) {
+          if (originalPipeline && originalPipeline.name.toLowerCase() !== "new") {
             grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
           }
         }
@@ -392,11 +384,7 @@ const LeadManagementContent = ({ role }) => {
           return false;
         }
         const leadPipelineId = lead.pipelineId || lead.stageId;
-        return (
-          !leadPipelineId ||
-          leadPipelineId === null ||
-          leadPipelineId === undefined
-        );
+        return !leadPipelineId || leadPipelineId === null || leadPipelineId === undefined;
       });
 
       if (leadsWithoutPipeline.length > 0) {
@@ -405,16 +393,15 @@ const LeadManagementContent = ({ role }) => {
           if (!grouped[firstNonNewStage.name]) {
             grouped[firstNonNewStage.name] = [];
           }
-          grouped[firstNonNewStage.name] = [
-            ...grouped[firstNonNewStage.name],
-            ...leadsWithoutPipeline,
-          ];
+          grouped[firstNonNewStage.name] = [...grouped[firstNonNewStage.name], ...leadsWithoutPipeline];
         }
       }
     }
 
     return grouped;
   }, [pipelines, leads]);
+
+
 
   // Add pipeline handler
   const handleAddStage = () => {
@@ -503,17 +490,12 @@ const LeadManagementContent = ({ role }) => {
     // Find the lead in the grouped format
     let lead = null;
     let currentPipelineId = null;
-
+    
     // Check if leads is in the new grouped format
-    if (
-      Array.isArray(leads) &&
-      leads.length > 0 &&
-      leads[0].stageId &&
-      leads[0].leads
-    ) {
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
       // New format: find lead in grouped structure
       for (const stageGroup of leads) {
-        const foundLead = stageGroup.leads.find((l) => l.leadId === leadId);
+        const foundLead = stageGroup.leads.find(l => l.leadId === leadId);
         if (foundLead) {
           lead = foundLead;
           currentPipelineId = stageGroup.stageId;
@@ -614,19 +596,12 @@ const LeadManagementContent = ({ role }) => {
     <div className="p-6 bg-gray-50 min-h-screen">
       <KanbanBoardClientOnly
         leadsByStatus={leadsByStatus}
-        statuses={pipelines
-          .filter((p) => p.name.toLowerCase() !== "new")
-          .map((p) => p.name)}
+        statuses={pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name)}
         kanbanStatuses={pipelines.filter((p) => p.name.toLowerCase() !== "new")}
         onScheduleActivity={handleScheduleActivity}
         onDragEnd={handleDragEnd}
         // Debug props
-        debugProps={{
-          leadsByStatus,
-          statuses: pipelines
-            .filter((p) => p.name.toLowerCase() !== "new")
-            .map((p) => p.name),
-        }}
+        debugProps={{ leadsByStatus, statuses: pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name) }}
       />
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}
