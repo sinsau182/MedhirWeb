@@ -674,7 +674,7 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Category
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">"{categoryName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -692,7 +692,7 @@ const DeleteLocationModal = ({ open, onClose, onConfirm, locationName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Location
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the location <span className="font-semibold">"{locationName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this location.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the location <span className="font-semibold">&quot;{locationName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this location.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -710,7 +710,7 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Status Label
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the status label <span className="font-semibold">"{statusName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this status.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the status label <span className="font-semibold">&quot;{statusName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this status.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -1065,7 +1065,7 @@ const AssetSettingsPage = () => {
                     <div className="flex justify-between items-center">
                         <div>
                     <h1 className="text-3xl font-bold text-gray-800">Asset Management Settings</h1>
-                    <p className="text-gray-500 mt-1">Configure and standardize your company's asset tracking system.</p>
+                    <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
                         </div>
                     </div>
                 </header>
