@@ -38,7 +38,7 @@ const priorityOptions = [
   { value: 'High', label: 'High', stars: 3, color: 'text-yellow-400' },
 ];
 
-const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = false, salesPersons = [], designers = [] }) => {
+const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = false, salesPersons = [], designers = [], salesPersonsLoading = false, designersLoading = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     contactNumber: '',
@@ -76,12 +76,12 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
 
   // Helper functions to get display names
   const getSalesPersonName = (id) => {
-    const person = salesPersons.find(p => p.id === id);
+    const person = salesPersons.find(p => p.employeeId === id);
     return person ? person.name : '';
   };
 
   const getDesignerName = (id) => {
-    const designer = designers.find(d => d.id === id);
+    const designer = designers.find(d => d.employeeId === id);
     return designer ? designer.name : '';
   };
 
@@ -435,11 +435,17 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="rounded-lg shadow-lg">
-                      {salesPersons.map(person => (
-                        <SelectItem key={person.id} value={person.id} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
-                          {person.name}
+                      {salesPersonsLoading ? (
+                        <SelectItem value="" disabled className="text-xs">
+                          Loading...
                         </SelectItem>
-                      ))}
+                      ) : (
+                        salesPersons.map(person => (
+                          <SelectItem key={person.employeeId} value={person.employeeId} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
+                            {person.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {errors.salesRep && <p className="text-red-500 text-xs mt-1">{errors.salesRep}</p>}
@@ -458,11 +464,17 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="rounded-lg shadow-lg">
-                      {designers.map(designer => (
-                        <SelectItem key={designer.id} value={designer.id} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
-                          {designer.name}
+                      {designersLoading ? (
+                        <SelectItem value="" disabled className="text-xs">
+                          Loading...
                         </SelectItem>
-                      ))}
+                      ) : (
+                        designers.map(designer => (
+                          <SelectItem key={designer.employeeId} value={designer.employeeId} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
+                            {designer.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {errors.designer && <p className="text-red-500 text-xs mt-1">{errors.designer}</p>}

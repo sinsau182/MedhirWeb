@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
+import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaLink, FaUpload, FaFileAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { addReceipt } from "../../redux/slices/receiptSlice";
@@ -18,17 +18,22 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     bankAccount: '',
     chequeNumber: '',
     upiTransactionId: '',
-    attachment: null,
+
     linkedInvoices: [],
   });
 const dispatch = useDispatch();
   const { projectCustomerList, invoicesByProject, receiptsByProject } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
-  const [attachmentPreview, setAttachmentPreview] = useState(null);
+
   const [isInvoiceLinkModalOpen, setIsInvoiceLinkModalOpen] = useState(false);
   const [invoicesToLink, setInvoicesToLink] = useState([]);
   const [activeTab, setActiveTab] = useState('linking');
+  
+  // File upload state
+  const [paymentProof, setPaymentProof] = useState(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   
   // New state for project-specific data
   const [projectReceiptData, setProjectReceiptData] = useState({
@@ -157,24 +162,61 @@ useEffect(() => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  // File upload handlers
+  const handleFileSelect = (file) => {
     if (file) {
-      setFormData(prev => ({ ...prev, attachment: file }));
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select a valid file type (PNG, JPG, PDF)');
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        toast.error('File size must be less than 10MB');
+        return;
+      }
+      
+      setPaymentProof(file);
+      
+      // Create preview for images
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (ev) => setAttachmentPreview(ev.target.result);
+        reader.onload = (e) => setPaymentProofPreview(e.target.result);
         reader.readAsDataURL(file);
       } else {
-        setAttachmentPreview(null);
+        setPaymentProofPreview(null);
       }
     }
   };
 
-  const removeAttachment = () => {
-    setFormData(prev => ({ ...prev, attachment: null }));
-    setAttachmentPreview(null);
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
   };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const removeFile = () => {
+    setPaymentProof(null);
+    setPaymentProofPreview(null);
+  };
+
+
 
   const toggleAccountingSection = () => {
     setIsAccountingCollapsed(!isAccountingCollapsed);
@@ -319,17 +361,12 @@ const handleSubmit = async (e) => {
         amountAllocated: inv.payment,
       }));
     
-    // Use linkedInvoices as per backend structure
+    // Create receipt data object - only include fields that DTO expects
     const receiptData = {
-      ...formData,
-      customerId: formData.customerId, // ✅ directly use the one already set from dropdown
-      projectId: formData.leadId,      // ✅ use leadId as projectId
-      customerName: formData.customerName,
-      projectName: formData.projectName,
+      customerId: formData.customerId,
+      projectId: formData.leadId,
       amountReceived: parseFloat(formData.amount),
-      amount: parseFloat(formData.amount),
-      linkedInvoices: currentLinkedInvoices, // Use current allocations from invoicesToLink
-      attachment: formData.attachment ? formData.attachment.name : null,
+      linkedInvoices: currentLinkedInvoices,
       receiptDate: formData.receiptDate,
       paymentMethod: formData.paymentMethod,
       receiptNumber: formData.receiptNumber,
@@ -338,19 +375,32 @@ const handleSubmit = async (e) => {
         formData.chequeNumber ||
         formData.upiTransactionId ||
         '',
+      bankAccountId: formData.bankAccount || null, // Add if your DTO has this field
     };
     
-    // Debug: Log the data being sent
-    console.log('Receipt Data being sent:', receiptData);
-    console.log('Linked Invoices:', currentLinkedInvoices);
-    console.log('Invoices to Link:', invoicesToLink);
-    
     try {
-      await dispatch(addReceipt(receiptData)).unwrap();
+      // Always send as FormData since backend expects multipart form data
+      const formDataToSend = new FormData();
+      
+      // Append receipt data as a JSON string (like bill endpoint)
+      formDataToSend.append('receipt', JSON.stringify(receiptData));
+      
+      // Add file if selected (optional)
+      if (paymentProof) {
+        formDataToSend.append('file', paymentProof);
+      }
+      
+      await dispatch(addReceipt(formDataToSend)).unwrap();
+      
+      // Debug: Log the data being sent
+      console.log('Receipt Data being sent:', receiptData);
+      console.log('Linked Invoices:', currentLinkedInvoices);
+      console.log('Invoices to Link:', invoicesToLink);
+      console.log('Payment Proof:', paymentProof);
       toast.success('Receipt added successfully!');
       // Add small delay to prevent duplicate messages
       setTimeout(() => {
-        if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
       }, 100);
     } catch (error) {
       console.error('Receipt submission error:', error);
@@ -624,26 +674,93 @@ const handleSubmit = async (e) => {
                   )}
                 </div>
               )}
+              
               {activeTab === 'attachment' && (
                 <div>
-                  {!formData.attachment ? (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
-                      <input type="file" onChange={handleFileChange} accept="image/*,.pdf" className="hidden" id="attachment-upload" />
-                      <label htmlFor="attachment-upload" className="cursor-pointer">
-                        <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                        <p className="text-lg font-medium text-gray-700 mb-2">Upload Payment Proof</p>
-                        <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                        <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF up to 10MB</p>
-                      </label>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Proof Upload</h3>
+                    <p className="text-sm text-gray-600 mb-4">Upload a photo or PDF of the payment proof for this receipt.</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* File Upload Area */}
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                        isDragOver 
+                          ? 'border-green-400 bg-green-50' 
+                          : paymentProof 
+                            ? 'border-green-300 bg-green-50' 
+                            : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      onDrop={handleFileDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                    >
+                      {!paymentProof ? (
+                        <div>
+                          <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Payment Proof</h3>
+                          <p className="text-gray-500 mb-4">Click to upload or drag and drop</p>
+                          <p className="text-sm text-gray-400">PNG, JPG, PDF up to 10MB</p>
+                          <input
+                            type="file"
+                            accept=".png,.jpg,.jpeg,.pdf"
+                            onChange={(e) => handleFileSelect(e.target.files[0])}
+                            className="hidden"
+                            id="payment-proof-upload"
+                          />
+                          <label
+                            htmlFor="payment-proof-upload"
+                            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
+                          >
+                            <FaUpload className="w-4 h-4 mr-2" />
+                            Choose File
+                          </label>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-center mb-4">
+                            {paymentProofPreview ? (
+                              <img 
+                                src={paymentProofPreview} 
+                                alt="Payment proof preview" 
+                                className="max-h-32 max-w-full rounded-lg"
+                              />
+                            ) : (
+                              <FaFileAlt className="text-4xl text-gray-400" />
+                            )}
+                          </div>
+                          <div className="mb-4">
+                            <p className="font-semibold text-gray-700">{paymentProof.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(paymentProof.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removeFile}
+                            className="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                          >
+                            <FaTimes className="w-3 h-3 mr-1" />
+                            Remove File
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="border border-gray-300 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3"><div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">{formData.attachment.type.startsWith('image/') ? '🖼️' : '📄'}</div><div><p className="text-sm font-medium text-gray-900">{formData.attachment.name}</p><p className="text-xs text-gray-500">{(formData.attachment.size / 1024 / 1024).toFixed(2)} MB</p></div></div>
-                        <button type="button" onClick={removeAttachment} className="text-red-600 hover:text-red-800 p-1"><FaTimes /></button>
+                    
+                    {/* File Info */}
+                    {paymentProof && (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <div className="flex items-start">
+                          <FaInfoCircle className="text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                          <div className="text-sm text-blue-700">
+                            <p className="font-semibold mb-1">File uploaded successfully!</p>
+                            <p>This file will be attached to the receipt when you save.</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
             </div>

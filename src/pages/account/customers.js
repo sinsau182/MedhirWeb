@@ -1,12 +1,101 @@
 // Updated customers page with PRD implementation
 import { useState, useEffect, use } from 'react';
-import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes } from 'react-icons/fa';
+import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes, FaFileAlt } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
+import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+
+// Small preview component for attachments
+const AttachmentPreview = ({ fileUrl, onClick }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isImage, setIsImage] = useState(false);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (fileUrl) {
+      setIsLoading(true);
+      // Check if it's an image by file extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
+      setIsImage(isImageFile);
+      
+      if (isImageFile) {
+        // For images, try to get preview from MinIO
+        dispatch(fetchImageFromMinio({ url: fileUrl }))
+          .unwrap()
+          .then(result => {
+            if (result.dataUrl) {
+              setPreviewUrl(result.dataUrl);
+            } else {
+              setPreviewUrl(fileUrl); // Fallback to direct URL
+            }
+            setIsLoading(false);
+          })
+          .catch(error => {
+            console.error('Preview error:', error);
+            setPreviewUrl(fileUrl); // Fallback to direct URL
+            setIsLoading(false);
+          });
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, [fileUrl, dispatch]);
+
+  if (!fileUrl) {
+    return (
+      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+        <span className="text-gray-400 text-xs">-</span>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center animate-pulse">
+        <div className="w-3 h-3 bg-gray-300 rounded"></div>
+      </div>
+    );
+  }
+
+  if (isImage && previewUrl) {
+    return (
+      <div 
+        className="w-8 h-8 rounded border border-gray-200 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+        onClick={onClick}
+        title="Click to view full size"
+      >
+        <img 
+          src={previewUrl} 
+          alt="Attachment preview" 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center" style={{ display: 'none' }}>
+          <FaFileAlt className="text-gray-400 text-xs" />
+        </div>
+      </div>
+    );
+  }
+
+  // For PDFs and other files
+  return (
+    <div 
+      className="w-8 h-8 bg-blue-100 rounded border border-blue-200 flex items-center justify-center cursor-pointer hover:bg-blue-200 transition-colors"
+      onClick={onClick}
+      title="Click to view file"
+    >
+      <FaFileAlt className="text-blue-600 text-xs" />
+    </div>
+  );
+};
 
 const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
   if (!invoice) return null;
@@ -118,6 +207,30 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
             <div><strong>Payment Method:</strong> {receipt.paymentMethod}</div>
             <div><strong>Receipt No.:</strong> {receipt.receiptNumber}</div>
             <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransactionId}</span></div>
+            <div><strong>Attachment:</strong> {receipt.receiptFileUrl || receipt.attachmentUrl ? (
+              <button
+                onClick={async () => {
+                  try {
+                    const result = await dispatch(fetchImageFromMinio({ url: receipt.receiptFileUrl || receipt.attachmentUrl })).unwrap();
+                    if (result.dataUrl) {
+                      window.open(result.dataUrl, '_blank');
+                    } else {
+                      // Fallback to direct URL if authentication failed
+                      window.open(receipt.receiptFileUrl || receipt.attachmentUrl, '_blank');
+                    }
+                  } catch (error) {
+                    console.error('Receipt file preview error:', error);
+                    // Fallback to direct URL
+                    window.open(receipt.receiptFileUrl || receipt.attachmentUrl, '_blank');
+                  }
+                }}
+                className="text-blue-600 hover:text-blue-800 ml-1 cursor-pointer"
+              >
+                View Payment Proof
+              </button>
+            ) : (
+              <span className="text-gray-500 ml-1">No attachment</span>
+            )}</div>
             <div className="flex items-center">
               <strong>Status:</strong> 
               <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${
@@ -202,7 +315,7 @@ const Customers = () => {
   const handleAddClick = () => {
     if (activeTab === 'invoice') setShowAddForm('invoice');
     else if (activeTab === 'receipts') setShowAddForm('receipt');
-    else if (activeTab === 'customers') setShowAddForm('customers');
+    else if (activeTab === 'clients') setShowAddForm('client');
   };
   const handleBackFromForm = () => {
     setShowAddForm(null);
@@ -249,8 +362,10 @@ const handleInvoiceSubmit = (data) => {
     setInvoiceForReceipt(null);
     dispatch(fetchReceipts()); // Refresh receipts list
     dispatch(fetchInvoices()); // Refresh invoices list so amountReceived is updated
-    toast.success('Receipt added!');
+    // toast.success('Receipt added!');
   };
+
+
   const handleClientSubmit = (data) => {
     setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
     toast.success('Customer added!');
@@ -303,6 +418,12 @@ const handleInvoiceSubmit = (data) => {
     let table;
     switch (activeTab) {
       case 'invoice':
+        const filteredInvoices = invoices.filter(invoice =>
+          (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.project?.projectName && invoice.project.projectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.customer?.customerName && invoice.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.status && invoice.status.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
         table = (
               <table className="min-w-full bg-white">
                 <thead className="bg-gray-100">
@@ -319,7 +440,7 @@ const handleInvoiceSubmit = (data) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-              {invoices.map(invoice => {
+              {filteredInvoices.map(invoice => {
                 const amountRemaining = invoice.totalAmount - invoice.amountReceived;
                 return (
                   <tr key={invoice.id}>
@@ -374,11 +495,15 @@ const handleInvoiceSubmit = (data) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment trans. Id</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Attachment</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-              {filteredReceipts.map(r => (
+              {filteredReceipts.map(r => {
+                // Debug: Log receipt data to see available fields
+                console.log('Receipt data:', r);
+                return (
                 <tr key={r.id}>
                   <td className="px-6 py-4 text-sm font-medium text-blue-600 whitespace-nowrap max-w-xs truncate">{r.receiptNumber}</td>
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.project?.projectName}</td>
@@ -388,12 +513,33 @@ const handleInvoiceSubmit = (data) => {
                   <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.paymentMethod}</td>
                   <td className="px-6 py-4 text-sm font-mono whitespace-nowrap max-w-xs truncate">{r.paymentTransactionId}</td>
                   <td className="px-6 py-4 text-center">
+                    <AttachmentPreview 
+                      fileUrl={r.receiptFileUrl || r.attachmentUrl}
+                      onClick={async () => {
+                        try {
+                          const result = await dispatch(fetchImageFromMinio({ url: r.receiptFileUrl || r.attachmentUrl })).unwrap();
+                          if (result.dataUrl) {
+                            window.open(result.dataUrl, '_blank');
+                          } else {
+                            // Fallback to direct URL if authentication failed
+                            window.open(r.receiptFileUrl || r.attachmentUrl, '_blank');
+                          }
+                        } catch (error) {
+                          console.error('Receipt file preview error:', error);
+                          // Fallback to direct URL
+                          window.open(r.receiptFileUrl || r.attachmentUrl, '_blank');
+                        }
+                      }}
+                    />
+                  </td>
+                  <td className="px-6 py-4 text-center">
                     <button onClick={() => setSelectedReceiptForPreview(r)} className="text-gray-500 hover:text-blue-600">
                       <FaEye />
                     </button>
                   </td>
                   </tr>
-              ))}
+              );
+              })}
                 </tbody>
               </table>
         );
@@ -435,29 +581,31 @@ const handleInvoiceSubmit = (data) => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
-        </div>
-        <div className="flex justify-between items-center mb-6">
-          <nav className="flex space-x-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
+          <p className="text-gray-600">Manage customer relationships and transactions</p>
+      </div>
+        <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
+          <div className="flex items-center">
+            <nav className="flex space-x-6">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-                style={{ minWidth: 110 }}
+                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                  style={{ minWidth: 110 }}
               >
                 <tab.icon className="w-5 h-5" />
                 <span>{tab.label}</span>
               </button>
             ))}
           </nav>
-          
+        </div>
           <div className="flex items-center space-x-4">
             <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}>
               <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
             </button>
-            <div className="flex items-center bg-white rounded-md shadow-sm p-2">
+            <div className="flex items-center bg-white rounded-md shadow-sm p-2 border border-gray-300">
               <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
               <input
                 type="text"
@@ -468,7 +616,7 @@ const handleInvoiceSubmit = (data) => {
               />
             </div>
           </div>
-        </div>
+      </div>
         {renderContent()}
         {selectedInvoiceForPreview && (
           <InvoicePreviewModal 

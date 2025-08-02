@@ -373,7 +373,7 @@ const Leaves = () => {
                       Leave carried from previous year
                     </p>
                     <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.annualLeavesCarryForwarded)}
+                      {formatNumber(leaveBalance.leavesCarriedFromPreviousYear)}
                     </p>
                   </div>
                   <div className="flex justify-between">
