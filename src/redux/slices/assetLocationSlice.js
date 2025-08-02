@@ -1,9 +1,8 @@
-
 //
 //export default assetLocationSlice.reducer; //
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { getItemFromSessionStorage } from './sessionStorageSlice';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+import { getItemFromSessionStorage } from "./sessionStorageSlice";
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
@@ -11,62 +10,78 @@ const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/locations";
 
 // Fetch all locations
 export const fetchAssetLocations = createAsyncThunk(
-  'assetLocations/fetchAll',
+  "assetLocations/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token', null);
-      const response = await axios.get(API_BASE, { headers: { Authorization: `Bearer ${token}` } });
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.get(API_BASE, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch locations');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch locations"
+      );
     }
   }
 );
 
 // Add a new location
 export const addAssetLocation = createAsyncThunk(
-  'assetLocations/add',
+  "assetLocations/add",
   async (location, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token', null);
-      const response = await axios.post(API_BASE, location, { headers: { Authorization: `Bearer ${token}` } });
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.post(API_BASE, location, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to add location');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add location"
+      );
     }
   }
 );
 
 // Delete a location
 export const deleteAssetLocation = createAsyncThunk(
-  'assetLocations/delete',
+  "assetLocations/delete",
   async (locationId, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token', null);
-      await axios.delete(`${API_BASE}/${locationId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const token = getItemFromSessionStorage("token", null);
+      await axios.delete(`${API_BASE}/${locationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return locationId;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete location');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete location"
+      );
     }
   }
 );
 
 // Batch update locations
 export const batchUpdateAssetLocations = createAsyncThunk(
-  'assetLocations/batchUpdate',
+  "assetLocations/batchUpdate",
   async (locations, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token', null);
-      const response = await axios.patch(`${API_BASE}/batch`, locations, { headers: { Authorization: `Bearer ${token}` } });
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.patch(`${API_BASE}/batch`, locations, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to batch update locations');
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to batch update locations"
+      );
     }
   }
 );
 
 const assetLocationSlice = createSlice({
-  name: 'assetLocations',
+  name: "assetLocations",
   initialState: {
     locations: [],
     loading: false,
@@ -105,7 +120,10 @@ const assetLocationSlice = createSlice({
       })
       .addCase(deleteAssetLocation.fulfilled, (state, action) => {
         state.loading = false;
-        state.locations = state.locations.filter(loc => loc.locationId !== action.payload && loc.id !== action.payload);
+        state.locations = state.locations.filter(
+          (loc) =>
+            loc.locationId !== action.payload && loc.id !== action.payload
+        );
       })
       .addCase(deleteAssetLocation.rejected, (state, action) => {
         state.loading = false;
@@ -128,4 +146,4 @@ const assetLocationSlice = createSlice({
   },
 });
 
-export default assetLocationSlice.reducer; 
+export default assetLocationSlice.reducer;
