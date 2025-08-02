@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaSave, FaTimes, FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaBuilding, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaCreditCard, FaFileAlt, FaInfoCircle, FaEye } from 'react-icons/fa';
+import { FaSave, FaTimes, FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaBuilding, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaCreditCard, FaFileAlt, FaEye } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { addVendor, updateVendor } from '../../redux/slices/vendorSlice';
 import { toast } from 'sonner';
@@ -749,7 +749,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                       : 'border-gray-300 focus:ring-blue-500'
                   }`}
-                  placeholder="Enter vendor name"
+
                   maxLength={100}
                 />
                 {errors.vendorName && <div className="text-red-500 text-sm mt-1 font-medium">{errors.vendorName}</div>}
@@ -838,9 +838,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                              {/* GSTIN */}
                <div>
                  <label className={`text-sm font-medium mb-2 flex items-center ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>
-                   GSTIN <span className="text-gray-400 ml-1">
-                     <FaInfoCircle title="Format: 2-digit state code + 10-digit PAN + 1-digit entity + 1-digit check sum + 1-digit Z + 1-digit random" />
-                   </span>
+                   GSTIN
                  </label>
                 <input
   type="text"
@@ -853,7 +851,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
       : 'border-gray-300 focus:ring-blue-500'
   }`}
-  placeholder="27AAECS1234F1Z2 (15 characters)"
+
   maxLength={15}
   disabled={formData.taxTreatment !== 'Registered'}
   style={{ backgroundColor: formData.taxTreatment !== 'Registered' ? '#f9fafb' : 'white' }}
@@ -866,9 +864,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">
                    PAN <span className="text-red-500">*</span>
-                   <span className="text-gray-400 ml-1">
-                     <FaInfoCircle title="Format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)" />
-                   </span>
                  </label>
                 <input
   type="text"
@@ -881,7 +876,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
       : 'border-gray-300 focus:ring-blue-500'
   }`}
-  placeholder="ABCDE1234F (10 characters)"
+
   maxLength={10}
 />
                  <div className="text-xs text-gray-400 mt-1">Format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)</div>
@@ -965,7 +960,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                           ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                           : 'border-gray-300 focus:ring-blue-500'
                       }`}
-                      placeholder="Enter full name"
+
                     />
                     {errors.contactName && <div className="text-red-500 text-sm mt-1 font-medium">{errors.contactName}</div>}
                   </div>
@@ -973,9 +968,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                    <div>
                      <label className="block text-sm font-medium text-gray-700 mb-2">
                        Email Address
-                       <span className="text-gray-400 ml-1">
-                         <FaInfoCircle title="Format: username@domain.com" />
-                       </span>
                      </label>
                      <input
                        type="email"
@@ -988,7 +980,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                            ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                            : 'border-gray-300 focus:ring-blue-500'
                        }`}
-                       placeholder="contact@vendor.com (username@domain.com)"
+
                      />
                      <div className="text-xs text-gray-400 mt-1">Format: username@domain.com</div>
                      {errors.email && <div className="text-red-500 text-sm mt-1 font-medium">{errors.email}</div>}
@@ -998,9 +990,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
   <label className="block text-sm font-medium text-gray-700 mb-2">
     
     Main Phone Number<span className="text-red-500 mr-1"> *</span> {/* Required asterisk */}
-    <span className="text-gray-400 ml-1">
-      <FaInfoCircle title="Format: 10 digits only (e.g., 9876543210)" />
-    </span>
   </label>
   <div className="flex">
     <select
@@ -1020,7 +1009,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
           ? 'border-red-500 focus:ring-red-500 bg-red-50' 
           : 'border-gray-300 focus:ring-blue-500'
       }`}
-      placeholder="9876543210 (10 digits only)"
+      
       maxLength={10}
     />
   </div>
@@ -1034,9 +1023,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                    <div>
                      <label className="block text-sm font-medium text-gray-700 mb-2">
                        Alternate Phone Number
-                       <span className="text-gray-400 ml-1">
-                         <FaInfoCircle title="Format: 10 digits only (e.g., 9876543210)" />
-                       </span>
                      </label>
                      <div className="flex">
                        <select className="border border-gray-300 rounded-l-lg px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled>
@@ -1053,7 +1039,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                              ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                              : 'border-gray-300 focus:ring-blue-500'
                          }`}
-                         placeholder="9876543210 (10 digits only)"
+                         
                          maxLength={10}
                        />
                      </div>
@@ -1085,7 +1071,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                           ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                           : 'border-gray-300 focus:ring-blue-500'
                       }`}
-                      placeholder="Building name, street address"
+                      
                     />
                     {errors.addressLine1 && <div className="text-red-500 text-sm mt-1 font-medium">{errors.addressLine1}</div>}
                   </div>
@@ -1100,7 +1086,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       value={formData.addressLine2 || ""}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Apartment, suite, unit, building, floor, etc."
+                      
                     />
                   </div>
                   {/* City & State/Province */}
@@ -1120,7 +1106,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                             ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                             : 'border-gray-300 focus:ring-blue-500'
                         }`}
-                        placeholder="Enter city"
+                        
                       />
                       {errors.city && <div className="text-red-500 text-sm mt-1 font-medium">{errors.city}</div>}
                     </div>
@@ -1128,8 +1114,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         State/Province <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
+                      <select
                         name="state"
                         value={formData.state || ""}
                         onChange={handleChange}
@@ -1139,8 +1124,12 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                             ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                             : 'border-gray-300 focus:ring-blue-500'
                         }`}
-                        placeholder="Enter state or province"
-                      />
+                      >
+                        <option value="">Select state</option>
+                        {indianStates.map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
                       {errors.state && <div className="text-red-500 text-sm mt-1 font-medium">{errors.state}</div>}
                     </div>
                   </div>
@@ -1148,9 +1137,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                    <div>
                      <label className="block text-sm font-medium text-gray-700 mb-2">
                        PIN/ZIP Code <span className="text-red-500">*</span>
-                       <span className="text-gray-400 ml-1">
-                         <FaInfoCircle title="Format: 6 digits starting with 1-9 (e.g., 110001)" />
-                       </span>
                      </label>
                      <input
                        type="text"
@@ -1163,7 +1149,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                            ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                            : 'border-gray-300 focus:ring-blue-500'
                        }`}
-                       placeholder="110001 (6 digits, starting with 1-9)"
+
                        maxLength={6}
                      />
                      <div className="text-xs text-gray-400 mt-1">Format: 6 digits starting with 1-9 (e.g., 110001)</div>
@@ -1196,7 +1182,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                       : 'border-gray-300 focus:ring-blue-500'
                   }`}
-                  placeholder="Enter account holder name"
+                  
                 />
                 {errors['bankDetails.accountHolderName'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.accountHolderName']}</div>}
               </div>
@@ -1214,7 +1200,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                       : 'border-gray-300 focus:ring-blue-500'
                   }`}
-                  placeholder="Enter branch name"
+                  
                 />
                 {errors['bankDetails.branchName'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.branchName']}</div>}
               </div>
@@ -1266,9 +1252,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">
                    Account Number <span className="text-red-500">*</span>
-                   <span className="text-gray-400 ml-1">
-                     <FaInfoCircle title="Format: 9-18 digits only (e.g., 1234567890)" />
-                   </span>
                  </label>
                  <input
                    type="text"
@@ -1281,7 +1264,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                        ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                        : 'border-gray-300 focus:ring-blue-500'
                    }`}
-                   placeholder="1234567890 (9-18 digits only)"
+
                    maxLength={18}
                  />
                  <div className="text-xs text-gray-400 mt-1">Format: 9-18 digits only (e.g., 1234567890)</div>
@@ -1291,9 +1274,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">
                    Confirm Account Number <span className="text-red-500">*</span>
-                   <span className="text-gray-400 ml-1">
-                     <FaInfoCircle title="Must match the account number above" />
-                   </span>
                  </label>
                  <input
                    type="text"
@@ -1305,7 +1285,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                        ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                        : 'border-gray-300 focus:ring-blue-500'
                    }`}
-                   placeholder="Re-enter account number (must match)"
+
                    maxLength={18}
                  />
                  <div className="text-xs text-gray-400 mt-1">Must match the account number above</div>
@@ -1315,9 +1295,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">
                    IFSC Code <span className="text-red-500">*</span>
-                   <span className="text-gray-400 ml-1">
-                     <FaInfoCircle title="Format: 4 letters + 0 + 6 alphanumeric (e.g., SBIN0008754)" />
-                   </span>
                  </label>
                  <input
    type="text"
@@ -1330,7 +1307,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
        ? 'border-red-500 focus:ring-red-500 bg-red-50' 
        : 'border-gray-300 focus:ring-blue-500'
    }`}
-   placeholder="SBIN0008754 (11 characters)"
+
    maxLength={11}
 />
                  <div className="text-xs text-gray-400 mt-1">Format: 4 letters + 0 + 6 alphanumeric (e.g., SBIN0008754)</div>
@@ -1340,9 +1317,6 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-2">
                    UPI ID <span className="text-red-500">*</span>
-                   <span className="text-gray-400 ml-1">
-                     <FaInfoCircle title="Format: username@provider (e.g., example@paytm)" />
-                   </span>
                  </label>
                  <input
                    type="text"
@@ -1355,7 +1329,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                        ? 'border-red-500 focus:ring-red-500 bg-red-50' 
                        : 'border-gray-300 focus:ring-blue-500'
                    }`}
-                   placeholder="example@paytm (username@provider)"
+
                  />
                  <div className="text-xs text-gray-400 mt-1">Format: username@provider (e.g., example@paytm)</div>
                  {errors['bankDetails.upiId'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.upiId']}</div>}
