@@ -2,8 +2,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
+const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = 'http://localhost:8083/api/asset-settings/id-formatting';
+const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/id-formatting`;
 
 // Fetch ID formatting for all categories
 export const fetchIdFormattings = createAsyncThunk(

@@ -2,7 +2,7 @@
 ///
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
-
+const { publicRuntimeConfig } = getConfig();
 // Add new asset
 export const addAsset = createAsyncThunk(
     'assets/addAsset',
@@ -15,7 +15,7 @@ export const addAsset = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch('http://localhost:8083/api/assets', {
+            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -48,7 +48,7 @@ export const fetchAssets = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch('http://localhost:8083/api/assets', {
+            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export const fetchAssetById = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch(`http://localhost:8083/api/assets/asset/${assetId}`, {
+            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets/asset/${assetId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export const updateAsset = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch(`http://localhost:8083/api/assets/asset/${assetId}`, {
+            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets/asset/${assetId}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,

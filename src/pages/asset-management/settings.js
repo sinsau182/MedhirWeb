@@ -389,8 +389,6 @@ const CustomFieldsSettings = ({ editing }) => {
     // Fetch custom fields when category is selected
     useEffect(() => {
         if (selectedCategory) {
-            console.log('Fetching custom fields for category:', selectedCategory);
-            console.log('API URL will be:', `http://localhost:8083/api/asset-settings/custom-fields?categoryId=${selectedCategory}`);
             
             // Clear existing fields for this category to avoid stale data
             dispatch(clearFieldsForCategory(selectedCategory));

@@ -1,8 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
+const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = 'http://localhost:8083/api/asset-settings/custom-fields';
+const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/custom-fields`;
 
 // Fetch custom fields for a category
 export const fetchCustomFields = createAsyncThunk(

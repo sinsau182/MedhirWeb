@@ -3,8 +3,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
+const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = 'http://localhost:8083/api/asset-settings/status-labels';
+const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/status-labels`;
 
 // Fetch all status labels
 export const fetchAssetStatuses = createAsyncThunk(

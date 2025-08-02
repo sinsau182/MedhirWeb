@@ -6,7 +6,7 @@ import getConfig from 'next/config';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
 const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = 'http://localhost:8083/api/asset-settings/categories';
+const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/categories`;
 
 // Fetch all categories
 export const fetchAssetCategories = createAsyncThunk(
@@ -61,7 +61,7 @@ export const batchUpdateAssetCategories = createAsyncThunk(
       const token = getItemFromSessionStorage('token', null);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await axios.patch(
-        'http://localhost:8083/api/asset-settings/categories/batch',
+        `${publicRuntimeConfig.apiUrl}/api/asset-settings/categories/batch`,
         categories,
         { headers }
       );
@@ -79,7 +79,7 @@ export const deleteAssetCategory = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage('token', null);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.delete(`http://localhost:8083/api/asset-settings/categories/${categoryId}`, { headers });
+      await axios.delete(`${publicRuntimeConfig.apiUrl}/api/asset-settings/categories/${categoryId}`, { headers });
       return categoryId;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete category');
