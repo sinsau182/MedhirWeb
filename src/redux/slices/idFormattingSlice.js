@@ -2,6 +2,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
+import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
 const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/id-formatting`;
