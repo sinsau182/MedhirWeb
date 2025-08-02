@@ -72,6 +72,24 @@ const modularMenus = {
         link: "/hradmin/payroll",
       },
       {
+        label: "Asset Management",
+        icon: <FaBoxes className="w-4 h-4" />,
+        hasSubmenu: true,
+        menuKey: "hr-asset",
+        subItems: [
+          {
+            label: "Home",
+            icon: <FaBuilding className="w-4 h-4" />,
+            link: "/asset-management",
+          },
+          {
+            label: "Settings",
+            icon: <Settings className="w-4 h-4" />,
+            link: "/asset-management/settings",
+          },
+        ],
+      },
+      {
         label: "Settings",
         icon: <Settings className="w-4 h-4" />,
         hasSubmenu: true,
@@ -232,6 +250,19 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
 
   const isActiveLink = (link) => {
     if (!link) return false;
+    
+    // Special handling for asset management routes
+    if (link === "/asset-management") {
+      // Home should only be active on exact match, not on subpages
+      return router.pathname === link;
+    }
+    
+    // Special handling for employees route to include addNewEmployee
+    if (link === "/hradmin/employees") {
+      return router.pathname === link || router.pathname.startsWith("/hradmin/addNewEmployee");
+    }
+    
+    // For other routes, use the existing logic
     return router.pathname === link || router.pathname.startsWith(link);
   };
 

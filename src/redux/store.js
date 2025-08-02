@@ -31,12 +31,12 @@ import minioReducer from "./slices/minioSlice";
 import invoiceReducer from "./slices/invoiceSlice";
 import receiptReducer from "./slices/receiptSlice";
 import payrollReducer from "./slices/payrollSlice";
-// import assetCategoryReducer from './slices/assetCategorySlice';
-// import assetLocationReducer from './slices/assetLocationSlice';
-// import assetStatusReducer from './slices/assetStatusSlice';
-// import customFieldsReducer from './slices/customFieldsSlice';
-// import idFormattingReducer from './slices/idFormattingSlice';
-// import assetReducer from './slices/assetSlice';
+import assetCategoryReducer from './slices/assetCategorySlice';
+import assetLocationReducer from './slices/assetLocationSlice';
+import assetStatusReducer from './slices/assetStatusSlice';
+import customFieldsReducer from './slices/customFieldsSlice';
+import idFormattingReducer from './slices/idFormattingSlice';
+import assetReducer from './slices/assetSlice';
 
 
 export const store = configureStore({
@@ -71,12 +71,12 @@ export const store = configureStore({
     pipelines: pipelineReducer,
     manualAttendance: manualAttendanceReducer,
     minio: minioReducer,
-    // assetCategories: assetCategoryReducer,
-    // assetLocations: assetLocationReducer,
-    // assetStatuses: assetStatusReducer,
-    // customFields: customFieldsReducer,
-    // idFormatting: idFormattingReducer,
-    // assets: assetReducer,
+    assetCategories: assetCategoryReducer,
+    assetLocations: assetLocationReducer,
+    assetStatuses: assetStatusReducer,
+    customFields: customFieldsReducer,
+    idFormatting: idFormattingReducer,
+    assets: assetReducer,
     invoices: invoiceReducer,
     receipts: receiptReducer,
     payroll: payrollReducer,
