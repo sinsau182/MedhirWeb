@@ -1,8 +1,9 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye } from 'react-icons/fa';
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
+import VendorPreview from '../../components/Previews/VendorPreview';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
@@ -31,7 +32,10 @@ const Vendor = () => {
   const [selectedBill, setSelectedBill] = useState(null);
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
-
+   const [previewFile, setPreviewFile] = useState(null);
+   // State for vendor preview modal
+   const [showVendorPreview, setShowVendorPreview] = useState(false);
+   const [previewVendorData, setPreviewVendorData] = useState(null);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
@@ -96,7 +100,21 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     setEditingPO(po);
     setShowAddForm('po');
   };
+  
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    const allowed = files.filter(f => /pdf|jpg|jpeg|png/i.test(f.type));
+    setFormData(prev => ({...prev, attachments: [...prev.attachments, ...allowed]}));
+  };
 
+  const handleRemoveAttachment = (idx) => {
+    setFormData(prev => ({...prev, attachments: prev.attachments.filter((_, i) => i !== idx)}));
+  };
+
+  const handlePreviewAttachment = (file) => {
+    setPreviewFile(file);
+  };
+   
   // Close attachment modal
   const closeAttachmentModal = () => {
     setShowAttachmentModal(false);
@@ -324,7 +342,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                      <th className="px-1 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -383,7 +401,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                               ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
                               : 'bg-gray-100 text-gray-500'
                           }`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
                                 bill.attachmentUrls === 'Yes' || 
                                 bill.attachmentUrls === true) {
@@ -436,9 +455,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                       
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -464,21 +482,34 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            po.status === 'Approved' 
-                              ? 'bg-green-100 text-green-800' 
-                              : po.status === 'Draft'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {po.status}
-                          </span>
-                        </td>
+                        
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
                         </td>
-                
+
+                 <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <span 
+                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                             (po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
+                                  }`}
+                            onClick={(e) => {
+  e.stopPropagation();
+  if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
+    setSelectedAttachments(po.attachmentUrls);
+    setShowAttachmentModal(true);
+  } else if (typeof po.attachmentUrls === 'string') {
+    setSelectedAttachments([po.attachmentUrls]);
+    setShowAttachmentModal(true);
+  }
+}}
+                                          >
+                                {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                   po.attachmentUrls === 'Yes' || 
+                                   po.attachmentUrls === true ? '📎' : '-'}
+                             </span>
+                      </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -626,6 +657,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -666,6 +698,18 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewVendorData(vendor);
+                            setShowVendorPreview(true);
+                          }}
+                          className="text-gray-600 hover:text-blue-600"
+                        >
+                          <FaEye className="w-5 h-5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -750,6 +794,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         </div>
       </div>
 
+
       {/* Attachment Modal */}
       {showAttachmentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -827,6 +872,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           </div>
         </div>
       )}
+
+             {/* Vendor Preview Modal */}
+       {showVendorPreview && previewVendorData && (
+         <VendorPreview
+           vendorData={previewVendorData}
+           onClose={() => setShowVendorPreview(false)}
+         />
+       )}
     </div>
   );
 };
