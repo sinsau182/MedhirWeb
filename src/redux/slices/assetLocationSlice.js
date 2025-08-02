@@ -7,7 +7,7 @@ import { getItemFromSessionStorage } from './sessionStorageSlice';
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/locations`;
+const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/locations";
 
 // Fetch all locations
 export const fetchAssetLocations = createAsyncThunk(

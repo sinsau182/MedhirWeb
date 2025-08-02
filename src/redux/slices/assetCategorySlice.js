@@ -6,7 +6,7 @@ import getConfig from 'next/config';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
 const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/categories`;
+const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/categories";
 
 // Fetch all categories
 export const fetchAssetCategories = createAsyncThunk(
