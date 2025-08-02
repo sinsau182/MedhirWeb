@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 import { fetchLeads, updateLead, createLead } from "@/redux/slices/leadsSlice";
@@ -2964,7 +2964,6 @@ const SettingsPage = ({
       label: "Stage Dependent Forms",
       icon: FaTasks,
       description: "Create custom forms required for specific pipeline stages.",
-      frozen: true,
     },
     {
       id: "permissions",
