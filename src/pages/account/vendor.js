@@ -93,9 +93,11 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Handle attachment icon click
   const handleAttachmentClick = (bill) => {
     const attachments = bill.attachmentUrls || [];
-    setSelectedAttachments(attachments);
-    setSelectedBillVendor(bill.vendorName);
-    setShowAttachmentModal(true);
+    if (attachments.length > 0) {
+      // Open the first attachment directly in a new tab
+      const firstAttachment = attachments[0];
+      window.open(firstAttachment, '_blank');
+    }
   };
   // Handle PO row click for editing
   const handlePORowClick = (po) => {
@@ -496,15 +498,16 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                                 po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
                                   }`}
                             onClick={(e) => {
-  e.stopPropagation();
-  if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
-    setSelectedAttachments(po.attachmentUrls);
-    setShowAttachmentModal(true);
-  } else if (typeof po.attachmentUrls === 'string') {
-    setSelectedAttachments([po.attachmentUrls]);
-    setShowAttachmentModal(true);
-  }
-}}
+   e.stopPropagation();
+   if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
+     // Open the first attachment directly in a new tab
+     const firstAttachment = po.attachmentUrls[0];
+     window.open(firstAttachment, '_blank');
+   } else if (typeof po.attachmentUrls === 'string') {
+     // Open the string attachment directly in a new tab
+     window.open(po.attachmentUrls, '_blank');
+   }
+ }}
                                           >
                                 {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
                                    po.attachmentUrls === 'Yes' || 
@@ -796,81 +799,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         </div>
       </div>
 
-
-      {/* Attachment Modal */}
-      {showAttachmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Attachments - {selectedBillVendor}
-              </h3>
-              <button
-                onClick={closeAttachmentModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {selectedAttachments.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedAttachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          {attachment.toLowerCase().includes('.pdf') ? (
-                            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                            {typeof attachment === 'string' ? attachment.split('/').pop() || attachment : `Attachment ${index + 1}`}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {typeof attachment === 'string' ? 'File' : 'Attachment'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewFile(attachment, typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`)}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => handleDownloadFile(attachment, typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`)}
-                          className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-6xl mb-4">📎</div>
-                  <p className="text-gray-500 text-lg">No attachments available</p>
-                  <p className="text-gray-400 text-sm mt-2">This bill doesn&apos;t have any attachments</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-             {/* Vendor Preview Modal */}
+      {/* Vendor Preview Modal */}
        {showVendorPreview && previewVendorData && (
          <VendorPreview
            vendorData={previewVendorData}
