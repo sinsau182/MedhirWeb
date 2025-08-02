@@ -327,6 +327,9 @@ const LeadManagementContent = ({ role }) => {
   const leadsByStatus = useMemo(() => {
     const grouped = {};
 
+    // Filter out the "New" stage from pipelines
+    const filteredPipelines = pipelines.filter((p) => p.name.toLowerCase() !== "new");
+
     // Check if leads is in the new grouped format
     if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
       // New format: leads grouped by stageId
@@ -335,22 +338,27 @@ const LeadManagementContent = ({ role }) => {
         const stageLeads = stageGroup.leads || [];
         
         // Find the pipeline/stage name for this stageId
-        const pipeline = pipelines.find(p => 
+        const pipeline = filteredPipelines.find(p => 
           p.stageId === stageId || p.pipelineId === stageId
         );
         
         if (pipeline) {
           grouped[pipeline.name] = stageLeads;
         } else {
-          // Create a fallback name if pipeline not found
-          grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
+          // Create a fallback name if pipeline not found (but only if it's not the "New" stage)
+          const originalPipeline = pipelines.find(p => 
+            p.stageId === stageId || p.pipelineId === stageId
+          );
+          if (originalPipeline && originalPipeline.name.toLowerCase() !== "new") {
+            grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
+          }
         }
       });
     } else {
       // Old format: individual leads with pipelineId/stageId
       const usedLeadIds = new Set();
 
-      pipelines.forEach((pipeline) => {
+      filteredPipelines.forEach((pipeline) => {
         const matchingLeads = leads.filter((lead) => {
           if (usedLeadIds.has(lead.leadId)) {
             return false;
@@ -370,7 +378,7 @@ const LeadManagementContent = ({ role }) => {
         grouped[pipeline.name] = matchingLeads;
       });
 
-      // Handle leads without pipelineId
+      // Handle leads without pipelineId - assign to first non-"New" stage
       const leadsWithoutPipeline = leads.filter((lead) => {
         if (usedLeadIds.has(lead.leadId)) {
           return false;
@@ -380,12 +388,12 @@ const LeadManagementContent = ({ role }) => {
       });
 
       if (leadsWithoutPipeline.length > 0) {
-        const newStage = pipelines.find((p) => p.name.toLowerCase() === "new") || pipelines[0];
-        if (newStage) {
-          if (!grouped[newStage.name]) {
-            grouped[newStage.name] = [];
+        const firstNonNewStage = filteredPipelines[0];
+        if (firstNonNewStage) {
+          if (!grouped[firstNonNewStage.name]) {
+            grouped[firstNonNewStage.name] = [];
           }
-          grouped[newStage.name] = [...grouped[newStage.name], ...leadsWithoutPipeline];
+          grouped[firstNonNewStage.name] = [...grouped[firstNonNewStage.name], ...leadsWithoutPipeline];
         }
       }
     }
@@ -586,27 +594,14 @@ const LeadManagementContent = ({ role }) => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center space-x-6">
-          <Tooltip content="Add a new lead to the pipeline">
-            <button
-              onClick={() => setShowAddLeadModal(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
-            >
-              New Lead
-            </button>
-          </Tooltip>
-
-        </div>
-      </div>
       <KanbanBoardClientOnly
         leadsByStatus={leadsByStatus}
-        statuses={pipelines.map((p) => p.name)}
-        kanbanStatuses={pipelines}
+        statuses={pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name)}
+        kanbanStatuses={pipelines.filter((p) => p.name.toLowerCase() !== "new")}
         onScheduleActivity={handleScheduleActivity}
         onDragEnd={handleDragEnd}
         // Debug props
-        debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+        debugProps={{ leadsByStatus, statuses: pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name) }}
       />
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}

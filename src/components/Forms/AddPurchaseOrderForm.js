@@ -574,7 +574,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         <button
           type="button"
           onClick={handleSubmit}
-          className="px-6 py-2 rounded-lg transition-colors font-medium bg-blue-600 text-white font-bold hover:bg-blue-700"
+          className="px-6 py-2 rounded-lg transition-colors font-medium bg-blue-600 text-white hover:bg-blue-700"
         >
           {mode === 'edit' ? 'Update PO' : 'Save PO'}
         </button>
