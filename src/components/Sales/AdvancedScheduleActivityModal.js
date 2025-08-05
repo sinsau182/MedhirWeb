@@ -4,6 +4,7 @@ import axios from 'axios';
 import getConfig from 'next/config';
 import { useDispatch } from 'react-redux';
 import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -220,7 +221,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
   // Save: if editing, only update the selected activity; if creating, create all filled tabs
   const handleSave = useCallback(async (statusOverride) => {
     try {
-      const token = localStorage.getItem('token') || '';
+      const token = getItemFromSessionStorage('token') || '';
       let formData = new FormData();
       let activities = [];
       // If editing, only update the selected activity

@@ -400,7 +400,7 @@ const OdooDetailBody = ({
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -424,7 +424,7 @@ const OdooDetailBody = ({
     try {
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, projectFields, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
         },
       });
       Object.entries(projectFields).forEach(([field, value]) => {
@@ -446,7 +446,7 @@ const OdooDetailBody = ({
       if (assignedDesignerId) body.designer = assignedDesignerId;
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, body, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
         },
       });
       setIsEditingTeam(false);
@@ -523,7 +523,7 @@ const OdooDetailBody = ({
           { content: noteContent },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
         );
@@ -540,7 +540,7 @@ const OdooDetailBody = ({
           { content: noteContent },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
         );
@@ -2064,7 +2064,7 @@ const LeadDetailContent = () => {
     if (lead && lead.leadId) {
       const fetchActivities = async () => {
         try {
-          const token = localStorage.getItem("token") || "";
+          const token = getItemFromSessionStorage("token") || "";
           const response = await axios.get(
             `${API_BASE_URL}/leads/${lead.leadId}/activities`,
             {
@@ -2088,7 +2088,7 @@ const LeadDetailContent = () => {
   // Add fetchActivityLogs function
   const fetchActivityLogs = async (leadId) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = getItemFromSessionStorage("token") || "";
       const response = await axios.get(
         `${API_BASE_URL}/leads/${leadId}/activity-logs`,
         {
@@ -2192,7 +2192,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2264,7 +2264,7 @@ const LeadDetailContent = () => {
 
   const fetchActivities = async (leadId) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = getItemFromSessionStorage("token") || "";
       const response = await axios.get(
         `${API_BASE_URL}/leads/${leadId}/activities`,
         {
@@ -2355,7 +2355,7 @@ const LeadDetailContent = () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2381,7 +2381,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2404,7 +2404,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2423,7 +2423,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );

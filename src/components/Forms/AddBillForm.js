@@ -162,18 +162,38 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                     <div className="flex flex-col items-center w-full h-full">
                         <div className="flex-1 flex items-center justify-center w-full relative overflow-hidden">
                             {uploadedImage.type === 'application/pdf' ? (
-                                <div className="text-center">
-                                    <FaFilePdf className="text-red-500 text-6xl mb-4" />
-                                    <span className="text-gray-700 font-medium">{uploadedImage.name}</span>
-                                    <div className="mt-4 flex gap-2 justify-center">
+                                <div className="relative w-full h-full flex flex-col">
+                                    <div className="absolute top-2 right-2 flex gap-2 z-10">
                                         <button
                                             onClick={handleRemoveClick}
-                                            className="flex items-center gap-2 px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors"
+                                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                                            title="Remove file"
                                         >
-                                            <FaTimes size={12} />
-                                            Remove File
+                                            <FaTimes size={14} />
+                                        </button>
+                                        <button
+                                            onClick={handleDownload}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                                            title="Download file"
+                                        >
+                                            <FaDownload size={14} />
                                         </button>
                                     </div>
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <iframe 
+                                            src={typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage)}
+                                            className="w-full h-full border-0 rounded-md shadow-sm"
+                                            title="PDF Preview"
+                                            onLoad={() => setShowZoomControls(true)}
+                                        />
+                                    </div>
+                                    {showZoomControls && (
+                                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
+                                            <span className="px-2 py-1 text-sm text-gray-600 font-medium">
+                                                PDF Document
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="relative w-full h-full flex items-center justify-center">
@@ -286,9 +306,7 @@ const BillForm = ({ bill, onCancel }) => {
   const [showDeleteIdx, setShowDeleteIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
-  const [existingAttachments, setExistingAttachments] = useState([]);
-  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
-  const [selectedAttachment, setSelectedAttachment] = useState(null);
+  const [vendorCredits, setVendorCredits] = useState([]);
 
   // Pre-fill form data when bill prop is provided (edit mode)
   useEffect(() => {
@@ -319,10 +337,7 @@ const BillForm = ({ bill, onCancel }) => {
         }
       }
 
-      // Set existing attachments if available
-      if (bill.attachmentUrls && bill.attachmentUrls.length > 0) {
-        setExistingAttachments(bill.attachmentUrls);
-      }
+
     }
   }, [bill, vendors]);
 
@@ -332,8 +347,6 @@ const BillForm = ({ bill, onCancel }) => {
     }
   }, [selectedVendor]);
   
-  const [vendorCredits, setVendorCredits] = useState([]);
-
   const handleFileUpload = (file) => {
         if (!file) return;
         
@@ -341,7 +354,7 @@ const BillForm = ({ bill, onCancel }) => {
         setUploadedFile(file);
         setUploadedImage(file);
         
-        console.log('✅ File uploaded successfully:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        console.log(' File uploaded successfully:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     };
 
   const handleRemoveFile = () => {
@@ -350,26 +363,6 @@ const BillForm = ({ bill, onCancel }) => {
         setError(null);
         toast.success('File removed successfully');
     };
-
-  const handleViewAttachment = (attachment) => {
-    setSelectedAttachment(attachment);
-    setShowAttachmentModal(true);
-  };
-
-  const handleDownloadAttachment = (attachment) => {
-    const fileName = typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : 'attachment';
-    const link = document.createElement('a');
-    link.href = attachment;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const closeAttachmentModal = () => {
-    setShowAttachmentModal(false);
-    setSelectedAttachment(null);
-  };
 
   // Calculate totals
   const subtotal = billLines.reduce((sum, l) => sum + l.qty * l.rate, 0);
@@ -685,19 +678,6 @@ const BillForm = ({ bill, onCancel }) => {
                 >
                   Bill Lines
                 </button>
-                {isEditMode && existingAttachments.length > 0 && (
-                  <button 
-                    type="button" 
-                    className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
-                      activeTab === 'attachments' 
-                        ? 'border-blue-600 text-blue-600' 
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`} 
-                    onClick={() => setActiveTab('attachments')}
-                  >
-                    Attachments ({existingAttachments.length})
-                  </button>
-                )}
                 {selectedVendor && <button
                   type="button"
                   className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
@@ -846,58 +826,6 @@ const BillForm = ({ bill, onCancel }) => {
                       <span className="font-bold text-lg">Final Amount:</span>
                       <span className="font-bold text-lg">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'attachments' && (
-                <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <FaPaperclip className="text-blue-600" />
-                      <span className="text-blue-800 font-medium">Existing Attachments</span>
-                    </div>
-                    <p className="text-blue-700 text-sm">
-                      These attachments were previously uploaded with this bill. You can view and download them.
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {existingAttachments.map((attachment, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            {attachment.toLowerCase().includes('.pdf') ? (
-                              <FaFilePdf className="w-6 h-6 text-red-500" />
-                            ) : (
-                              <FaFileImage className="w-6 h-6 text-blue-500" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                              {typeof attachment === 'string' ? attachment.split('/').pop() || attachment : `Attachment ${index + 1}`}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {typeof attachment === 'string' ? 'File' : 'Attachment'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewAttachment(attachment)}
-                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => handleDownloadAttachment(attachment)}
-                            className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                          >
-                            Download
-                          </button>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}
@@ -1059,40 +987,7 @@ const BillForm = ({ bill, onCancel }) => {
         </div>
       )}
 
-      {/* Attachment Preview Modal */}
-      {showAttachmentModal && selectedAttachment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {typeof selectedAttachment === 'string' ? selectedAttachment.split('/').pop() || 'Attachment' : 'Attachment'}
-              </h3>
-              <button
-                onClick={closeAttachmentModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <FaTimes className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[70vh]">
-              {selectedAttachment.toLowerCase().includes('.pdf') ? (
-                <iframe 
-                  src={selectedAttachment} 
-                  className="w-full h-96 border rounded" 
-                  title="PDF Preview"
-                />
-              ) : (
-                <img 
-                  src={selectedAttachment} 
-                  alt="Attachment Preview" 
-                  className="max-w-full max-h-96 mx-auto rounded border" 
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

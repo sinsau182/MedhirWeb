@@ -6,6 +6,7 @@ import { FaRupeeSign, FaTimes, FaFilePdf } from 'react-icons/fa';
 import axios from 'axios';
 import getConfig from 'next/config';
 import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -175,7 +176,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
           discount: discount ? parseFloat(discount) : null
         }, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+            'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`,
             'Content-Type': 'application/json'
           }
         });
@@ -184,7 +185,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
         // Always use FormData since backend expects multipart/form-data
         await axios.post(`${API_BASE_URL}/leads/${lead.leadId}/convert-with-docs`, formData, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`
             // Don't set Content-Type for FormData, let browser set it automatically to multipart/form-data
           }
         });

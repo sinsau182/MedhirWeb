@@ -545,15 +545,6 @@ const LeadManagementContent = ({ role }) => {
         newPipelineName: pipelines[newPipelineIndex]?.name
       });
       
-      if (currentPipelineIndex === 0 && newPipelineIndex === 1) {
-        // Show assignment modal for stage 0 -> stage 1 transition
-        console.log("Opening assignment modal for lead:", lead);
-        setSelectedLeadForAssignment(lead);
-        setTargetPipelineId(newPipelineId);
-        setShowAssignModal(true);
-        return;
-      }
-
       // If pipeline requires a form, open the modal instead of moving directly
       if (newPipeline.formType === "CONVERTED") {
         setSelectedLead({ ...lead, pipelineId: newPipelineId });
@@ -566,6 +557,26 @@ const LeadManagementContent = ({ role }) => {
       } else if (newPipeline.formType === "LOST") {
         setSelectedLead({ ...lead, pipelineId: newPipelineId });
         setShowLostModal(true);
+        return;
+      } else if (newPipeline.formType === "ASSIGNED") {
+        setSelectedLeadForAssignment(lead);
+        setTargetPipelineId(newPipelineId);
+        setShowAssignModal(true);
+        return;
+      } else if (newPipeline.formType === "SEMI") {
+        // Note: Semi contacted modal is not implemented in LeadManagement
+        console.log("Semi contacted form type detected but modal not implemented");
+        dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
+        return;
+      } else if (newPipeline.formType === "POTENTIAL") {
+        // Note: Potential modal is not implemented in LeadManagement
+        console.log("Potential form type detected but modal not implemented");
+        dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
+        return;
+      } else if (newPipeline.formType === "HIGHPOTENTIAL") {
+        // Note: High potential modal is not implemented in LeadManagement
+        console.log("High potential form type detected but modal not implemented");
+        dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
         return;
       }
 
@@ -754,6 +765,10 @@ const LeadManagementContent = ({ role }) => {
                     <option value="CONVERTED">Converted</option>
                     <option value="JUNK">Junk</option>
                     <option value="LOST">Lost</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="SEMI">Semi Contacted</option>
+                    <option value="POTENTIAL">Potential</option>
+                    <option value="HIGHPOTENTIAL">High Potential</option>
                     <option value="ONBOARDING">Onboarding</option>
                     <option value="APPROVAL">Approval</option>
                     <option value="CUSTOM">Custom</option>
