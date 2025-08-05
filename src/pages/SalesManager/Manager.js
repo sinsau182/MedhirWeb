@@ -22,6 +22,7 @@ import AddLeadModal from "@/components/Sales/AddLeadModal";
 import AssignLeadModal from "@/components/Sales/AssignLeadModal";
 import SemiContactedModal from "@/components/Sales/SemiContactedModal";
 import PotentialModal from "@/components/Sales/PotentialModal";
+import HighPotentialModal from "@/components/Sales/HighPotentialModal";
 import KanbanBoardClientOnly from "@/components/Sales/KanbanBoardClientOnly";
 import {
   fetchLeads,
@@ -142,6 +143,11 @@ const ManagerContent = ({ role }) => {
   const [showPotentialModal, setShowPotentialModal] = useState(false);
   const [selectedLeadForPotential, setSelectedLeadForPotential] = useState(null);
   const [targetPipelineIdForPotential, setTargetPipelineIdForPotential] = useState(null);
+
+  // High potential modal state
+  const [showHighPotentialModal, setShowHighPotentialModal] = useState(false);
+  const [selectedLeadForHighPotential, setSelectedLeadForHighPotential] = useState(null);
+  const [targetPipelineIdForHighPotential, setTargetPipelineIdForHighPotential] = useState(null);
 
   // Manager-specific state (retained from original)
   const [editingLead, setEditingLead] = useState(null);
@@ -367,6 +373,7 @@ const ManagerContent = ({ role }) => {
 
     if (String(currentPipelineId) !== String(newPipelineId)) {
       // Check if moving from stage index 0 to stage index 1
+      // Log pipeline information for debugging
       const currentPipelineIndex = pipelines.findIndex(p => 
         p.pipelineId === currentPipelineId || p.stageId === currentPipelineId
       );
@@ -380,20 +387,12 @@ const ManagerContent = ({ role }) => {
         currentPipelineId,
         newPipelineId,
         currentPipelineName: pipelines[currentPipelineIndex]?.name,
-        newPipelineName: pipelines[newPipelineIndex]?.name
+        newPipelineName: pipelines[newPipelineIndex]?.name,
+        newPipelineFormType: newPipeline.formType
       });
-      
-      if (currentPipelineIndex === 0 && newPipelineIndex === 1) {
-        // Show assignment modal for stage 0 -> stage 1 transition
-        console.log("Opening assignment modal for lead:", lead);
-        setSelectedLeadForAssignment(lead);
-        setTargetPipelineId(newPipelineId);
-        setShowAssignModal(true);
-        return;
-      }
 
-      // Check if moving to "Semi (Contacted)" stage
-      if (newPipeline.name.toLowerCase() === "semi (contacted)") {
+      // Check if moving to stages with specific form types
+      if (newPipeline.formType === "SEMI") {
         console.log("Opening semi contacted modal for lead:", lead);
         setSelectedLeadForSemiContacted(lead);
         setTargetPipelineIdForSemiContacted(newPipelineId);
@@ -401,12 +400,19 @@ const ManagerContent = ({ role }) => {
         return;
       }
 
-      // Check if moving to "Potential" stage
-      if (newPipeline.name.toLowerCase() === "potential") {
+      if (newPipeline.formType === "POTENTIAL") {
         console.log("Opening potential modal for lead:", lead);
         setSelectedLeadForPotential(lead);
         setTargetPipelineIdForPotential(newPipelineId);
         setShowPotentialModal(true);
+        return;
+      }
+
+      if (newPipeline.formType === "HIGHPOTENTIAL") {
+        console.log("Opening high potential modal for lead:", lead);
+        setSelectedLeadForHighPotential(lead);
+        setTargetPipelineIdForHighPotential(newPipelineId);
+        setShowHighPotentialModal(true);
         return;
       }
 
@@ -422,6 +428,11 @@ const ManagerContent = ({ role }) => {
       } else if (newPipeline.formType === "LOST") {
         setSelectedLead({ ...lead, pipelineId: newPipelineId });
         setShowLostModal(true);
+        return;
+      } else if (newPipeline.formType === "ASSIGNED") {
+        setSelectedLeadForAssignment(lead);
+        setTargetPipelineId(newPipelineId);
+        setShowAssignModal(true);
         return;
       }
 
@@ -550,8 +561,13 @@ const ManagerContent = ({ role }) => {
       await dispatch(updateLead({
         leadId: assignmentData.leadId,
         salesRep: assignmentData.salesRep,
-        designer: assignmentData.designer,
-        pipelineId: targetPipelineId
+        designer: assignmentData.designer
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: assignmentData.leadId,
+        newPipelineId: targetPipelineId
       }));
       
       // Refresh leads to get the updated grouped format
@@ -571,8 +587,13 @@ const ManagerContent = ({ role }) => {
         floorPlan: semiContactedData.floorPlan,
         estimatedBudget: semiContactedData.estimatedBudget,
         firstMeetingDate: semiContactedData.firstMeetingDate,
-        priority: semiContactedData.priority,
-        pipelineId: targetPipelineIdForSemiContacted
+        priority: semiContactedData.priority
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: semiContactedData.leadId,
+        newPipelineId: targetPipelineIdForSemiContacted
       }));
       
       // Refresh leads to get the updated grouped format
@@ -591,14 +612,47 @@ const ManagerContent = ({ role }) => {
         leadId: potentialData.leadId,
         requirements: potentialData.requirements,
         consultationFee: potentialData.consultationFee,
-        designConsultation: potentialData.designConsultation,
-        pipelineId: targetPipelineIdForPotential
+        designConsultation: potentialData.designConsultation
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: potentialData.leadId,
+        newPipelineId: targetPipelineIdForPotential
       }));
       
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
       console.error("Potential update error:", error);
+      throw error;
+    }
+  };
+
+  // High potential handler for HighPotentialModal
+  const handleHighPotentialSuccess = async (highPotentialData) => {
+    try {
+      // Update the lead with high potential information
+      await dispatch(updateLead({
+        leadId: highPotentialData.leadId,
+        quotationDetails: highPotentialData.quotationDetails,
+        initialQuotedAmount: highPotentialData.initialQuotedAmount,
+        finalQuotedAmount: highPotentialData.finalQuotedAmount,
+        discountPercent: highPotentialData.discountPercent,
+        designTimeline: highPotentialData.designTimeline,
+        completionTimeline: highPotentialData.completionTimeline
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: highPotentialData.leadId,
+        newPipelineId: targetPipelineIdForHighPotential
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("High potential update error:", error);
       throw error;
     }
   };
@@ -847,6 +901,10 @@ const ManagerContent = ({ role }) => {
                     <option value="CONVERTED">Converted</option>
                     <option value="JUNK">Junk</option>
                     <option value="LOST">Lost</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="SEMI">Semi Contacted</option>
+                    <option value="POTENTIAL">Potential</option>
+                    <option value="HIGHPOTENTIAL">High Potential</option>
                     <option value="ONBOARDING">Onboarding</option>
                     <option value="APPROVAL">Approval</option>
                     <option value="CUSTOM">Custom</option>
@@ -954,6 +1012,16 @@ const ManagerContent = ({ role }) => {
         }}
         lead={selectedLeadForPotential}
         onSuccess={handlePotentialSuccess}
+      />
+      <HighPotentialModal
+        isOpen={showHighPotentialModal}
+        onClose={() => {
+          setShowHighPotentialModal(false);
+          setSelectedLeadForHighPotential(null);
+          setTargetPipelineIdForHighPotential(null);
+        }}
+        lead={selectedLeadForHighPotential}
+        onSuccess={handleHighPotentialSuccess}
       />
     </div>
   );
