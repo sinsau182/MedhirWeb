@@ -33,7 +33,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         id: index + 1,
         itemName: item.itemName || '',
         description: item.description || '',
-        hsnCode: item.hsnOrSac || '',
+        //hsnCode: item.hsnOrSac || '',
         gstRate: item.gstPercent || 18,
         quantity: item.quantity || 1,
         rate: item.rate || 0,
@@ -42,7 +42,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         id: 1,
         itemName: 'Sample Item',
         description: 'A sample item for this PO.',
-        hsnCode: '998877',
+        //hsnCode: '998877',
         gstRate: 18,
         quantity: 2,
         rate: 150,
@@ -68,7 +68,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         id: 1,
         itemName: 'Sample Item',
         description: 'A sample item for this PO.',
-        hsnCode: '998877',
+        //hsnCode: '998877',
         gstRate: 18,
         quantity: 2,
         rate: 150,
@@ -158,7 +158,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       id: Date.now(),
       itemName: '',
       description: '',
-      hsnCode: '',
+      //hsnCode: '',
       gstRate: 18,
       quantity: 1,
       rate: 0,
@@ -235,7 +235,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       companyId: formData.company?._id || formData.company?.companyId || companyId, // Use selected company ID
       companyAddress: formData.shippingAddress,
       vendorId: selectedVendor.vendorId,
-      gstin: selectedVendor.gstin,
+      //gstin: selectedVendor.gstin,
       vendorAddress: selectedVendor.addressLine1,
       tdsPercentage: selectedVendor.tdsPercentage || 0,
       purchaseOrderDate: formData.orderDate,
@@ -251,7 +251,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         return {
           itemName: item.itemName,
           description: item.description,
-          hsnOrSac: item.hsnCode,
+          //hsnOrSac: item.hsnCode,
           quantity: qty,
           uom: item.unit,
           rate: rate,
@@ -319,7 +319,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
               </select>
               {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
             </div>
-            <div>
+            {/*<div>
               <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
               <input 
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
@@ -327,8 +327,8 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 placeholder="Auto-filled from vendor"
                 readOnly 
               />
-            </div>
-            <div>
+            </div>*/}
+            {/*<div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
               <textarea 
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
@@ -337,7 +337,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 rows={3}
                 readOnly 
               />
-            </div>
+            </div>*/}
           </div>
           
           {/* PO Details */}
@@ -464,7 +464,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                     <tr className="text-left text-gray-600 font-medium">
                       <th className="p-3 w-1/4">Item</th>
                       <th className="p-3 w-1/3">Description</th>
-                      <th className="p-3">HSN</th>
+                      {/*<th className="p-3">HSN</th>*/}
                       <th className="p-3">Qty</th>
                       <th className="p-3">Unit</th>
                       <th className="p-3">Rate</th>
@@ -477,7 +477,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                         <tr key={item.id} className="border-t">
                           <td className="p-2"><input type="text" placeholder="Item Name" value={item.itemName} onChange={e => handleItemChange(item.id, 'itemName', e.target.value)} className={`w-full border rounded-md p-2 ${errors[`itemName_${index}`] ? 'border-red-400' : 'border-gray-200'}`} /></td>
                           <td className="p-2"><input type="text" placeholder="Description" value={item.description} onChange={e => handleItemChange(item.id, 'description', e.target.value)} className="w-full border-gray-200 rounded-md p-2" /></td>
-                          <td className="p-2"><input type="text" placeholder="HSN" value={item.hsnCode} onChange={e => handleItemChange(item.id, 'hsnCode', e.target.value)} className="w-full border-gray-200 rounded-md p-2" /></td>
+                          {/*<td className="p-2"><input type="text" placeholder="HSN" value={item.hsnCode} onChange={e => handleItemChange(item.id, 'hsnCode', e.target.value)} className="w-full border-gray-200 rounded-md p-2" /></td>*/}
                           <td className="p-2"><input type="number" placeholder="1" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)} className={`w-20 border rounded-md p-2 ${errors[`quantity_${index}`] ? 'border-red-400' : 'border-gray-200'}`} /></td>
                           <td className="p-2">
                             <select value={item.unit} onChange={e => handleItemChange(item.id, 'unit', e.target.value)} className="w-full border-gray-200 rounded-md p-2">

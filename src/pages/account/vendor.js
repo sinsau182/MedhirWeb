@@ -348,7 +348,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         id: purchaseOrders.length + 1,
         poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
         vendorName: poData.vendorName,
-        vendorGstin: poData.vendorGstin,
+        
         orderDate: poData.orderDate,
         deliveryDate: poData.deliveryDate,
         status: poData.status || 'Draft',
@@ -509,8 +509,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
+                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
@@ -535,10 +534,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{bill.gstin}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                                      <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -624,7 +620,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PO Number</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
+                      
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
@@ -650,9 +646,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             })()}
                           </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{po.gstin}</span>
-                        </td>
+                       
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
                         
@@ -689,7 +683,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             e.stopPropagation();
                             handlePurchaseOrderPreview(po);
                           }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
                           title="Preview Purchase Order"
                         >
                           <FaEye className="w-4 h-4" />
@@ -843,7 +837,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
-                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

@@ -47,7 +47,7 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Vendor</h3>
                     <p className="font-bold text-gray-800">{vendor?.name || vendor?.vendorName || 'N/A'}</p>
                     <p className="text-gray-600 text-sm whitespace-pre-line">{vendor?.address || ''}</p>
-                    <p className="text-gray-600 text-sm">GSTIN: {vendor?.gstin || 'N/A'}</p>
+                    
                 </div>
                 <div>
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Ship To</h3>
