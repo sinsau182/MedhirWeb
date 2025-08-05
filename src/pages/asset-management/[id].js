@@ -309,7 +309,7 @@ const AssetDetailPage = () => {
                 <div className="p-6 text-center">
                     <FaExclamationTriangle className="text-4xl text-yellow-500 mx-auto mb-4" />
                     <h2 className="text-2xl font-bold text-gray-800 mb-2">Asset Not Found</h2>
-                    <p className="text-gray-600 mb-4">The asset you're looking for doesn't exist or couldn't be loaded.</p>
+                    <p className="text-gray-600 mb-4">The asset you&apos;re looking for doesn&apos;t exist or couldn&apos;t be loaded.</p>
                     <button
                         onClick={() => router.push('/asset-management')}
                         className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
