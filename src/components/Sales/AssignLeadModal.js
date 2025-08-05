@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaUserTie, FaCheck } from "react-icons/fa";
+import { FaTimes, FaUserTie, FaUserCog, FaCheck } from "react-icons/fa";
 import { toast } from "sonner";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchLeadById } from "@/redux/slices/leadsSlice";
 
 const AssignLeadModal = ({ 
   isOpen, 
@@ -11,39 +9,29 @@ const AssignLeadModal = ({
   onAssign,
   salesEmployees = [] // Array of available sales employees
 }) => {
-    const dispatch = useDispatch();
-    const [selectedSalesRep, setSelectedSalesRep] = useState("");
+  const [selectedSalesRep, setSelectedSalesRep] = useState("");
+  const [selectedDesigner, setSelectedDesigner] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { lead: leadData } = useSelector((state) => state.leads);
-  console.log("AssignLeadModal - Lead Data:", leadData);
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setSelectedSalesRep("");
+      setSelectedDesigner("");
       setIsSubmitting(false);
-      dispatch(fetchLeadById(lead.leadId));
-      
-             // Debug: Log the employee data
-       console.log("AssignLeadModal - All Team Members:", salesEmployees);
-       console.log("AssignLeadModal - Total Employees:", salesEmployees.length);
     }
-  }, [isOpen, salesEmployees, lead]);
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Enhanced validation
     if (!selectedSalesRep) {
       toast.error("Please select a Sales Representative");
       return;
     }
 
-    // Validate that selected employee exists in the list
-    const salesRepExists = salesEmployees.some(emp => emp.employeeId === selectedSalesRep);
-
-    if (!salesRepExists) {
-      toast.error("Selected Sales Representative is not available");
+    if (!selectedDesigner) {
+      toast.error("Please select a Sales Designer");
       return;
     }
 
@@ -52,7 +40,8 @@ const AssignLeadModal = ({
     try {
       await onAssign({
         leadId: lead.leadId,
-        salesRep: selectedSalesRep
+        salesRep: selectedSalesRep,
+        designer: selectedDesigner
       });
       
       toast.success("Lead assigned successfully!");
@@ -85,7 +74,7 @@ const AssignLeadModal = ({
                 Assign Lead
               </h2>
               <p className="text-sm text-gray-600">
-                Assign this lead to a sales representative
+                Assign this lead to sales team members
               </p>
             </div>
           </div>
@@ -112,15 +101,15 @@ const AssignLeadModal = ({
               </div>
               <div>
                 <span className="font-medium text-gray-700">Contact:</span>
-                <p className="text-gray-900">{leadData?.contactNumber || "N/A"}</p>
+                <p className="text-gray-900">{lead?.contactNumber || "N/A"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Email:</span>
-                <p className="text-gray-900">{leadData?.email || "N/A"}</p>
+                <p className="text-gray-900">{lead?.email || "N/A"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Project Type:</span>
-                <p className="text-gray-900">{leadData?.projectType || "N/A"}</p>
+                <p className="text-gray-900">{lead?.projectType || "N/A"}</p>
               </div>
             </div>
           </div>
@@ -133,25 +122,49 @@ const AssignLeadModal = ({
                 <FaUserTie className="w-4 h-4 text-blue-600" />
                 Sales Representative *
               </label>
-                             <select
-                 value={selectedSalesRep}
-                 onChange={(e) => setSelectedSalesRep(e.target.value)}
-                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                 required
-               >
-                                   <option value="">Select Sales Representative</option>
-                  {salesEmployees.length === 0 ? (
-                    <option value="" disabled>No employees available</option>
-                  ) : (
-                    salesEmployees.map((employee) => (
-                      <option key={employee.employeeId} value={employee.employeeId}>
-                        {employee.name} {employee.role ? `(${employee.role})` : ''}
-                      </option>
-                    ))
-                  )}
-               </select>
+              <select
+                value={selectedSalesRep}
+                onChange={(e) => setSelectedSalesRep(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                required
+              >
+                <option value="">Select Sales Representative</option>
+                {salesEmployees
+                  .filter(emp => emp.role === 'SALES_REP' || emp.role === 'SALES_MANAGER')
+                  .map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name} ({employee.role})
+                    </option>
+                  ))}
+              </select>
               <p className="text-xs text-gray-500 mt-1">
                 Choose the sales representative who will handle this lead
+              </p>
+            </div>
+
+            {/* Sales Designer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <FaUserCog className="w-4 h-4 text-purple-600" />
+                Sales Designer *
+              </label>
+              <select
+                value={selectedDesigner}
+                onChange={(e) => setSelectedDesigner(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                required
+              >
+                <option value="">Select Sales Designer</option>
+                {salesEmployees
+                  .filter(emp => emp.role === 'DESIGNER' || emp.role === 'SALES_DESIGNER')
+                  .map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name} ({employee.role})
+                    </option>
+                  ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose the designer who will work on this project
               </p>
             </div>
 
@@ -160,7 +173,8 @@ const AssignLeadModal = ({
               <h4 className="font-medium text-blue-800 mb-2">Assignment Summary</h4>
               <div className="text-sm text-blue-700 space-y-1">
                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                                 <p><strong>Sales Rep:</strong> {selectedSalesRep ? salesEmployees.find(emp => emp.employeeId === selectedSalesRep)?.name : "Not selected"}</p>
+                <p><strong>Sales Rep:</strong> {selectedSalesRep ? salesEmployees.find(emp => emp.id === selectedSalesRep)?.name : "Not selected"}</p>
+                <p><strong>Designer:</strong> {selectedDesigner ? salesEmployees.find(emp => emp.id === selectedDesigner)?.name : "Not selected"}</p>
               </div>
             </div>
           </form>
@@ -179,7 +193,7 @@ const AssignLeadModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || !selectedSalesRep}
+            disabled={isSubmitting || !selectedSalesRep || !selectedDesigner}
             className="px-6 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
           >
             {isSubmitting ? (
