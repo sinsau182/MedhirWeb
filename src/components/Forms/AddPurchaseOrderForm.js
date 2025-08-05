@@ -3,15 +3,18 @@ import { FaBuilding, FaPaperclip, FaPlus, FaTrash, FaShippingFast, FaFilePdf, Fa
 import PurchaseOrderPreview from '../Previews/PurchaseOrderPreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
+import { fetchCompanies } from '../../redux/slices/companiesSlice';
 import { createPurchaseOrder, updatePurchaseOrder } from '../../redux/slices/PurchaseOrderSlice';
 
 const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = null }) => {
   const companyId = sessionStorage.getItem('employeeCompanyId');
   const dispatch = useDispatch();
   const { vendors, loading: vendorsLoading, error } = useSelector((state) => state.vendors);
+  const { companies, loading: companiesLoading } = useSelector((state) => state.companies);
 
   useEffect(() => {
     dispatch(fetchVendors());
+    dispatch(fetchCompanies());
   }, [dispatch]);
 
   // Transform API data to form format for edit mode
@@ -93,22 +96,23 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
   // Set company when in edit mode
   useEffect(() => {
-    if (mode === 'edit' && initialData && initialData.companyAddress) {
-      const company = companies.find(c => c.address.includes(initialData.companyAddress) || initialData.companyAddress.includes(c.name));
+    if (mode === 'edit' && initialData && initialData.companyAddress && companies && companies.length > 0) {
+      const company = companies.find(c => 
+        c.regAdd?.includes(initialData.companyAddress) || 
+        initialData.companyAddress?.includes(c.name) ||
+        c.name?.includes(initialData.companyAddress)
+      );
       if (company) {
         setFormData(prev => ({
           ...prev,
           company: company,
-          shippingAddress: initialData.companyAddress
+          shippingAddress: company.regAdd || company.address || initialData.companyAddress
         }));
       }
     }
-  }, [mode, initialData]);
+  }, [mode, initialData, companies]);
 
-  const [companies] = useState([
-    { id: 1, name: 'ABC Pvt Ltd', gstin: '27AABCU9876A1Z5', address: '1st Floor, Innovation Tower,\nCybercity, Ebene,\nMauritius' },
-    { id: 2, name: 'DEF Solutions', gstin: '29AABCD1234A1Z5', address: 'Global Village Tech Park,\nRR Nagar, Bangalore,\nIndia - 560098' },
-  ]);
+  // Companies are now fetched from Redux state
 
   const unitOptions = ['PCS', 'KG', 'LTR', 'MTR', 'NOS', 'BOX', 'SET'];
   const gstRates = [0, 5, 12, 18, 28];
@@ -128,11 +132,11 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
   const handleCompanyChange = (e) => {
     const companyId = e.target.value;
-    const selected = companies.find(c => c.id === Number(companyId));
+    const selected = companies.find(c => c._id === companyId || c.companyId === companyId);
     setFormData(prev => ({
         ...prev,
         company: selected,
-        shippingAddress: selected ? selected.address : ''
+        shippingAddress: selected ? selected.regAdd : ''
     }));
     if (errors.company) setErrors(prev => ({...prev, company: null}));
   };
@@ -228,7 +232,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
     const poData = {
       purchaseOrderId: formData.poNumber,
       purchaseOrderNumber: formData.poNumber,
-      companyId: companyId,
+      companyId: formData.company?._id || formData.company?.companyId || companyId, // Use selected company ID
       companyAddress: formData.shippingAddress,
       vendorId: selectedVendor.vendorId,
       gstin: selectedVendor.gstin,
@@ -264,6 +268,8 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
     };
 
     console.log('Purchase Order Data:', poData);
+    console.log('Selected Company:', formData.company);
+    console.log('Company ID being saved:', formData.company?._id || formData.company?.companyId || companyId);
 
     // Create FormData for multipart upload
     const formDataToSend = new FormData();
@@ -387,11 +393,16 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
               <label className="block text-sm font-medium text-gray-700 mb-2">Company <span className="text-red-500">*</span></label>
               <select
                 className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-300'}`}
-                value={formData.company?.id || ''}
+                value={formData.company?._id || formData.company?.companyId || ''}
                 onChange={handleCompanyChange}
+                disabled={companiesLoading}
               >
-                <option value="">Select Company</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="">{companiesLoading ? 'Loading companies...' : 'Select Company'}</option>
+                {companies && companies.map(c => (
+                  <option key={c._id || c.companyId} value={c._id || c.companyId}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
               {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company}</p>}
             </div>

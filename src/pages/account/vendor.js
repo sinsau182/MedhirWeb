@@ -4,6 +4,7 @@ import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, F
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
 import VendorPreview from '../../components/Previews/VendorPreview';
+import PurchaseOrderPreview from '../../components/Previews/PurchaseOrderPreview';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,10 +12,14 @@ import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBills } from '../../redux/slices/BillSlice';
 import { fetchPayments } from '../../redux/slices/paymentSlice';
 import { fetchPurchaseOrders } from '../../redux/slices/PurchaseOrderSlice';
+import { fetchCompanies } from '../../redux/slices/companiesSlice';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import { generatePresignedUrl, fetchImageFromMinio } from '../../redux/slices/minioSlice';
+import getConfig from 'next/config';
+
+const { publicRuntimeConfig } = getConfig();
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -87,6 +92,7 @@ const Vendor = () => {
   const { bills, loading: billsLoading, error: billsError } = useSelector((state) => state.bills);
   const { payments, loading: paymentsLoading, error: paymentsError } = useSelector((state) => state.payments);
   const { purchaseOrders, loading: purchaseOrdersLoading, error: purchaseOrdersError } = useSelector((state) => state.purchaseOrders);
+  const { companies } = useSelector((state) => state.companies);
   // State for attachment modal
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [selectedAttachments, setSelectedAttachments] = useState([]);
@@ -98,14 +104,18 @@ const Vendor = () => {
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
    const [previewFile, setPreviewFile] = useState(null);
+   const [showPurchaseOrderPreview, setShowPurchaseOrderPreview] = useState(false);
+   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
    // State for vendor preview modal
    const [showVendorPreview, setShowVendorPreview] = useState(false);
+   const [formData, setFormData] = useState({ attachments: [] });
    const [previewVendorData, setPreviewVendorData] = useState(null);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
       dispatch(fetchPayments());
       dispatch(fetchPurchaseOrders());
+      dispatch(fetchCompanies());
     }, [dispatch]);
 
     console.log(bills);
@@ -167,6 +177,115 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     setEditingPO(po);
     setShowAddForm('po');
   };
+
+  const handlePurchaseOrderPreview = async (po) => {
+    // Transform the purchase order data to match the preview component's expected format
+    const vendor = vendors.find(v => v.vendorId === po.vendorId);
+    console.log('Original PO data:', po);
+    console.log('Found vendor:', vendor);
+    
+    // Get company details - use the company that was selected when creating the PO
+    let companyDetails = {
+      name: 'Your Company',
+      address: 'Your Company Address'
+    };
+    
+    try {
+      // First, try to find the company using the companyId from the purchase order
+      // This should be the company that was selected when creating the PO
+      const poCompanyId = po.companyId;
+      console.log('PO Company ID:', poCompanyId);
+      console.log('Available companies:', companies);
+      
+      if (poCompanyId && companies && companies.length > 0) {
+        // Find the company that was selected when creating this PO
+        const company = companies.find(c => c.companyId === poCompanyId || c._id === poCompanyId);
+        console.log('Found company for this PO:', company);
+        
+        if (company) {
+          companyDetails = {
+            name: company.name || 'Your Company',
+            address: company.regAdd || 'Your Company Address'
+          };
+          console.log('Processed company details for PO:', companyDetails);
+        } else {
+          console.log('Company not found for this PO, trying to find by address match');
+          
+          // If company not found by ID, try to find by address matching
+          const company = companies.find(c => 
+            c.regAdd === po.companyAddress || 
+            c.name === po.companyAddress ||
+            po.companyAddress?.includes(c.name) ||
+            c.regAdd?.includes(po.companyAddress)
+          );
+          
+          if (company) {
+            companyDetails = {
+              name: company.name || 'Your Company',
+              address: company.regAdd || 'Your Company Address'
+            };
+            console.log('Found company by address match:', companyDetails);
+          } else {
+            console.log('No company match found, using logged-in company as fallback');
+            
+            // Fallback to logged-in company if no match found
+            const loggedInCompanyId = sessionStorage.getItem('employeeCompanyId');
+            if (loggedInCompanyId) {
+              const loggedInCompany = companies.find(c => c.companyId === loggedInCompanyId || c._id === loggedInCompanyId);
+              if (loggedInCompany) {
+                companyDetails = {
+                  name: loggedInCompany.name || 'Your Company',
+                  address: loggedInCompany.regAdd || 'Your Company Address'
+                };
+                console.log('Using logged-in company as fallback:', companyDetails);
+              }
+            }
+          }
+        }
+      } else {
+        console.log('No PO company ID or companies loaded, using logged-in company');
+        
+        // Fallback to logged-in company
+        const loggedInCompanyId = sessionStorage.getItem('employeeCompanyId');
+        if (loggedInCompanyId && companies && companies.length > 0) {
+          const loggedInCompany = companies.find(c => c.companyId === loggedInCompanyId || c._id === loggedInCompanyId);
+          if (loggedInCompany) {
+            companyDetails = {
+              name: loggedInCompany.name || 'Your Company',
+              address: loggedInCompany.regAdd || 'Your Company Address'
+            };
+            console.log('Using logged-in company:', companyDetails);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching company details:', error);
+    }
+    
+    const transformedPo = {
+      ...po,
+      poNumber: po.purchaseOrderNumber,
+      orderDate: po.purchaseOrderDate,
+      deliveryDate: po.purchaseOrderDeliveryDate,
+      vendor: vendor ? {
+        name: vendor.vendorName,
+        address: vendor.addressLine1,
+        gstin: vendor.gstin
+      } : null,
+      company: companyDetails,
+      shippingAddress: po.companyAddress || companyDetails.address,
+      items: po.purchaseOrderLineItems || [],
+      notes: po.notes || '',
+      subtotal: po.totalBeforeGST || 0,
+      totalGst: po.totalGST || 0,
+      grandTotal: po.finalAmount || 0
+    };
+    
+    console.log('Final transformed PO for preview:', transformedPo);
+    console.log('Transformed PO data:', transformedPo);
+    setSelectedPurchaseOrder(transformedPo);
+    setShowPurchaseOrderPreview(true);
+  };
   
   const handleAttachmentChange = (e) => {
     const files = Array.from(e.target.files);
@@ -190,23 +309,9 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   };
 
   const handlePaymentSubmit = (paymentData) => {
-    setPayments(prev => [...prev, {
-      id: prev.length + 1,
-      paymentNo: `PAY-${String(prev.length + 1001).padStart(4, '0')}`,
-      paymentDate: paymentData.paymentDate,
-      vendorName: paymentData.vendor,
-      billReference: paymentData.selectedBills.map(bill => bill.billNo).join(', '),
-      gstin: paymentData.gstin,
-      paymentMethod: paymentData.paymentMethod,
-      journal: paymentData.journal,
-      amount: paymentData.totalAmount,
-     
-      status: 'Draft',
-      tdsApplied: paymentData.tdsApplied ? 'Yes' : 'No',
-      company: paymentData.company,
-      paymentReference: paymentData.reference,
-      attachments: 'No'
-    }]);
+    // The payment submission is handled by the form component itself
+    // We just need to refresh the payments list and close the form
+    dispatch(fetchPayments());
     setShowAddForm(null);
     console.log('Payment added successfully:', paymentData);
   };
@@ -524,6 +629,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -576,6 +682,18 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                                    po.attachmentUrls === 'Yes' || 
                                    po.attachmentUrls === true ? '📎' : '-'}
                              </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePurchaseOrderPreview(po);
+                          }}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                          title="Preview Purchase Order"
+                        >
+                          <FaEye className="w-4 h-4" />
+                        </button>
                       </td>
 
                       </tr>
@@ -869,6 +987,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
            onClose={() => setShowVendorPreview(false)}
          />
        )}
+
+      {/* Purchase Order Preview Modal */}
+      {showPurchaseOrderPreview && selectedPurchaseOrder && (
+        <PurchaseOrderPreview
+          poData={selectedPurchaseOrder}
+          onClose={() => setShowPurchaseOrderPreview(false)}
+        />
+      )}
     </div>
   );
 };
