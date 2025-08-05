@@ -142,13 +142,13 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     }
 
     // Alternate phone validation
-    if (formData.alternatePhone.trim()) {
-      if (!/^\d{10}$/.test(formData.alternatePhone.replace(/\D/g, ''))) {
-        newErrors.alternatePhone = 'Alternate phone must be exactly 10 digits';
-      } else if (formData.alternatePhone.replace(/\D/g, '').startsWith('0')) {
-        newErrors.alternatePhone = 'Alternate phone cannot start with 0';
-      } else if (formData.alternatePhone.replace(/\D/g, '') === formData.contactNumber.replace(/\D/g, '')) {
-        newErrors.alternatePhone = 'Alternate phone cannot be same as main contact number';
+    if (formData.alternateContactNumber.trim()) {
+      if (!/^\d{10}$/.test(formData.alternateContactNumber.replace(/\D/g, ''))) {
+        newErrors.alternateContactNumber = 'Alternate phone must be exactly 10 digits';
+      } else if (formData.alternateContactNumber.replace(/\D/g, '').startsWith('0')) {
+        newErrors.alternateContactNumber = 'Alternate phone cannot start with 0';
+      } else if (formData.alternateContactNumber.replace(/\D/g, '') === formData.contactNumber.replace(/\D/g, '')) {
+        newErrors.alternateContactNumber = 'Alternate phone cannot be same as main contact number';
       }
     }
 
@@ -235,7 +235,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         break;
       
       case 'contactNumber':
-      case 'alternatePhone':
+      case 'alternateContactNumber':
         // Only allow digits, max 10 characters
         processedValue = value.replace(/\D/g, '').slice(0, 10);
         break;
@@ -344,11 +344,11 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               <Input
                 type="tel"
                 placeholder="Enter alternate phone number"
-                value={formData.alternatePhone}
-                onChange={(e) => handleInputChange('alternatePhone', e.target.value)}
-                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.alternatePhone ? 'border-red-500' : ''}`}
+                value={formData.alternateContactNumber}
+                onChange={(e) => handleInputChange('alternateContactNumber', e.target.value)}
+                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.alternateContactNumber ? 'border-red-500' : ''}`}
               />
-              {errors.alternatePhone && <p className="text-red-500 text-xs mt-1">{errors.alternatePhone}</p>}
+              {errors.alternateContactNumber && <p className="text-red-500 text-xs mt-1">{errors.alternateContactNumber}</p>}
             </div>
 
             
