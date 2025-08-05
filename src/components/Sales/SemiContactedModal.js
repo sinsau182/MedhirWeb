@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaFileAlt, FaCalendarAlt, FaDollarSign, FaExclamationTriangle, FaCheck } from "react-icons/fa";
 import { toast } from "sonner";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchLeadById } from "@/redux/slices/leadsSlice";
 
 const SemiContactedModal = ({ 
   isOpen, 
@@ -8,6 +10,7 @@ const SemiContactedModal = ({
   lead, 
   onSuccess
 }) => {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     floorPlan: "",
     estimatedBudget: "",
@@ -16,9 +19,13 @@ const SemiContactedModal = ({
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { lead: leadData } = useSelector((state) => state.leads);
+  console.log("SemiContactedModal - Lead Data:", leadData);
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
+      dispatch(fetchLeadById(lead.leadId));
       setFormData({
         floorPlan: "",
         estimatedBudget: "",
@@ -27,7 +34,7 @@ const SemiContactedModal = ({
       });
       setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, lead]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -188,15 +195,15 @@ const SemiContactedModal = ({
               </div>
               <div>
                 <span className="font-medium text-gray-700">Contact:</span>
-                <p className="text-gray-900">{lead?.contactNumber || "N/A"}</p>
+                <p className="text-gray-900">{leadData?.contactNumber || "N/A"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Email:</span>
-                <p className="text-gray-900">{lead?.email || "N/A"}</p>
+                <p className="text-gray-900">{leadData?.email || "N/A"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Project Type:</span>
-                <p className="text-gray-900">{lead?.projectType || "N/A"}</p>
+                <p className="text-gray-900">{leadData?.projectType || "N/A"}</p>
               </div>
             </div>
           </div>

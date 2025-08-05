@@ -254,7 +254,7 @@ const OdooDetailBody = ({
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
     contactNumber: lead.contactNumber || "",
-    alternatePhone: lead.alternatePhone || "",
+    alternateContactNumber: lead.alternateContactNumber || "",
     email: lead.email || "",
   });
 
@@ -301,7 +301,7 @@ const OdooDetailBody = ({
         processedValue = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
         break;
       case 'contactNumber':
-      case 'alternatePhone':
+      case 'alternateContactNumber':
         // Only allow digits, max 10 digits
         processedValue = value.replace(/\D/g, '').slice(0, 10);
         break;
@@ -439,13 +439,13 @@ const OdooDetailBody = ({
       }
       
       // Alternate phone validation (optional)
-      if (contactFields.alternatePhone.trim()) {
-        if (!/^\d{10}$/.test(contactFields.alternatePhone.trim())) {
-          errors.alternatePhone = "Alternate phone must be exactly 10 digits";
-        } else if (contactFields.alternatePhone.trim().startsWith('0')) {
-          errors.alternatePhone = "Alternate phone cannot start with 0";
-        } else if (contactFields.alternatePhone.trim() === contactFields.contactNumber.trim()) {
-          errors.alternatePhone = "Alternate phone cannot be same as main contact";
+      if (contactFields.alternateContactNumber.trim()) {
+        if (!/^\d{10}$/.test(contactFields.alternateContactNumber.trim())) {
+          errors.alternateContactNumber = "Alternate phone must be exactly 10 digits";
+        } else if (contactFields.alternateContactNumber.trim().startsWith('0')) {
+          errors.alternateContactNumber = "Alternate phone cannot start with 0";
+        } else if (contactFields.alternateContactNumber.trim() === contactFields.contactNumber.trim()) {
+          errors.alternateContactNumber = "Alternate phone cannot be same as main contact";
         }
       }
       
@@ -472,7 +472,7 @@ const OdooDetailBody = ({
         {
           name: contactFields.name.trim(),
           contactNumber: contactFields.contactNumber.trim(),
-          alternatePhone: contactFields.alternatePhone.trim(),
+          alternateContactNumber: contactFields.alternateContactNumber.trim(),
           email: contactFields.email.trim(),
         },
         {
@@ -483,7 +483,7 @@ const OdooDetailBody = ({
       );
       onFieldChange("name", contactFields.name.trim());
       onFieldChange("contactNumber", contactFields.contactNumber.trim());
-      onFieldChange("alternatePhone", contactFields.alternatePhone.trim());
+      onFieldChange("alternateContactNumber", contactFields.alternateContactNumber.trim());
       onFieldChange("email", contactFields.email.trim());
       setIsEditingContact(false);
       await dispatch(fetchLeadById(lead.leadId));
@@ -1607,9 +1607,9 @@ const OdooDetailBody = ({
                   placeholder="Contact Number"
                 />
                 <input
-                  value={contactFields.alternatePhone}
+                  value={contactFields.alternateContactNumber}
                   onChange={(e) =>
-                    handleContactFieldChange("alternatePhone", e.target.value)
+                    handleContactFieldChange("alternateContactNumber", e.target.value)
                   }
                   className="w-full p-1 border-b"
                   placeholder="Alternate Phone Number (Optional)"
@@ -1641,11 +1641,11 @@ const OdooDetailBody = ({
                     {lead.contactNumber ? `+91 ${lead.contactNumber}` : "N/A"}
                   </span>
                 </div>
-                {lead.alternatePhone && (
+                {lead.alternateContactNumber && (
                   <div className="flex items-center gap-3">
                     <FaPhone className="text-gray-400" />
                     <span className="text-gray-900 font-medium">
-                      {`+91 ${lead.alternatePhone}`}
+                      {`+91 ${lead.alternateContactNumber}`}
                     </span>
                   </div>
                 )}
