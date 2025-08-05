@@ -417,12 +417,63 @@ const OdooDetailBody = ({
 
   const handleSaveContact = async () => {
     try {
+      // Validate form data before submission
+      const errors = {};
+      
+      // Name validation
+      if (!contactFields.name.trim()) {
+        errors.name = "Name is required";
+      } else if (contactFields.name.trim().length < 2) {
+        errors.name = "Name must be at least 2 characters";
+      } else if (contactFields.name.trim().length > 50) {
+        errors.name = "Name must be less than 50 characters";
+      }
+      
+      // Contact number validation
+      if (!contactFields.contactNumber.trim()) {
+        errors.contactNumber = "Contact number is required";
+      } else if (!/^\d{10}$/.test(contactFields.contactNumber.trim())) {
+        errors.contactNumber = "Contact number must be exactly 10 digits";
+      } else if (contactFields.contactNumber.trim().startsWith('0')) {
+        errors.contactNumber = "Contact number cannot start with 0";
+      }
+      
+      // Alternate phone validation (optional)
+      if (contactFields.alternatePhone.trim()) {
+        if (!/^\d{10}$/.test(contactFields.alternatePhone.trim())) {
+          errors.alternatePhone = "Alternate phone must be exactly 10 digits";
+        } else if (contactFields.alternatePhone.trim().startsWith('0')) {
+          errors.alternatePhone = "Alternate phone cannot start with 0";
+        } else if (contactFields.alternatePhone.trim() === contactFields.contactNumber.trim()) {
+          errors.alternatePhone = "Alternate phone cannot be same as main contact";
+        }
+      }
+      
+      // Email validation (optional)
+      if (contactFields.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contactFields.email.trim())) {
+          errors.email = "Please enter a valid email address";
+        } else if (contactFields.email.trim().length > 100) {
+          errors.email = "Email must be less than 100 characters";
+        }
+      }
+      
+      // If there are validation errors, show them and return
+      if (Object.keys(errors).length > 0) {
+        Object.values(errors).forEach(error => {
+          toast.error(error);
+        });
+        return;
+      }
+      
       await axios.put(
         `${API_BASE_URL}/leads/${lead.leadId}`,
         {
-          name: contactFields.name,
-          contactNumber: contactFields.contactNumber,
-          email: contactFields.email,
+          name: contactFields.name.trim(),
+          contactNumber: contactFields.contactNumber.trim(),
+          alternatePhone: contactFields.alternatePhone.trim(),
+          email: contactFields.email.trim(),
         },
         {
           headers: {
@@ -430,9 +481,10 @@ const OdooDetailBody = ({
           },
         }
       );
-      onFieldChange("name", contactFields.name);
-      onFieldChange("contactNumber", contactFields.contactNumber);
-      onFieldChange("email", contactFields.email);
+      onFieldChange("name", contactFields.name.trim());
+      onFieldChange("contactNumber", contactFields.contactNumber.trim());
+      onFieldChange("alternatePhone", contactFields.alternatePhone.trim());
+      onFieldChange("email", contactFields.email.trim());
       setIsEditingContact(false);
       await dispatch(fetchLeadById(lead.leadId));
       toast.success("Contact details updated!");
@@ -1544,6 +1596,7 @@ const OdooDetailBody = ({
                     handleContactFieldChange("name", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Full Name"
                 />
                 <input
                   value={contactFields.contactNumber}
@@ -1551,6 +1604,15 @@ const OdooDetailBody = ({
                     handleContactFieldChange("contactNumber", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Contact Number"
+                />
+                <input
+                  value={contactFields.alternatePhone}
+                  onChange={(e) =>
+                    handleContactFieldChange("alternatePhone", e.target.value)
+                  }
+                  className="w-full p-1 border-b"
+                  placeholder="Alternate Phone Number (Optional)"
                 />
                 <input
                   value={contactFields.email}
@@ -1558,6 +1620,7 @@ const OdooDetailBody = ({
                     handleContactFieldChange("email", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Email (Optional)"
                 />
                 <button
                   onClick={handleSaveContact}
@@ -1578,6 +1641,14 @@ const OdooDetailBody = ({
                     {lead.contactNumber ? `+91 ${lead.contactNumber}` : "N/A"}
                   </span>
                 </div>
+                {lead.alternatePhone && (
+                  <div className="flex items-center gap-3">
+                    <FaPhone className="text-gray-400" />
+                    <span className="text-gray-900 font-medium">
+                      {`+91 ${lead.alternatePhone}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <FaEnvelope className="text-gray-400" />
                   <span className="text-gray-900 font-medium">
