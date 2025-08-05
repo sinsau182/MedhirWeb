@@ -20,6 +20,9 @@ import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
 import AssignLeadModal from "@/components/Sales/AssignLeadModal";
+import SemiContactedModal from "@/components/Sales/SemiContactedModal";
+import PotentialModal from "@/components/Sales/PotentialModal";
+import HighPotentialModal from "@/components/Sales/HighPotentialModal";
 import KanbanBoardClientOnly from "@/components/Sales/KanbanBoardClientOnly";
 import {
   fetchLeads,
@@ -35,6 +38,7 @@ import {
   deletePipeline,
   initializePipelineStages,
 } from "@/redux/slices/pipelineSlice";
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
 import {
@@ -151,7 +155,8 @@ const DeletePipelineModal = ({ isOpen, onClose }) => {
     onClose();
     dispatch(fetchPipelines());
     // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
+    const employeeId = sessionStorage.getItem("employeeId");
+    dispatch(fetchLeads({ employeeId }));
   };
 
   const handleSelectAll = () => {
@@ -281,6 +286,7 @@ const LeadManagementContent = ({ role }) => {
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
   const { leads } = useSelector((state) => state.leads);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
   // Add pipeline modal state
   const [isAddingStage, setIsAddingStage] = useState(false);
@@ -318,13 +324,32 @@ const LeadManagementContent = ({ role }) => {
   const [selectedLeadForAssignment, setSelectedLeadForAssignment] = useState(null);
   const [targetPipelineId, setTargetPipelineId] = useState(null);
 
+  // Semi contacted modal state
+  const [showSemiContactedModal, setShowSemiContactedModal] = useState(false);
+  const [selectedLeadForSemiContacted, setSelectedLeadForSemiContacted] = useState(null);
+  const [targetPipelineIdForSemiContacted, setTargetPipelineIdForSemiContacted] = useState(null);
+
+  // Potential modal state
+  const [showPotentialModal, setShowPotentialModal] = useState(false);
+  const [selectedLeadForPotential, setSelectedLeadForPotential] = useState(null);
+  const [targetPipelineIdForPotential, setTargetPipelineIdForPotential] = useState(null);
+
+  // High potential modal state
+  const [showHighPotentialModal, setShowHighPotentialModal] = useState(false);
+  const [selectedLeadForHighPotential, setSelectedLeadForHighPotential] = useState(null);
+  const [targetPipelineIdForHighPotential, setTargetPipelineIdForHighPotential] = useState(null);
+
   // Initialize pipeline state
   const [isInitializing, setIsInitializing] = useState(false);
 
   // Fetch pipelines and all leads on mount
   useEffect(() => {
     dispatch(fetchPipelines());
-    dispatch(fetchLeads());
+    // For Lead Management (Sales role), filter by employeeId
+    // For Manager role, fetch all leads without filtering
+    const employeeId = sessionStorage.getItem("employeeId");
+    dispatch(fetchLeads({ employeeId }));
+    dispatch(fetchManagerEmployees());
   }, [dispatch]);
 
 
@@ -433,7 +458,8 @@ const LeadManagementContent = ({ role }) => {
     setNewStageFormType("");
     setIsAddingStage(false);
     // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
+    const employeeId = sessionStorage.getItem("employeeId");
+    dispatch(fetchLeads({ employeeId }));
   };
 
   // Delete pipeline handler
@@ -443,7 +469,8 @@ const LeadManagementContent = ({ role }) => {
     });
     dispatch(fetchPipelines());
     // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
+    const employeeId = sessionStorage.getItem("employeeId");
+    dispatch(fetchLeads({ employeeId }));
     setShowDeletePipelineModal(false);
     setSelectedPipelinesToDelete([]);
   };
@@ -461,7 +488,8 @@ const LeadManagementContent = ({ role }) => {
       await dispatch(initializePipelineStages());
       toast.success("Default pipeline stages initialized successfully!");
       dispatch(fetchPipelines());
-      dispatch(fetchLeads());
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
     } catch (error) {
       toast.error("Failed to initialize pipeline stages");
     } finally {
@@ -564,19 +592,19 @@ const LeadManagementContent = ({ role }) => {
         setShowAssignModal(true);
         return;
       } else if (newPipeline.formType === "SEMI") {
-        // Note: Semi contacted modal is not implemented in LeadManagement
-        console.log("Semi contacted form type detected but modal not implemented");
-        dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
+        setSelectedLeadForSemiContacted(lead);
+        setTargetPipelineIdForSemiContacted(newPipelineId);
+        setShowSemiContactedModal(true);
         return;
       } else if (newPipeline.formType === "POTENTIAL") {
-        // Note: Potential modal is not implemented in LeadManagement
-        console.log("Potential form type detected but modal not implemented");
-        dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
+        setSelectedLeadForPotential(lead);
+        setTargetPipelineIdForPotential(newPipelineId);
+        setShowPotentialModal(true);
         return;
       } else if (newPipeline.formType === "HIGHPOTENTIAL") {
-        // Note: High potential modal is not implemented in LeadManagement
-        console.log("High potential form type detected but modal not implemented");
-        dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
+        setSelectedLeadForHighPotential(lead);
+        setTargetPipelineIdForHighPotential(newPipelineId);
+        setShowHighPotentialModal(true);
         return;
       }
 
@@ -632,7 +660,8 @@ const LeadManagementContent = ({ role }) => {
   const handleAddLead = async (leadData) => {
     await dispatch(createLead(leadData));
     // Refresh leads to get the updated grouped format
-    dispatch(fetchLeads());
+    const employeeId = sessionStorage.getItem("employeeId");
+    dispatch(fetchLeads({ employeeId }));
   };
 
   // Assignment handler for AssignLeadModal
@@ -642,14 +671,102 @@ const LeadManagementContent = ({ role }) => {
       await dispatch(updateLead({
         leadId: assignmentData.leadId,
         salesRep: assignmentData.salesRep,
-        designer: assignmentData.designer,
-        pipelineId: targetPipelineId
+        designer: assignmentData.designer
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: assignmentData.leadId,
+        newPipelineId: targetPipelineId
       }));
       
       // Refresh leads to get the updated grouped format
-      dispatch(fetchLeads());
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
     } catch (error) {
       console.error("Assignment error:", error);
+      throw error;
+    }
+  };
+
+  // Semi contacted handler
+  const handleSemiContactedSuccess = async (formData) => {
+    try {
+      // Update the lead with semi contacted data
+      await dispatch(updateLead({
+        leadId: formData.leadId,
+        floorPlan: formData.floorPlan,
+        estimatedBudget: formData.estimatedBudget,
+        firstMeetingDate: formData.firstMeetingDate,
+        priority: formData.priority
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: formData.leadId,
+        newPipelineId: targetPipelineIdForSemiContacted
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
+    } catch (error) {
+      console.error("Semi contacted update error:", error);
+      throw error;
+    }
+  };
+
+  // Potential handler
+  const handlePotentialSuccess = async (formData) => {
+    try {
+      // Update the lead with potential data
+      await dispatch(updateLead({
+        leadId: formData.leadId,
+        requirements: formData.requirements,
+        consultationFee: formData.consultationFee,
+        designConsultation: formData.designConsultation
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: formData.leadId,
+        newPipelineId: targetPipelineIdForPotential
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
+    } catch (error) {
+      console.error("Potential update error:", error);
+      throw error;
+    }
+  };
+
+  // High potential handler
+  const handleHighPotentialSuccess = async (formData) => {
+    try {
+      // Update the lead with high potential data
+      await dispatch(updateLead({
+        leadId: formData.leadId,
+        quotationDetails: formData.quotationDetails,
+        initialQuotedAmount: formData.initialQuotedAmount,
+        finalQuotedAmount: formData.finalQuotedAmount,
+        discountPercent: formData.discountPercent,
+        designTimeline: formData.designTimeline,
+        completionTimeline: formData.completionTimeline
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: formData.leadId,
+        newPipelineId: targetPipelineIdForHighPotential
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
+    } catch (error) {
+      console.error("High potential update error:", error);
       throw error;
     }
   };
@@ -829,7 +946,8 @@ const LeadManagementContent = ({ role }) => {
           setShowConvertModal(false);
           setSelectedLead(null);
           // Refresh leads to get the updated grouped format
-          dispatch(fetchLeads());
+          const employeeId = sessionStorage.getItem("employeeId");
+          dispatch(fetchLeads({ employeeId }));
         }}
       />
       <JunkReasonModal
@@ -839,7 +957,8 @@ const LeadManagementContent = ({ role }) => {
           setShowJunkModal(false);
           setSelectedLead(null);
           // Refresh leads to get the updated grouped format
-          dispatch(fetchLeads());
+          const employeeId = sessionStorage.getItem("employeeId");
+          dispatch(fetchLeads({ employeeId }));
         }}
       />
       <LostLeadModal
@@ -849,7 +968,8 @@ const LeadManagementContent = ({ role }) => {
           setShowLostModal(false);
           setSelectedLead(null);
           // Refresh leads to get the updated grouped format
-          dispatch(fetchLeads());
+          const employeeId = sessionStorage.getItem("employeeId");
+          dispatch(fetchLeads({ employeeId }));
         }}
       />
       <AssignLeadModal
@@ -861,14 +981,37 @@ const LeadManagementContent = ({ role }) => {
         }}
         lead={selectedLeadForAssignment}
         onAssign={handleAssignLead}
-        salesEmployees={[
-          { id: "1", name: "John Smith", role: "SALES_REP" },
-          { id: "2", name: "Jane Doe", role: "SALES_MANAGER" },
-          { id: "3", name: "Mike Johnson", role: "SALES_REP" },
-          { id: "4", name: "Sarah Wilson", role: "DESIGNER" },
-          { id: "5", name: "Tom Brown", role: "SALES_DESIGNER" },
-          { id: "6", name: "Lisa Davis", role: "DESIGNER" }
-        ]}
+        salesEmployees={managerEmployees || []}
+      />
+      <SemiContactedModal
+        isOpen={showSemiContactedModal}
+        onClose={() => {
+          setShowSemiContactedModal(false);
+          setSelectedLeadForSemiContacted(null);
+          setTargetPipelineIdForSemiContacted(null);
+        }}
+        lead={selectedLeadForSemiContacted}
+        onSuccess={handleSemiContactedSuccess}
+      />
+      <PotentialModal
+        isOpen={showPotentialModal}
+        onClose={() => {
+          setShowPotentialModal(false);
+          setSelectedLeadForPotential(null);
+          setTargetPipelineIdForPotential(null);
+        }}
+        lead={selectedLeadForPotential}
+        onSuccess={handlePotentialSuccess}
+      />
+      <HighPotentialModal
+        isOpen={showHighPotentialModal}
+        onClose={() => {
+          setShowHighPotentialModal(false);
+          setSelectedLeadForHighPotential(null);
+          setTargetPipelineIdForHighPotential(null);
+        }}
+        lead={selectedLeadForHighPotential}
+        onSuccess={handleHighPotentialSuccess}
       />
     </div>
   );

@@ -32,8 +32,19 @@ const SemiContactedModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Enhanced validation
     if (!formData.floorPlan.trim()) {
       toast.error("Please provide the floor plan");
+      return;
+    }
+    
+    if (formData.floorPlan.trim().length < 5) {
+      toast.error("Floor plan must be at least 5 characters");
+      return;
+    }
+    
+    if (formData.floorPlan.trim().length > 200) {
+      toast.error("Floor plan must be less than 200 characters");
       return;
     }
 
@@ -41,9 +52,31 @@ const SemiContactedModal = ({
       toast.error("Please provide the estimated budget");
       return;
     }
+    
+    // Validate budget format
+    const budgetValue = parseFloat(formData.estimatedBudget.replace(/[^\d.]/g, ''));
+    if (isNaN(budgetValue) || budgetValue <= 0) {
+      toast.error("Budget must be a valid positive number");
+      return;
+    }
+    
+    if (budgetValue > 999999999) {
+      toast.error("Budget cannot exceed 999,999,999");
+      return;
+    }
 
     if (!formData.firstMeetingDate) {
       toast.error("Please select the first meeting date");
+      return;
+    }
+    
+    // Validate meeting date is not in the past
+    const meetingDate = new Date(formData.firstMeetingDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (meetingDate < today) {
+      toast.error("Meeting date cannot be in the past");
       return;
     }
 
@@ -52,8 +85,8 @@ const SemiContactedModal = ({
     try {
       await onSuccess({
         leadId: lead.leadId,
-        floorPlan: formData.floorPlan,
-        estimatedBudget: formData.estimatedBudget,
+        floorPlan: formData.floorPlan.trim(),
+        estimatedBudget: formData.estimatedBudget.trim(),
         firstMeetingDate: formData.firstMeetingDate,
         priority: formData.priority
       });
@@ -73,9 +106,42 @@ const SemiContactedModal = ({
   };
 
   const handleInputChange = (field, value) => {
+    let processedValue = value;
+
+    // Apply input restrictions based on field type
+    switch (field) {
+      case 'floorPlan':
+        // Allow alphanumeric, spaces, and common characters
+        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 200);
+        break;
+      
+      case 'estimatedBudget':
+        // Only allow numbers and decimal point
+        processedValue = value.replace(/[^\d.]/g, '');
+        // Prevent multiple decimal points
+        const decimalCount = (processedValue.match(/\./g) || []).length;
+        if (decimalCount > 1) {
+          processedValue = processedValue.replace(/\.+$/, '');
+        }
+        break;
+      
+      case 'firstMeetingDate':
+        // Allow date input
+        processedValue = value;
+        break;
+      
+      case 'priority':
+        // Allow priority selection
+        processedValue = value;
+        break;
+      
+      default:
+        processedValue = value;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   };
 

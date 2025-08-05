@@ -381,6 +381,7 @@ const ManagerContent = ({ role }) => {
         p.pipelineId === newPipelineId || p.stageId === newPipelineId
       );
       
+      // Log pipeline information for debugging
       console.log("Pipeline index check:", {
         currentPipelineIndex,
         newPipelineIndex,
@@ -393,7 +394,6 @@ const ManagerContent = ({ role }) => {
 
       // Check if moving to stages with specific form types
       if (newPipeline.formType === "SEMI") {
-        console.log("Opening semi contacted modal for lead:", lead);
         setSelectedLeadForSemiContacted(lead);
         setTargetPipelineIdForSemiContacted(newPipelineId);
         setShowSemiContactedModal(true);
@@ -401,7 +401,6 @@ const ManagerContent = ({ role }) => {
       }
 
       if (newPipeline.formType === "POTENTIAL") {
-        console.log("Opening potential modal for lead:", lead);
         setSelectedLeadForPotential(lead);
         setTargetPipelineIdForPotential(newPipelineId);
         setShowPotentialModal(true);
@@ -409,7 +408,6 @@ const ManagerContent = ({ role }) => {
       }
 
       if (newPipeline.formType === "HIGHPOTENTIAL") {
-        console.log("Opening high potential modal for lead:", lead);
         setSelectedLeadForHighPotential(lead);
         setTargetPipelineIdForHighPotential(newPipelineId);
         setShowHighPotentialModal(true);
@@ -437,7 +435,6 @@ const ManagerContent = ({ role }) => {
       }
 
       // Otherwise, move lead directly
-      console.log("Moving lead directly via API:", { leadId, newPipelineId });
       dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
     } else {
       console.log("Pipeline is the same, no move needed");
@@ -475,10 +472,10 @@ const ManagerContent = ({ role }) => {
   };
 
   const handleAddLeadSubmit = async (formData) => {
-    if (!formData.salesRep || !formData.designer) {
-      toast.error("Please assign both Sales Person and Designer.");
-      return;
-    }
+    // if (!formData.salesRep || !formData.designer) {
+    //   toast.error("Please assign both Sales Person and Designer.");
+    //   return;
+    // }
     const leadData = {
       ...defaultLeadData,
       ...formData,
@@ -493,7 +490,7 @@ const ManagerContent = ({ role }) => {
       } else {
         // Assign a new unique leadId
         const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
-        await dispatch(createLead({ ...leadData, leadId: newId })).unwrap();
+        await dispatch(createLead({ ...leadData, leadId: newId, companyId: sessionStorage.getItem("employeeCompanyId") })).unwrap();
         toast.success("Lead created successfully!");
       }
 

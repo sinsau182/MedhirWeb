@@ -104,6 +104,36 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
     }
   };
 
+  // Input restriction helpers
+  const handleNumberInput = (value, setter) => {
+    // Only allow numbers and decimal point
+    let processedValue = value.replace(/[^\d.]/g, '');
+    // Prevent multiple decimal points
+    const decimalCount = (processedValue.match(/\./g) || []).length;
+    if (decimalCount > 1) {
+      processedValue = processedValue.replace(/\.+$/, '');
+    }
+    setter(processedValue);
+  };
+
+  const handlePanInput = (value) => {
+    // Only allow uppercase letters and numbers, max 10 characters
+    const processedValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
+    setPanNumber(processedValue);
+  };
+
+  const handleTransactionIdInput = (value) => {
+    // Allow alphanumeric and common characters
+    const processedValue = value.replace(/[^a-zA-Z0-9\s\-_]/g, '').slice(0, 50);
+    setPaymentTransactionId(processedValue);
+  };
+
+  const handleTimelineInput = (value) => {
+    // Allow alphanumeric, spaces, and common characters
+    const processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 200);
+    setProjectTimeline(processedValue);
+  };
+
   const handleOpenFile = async (file, type) => {
     if (!file) return;
     
@@ -134,17 +164,109 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Enhanced validation
     if (!lead) {
-      alert("No lead selected.");
+      toast.error("No lead selected.");
       return;
     }
-    if (!finalQuotation || !signupAmount) {
-      alert("Please fill in Final Quotation and Sign-up Amount.");
+    
+    if (!finalQuotation || !finalQuotation.trim()) {
+      toast.error("Please fill in Final Quotation.");
       return;
     }
-    if (isNaN(parseFloat(finalQuotation)) || isNaN(parseFloat(signupAmount))) {
-      alert("Quotation and Sign-up Amount must be valid numbers.");
+    
+    if (!signupAmount || !signupAmount.trim()) {
+      toast.error("Please fill in Sign-up Amount.");
       return;
+    }
+    
+    // Validate final quotation
+    const finalQuotationValue = parseFloat(finalQuotation.replace(/[^\d.]/g, ''));
+    if (isNaN(finalQuotationValue) || finalQuotationValue <= 0) {
+      toast.error("Final Quotation must be a valid positive number.");
+      return;
+    }
+    
+    if (finalQuotationValue > 999999999) {
+      toast.error("Final Quotation cannot exceed 999,999,999.");
+      return;
+    }
+    
+    // Validate signup amount
+    const signupAmountValue = parseFloat(signupAmount.replace(/[^\d.]/g, ''));
+    if (isNaN(signupAmountValue) || signupAmountValue <= 0) {
+      toast.error("Sign-up Amount must be a valid positive number.");
+      return;
+    }
+    
+    if (signupAmountValue > 999999999) {
+      toast.error("Sign-up Amount cannot exceed 999,999,999.");
+      return;
+    }
+    
+    // Validate signup amount is not greater than final quotation
+    if (signupAmountValue > finalQuotationValue) {
+      toast.error("Sign-up Amount cannot be greater than Final Quotation.");
+      return;
+    }
+    
+    // Validate quoted amount if provided
+    if (quotedAmount && quotedAmount.trim()) {
+      const quotedAmountValue = parseFloat(quotedAmount.replace(/[^\d.]/g, ''));
+      if (isNaN(quotedAmountValue) || quotedAmountValue <= 0) {
+        toast.error("Initial Quoted Amount must be a valid positive number.");
+        return;
+      }
+      
+      if (quotedAmountValue > 999999999) {
+        toast.error("Initial Quoted Amount cannot exceed 999,999,999.");
+        return;
+      }
+    }
+    
+    // Validate discount if provided
+    if (discount && discount.trim()) {
+      const discountValue = parseFloat(discount.replace(/[^\d.]/g, ''));
+      if (isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
+        toast.error("Discount must be between 0 and 100.");
+        return;
+      }
+    }
+    
+    // Validate PAN number if provided
+    if (panNumber && panNumber.trim()) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(panNumber.trim().toUpperCase())) {
+        toast.error("Please enter a valid PAN number (e.g., ABCDE1234F).");
+        return;
+      }
+    }
+    
+    // Validate payment transaction ID if provided
+    if (paymentTransactionId && paymentTransactionId.trim()) {
+      if (paymentTransactionId.trim().length < 5) {
+        toast.error("Payment Transaction ID must be at least 5 characters.");
+        return;
+      }
+      
+      if (paymentTransactionId.trim().length > 50) {
+        toast.error("Payment Transaction ID must be less than 50 characters.");
+        return;
+      }
+    }
+    
+    // Validate project timeline if provided
+    if (projectTimeline && projectTimeline.trim()) {
+      if (projectTimeline.trim().length < 5) {
+        toast.error("Project Timeline must be at least 5 characters.");
+        return;
+      }
+      
+      if (projectTimeline.trim().length > 200) {
+        toast.error("Project Timeline must be less than 200 characters.");
+        return;
+      }
     }
     try {
       // Prepare FormData for file upload - ALWAYS use FormData since backend expects multipart/form-data
@@ -226,13 +348,11 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FaRupeeSign /></span>
                 <input
-                  type="number"
+                  type="text"
                   value={quotedAmount}
-                  onChange={e => setQuotedAmount(e.target.value)}
+                  onChange={e => handleNumberInput(e.target.value, setQuotedAmount)}
                   className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all"
                   placeholder="Enter initial quoted amount"
-                  min="0"
-                  step="any"
                 />
               </div>
             </div>
@@ -241,13 +361,11 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FaRupeeSign /></span>
                 <input
-                  type="number"
+                  type="text"
                   value={finalQuotation}
-                  onChange={(e) => setFinalQuotation(e.target.value)}
+                  onChange={(e) => handleNumberInput(e.target.value, setFinalQuotation)}
                   className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all"
                   required
-                  min="0"
-                  step="any"
                 />
               </div>
             </div>
@@ -257,13 +375,11 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FaRupeeSign /></span>
               <input
-                type="number"
+                type="text"
                 value={signupAmount}
-                onChange={(e) => setSignupAmount(e.target.value)}
+                onChange={(e) => handleNumberInput(e.target.value, setSignupAmount)}
                 className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all"
                 required
-                min="0"
-                step="any"
               />
             </div>
           </div>
@@ -296,7 +412,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             <input
               type="text"
               value={paymentTransactionId}
-              onChange={(e) => setPaymentTransactionId(e.target.value)}
+              onChange={(e) => handleTransactionIdInput(e.target.value)}
               className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
               placeholder="Enter transaction ID"
             />
@@ -307,8 +423,9 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <input
                 type="text"
                 value={panNumber}
-                onChange={(e) => setPanNumber(e.target.value)}
+                onChange={(e) => handlePanInput(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
+                placeholder="ABCDE1234F"
               />
             </div>
             <div>
@@ -316,7 +433,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <input
                 type="text"
                 value={projectTimeline}
-                onChange={(e) => setProjectTimeline(e.target.value)}
+                onChange={(e) => handleTimelineInput(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
                 placeholder="e.g., 6 Months, Jan-Mar 2025"
               />
@@ -327,7 +444,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             <input
               type="text"
               value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
+              onChange={(e) => handleNumberInput(e.target.value, setDiscount)}
               className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
               placeholder="e.g., 10% or 5000"
             />

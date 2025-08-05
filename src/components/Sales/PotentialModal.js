@@ -30,13 +30,36 @@ const PotentialModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Enhanced validation
     if (!formData.requirements.trim()) {
       toast.error("Please provide the requirements");
+      return;
+    }
+    
+    if (formData.requirements.trim().length < 10) {
+      toast.error("Requirements must be at least 10 characters");
+      return;
+    }
+    
+    if (formData.requirements.trim().length > 500) {
+      toast.error("Requirements must be less than 500 characters");
       return;
     }
 
     if (!formData.consultationFee.trim()) {
       toast.error("Please provide the consultation fee");
+      return;
+    }
+    
+    // Validate consultation fee
+    const consultationFee = parseFloat(formData.consultationFee.replace(/[^\d.]/g, ''));
+    if (isNaN(consultationFee) || consultationFee < 0) {
+      toast.error("Consultation fee must be a valid positive number");
+      return;
+    }
+    
+    if (consultationFee > 999999) {
+      toast.error("Consultation fee cannot exceed 999,999");
       return;
     }
 
@@ -45,8 +68,8 @@ const PotentialModal = ({
     try {
       await onSuccess({
         leadId: lead.leadId,
-        requirements: formData.requirements,
-        consultationFee: formData.consultationFee,
+        requirements: formData.requirements.trim(),
+        consultationFee: formData.consultationFee.trim(),
         designConsultation: formData.designConsultation
       });
       
@@ -65,9 +88,37 @@ const PotentialModal = ({
   };
 
   const handleInputChange = (field, value) => {
+    let processedValue = value;
+
+    // Apply input restrictions based on field type
+    switch (field) {
+      case 'requirements':
+        // Allow alphanumeric, spaces, and common characters
+        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 500);
+        break;
+      
+      case 'consultationFee':
+        // Only allow numbers and decimal point
+        processedValue = value.replace(/[^\d.]/g, '');
+        // Prevent multiple decimal points
+        const decimalCount = (processedValue.match(/\./g) || []).length;
+        if (decimalCount > 1) {
+          processedValue = processedValue.replace(/\.+$/, '');
+        }
+        break;
+      
+      case 'designConsultation':
+        // Allow alphanumeric, spaces, and common characters
+        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 200);
+        break;
+      
+      default:
+        processedValue = value;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   };
 
