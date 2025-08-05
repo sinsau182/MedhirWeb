@@ -364,4 +364,4 @@ export const customerSlice = createSlice({
 });
 
 export const { clearSelectedCustomer, clearError } = customerSlice.actions;
-export default customerSlice.reducer; 
+export default customerSlice.reducer;
