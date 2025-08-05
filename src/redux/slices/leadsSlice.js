@@ -12,12 +12,22 @@ const token = getItemFromSessionStorage("token", null);
 
 export const fetchLeads = createAsyncThunk(
   'leads/fetchLeads',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/leads/kanban-cards`, {
-        headers: getAuthHeaders(),
-      });
-      return res.data;
+        const companyId = sessionStorage.getItem("employeeCompanyId");
+        
+        let url = `${API_BASE_URL}/leads/kanban-cards/${companyId}`;
+        
+        // Only add employeeId filter if explicitly provided (for Lead Management)
+        // Manager pages will call fetchLeads() without params to get all leads
+        if (params.employeeId) {
+          url += `?assignedSalesRep=${params.employeeId}`;
+        }
+        
+        const res = await axios.get(url, {
+          headers: getAuthHeaders(),
+        });
+        return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -53,7 +63,6 @@ export const createLead = createAsyncThunk(
     async (leadData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-
             const response = await fetch(`${API_BASE_URL}/leads`, {
                 method: "POST",
                 headers: {

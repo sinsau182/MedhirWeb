@@ -19,12 +19,17 @@ const AssignLeadModal = ({
       setSelectedSalesRep("");
       setSelectedDesigner("");
       setIsSubmitting(false);
+      
+             // Debug: Log the employee data
+       console.log("AssignLeadModal - All Team Members:", salesEmployees);
+       console.log("AssignLeadModal - Total Employees:", salesEmployees.length);
     }
-  }, [isOpen]);
+  }, [isOpen, salesEmployees]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Enhanced validation
     if (!selectedSalesRep) {
       toast.error("Please select a Sales Representative");
       return;
@@ -32,6 +37,26 @@ const AssignLeadModal = ({
 
     if (!selectedDesigner) {
       toast.error("Please select a Sales Designer");
+      return;
+    }
+
+    // Prevent assigning same person to both roles
+    if (selectedSalesRep === selectedDesigner) {
+      toast.error("Sales Representative and Designer cannot be the same person");
+      return;
+    }
+
+    // Validate that selected employees exist in the list
+    const salesRepExists = salesEmployees.some(emp => emp.employeeId === selectedSalesRep);
+    const designerExists = salesEmployees.some(emp => emp.employeeId === selectedDesigner);
+
+    if (!salesRepExists) {
+      toast.error("Selected Sales Representative is not available");
+      return;
+    }
+
+    if (!designerExists) {
+      toast.error("Selected Designer is not available");
       return;
     }
 
@@ -122,21 +147,23 @@ const AssignLeadModal = ({
                 <FaUserTie className="w-4 h-4 text-blue-600" />
                 Sales Representative *
               </label>
-              <select
-                value={selectedSalesRep}
-                onChange={(e) => setSelectedSalesRep(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                required
-              >
-                <option value="">Select Sales Representative</option>
-                {salesEmployees
-                  .filter(emp => emp.role === 'SALES_REP' || emp.role === 'SALES_MANAGER')
-                  .map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.name} ({employee.role})
-                    </option>
-                  ))}
-              </select>
+                             <select
+                 value={selectedSalesRep}
+                 onChange={(e) => setSelectedSalesRep(e.target.value)}
+                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                 required
+               >
+                                   <option value="">Select Sales Representative</option>
+                  {salesEmployees.length === 0 ? (
+                    <option value="" disabled>No employees available</option>
+                  ) : (
+                    salesEmployees.map((employee) => (
+                      <option key={employee.employeeId} value={employee.employeeId}>
+                        {employee.name} {employee.role ? `(${employee.role})` : ''}
+                      </option>
+                    ))
+                  )}
+               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Choose the sales representative who will handle this lead
               </p>
@@ -148,21 +175,23 @@ const AssignLeadModal = ({
                 <FaUserCog className="w-4 h-4 text-purple-600" />
                 Sales Designer *
               </label>
-              <select
-                value={selectedDesigner}
-                onChange={(e) => setSelectedDesigner(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-                required
-              >
-                <option value="">Select Sales Designer</option>
-                {salesEmployees
-                  .filter(emp => emp.role === 'DESIGNER' || emp.role === 'SALES_DESIGNER')
-                  .map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.name} ({employee.role})
-                    </option>
-                  ))}
-              </select>
+                             <select
+                 value={selectedDesigner}
+                 onChange={(e) => setSelectedDesigner(e.target.value)}
+                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                 required
+               >
+                                   <option value="">Select Sales Designer</option>
+                  {salesEmployees.length === 0 ? (
+                    <option value="" disabled>No employees available</option>
+                  ) : (
+                    salesEmployees.map((employee) => (
+                      <option key={employee.employeeId} value={employee.employeeId}>
+                        {employee.name} {employee.role ? `(${employee.role})` : ''}
+                      </option>
+                    ))
+                  )}
+               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Choose the designer who will work on this project
               </p>
@@ -173,8 +202,8 @@ const AssignLeadModal = ({
               <h4 className="font-medium text-blue-800 mb-2">Assignment Summary</h4>
               <div className="text-sm text-blue-700 space-y-1">
                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                <p><strong>Sales Rep:</strong> {selectedSalesRep ? salesEmployees.find(emp => emp.id === selectedSalesRep)?.name : "Not selected"}</p>
-                <p><strong>Designer:</strong> {selectedDesigner ? salesEmployees.find(emp => emp.id === selectedDesigner)?.name : "Not selected"}</p>
+                                 <p><strong>Sales Rep:</strong> {selectedSalesRep ? salesEmployees.find(emp => emp.employeeId === selectedSalesRep)?.name : "Not selected"}</p>
+                 <p><strong>Designer:</strong> {selectedDesigner ? salesEmployees.find(emp => emp.employeeId === selectedDesigner)?.name : "Not selected"}</p>
               </div>
             </div>
           </form>

@@ -52,6 +52,10 @@ import LostLeadModal from "@/components/Sales/LostLeadModal";
 import axios from "axios";
 import getConfig from "next/config";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
+import AssignLeadModal from "@/components/Sales/AssignLeadModal";
+import SemiContactedModal from "@/components/Sales/SemiContactedModal";
+import PotentialModal from "@/components/Sales/PotentialModal";
+import HighPotentialModal from "@/components/Sales/HighPotentialModal";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import { jwtDecode } from "jwt-decode";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
@@ -250,6 +254,7 @@ const OdooDetailBody = ({
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
     contactNumber: lead.contactNumber || "",
+    alternatePhone: lead.alternatePhone || "",
     email: lead.email || "",
   });
 
@@ -287,7 +292,28 @@ const OdooDetailBody = ({
   }, [lead, isEditing]);
 
   const handleContactFieldChange = (field, value) => {
-    setContactFields((prev) => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Apply runtime validation and input restrictions
+    switch (field) {
+      case 'name':
+        // Only allow letters, spaces, and common punctuation
+        processedValue = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+        break;
+      case 'contactNumber':
+      case 'alternatePhone':
+        // Only allow digits, max 10 digits
+        processedValue = value.replace(/\D/g, '').slice(0, 10);
+        break;
+      case 'email':
+        // Allow email characters, max 100 characters
+        processedValue = value.slice(0, 100);
+        break;
+      default:
+        processedValue = value;
+    }
+    
+    setContactFields((prev) => ({ ...prev, [field]: processedValue }));
   };
 
   const handleDownloadFile = async (url) => {
@@ -1049,7 +1075,6 @@ const OdooDetailBody = ({
                     ))}
                   {activities.filter((activity) => activity.attachment).length === 0 && (
                     <div className="text-center py-8">
-                      <div className="text-gray-400 text-6xl mb-4">📎</div>
                       <p className="text-gray-500 text-lg">No files available</p>
                       <p className="text-gray-400 text-sm mt-2">No attachments have been uploaded for this lead</p>
                     </div>
@@ -1569,7 +1594,7 @@ const OdooDetailBody = ({
               <h3 className="text-base font-semibold text-gray-800">
                 Assigned Team
               </h3>
-              {isEditingTeam ? (
+              {/* {isEditingTeam ? (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsEditingTeam(false)}
@@ -1592,7 +1617,7 @@ const OdooDetailBody = ({
                 >
                   <FaPencilAlt className="w-3 h-3" /> Edit
                 </button>
-              )}
+              )} */}
             </div>
             <div className="border-b border-gray-200 mb-4"></div>
             {isEditingTeam ? (
@@ -2009,6 +2034,7 @@ const LeadDetailContent = () => {
   const { pipelines, status: pipelinesStatus } = useSelector(
     (state) => state.pipelines
   );
+  const { employees: managerEmployees } = useSelector((state) => state.managerEmployee);
 
   // All state hooks - MUST be called before any conditional returns
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -2025,6 +2051,10 @@ const LeadDetailContent = () => {
   const [showJunkModal, setShowJunkModal] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showSemiContactedModal, setShowSemiContactedModal] = useState(false);
+  const [showPotentialModal, setShowPotentialModal] = useState(false);
+  const [showHighPotentialModal, setShowHighPotentialModal] = useState(false);
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -2173,6 +2203,10 @@ const LeadDetailContent = () => {
     if (!lead) return;
     const stage = pipelines.find((p) => p.name === stageName);
     if (!stage) return;
+    
+
+    
+    // Handle different form types
     if (stage.formType === "LOST") {
       setShowLostModal(true);
       return;
@@ -2185,6 +2219,23 @@ const LeadDetailContent = () => {
       setShowConvertModal(true);
       return;
     }
+    if (stage.formType === "ASSIGNED") {
+      setShowAssignModal(true);
+      return;
+    }
+    if (stage.formType === "SEMI") {
+      setShowSemiContactedModal(true);
+      return;
+    }
+    if (stage.formType === "POTENTIAL") {
+      setShowPotentialModal(true);
+      return;
+    }
+    if (stage.formType === "HIGHPOTENTIAL") {
+      setShowHighPotentialModal(true);
+      return;
+    }
+    
     // For all other stages, update stageId directly
     try {
       await axios.patch(
@@ -2432,6 +2483,121 @@ const LeadDetailContent = () => {
     toast.success("Lead marked as Converted!");
   };
 
+  const handleAssignSuccess = async (assignmentData) => {
+    setShowAssignModal(false);
+    
+    // Update lead with assignment data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      salesRep: assignmentData.salesRep,
+      designer: assignmentData.designer
+    }));
+    
+    // Move to assigned stage
+    const assignedStage = pipelines.find((p) => p.formType === "ASSIGNED");
+    if (assignedStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${assignedStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Lead assigned successfully!");
+  };
+
+  const handleSemiContactedSuccess = async (semiContactedData) => {
+    setShowSemiContactedModal(false);
+    
+    // Update lead with semi contacted data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      floorPlan: semiContactedData.floorPlan,
+      estimatedBudget: semiContactedData.estimatedBudget,
+      firstMeetingDate: semiContactedData.firstMeetingDate,
+      priority: semiContactedData.priority
+    }));
+    
+    // Move to semi contacted stage
+    const semiStage = pipelines.find((p) => p.formType === "SEMI");
+    if (semiStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${semiStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Semi contacted details saved!");
+  };
+
+  const handlePotentialSuccess = async (potentialData) => {
+    setShowPotentialModal(false);
+    
+    // Update lead with potential data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      requirements: potentialData.requirements,
+      consultationFee: potentialData.consultationFee,
+      designConsultation: potentialData.designConsultation
+    }));
+    
+    // Move to potential stage
+    const potentialStage = pipelines.find((p) => p.formType === "POTENTIAL");
+    if (potentialStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${potentialStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Potential details saved!");
+  };
+
+  const handleHighPotentialSuccess = async (highPotentialData) => {
+    setShowHighPotentialModal(false);
+    
+    // Update lead with high potential data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      quotationDetails: highPotentialData.quotationDetails,
+      initialQuotedAmount: highPotentialData.initialQuotedAmount,
+      finalQuotedAmount: highPotentialData.finalQuotedAmount,
+      discountPercent: highPotentialData.discountPercent,
+      designTimeline: highPotentialData.designTimeline,
+      completionTimeline: highPotentialData.completionTimeline
+    }));
+    
+    // Move to high potential stage
+    const highPotentialStage = pipelines.find((p) => p.formType === "HIGHPOTENTIAL");
+    if (highPotentialStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${highPotentialStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("High potential details saved!");
+  };
+
   // Add the edit handler
   const handleEditActivity = (activity) => {
     setEditingActivity(activity);
@@ -2518,6 +2684,31 @@ const LeadDetailContent = () => {
         lead={showConvertModal ? lead : null}
         onClose={() => setShowConvertModal(false)}
         onSuccess={handleConvertSuccess}
+      />
+      <AssignLeadModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        lead={lead}
+        onAssign={handleAssignSuccess}
+        salesEmployees={managerEmployees || []}
+      />
+      <SemiContactedModal
+        isOpen={showSemiContactedModal}
+        onClose={() => setShowSemiContactedModal(false)}
+        lead={lead}
+        onSuccess={handleSemiContactedSuccess}
+      />
+      <PotentialModal
+        isOpen={showPotentialModal}
+        onClose={() => setShowPotentialModal(false)}
+        lead={lead}
+        onSuccess={handlePotentialSuccess}
+      />
+      <HighPotentialModal
+        isOpen={showHighPotentialModal}
+        onClose={() => setShowHighPotentialModal(false)}
+        lead={lead}
+        onSuccess={handleHighPotentialSuccess}
       />
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
