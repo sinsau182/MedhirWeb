@@ -3331,6 +3331,9 @@ const PipelineSettings = ({
                     <option value="CONVERTED">Converted</option>
                     <option value="JUNK">Junk</option>
                     <option value="LOST">Lost</option>
+                    <option value="ONBOARDING">Onboarding</option>
+                    <option value="APPROVAL">Approval</option>
+                    <option value="CUSTOM">Custom</option>
                   </select>
                   {newStageFormType === "" && (
                     <span className="text-xs text-red-500 mt-1">

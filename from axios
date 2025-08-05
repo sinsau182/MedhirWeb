@@ -1,0 +1,2039 @@
+[33mcommit a6ee5954b6bab844f51dd503ec93bd7687892250[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31mpersonal/main[m[33m)[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 21:40:21 2025 +0530
+
+    minioSlice and hook changed
+
+[33mcommit 22212e199a255a6f1300973ea2acdddbe7449023[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 21:36:51 2025 +0530
+
+    minioSlice changed
+
+[33mcommit 6867bfd7422bf95d07f9669666a60effa52a32fe[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 21:29:54 2025 +0530
+
+    vendor list updated validation
+
+[33mcommit 59637829fa350fad1ebe08e5f959da7c659c70cf[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 21:29:27 2025 +0530
+
+    vendor list updated validation
+
+[33mcommit d14d99ca8b5b83e5199145d343faffd3bdc6e431[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 21:29:14 2025 +0530
+
+    vendor list updated validation
+
+[33mcommit cdef55f1d19f58b4e478b7c469484cff885d026c[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 17:33:08 2025 +0530
+
+    bulk payment form changed by ankit
+
+[33mcommit a21e74a283d24ce00d8b240b82012d4a4c1d135b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 17:19:22 2025 +0530
+
+    ------asset build solved------
+
+[33mcommit 498f07db754c419d038f86e76dd423aa8ba3b0b5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 17:15:18 2025 +0530
+
+    ------asset build solved------
+
+[33mcommit be1b9efb83c759a0bf5e04178f32e51858f06a94[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 17:08:12 2025 +0530
+
+    ------asset build solved------
+
+[33mcommit 8f30e2dbc07e0242daa5d370de69e95a240cdb59[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 17:06:42 2025 +0530
+
+    ------asset build solved------
+
+[33mcommit f93dfe89302aa71f0573f0cb7ba59700e9ce8f4e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 16:49:54 2025 +0530
+
+    sales settings corrected
+
+[33mcommit 6764a16e8927e95934abe370a1da47f1e5966f95[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 16:22:34 2025 +0530
+
+    ------vendor added------
+
+[33mcommit 353bf25a4e123d7ef0749e14bc125a62c86a0902[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 16:19:56 2025 +0530
+
+    ------asset build solved------
+
+[33mcommit 6334c04968d2074f6c54d4dd1584b5ffe4868bb1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 16:08:07 2025 +0530
+
+    ------asset build solved------
+
+[33mcommit d09208d2a93a8b40a9edcfa1418f1feb0dff4cc7[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 15:56:04 2025 +0530
+
+    payroll error
+
+[33mcommit fec1c2d5eebd0bc8fa57ff8f26c423bcd574bac4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 15:47:43 2025 +0530
+
+    ------asset added------
+
+[33mcommit 52c04a9a8077f55707521b5bb6730f6b936cba7c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 15:45:00 2025 +0530
+
+    ------asset added------
+
+[33mcommit 1e0061fbd4dd5b4e9c3d5d964cd561b34cc9139c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Aug 2 14:44:16 2025 +0530
+
+    ------asset added------
+
+[33mcommit 2c3adddd0eb69b5e91d05667b4a0ea91a312c4db[m
+Merge: 353546a b8063e5
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 22:38:17 2025 +0530
+
+    Merge branch 'main' of https://git.home.medhir.in/Saurav_Singh/nayati-ui
+
+[33mcommit 353546a0d20332627cc12f8f999ab28377c816d3[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 22:37:17 2025 +0530
+
+    ------payroll integrated and account settings enabled------
+
+[33mcommit c2401f09beccb2b65859364aee57cd318e02851d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 19:05:13 2025 +0530
+
+    payroll integrated
+
+[33mcommit f0511784dabab8a317fc1b174d99f71e9a555e7e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:44:29 2025 +0530
+
+    sales and salary on dev to deploy, and build resolved
+
+[33mcommit b8063e5e70edc18cd4d582535f929d00df828755[m
+Merge: d0ba79b 16473dd
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 12:10:53 2025 +0000
+
+    merge upstream
+
+[33mcommit d0ba79bbe5cffc9428a9971b44e42fab3f859bb0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:39:25 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit c40377052c27ecd5a98ce7a9a0052e3549e5ed0c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:39:11 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit 01145e3ac0766052a44a4bd1c2f6b27e64419c51[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:38:32 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit cd866b82682b73f067a79e41d31feea0ec88c7e8[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:38:21 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit d5f64688e7fc0375e14c0110fd855c6f633ba359[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:37:58 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit 0dd9abf5f6a42b69a7af2f2517aa1a2de7489c76[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:30:06 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit 78ea1104c7d120eca7913606aa9f97cd058ab2a6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:29:48 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit f62e1f547ef7d9e66a7ceabcbd1b8040f0061c1f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:29:26 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit ca1a4d78a9363cd03710c1f4b4b5c9fca7592490[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:29:19 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit 3bc5bed48b57aead537ccabf02c7724ae2b613e5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:28:55 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit 032ae2719089e8b27e79d30d7c3ceb68772039ec[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:28:44 2025 +0530
+
+    sales and salary on dev to deploy
+
+[33mcommit 5fbe9fd56b84be1a5a5e49f3c7765ec77a22b15c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:28:24 2025 +0530
+
+    sales and salary on dev
+
+[33mcommit e219f3a605bb4d90280b96eab13323856e396a35[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:28:05 2025 +0530
+
+    sales and salary on dev
+
+[33mcommit 4ba1031aafe2b2cabccb208a756302c03602eeda[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:26:58 2025 +0530
+
+    sales and salary on dev
+
+[33mcommit e5996312844123efa3885764b54786fbb7a1c5cb[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 17:22:37 2025 +0530
+
+    salary done
+
+[33mcommit f01ef0fde977efbb0bc1f0741186f53c633129f2[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 16:28:36 2025 +0530
+
+    sales updated by swarnim
+
+[33mcommit 0e421b10bfd08948da387cfae076f5a14116872d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 14:20:34 2025 +0530
+
+    leaves solved
+
+[33mcommit 80148c375d54253e9c02ff2fc010e6bd2f32cb28[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 13:38:44 2025 +0530
+
+    -----Attendance Correct-----
+
+[33mcommit 78a6927862399cd9393527e949d0852257345b2f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Aug 1 13:38:16 2025 +0530
+
+    -----Attendance Correct-----
+
+[33mcommit 777eca7d4b014b385560617e75d4592ab25bf7f1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 21:47:08 2025 +0530
+
+    -----vendor changes------
+
+[33mcommit 807dc8c114f7b720a4848045c58881a2a1c01178[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 21:39:02 2025 +0530
+
+    -----vendor changes------
+
+[33mcommit 5a27f1e6792e6b277bf8482ebcdc87e61e0fa3b2[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 21:34:59 2025 +0530
+
+    vendor codes
+
+[33mcommit 895a9a67ed7245ad772af56d473d4fcbfa08f83a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 20:02:06 2025 +0530
+
+    invoice integrated by Megha
+
+[33mcommit f31d5505475064a979e4a283c4f2ed30d307f6aa[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 20:01:25 2025 +0530
+
+    invoice integrated by Megha
+
+[33mcommit 657a2f9f81c5b184becec78401dd9a17d7c9f2e6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 20:00:48 2025 +0530
+
+    invoice integrated by Megha
+
+[33mcommit 276d64953ee0f11751f9d1f60869652358277836[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 19:17:00 2025 +0530
+
+    po check by anupam
+
+[33mcommit 8adc9d0722e01e559809f8949486a2fac5a0629e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 18:46:30 2025 +0530
+
+    <-----cache busting done------>
+
+[33mcommit 4fac0553e049a0ed83ca716e76f4ff075bd216b1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 18:45:24 2025 +0530
+
+    -----cache busting done------
+
+[33mcommit 6b6c870ab38b59806750d7df306c3c52b6405e65[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 17:27:58 2025 +0530
+
+    files of leave changes
+
+[33mcommit 3527c27037a227286ea8f9aa7bf0e792eab0373a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 13:09:07 2025 +0530
+
+    -----anupam files changes-----
+
+[33mcommit aed2499c38415a058f040b798ad8869a419685e5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 31 11:58:24 2025 +0530
+
+    cache busting doing
+
+[33mcommit 16473ddd59e33c8ebc2f4c56b9745f2fd7fb646b[m
+Merge: 055cf6f 29f5873
+Author: sangar <lsangar@tuta.io>
+Date:   Wed Jul 30 15:53:32 2025 +0000
+
+    Merge pull request 'main' (!17) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/17
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 29f5873cbb741c5a4c5e5299499e8d2a438544da[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 21:10:56 2025 +0530
+
+    -----build done-----
+
+[33mcommit a9bcc75940727ba10d16c57d6a8380c92d90096e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 20:38:45 2025 +0530
+
+    -----QA Ready-----
+
+[33mcommit 45228ca8f2be82f9f9402bceb6cfe7f63e68b141[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 20:06:24 2025 +0530
+
+    -----P/L excepted-----
+
+[33mcommit 907a318214375e161fb88f6d18ef2e46b564e6ef[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 19:47:37 2025 +0530
+
+    -----P/L excepted-----
+
+[33mcommit 26695fc9e341a3faf66ec5f005c372ba3f4fec4d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 18:28:46 2025 +0530
+
+    -----build done-----
+
+[33mcommit d5831a6e87472d3bcde079339410f4cd500db0e9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 18:26:21 2025 +0530
+
+    -----build done-----
+
+[33mcommit 002ecd03beeddf6ff5b820d63922ad1d421cdf47[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 18:25:57 2025 +0530
+
+    build done
+
+[33mcommit 5b086cfd79221d5440a2dcd01f20bd99aa714024[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 18:25:04 2025 +0530
+
+    build done
+
+[33mcommit f176f7e24db524d2c8673d8d74e21508b8692b77[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 17:13:14 2025 +0530
+
+    comp off half removed
+
+[33mcommit 6fff1d241cc2f58cba06695096ffbf9dcfb3219e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 16:35:37 2025 +0530
+
+    Customers done
+
+[33mcommit af8c4539e5d1b94092f44726adbe278322a1cebd[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 16:11:34 2025 +0530
+
+    sidebar modified for Customers
+
+[33mcommit 61105166b8cc922e8989484ec16577c88fa43b1e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 16:05:24 2025 +0530
+
+    sidebar modified for Customers
+
+[33mcommit cb34045a050a24053c6e7d305c762f74e017aab3[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 16:05:04 2025 +0530
+
+    sidebar modified for Customers
+
+[33mcommit 7489a6f85c43db01a66d85303c35be1ae26cf73a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 16:00:28 2025 +0530
+
+    sidebar modified for Customers
+
+[33mcommit 805613b46eb910539089a1a061e9654618a08c3d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 30 15:59:43 2025 +0530
+
+    sidebar modified for Customers
+
+[33mcommit 1f45d35fda11cb813a577ca9d68996a88de4b07f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 20:19:36 2025 +0530
+
+    ------Attendance Done to Deploy------
+
+[33mcommit fc1c3b3fb96708b5c24f7fa68bd62b10b8cf7d3e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:07:41 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 26dc79d59e1bff0996d8b387f2464163b06dca05[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:07:19 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 35158f81cefa0ccefc51c27cb3fff67fd7f72598[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:07:06 2025 +0530
+
+    attendance done for blank
+
+[33mcommit e3b94da8c032634ef328d2452816b0f8e3abf709[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:06:48 2025 +0530
+
+    attendance done for blank
+
+[33mcommit ad7de47af44cde737fa029bb979a683e9ca18c96[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:05:47 2025 +0530
+
+    attendance done for blank
+
+[33mcommit ffa186235a4eab96b8bd7a864c27d1caab55ebef[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:05:22 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 8e3244f4cdf6393e7aa796d0ff6afc398b046ae9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:05:01 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 27208a734b15e3e45a80a22afe68c9e389970ffe[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:04:32 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 16cb974afa4de0202c47e9f33ea2b6418f02aee6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:04:11 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 81cd44ad5330cad3a28b364175d4f42f8dae35bb[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 19:03:52 2025 +0530
+
+    attendance done for blank
+
+[33mcommit 2cf79cece27b1cab6447a5ae149944be94393b09[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 18:44:48 2025 +0530
+
+    attendance empty done
+
+[33mcommit eca329b37a835076ccafd043ecf1aad55bd707f9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 18:44:17 2025 +0530
+
+    attendance empty done
+
+[33mcommit 2eabf3a5d29f383ebefa5b04bb80f325a189931a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 29 18:43:45 2025 +0530
+
+    attendance empty done
+
+[33mcommit b8464b6a19b609ea1efe9fbee963220b48d8890a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 26 20:06:43 2025 +0530
+
+    ------Dev Testing------
+
+[33mcommit 00eb2cca541d2406215f337b5d2d21f5ee93cfcd[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 26 19:59:23 2025 +0530
+
+    ------Dev Testing------
+
+[33mcommit 70d40412ef18f31635df425ac747dabdb7697a94[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 26 19:57:20 2025 +0530
+
+    dev testing
+
+[33mcommit 902e74948d785e64a3bff790f34d6f2eeb96cc21[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 26 19:52:33 2025 +0530
+
+    ------All Done By Saurav------
+
+[33mcommit a46f1203f4f49566f40e9a8012bc614e70db8584[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 22:18:21 2025 +0530
+
+    open in new tab in profile
+
+[33mcommit 0171e3e8a292b23a4ae00a18df0b4841902da121[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 22:18:00 2025 +0530
+
+    open in new tab
+
+[33mcommit e46f3e86af086d1d8547dcdf5008c01bb2a882e0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 20:40:51 2025 +0530
+
+    weekly offs updated
+
+[33mcommit 444f4543d1e9c432e22ae2362068c0bcf5104822[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 20:28:16 2025 +0530
+
+    ------safe point------
+
+[33mcommit e3f1b49b0131fde276a99e505be672c866be6e04[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 17:43:57 2025 +0530
+
+    ------profile done from my side------
+
+[33mcommit 48bf8f5e7c807d60c40d68d58c20d96a448e90cc[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 17:43:31 2025 +0530
+
+    ------profile done from my side------
+
+[33mcommit 91b02eb40f67ecfa9ea5cd55560c2599f427a669[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 17:36:53 2025 +0530
+
+    profile done from my side
+
+[33mcommit 7151e9116a326ac342032e1b0f23132c9216bb66[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 17:20:59 2025 +0530
+
+    -----profile version to check-----
+
+[33mcommit 3eda8a67b3dd6020783805de6212057f0fd5c509[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 17:19:09 2025 +0530
+
+    profile version 1
+
+[33mcommit a24dc4398b6664d2bcdd282cf07c5e7a3fecb94f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 14:51:52 2025 +0530
+
+    profile fixed updated
+
+[33mcommit 0bb246a9afddfcd11fc281088d8cc10f2863b594[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 14:51:28 2025 +0530
+
+    profile fixed
+
+[33mcommit 51371b00a8d34630f541a92ff1f870b0ce749fc6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 25 13:53:10 2025 +0530
+
+    profile fixed
+
+[33mcommit ff3c1e2bcc8ce691d641e12b1de13a89478c0b31[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 21:19:50 2025 +0530
+
+    -----reporting manager done-----
+
+[33mcommit 7be5d5a239421bf13d97234adc2f971893a9b347[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 21:19:27 2025 +0530
+
+    -----reporting manager done
+
+[33mcommit b131811d1174a334a736ff63e018aa7e6f3e5520[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 21:10:37 2025 +0530
+
+    reporting manager done to check
+
+[33mcommit 4d94add477a0c72e7bd9d00967c05c0216d22c5e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 21:09:02 2025 +0530
+
+    reporting manager done to check
+
+[33mcommit 06c2ffacc024c6509ec327ba61ff3893e1a96654[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 21:04:25 2025 +0530
+
+    reporting manager done to check
+
+[33mcommit a1a517c88def420d916d476da0c24e6d9f34c6fe[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 20:22:16 2025 +0530
+
+    reporting manager done to check
+
+[33mcommit c6ed7d2c3bc023c736b465c5e26c7f9516b95903[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 20:21:51 2025 +0530
+
+    reporting manager done
+
+[33mcommit e5eb53bf55a6f166aa64cd0e053d542a75af6a6a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 20:14:40 2025 +0530
+
+    doc upload fixed done
+
+[33mcommit 294458ee84d1d21b7a03155497e9814688224c5d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 16:09:05 2025 +0530
+
+    request details scrollable
+
+[33mcommit e99e4fbdb3f355a7ce9b4365289a2238b0e754bd[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 12:55:07 2025 +0530
+
+    request details scrollable
+
+[33mcommit d7b7e8b2cccd1a977cea6ae8bf09766b736ed75e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 12:12:43 2025 +0530
+
+    all changes done
+
+[33mcommit 57a22859777beab162dbe6c206fed5143e459027[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 24 04:12:20 2025 +0530
+
+    saurav done
+
+[33mcommit cb6725eb421b9f659a5c23b9eb82c5376084c21a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:06:31 2025 +0530
+
+    profile partial done
+
+[33mcommit ab50e66469671157559b3003cca847e6dde9cf2f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:05:24 2025 +0530
+
+    profile partial done
+
+[33mcommit 239d29532d43583cce6bb59e7b7509f2c8ab8af4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:05:13 2025 +0530
+
+    profile partial done
+
+[33mcommit be0b528c5940ea894a7283a0da39ffcee545ba1b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:04:51 2025 +0530
+
+    profile partial done
+
+[33mcommit 0356f8ec3ccecb7eeb8454d8d822d14f8206f7ca[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:04:11 2025 +0530
+
+    profile partial done
+
+[33mcommit 760ae9ce15f95904e3ee0a2eee438ff107b8eb5d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:03:43 2025 +0530
+
+    profile partial done
+
+[33mcommit ba94a2e2cdd2bd771565e0f6f630b63532308a6b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:03:04 2025 +0530
+
+    profile partial done
+
+[33mcommit a0778558667f035c970ea77de0cf06b7f327b834[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 23:01:55 2025 +0530
+
+    profile partial done
+
+[33mcommit 6b06d062e5ce3edd8c0d88cbe5945de39edd5a43[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 22:57:10 2025 +0530
+
+    profile partial done
+
+[33mcommit aa5fa19170b29426ed614247b3083db0b45f17a1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 19:31:29 2025 +0530
+
+    token added in profile
+
+[33mcommit c32d7e54f71ef293a489233a6eee281028141cd2[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 19:19:51 2025 +0530
+
+    profile restored and addNewEmployee existing done
+
+[33mcommit f6ffdd69742b5ea9553459b0e885c15b5ca4fc71[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 18:54:54 2025 +0530
+
+    profile unsolved
+
+[33mcommit 80c95938a3afabb768744f17f7ceb5baf5f4edb0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 18:34:52 2025 +0530
+
+    profile unsolved
+
+[33mcommit 5dc47c36267ea2d2bd77247dde4ecbb24bb4d6ff[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 18:34:37 2025 +0530
+
+    profile unsolved
+
+[33mcommit c70fed1978beea9abba9854f24a50eaec964c502[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 16:47:31 2025 +0530
+
+    dev run
+
+[33mcommit 830b0fdd00f2edc1318c90f6cda12d81b1cdd1c9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 16:39:14 2025 +0530
+
+    latest add new employee form
+
+[33mcommit a02521cfe6a3decb2766333ac9d057e2a5b0f80a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 13:52:23 2025 +0530
+
+    form id proofs fields fixed
+
+[33mcommit 9bc89e1fc67a4d380f31ab29e230e4559a3be901[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 13:20:39 2025 +0530
+
+    file upload solved
+
+[33mcommit 429d720c645a506f082e1e2d039d6bd06fbaa728[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 13:18:26 2025 +0530
+
+    file upload solved
+
+[33mcommit 80841a078999e70c9e94aecba745f07d932952f9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Wed Jul 23 12:30:45 2025 +0530
+
+    dev deployed
+
+[33mcommit 056676b73943a9b15786e2e3c58d8bbd211bbbd2[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:35:12 2025 +0530
+
+    prefix solved in company form done
+
+[33mcommit 851177cdcc4f9eb4f0cb9299c59bb92bb5d9c55b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:34:24 2025 +0530
+
+    prefix solved in company form done
+
+[33mcommit f250a57b1178edaffdc6f236838a2301fc2c0968[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:33:56 2025 +0530
+
+    prefix solved in company form done
+
+[33mcommit e36245821cfbdafd15c5aa51bea7adf100554063[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:33:37 2025 +0530
+
+    prefix solved in company form
+
+[33mcommit 3c359d1ecfac0e7e68d1b5de277d154f7c745d68[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:33:17 2025 +0530
+
+    prefix solved in company form
+
+[33mcommit d219f98c3e354b1b64740476d58576d8f5a088a4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:32:50 2025 +0530
+
+    prefix solved in company form
+
+[33mcommit b24f8e01b15725eb83db67d8640770362023d1c6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 22:31:52 2025 +0530
+
+    prefix solved in form
+
+[33mcommit 434ad0c9388c2ca4a7d532a6b8af4e9eaa4f71a2[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 21:53:47 2025 +0530
+
+    refactored superadmin ui updated
+
+[33mcommit 06e106907e8f4190e20f4208405cf408883ad900[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:55:26 2025 +0530
+
+    latest
+
+[33mcommit 06c82633f92983f413809ef3001db27815fb4de4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:55:03 2025 +0530
+
+    latest
+
+[33mcommit e777461b4ab41b054a12fb1703b3551cd8ea4d1c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:31:03 2025 +0530
+
+    company head email solved done
+
+[33mcommit 220e33ea13d24908daf8cfbaeabc721d4c607a38[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:30:49 2025 +0530
+
+    company head email solved
+
+[33mcommit b6dc2cf2935de4de6a0e1eaea8a0291a0de366c4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:06:49 2025 +0530
+
+    caps gst issue solved
+
+[33mcommit d993f2c3bb41317695e6bae346bb1ec2bee86cbf[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:03:59 2025 +0530
+
+    not found in search done
+
+[33mcommit 159eabcf9873de85b593ee6be4d922b91262ee93[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 18:02:01 2025 +0530
+
+    not found in search done
+
+[33mcommit 2d5c3a03a412f8e2c80d8c793c1ac7c0b84f605d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 17:34:15 2025 +0530
+
+    sidebar corrected and company done
+
+[33mcommit 68abf6e534a0fae71a553cdb60bb7b212528d1f5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 17:33:38 2025 +0530
+
+    sidebar corrected and company form done
+
+[33mcommit c7e7da51674dc3667b23aaf1eb002a3c9bcb6fa9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 17:33:06 2025 +0530
+
+    sidebar corrected
+
+[33mcommit 039a77808969cd14d9c12b6bfe082796a294aa6f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 16:56:24 2025 +0530
+
+    prefix solved
+
+[33mcommit 9cd7894e32b60438c2471f9dfb94615d9eaf9a61[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 16:52:14 2025 +0530
+
+    superadmin company form updated
+
+[33mcommit 77c0434bd4dd209d9e38ead21ee58ddcb79078ad[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 16:10:58 2025 +0530
+
+    back button relocated
+
+[33mcommit 92fd567841520c0134d10d6b0ffca0566a88d833[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 16:03:17 2025 +0530
+
+    superadmin form
+
+[33mcommit 96656752cc117df6e926ece3473b9dcc68557f7b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 12:44:38 2025 +0530
+
+    ______Changes by Arun_______
+
+[33mcommit b7a649a167ed888485d448b1dceeccacffb19809[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 22 12:44:12 2025 +0530
+
+    ______Changes by Arun_______
+
+[33mcommit c34e489affeade36f7da13da538b11d0cf89d03e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sun Jul 20 23:50:43 2025 +0530
+
+    -------checkpoint version-------
+
+[33mcommit ee4e1f5f8bef39b44a6a19f7cb7233cafb7cee37[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sun Jul 20 23:49:17 2025 +0530
+
+    -------checkpoint version-------
+
+[33mcommit aa67c3997bc6985cca2637f5ff3c112211f4ff11[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 22:18:21 2025 +0530
+
+    gst star added for next resolved
+
+[33mcommit 114d34cac39ff4a24f21b7e365813ebbfb71cf69[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 22:18:08 2025 +0530
+
+    gst star added for next resolve
+
+[33mcommit 1d56e0dfd58b8fed7408d4ed362a4bc902380237[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 22:17:41 2025 +0530
+
+    gst star added
+
+[33mcommit 92680ba6f340a9d99b974338bff1f1725983b258[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 22:15:00 2025 +0530
+
+    company head solved
+
+[33mcommit c87231ed130412584b1f3c39f8f6ffbd959bb165[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 22:06:35 2025 +0530
+
+    sidebar solved
+
+[33mcommit 9e5d774060e67b504c8d7d219e3439f7963a7f58[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 21:27:01 2025 +0530
+
+    company update done all
+
+[33mcommit a9024b2ff92137436ffdaa9d4a624d8e7a6ad36d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 21:26:12 2025 +0530
+
+    company update done all
+
+[33mcommit 28ef6f7d6c08e7c4e5c68089cadeb9dcc204d673[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 21:23:20 2025 +0530
+
+    app resolved
+
+[33mcommit 6e7cdfa47429cb4ca2b63d8ad3e615ae49e08241[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 21:11:42 2025 +0530
+
+    company page resolved
+
+[33mcommit d3d0a4a1dc3abd3dcb8a663f6cb84214947c9843[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 20:37:34 2025 +0530
+
+    build resolved
+
+[33mcommit 4f699904eb5403d496b928f51481d13bc99ddfc9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 19:54:30 2025 +0530
+
+    eslint not solved properly
+
+[33mcommit d650f6cda0a7b1760c0d0e8958fbe4736ccf6b7d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 19:27:16 2025 +0530
+
+    eslint solved all
+
+[33mcommit da957b95f320d95cbc2f1045f63e37f7717c3b41[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 19:26:36 2025 +0530
+
+    eslint solved
+
+[33mcommit d8c12d91e5f7f8cf64b02afa7f5f3f4cf9967a5a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 18:48:42 2025 +0530
+
+    button corrected
+
+[33mcommit 24637ea44f89b90acc28aee2f6817c8a72371172[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 18:41:50 2025 +0530
+
+    superadmin update corrected
+
+[33mcommit af3cb0666c05f17cc6dc59e6e474b539cc8129ee[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 18:41:21 2025 +0530
+
+    superadmin corrected
+
+[33mcommit 241fe2ed08b012262666a63f2769324e92d3cd99[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 17:59:13 2025 +0530
+
+    sales updated
+
+[33mcommit 28276ac0d3ac800f32a65ab7fce348c790823ea4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 17:27:49 2025 +0530
+
+    updated frontend
+
+[33mcommit 108273e104757d4dec41668f466c590c33f41dc7[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 19 16:59:29 2025 +0530
+
+    updated frontend
+
+[33mcommit 8acbed54b70f5e178b268b43c149cf6487848ee5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 21:55:29 2025 +0530
+
+    container file reverted
+
+[33mcommit 515c3537da81834001fd4286626830c3225868a4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 20:52:30 2025 +0530
+
+    version added
+
+[33mcommit bbe79ea6240183584c2a552ff4ca90b170109fdc[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 20:11:59 2025 +0530
+
+    arun updated
+
+[33mcommit bc88db506738ecdda8c675382cac0188d7649aa9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 19:36:37 2025 +0530
+
+    container file updated for env
+
+[33mcommit 17fe0705466b0cf9f62b18ac0e009e670d80c38a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 19:07:25 2025 +0530
+
+    latest update by arun
+
+[33mcommit 76511fb02058b0b057ef17d3458609b6ac2d1f4a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:11:01 2025 +0530
+
+    activity resolved in sales by arun
+
+[33mcommit 60f04a409b704f18135f665813d5981f8060e257[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:09:33 2025 +0530
+
+    activity resolved in sales by arun
+
+[33mcommit b8029048c12bab523c8b97b4267e9cce059de758[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:09:09 2025 +0530
+
+    activity resolved in sales modules
+
+[33mcommit a1f06c88a8326948c139563f3afb0b2e22e5c6bb[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:08:42 2025 +0530
+
+    activity resolved in sales
+
+[33mcommit 765846b70706b4bd3928e1800f5408e0913155c5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:07:50 2025 +0530
+
+    activity resolved by arun
+
+[33mcommit 6ed222261b11e6ef3bf7fc068d2c1ce5b5ad49d6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:07:11 2025 +0530
+
+    activity resolved by Arun Sir
+
+[33mcommit 3280f926a3495c72f3da85a870c6dbace3add727[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 17:06:55 2025 +0530
+
+    activity resolved by Arun
+
+[33mcommit 1c30ad90ca37edcc5b371b10827a33a38090030e[m[33m ([m[1;31mpersonal/arun[m[33m)[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 16:09:35 2025 +0530
+
+    consoles and comments removed
+
+[33mcommit 11ae301a5546233ddb5f61f7decf82bd8988e4d9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 15:44:38 2025 +0530
+
+    overlap issue solved
+
+[33mcommit 1a4c3e1e3131b2ce67c88a66c8f5c9a0569fa89b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 15:44:03 2025 +0530
+
+    overlap issue solve
+
+[33mcommit 4c58dc5f817cb4f5e1772d96508cfe5e02cc93b9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 15:21:33 2025 +0530
+
+    payroll page updated
+
+[33mcommit bb2407dc4b6e77cff5552dcd1b38c03e34d237c5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 14:46:31 2025 +0530
+
+    date selection and apply disable solved
+
+[33mcommit f272cef685bb9922068d66e084635b0f605d09b9[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 14:04:19 2025 +0530
+
+    sidebar corrected and overtime disabled
+
+[33mcommit f418479408b9ecaaf90de6b0bddbf2cf15b6b355[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 13:02:14 2025 +0530
+
+    form scrollable and HOD column removed
+
+[33mcommit cb14e28f6704b827e6ea7b4b35cea67c34c61e3f[m
+Merge: 7fa7585 993096b
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jul 18 12:33:48 2025 +0530
+
+    Merge branch 'main' of https://github.com/sinsau182/MedhirWeb
+
+[33mcommit 993096b8f6422a2dd11f4930e0b14324e2ee7316[m
+Merge: d7e680c 9ba887c
+Author: SinghSaurav <91497861+sinsau182@users.noreply.github.com>
+Date:   Fri Jul 18 12:32:45 2025 +0530
+
+    Merge pull request #23 from sinsau182/addcompanyform
+    
+    Addcompanyform
+
+[33mcommit 9ba887c7b3f5294fd7fffb9b5e4d065b8ba0dcb4[m[33m ([m[1;31mpersonal/addcompanyform[m[33m)[m
+Author: Swarnim Dhawale <narutouzumakitsunade1729@gmail.com>
+Date:   Fri Jul 18 12:26:31 2025 +0530
+
+    formchanged
+
+[33mcommit 7e111f86a81a061f19bd4a0bdfc6aa523e73c2b1[m
+Merge: ea8b441 d7e680c
+Author: Swarnim Dhawale <narutouzumakitsunade1729@gmail.com>
+Date:   Fri Jul 18 11:55:44 2025 +0530
+
+    Merge branch 'main' of https://github.com/sinsau182/MedhirWeb into addcompanyform
+
+[33mcommit 7fa7585d9a44c03ea5b737a2d9279c30df6c1e84[m
+Merge: d7e680c 055cf6f
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 17 21:45:34 2025 +0530
+
+    Merge branch 'main' of https://git.home.medhir.in/Saurav_Singh/nayati-ui
+
+[33mcommit d7e680ca83a311cff8d6470070b1811663c1b7b1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 17 21:43:06 2025 +0530
+
+    form done
+
+[33mcommit ea8b44141c0f6bc0f73e80ec7d2d63f602ac7599[m
+Author: Swarnim Dhawale <narutouzumakitsunade1729@gmail.com>
+Date:   Thu Jul 17 21:40:11 2025 +0530
+
+    addcompanyform
+
+[33mcommit f366c3d3ebf2b83ff35de582043afe7982d58880[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 17 21:06:36 2025 +0530
+
+    pr done
+
+[33mcommit 5da15b8030d530eeb464ef0e05fba2ecb446b2ad[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 17 17:59:56 2025 +0530
+
+    employeeCompanyId used
+
+[33mcommit 90a2c0d6dc82bf8936ec516a7dbfcc6f699e7735[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 17 14:02:09 2025 +0530
+
+    updated
+
+[33mcommit f05418422a336a8a37eb64cd3699befce4b91c81[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jul 17 12:12:31 2025 +0530
+
+    sidebar changed, modules removed
+
+[33mcommit 055cf6f5d26897768d59b5f154c9fdc914401e10[m
+Merge: 45fbdbb 87bcf3c
+Author: sangar <lsangar@tuta.io>
+Date:   Sat Jul 12 14:46:52 2025 +0000
+
+    Merge pull request 'main' (!16) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/16
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 87bcf3cb461d612fccab9d2a2432e8119f99fe21[m
+Merge: 1488c41 45fbdbb
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Sat Jul 12 14:20:11 2025 +0000
+
+    merge upstream
+
+[33mcommit 1488c41f4616b4ccbf4f47de7fd8da41476e63e4[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jul 12 19:48:32 2025 +0530
+
+    pipeline check
+
+[33mcommit 45fbdbbcaebe2c25f6e7516ad76176a8c7768728[m
+Merge: 149a4f6 72d46b7
+Author: sangar <lsangar@tuta.io>
+Date:   Tue Jul 1 12:50:11 2025 +0000
+
+    Merge pull request 'QA deploy' (!15) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/15
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 72d46b7c782367f957398665fad6f96bdeced38c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 1 18:12:55 2025 +0530
+
+    QA deploy
+
+[33mcommit 149a4f6a3fc273d21c6c65d1aa81f1dfbb7f40ef[m
+Merge: e56ee58 83335f7
+Author: sangar <lsangar@tuta.io>
+Date:   Tue Jul 1 12:32:20 2025 +0000
+
+    Merge pull request 'QA deploy' (!14) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/14
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 83335f7ac7c8088c5ce93e8ee376a6139d19a019[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 1 11:36:34 2025 +0530
+
+    QA deploy
+
+[33mcommit 09c09a1cea4e987efebaea28057003aa426034fd[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jul 1 11:27:13 2025 +0530
+
+    QA deploy
+
+[33mcommit e56ee5803bb3daa3b8375c34bb0ac8bdb565498a[m
+Merge: 7821a37 a8c6695
+Author: sangar <lsangar@tuta.io>
+Date:   Tue Jun 24 11:33:44 2025 +0000
+
+    Merge pull request 'main' (!11) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/11
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit a8c6695fa29a85b40bd662b01bba210e642558ef[m
+Merge: 2d02eaa 7821a37
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Tue Jun 24 09:53:35 2025 +0000
+
+    merge upstream
+
+[33mcommit 2d02eaa087067510d3c048c572a909495e6d7369[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jun 24 15:20:48 2025 +0530
+
+    eslint turned on
+
+[33mcommit 28b590a684e3116d3916ce9982ad3e06404c2ca5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jun 24 13:52:39 2025 +0530
+
+    attendance done
+
+[33mcommit a383ff1c40711dde7331892c5e0019e387f4cb69[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:39:07 2025 +0530
+
+    production push
+
+[33mcommit 0aefee950956411d4a90ffb36149f775e54c149d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:38:43 2025 +0530
+
+    production push
+
+[33mcommit 38566bf7cb848888677cc2b2ab2ead9a525cce2f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:36:28 2025 +0530
+
+    production push
+
+[33mcommit 7821a3711d9e3c007d5ab9fe1bff15bfe637d14e[m
+Merge: b5e4860 8620e21
+Author: sangar <lsangar@tuta.io>
+Date:   Sat Jun 21 15:03:57 2025 +0000
+
+    Merge pull request 'main' (!10) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/10
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 895a891d82df192cb37f8d9e240d2d44d860199f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:31:11 2025 +0530
+
+    production push
+
+[33mcommit bc9daa27136ec78bc61a447035d1ddce959d5d1d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:29:36 2025 +0530
+
+    production push
+
+[33mcommit 33f76a49cb8ee6a3df5db1b8cae640cd2aba3940[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:28:24 2025 +0530
+
+    production push
+
+[33mcommit 8620e2167141a8121f0c44624735ac7a5eba0f7a[m
+Merge: b1fdd03 b5e4860
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 14:53:42 2025 +0000
+
+    merge upstream
+
+[33mcommit b1fdd03a2a51c4f500af02868198908355542aab[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 20:22:44 2025 +0530
+
+    production push
+
+[33mcommit 6f6541fb29a0c8b8aea87e1d9ddb6e41a1a64dc1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:47:05 2025 +0530
+
+    profile requests done
+
+[33mcommit 140b423aa07614c2912fc29359bbb9f84cd4aac8[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:45:42 2025 +0530
+
+    profile requests done
+
+[33mcommit dc30284f541da9a4e3f08503dcc2154ad75d4f85[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:45:26 2025 +0530
+
+    profile requests done
+
+[33mcommit 3c61942b8b03d34d7e6a76c29ecd5c27cff3e520[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:43:44 2025 +0530
+
+    profile requests done
+
+[33mcommit 2347610928d7cf03c01f3d94a21a98a5b18671c0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:38:11 2025 +0530
+
+    profile requests done
+
+[33mcommit 8d9bbd6cc015cf0bcfb0ea52a3302beb553f413a[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:34:15 2025 +0530
+
+    profile requests done
+
+[33mcommit 105dee51fbc350b45be19311a26fbd24bd6efed0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:31:10 2025 +0530
+
+    profile requests done
+
+[33mcommit c26ef5d1a0c067d43b0923a0fde89b33b7af67b7[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 18:29:18 2025 +0530
+
+    profile requests done
+
+[33mcommit 5c593e125a76945bbb6c7180cfb230a21c75cf88[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 12:27:12 2025 +0530
+
+    attendance array issue solved without componentising
+
+[33mcommit 4971dee1212fb8e001fcb24ffd1a620d1475845d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 12:26:19 2025 +0530
+
+    attendance array issue solved without componentising
+
+[33mcommit 55dafe75928218120c91bd12fd90f2075bc67405[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 12:25:32 2025 +0530
+
+    attendance array issue solved without componentising
+
+[33mcommit 2b5468b52843d53da93ac7086ba15630b1231d3d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 12:24:38 2025 +0530
+
+    attendance array issue solved
+
+[33mcommit 5d46d58aa95a5300c4e75505446c1376f7f5f9d6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 21 12:02:30 2025 +0530
+
+    attendance array issue solve
+
+[33mcommit 2557e947d58e5668ce6d8f2ff089bed3f2f0d1ce[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 20 13:53:54 2025 +0530
+
+    attendance integrated
+
+[33mcommit f4c333bda3ddf28df9492c95d2d47236ef1b4a11[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 20 13:53:28 2025 +0530
+
+    attendance integrated
+
+[33mcommit 084c9cc7f3e0609cdbc481bcc6a7ecd8f38c8fc5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 20 12:34:54 2025 +0530
+
+    attendance integrated
+
+[33mcommit 03d30447748dd0768303eb7e02357f163bbeff62[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 20 12:27:39 2025 +0530
+
+    attendance integrated
+
+[33mcommit 3d65490d750098ca7aca4f3003cb97b6503a7a88[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jun 19 18:31:02 2025 +0530
+
+    production testing
+
+[33mcommit c31849d707e07dce47a7dfb5f2264e148a1a78f8[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jun 19 18:07:56 2025 +0530
+
+    production testing
+
+[33mcommit 3617bea650772f09040150157cde254d88eabe2b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jun 19 18:00:24 2025 +0530
+
+    production testing
+
+[33mcommit 481bbe930edc6dce2200d78c86bb4e39b6a31fde[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 14 17:32:56 2025 +0530
+
+    sales sorted
+
+[33mcommit 666a31e5e17e2ce46fb38bb24c9f8c5b957636a1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 14 14:07:28 2025 +0530
+
+    admin add sorted
+
+[33mcommit b05bef0ab941b9b28f76961001147a78a9be5702[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Jun 14 13:28:54 2025 +0530
+
+    company error handled
+
+[33mcommit c82706e9e4e716b20c09c3bac3088c48f17c40e8[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:43:56 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit f40cc881e9c3e860abc0f61da489f0da55c65974[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:31:37 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit a6c8b5477fc807322c127099eed11d7c956c4c42[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:30:54 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit d19f08b1d865770ead852880d0e901659bd51b98[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:25:11 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit bc138c4eadecfca46d79c9274bb1748943ff4f24[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:24:21 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit c049882cf534108d867a401faaafeb6e3e80cd7d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:24:05 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit cae6b2bcbb617f6600db437ece367991a0717d04[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:15:57 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit 64c0f557860b62e4f9264bbdb4be13181c4c5e96[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:15:42 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit cddc2da920965fafca8649c0e692cc9633487159[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:14:02 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit e34d368177080a0fc65eee399179e8a398109ac3[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:13:33 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit dcd4f5cfa293e2caec315508740b30bbc8feef35[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:13:08 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit 706dd8a2a19f339f778465c4751e775e8931ec12[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:11:08 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit b4a457ae4cc4fcd847274bf47137dee6840b78b3[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:10:54 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit aab575eb4a4a9983d92885f4990ba072f1bbc66e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:10:31 2025 +0530
+
+    admin adding solved in module page
+
+[33mcommit 044a1b100aee45fac9805a1e32edc97b2f282b5b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 19:10:05 2025 +0530
+
+    admin adding solved
+
+[33mcommit 9412b3b31c0653fc3d4ad5463ab7c9923f39eeb8[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 18:04:14 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit 78f2ea717502d03f0eafaf03861ff141ec647021[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 18:03:48 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit eab4d6e0696e5edc350696fe7409f3cbdcdb2798[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 18:01:59 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit b888cd78b9ee69bccd89e325be0c791664132fa2[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 18:01:44 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit c9923a4157c41de43c7345a52b2301124e22a9bc[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 18:01:21 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit a05d3291f1da843757fffb4003919067a9466c88[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 13 13:27:15 2025 +0530
+
+    date fixed
+
+[33mcommit c0f82db54d822558bb761e131225501724e91173[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jun 12 17:58:51 2025 +0530
+
+    present absent count on dashboard card
+
+[33mcommit ccf92ab32d6cd7be8c90adeaaf890a441adea161[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Jun 10 00:04:09 2025 +0530
+
+    manager attendance, hr attendance, company selection, leave policies modified
+
+[33mcommit 0fda62ddda84841223e9d02113c9da560b01cd06[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Jun 6 12:16:34 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit 5213401abc5c4c6713b6097f6805a5d7d9d3fde0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jun 5 12:36:01 2025 +0530
+
+    latest medhir frontend
+
+[33mcommit 2ca4c3f319bcb359fcdad0b0a86cbc931da62624[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Jun 5 12:35:34 2025 +0530
+
+    latest frontend medhir
+
+[33mcommit 8fc839aeccf2a59fc82c761b23118007a7f2b5f0[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu May 29 13:20:08 2025 +0530
+
+    attendance ui done
+
+[33mcommit 67ccc4bf8c9174a352bf307ce38558e91985b3cd[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu May 29 13:16:49 2025 +0530
+
+    attendance upload correction
+
+[33mcommit 57a46725c013f096f1673f3a9fd821662391bd73[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu May 29 12:08:03 2025 +0530
+
+    attendance upload correction
+
+[33mcommit 9eacee5e500793995cc675d1a43f1ec23e98eb09[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue May 27 18:38:36 2025 +0530
+
+    attendance upload correction
+
+[33mcommit f1975b49d286527222b0dd738f7808e52af6b6e5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue May 27 15:53:51 2025 +0530
+
+    attendance upload correction
+
+[33mcommit 2bbdf7a60edb590b58d75c428116d8559616a80c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sun May 25 23:34:00 2025 +0530
+
+    attendance upload correction
+
+[33mcommit b5e48608fe889250ffa43a6fac5cce3c2207f63b[m
+Merge: d6e362f 9d0f59e
+Author: sangar <lsangar@tuta.io>
+Date:   Wed May 21 18:02:54 2025 +0000
+
+    Merge pull request 'main' (!9) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: http://10.0.3.90/Medhir/nayati-ui/pulls/9
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 9d0f59eab1c6674453c89fced7a552f9358a3dc9[m
+Merge: e69d31e d6e362f
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Thu May 15 13:08:06 2025 +0000
+
+    merge upstream
+
+[33mcommit e69d31e0b60ca756f09455f0fb70ae271e1345fe[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu May 15 18:37:26 2025 +0530
+
+    employee login done
+
+[33mcommit 6e947dfa35e5f6e813a4b50e0ed96f4df4277b69[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu May 15 18:37:00 2025 +0530
+
+    employee login done
+
+[33mcommit cdf890c76d683798dec6e8407bbb78cde9d20c16[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu May 8 14:59:42 2025 +0530
+
+    updated frontend
+
+[33mcommit 48e9a62e787e650ddb55e8188141c70b71d77752[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat May 3 17:34:28 2025 +0530
+
+    apply form updated and profile working
+
+[33mcommit 587fc8bd1f9ad22ff2ef08a89e83a8d78ac56c8b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat May 3 17:34:05 2025 +0530
+
+    apply form updated
+
+[33mcommit d6e362fb1e27058ec099136a9f5e130f66fde124[m
+Merge: d05c54a af3b78d
+Author: sangar <lsangar@tuta.io>
+Date:   Tue Apr 29 14:24:23 2025 +0000
+
+    Merge pull request 'main' (!8) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/8
+
+[33mcommit af3b78d5f939f96be7f7fd439ed43de1084beaaa[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 29 19:50:50 2025 +0530
+
+    profile update check and removed .env
+
+[33mcommit 4491b39b0aa118c4f67f9936a6ecb3fdc9abd517[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 29 19:49:57 2025 +0530
+
+    profile update check
+
+[33mcommit 19219da1f83ab18c9ad303ff653e340896b99de5[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 29 19:43:30 2025 +0530
+
+    profile update check
+
+[33mcommit d05c54ae5812d3a016736837a76a7986f9fb4eb6[m
+Merge: f299399 3f7de1c
+Author: sangar <lsangar@tuta.io>
+Date:   Sat Apr 26 14:05:18 2025 +0000
+
+    Merge pull request 'main' (!7) from sangar/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/7
+
+[33mcommit 3f7de1c6aeb62b6002889956b28177df4bb3ea92[m
+Author: lsangar <lsangar@tuta.io>
+Date:   Sat Apr 26 19:25:55 2025 +0530
+
+    NAY-38 - update env variables
+
+[33mcommit e88e2eb3cfdd25b32ea86bed0827b4ef9a4ec400[m
+Author: lsangar <lsangar@tuta.io>
+Date:   Sat Apr 26 18:17:54 2025 +0530
+
+    NAY-38 - update conflicting packages
+
+[33mcommit 49e4b876f2a1875e55f30230815f7fe3b9cc240d[m
+Author: lsangar <lsangar@tuta.io>
+Date:   Sat Apr 26 18:09:21 2025 +0530
+
+    NAY-38 - enable multi environments docker, refactoring
+
+[33mcommit f29939951b0b46f4853178293bad1a2b09c4119b[m
+Merge: 3ae5555 4b0cce0
+Author: sangar <lsangar@tuta.io>
+Date:   Fri Apr 25 13:41:08 2025 +0000
+
+    Merge pull request 'main' (!5) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/5
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit 4b0cce0d9f22714c568898add3d778bcb26acb4b[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 18:39:54 2025 +0530
+
+    removed consoles from pages
+
+[33mcommit fd54b8caa19e0474d344bdc5def7ea29fe4079d7[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 18:33:58 2025 +0530
+
+    removed consoles from pages
+
+[33mcommit 337bd7a1be978d58cc3097349962a902e1f4e692[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 18:11:26 2025 +0530
+
+    removed localhost from pages
+
+[33mcommit c151e7b59e5321c83ebf2fa7a6ad46a7a3b6d559[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 18:10:42 2025 +0530
+
+    removed localhost from pages
+
+[33mcommit 73877faa551e948c670812dd723ae7c4ac5c46b1[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 18:07:02 2025 +0530
+
+    removed localhost from pages
+
+[33mcommit aed72a86ecb40342a1d6a382ce50e3f545261913[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 18:06:07 2025 +0530
+
+    removed localhost from pages
+
+[33mcommit 5e2245bf5614c63e8b15f59ca89220b8f189f72c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 17:38:46 2025 +0530
+
+    review pending
+
+[33mcommit d0afb919001c66be81ec218f9461c0ce240ad850[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 17:38:07 2025 +0530
+
+    review pending
+
+[33mcommit e8f4f2f6c90a64643c7ac873ab63e69eeba89e6c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 22 17:35:38 2025 +0530
+
+    review pending
+
+[33mcommit 25e8c7dbca6cc67cbfdb6246a5ac00298364a169[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Apr 10 20:49:59 2025 +0530
+
+    api updated with rest.medhir.in
+
+[33mcommit faf00717ecfcf63d07f95c0eef4ad03924c38095[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Apr 10 20:49:27 2025 +0530
+
+    api changed
+
+[33mcommit 4eca07332088c3aff64fd678260fb1d5e0f1741d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Apr 10 20:36:53 2025 +0530
+
+    ui updated with session manager
+
+[33mcommit 3ae5555768f8b76f0d6ba99157f8be8b8f14a5da[m
+Merge: 6519ffc b8026d7
+Author: sangar <lsangar@tuta.io>
+Date:   Sun Apr 6 18:04:20 2025 +0000
+
+    Merge pull request 'main' (!4) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: http://192.168.0.101/Medhir/nayati-ui/pulls/4
+    Reviewed-by: sangar <lsangar@tuta.io>
+
+[33mcommit b8026d7de2ae7197fb62eba82d9c101067696c1b[m
+Merge: 444d81a 6519ffc
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Sat Apr 5 16:58:24 2025 +0000
+
+    merge upstream
+
+[33mcommit 444d81a292536cffb3080d29f626ece986ec730d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Apr 5 22:27:44 2025 +0530
+
+    settings integrated
+
+[33mcommit ee32cfd096947310181fc11af3267ef8b6172362[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Apr 4 20:33:50 2025 +0530
+
+    ui final
+
+[33mcommit 95850c75d0d18030bfe9d9ffa5ed89c1112d70f6[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Apr 4 20:32:44 2025 +0530
+
+    ui final
+
+[33mcommit c035e97b3cb64e9b3308b2e1ef0214fc0238779f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Apr 3 16:54:50 2025 +0530
+
+    product ready
+
+[33mcommit 25dd53fce6414e4032bcdffb8142e7efd771215f[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Tue Apr 1 20:38:21 2025 +0530
+
+    updates medhir
+
+[33mcommit 6519ffcaa472b32e03c49bfee77aeb1517095c8b[m
+Merge: e8bdef1 ffbd5fa
+Author: sangar <lsangar@tuta.io>
+Date:   Mon Mar 31 13:23:45 2025 +0000
+
+    Merge pull request 'main' (!3) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/3
+
+[33mcommit ffbd5fa7877801a3bb5007626561b70d04c96724[m
+Merge: c3377a7 e8bdef1
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Mon Mar 31 10:52:55 2025 +0000
+
+    merge upstream
+
+[33mcommit c3377a776484fa918d70cceb6556d1c146f67fb7[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Mon Mar 31 16:22:10 2025 +0530
+
+    build solved
+
+[33mcommit e8bdef18246d9024159f4b535b35ef54f7d8374d[m
+Merge: 94390ee 6ac483d
+Author: sangar <lsangar@tuta.io>
+Date:   Mon Mar 31 10:24:18 2025 +0000
+
+    Merge pull request 'main' (!2) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/2
+
+[33mcommit 6ac483de6e4213208e46572da2aa725c0fe05cd6[m
+Merge: febb49d 94390ee
+Author: Saurav_Singh <singhsaurav182001@gmail.com>
+Date:   Sat Mar 29 14:44:08 2025 +0000
+
+    merge upstream
+
+[33mcommit febb49dd209f2936df797313e8c3bd90baeb731c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Sat Mar 29 20:11:29 2025 +0530
+
+    manager and employee ui made
+
+[33mcommit 5ac1f79cf9ed97147ba30d0746ebcb47b289031e[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Mar 28 21:25:36 2025 +0530
+
+    ui changes
+
+[33mcommit c8bcc5e43d3def4507a0ce53f33e184f4ad53b4d[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Fri Mar 28 21:17:14 2025 +0530
+
+    ui changes
+
+[33mcommit 94390ee09da4ebdf8f7047e6c290e6e3022b9b07[m
+Merge: 23727d6 92943a6
+Author: sangar <lsangar@tuta.io>
+Date:   Thu Mar 27 15:58:28 2025 +0000
+
+    Merge pull request 'NAY-28 - update backedn url' (!1) from Saurav_Singh/nayati-ui:main into main
+    
+    Reviewed-on: https://git.home.medhir.in/Medhir/nayati-ui/pulls/1
+
+[33mcommit 92943a6894f3c55cb51a946a43b78c19b5d8ce2c[m
+Author: sinsau182 <singhsaurav182001@gmail.com>
+Date:   Thu Mar 27 21:26:33 2025 +0530
+
+    NAY-28 - update backedn url
+
+[33mcommit 23727d6c6d78c20f0828cc2db434074e0cb349a3[m
+Author: lsangar <lsangar@tuta.io>
+Date:   Thu Mar 27 20:49:49 2025 +0530
+
+    NAY-28 - first working commit

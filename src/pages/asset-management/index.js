@@ -9,7 +9,6 @@ import { fetchAssetCategories } from '@/redux/slices/assetCategorySlice';
 import { fetchAssetLocations } from '@/redux/slices/assetLocationSlice';
 import { fetchAssetStatuses } from '@/redux/slices/assetStatusSlice';
 import { addAsset, fetchAssets } from '@/redux/slices/assetSlice';
-import { fetchVendors } from '@/redux/slices/vendorSlice'; // adjust path if needed
 
 // Mock Data for existing assets display - REMOVED since we now use Redux
 // const MOCK_ASSETS = [
@@ -24,37 +23,27 @@ const MOCK_TEAMS = ['Marketing', 'Production', 'Sales', 'HR', 'Finance'];
 const MOCK_LAPTOP_COMPANIES = ['Dell', 'HP', 'Lenovo', 'Apple', 'Asus', 'Acer'];
 
 // Input and Select components defined outside to prevent re-creation on each render
-
-
-const InputField = ({ label, name, type = 'text', onChange, accept, file }) => {
-    return (
-        <div className="mb-4">
-            {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
-            <input
-                type={type}
-                name={name}
-                accept={accept}
-                onChange={onChange}
-                className="border border-gray-300 rounded px-3 py-2 w-full"
-            />
-            {/* Show file name if type is file */}
-            {type === 'file' && file && (
-                <p className="text-sm text-gray-600 mt-1">{file.name}</p>
-            )}
-        </div>
-    );
-};
-
-
+const InputField = ({ label, name, value, onChange, ...props }) => (
+    <div>
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <input 
+            name={name} 
+            onChange={onChange} 
+            value={value || ''} 
+            {...props} 
+            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+        />
+    </div>
+);
 
 const SelectField = ({ label, name, value, onChange, children, ...props }) => (
     <div>
         <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <select
-            name={name}
-            onChange={onChange}
-            value={value || ''}
-            {...props}
+        <select 
+            name={name} 
+            onChange={onChange} 
+            value={value || ''} 
+            {...props} 
             className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
         >
             {children}
@@ -68,31 +57,30 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     const { locations, loading: locationsLoading, error: locationsError } = useSelector(state => state.assetLocations);
     const { statuses, loading: statusesLoading, error: statusesError } = useSelector(state => state.assetStatuses);
     const { addingAsset, addAssetError } = useSelector(state => state.assets);
-    const { vendors, loading: vendorsLoading, error: vendorsError } = useSelector(state => state.vendors);
-
+    
     const [formData, setFormData] = useState({
-        assetName: '',
-        category: '',
-        serialNumber: '',
+        assetName: '', 
+        category: '', 
+        serialNumber: '', 
         location: '',
-        purchaseDate: '',
-        vendor: '',
-        invoiceNumber: '',
+        purchaseDate: '', 
+        vendor: '', 
+        invoiceNumber: '', 
         purchaseCost: '',
-        gstRate: '',
-        itcEligible: 'Yes',
+        gstRate: '', 
+        itcEligible: 'Yes', 
         invoiceScan: null,
-        assignedTo: '',
-        assignmentDate: '',
+        assignedTo: '', 
+        assignmentDate: '', 
         warrantyExpiry: '',
         // IT Specific Fields
-        team: '',
-        laptopCompany: '',
-        processor: '',
-        ram: '',
-        memory: '',
-        condition: 'New',
-        accessories: '',
+        team: '', 
+        laptopCompany: '', 
+        processor: '', 
+        ram: '', 
+        memory: '', 
+        condition: 'New', 
+        accessories: '', 
         graphicsCard: ''
     });
 
@@ -105,29 +93,12 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             dispatch(fetchAssetCategories());
             dispatch(fetchAssetLocations());
             dispatch(fetchAssetStatuses());
-            dispatch(fetchVendors());
         }
     }, [isOpen, dispatch]);
 
     useEffect(() => {
-        // Find the selected category object
-        const selectedCategory = Array.isArray(categories)
-            ? categories.find(
-                c => (c.categoryId || c.id) === formData.category
-            )
-            : null;
-
-        // Robust check for IT sector
-        const isITCategory = selectedCategory && selectedCategory.name &&
-            (
-                /it[\s_-]*sector/i.test(selectedCategory.name) || // matches "IT sector", "IT-sector", etc.
-                /it[\s_-]*equipment/i.test(selectedCategory.name) || // matches "IT Equipment"
-                /^it$/i.test(selectedCategory.name) || // matches "IT"
-                selectedCategory.name.toLowerCase().includes('it') // fallback: contains "it"
-            );
-
-        setShowITFields(!!isITCategory);
-    }, [formData.category, categories]);
+        setShowITFields(formData.category === 'IT Equipment');
+    }, [formData.category]);
 
     // Handle Redux errors with toast notifications
     useEffect(() => {
@@ -140,13 +111,10 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         if (statusesError) {
             toast.error(`Failed to fetch statuses: ${statusesError}`);
         }
-        if (vendorsError) {
-            toast.error(`Failed to fetch vendors: ${vendorsError}`);
-        }
         if (addAssetError) {
             toast.error(`Failed to add asset: ${addAssetError}`);
         }
-    }, [categoriesError, locationsError, statusesError, vendorsError, addAssetError]);
+    }, [categoriesError, locationsError, statusesError, addAssetError]);
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
@@ -159,13 +127,13 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        
         // Basic validation
         if (!formData.assetName || !formData.category || !formData.purchaseDate || !formData.purchaseCost) {
             toast.error("Please fill all required fields.");
             return;
         }
-
+        
         try {
             // Prepare asset data as JSON object with backend-expected field names
             const assetData = {
@@ -174,7 +142,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 serialNumber: formData.serialNumber || '',
                 locationId: formData.location,               // Backend expects 'locationId' not 'location'
                 purchaseDate: formData.purchaseDate,
-                vendorId: formData.vendor || null,
+                vendorId: null, // TODO: Map vendor name to vendorId when vendor management is implemented
                 invoiceNumber: formData.invoiceNumber || '',
                 purchaseCost: parseFloat(formData.purchaseCost),
                 gstRate: parseFloat(formData.gstRate || '0'),
@@ -182,7 +150,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 assignedTo: formData.assignedTo || '',
                 warrantyExpiry: formData.warrantyExpiry || null,
             };
-
+            
             // Add IT specific fields as custom fields if applicable
             if (showITFields) {
                 assetData.customFields = {};
@@ -195,11 +163,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 if (formData.accessories) assetData.customFields.accessories = formData.accessories;
                 if (formData.graphicsCard) assetData.customFields.graphicsCard = formData.graphicsCard;
             }
-
+            
             // Create FormData with the asset data as JSON in the 'asset' field
             const submitData = new FormData();
             submitData.append('asset', JSON.stringify(assetData));
-
+            
             // Add file upload if present
             if (formData.invoiceScan) {
                 submitData.append('invoiceScan', formData.invoiceScan);
@@ -211,18 +179,18 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
 
             // Dispatch the addAsset action
             const result = await dispatch(addAsset(submitData)).unwrap();
-
+            
             toast.success('Asset added successfully!');
             onSubmit(result); // Pass the response back to parent
             onClose();
-
+            
             // Reset form
             setFormData({
                 assetName: '', category: '', serialNumber: '', location: '',
                 purchaseDate: '', vendor: '', invoiceNumber: '', purchaseCost: '',
                 gstRate: '', itcEligible: 'Yes', invoiceScan: null,
                 assignedTo: '', assignmentDate: '', warrantyExpiry: '',
-                team: '', laptopCompany: '', processor: '', ram: '', memory: '',
+                team: '', laptopCompany: '', processor: '', ram: '', memory: '', 
                 condition: 'New', accessories: '', graphicsCard: ''
             });
         } catch (error) {
@@ -245,16 +213,16 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     <div className="p-4 border rounded-md">
                         <h3 className="font-semibold text-lg mb-4">Core Identification</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <InputField
-                                label="Asset Name"
-                                name="assetName"
+                            <InputField 
+                                label="Asset Name" 
+                                name="assetName" 
                                 value={formData.assetName}
                                 onChange={handleChange}
-                                required
+                                required 
                             />
-                            <SelectField
-                                label="Category"
-                                name="category"
+                            <SelectField 
+                                label="Category" 
+                                name="category" 
                                 value={formData.category}
                                 onChange={handleChange}
                                 required
@@ -268,15 +236,15 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                     </option>
                                 ))}
                             </SelectField>
-                            <InputField
-                                label="Serial Number"
-                                name="serialNumber"
+                            <InputField 
+                                label="Serial Number" 
+                                name="serialNumber" 
                                 value={formData.serialNumber}
                                 onChange={handleChange}
                             />
-                            <SelectField
-                                label="Location"
-                                name="location"
+                            <SelectField 
+                                label="Location" 
+                                name="location" 
                                 value={formData.location}
                                 onChange={handleChange}
                                 required
@@ -292,59 +260,52 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                             </SelectField>
                         </div>
                     </div>
-
+                    
                     {/* Financial & Purchase */}
                     <div className="p-4 border rounded-md">
                         <h3 className="font-semibold text-lg mb-4">Financial & Purchase Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <InputField
-                                label="Purchase Date"
-                                name="purchaseDate"
+                            <InputField 
+                                label="Purchase Date" 
+                                name="purchaseDate" 
                                 value={formData.purchaseDate}
                                 onChange={handleChange}
-                                type="date"
-                                required
+                                type="date" 
+                                required 
                             />
-                            <SelectField
-                                label="Supplier / Vendor"
+                            <SelectField 
+                                label="Supplier / Vendor" 
                                 name="vendor"
                                 value={formData.vendor}
                                 onChange={handleChange}
-                                required
                             >
-                                <option value="">
-                                    {vendorsLoading ? 'Loading vendors...' : 'Select Vendor...'}
-                                </option>
-                                {Array.isArray(vendors) && vendors.map(v => (
-                                    <option key={v.vendorId || v.id} value={v.vendorId || v.id}>
-                                        {v.vendorName}
-                                    </option>
-                                ))}
+                                <option value="">Select Vendor...</option>
+                                {MOCK_VENDORS.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
                             </SelectField>
-                            <InputField
-                                label="Invoice / Bill Number"
-                                name="invoiceNumber"
+                            <InputField 
+                                label="Invoice / Bill Number" 
+                                name="invoiceNumber" 
                                 value={formData.invoiceNumber}
                                 onChange={handleChange}
                             />
-                            <InputField
-                                label="Purchase Cost (Gross)"
-                                name="purchaseCost"
+                            <InputField 
+                                label="Purchase Cost (Gross)" 
+                                name="purchaseCost" 
                                 value={formData.purchaseCost}
                                 onChange={handleChange}
-                                type="number"
-                                required
+                                type="number" 
+                                required 
                             />
-                            <InputField
-                                label="GST Rate (%)"
-                                name="gstRate"
+                            <InputField 
+                                label="GST Rate (%)" 
+                                name="gstRate" 
                                 value={formData.gstRate}
                                 onChange={handleChange}
-                                type="number"
-                                placeholder="e.g., 18"
+                                type="number" 
+                                placeholder="e.g., 18" 
                             />
-                            <SelectField
-                                label="Input Tax Credit (ITC) Eligible"
+                            <SelectField 
+                                label="Input Tax Credit (ITC) Eligible" 
                                 name="itcEligible"
                                 value={formData.itcEligible}
                                 onChange={handleChange}
@@ -352,30 +313,23 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 <option value="Yes">Yes</option>
                                 <option value="No">No</option>
                             </SelectField>
-                            <InputField
-                                label="Invoice Scan"
-                                name="invoiceScan"
+                            <InputField 
+                                label="Invoice Scan" 
+                                name="invoiceScan" 
                                 onChange={handleChange}
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                            />
-                            <InputField
-                                label="Warranty Expiry Date"
-                                name="warrantyExpiry"
-                                value={formData.warrantyExpiry}
-                                onChange={handleChange}
-                                type="date"
+                                type="file" 
+                                accept=".pdf,.jpg,.jpeg,.png" 
                             />
                         </div>
                     </div>
-
+                    
                     {/* Conditional IT Fields */}
                     {showITFields && (
                         <div className="p-4 border rounded-md bg-blue-50 border-blue-200">
                             <h3 className="font-semibold text-lg mb-4 text-blue-800">IT Equipment Details</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <SelectField
-                                    label="Laptop Company"
+                                <SelectField 
+                                    label="Laptop Company" 
                                     name="laptopCompany"
                                     value={formData.laptopCompany}
                                     onChange={handleChange}
@@ -383,32 +337,32 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                     <option value="">Select Company...</option>
                                     {MOCK_LAPTOP_COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
                                 </SelectField>
-                                <InputField
-                                    label="Processor/Model"
-                                    name="processor"
+                                <InputField 
+                                    label="Processor/Model" 
+                                    name="processor" 
                                     value={formData.processor}
                                     onChange={handleChange}
                                 />
-                                <InputField
-                                    label="RAM (e.g., 16GB)"
-                                    name="ram"
+                                <InputField 
+                                    label="RAM (e.g., 16GB)" 
+                                    name="ram" 
                                     value={formData.ram}
                                     onChange={handleChange}
                                 />
-                                <InputField
-                                    label="Memory (e.g., 512GB SSD)"
-                                    name="memory"
+                                <InputField 
+                                    label="Memory (e.g., 512GB SSD)" 
+                                    name="memory" 
                                     value={formData.memory}
                                     onChange={handleChange}
                                 />
-                                <InputField
-                                    label="Graphics Card"
-                                    name="graphicsCard"
+                                <InputField 
+                                    label="Graphics Card" 
+                                    name="graphicsCard" 
                                     value={formData.graphicsCard}
                                     onChange={handleChange}
                                 />
-                                <SelectField
-                                    label="Condition"
+                                <SelectField 
+                                    label="Condition" 
                                     name="condition"
                                     value={formData.condition}
                                     onChange={handleChange}
@@ -418,51 +372,67 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                     <option value="Fair">Fair</option>
                                     <option value="Damaged">Damaged</option>
                                 </SelectField>
-                                <InputField
-                                    label="Accessories"
-                                    name="accessories"
+                                <InputField 
+                                    label="Accessories" 
+                                    name="accessories" 
                                     value={formData.accessories}
                                     onChange={handleChange}
-                                    placeholder="e.g., Charger, Mouse"
+                                    placeholder="e.g., Charger, Mouse" 
                                 />
-                                <InputField
-                                    label="Assigned To"
-                                    name="assignedTo"
-                                    value={formData.assignedTo}
-                                    onChange={handleChange}
-                                    placeholder="Enter Employee Name"
-                                />
-                                <InputField
-                                    label="Assigned To Team"
+                                <SelectField 
+                                    label="Assigned To Team" 
                                     name="team"
                                     value={formData.team}
                                     onChange={handleChange}
-                                    placeholder="Enter Team Name"
-                                />
-                                <InputField
-                                    label="Assignment Date"
-                                    name="assignmentDate"
-                                    value={formData.assignmentDate}
-                                    onChange={handleChange}
-                                    type="date"
-                                />
+                                >
+                                    <option value="">Select Team...</option>
+                                    {MOCK_TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+                                </SelectField>
                             </div>
                         </div>
                     )}
 
-                    {/* Assignment & Warranty section removed */}
+                    {/* Assignment & Warranty */}
+                    <div className="p-4 border rounded-md">
+                        <h3 className="font-semibold text-lg mb-4">Assignment & Warranty</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <SelectField 
+                                label="Assigned To" 
+                                name="assignedTo"
+                                value={formData.assignedTo}
+                                onChange={handleChange}
+                            >
+                                <option value="">Not Assigned</option>
+                                {MOCK_EMPLOYEES.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
+                            </SelectField>
+                            <InputField 
+                                label="Assignment Date" 
+                                name="assignmentDate" 
+                                value={formData.assignmentDate}
+                                onChange={handleChange}
+                                type="date" 
+                            />
+                            <InputField 
+                                label="Warranty Expiry Date" 
+                                name="warrantyExpiry" 
+                                value={formData.warrantyExpiry}
+                                onChange={handleChange}
+                                type="date" 
+                            />
+                        </div>
+                    </div>
                 </div>
                 <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
-                    <button
-                        type="button"
-                        onClick={onClose}
+                    <button 
+                        type="button" 
+                        onClick={onClose} 
                         disabled={addingAsset}
                         className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Cancel
                     </button>
-                    <button
-                        type="submit"
+                    <button 
+                        type="submit" 
                         disabled={addingAsset || categoriesLoading || locationsLoading || statusesLoading}
                         className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -478,7 +448,7 @@ const AssetManagementPage = () => {
     const dispatch = useDispatch();
     const router = useRouter();
     const [isModalOpen, setIsModalOpen] = useState(false);
-
+    
     // Get data from Redux store
     const { assets, loading: assetsLoading, error: assetsError } = useSelector(state => state.assets);
     const { categories } = useSelector(state => state.assetCategories);
@@ -524,11 +494,11 @@ const AssetManagementPage = () => {
     const handleAddAsset = (newAssetData) => {
         // Handle the API response - the newAssetData will be the response from the server
         console.log('Asset added successfully:', newAssetData);
-
+        
         // Refresh the assets list to show the new asset
         dispatch(fetchAssets());
         setIsModalOpen(false);
-
+        
         // The success message is already shown in the modal
     };
 
@@ -544,7 +514,7 @@ const AssetManagementPage = () => {
             default: return 'bg-gray-100 text-gray-700';
         }
     };
-
+    
     return (
         <AssetManagementLayout>
             <div className="p-6">
@@ -583,8 +553,8 @@ const AssetManagementPage = () => {
                             <tbody>
                                 {Array.isArray(assets) && assets.length > 0 ? (
                                     assets.map((asset) => (
-                                        <tr
-                                            key={asset.id}
+                                        <tr 
+                                            key={asset.id} 
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                                             onClick={() => router.push(`/asset-management/${asset.assetId}`)}
                                         >
@@ -613,7 +583,7 @@ const AssetManagementPage = () => {
                 </div>
 
                 {/* Add Asset Modal */}
-                <AddAssetModal
+                <AddAssetModal 
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onSubmit={handleAddAsset}

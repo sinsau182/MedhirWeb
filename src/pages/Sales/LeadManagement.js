@@ -19,6 +19,7 @@ import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
+import AssignLeadModal from "@/components/Sales/AssignLeadModal";
 import KanbanBoardClientOnly from "@/components/Sales/KanbanBoardClientOnly";
 import {
   fetchLeads,
@@ -312,6 +313,11 @@ const LeadManagementContent = ({ role }) => {
   const [showLostModal, setShowLostModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
+  // Assignment modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedLeadForAssignment, setSelectedLeadForAssignment] = useState(null);
+  const [targetPipelineId, setTargetPipelineId] = useState(null);
+
   // Initialize pipeline state
   const [isInitializing, setIsInitializing] = useState(false);
 
@@ -522,6 +528,32 @@ const LeadManagementContent = ({ role }) => {
     });
 
     if (String(currentPipelineId) !== String(newPipelineId)) {
+      // Check if moving from stage index 0 to stage index 1
+      const currentPipelineIndex = pipelines.findIndex(p => 
+        p.pipelineId === currentPipelineId || p.stageId === currentPipelineId
+      );
+      const newPipelineIndex = pipelines.findIndex(p => 
+        p.pipelineId === newPipelineId || p.stageId === newPipelineId
+      );
+      
+      console.log("Pipeline index check:", {
+        currentPipelineIndex,
+        newPipelineIndex,
+        currentPipelineId,
+        newPipelineId,
+        currentPipelineName: pipelines[currentPipelineIndex]?.name,
+        newPipelineName: pipelines[newPipelineIndex]?.name
+      });
+      
+      if (currentPipelineIndex === 0 && newPipelineIndex === 1) {
+        // Show assignment modal for stage 0 -> stage 1 transition
+        console.log("Opening assignment modal for lead:", lead);
+        setSelectedLeadForAssignment(lead);
+        setTargetPipelineId(newPipelineId);
+        setShowAssignModal(true);
+        return;
+      }
+
       // If pipeline requires a form, open the modal instead of moving directly
       if (newPipeline.formType === "CONVERTED") {
         setSelectedLead({ ...lead, pipelineId: newPipelineId });
@@ -590,6 +622,25 @@ const LeadManagementContent = ({ role }) => {
     await dispatch(createLead(leadData));
     // Refresh leads to get the updated grouped format
     dispatch(fetchLeads());
+  };
+
+  // Assignment handler for AssignLeadModal
+  const handleAssignLead = async (assignmentData) => {
+    try {
+      // Update the lead with sales rep and designer assignments
+      await dispatch(updateLead({
+        leadId: assignmentData.leadId,
+        salesRep: assignmentData.salesRep,
+        designer: assignmentData.designer,
+        pipelineId: targetPipelineId
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("Assignment error:", error);
+      throw error;
+    }
   };
 
   return (
@@ -785,6 +836,24 @@ const LeadManagementContent = ({ role }) => {
           // Refresh leads to get the updated grouped format
           dispatch(fetchLeads());
         }}
+      />
+      <AssignLeadModal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setSelectedLeadForAssignment(null);
+          setTargetPipelineId(null);
+        }}
+        lead={selectedLeadForAssignment}
+        onAssign={handleAssignLead}
+        salesEmployees={[
+          { id: "1", name: "John Smith", role: "SALES_REP" },
+          { id: "2", name: "Jane Doe", role: "SALES_MANAGER" },
+          { id: "3", name: "Mike Johnson", role: "SALES_REP" },
+          { id: "4", name: "Sarah Wilson", role: "DESIGNER" },
+          { id: "5", name: "Tom Brown", role: "SALES_DESIGNER" },
+          { id: "6", name: "Lisa Davis", role: "DESIGNER" }
+        ]}
       />
     </div>
   );

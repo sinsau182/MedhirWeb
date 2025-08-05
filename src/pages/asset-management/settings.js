@@ -1,7 +1,3 @@
-////////////////aasset management .........setting .js
-
-
-   
 import React, { useState, useRef, useMemo } from 'react';
 import AssetManagementLayout from '@/components/AssetManagementLayout';
 import { toast } from 'sonner';
@@ -27,109 +23,74 @@ const SettingsSection = ({ title, subtitle, children }) => (
 
 // --- Individual Setting Components ---
 
-const CategorySettings = ({
-  editing,
-  editedCategories,
-  setEditedCategories,
-  newCategory,
-  setNewCategory,
-  onAdd,
-  onFieldChange,
-  loading,
-  onDelete,
-}) => {
-  const isAddDisabled =
-    !newCategory.name ||
-    !newCategory.depreciationRate ||
-    isNaN(Number(newCategory.depreciationRate)) ||
-    Number(newCategory.depreciationRate) <= 0 ||
-    loading;
-  return (
-    <SettingsSection
-      title="Asset Categories"
-      subtitle="Add categories to your assets"
-    >
-      <div className="flex items-end gap-4 mb-4 w-full max-w-3xl mx-auto">
-        <input
-          value={newCategory.name}
-          onChange={e =>
-            setNewCategory({ ...newCategory, name: e.target.value })
-          }
-          placeholder="New Category Name (e.g., IT Equipment)"
-          className="flex-1 min-w-[220px] p-3 border rounded-md text-base"
-        />
-        <input
-          value={newCategory.depreciationRate}
-          onChange={e =>
-            setNewCategory({
-              ...newCategory,
-              depreciationRate: e.target.value,
-            })
-          }
-          type="number"
-          placeholder="Depreciation Rate (%)"
-          className="w-56 p-3 border rounded-md text-base"
-        />
-        <button
-          onClick={onAdd}
-          className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${
-            isAddDisabled ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          disabled={isAddDisabled}
-        >
-          <FaPlus className="inline mr-1" /> Add
-        </button>
-      </div>
-      {loading && <div className="text-blue-600">Loading...</div>}
-      <div className="space-y-2">
-        {editedCategories.map(cat => (
-          <div
-            key={cat.id || cat.categoryId}
-            className="flex justify-between items-center p-2 bg-gray-50 rounded"
-          >
-            <div className="flex-1 flex gap-2 items-center">
-              {editing ? (
-                <>
-                  <input
-                    className="w-1/2 p-1 border rounded-md"
-                    value={cat.name}
-                    onChange={e =>
-                      onFieldChange(cat.id, "name", e.target.value)
-                    }
-                  />
-                  <input
-                    className="w-1/4 p-1 border rounded-md"
-                    value={cat.depreciationRate}
-                    onChange={e =>
-                      onFieldChange(cat.id, "depreciationRate", e.target.value)
-                    }
-                    type="number"
-                  />
-                </>
-              ) : (
-                <span>
-                  {cat.name}{" "}
-                  {cat.depreciationRate !== undefined &&
-                  cat.depreciationRate !== null &&
-                  cat.depreciationRate !== ""
-                    ? `(${cat.depreciationRate}%)`
-                    : ""}
-                </span>
-              )}
+const CategorySettings = ({ editing, editedCategories, setEditedCategories, newCategory, setNewCategory, onAdd, onFieldChange, loading, onDelete }) => {
+    const isAddDisabled =
+        !newCategory.name ||
+        !newCategory.depreciationRate ||
+        isNaN(Number(newCategory.depreciationRate)) ||
+        Number(newCategory.depreciationRate) <= 0 ||
+        loading;
+    return (
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 -mt-4">
+            <div className="flex items-end gap-4 mb-4 w-full max-w-3xl mx-auto">
+                <input 
+                    value={newCategory.name} 
+                    onChange={e => setNewCategory({...newCategory, name: e.target.value})} 
+                    placeholder="New Category Name (e.g., IT Equipment)" 
+                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
+                />
+                <input 
+                    value={newCategory.depreciationRate} 
+                    onChange={e => setNewCategory({...newCategory, depreciationRate: e.target.value})} 
+                    type="number" 
+                    placeholder="Depreciation Rate (%)" 
+                    className="w-56 p-3 border rounded-md text-base" 
+                />
+                <button 
+                    onClick={onAdd} 
+                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={isAddDisabled}
+                >
+                    <FaPlus className="inline mr-1" /> Add
+                </button>
             </div>
-            <button
-              className="text-red-500 hover:text-red-700 ml-2"
-              title="Delete Category"
-              onClick={() => onDelete(cat.categoryId || cat.id, cat.name)}
-            >
-              <FaTrash />
-            </button>
-          </div>
-        ))}
-      </div>
-    </SettingsSection>
-  );
+            {loading && <div className="text-blue-600">Loading...</div>}
+            <div className="space-y-2">
+                {editedCategories.map(cat => (
+                    <div key={cat.id || cat.categoryId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <div className="flex-1 flex gap-2 items-center">
+                        {editing ? (
+                            <>
+                                <input
+                                    className="w-1/2 p-1 border rounded-md"
+                                    value={cat.name}
+                                    onChange={e => onFieldChange(cat.id, 'name', e.target.value)}
+                                />
+                                <input
+                                    className="w-1/4 p-1 border rounded-md"
+                                    value={cat.depreciationRate}
+                                    onChange={e => onFieldChange(cat.id, 'depreciationRate', e.target.value)}
+                                    type="number"
+                                />
+                            </>
+                        ) : (
+                            <span>{cat.name} {cat.depreciationRate !== undefined && cat.depreciationRate !== null && cat.depreciationRate !== '' ? `(${cat.depreciationRate}%)` : ''}</span>
+                        )}
+                        </div>
+                        <button
+                            className="text-red-500 hover:text-red-700 ml-2"
+                            title="Delete Category"
+                            onClick={() => onDelete(cat.categoryId || cat.id, cat.name)}
+                        >
+                            <FaTrash />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 };
+
 const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLocation, setNewLocation, onAdd, onFieldChange, loading, onDelete }) => {
     const isAddDisabled = !newLocation.name || loading;
     return (
@@ -242,135 +203,282 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
 const IdFormattingSettings = ({ categories, editing }) => {
     const dispatch = useDispatch();
     const { formattingsByCategory, loading, error } = useSelector(state => state.idFormatting);
+    const [addingFormat, setAddingFormat] = useState({});
     const [tempFormats, setTempFormats] = useState({});
-
+    
+    // Ensure categories is an array and handle both id and categoryId
     const safeCategories = useMemo(() => Array.isArray(categories) ? categories : [], [categories]);
-
+    
+    // Fetch ID formattings when component mounts
     useEffect(() => {
+        console.log('IdFormattingSettings: Fetching ID formattings...');
         dispatch(fetchIdFormattings());
     }, [dispatch]);
 
-    // When exiting edit mode, batch save all changes
+    // Debug: Log formattingsByCategory changes
     useEffect(() => {
-        const saveAll = async () => {
+        console.log('IdFormattingSettings: formattingsByCategory updated:', formattingsByCategory);
+        console.log('IdFormattingSettings: Available categories:', safeCategories.map(c => ({ id: c.categoryId || c.id, name: c.name })));
+    }, [formattingsByCategory, safeCategories]);
+
+    // Handle batch updates when exiting edit mode
+    useEffect(() => {
+        const updatePendingFormats = async () => {
             if (!editing && Object.keys(tempFormats).length > 0) {
-                for (const [categoryId, tempFormat] of Object.entries(tempFormats)) {
-                    // Validation
-                    const prefix = (tempFormat.prefix || '').trim();
-                    const objectId = (tempFormat.objectId || '').trim();
-                    const startNumber = tempFormat.startNumber !== undefined ? parseInt(tempFormat.startNumber) : null;
-
-                    if (!prefix) {
-                        toast.error(`Prefix is required for ${categories.find(c => (c.categoryId || c.id) === categoryId)?.name || 'category'}.`);
-                        continue;
+                // Update all categories that have pending changes
+                const updatePromises = Object.entries(tempFormats).map(([categoryId, tempFormat]) => {
+                    if (formattingsByCategory[categoryId]) {
+                        return handleUpdateFormat(categoryId);
                     }
-                    if (!objectId) {
-                        toast.error(`Object ID is required for ${categories.find(c => (c.categoryId || c.id) === categoryId)?.name || 'category'}.`);
-                        continue;
-                    }
-                    if (startNumber === null || isNaN(startNumber) || startNumber < 0) {
-                        toast.error(`Start Number must be a non-negative number for ${categories.find(c => (c.categoryId || c.id) === categoryId)?.name || 'category'}.`);
-                        continue;
-                    }
-
-                    const hasExisting = !!formattingsByCategory[categoryId];
-                    const payload = {
-                        categoryId,
-                        prefix,
-                        objectId,
-                        startNumber
-                    };
-                    if (hasExisting) {
-                        await dispatch(updateIdFormatting({ categoryId, formattingData: payload })).unwrap();
-                    } else {
-                        await dispatch(addIdFormatting(payload)).unwrap();
-                    }
+                    return Promise.resolve();
+                });
+                
+                try {
+                    await Promise.all(updatePromises);
+                    
+                    // Refresh the ID formatting data after all batch updates are complete
+                    await dispatch(fetchIdFormattings());
+                    
+                    setTempFormats({}); // Clear all temp formats
+                } catch (error) {
+                    console.error('Error updating formats:', error);
                 }
-                await dispatch(fetchIdFormattings());
-                setTempFormats({});
             }
         };
-        saveAll();
-        // eslint-disable-next-line
+
+        updatePendingFormats();
     }, [editing]);
 
     const handleFormatChange = (categoryId, key, value) => {
-        setTempFormats(prev => {
-            const backend = formattingsByCategory[categoryId] || {};
-            const prevTemp = prev[categoryId] || {};
-            return {
-                ...prev,
-                [categoryId]: {
-                    prefix: key === 'prefix'
-                        ? value.toUpperCase()
-                        : (prevTemp.prefix !== undefined ? prevTemp.prefix : backend.prefix || ''),
-                    objectId: key === 'objectId'
-                        ? value
-                        : (prevTemp.objectId !== undefined ? prevTemp.objectId : backend.objectId || ''),
-                    startNumber: key === 'startNumber'
-                        ? value
-                        : (prevTemp.startNumber !== undefined ? prevTemp.startNumber : backend.startNumber || '')
-                }
+        setTempFormats(prev => ({
+            ...prev,
+            [categoryId]: { 
+                ...prev[categoryId], 
+                [key]: value 
+            }
+        }));
+    };
+
+    const handleAddFormat = (categoryId) => {
+        setAddingFormat(prev => ({ ...prev, [categoryId]: true }));
+        // Initialize with empty values
+        setTempFormats(prev => ({
+            ...prev,
+            [categoryId]: { prefix: '', objectId: '', startNumber: '' }
+        }));
+    };
+
+    const handleSaveFormat = async (categoryId) => {
+        const formatData = tempFormats[categoryId];
+        if (!formatData || (!formatData.prefix && !formatData.objectId && !formatData.startNumber)) {
+            toast.error("Please fill at least one field");
+            return;
+        }
+
+        try {
+            // Convert startNumber to number if it exists
+            const payload = {
+                categoryId,
+                prefix: formatData.prefix || '',
+                objectId: formatData.objectId || '',
+                startNumber: formatData.startNumber ? parseInt(formatData.startNumber) : 0
             };
+
+            await dispatch(addIdFormatting(payload)).unwrap();
+            
+            // Refresh the ID formatting data to show the new format instantly
+            await dispatch(fetchIdFormattings());
+            
+            setAddingFormat(prev => ({ ...prev, [categoryId]: false }));
+            setTempFormats(prev => {
+                const updated = { ...prev };
+                delete updated[categoryId];
+                return updated;
+            });
+            toast.success("ID formatting added successfully!");
+        } catch (error) {
+            console.error('Error adding ID formatting:', error);
+            toast.error("Failed to add ID formatting");
+        }
+    };
+
+    const handleCancelFormat = (categoryId) => {
+        setAddingFormat(prev => ({ ...prev, [categoryId]: false }));
+        // Remove the temp format
+        setTempFormats(prev => {
+            const updated = { ...prev };
+            delete updated[categoryId];
+            return updated;
         });
     };
 
+    const handleUpdateFormat = async (categoryId) => {
+        const currentFormat = formattingsByCategory[categoryId];
+        const tempFormat = tempFormats[categoryId];
+        
+        if (!tempFormat) return;
+
+        try {
+            // Convert startNumber to number if it exists
+            const payload = {
+                prefix: tempFormat.prefix !== undefined ? tempFormat.prefix : currentFormat.prefix,
+                objectId: tempFormat.objectId !== undefined ? tempFormat.objectId : currentFormat.objectId,
+                startNumber: tempFormat.startNumber !== undefined ? parseInt(tempFormat.startNumber) : currentFormat.startNumber
+            };
+
+            await dispatch(updateIdFormatting({ categoryId, formattingData: payload })).unwrap();
+            
+            // Clear temp format for this category
+            setTempFormats(prev => {
+                const updated = { ...prev };
+                delete updated[categoryId];
+                return updated;
+            });
+            
+            toast.success("ID formatting updated successfully!");
+        } catch (error) {
+            console.error('Error updating ID formatting:', error);
+            toast.error("Failed to update ID formatting");
+        }
+    };
+    
+    // Check if a category has any ID format values
+    const hasIdFormat = (categoryId) => {
+        const format = formattingsByCategory[categoryId];
+        const hasFormat = format && (format.prefix || format.objectId || format.startNumber);
+        console.log(`IdFormattingSettings: hasIdFormat for ${categoryId}:`, { format, hasFormat });
+        return hasFormat;
+    };
+
+    // Get current value for input (temp value if editing, or stored value)
     const getCurrentValue = (categoryId, field) => {
         if (tempFormats[categoryId] && tempFormats[categoryId][field] !== undefined) {
             return tempFormats[categoryId][field];
         }
         return formattingsByCategory[categoryId]?.[field] || '';
     };
-
-   return (
-    <SettingsSection
-        title="Asset ID Formatting"
-        subtitle="Set custom prefixes, object IDs, and starting numbers for each asset category."
-    >
-        {loading && <div className="text-blue-600 mb-4">Loading ID formatting settings...</div>}
-        {error && <div className="text-red-600 mb-4">Error: {error}</div>}
-
-        <div className="space-y-4">
-            {safeCategories.map((cat) => {
-                const categoryId = cat.categoryId || cat.id;
-
-                return (
-                    <div
-                        key={categoryId}
-                        className="grid grid-cols-4 gap-4 items-center p-3 bg-gray-50 rounded-md border"
-                    >
-                        {/* Category Name */}
-                        <div className="font-semibold col-span-1">{cat.name}</div>
-
-                        {/* Editable or Read-Only Fields */}
-                        {['prefix', 'objectId', 'startNumber'].map((field, index) => (
-                            <input
-                                key={index}
-                                value={getCurrentValue(categoryId, field)}
-                                onChange={(e) =>
-                                    editing && handleFormatChange(categoryId, field, e.target.value)
-                                }
-                                placeholder={
-                                    field === 'prefix'
-                                        ? 'Prefix (e.g., IT-)'
-                                        : field === 'objectId'
-                                        ? 'Object ID (e.g., 01)'
-                                        : 'Start Number (e.g., 1001)'
-                                }
-                                type={field === 'startNumber' ? 'number' : 'text'}
-                                disabled={!editing}
-                                className={`w-full p-2 border rounded-md ${
-                                    editing ? '' : 'bg-gray-100 text-gray-700'
-                                }`}
-                            />
-                        ))}
+    
+    return (
+        <SettingsSection title="Asset ID Formatting" subtitle="Set custom prefixes, object IDs, and starting numbers for each asset category.">
+            {loading && <div className="text-blue-600 mb-4">Loading ID formatting settings...</div>}
+            {error && <div className="text-red-600 mb-4">Error: {error}</div>}
+            <div className="space-y-4">
+                {safeCategories.map(cat => {
+                    const categoryId = cat.categoryId || cat.id;
+                    const isAdding = addingFormat[categoryId];
+                    const hasFormat = hasIdFormat(categoryId);
+                    
+                    console.log(`IdFormattingSettings: Rendering category ${cat.name}:`, { 
+                        categoryId, 
+                        isAdding, 
+                        hasFormat,
+                        rawCategory: cat 
+                    });
+                    
+                    return (
+                        <div key={categoryId} className="flex items-center gap-4 p-2 bg-gray-50 rounded">
+                            <span className="font-semibold w-1/4">{cat.name}</span>
+                            
+                            {!hasFormat && !isAdding ? (
+                                // Show Add button when no format exists
+                                <div className="flex-1 flex justify-center">
+                                    <button
+                                        onClick={() => handleAddFormat(categoryId)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
+                                    >
+                                        <FaPlus /> Add ID Format
+                                    </button>
+                                </div>
+                            ) : isAdding ? (
+                                // Show input fields when adding
+                                <>
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'prefix')} 
+                                        onChange={e => handleFormatChange(categoryId, 'prefix', e.target.value)} 
+                                        placeholder="Prefix (e.g., IT-)" 
+                                        className="w-1/4 p-2 border rounded-md" 
+                                    />
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'objectId')} 
+                                        onChange={e => handleFormatChange(categoryId, 'objectId', e.target.value)} 
+                                        placeholder="Object ID (e.g., 01)" 
+                                        className="w-1/4 p-2 border rounded-md" 
+                                    />
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'startNumber')} 
+                                        onChange={e => handleFormatChange(categoryId, 'startNumber', e.target.value)} 
+                                        type="number" 
+                                        placeholder="Start Number (e.g., 1001)" 
+                                        className="w-1/6 p-2 border rounded-md" 
+                                    />
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleSaveFormat(categoryId)}
+                                            className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                                            disabled={loading}
+                                        >
+                                            <FaSave />
+                                        </button>
+                                        <button
+                                            onClick={() => handleCancelFormat(categoryId)}
+                                            className="px-3 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 text-sm"
+                                        >
+                                            <FaTimes />
+                                        </button>
+                                    </div>
+                                </>
+                            ) : editing ? (
+                                // Show editable fields when format exists and editing
+                                <>
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'prefix')} 
+                                        onChange={e => handleFormatChange(categoryId, 'prefix', e.target.value)} 
+                                        placeholder="Prefix (e.g., IT-)" 
+                                        className="w-1/4 p-2 border rounded-md" 
+                                    />
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'objectId')} 
+                                        onChange={e => handleFormatChange(categoryId, 'objectId', e.target.value)} 
+                                        placeholder="Object ID (e.g., 01)" 
+                                        className="w-1/4 p-2 border rounded-md" 
+                                    />
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'startNumber')} 
+                                        onChange={e => handleFormatChange(categoryId, 'startNumber', e.target.value)} 
+                                        type="number" 
+                                        placeholder="Start Number (e.g., 1001)" 
+                                        className="w-1/4 p-2 border rounded-md" 
+                                    />
+                                </>
+                            ) : (
+                                // Show readonly fields when format exists and not editing
+                                <>
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'prefix')} 
+                                        placeholder="Prefix (e.g., IT-)" 
+                                        className="w-1/4 p-2 border rounded-md bg-gray-100" 
+                                        disabled
+                                    />
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'objectId')} 
+                                        placeholder="Object ID (e.g., 01)" 
+                                        className="w-1/4 p-2 border rounded-md bg-gray-100" 
+                                        disabled
+                                    />
+                                    <input 
+                                        value={getCurrentValue(categoryId, 'startNumber')} 
+                                        placeholder="Start Number (e.g., 1001)" 
+                                        className="w-1/4 p-2 border rounded-md bg-gray-100" 
+                                        disabled
+                                    />
+                                </>
+                            )}
                     </div>
-                );
-            })}
-        </div>
-    </SettingsSection>
-);
-
+                    );
+                })}
+            </div>
+        </SettingsSection>
+    );
 };
 
 const CustomFieldsSettings = ({ editing }) => {
@@ -389,6 +497,8 @@ const CustomFieldsSettings = ({ editing }) => {
     // Fetch custom fields when category is selected
     useEffect(() => {
         if (selectedCategory) {
+            console.log('Fetching custom fields for category:', selectedCategory);
+            console.log('API URL will be:', `http://localhost:8080/api/asset-settings/custom-fields?categoryId=${selectedCategory}`);
             
             // Clear existing fields for this category to avoid stale data
             dispatch(clearFieldsForCategory(selectedCategory));
@@ -674,7 +784,7 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Category
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">"{categoryName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -692,7 +802,7 @@ const DeleteLocationModal = ({ open, onClose, onConfirm, locationName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Location
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the location <span className="font-semibold">&quot;{locationName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this location.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the location <span className="font-semibold">"{locationName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this location.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -710,7 +820,7 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Status Label
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the status label <span className="font-semibold">&quot;{statusName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this status.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the status label <span className="font-semibold">"{statusName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this status.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -823,7 +933,7 @@ const AssetSettingsPage = () => {
 
     const handleCancelCategories = () => {
         // Revert to initial state
-        setEditedCategories((categories));
+        setEditedCategories(JSON.parse(JSON.stringify(initialStateRef.current.categories)));
         setNewCategory({ name: '', depreciationRate: '' });
         setEditingCategories(false);
         toast.info("Category changes cancelled. Settings reverted to last saved state.");
@@ -867,7 +977,7 @@ const AssetSettingsPage = () => {
     };
 
     const handleCancelLocations = () => {
-        setEditedLocations(locations);
+        setEditedLocations(JSON.parse(JSON.stringify(initialStateRef.current.locations)));
         setNewLocation({ name: '', address: '' });
         setEditingLocations(false);
         toast.info("Location changes cancelled. Settings reverted to last saved state.");
@@ -913,7 +1023,7 @@ const AssetSettingsPage = () => {
     };
 
     const handleCancelStatuses = () => {
-        setEditedStatuses(statuses);
+        setEditedStatuses(JSON.parse(JSON.stringify(initialStateRef.current.statuses)));
         setNewStatus({ name: '' });
         setEditingStatuses(false);
         toast.info("Status changes cancelled. Settings reverted to last saved state.");
@@ -1065,7 +1175,7 @@ const AssetSettingsPage = () => {
                     <div className="flex justify-between items-center">
                         <div>
                     <h1 className="text-3xl font-bold text-gray-800">Asset Management Settings</h1>
-                    <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
+                    <p className="text-gray-500 mt-1">Configure and standardize your company's asset tracking system.</p>
                         </div>
                     </div>
                 </header>
@@ -1073,25 +1183,20 @@ const AssetSettingsPage = () => {
                 <div className="flex gap-8">
                     <aside className="w-1/4">
                         <nav className="flex flex-col gap-2 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                            {settingsTabs.map(tab => {
-                                const isActive = activeTab === tab.id;
-                                const isDisabled = tab.id === 'customFields';
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => {
-                                            if (!isDisabled) setActiveTab(tab.id);
-                                        }}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-md text-left transition-colors
-                                            ${isActive && !isDisabled ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}
-                                            ${isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400' : ''}`}
-                                        disabled={isDisabled}
-                                    >
-                                        <tab.icon className="text-lg" />
-                                        <span className="font-medium">{tab.label}</span>
-                                    </button>
-                                );
-                            })}
+                            {settingsTabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-md text-left transition-colors ${
+                                        activeTab === tab.id
+                                            ? 'bg-blue-600 text-white'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <tab.icon className="text-lg" />
+                                    <span className="font-medium">{tab.label}</span>
+                                </button>
+                            ))}
                         </nav>
                     </aside>
                     
@@ -1100,18 +1205,11 @@ const AssetSettingsPage = () => {
                             {(() => {
                                 const activeTabData = settingsTabs.find(tab => tab.id === activeTab);
                                 if (!activeTabData) return null;
-                                if (activeTabData.id === 'customFields') {
-                                    return (
-                                        <div className="p-8 text-center text-gray-500">
-                                            <h2 className="text-2xl font-bold mb-4">Custom Fields</h2>
-                                            <p>Coming Soon..</p>
-                                        </div>
-                                    );
-                                }
-                                return (
+                                
+                                                                return (
                                     <div>
-                                        <div className="flex justify-end items-center -mb-10">
-                                            <div className="flex -gap-5">
+                                        <div className="flex justify-end items-center mb-4">
+                                            <div className="flex gap-3">
                                                 {!activeTabData.editing ? (
                                                     <button
                                                         onClick={() => activeTabData.setEditing(true)}
@@ -1128,12 +1226,12 @@ const AssetSettingsPage = () => {
                                                             <FaTimes /> Cancel
                                                         </button>
                                                         {activeTabData.onSave && (
-                                                            <button
+                            <button
                                                                 onClick={activeTabData.onSave}
                                                                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium flex items-center gap-2"
-                                                            >
+                            >
                                                                 <FaSave /> Save {activeTabData.label}
-                                                            </button>
+                            </button>
                                                         )}
                                                     </>
                                                 )}
