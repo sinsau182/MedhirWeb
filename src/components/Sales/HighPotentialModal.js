@@ -36,8 +36,19 @@ const HighPotentialModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Enhanced validation
     if (!formData.quotationDetails.trim()) {
       toast.error("Please provide the quotation details");
+      return;
+    }
+    
+    if (formData.quotationDetails.trim().length < 10) {
+      toast.error("Quotation details must be at least 10 characters");
+      return;
+    }
+    
+    if (formData.quotationDetails.trim().length > 500) {
+      toast.error("Quotation details must be less than 500 characters");
       return;
     }
 
@@ -45,9 +56,39 @@ const HighPotentialModal = ({
       toast.error("Please provide the initial quoted amount");
       return;
     }
+    
+    // Validate initial quoted amount
+    const initialAmount = parseFloat(formData.initialQuotedAmount.replace(/[^\d.]/g, ''));
+    if (isNaN(initialAmount) || initialAmount <= 0) {
+      toast.error("Initial quoted amount must be a valid positive number");
+      return;
+    }
+    
+    if (initialAmount > 999999999) {
+      toast.error("Initial quoted amount cannot exceed 999,999,999");
+      return;
+    }
 
     if (!formData.finalQuotedAmount.trim()) {
       toast.error("Please provide the final quoted amount");
+      return;
+    }
+    
+    // Validate final quoted amount
+    const finalAmount = parseFloat(formData.finalQuotedAmount.replace(/[^\d.]/g, ''));
+    if (isNaN(finalAmount) || finalAmount <= 0) {
+      toast.error("Final quoted amount must be a valid positive number");
+      return;
+    }
+    
+    if (finalAmount > 999999999) {
+      toast.error("Final quoted amount cannot exceed 999,999,999");
+      return;
+    }
+    
+    // Validate final amount is not greater than initial amount
+    if (finalAmount > initialAmount) {
+      toast.error("Final quoted amount cannot be greater than initial quoted amount");
       return;
     }
 
@@ -55,14 +96,41 @@ const HighPotentialModal = ({
       toast.error("Please provide the discount percentage");
       return;
     }
+    
+    // Validate discount percentage
+    const discountPercent = parseFloat(formData.discountPercent.replace(/[^\d.]/g, ''));
+    if (isNaN(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+      toast.error("Discount percentage must be between 0 and 100");
+      return;
+    }
 
     if (!formData.designTimeline.trim()) {
       toast.error("Please provide the design timeline");
       return;
     }
+    
+    if (formData.designTimeline.trim().length < 5) {
+      toast.error("Design timeline must be at least 5 characters");
+      return;
+    }
+    
+    if (formData.designTimeline.trim().length > 100) {
+      toast.error("Design timeline must be less than 100 characters");
+      return;
+    }
 
     if (!formData.completionTimeline.trim()) {
       toast.error("Please provide the completion timeline");
+      return;
+    }
+    
+    if (formData.completionTimeline.trim().length < 5) {
+      toast.error("Completion timeline must be at least 5 characters");
+      return;
+    }
+    
+    if (formData.completionTimeline.trim().length > 100) {
+      toast.error("Completion timeline must be less than 100 characters");
       return;
     }
 
@@ -71,12 +139,12 @@ const HighPotentialModal = ({
     try {
       await onSuccess({
         leadId: lead.leadId,
-        quotationDetails: formData.quotationDetails,
-        initialQuotedAmount: formData.initialQuotedAmount,
-        finalQuotedAmount: formData.finalQuotedAmount,
-        discountPercent: formData.discountPercent,
-        designTimeline: formData.designTimeline,
-        completionTimeline: formData.completionTimeline
+        quotationDetails: formData.quotationDetails.trim(),
+        initialQuotedAmount: formData.initialQuotedAmount.trim(),
+        finalQuotedAmount: formData.finalQuotedAmount.trim(),
+        discountPercent: formData.discountPercent.trim(),
+        designTimeline: formData.designTimeline.trim(),
+        completionTimeline: formData.completionTimeline.trim()
       });
       
       toast.success("Lead updated successfully!");
@@ -94,9 +162,48 @@ const HighPotentialModal = ({
   };
 
   const handleInputChange = (field, value) => {
+    let processedValue = value;
+
+    // Apply input restrictions based on field type
+    switch (field) {
+      case 'quotationDetails':
+        // Allow alphanumeric, spaces, and common characters
+        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 500);
+        break;
+      
+      case 'initialQuotedAmount':
+      case 'finalQuotedAmount':
+        // Only allow numbers and decimal point
+        processedValue = value.replace(/[^\d.]/g, '');
+        // Prevent multiple decimal points
+        const decimalCount = (processedValue.match(/\./g) || []).length;
+        if (decimalCount > 1) {
+          processedValue = processedValue.replace(/\.+$/, '');
+        }
+        break;
+      
+      case 'discountPercent':
+        // Only allow numbers and decimal point, max 100
+        processedValue = value.replace(/[^\d.]/g, '');
+        const discountValue = parseFloat(processedValue);
+        if (!isNaN(discountValue) && discountValue > 100) {
+          processedValue = '100';
+        }
+        break;
+      
+      case 'designTimeline':
+      case 'completionTimeline':
+        // Allow alphanumeric, spaces, and common characters
+        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 100);
+        break;
+      
+      default:
+        processedValue = value;
+    }
+
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
   };
 

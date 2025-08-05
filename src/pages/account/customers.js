@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
 import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import { fetchCustomers, addCustomer } from '@/redux/slices/customerSlice';
 import MinioImage from '@/components/ui/MinioImage';
 
 // Small preview component for attachments
@@ -94,6 +95,145 @@ const AttachmentPreview = ({ fileUrl, onClick }) => {
       title="Click to view file"
     >
       <FaFileAlt className="text-blue-600 text-xs" />
+    </div>
+  );
+};
+
+const FullSizeAttachmentPreview = ({ fileUrl, onClick }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isImage, setIsImage] = useState(false);
+  const [isPdf, setIsPdf] = useState(false);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (fileUrl) {
+      setIsLoading(true);
+      // Check if it's an image by file extension
+      const isImageFile = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl);
+      const isPdfFile = /\.pdf$/i.test(fileUrl);
+      setIsImage(isImageFile);
+      setIsPdf(isPdfFile);
+      
+      if (isImageFile) {
+        // For images, try to get preview from MinIO
+        dispatch(fetchImageFromMinio({ url: fileUrl }))
+          .unwrap()
+          .then(result => {
+            if (result.dataUrl) {
+              setPreviewUrl(result.dataUrl);
+            } else {
+              setPreviewUrl(fileUrl); // Fallback to direct URL
+            }
+            setIsLoading(false);
+          })
+          .catch(error => {
+            console.error('Preview error:', error);
+            setPreviewUrl(fileUrl); // Fallback to direct URL
+            setIsLoading(false);
+          });
+      } else if (isPdfFile) {
+        // For PDFs, try to get the URL for preview
+        dispatch(fetchImageFromMinio({ url: fileUrl }))
+          .unwrap()
+          .then(result => {
+            if (result.dataUrl) {
+              setPreviewUrl(result.dataUrl);
+            } else {
+              setPreviewUrl(fileUrl); // Fallback to direct URL
+            }
+            setIsLoading(false);
+          })
+          .catch(error => {
+            console.error('PDF preview error:', error);
+            setPreviewUrl(fileUrl); // Fallback to direct URL
+            setIsLoading(false);
+          });
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, [fileUrl, dispatch]);
+
+  if (!fileUrl) {
+    return (
+      <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+        <span className="text-gray-400">No attachment</span>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center animate-pulse">
+        <div className="w-8 h-8 bg-gray-300 rounded"></div>
+      </div>
+    );
+  }
+
+  if (isImage && previewUrl) {
+    return (
+      <div 
+        className="w-full h-full rounded-lg border-2 border-gray-200 overflow-hidden cursor-pointer hover:border-blue-400 transition-all duration-200 shadow-lg"
+        onClick={onClick}
+        title="Click to view full size"
+      >
+        <div className="w-full h-full bg-gradient-to-br from-gray-50 to-white p-2 overflow-y-auto">
+          <img 
+            src={previewUrl} 
+            alt="Attachment preview" 
+            className="w-full min-h-full object-contain rounded-md shadow-sm"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        </div>
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center" style={{ display: 'none' }}>
+          <FaFileAlt className="text-gray-400 text-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isPdf && previewUrl) {
+    return (
+      <div 
+        className="w-full h-full rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-400 transition-all duration-200 shadow-lg"
+        title="PDF Preview"
+      >
+        <div className="w-full h-full bg-gradient-to-br from-gray-50 to-white p-2 overflow-y-auto">
+          <iframe
+            src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+            className="w-full min-h-full rounded-md shadow-sm border-0"
+            title="PDF Preview"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        </div>
+        <div className="w-full h-full bg-gray-100 flex items-center justify-center" style={{ display: 'none' }}>
+          <FaFileAlt className="text-gray-400 text-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  // For other files (not images or PDFs)
+  return (
+    <div 
+      className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border-2 border-blue-200 flex items-center justify-center cursor-pointer hover:border-blue-400 hover:from-blue-100 hover:to-blue-200 transition-all duration-200 shadow-lg"
+      onClick={onClick}
+      title="Click to view file"
+    >
+      <div className="text-center p-6">
+        <div className="bg-white rounded-full p-4 mb-4 shadow-md">
+          <FaFileAlt className="text-blue-600 text-5xl" />
+        </div>
+        <p className="text-blue-700 text-lg font-medium">Click to view file</p>
+        <p className="text-blue-500 text-sm mt-1">Document or File</p>
+      </div>
     </div>
   );
 };
@@ -195,94 +335,123 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800">Receipt Preview: {receipt.receiptNumber}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
             <FaTimes />
           </button>
         </div>
-        <div className="p-6 max-h-[70vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm mb-6">
-            <div><strong>Customer:</strong> {receipt.customer?.customerName || receipt.client}</div>
-            <div><strong>Project:</strong> {receipt.project?.projectName || receipt.project}</div>
-            <div><strong>Receipt Date:</strong> {receipt.receiptDate}</div>
-            <div><strong>Payment Method:</strong> {receipt.paymentMethod}</div>
-            <div><strong>Receipt No.:</strong> {receipt.receiptNumber}</div>
-            <div><strong>Payment Trans. ID:</strong> <span className="font-mono">{receipt.paymentTransactionId}</span></div>
-            <div><strong>Attachment:</strong> {receipt.receiptFileUrl || receipt.attachmentUrl ? (
-              <button
-                onClick={async () => {
-                  try {
-                    const { dataUrl } = await dispatch(fetchImageFromMinio({ url: receipt.receiptFileUrl || receipt.attachmentUrl })).unwrap();
-                    if (dataUrl) {
-                      window.open(dataUrl, '_blank', 'noopener,noreferrer');
-                    } else {
-                      // Fallback to direct URL if authentication failed or access denied
-                      const directUrl = receipt.receiptFileUrl || receipt.attachmentUrl;
-                      if (directUrl) {
-                        window.open(directUrl, '_blank', 'noopener,noreferrer');
-                      } else {
-                        toast.error('Unable to open attachment');
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Receipt file preview error:', error);
-                    // Fallback to direct URL
-                    const directUrl = receipt.receiptFileUrl || receipt.attachmentUrl;
-                    if (directUrl) {
-                      window.open(directUrl, '_blank', 'noopener,noreferrer');
-                    } else {
-                      toast.error('Unable to open attachment');
-                    }
-                  }
-                }}
-                className="text-blue-600 hover:text-blue-800 ml-1 cursor-pointer"
-              >
-                View Payment Proof
-              </button>
-            ) : (
-              <span className="text-gray-500 ml-1">No attachment</span>
-            )}</div>
-            <div className="flex items-center">
-              <strong>Status:</strong> 
-              <span className={`font-semibold px-2 py-1 rounded-full text-xs ml-2 ${
-                receipt.status?.toLowerCase() === 'received' || receipt.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
-                receipt.status?.toLowerCase() === 'partial received' || receipt.status?.toLowerCase() === 'partial paid' || receipt.status?.toLowerCase() === 'partially paid' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
-              }`}>{receipt.status}</span>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold">Total Amount Received:</span>
-                <span className="text-2xl font-bold text-green-600">₹{receipt.amountReceived}</span>
+        <div className="p-8 h-[85vh] flex">
+          <div className="grid grid-cols-7 gap-10 w-full">
+            {/* Left side - All text fields */}
+            <div className="col-span-3">
+              <div className="space-y-5 text-sm mb-8">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <strong className="text-gray-600">Customer:</strong>
+                  <span className="font-medium">{receipt.customer?.customerName || receipt.client}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <strong className="text-gray-600">Project:</strong>
+                  <span className="font-medium">{receipt.project?.projectName || receipt.project}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <strong className="text-gray-600">Receipt Date:</strong>
+                  <span className="font-medium">{receipt.receiptDate}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <strong className="text-gray-600">Payment Method:</strong>
+                  <span className="font-medium">{receipt.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <strong className="text-gray-600">Receipt No.:</strong>
+                  <span className="font-medium">{receipt.receiptNumber}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <strong className="text-gray-600">Payment Trans. ID:</strong>
+                  <span className="font-mono font-medium">{receipt.paymentTransactionId}</span>
+                </div>
+              </div>
+              
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
+                <div className="flex justify-between items-center mb-4">
+                    <span className="text-lg font-semibold text-gray-700">Total Amount Received:</span>
+                    <span className="text-2xl font-bold text-green-600 bg-white px-3 py-1 rounded-md shadow-sm">₹{receipt.amountReceived}</span>
+                </div>
+
+                <h4 className="text-md font-semibold text-gray-700 mb-3 border-b border-green-200 pb-2">Invoice Allocations</h4>
+                {invoiceLinks.length > 0 ? (
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-200">
+                      <tr>
+                        <th className="text-left py-2 px-3">Invoice #</th>
+                        <th className="text-right py-2 px-3">Allocated Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {invoiceLinks.map((alloc, index) => (
+                        <tr key={index}>
+                          <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceNumber}</td>
+                          <td className="text-right py-2 px-3 font-semibold">₹{alloc.amountAllocated}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    No invoices linked to this receipt.
+                  </div>
+                )}
+              </div>
             </div>
 
-            <h4 className="text-md font-semibold text-gray-700 mb-2">Invoice Allocations</h4>
-            {invoiceLinks.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead className="bg-gray-200">
-                  <tr>
-                    <th className="text-left py-2 px-3">Invoice #</th>
-                    <th className="text-right py-2 px-3">Allocated Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {invoiceLinks.map((alloc, index) => (
-                    <tr key={index}>
-                      <td className="py-2 px-3 font-medium text-blue-600">{alloc.invoiceNumber}</td>
-                      <td className="text-right py-2 px-3 font-semibold">₹{alloc.amountAllocated}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-4 text-gray-500">
-                No invoices linked to this receipt.
+            {/* Right side - Only attachment */}
+            <div className="col-span-4">
+              <div className="bg-gray-50 rounded-lg p-4 h-full flex flex-col">
+                <h4 className="text-md font-semibold text-gray-700 mb-4">Attachment</h4>
+                <div className="flex-1 overflow-y-auto">
+                {receipt.receiptFileUrl || receipt.attachmentUrl ? (
+                  <FullSizeAttachmentPreview 
+                    fileUrl={receipt.receiptFileUrl || receipt.attachmentUrl}
+                    onClick={async () => {
+                      try {
+                        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: receipt.receiptFileUrl || receipt.attachmentUrl })).unwrap();
+                        if (dataUrl) {
+                          window.open(dataUrl, '_blank', 'noopener,noreferrer');
+                        } else {
+                          // Fallback to direct URL if authentication failed or access denied
+                          const directUrl = receipt.receiptFileUrl || receipt.attachmentUrl;
+                          if (directUrl) {
+                            window.open(directUrl, '_blank', 'noopener,noreferrer');
+                          } else {
+                            toast.error('Unable to open attachment');
+                          }
+                        }
+                      } catch (error) {
+                        console.error('Receipt file preview error:', error);
+                        // Fallback to direct URL
+                        const directUrl = receipt.receiptFileUrl || receipt.attachmentUrl;
+                        if (directUrl) {
+                          window.open(directUrl, '_blank', 'noopener,noreferrer');
+                        } else {
+                          toast.error('Unable to open attachment');
+                        }
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="w-full text-center py-8 border-2 border-dashed border-gray-300 rounded-lg text-gray-500">
+                    <div className="flex flex-col items-center">
+                      <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>No attachment</span>
+                    </div>
+                  </div>
+                )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -294,6 +463,7 @@ const Customers = () => {
   const dispatch = useDispatch();
   const { receipts, loading, error } = useSelector(state => state.receipts);
   const { invoices } = useSelector(state => state.invoices);
+  const { customers, loading: customersLoading, error: customersError } = useSelector(state => state.customers);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
@@ -310,6 +480,10 @@ const Customers = () => {
     dispatch(fetchInvoices());
   }, [dispatch]);
 
+  useEffect(() => {
+    dispatch(fetchCustomers());
+  }, [dispatch]);
+
   // const [invoices, setInvoices] = useState([
   //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
   //   { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
@@ -319,9 +493,7 @@ const Customers = () => {
   //   { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
   //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
   // ]);
-  const [clients, setClients] = useState([
-    { id: 1, name: 'Customer A', company: 'Tech Corp', email: 'client.a@example.com', phone: '555-1234', status: 'Active' }
-  ]);
+  // Remove the static clients state since we're now using Redux
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const handleTabClick = (tab) => { setActiveTab(tab); setShowAddForm(null); };
@@ -380,9 +552,9 @@ const handleInvoiceSubmit = (data) => {
 
 
   const handleClientSubmit = (data) => {
-    setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
-    toast.success('Customer added!');
+    // The AddClientForm now handles the Redux dispatch internally
     setShowAddForm(null);
+    dispatch(fetchCustomers()); // Refresh the customers list
   };
 
   const tabs = [
@@ -568,28 +740,66 @@ const handleInvoiceSubmit = (data) => {
         );
         break;
       case 'clients':
-        table = (
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
+        if (customersLoading) {
+          table = (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading customers...</p>
+              </div>
+            </div>
+          );
+        } else if (customersError) {
+          table = (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <p className="text-red-600 mb-2">Error loading customers</p>
+                <p className="text-gray-600 text-sm">{customersError}</p>
+              </div>
+            </div>
+          );
+        } else {
+          const filteredCustomers = customers.filter(customer =>
+            (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+          );
+          table = (
+                <table className="min-w-full bg-white">
+                  <thead className="bg-gray-100">
+                    <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact Number</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map(customer => (
+                    <tr key={customer.customerId}>
+                      <td className="px-6 py-4 text-sm font-medium text-blue-600">{customer.customerId}</td>
+                      <td className="px-6 py-4 text-sm font-semibold">{customer.customerName}</td>
+                      <td className="px-6 py-4 text-sm">{customer.companyName || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{customer.email || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{customer.contactNumber}</td>
+                      <td className="px-6 py-4 text-sm">{customer.address || '-'}</td>
+                      </tr>
+                  ))
+                ) : (
                   <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      {searchTerm ? 'No customers found matching your search.' : 'No customers found.'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-              {clients.map(c => (
-                <tr key={c.id}>
-                  <td className="px-6 py-4 text-sm">{c.name}</td>
-                  <td className="px-6 py-4 text-sm">{c.company}</td>
-                  <td className="px-6 py-4 text-sm">{c.email}</td>
-                  <td className="px-6 py-4"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{c.status}</span></td>
-                  </tr>
-              ))}
-                </tbody>
-              </table>
-        );
+                )}
+                  </tbody>
+                </table>
+          );
+        }
         break;
       default: return null;
     }
