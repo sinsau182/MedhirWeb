@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
 import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import { fetchCustomers, addCustomer } from '@/redux/slices/customerSlice';
 import MinioImage from '@/components/ui/MinioImage';
 
 // Small preview component for attachments
@@ -462,6 +463,7 @@ const Customers = () => {
   const dispatch = useDispatch();
   const { receipts, loading, error } = useSelector(state => state.receipts);
   const { invoices } = useSelector(state => state.invoices);
+  const { customers, loading: customersLoading, error: customersError } = useSelector(state => state.customers);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
@@ -478,6 +480,10 @@ const Customers = () => {
     dispatch(fetchInvoices());
   }, [dispatch]);
 
+  useEffect(() => {
+    dispatch(fetchCustomers());
+  }, [dispatch]);
+
   // const [invoices, setInvoices] = useState([
   //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
   //   { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
@@ -487,9 +493,7 @@ const Customers = () => {
   //   { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
   //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
   // ]);
-  const [clients, setClients] = useState([
-    { id: 1, name: 'Customer A', company: 'Tech Corp', email: 'client.a@example.com', phone: '555-1234', status: 'Active' }
-  ]);
+  // Remove the static clients state since we're now using Redux
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const handleTabClick = (tab) => { setActiveTab(tab); setShowAddForm(null); };
@@ -548,9 +552,9 @@ const handleInvoiceSubmit = (data) => {
 
 
   const handleClientSubmit = (data) => {
-    setClients(prev => [...prev, { id: data.id, name: data.clientName, company: data.companyName, email: data.email, phone: data.phone, status: data.status }]);
-    toast.success('Customer added!');
+    // The AddClientForm now handles the Redux dispatch internally
     setShowAddForm(null);
+    dispatch(fetchCustomers()); // Refresh the customers list
   };
 
   const tabs = [
@@ -736,28 +740,66 @@ const handleInvoiceSubmit = (data) => {
         );
         break;
       case 'clients':
-        table = (
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-100">
+        if (customersLoading) {
+          table = (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading customers...</p>
+              </div>
+            </div>
+          );
+        } else if (customersError) {
+          table = (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <p className="text-red-600 mb-2">Error loading customers</p>
+                <p className="text-gray-600 text-sm">{customersError}</p>
+              </div>
+            </div>
+          );
+        } else {
+          const filteredCustomers = customers.filter(customer =>
+            (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+          );
+          table = (
+                <table className="min-w-full bg-white">
+                  <thead className="bg-gray-100">
+                    <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact Number</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map(customer => (
+                    <tr key={customer.customerId}>
+                      <td className="px-6 py-4 text-sm font-medium text-blue-600">{customer.customerId}</td>
+                      <td className="px-6 py-4 text-sm font-semibold">{customer.customerName}</td>
+                      <td className="px-6 py-4 text-sm">{customer.companyName || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{customer.email || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{customer.contactNumber}</td>
+                      <td className="px-6 py-4 text-sm">{customer.address || '-'}</td>
+                      </tr>
+                  ))
+                ) : (
                   <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      {searchTerm ? 'No customers found matching your search.' : 'No customers found.'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-              {clients.map(c => (
-                <tr key={c.id}>
-                  <td className="px-6 py-4 text-sm">{c.name}</td>
-                  <td className="px-6 py-4 text-sm">{c.company}</td>
-                  <td className="px-6 py-4 text-sm">{c.email}</td>
-                  <td className="px-6 py-4"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.status === 'Active' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>{c.status}</span></td>
-                  </tr>
-              ))}
-                </tbody>
-              </table>
-        );
+                )}
+                  </tbody>
+                </table>
+          );
+        }
         break;
       default: return null;
     }
