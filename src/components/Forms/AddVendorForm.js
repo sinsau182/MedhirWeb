@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaSave, FaTimes, FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaBuilding, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaCreditCard, FaFileAlt, FaInfoCircle } from 'react-icons/fa';
+import { FaSave, FaTimes, FaPlus, FaTrash, FaChevronDown, FaChevronRight, FaBuilding, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope, FaGlobe, FaCreditCard, FaFileAlt, FaEye } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { addVendor, updateVendor } from '../../redux/slices/vendorSlice';
 import { toast } from 'sonner';
+import VendorPreview from '../Previews/VendorPreview';
 
 const steps = [
   { label: 'Basic Details' },
@@ -19,6 +20,8 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
   const sentinelRef = useRef(null);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const tagsDropdownRef = useRef(null);
+  // State for vendor preview
+  const [showVendorPreview, setShowVendorPreview] = useState(false);
 
   // Determine if we're in edit mode
   const isEditMode = !!vendor;
@@ -161,9 +164,202 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
 
   const contactTypes = ['Billing', 'Shipping', 'Finance', 'Technical', 'Sales', 'Support'];
 
+  // Real-time validation functions
+  const validateField = (name, value) => {
+    // Validation for alphabetic-only fields
+    const validateAlphabeticField = (value, fieldName) => {
+      if (!value.trim()) {
+        return `${fieldName} is required`;
+      }
+      const alphabeticRegex = /^[A-Za-z\s\-'\.]+$/;
+      if (!alphabeticRegex.test(value)) {
+        return `${fieldName} should only contain letters, spaces, hyphens, apostrophes, and periods`;
+      }
+      return null;
+    };
+
+    const validateGSTIN = (gstin) => {
+      if (!gstin.trim()) return 'GSTIN is required for Registered vendors';
+      const gstinRegex = /^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+      if (!gstinRegex.test(gstin.toUpperCase())) {
+        return 'Invalid GSTIN format (e.g., 27AAECS1234F1Z2)';
+      }
+      return null;
+    };
+
+    const validatePAN = (pan) => {
+  if (!pan.trim()) return 'PAN is required';
+
+  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+  
+  if (!panRegex.test(pan.toUpperCase())) {
+    return 'Invalid PAN format (e.g., ABCDE1234F)';
+  }
+
+  return null;
+};
+    const validateIFSC = (ifsc) => {
+      if (!ifsc.trim()) return 'IFSC code is required';
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscRegex.test(ifsc.toUpperCase())) {
+        return 'Invalid IFSC code format (e.g., SBIN0008754)';
+      }
+      return null;
+    };
+
+    const validateAccountNumber = (accountNumber) => {
+      if (!accountNumber.trim()) return 'Account number is required';
+      const accountRegex = /^[0-9]{9,18}$/;
+      if (!accountRegex.test(accountNumber)) {
+        return 'Invalid account number format (9-18 digits only)';
+      }
+      return null;
+    };
+
+    const validateUPI = (upi) => {
+      if (!upi.trim()) return 'UPI ID is required';
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/;
+      if (!upiRegex.test(upi)) {
+        return 'Invalid UPI ID format (e.g., example@paytm)';
+      }
+      return null;
+    };
+
+    const validatePINCode = (pinCode) => {
+      if (!pinCode.trim()) return 'PIN Code is required';
+      const pinRegex = /^[1-9][0-9]{5}$/;
+      if (!pinRegex.test(pinCode)) {
+        return 'Invalid PIN Code format (6 digits, starting with 1-9)';
+      }
+      return null;
+    };
+
+    const validateEmail = (email) => {
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return 'Invalid email format';
+      }
+      return null;
+    };
+
+    const validatePhone = (phone, fieldName) => {
+      if (phone && !/^\d{10}$/.test(phone)) {
+        return `${fieldName} must be exactly 10 digits`;
+      }
+      return null;
+    };
+
+    // Field-specific validation
+    switch (name) {
+      case 'vendorName':
+        return validateAlphabeticField(value, 'Vendor name');
+      
+      case 'contactName':
+        return validateAlphabeticField(value, 'Contact name');
+      
+      case 'bankDetails.accountHolderName':
+        return validateAlphabeticField(value, 'Account holder name');
+      
+      case 'gstin':
+        if (formData.taxTreatment === 'Registered') {
+          return validateGSTIN(value);
+        }
+        return null;
+      
+      case 'pan':
+        return validatePAN(value);
+      
+      case 'email':
+        return validateEmail(value);
+      
+      case 'mobile':
+        return validatePhone(value, 'Mobile number');
+      
+      case 'phone':
+        return validatePhone(value, 'Phone number');
+      
+      case 'pinCode':
+        return validatePINCode(value);
+      
+      case 'bankDetails.accountNumber':
+        return validateAccountNumber(value);
+      
+      case 'bankDetails.ifscCode':
+        return validateIFSC(value);
+      
+      case 'bankDetails.upiId':
+        return validateUPI(value);
+      
+      case 'taxTreatment':
+        if (!value.trim()) {
+          return 'GST Treatment is required';
+        }
+        return null;
+      
+      case 'addressLine1':
+        if (!value.trim()) {
+          return 'Address Line 1 is required';
+        }
+        return null;
+      
+      case 'city':
+        if (!value.trim()) {
+          return 'City is required';
+        }
+        return null;
+      
+      case 'state':
+        if (!value.trim()) {
+          return 'State is required';
+        }
+        return null;
+      
+      case 'bankDetails.branchName':
+        if (!value.trim()) {
+          return 'Branch name is required';
+        }
+        return null;
+      
+      case 'bankDetails.bankName':
+        if (!value.trim()) {
+          return 'Bank name is required';
+        }
+        return null;
+      
+      case 'bankDetails.accountType':
+        if (!value.trim()) {
+          return 'Account type is required';
+        }
+        return null;
+      
+      case 'confirmAccountNumber':
+        if (!value.trim()) {
+          return 'Please confirm your account number';
+        } else if (formData.bankDetails.accountNumber !== value) {
+          return 'Account numbers do not match';
+        }
+        return null;
+      
+      default:
+        return null;
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const newValue = type === 'checkbox' ? checked : value;
+    
+    // Validation for alphabetic-only fields
+    const alphabeticFields = ['vendorName', 'contactName', 'bankDetails.accountHolderName'];
+    const fieldName = name.startsWith('bankDetails.') ? name.split('.')[1] : name;
+    
+    if (alphabeticFields.includes(name) || (name.startsWith('bankDetails.') && alphabeticFields.includes(`bankDetails.${fieldName}`))) {
+      // Only allow alphabetic characters, spaces, and common punctuation
+      const alphabeticRegex = /^[A-Za-z\s\-'\.]+$/;
+      if (value && !alphabeticRegex.test(value)) {
+        // Don't update the value if it contains non-alphabetic characters
+        return;
+      }
+    }
     
     // Handle nested bankDetails fields
     if (name.startsWith('bankDetails.')) {
@@ -182,13 +378,23 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
       }));
     }
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    // Real-time validation
+    const error = validateField(name, newValue);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error || ''
+    }));
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    
+    // Validate on blur for fields that might be empty
+    const error = validateField(name, value);
+    setErrors(prev => ({
+      ...prev,
+      [name]: error || ''
+    }));
   };
 
   // Separate handler for confirm account number
@@ -196,13 +402,12 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
     const value = e.target.value;
     setConfirmAccountNumber(value);
     
-    // Clear error when user starts typing
-    if (errors.confirmAccountNumber) {
-      setErrors(prev => ({
-        ...prev,
-        confirmAccountNumber: ''
-      }));
-    }
+    // Real-time validation
+    const error = validateField('confirmAccountNumber', value);
+    setErrors(prev => ({
+      ...prev,
+      confirmAccountNumber: error || ''
+    }));
   };
 
   const handleMultiSelect = (name, value) => {
@@ -253,33 +458,121 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    // Custom validation functions
+    const validateGSTIN = (gstin) => {
+      if (!gstin.trim()) return 'GSTIN is required for Registered vendors';
+      const gstinRegex = /^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+      if (!gstinRegex.test(gstin.toUpperCase())) {
+        return 'Invalid GSTIN format (e.g., 27AAECS1234F1Z2)';
+      }
+      return null;
+    };
+
+    const validatePAN = (pan) => {
+      if (!pan.trim()) return 'PAN is required';
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(pan.toUpperCase())) {
+        return 'Invalid PAN format (e.g., ABCDE1234F)';
+      }
+      return null;
+    };
+
+    const validateIFSC = (ifsc) => {
+      if (!ifsc.trim()) return 'IFSC code is required';
+      const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscRegex.test(ifsc.toUpperCase())) {
+        return 'Invalid IFSC code format (e.g., SBIN0008754)';
+      }
+      return null;
+    };
+
+    const validateAccountNumber = (accountNumber) => {
+      if (!accountNumber.trim()) return 'Account number is required';
+      const accountRegex = /^[0-9]{9,18}$/;
+      if (!accountRegex.test(accountNumber)) {
+        return 'Invalid account number format (9-18 digits only)';
+      }
+      return null;
+    };
+
+    const validateUPI = (upi) => {
+      if (!upi.trim()) return 'UPI ID is required';
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/;
+      if (!upiRegex.test(upi)) {
+        return 'Invalid UPI ID format (e.g., example@paytm)';
+      }
+      return null;
+    };
+
+    const validatePINCode = (pinCode) => {
+      if (!pinCode.trim()) return 'PIN Code is required';
+      const pinRegex = /^[1-9][0-9]{5}$/;
+      if (!pinRegex.test(pinCode)) {
+        return 'Invalid PIN Code format (6 digits, starting with 1-9)';
+      }
+      return null;
+    };
+
+    const validateEmail = (email) => {
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return 'Invalid email format';
+      }
+      return null;
+    };
+
+    const validatePhone = (phone, fieldName) => {
+      if (phone && !/^\d{10}$/.test(phone)) {
+        return `${fieldName} must be exactly 10 digits`;
+      }
+      return null;
+    };
+
+    // Validation for alphabetic-only fields
+    const validateAlphabeticField = (value, fieldName) => {
+      if (!value.trim()) {
+        return `${fieldName} is required`;
+      }
+      const alphabeticRegex = /^[A-Za-z\s\-'\.]+$/;
+      if (!alphabeticRegex.test(value)) {
+        return `${fieldName} should only contain letters, spaces, hyphens, apostrophes, and periods`;
+      }
+      return null;
+    };
+
     // Basic Information validations
-    if (!formData.vendorName.trim()) {
-      newErrors.vendorName = 'Vendor name is required';
-    }
-
-    // if (!formData.gstin.trim()) {
-    //   newErrors.gstin = 'GSTIN is required';
-    // } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/.test(formData.gstin)) {
-    //   newErrors.gstin = 'Invalid GSTIN format';
-    // }
-
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-
-if (!formData.pan.trim()) {
-  newErrors.pan = 'PAN is required';
-} else if (!panRegex.test(formData.pan)) {
-  newErrors.pan = 'Invalid PAN format (e.g., ABCDE1234F)';
-}
+    const vendorNameError = validateAlphabeticField(formData.vendorName, 'Vendor name');
+    if (vendorNameError) newErrors.vendorName = vendorNameError;
 
     if (!formData.taxTreatment.trim()) {
-      newErrors.taxTreatment = 'GST treatment is required';
+      newErrors.taxTreatment = 'GST Treatment is required';
     }
 
-    if (!formData.contactName.trim()) {
-      newErrors.contactName = 'Contact name is required';
+    // GSTIN validation only if taxTreatment is 'Registered'
+    if (formData.taxTreatment === 'Registered') {
+      const gstinError = validateGSTIN(formData.gstin);
+      if (gstinError) newErrors.gstin = gstinError;
     }
 
+    // PAN validation
+    const panError = validatePAN(formData.pan);
+    if (panError) newErrors.pan = panError;
+
+    // Contact Information validations
+    const contactNameError = validateAlphabeticField(formData.contactName, 'Contact name');
+    if (contactNameError) newErrors.contactName = contactNameError;
+
+    // Email validation
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
+
+    // Phone validations
+    const mobileError = validatePhone(formData.mobile, 'Mobile number');
+    if (mobileError) newErrors.mobile = mobileError;
+
+    const phoneError = validatePhone(formData.phone, 'Phone number');
+    if (phoneError) newErrors.phone = phoneError;
+
+    // Address validations
     if (!formData.addressLine1.trim()) {
       newErrors.addressLine1 = 'Address Line 1 is required';
     }
@@ -292,31 +585,13 @@ if (!formData.pan.trim()) {
       newErrors.state = 'State is required';
     }
 
-    if (!formData.pinCode.trim()) {
-      newErrors.pinCode = 'PIN Code is required';
-    } else if (!/^[1-9][0-9]{5}$/.test(formData.pinCode)) {
-      newErrors.pinCode = 'Invalid PIN Code format';
-    }
-
-    // Email validation
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-
-    // Mobile validation (main phone)
-    if (formData.mobile && !/^\d{10}$/.test(formData.mobile)) {
-      newErrors.mobile = 'Mobile number must be exactly 10 digits';
-    }
-
-    // Phone validation (alternate phone)
-    if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
-      newErrors.phone = 'Phone number must be exactly 10 digits';
-    }
+    // PIN Code validation
+    const pinError = validatePINCode(formData.pinCode);
+    if (pinError) newErrors.pinCode = pinError;
 
     // Banking details validation
-    if (!formData.bankDetails.accountHolderName.trim()) {
-      newErrors['bankDetails.accountHolderName'] = 'Account holder name is required';
-    }
+    const accountHolderNameError = validateAlphabeticField(formData.bankDetails.accountHolderName, 'Account holder name');
+    if (accountHolderNameError) newErrors['bankDetails.accountHolderName'] = accountHolderNameError;
 
     if (!formData.bankDetails.branchName.trim()) {
       newErrors['bankDetails.branchName'] = 'Branch name is required';
@@ -330,23 +605,17 @@ if (!formData.pan.trim()) {
       newErrors['bankDetails.accountType'] = 'Account type is required';
     }
 
-    if (!formData.bankDetails.accountNumber.trim()) {
-      newErrors['bankDetails.accountNumber'] = 'Account number is required';
-    } else if (!/^[0-9]{9,18}$/.test(formData.bankDetails.accountNumber)) {
-      newErrors['bankDetails.accountNumber'] = 'Invalid account number format';
-    }
+    // Account Number validation
+    const accountError = validateAccountNumber(formData.bankDetails.accountNumber);
+    if (accountError) newErrors['bankDetails.accountNumber'] = accountError;
 
-    if (!formData.bankDetails.ifscCode.trim()) {
-      newErrors['bankDetails.ifscCode'] = 'IFSC code is required';
-    } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bankDetails.ifscCode)) {
-      newErrors['bankDetails.ifscCode'] = 'Invalid IFSC code format';
-    }
+    // IFSC Code validation
+    const ifscError = validateIFSC(formData.bankDetails.ifscCode);
+    if (ifscError) newErrors['bankDetails.ifscCode'] = ifscError;
 
-   if (!formData.bankDetails.upiId.trim()) {
-  newErrors['bankDetails.upiId'] = 'UPI ID is required';
-} else if (!/^[a-zA-Z0-9.\-_]{2,}@[a-zA-Z]{2,}$/.test(formData.bankDetails.upiId)) {
-  newErrors['bankDetails.upiId'] = 'Invalid UPI ID format';
-}
+    // UPI ID validation
+    const upiError = validateUPI(formData.bankDetails.upiId);
+    if (upiError) newErrors['bankDetails.upiId'] = upiError;
 
     // Confirm Account Number validation
     if (!confirmAccountNumber.trim()) {
@@ -357,6 +626,28 @@ if (!formData.pan.trim()) {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePreview = () => {
+    if (validateForm()) {
+      const previewData = {
+        ...formData,
+        vendorId: vendor?.vendorId || `V${Date.now()}`,
+        status: 'Active',
+        createdAt: vendor?.createdAt || new Date().toISOString(),
+        updatedAt: isEditMode ? new Date().toISOString() : undefined,
+        tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null
+      };
+      setShowVendorPreview(true);
+    } else {
+      // Show specific validation errors instead of general message
+      const errorMessages = Object.values(errors).filter(msg => msg);
+      if (errorMessages.length > 0) {
+        toast.error(`Please fix the following errors: ${errorMessages.slice(0, 3).join(', ')}${errorMessages.length > 3 ? ' and more...' : ''}`);
+      } else {
+        toast.error('Please fill all the required fields before previewing');
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -393,7 +684,13 @@ if (!formData.pan.trim()) {
         toast.error(err);
       }
     } else {
-      toast.error('Please fill all the required fields');
+      // Show specific validation errors instead of general message
+      const errorMessages = Object.values(errors).filter(msg => msg);
+      if (errorMessages.length > 0) {
+        toast.error(`Please fix the following errors: ${errorMessages.slice(0, 3).join(', ')}${errorMessages.length > 3 ? ' and more...' : ''}`);
+      } else {
+        toast.error('Please fill all the required fields');
+      }
     }
   };
 
@@ -446,11 +743,16 @@ if (!formData.pan.trim()) {
                   name="vendorName"
                   value={formData.vendorName}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter vendor name"
+                  onBlur={handleBlur}
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors.vendorName 
+                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+
                   maxLength={100}
                 />
-                {errors.vendorName && <div className="text-red-500 text-sm mt-1">{errors.vendorName}</div>}
+                {errors.vendorName && <div className="text-red-500 text-sm mt-1 font-medium">{errors.vendorName}</div>}
               </div>
                             {/* Tax Treatment */}
                             <div>
@@ -459,7 +761,12 @@ if (!formData.pan.trim()) {
                   name="taxTreatment"
                   value={formData.taxTreatment || ''}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors.taxTreatment 
+                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
                 >
                   <option value="">Select tax treatment</option>
                   <option value="Registered">Registered</option>
@@ -467,7 +774,7 @@ if (!formData.pan.trim()) {
                   <option value="Composition">Composition</option>
                   <option value="Consumer">Consumer</option>
                 </select>
-                {errors.taxTreatment && <div className="text-red-500 text-sm mt-1">{errors.taxTreatment}</div>}
+                {errors.taxTreatment && <div className="text-red-500 text-sm mt-1 font-medium">{errors.taxTreatment}</div>}
               </div>
                             {/* Vendor Tags */}
                             <div className="relative" ref={tagsDropdownRef}>
@@ -528,37 +835,53 @@ if (!formData.pan.trim()) {
                   <option value="Contractor">Contractor</option>
                 </select>
               </div> */}
-              {/* GSTIN */}
-              <div>
-                <label className={`block text-sm font-medium mb-2 flex items-center ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>GSTIN <span className="text-gray-400 ml-1"><FaInfoCircle title="15-digit Goods and Services Tax Identification Number" /></span></label>
+                             {/* GSTIN */}
+               <div>
+                 <label className={`text-sm font-medium mb-2 flex items-center ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>
+                   GSTIN
+                 </label>
                 <input
-                  type="text"
-                  name="gstin"
-                  value={formData.gstin}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="  eg :E22ABCDE1234F1Z5"
-                  maxLength={15}
-                  disabled={formData.taxTreatment !== 'Registered'}
-                />
-                <div className="text-xs text-gray-400 mt-1">15-digit Goods and Services Tax Identification Number</div>
-                {errors.gstin && <div className="text-red-500 text-sm mt-1">{errors.gstin}</div>}
-              </div>
-              {/* PAN */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">PAN <span className="text-red-500">*</span></label>
+  type="text"
+  name="gstin"
+  value={formData.gstin.toUpperCase()}  // Always display uppercase
+  onChange={handleChange}
+  onBlur={handleBlur}
+  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+    errors.gstin 
+      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+      : 'border-gray-300 focus:ring-blue-500'
+  }`}
+
+  maxLength={15}
+  disabled={formData.taxTreatment !== 'Registered'}
+  style={{ backgroundColor: formData.taxTreatment !== 'Registered' ? '#f9fafb' : 'white' }}
+/>
+
+                 <div className="text-xs text-gray-400 mt-1">Format: 27AAECS1234F1Z2 (15 characters length)</div>
+                 {errors.gstin && <div className="text-red-500 text-sm mt-1 font-medium">{errors.gstin}</div>}
+               </div>
+                             {/* PAN */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   PAN <span className="text-red-500">*</span>
+                 </label>
                 <input
-                  type="text"
-                  name="pan"
-                  value={formData.pan}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter PAN"
-                  maxLength={10}
-                />
-                <div className="text-xs text-gray-400 mt-1">10-character Permanent Account Number</div>
-                {errors.pan && <div className="text-red-500 text-sm mt-1">{errors.pan}</div>}
-              </div>
+  type="text"
+  name="pan"
+  value={formData.pan.toUpperCase()}
+  onChange={handleChange}
+  onBlur={handleBlur}
+  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+    errors.pan 
+      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+      : 'border-gray-300 focus:ring-blue-500'
+  }`}
+
+  maxLength={10}
+/>
+                 <div className="text-xs text-gray-400 mt-1">Format: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)</div>
+                 {errors.pan && <div className="text-red-500 text-sm mt-1 font-medium">{errors.pan}</div>}
+               </div>
               {/* TDS Selection */}
               <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
               <label className="flex items-center">
@@ -631,62 +954,98 @@ if (!formData.pan.trim()) {
                       name="contactName"
                       value={formData.contactName || ''}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Enter full name"
+                      onBlur={handleBlur}
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                        errors.contactName 
+                          ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                          : 'border-gray-300 focus:ring-blue-500'
+                      }`}
+
                     />
-                    {errors.contactName && <div className="text-red-500 text-sm mt-1">{errors.contactName}</div>}
+                    {errors.contactName && <div className="text-red-500 text-sm mt-1 font-medium">{errors.contactName}</div>}
                   </div>
-                  {/* Email Address */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email || ''}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="contact@vendor.com"
-                    />
-                    {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email}</div>}
-                  </div>
-                  {/* Main Phone Number (Mobile) */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Main Phone Number</label>
-                    <div className="flex">
-                      <select className="border border-gray-300 rounded-l-lg px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled>
-                        <option>+91</option>
-                      </select>
-                      <input
-                        type="tel"
-                        name="mobile"
-                        value={formData.mobile || ''}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-base border-t border-b border-r border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        placeholder="Enter main phone number"
-                        maxLength={10}
-                      />
-                    </div>
-                    {errors.mobile && <div className="text-red-500 text-sm mt-1">{errors.mobile}</div>}
-                  </div>
-                  {/* Alternate Phone Number */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Alternate Phone Number</label>
-                    <div className="flex">
-                      <select className="border border-gray-300 rounded-l-lg px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled>
-                        <option>+91</option>
-                      </select>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone || ''}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 text-base border-t border-b border-r border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        placeholder="Enter alternate phone number"
-                        maxLength={10}
-                      />
-                    </div>
-                    {errors.phone && <div className="text-red-500 text-sm mt-1">{errors.phone}</div>}
-                  </div>
+                                     {/* Email Address */}
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                       Email Address
+                     </label>
+                     <input
+                       type="email"
+                       name="email"
+                       value={formData.email || ''}
+                       onChange={handleChange}
+                       onBlur={handleBlur}
+                       className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                         errors.email 
+                           ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                           : 'border-gray-300 focus:ring-blue-500'
+                       }`}
+
+                     />
+                     <div className="text-xs text-gray-400 mt-1">Format: username@domain.com</div>
+                     {errors.email && <div className="text-red-500 text-sm mt-1 font-medium">{errors.email}</div>}
+                   </div>
+                                     {/* Main Phone Number (Mobile) */}
+                <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    
+    Main Phone Number<span className="text-red-500 mr-1"> *</span> {/* Required asterisk */}
+  </label>
+  <div className="flex">
+    <select
+      className="border border-gray-300 rounded-l-lg px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      disabled
+    >
+      <option>+91</option>
+    </select>
+    <input
+      type="tel"
+      name="mobile"
+      value={formData.mobile || ''}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      className={`w-full px-3 py-2 text-base border-t border-b border-r rounded-r-lg focus:ring-2 focus:border-transparent transition-all ${
+        errors.mobile 
+          ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+          : 'border-gray-300 focus:ring-blue-500'
+      }`}
+      
+      maxLength={10}
+    />
+  </div>
+  <div className="text-xs text-gray-400 mt-1">Format: 10 digits only (e.g., 9876543210)</div>
+  {errors.mobile && (
+    <div className="text-red-500 text-sm mt-1 font-medium">{errors.mobile}</div>
+  )}
+</div>
+
+                                     {/* Alternate Phone Number */}
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                       Alternate Phone Number
+                     </label>
+                     <div className="flex">
+                       <select className="border border-gray-300 rounded-l-lg px-3 py-2 bg-gray-50 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled>
+                         <option>+91</option>
+                       </select>
+                       <input
+                         type="tel"
+                         name="phone"
+                         value={formData.phone || ''}
+                         onChange={handleChange}
+                         onBlur={handleBlur}
+                         className={`w-full px-3 py-2 text-base border-t border-b border-r rounded-r-lg focus:ring-2 focus:border-transparent transition-all ${
+                           errors.phone 
+                             ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                             : 'border-gray-300 focus:ring-blue-500'
+                         }`}
+                         
+                         maxLength={10}
+                       />
+                     </div>
+                     <div className="text-xs text-gray-400 mt-1">Format: 10 digits only (e.g., 9876543210)</div>
+                     {errors.phone && <div className="text-red-500 text-sm mt-1 font-medium">{errors.phone}</div>}
+                   </div>
                 </div>
               </div>
               {/* Address Information (Right Column) */}
@@ -706,10 +1065,15 @@ if (!formData.pan.trim()) {
                       name="addressLine1"
                       value={formData.addressLine1 || ""}
                       onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Building name, street address"
+                      onBlur={handleBlur}
+                      className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                        errors.addressLine1 
+                          ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                          : 'border-gray-300 focus:ring-blue-500'
+                      }`}
+                      
                     />
-                    {errors.addressLine1 && <div className="text-red-500 text-sm mt-1">{errors.addressLine1}</div>}
+                    {errors.addressLine1 && <div className="text-red-500 text-sm mt-1 font-medium">{errors.addressLine1}</div>}
                   </div>
                   {/* Address Line 2 */}
                   <div>
@@ -722,7 +1086,7 @@ if (!formData.pan.trim()) {
                       value={formData.addressLine2 || ""}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Apartment, suite, unit, building, floor, etc."
+                      
                     />
                   </div>
                   {/* City & State/Province */}
@@ -736,42 +1100,61 @@ if (!formData.pan.trim()) {
                         name="city"
                         value={formData.city || ""}
                         onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        placeholder="Enter city"
+                        onBlur={handleBlur}
+                        className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                          errors.city 
+                            ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                            : 'border-gray-300 focus:ring-blue-500'
+                        }`}
+                        
                       />
-                      {errors.city && <div className="text-red-500 text-sm mt-1">{errors.city}</div>}
+                      {errors.city && <div className="text-red-500 text-sm mt-1 font-medium">{errors.city}</div>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         State/Province <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="text"
+                      <select
                         name="state"
                         value={formData.state || ""}
                         onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                        placeholder="Enter state or province"
-                      />
-                      {errors.state && <div className="text-red-500 text-sm mt-1">{errors.state}</div>}
+                        onBlur={handleBlur}
+                        className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                          errors.state 
+                            ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                            : 'border-gray-300 focus:ring-blue-500'
+                        }`}
+                      >
+                        <option value="">Select state</option>
+                        {indianStates.map(state => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                      {errors.state && <div className="text-red-500 text-sm mt-1 font-medium">{errors.state}</div>}
                     </div>
                   </div>
-                  {/* PIN/ZIP Code */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      PIN/ZIP Code <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="pinCode"
-                      value={formData.pinCode || ""}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Enter PIN or ZIP code"
-                      maxLength={6}
-                    />
-                    {errors.pinCode && <div className="text-red-500 text-sm mt-1">{errors.pinCode}</div>}
-                  </div>
+                                     {/* PIN/ZIP Code */}
+                   <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-2">
+                       PIN/ZIP Code <span className="text-red-500">*</span>
+                     </label>
+                     <input
+                       type="text"
+                       name="pinCode"
+                       value={formData.pinCode || ""}
+                       onChange={handleChange}
+                       onBlur={handleBlur}
+                       className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                         errors.pinCode 
+                           ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                           : 'border-gray-300 focus:ring-blue-500'
+                       }`}
+
+                       maxLength={6}
+                     />
+                     <div className="text-xs text-gray-400 mt-1">Format: 6 digits starting with 1-9 (e.g., 110001)</div>
+                     {errors.pinCode && <div className="text-red-500 text-sm mt-1 font-medium">{errors.pinCode}</div>}
+                   </div>
                 </div>
               </div>
             </div>
@@ -793,10 +1176,15 @@ if (!formData.pan.trim()) {
                   name="bankDetails.accountHolderName"
                   value={formData.bankDetails.accountHolderName || ''}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter account holder name"
+                  onBlur={handleBlur}
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors['bankDetails.accountHolderName'] 
+                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                  
                 />
-                {errors['bankDetails.accountHolderName'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.accountHolderName']}</div>}
+                {errors['bankDetails.accountHolderName'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.accountHolderName']}</div>}
               </div>
               {/* Branch Name */}
               <div>
@@ -806,10 +1194,15 @@ if (!formData.pan.trim()) {
                   name="bankDetails.branchName"
                   value={formData.bankDetails.branchName || ''}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter branch name"
+                  onBlur={handleBlur}
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors['bankDetails.branchName'] 
+                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
+                  
                 />
-                {errors['bankDetails.branchName'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.branchName']}</div>}
+                {errors['bankDetails.branchName'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.branchName']}</div>}
               </div>
               {/* Bank Name */}
               <div>
@@ -818,7 +1211,12 @@ if (!formData.pan.trim()) {
                   name="bankDetails.bankName"
                   value={formData.bankDetails.bankName || ''}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors['bankDetails.bankName'] 
+                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
                 >
                   <option value="">Select bank</option>
                   <option value="SBI">State Bank of India</option>
@@ -827,7 +1225,7 @@ if (!formData.pan.trim()) {
                   <option value="Axis">Axis Bank</option>
                   <option value="PNB">Punjab National Bank</option>
                 </select>
-                {errors['bankDetails.bankName'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.bankName']}</div>}
+                {errors['bankDetails.bankName'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.bankName']}</div>}
               </div>
               {/* Account Type */}
               <div>
@@ -836,71 +1234,106 @@ if (!formData.pan.trim()) {
                   name="bankDetails.accountType"
                   value={formData.bankDetails.accountType || ''}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  onBlur={handleBlur}
+                  className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                    errors['bankDetails.accountType'] 
+                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
                 >
                   <option value="">Select account type</option>
                   <option value="Savings">Savings</option>
                   <option value="Current">Current</option>
                   <option value="OD">Overdraft</option>
                 </select>
-                {errors['bankDetails.accountType'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.accountType']}</div>}
+                {errors['bankDetails.accountType'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.accountType']}</div>}
               </div>
-              {/* Account Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Account Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  name="bankDetails.accountNumber"
-                  value={formData.bankDetails.accountNumber || ''}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter account number"
-                  maxLength={18}
-                />
-                {errors['bankDetails.accountNumber'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.accountNumber']}</div>}
-              </div>
-              {/* Confirm Account Number */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Account Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={confirmAccountNumber}
-                  onChange={handleConfirmAccountNumberChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Re-enter account number"
-                  maxLength={18}
-                />
-                {errors.confirmAccountNumber && <div className="text-red-500 text-sm mt-1">{errors.confirmAccountNumber}</div>}
-              </div>
-              {/* IFSC Code */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  name="bankDetails.ifscCode"
-                  value={formData.bankDetails.ifscCode || ''}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="ENTER IFSC CODE"
-                  maxLength={11}
-                />
-                <div className="text-xs text-gray-400 mt-1">11-character alphanumeric code</div>
-                {errors['bankDetails.ifscCode'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.ifscCode']}</div>}
-              </div>
-              {/* UPI ID */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  name="bankDetails.upiId"
-                  value={formData.bankDetails.upiId || ''}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="example@paytm or example@upi"
-                />
-                <div className="text-xs text-gray-400 mt-1">For quick digital payments</div>
-                {errors['bankDetails.upiId'] && <div className="text-red-500 text-sm mt-1">{errors['bankDetails.upiId']}</div>}
-              </div>
+                             {/* Account Number */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Account Number <span className="text-red-500">*</span>
+                 </label>
+                 <input
+                   type="text"
+                   name="bankDetails.accountNumber"
+                   value={formData.bankDetails.accountNumber || ''}
+                   onChange={handleChange}
+                   onBlur={handleBlur}
+                   className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                     errors['bankDetails.accountNumber'] 
+                       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                       : 'border-gray-300 focus:ring-blue-500'
+                   }`}
+
+                   maxLength={18}
+                 />
+                 <div className="text-xs text-gray-400 mt-1">Format: 9-18 digits only (e.g., 1234567890)</div>
+                 {errors['bankDetails.accountNumber'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.accountNumber']}</div>}
+               </div>
+                             {/* Confirm Account Number */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Confirm Account Number <span className="text-red-500">*</span>
+                 </label>
+                 <input
+                   type="text"
+                   value={confirmAccountNumber}
+                   onChange={handleConfirmAccountNumberChange}
+                   onBlur={handleBlur}
+                   className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                     errors.confirmAccountNumber 
+                       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                       : 'border-gray-300 focus:ring-blue-500'
+                   }`}
+
+                   maxLength={18}
+                 />
+                 <div className="text-xs text-gray-400 mt-1">Must match the account number above</div>
+                 {errors.confirmAccountNumber && <div className="text-red-500 text-sm mt-1 font-medium">{errors.confirmAccountNumber}</div>}
+               </div>
+                             {/* IFSC Code */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   IFSC Code <span className="text-red-500">*</span>
+                 </label>
+                 <input
+   type="text"
+   name="bankDetails.ifscCode"
+   value={(formData.bankDetails.ifscCode || '').toUpperCase()}
+   onChange={handleChange}
+   onBlur={handleBlur}
+   className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+     errors['bankDetails.ifscCode'] 
+       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+       : 'border-gray-300 focus:ring-blue-500'
+   }`}
+
+   maxLength={11}
+/>
+                 <div className="text-xs text-gray-400 mt-1">Format: 4 letters + 0 + 6 alphanumeric (e.g., SBIN0008754)</div>
+                 {errors['bankDetails.ifscCode'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.ifscCode']}</div>}
+               </div>
+                             {/* UPI ID */}
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   UPI ID <span className="text-red-500">*</span>
+                 </label>
+                 <input
+                   type="text"
+                   name="bankDetails.upiId"
+                   value={formData.bankDetails.upiId || ''}
+                   onChange={handleChange}
+                   onBlur={handleBlur}
+                   className={`w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:border-transparent transition-all ${
+                     errors['bankDetails.upiId'] 
+                       ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                       : 'border-gray-300 focus:ring-blue-500'
+                   }`}
+
+                 />
+                 <div className="text-xs text-gray-400 mt-1">Format: username@provider (e.g., example@paytm)</div>
+                 {errors['bankDetails.upiId'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.upiId']}</div>}
+               </div>
             </div>
           </>
         );
@@ -999,6 +1432,16 @@ if (!formData.pan.trim()) {
           >
             Save Draft
           </button>
+          {step === steps.length && (
+            <button
+              type="button"
+              onClick={handlePreview}
+              className="px-6 py-2 border border-green-300 rounded-lg text-green-700 bg-green-50 hover:bg-green-100 transition-colors flex items-center gap-2"
+            >
+              <FaEye className="w-4 h-4" />
+              Preview
+            </button>
+          )}
           {step < steps.length ? (
             <button
               type="button"
@@ -1019,6 +1462,14 @@ if (!formData.pan.trim()) {
           )}
         </div>
       </div>
+
+      {/* Vendor Preview Modal */}
+      {showVendorPreview && (
+        <VendorPreview
+          vendorData={formData}
+          onClose={() => setShowVendorPreview(false)}
+        />
+      )}
     </form>
   );
 };

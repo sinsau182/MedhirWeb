@@ -258,10 +258,15 @@ useEffect(() => {
     invoice.payment = newPayment;
     
     const totalAllocated = updatedInvoices.reduce((sum, inv) => sum + (inv.payment || 0), 0);
-    if (totalAllocated > receiptAmount) {
-      invoice.payment -= (totalAllocated - receiptAmount);
+    
+    // Calculate unallocated amount from previous receipts + current receipt amount
+    const previousUnallocatedAmount = projectReceiptData.totalUnallocatedAmount || 0;
+    const totalUnallocatedAmount = previousUnallocatedAmount + receiptAmount;
+    
+    if (totalAllocated > totalUnallocatedAmount) {
+      invoice.payment -= (totalAllocated - totalUnallocatedAmount);
       if (invoice.payment < 0) invoice.payment = 0;
-      toast.error(`Total allocation cannot exceed receipt amount: ₹${receiptAmount.toLocaleString()}`);
+      toast.error(`Total allocation cannot exceed unallocated amount: ₹${totalUnallocatedAmount.toLocaleString()}`);
     }
     
     // Check for duplicate invoice numbers
@@ -279,6 +284,20 @@ useEffect(() => {
   };
   
   const handleSaveInvoiceLinks = () => {
+    // Calculate total allocated amount
+    const totalAllocated = invoicesToLink.reduce((sum, inv) => sum + (inv.payment || 0), 0);
+    
+    // Calculate unallocated amount from previous receipts + current receipt amount
+    const previousUnallocatedAmount = projectReceiptData.totalUnallocatedAmount || 0;
+    const currentReceiptAmount = parseFloat(formData.amount) || 0;
+    const totalUnallocatedAmount = previousUnallocatedAmount + currentReceiptAmount;
+    
+    // Validate that total allocated doesn't exceed unallocated amount
+    if (totalAllocated > totalUnallocatedAmount) {
+      toast.error(`Total allocation (₹${totalAllocated.toLocaleString()}) cannot exceed unallocated amount (₹${totalUnallocatedAmount.toLocaleString()})`);
+      return;
+    }
+    
     // Save as per backend structure: { invoiceNumber, amountAllocated }
     const linked = invoicesToLink.filter(inv => inv.payment > 0).map(inv => ({
       invoiceNumber: inv.number,
@@ -361,11 +380,25 @@ const handleSubmit = async (e) => {
         amountAllocated: inv.payment,
       }));
     
+    // Calculate total allocated amount
+    const totalAllocated = currentLinkedInvoices.reduce((sum, inv) => sum + inv.amountAllocated, 0);
+    
+    // Calculate unallocated amount from previous receipts + current receipt amount
+    const previousUnallocatedAmount = projectReceiptData.totalUnallocatedAmount || 0;
+    const currentReceiptAmount = parseFloat(formData.amount) || 0;
+    const totalUnallocatedAmount = previousUnallocatedAmount + currentReceiptAmount;
+    
+    // Validate that total allocated doesn't exceed unallocated amount
+    if (totalAllocated > totalUnallocatedAmount) {
+      toast.error(`Total allocation (₹${totalAllocated.toLocaleString()}) cannot exceed unallocated amount (₹${totalUnallocatedAmount.toLocaleString()})`);
+      return;
+    }
+    
     // Create receipt data object - only include fields that DTO expects
     const receiptData = {
       customerId: formData.customerId,
       projectId: formData.leadId,
-      amountReceived: parseFloat(formData.amount),
+      amountReceived: currentReceiptAmount,
       linkedInvoices: currentLinkedInvoices,
       receiptDate: formData.receiptDate,
       paymentMethod: formData.paymentMethod,
@@ -629,7 +662,7 @@ const handleSubmit = async (e) => {
                 <div>
                   <div className="grid grid-cols-2 gap-4 mb-6 text-center">
                       <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency((projectReceiptData.previousReceipts.length > 0 ? (projectReceiptData.totalUnallocatedAmount + (parseFloat(formData.amount) || 0)) : (parseFloat(formData.amount) || 0)) - totalAllocatedInModal)}</div></div>
+                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency((projectReceiptData.totalUnallocatedAmount || 0) + receiptAmount - totalAllocatedInModal)}</div></div>
                   </div>
                   {invoicesToLink.length > 0 ? (
                     <table className="w-full text-sm">
@@ -794,7 +827,7 @@ const handleSubmit = async (e) => {
             <div className="p-6 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-4 mb-4 text-center">
                     <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                    <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold">{formatCurrency((projectReceiptData.previousReceipts.length > 0 ? (projectReceiptData.totalUnallocatedAmount + (parseFloat(formData.amount) || 0)) : (parseFloat(formData.amount) || 0)) - totalAllocatedInModal)}</div></div>
+                    <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold">{formatCurrency((projectReceiptData.totalUnallocatedAmount || 0) + receiptAmount - totalAllocatedInModal)}</div></div>
                 </div>
                 <table className="w-full text-sm">
                     <thead>

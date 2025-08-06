@@ -5,7 +5,7 @@ import { getItemFromSessionStorage } from './sessionStorageSlice';
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/id-formatting`;
+const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/id-formatting";
 
 // Fetch ID formatting for all categories
 export const fetchIdFormattings = createAsyncThunk(

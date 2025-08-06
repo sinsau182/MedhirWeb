@@ -49,6 +49,44 @@ export const fetchImageFromMinio = createAsyncThunk(
   }
 );
 
+// Async thunk to generate pre-signed URL for Minio files
+export const generatePresignedUrl = createAsyncThunk(
+  "minio/generatePresignedUrl",
+  async ({ url, action = 'view' }, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+
+      const response = await fetch(`${MINIO_BASE_URL}/generate-presigned-url`, {
+        method: 'POST',
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ fileUrl: url, action })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate pre-signed URL");
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "Failed to generate pre-signed URL");
+      }
+
+      return {
+        originalUrl: url,
+        presignedUrl: data.presignedUrl,
+        expiresIn: data.expiresIn,
+        action
+      };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Async thunk to preload multiple images
 export const preloadImages = createAsyncThunk(
   "minio/preloadImages",
@@ -150,6 +188,25 @@ const minioSlice = createSlice({
         };
       })
       .addCase(fetchImageFromMinio.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Generate pre-signed URL cases
+      .addCase(generatePresignedUrl.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(generatePresignedUrl.fulfilled, (state, action) => {
+        state.loading = false;
+        const { originalUrl, presignedUrl, expiresIn, action: urlAction } = action.payload;
+        state.cachedImages[originalUrl] = {
+          presignedUrl,
+          expiresIn,
+          action: urlAction,
+          timestamp: Date.now(),
+        };
+      })
+      .addCase(generatePresignedUrl.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

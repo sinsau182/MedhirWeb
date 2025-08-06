@@ -19,6 +19,10 @@ import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
+import AssignLeadModal from "@/components/Sales/AssignLeadModal";
+import SemiContactedModal from "@/components/Sales/SemiContactedModal";
+import PotentialModal from "@/components/Sales/PotentialModal";
+import HighPotentialModal from "@/components/Sales/HighPotentialModal";
 import KanbanBoardClientOnly from "@/components/Sales/KanbanBoardClientOnly";
 import {
   fetchLeads,
@@ -124,6 +128,26 @@ const ManagerContent = ({ role }) => {
   const [showJunkModal, setShowJunkModal] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+
+  // Assignment modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedLeadForAssignment, setSelectedLeadForAssignment] = useState(null);
+  const [targetPipelineId, setTargetPipelineId] = useState(null);
+
+  // Semi contacted modal state
+  const [showSemiContactedModal, setShowSemiContactedModal] = useState(false);
+  const [selectedLeadForSemiContacted, setSelectedLeadForSemiContacted] = useState(null);
+  const [targetPipelineIdForSemiContacted, setTargetPipelineIdForSemiContacted] = useState(null);
+
+  // Potential modal state
+  const [showPotentialModal, setShowPotentialModal] = useState(false);
+  const [selectedLeadForPotential, setSelectedLeadForPotential] = useState(null);
+  const [targetPipelineIdForPotential, setTargetPipelineIdForPotential] = useState(null);
+
+  // High potential modal state
+  const [showHighPotentialModal, setShowHighPotentialModal] = useState(false);
+  const [selectedLeadForHighPotential, setSelectedLeadForHighPotential] = useState(null);
+  const [targetPipelineIdForHighPotential, setTargetPipelineIdForHighPotential] = useState(null);
 
   // Manager-specific state (retained from original)
   const [editingLead, setEditingLead] = useState(null);
@@ -348,6 +372,48 @@ const ManagerContent = ({ role }) => {
     });
 
     if (String(currentPipelineId) !== String(newPipelineId)) {
+      // Check if moving from stage index 0 to stage index 1
+      // Log pipeline information for debugging
+      const currentPipelineIndex = pipelines.findIndex(p => 
+        p.pipelineId === currentPipelineId || p.stageId === currentPipelineId
+      );
+      const newPipelineIndex = pipelines.findIndex(p => 
+        p.pipelineId === newPipelineId || p.stageId === newPipelineId
+      );
+      
+      // Log pipeline information for debugging
+      console.log("Pipeline index check:", {
+        currentPipelineIndex,
+        newPipelineIndex,
+        currentPipelineId,
+        newPipelineId,
+        currentPipelineName: pipelines[currentPipelineIndex]?.name,
+        newPipelineName: pipelines[newPipelineIndex]?.name,
+        newPipelineFormType: newPipeline.formType
+      });
+
+      // Check if moving to stages with specific form types
+      if (newPipeline.formType === "SEMI") {
+        setSelectedLeadForSemiContacted(lead);
+        setTargetPipelineIdForSemiContacted(newPipelineId);
+        setShowSemiContactedModal(true);
+        return;
+      }
+
+      if (newPipeline.formType === "POTENTIAL") {
+        setSelectedLeadForPotential(lead);
+        setTargetPipelineIdForPotential(newPipelineId);
+        setShowPotentialModal(true);
+        return;
+      }
+
+      if (newPipeline.formType === "HIGHPOTENTIAL") {
+        setSelectedLeadForHighPotential(lead);
+        setTargetPipelineIdForHighPotential(newPipelineId);
+        setShowHighPotentialModal(true);
+        return;
+      }
+
       // If pipeline requires a form, open the modal instead of moving directly
       if (newPipeline.formType === "CONVERTED") {
         setSelectedLead({ ...lead, pipelineId: newPipelineId });
@@ -361,10 +427,14 @@ const ManagerContent = ({ role }) => {
         setSelectedLead({ ...lead, pipelineId: newPipelineId });
         setShowLostModal(true);
         return;
+      } else if (newPipeline.formType === "ASSIGNED") {
+        setSelectedLeadForAssignment(lead);
+        setTargetPipelineId(newPipelineId);
+        setShowAssignModal(true);
+        return;
       }
 
       // Otherwise, move lead directly
-      console.log("Moving lead directly via API:", { leadId, newPipelineId });
       dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
     } else {
       console.log("Pipeline is the same, no move needed");
@@ -402,10 +472,10 @@ const ManagerContent = ({ role }) => {
   };
 
   const handleAddLeadSubmit = async (formData) => {
-    if (!formData.salesRep || !formData.designer) {
-      toast.error("Please assign both Sales Person and Designer.");
-      return;
-    }
+    // if (!formData.salesRep || !formData.designer) {
+    //   toast.error("Please assign both Sales Person and Designer.");
+    //   return;
+    // }
     const leadData = {
       ...defaultLeadData,
       ...formData,
@@ -420,7 +490,7 @@ const ManagerContent = ({ role }) => {
       } else {
         // Assign a new unique leadId
         const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
-        await dispatch(createLead({ ...leadData, leadId: newId })).unwrap();
+        await dispatch(createLead({ ...leadData, leadId: newId, companyId: sessionStorage.getItem("employeeCompanyId") })).unwrap();
         toast.success("Lead created successfully!");
       }
 
@@ -479,6 +549,109 @@ const ManagerContent = ({ role }) => {
     setShowScheduleActivityModal(false);
     setLeadToScheduleActivity(null);
     toast.success("Activity scheduled successfully!");
+  };
+
+  // Assignment handler for AssignLeadModal
+  const handleAssignLead = async (assignmentData) => {
+    try {
+      // Update the lead with sales rep and designer assignments
+      await dispatch(updateLead({
+        leadId: assignmentData.leadId,
+        salesRep: assignmentData.salesRep,
+        designer: assignmentData.designer
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: assignmentData.leadId,
+        newPipelineId: targetPipelineId
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("Assignment error:", error);
+      throw error;
+    }
+  };
+
+  // Semi contacted handler for SemiContactedModal
+  const handleSemiContactedSuccess = async (semiContactedData) => {
+    try {
+      // Update the lead with semi contacted information
+      await dispatch(updateLead({
+        leadId: semiContactedData.leadId,
+        floorPlan: semiContactedData.floorPlan,
+        estimatedBudget: semiContactedData.estimatedBudget,
+        firstMeetingDate: semiContactedData.firstMeetingDate,
+        priority: semiContactedData.priority
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: semiContactedData.leadId,
+        newPipelineId: targetPipelineIdForSemiContacted
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("Semi contacted update error:", error);
+      throw error;
+    }
+  };
+
+  // Potential handler for PotentialModal
+  const handlePotentialSuccess = async (potentialData) => {
+    try {
+      // Update the lead with potential information
+      await dispatch(updateLead({
+        leadId: potentialData.leadId,
+        requirements: potentialData.requirements,
+        consultationFee: potentialData.consultationFee,
+        designConsultation: potentialData.designConsultation
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: potentialData.leadId,
+        newPipelineId: targetPipelineIdForPotential
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("Potential update error:", error);
+      throw error;
+    }
+  };
+
+  // High potential handler for HighPotentialModal
+  const handleHighPotentialSuccess = async (highPotentialData) => {
+    try {
+      // Update the lead with high potential information
+      await dispatch(updateLead({
+        leadId: highPotentialData.leadId,
+        quotationDetails: highPotentialData.quotationDetails,
+        initialQuotedAmount: highPotentialData.initialQuotedAmount,
+        finalQuotedAmount: highPotentialData.finalQuotedAmount,
+        discountPercent: highPotentialData.discountPercent,
+        designTimeline: highPotentialData.designTimeline,
+        completionTimeline: highPotentialData.completionTimeline
+      }));
+      
+      // Move the lead to the target pipeline
+      await dispatch(moveLeadToPipeline({
+        leadId: highPotentialData.leadId,
+        newPipelineId: targetPipelineIdForHighPotential
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("High potential update error:", error);
+      throw error;
+    }
   };
 
   // Confirmation modal for pipeline actions
@@ -725,6 +898,10 @@ const ManagerContent = ({ role }) => {
                     <option value="CONVERTED">Converted</option>
                     <option value="JUNK">Junk</option>
                     <option value="LOST">Lost</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="SEMI">Semi Contacted</option>
+                    <option value="POTENTIAL">Potential</option>
+                    <option value="HIGHPOTENTIAL">High Potential</option>
                     <option value="ONBOARDING">Onboarding</option>
                     <option value="APPROVAL">Approval</option>
                     <option value="CUSTOM">Custom</option>
@@ -801,6 +978,47 @@ const ManagerContent = ({ role }) => {
           // Refresh leads to get the updated grouped format
           dispatch(fetchLeads());
         }}
+      />
+      <AssignLeadModal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setSelectedLeadForAssignment(null);
+          setTargetPipelineId(null);
+        }}
+        lead={selectedLeadForAssignment}
+        onAssign={handleAssignLead}
+        salesEmployees={managerEmployees || []}
+      />
+      <SemiContactedModal
+        isOpen={showSemiContactedModal}
+        onClose={() => {
+          setShowSemiContactedModal(false);
+          setSelectedLeadForSemiContacted(null);
+          setTargetPipelineIdForSemiContacted(null);
+        }}
+        lead={selectedLeadForSemiContacted}
+        onSuccess={handleSemiContactedSuccess}
+      />
+      <PotentialModal
+        isOpen={showPotentialModal}
+        onClose={() => {
+          setShowPotentialModal(false);
+          setSelectedLeadForPotential(null);
+          setTargetPipelineIdForPotential(null);
+        }}
+        lead={selectedLeadForPotential}
+        onSuccess={handlePotentialSuccess}
+      />
+      <HighPotentialModal
+        isOpen={showHighPotentialModal}
+        onClose={() => {
+          setShowHighPotentialModal(false);
+          setSelectedLeadForHighPotential(null);
+          setTargetPipelineIdForHighPotential(null);
+        }}
+        lead={selectedLeadForHighPotential}
+        onSuccess={handleHighPotentialSuccess}
       />
     </div>
   );

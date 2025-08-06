@@ -16,8 +16,8 @@ export const addAsset = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets`, {
-                method: 'POST',
+            const response = await fetch(publicRuntimeConfig.apiURL + "/api/assets", {
+                method: 'POST', 
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     // Note: Don't set Content-Type for FormData, let browser set it with boundary
@@ -49,7 +49,7 @@ export const fetchAssets = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets`, {
+            const response = await fetch(publicRuntimeConfig.apiURL + "/api/assets", {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ export const fetchAssetById = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets/asset/${assetId}`, {
+            const response = await fetch(publicRuntimeConfig.apiURL + "/api/assets/asset/" + assetId, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',

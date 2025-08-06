@@ -4,7 +4,7 @@ import { getItemFromSessionStorage } from './sessionStorageSlice';
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/custom-fields`;
+const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/custom-fields";
 
 // Fetch custom fields for a category
 export const fetchCustomFields = createAsyncThunk(

@@ -52,6 +52,10 @@ import LostLeadModal from "@/components/Sales/LostLeadModal";
 import axios from "axios";
 import getConfig from "next/config";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
+import AssignLeadModal from "@/components/Sales/AssignLeadModal";
+import SemiContactedModal from "@/components/Sales/SemiContactedModal";
+import PotentialModal from "@/components/Sales/PotentialModal";
+import HighPotentialModal from "@/components/Sales/HighPotentialModal";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import { jwtDecode } from "jwt-decode";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
@@ -250,6 +254,7 @@ const OdooDetailBody = ({
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
     contactNumber: lead.contactNumber || "",
+    alternatePhone: lead.alternatePhone || "",
     email: lead.email || "",
   });
 
@@ -287,7 +292,28 @@ const OdooDetailBody = ({
   }, [lead, isEditing]);
 
   const handleContactFieldChange = (field, value) => {
-    setContactFields((prev) => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Apply runtime validation and input restrictions
+    switch (field) {
+      case 'name':
+        // Only allow letters, spaces, and common punctuation
+        processedValue = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+        break;
+      case 'contactNumber':
+      case 'alternatePhone':
+        // Only allow digits, max 10 digits
+        processedValue = value.replace(/\D/g, '').slice(0, 10);
+        break;
+      case 'email':
+        // Allow email characters, max 100 characters
+        processedValue = value.slice(0, 100);
+        break;
+      default:
+        processedValue = value;
+    }
+    
+    setContactFields((prev) => ({ ...prev, [field]: processedValue }));
   };
 
   const handleDownloadFile = async (url) => {
@@ -391,22 +417,74 @@ const OdooDetailBody = ({
 
   const handleSaveContact = async () => {
     try {
+      // Validate form data before submission
+      const errors = {};
+      
+      // Name validation
+      if (!contactFields.name.trim()) {
+        errors.name = "Name is required";
+      } else if (contactFields.name.trim().length < 2) {
+        errors.name = "Name must be at least 2 characters";
+      } else if (contactFields.name.trim().length > 50) {
+        errors.name = "Name must be less than 50 characters";
+      }
+      
+      // Contact number validation
+      if (!contactFields.contactNumber.trim()) {
+        errors.contactNumber = "Contact number is required";
+      } else if (!/^\d{10}$/.test(contactFields.contactNumber.trim())) {
+        errors.contactNumber = "Contact number must be exactly 10 digits";
+      } else if (contactFields.contactNumber.trim().startsWith('0')) {
+        errors.contactNumber = "Contact number cannot start with 0";
+      }
+      
+      // Alternate phone validation (optional)
+      if (contactFields.alternatePhone.trim()) {
+        if (!/^\d{10}$/.test(contactFields.alternatePhone.trim())) {
+          errors.alternatePhone = "Alternate phone must be exactly 10 digits";
+        } else if (contactFields.alternatePhone.trim().startsWith('0')) {
+          errors.alternatePhone = "Alternate phone cannot start with 0";
+        } else if (contactFields.alternatePhone.trim() === contactFields.contactNumber.trim()) {
+          errors.alternatePhone = "Alternate phone cannot be same as main contact";
+        }
+      }
+      
+      // Email validation (optional)
+      if (contactFields.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contactFields.email.trim())) {
+          errors.email = "Please enter a valid email address";
+        } else if (contactFields.email.trim().length > 100) {
+          errors.email = "Email must be less than 100 characters";
+        }
+      }
+      
+      // If there are validation errors, show them and return
+      if (Object.keys(errors).length > 0) {
+        Object.values(errors).forEach(error => {
+          toast.error(error);
+        });
+        return;
+      }
+      
       await axios.put(
         `${API_BASE_URL}/leads/${lead.leadId}`,
         {
-          name: contactFields.name,
-          contactNumber: contactFields.contactNumber,
-          email: contactFields.email,
+          name: contactFields.name.trim(),
+          contactNumber: contactFields.contactNumber.trim(),
+          alternatePhone: contactFields.alternatePhone.trim(),
+          email: contactFields.email.trim(),
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
-      onFieldChange("name", contactFields.name);
-      onFieldChange("contactNumber", contactFields.contactNumber);
-      onFieldChange("email", contactFields.email);
+      onFieldChange("name", contactFields.name.trim());
+      onFieldChange("contactNumber", contactFields.contactNumber.trim());
+      onFieldChange("alternatePhone", contactFields.alternatePhone.trim());
+      onFieldChange("email", contactFields.email.trim());
       setIsEditingContact(false);
       await dispatch(fetchLeadById(lead.leadId));
       toast.success("Contact details updated!");
@@ -424,7 +502,7 @@ const OdooDetailBody = ({
     try {
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, projectFields, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
         },
       });
       Object.entries(projectFields).forEach(([field, value]) => {
@@ -446,7 +524,7 @@ const OdooDetailBody = ({
       if (assignedDesignerId) body.designer = assignedDesignerId;
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, body, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
         },
       });
       setIsEditingTeam(false);
@@ -523,7 +601,7 @@ const OdooDetailBody = ({
           { content: noteContent },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
         );
@@ -540,7 +618,7 @@ const OdooDetailBody = ({
           { content: noteContent },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
         );
@@ -1049,7 +1127,6 @@ const OdooDetailBody = ({
                     ))}
                   {activities.filter((activity) => activity.attachment).length === 0 && (
                     <div className="text-center py-8">
-                      <div className="text-gray-400 text-6xl mb-4">📎</div>
                       <p className="text-gray-500 text-lg">No files available</p>
                       <p className="text-gray-400 text-sm mt-2">No attachments have been uploaded for this lead</p>
                     </div>
@@ -1519,6 +1596,7 @@ const OdooDetailBody = ({
                     handleContactFieldChange("name", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Full Name"
                 />
                 <input
                   value={contactFields.contactNumber}
@@ -1526,6 +1604,15 @@ const OdooDetailBody = ({
                     handleContactFieldChange("contactNumber", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Contact Number"
+                />
+                <input
+                  value={contactFields.alternatePhone}
+                  onChange={(e) =>
+                    handleContactFieldChange("alternatePhone", e.target.value)
+                  }
+                  className="w-full p-1 border-b"
+                  placeholder="Alternate Phone Number (Optional)"
                 />
                 <input
                   value={contactFields.email}
@@ -1533,6 +1620,7 @@ const OdooDetailBody = ({
                     handleContactFieldChange("email", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Email (Optional)"
                 />
                 <button
                   onClick={handleSaveContact}
@@ -1553,6 +1641,14 @@ const OdooDetailBody = ({
                     {lead.contactNumber ? `+91 ${lead.contactNumber}` : "N/A"}
                   </span>
                 </div>
+                {lead.alternatePhone && (
+                  <div className="flex items-center gap-3">
+                    <FaPhone className="text-gray-400" />
+                    <span className="text-gray-900 font-medium">
+                      {`+91 ${lead.alternatePhone}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <FaEnvelope className="text-gray-400" />
                   <span className="text-gray-900 font-medium">
@@ -1569,7 +1665,7 @@ const OdooDetailBody = ({
               <h3 className="text-base font-semibold text-gray-800">
                 Assigned Team
               </h3>
-              {isEditingTeam ? (
+              {/* {isEditingTeam ? (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsEditingTeam(false)}
@@ -1592,7 +1688,7 @@ const OdooDetailBody = ({
                 >
                   <FaPencilAlt className="w-3 h-3" /> Edit
                 </button>
-              )}
+              )} */}
             </div>
             <div className="border-b border-gray-200 mb-4"></div>
             {isEditingTeam ? (
@@ -2009,6 +2105,7 @@ const LeadDetailContent = () => {
   const { pipelines, status: pipelinesStatus } = useSelector(
     (state) => state.pipelines
   );
+  const { employees: managerEmployees } = useSelector((state) => state.managerEmployee);
 
   // All state hooks - MUST be called before any conditional returns
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -2025,6 +2122,10 @@ const LeadDetailContent = () => {
   const [showJunkModal, setShowJunkModal] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showSemiContactedModal, setShowSemiContactedModal] = useState(false);
+  const [showPotentialModal, setShowPotentialModal] = useState(false);
+  const [showHighPotentialModal, setShowHighPotentialModal] = useState(false);
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -2064,7 +2165,7 @@ const LeadDetailContent = () => {
     if (lead && lead.leadId) {
       const fetchActivities = async () => {
         try {
-          const token = localStorage.getItem("token") || "";
+          const token = getItemFromSessionStorage("token") || "";
           const response = await axios.get(
             `${API_BASE_URL}/leads/${lead.leadId}/activities`,
             {
@@ -2088,7 +2189,7 @@ const LeadDetailContent = () => {
   // Add fetchActivityLogs function
   const fetchActivityLogs = async (leadId) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = getItemFromSessionStorage("token") || "";
       const response = await axios.get(
         `${API_BASE_URL}/leads/${leadId}/activity-logs`,
         {
@@ -2173,6 +2274,10 @@ const LeadDetailContent = () => {
     if (!lead) return;
     const stage = pipelines.find((p) => p.name === stageName);
     if (!stage) return;
+    
+
+    
+    // Handle different form types
     if (stage.formType === "LOST") {
       setShowLostModal(true);
       return;
@@ -2185,6 +2290,23 @@ const LeadDetailContent = () => {
       setShowConvertModal(true);
       return;
     }
+    if (stage.formType === "ASSIGNED") {
+      setShowAssignModal(true);
+      return;
+    }
+    if (stage.formType === "SEMI") {
+      setShowSemiContactedModal(true);
+      return;
+    }
+    if (stage.formType === "POTENTIAL") {
+      setShowPotentialModal(true);
+      return;
+    }
+    if (stage.formType === "HIGHPOTENTIAL") {
+      setShowHighPotentialModal(true);
+      return;
+    }
+    
     // For all other stages, update stageId directly
     try {
       await axios.patch(
@@ -2192,7 +2314,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2264,7 +2386,7 @@ const LeadDetailContent = () => {
 
   const fetchActivities = async (leadId) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = getItemFromSessionStorage("token") || "";
       const response = await axios.get(
         `${API_BASE_URL}/leads/${leadId}/activities`,
         {
@@ -2355,7 +2477,7 @@ const LeadDetailContent = () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2381,7 +2503,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2404,7 +2526,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2423,13 +2545,128 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
     }
     await dispatch(fetchLeadById(lead.leadId));
     toast.success("Lead marked as Converted!");
+  };
+
+  const handleAssignSuccess = async (assignmentData) => {
+    setShowAssignModal(false);
+    
+    // Update lead with assignment data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      salesRep: assignmentData.salesRep,
+      designer: assignmentData.designer
+    }));
+    
+    // Move to assigned stage
+    const assignedStage = pipelines.find((p) => p.formType === "ASSIGNED");
+    if (assignedStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${assignedStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Lead assigned successfully!");
+  };
+
+  const handleSemiContactedSuccess = async (semiContactedData) => {
+    setShowSemiContactedModal(false);
+    
+    // Update lead with semi contacted data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      floorPlan: semiContactedData.floorPlan,
+      estimatedBudget: semiContactedData.estimatedBudget,
+      firstMeetingDate: semiContactedData.firstMeetingDate,
+      priority: semiContactedData.priority
+    }));
+    
+    // Move to semi contacted stage
+    const semiStage = pipelines.find((p) => p.formType === "SEMI");
+    if (semiStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${semiStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Semi contacted details saved!");
+  };
+
+  const handlePotentialSuccess = async (potentialData) => {
+    setShowPotentialModal(false);
+    
+    // Update lead with potential data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      requirements: potentialData.requirements,
+      consultationFee: potentialData.consultationFee,
+      designConsultation: potentialData.designConsultation
+    }));
+    
+    // Move to potential stage
+    const potentialStage = pipelines.find((p) => p.formType === "POTENTIAL");
+    if (potentialStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${potentialStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Potential details saved!");
+  };
+
+  const handleHighPotentialSuccess = async (highPotentialData) => {
+    setShowHighPotentialModal(false);
+    
+    // Update lead with high potential data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      quotationDetails: highPotentialData.quotationDetails,
+      initialQuotedAmount: highPotentialData.initialQuotedAmount,
+      finalQuotedAmount: highPotentialData.finalQuotedAmount,
+      discountPercent: highPotentialData.discountPercent,
+      designTimeline: highPotentialData.designTimeline,
+      completionTimeline: highPotentialData.completionTimeline
+    }));
+    
+    // Move to high potential stage
+    const highPotentialStage = pipelines.find((p) => p.formType === "HIGHPOTENTIAL");
+    if (highPotentialStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${highPotentialStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("High potential details saved!");
   };
 
   // Add the edit handler
@@ -2518,6 +2755,31 @@ const LeadDetailContent = () => {
         lead={showConvertModal ? lead : null}
         onClose={() => setShowConvertModal(false)}
         onSuccess={handleConvertSuccess}
+      />
+      <AssignLeadModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        lead={lead}
+        onAssign={handleAssignSuccess}
+        salesEmployees={managerEmployees || []}
+      />
+      <SemiContactedModal
+        isOpen={showSemiContactedModal}
+        onClose={() => setShowSemiContactedModal(false)}
+        lead={lead}
+        onSuccess={handleSemiContactedSuccess}
+      />
+      <PotentialModal
+        isOpen={showPotentialModal}
+        onClose={() => setShowPotentialModal(false)}
+        lead={lead}
+        onSuccess={handlePotentialSuccess}
+      />
+      <HighPotentialModal
+        isOpen={showHighPotentialModal}
+        onClose={() => setShowHighPotentialModal(false)}
+        lead={lead}
+        onSuccess={handleHighPotentialSuccess}
       />
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">

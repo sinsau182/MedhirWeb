@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/router";
 import { fetchLeads, updateLead, createLead } from "@/redux/slices/leadsSlice";
@@ -2964,7 +2964,6 @@ const SettingsPage = ({
       label: "Stage Dependent Forms",
       icon: FaTasks,
       description: "Create custom forms required for specific pipeline stages.",
-      frozen: true,
     },
     {
       id: "permissions",
@@ -3332,6 +3331,13 @@ const PipelineSettings = ({
                     <option value="CONVERTED">Converted</option>
                     <option value="JUNK">Junk</option>
                     <option value="LOST">Lost</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="SEMI">Semi Contacted</option>
+                    <option value="POTENTIAL">Potential</option>
+                    <option value="HIGHPOTENTIAL">High Potential</option>
+                    <option value="ONBOARDING">Onboarding</option>
+                    <option value="APPROVAL">Approval</option>
+                    <option value="CUSTOM">Custom</option>
                   </select>
                   {newStageFormType === "" && (
                     <span className="text-xs text-red-500 mt-1">

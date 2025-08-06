@@ -1,8 +1,9 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye } from 'react-icons/fa';
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
+import VendorPreview from '../../components/Previews/VendorPreview';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
@@ -13,10 +14,75 @@ import { fetchPurchaseOrders } from '../../redux/slices/PurchaseOrderSlice';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { generatePresignedUrl, fetchImageFromMinio } from '../../redux/slices/minioSlice';
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
+  
+  // File handling functions using minioSlice directly
+  const handleViewFile = async (url, fileName = null) => {
+    try {
+      // Try to generate pre-signed URL first (preferred method)
+      try {
+        const { presignedUrl } = await dispatch(generatePresignedUrl({ url, action: 'view' })).unwrap();
+        const newWindow = window.open(presignedUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = fileName || 'File Preview';
+          newWindow.focus();
+        }
+      } catch (presignedError) {
+        console.warn('Pre-signed URL generation failed, falling back to fetch method:', presignedError);
+        // Fallback to the old method if pre-signed URL generation fails
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+        const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = fileName || 'File Preview';
+          newWindow.focus();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      toast.error('Failed to open file. Please try again.');
+    }
+  };
+
+  const handleDownloadFile = async (url, fileName = null) => {
+    try {
+      // Try to generate pre-signed URL first (preferred method)
+      try {
+        const { presignedUrl } = await dispatch(generatePresignedUrl({ url, action: 'download' })).unwrap();
+        const a = document.createElement("a");
+        a.href = presignedUrl;
+        a.download = fileName || url.split("/").pop().split("?")[0];
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (presignedError) {
+        console.warn('Pre-signed URL generation failed, falling back to fetch method:', presignedError);
+        // Fallback to the old method if pre-signed URL generation fails
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+        
+        // Create a temporary link to download the file
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName || url.split("/").pop().split("?")[0];
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Clean up blob URL
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      toast.error('Failed to download file. Please try again.');
+    }
+  };
   const { vendors, loading, error } = useSelector((state) => state.vendors);
   const { bills, loading: billsLoading, error: billsError } = useSelector((state) => state.bills);
   const { payments, loading: paymentsLoading, error: paymentsError } = useSelector((state) => state.payments);
@@ -31,7 +97,10 @@ const Vendor = () => {
   const [selectedBill, setSelectedBill] = useState(null);
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
-
+   const [previewFile, setPreviewFile] = useState(null);
+   // State for vendor preview modal
+   const [showVendorPreview, setShowVendorPreview] = useState(false);
+   const [previewVendorData, setPreviewVendorData] = useState(null);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
@@ -87,16 +156,32 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Handle attachment icon click
   const handleAttachmentClick = (bill) => {
     const attachments = bill.attachmentUrls || [];
-    setSelectedAttachments(attachments);
-    setSelectedBillVendor(bill.vendorName);
-    setShowAttachmentModal(true);
+    if (attachments.length > 0) {
+      // Open the first attachment directly in a new tab
+      const firstAttachment = attachments[0];
+      window.open(firstAttachment, '_blank');
+    }
   };
   // Handle PO row click for editing
   const handlePORowClick = (po) => {
     setEditingPO(po);
     setShowAddForm('po');
   };
+  
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    const allowed = files.filter(f => /pdf|jpg|jpeg|png/i.test(f.type));
+    setFormData(prev => ({...prev, attachments: [...prev.attachments, ...allowed]}));
+  };
 
+  const handleRemoveAttachment = (idx) => {
+    setFormData(prev => ({...prev, attachments: prev.attachments.filter((_, i) => i !== idx)}));
+  };
+
+  const handlePreviewAttachment = (file) => {
+    setPreviewFile(file);
+  };
+   
   // Close attachment modal
   const closeAttachmentModal = () => {
     setShowAttachmentModal(false);
@@ -324,7 +409,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                      <th className="px-1 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -383,7 +468,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                               ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
                               : 'bg-gray-100 text-gray-500'
                           }`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
                                 bill.attachmentUrls === 'Yes' || 
                                 bill.attachmentUrls === true) {
@@ -436,9 +522,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                       
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -464,21 +549,35 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            po.status === 'Approved' 
-                              ? 'bg-green-100 text-green-800' 
-                              : po.status === 'Draft'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {po.status}
-                          </span>
-                        </td>
+                        
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
                         </td>
-                
+
+                 <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <span 
+                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                             (po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
+                                  }`}
+                            onClick={(e) => {
+   e.stopPropagation();
+   if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
+     // Open the first attachment directly in a new tab
+     const firstAttachment = po.attachmentUrls[0];
+     window.open(firstAttachment, '_blank');
+   } else if (typeof po.attachmentUrls === 'string') {
+     // Open the string attachment directly in a new tab
+     window.open(po.attachmentUrls, '_blank');
+   }
+ }}
+                                          >
+                                {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                   po.attachmentUrls === 'Yes' || 
+                                   po.attachmentUrls === true ? '📎' : '-'}
+                             </span>
+                      </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -626,6 +725,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -666,6 +766,18 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewVendorData(vendor);
+                            setShowVendorPreview(true);
+                          }}
+                          className="text-gray-600 hover:text-blue-600"
+                        >
+                          <FaEye className="w-5 h-5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -750,83 +862,13 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         </div>
       </div>
 
-      {/* Attachment Modal */}
-      {showAttachmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Attachments - {selectedBillVendor}
-              </h3>
-              <button
-                onClick={closeAttachmentModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {selectedAttachments.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedAttachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          {attachment.toLowerCase().includes('.pdf') ? (
-                            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                            {typeof attachment === 'string' ? attachment.split('/').pop() || attachment : `Attachment ${index + 1}`}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {typeof attachment === 'string' ? 'File' : 'Attachment'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => window.open(attachment, '_blank')}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = attachment;
-                            link.download = typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`;
-                            link.click();
-                          }}
-                          className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-6xl mb-4">📎</div>
-                  <p className="text-gray-500 text-lg">No attachments available</p>
-                  <p className="text-gray-400 text-sm mt-2">This bill doesn&apos;t have any attachments</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Vendor Preview Modal */}
+       {showVendorPreview && previewVendorData && (
+         <VendorPreview
+           vendorData={previewVendorData}
+           onClose={() => setShowVendorPreview(false)}
+         />
+       )}
     </div>
   );
 };

@@ -6,7 +6,7 @@ import { getItemFromSessionStorage } from './sessionStorageSlice';
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
-const API_BASE = `${publicRuntimeConfig.apiUrl}/api/asset-settings/status-labels`;
+const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/status-labels";
 
 // Fetch all status labels
 export const fetchAssetStatuses = createAsyncThunk(

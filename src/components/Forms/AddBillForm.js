@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { FaBuilding, FaUser, FaPlus, FaTrash, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaSave, FaUpload } from "react-icons/fa";
+import { FaBuilding, FaUser, FaPlus, FaTrash, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaSave, FaUpload, FaDownload, FaSearchPlus, FaSearchMinus } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchVendors, updateVendorCredit } from "../../redux/slices/vendorSlice";
 import { addBill, updateBill } from "../../redux/slices/BillSlice";
@@ -27,6 +27,8 @@ const AutoGrowTextarea = ({ className, ...props }) => {
 
 const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
     const fileInputRef = useRef(null);
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [showZoomControls, setShowZoomControls] = useState(false);
 
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
@@ -37,6 +39,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
         }
         
         onFileUpload(file);
+        setZoomLevel(1); // Reset zoom when new file is uploaded
     };
 
     const validateFile = (file) => {
@@ -62,6 +65,8 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
     const handleRemoveClick = (e) => {
         e.stopPropagation();
         onRemoveFile();
+        setZoomLevel(1);
+        setShowZoomControls(false);
     };
 
     const handleDragOver = (e) => {
@@ -83,8 +88,37 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
             const file = files[0];
             if (validateFile(file)) {
                 onFileUpload(file);
+                setZoomLevel(1);
             }
         }
+    };
+
+    const handleZoomIn = () => {
+        setZoomLevel(prev => Math.min(prev + 0.25, 3));
+    };
+
+    const handleZoomOut = () => {
+        setZoomLevel(prev => Math.max(prev - 0.25, 0.25));
+    };
+
+    const handleDownload = () => {
+        if (!uploadedImage) return;
+        
+        const url = typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = uploadedImage.name || 'bill-document';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        if (typeof uploadedImage !== 'string') {
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    const handleImageLoad = () => {
+        setShowZoomControls(true);
     };
 
     return (
@@ -106,33 +140,106 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                 />
                 
                 {uploadedImage && (
-                    <button
-                        onClick={handleRemoveClick}
-                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors z-10"
-                        title="Remove file"
-                    >
-                        <FaTimes size={14} />
-                    </button>
+                    <div className="absolute top-2 right-2 flex gap-2 z-10">
+                        <button
+                            onClick={handleRemoveClick}
+                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                            title="Remove file"
+                        >
+                            <FaTimes size={14} />
+                        </button>
+                        <button
+                            onClick={handleDownload}
+                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                            title="Download file"
+                        >
+                            <FaDownload size={14} />
+                        </button>
+                    </div>
                 )}
                 
                 {uploadedImage ? (
                     <div className="flex flex-col items-center w-full h-full">
-                        <div className="flex-1 flex items-center justify-center w-full">
+                        <div className="flex-1 flex items-center justify-center w-full relative overflow-hidden">
                             {uploadedImage.type === 'application/pdf' ? (
-                                <div className="text-center">
-                                    <FaFilePdf className="text-red-500 text-6xl mb-4" />
-                                    <span className="text-gray-700 font-medium">{uploadedImage.name}</span>
+                                <div className="relative w-full h-full flex flex-col">
+                                    <div className="absolute top-2 right-2 flex gap-2 z-10">
+                                        <button
+                                            onClick={handleRemoveClick}
+                                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                                            title="Remove file"
+                                        >
+                                            <FaTimes size={14} />
+                                        </button>
+                                        <button
+                                            onClick={handleDownload}
+                                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                                            title="Download file"
+                                        >
+                                            <FaDownload size={14} />
+                                        </button>
+                                    </div>
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <iframe 
+                                            src={typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage)}
+                                            className="w-full h-full border-0 rounded-md shadow-sm"
+                                            title="PDF Preview"
+                                            onLoad={() => setShowZoomControls(true)}
+                                        />
+                                    </div>
+                                    {showZoomControls && (
+                                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
+                                            <span className="px-2 py-1 text-sm text-gray-600 font-medium">
+                                                PDF Document
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
-                                <img 
-                                    src={typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage)} 
-                                    alt="Uploaded Bill" 
-                                    className="max-w-full max-h-full object-contain rounded-md shadow-sm" 
-                                />
+                                <div className="relative w-full h-full flex items-center justify-center">
+                                    <img 
+                                        src={typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage)} 
+                                        alt="Uploaded Bill" 
+                                        className="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform duration-200" 
+                                        style={{ transform: `scale(${zoomLevel})` }}
+                                        onLoad={handleImageLoad}
+                                    />
+                                    {showZoomControls && (
+                                        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
+                                            <button
+                                                onClick={handleZoomOut}
+                                                className="p-2 rounded-md hover:bg-gray-200 transition-colors"
+                                                title="Zoom Out"
+                                                disabled={zoomLevel <= 0.25}
+                                            >
+                                                <FaSearchMinus size={14} className={zoomLevel <= 0.25 ? 'text-gray-400' : 'text-gray-600'} />
+                                            </button>
+                                            <span className="px-2 py-1 text-sm text-gray-600 font-medium">
+                                                {Math.round(zoomLevel * 100)}%
+                                            </span>
+                                            <button
+                                                onClick={handleZoomIn}
+                                                className="p-2 rounded-md hover:bg-gray-200 transition-colors"
+                                                title="Zoom In"
+                                                disabled={zoomLevel >= 3}
+                                            >
+                                                <FaSearchPlus size={14} className={zoomLevel >= 3 ? 'text-gray-400' : 'text-gray-600'} />
+                                            </button>
+                                        </div>
+                                    )}
+                                    <div className="absolute top-2 right-2">
+                                        <button
+                                            onClick={handleRemoveClick}
+                                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                                            title="Remove file"
+                                        >
+                                            <FaTimes size={14} />
+                                        </button>
+                                    </div>
+                                </div>
                             )}
                         </div>
                         <div className="mt-4 text-center">
-                            <span className="text-green-600 font-semibold">✅ File uploaded successfully</span>
                             <p className="text-sm text-gray-500 mt-1">Click to upload a different file</p>
                         </div>
                     </div>
@@ -176,6 +283,7 @@ const BillForm = ({ bill, onCancel }) => {
   const dispatch = useDispatch();
   const isEditMode = !!bill;
   const fileInputRef = useRef(null);
+  const mainCardRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -198,6 +306,7 @@ const BillForm = ({ bill, onCancel }) => {
   const [showDeleteIdx, setShowDeleteIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
+  const [vendorCredits, setVendorCredits] = useState([]);
 
   // Pre-fill form data when bill prop is provided (edit mode)
   useEffect(() => {
@@ -227,6 +336,8 @@ const BillForm = ({ bill, onCancel }) => {
           setSelectedVendor(vendor);
         }
       }
+
+
     }
   }, [bill, vendors]);
 
@@ -236,12 +347,6 @@ const BillForm = ({ bill, onCancel }) => {
     }
   }, [selectedVendor]);
   
-  const [attachments, setAttachments] = useState([]);
-  const [previewFile, setPreviewFile] = useState(null);
-  const inputRef = useRef(null);
-  const mainCardRef = useRef(null);
-  const [vendorCredits, setVendorCredits] = useState([]);
-
   const handleFileUpload = (file) => {
         if (!file) return;
         
@@ -249,7 +354,7 @@ const BillForm = ({ bill, onCancel }) => {
         setUploadedFile(file);
         setUploadedImage(file);
         
-        console.log('✅ File uploaded successfully:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        console.log(' File uploaded successfully:', file.name, `(${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     };
 
   const handleRemoveFile = () => {
@@ -323,20 +428,6 @@ const BillForm = ({ bill, onCancel }) => {
 
   const cancelDeleteLine = () => setShowDeleteIdx(null);
 
-  const handleAttachmentChange = (e) => {
-    const files = Array.from(e.target.files);
-    const allowed = files.filter(f => /pdf|jpg|jpeg|png/i.test(f.type));
-    setAttachments(prev => [...prev, ...allowed]);
-  };
-
-  const handleRemoveAttachment = (idx) => {
-    setAttachments(prev => prev.filter((_, i) => i !== idx));
-  };
-
-  const handlePreviewAttachment = (file) => {
-    setPreviewFile(file);
-  };
-
   const handleAddVendorCredit = () => {
     setVendorCredits(prev => [...prev, { id: Date.now(), creditDate: new Date().toISOString().slice(0, 10), creditAmount: '', creditDescription: '' }]);
   };
@@ -409,9 +500,10 @@ const BillForm = ({ bill, onCancel }) => {
         const formData = new FormData();
         formData.append('bill', JSON.stringify(updateData));
         
-        attachments.forEach((file, index) => {
-          formData.append('attachment', file);
-        });
+        // Add uploaded file if exists
+        if (uploadedFile) {
+          formData.append('attachment', uploadedFile);
+        }
         
         const result = await dispatch(updateBill({ formData, billId: bill.billId || bill.id })).unwrap();
         if (result) {
@@ -422,9 +514,10 @@ const BillForm = ({ bill, onCancel }) => {
         const formData = new FormData();
         formData.append('bill', JSON.stringify(billData));
         
-        attachments.forEach((file, index) => {
-          formData.append('attachment', file);
-        });
+        // Add uploaded file if exists
+        if (uploadedFile) {
+          formData.append('attachment', uploadedFile);
+        }
         
         const result = await dispatch(addBill(formData)).unwrap();
         if (result) {
@@ -585,17 +678,6 @@ const BillForm = ({ bill, onCancel }) => {
                 >
                   Bill Lines
                 </button>
-                <button 
-                  type="button" 
-                  className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
-                    activeTab === 'attachments' 
-                      ? 'border-blue-600 text-blue-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`} 
-                  onClick={() => setActiveTab('attachments')}
-                >
-                  Attachments
-                </button>
                 {selectedVendor && <button
                   type="button"
                   className={`px-6 py-3 border-b-2 font-semibold transition-colors ${
@@ -745,73 +827,6 @@ const BillForm = ({ bill, onCancel }) => {
                       <span className="font-bold text-lg">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              {activeTab === 'attachments' && (
-                <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-                  <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-pointer">
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-2">
-                      <FaPaperclip className="text-2xl text-blue-500" />
-                    </div>
-                    <button
-                      type="button"
-                      className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium flex items-center gap-2 mb-2 hover:bg-blue-200 transition-colors"
-                      onClick={e => {
-                        e.preventDefault();
-                        if (inputRef.current) inputRef.current.click();
-                      }}
-                    >
-                      <FaPlus className="text-2xl" /> <span className="text-base">Add Attachment</span>
-                    </button>
-                    <input
-                      id="attachment-upload"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      multiple
-                      className="hidden"
-                      onChange={handleAttachmentChange}
-                      ref={inputRef}
-                    />
-                  </label>
-                  <div className="text-sm text-gray-400 mb-6">PDF, JPG, PNG allowed</div>
-                  <div className="w-full max-w-xl">
-                    {attachments.length > 0 && (
-                      <ul className="divide-y divide-gray-200 bg-gray-50 rounded-lg shadow p-4">
-                        {attachments.map((file, idx) => (
-                          <li key={idx} className="flex items-center justify-between py-2">
-                            <div className="flex items-center gap-3 cursor-pointer" onClick={() => handlePreviewAttachment(file)}>
-                              {/pdf/i.test(file.type) ? (
-                                <span className="text-red-500"><FaFilePdf /></span>
-                              ) : (
-                                <span className="text-blue-500"><FaFileImage /></span>
-                              )}
-                              <span className="text-gray-800 font-medium text-sm truncate max-w-xs">{file.name}</span>
-                            </div>
-                            <button type="button" className="text-red-500 hover:text-red-700 ml-4" onClick={() => handleRemoveAttachment(idx)}>
-                              <FaTimes />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  {/* Preview Modal */}
-                  {previewFile && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                      <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full relative">
-                        <button className="absolute top-2 right-2 text-gray-500 hover:text-red-500" onClick={() => setPreviewFile(null)}><FaTimes size={20} /></button>
-                        <div className="flex flex-col items-center">
-                          <div className="mb-4 text-lg font-semibold text-gray-800">{previewFile.name}</div>
-                          {/pdf/i.test(previewFile.type) ? (
-                            <iframe src={URL.createObjectURL(previewFile)} className="w-full h-96 border rounded" title="PDF Preview"></iframe>
-                          ) : (
-                            <img src={URL.createObjectURL(previewFile)} alt="Preview" className="max-h-96 rounded border" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
               
@@ -971,6 +986,8 @@ const BillForm = ({ bill, onCancel }) => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };
