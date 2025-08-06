@@ -9,7 +9,7 @@ const steps = [
   { label: 'Basic Details' },
   { label: 'Contact & Address' },
   { label: 'Compliance & Banking' },
-  { label: 'documents'},
+  { label: 'Documents'},
 ];
 
 const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
@@ -64,6 +64,12 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
       accountNumber: '',
       ifscCode: '',
       upiId: ''
+    },
+    
+    // Documents
+    documents: {
+      bills: [],
+      attachments: []
     }
   });
 
@@ -97,6 +103,10 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
           accountNumber: vendor.bankDetails?.accountNumber || '',
           ifscCode: vendor.bankDetails?.ifscCode || '',
           upiId: vendor.bankDetails?.upiId || ''
+        },
+        documents: {
+          bills: vendor.documents?.bills || [],
+          attachments: vendor.documents?.attachments || []
         }
       });
       
@@ -627,6 +637,73 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Document handling functions
+  const handleFileUpload = (files, documentType) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    const validFiles = Array.from(files).filter(file => {
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name} is not a supported file type. Only JPG, PNG, BMP, TIFF, PDF are allowed.`);
+        return false;
+      }
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Maximum file size is 10MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      const newDocuments = validFiles.map(file => ({
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file: file,
+        uploadedAt: new Date().toISOString()
+      }));
+
+      setFormData(prev => ({
+        ...prev,
+        documents: {
+          ...prev.documents,
+          [documentType]: [...prev.documents[documentType], ...newDocuments]
+        }
+      }));
+
+      toast.success(`${validFiles.length} file(s) uploaded successfully!`);
+    }
+  };
+
+  const removeDocument = (documentType, documentId) => {
+    setFormData(prev => ({
+      ...prev,
+      documents: {
+        ...prev.documents,
+        [documentType]: prev.documents[documentType].filter(doc => doc.id !== documentId)
+      }
+    }));
+    toast.success('Document removed successfully!');
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+  };
+
+  const handleDrop = (e, documentType) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+    const files = e.dataTransfer.files;
+    handleFileUpload(files, documentType);
   };
 
   const handlePreview = () => {
@@ -1335,6 +1412,168 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                  <div className="text-xs text-gray-400 mt-1">Format: username@provider (e.g., example@paytm)</div>
                  {errors['bankDetails.upiId'] && <div className="text-red-500 text-sm mt-1 font-medium">{errors['bankDetails.upiId']}</div>}
                </div>
+            </div>
+          </>
+        );
+      case 4:
+        return (
+          <>
+            <div className="flex items-center mb-6">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <FaFileAlt className="text-gray-400" /> Documents
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Bills Upload Section */}
+              <div className="space-y-4">
+                <h3 className="text-md font-semibold text-gray-800 mb-4">Bills & Invoices</h3>
+                
+                {/* Upload Area */}
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'bills')}
+                  onClick={() => document.getElementById('bills-upload').click()}
+                >
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-gray-700">Click to upload a bill</p>
+                      <p className="text-sm text-gray-500 mt-1">or drag and drop files here</p>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <p>JPG, PNG, BMP, TIFF, PDF supported</p>
+                      <p>Maximum file size: 10MB</p>
+                    </div>
+                  </div>
+                  <input
+                    id="bills-upload"
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                    className="hidden"
+                    onChange={(e) => handleFileUpload(e.target.files, 'bills')}
+                  />
+                </div>
+
+                {/* Uploaded Bills List */}
+                {formData.documents.bills.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700">Uploaded Bills:</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {formData.documents.bills.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <FaFileAlt className="w-4 h-4 text-blue-500" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">{doc.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(doc.size / 1024 / 1024).toFixed(2)} MB • {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeDocument('bills', doc.id)}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <FaTrash className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Attachments Upload Section */}
+              <div className="space-y-4">
+                <h3 className="text-md font-semibold text-gray-800 mb-4">Attachments & Documents</h3>
+                
+                {/* Upload Area */}
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, 'attachments')}
+                  onClick={() => document.getElementById('attachments-upload').click()}
+                >
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-gray-700">Click to upload documents</p>
+                      <p className="text-sm text-gray-500 mt-1">or drag and drop files here</p>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      <p>JPG, PNG, BMP, TIFF, PDF supported</p>
+                      <p>Maximum file size: 10MB</p>
+                    </div>
+                  </div>
+                  <input
+                    id="attachments-upload"
+                    type="file"
+                    multiple
+                    accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                    className="hidden"
+                    onChange={(e) => handleFileUpload(e.target.files, 'attachments')}
+                  />
+                </div>
+
+                {/* Uploaded Attachments List */}
+                {formData.documents.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-700">Uploaded Documents:</h4>
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {formData.documents.attachments.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <FaFileAlt className="w-4 h-4 text-blue-500" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">{doc.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(doc.size / 1024 / 1024).toFixed(2)} MB • {new Date(doc.uploadedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeDocument('attachments', doc.id)}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            <FaTrash className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-medium text-blue-800">Document Summary</h4>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Bills: {formData.documents.bills.length} • Attachments: {formData.documents.attachments.length}
+                  </p>
+                </div>
+                <div className="text-xs text-blue-600">
+                  Total: {formData.documents.bills.length + formData.documents.attachments.length} documents
+                </div>
+              </div>
             </div>
           </>
         );
