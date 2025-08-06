@@ -972,4 +972,4 @@ function PayrollManagement() {
   );
 }
 
-export default withAuth(PayrollManagement);
+export default withAuth(PayrollManagement); 
