@@ -1293,7 +1293,7 @@ const CustomFormBuilder = ({ editing }) => {
                                 {fields.length === 0 && (
                                     <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                                         <div className="text-4xl mb-2">📋</div>
-                                        <p>No fields added yet. Click "Add Field" to get started.</p>
+                                        <p>No fields added yet. Click &quot;Add Field&quot; to get started.</p>
                                     </div>
                                 )}
 
@@ -1464,7 +1464,7 @@ const CustomFormBuilder = ({ editing }) => {
                                 {fields.length === 0 && (
                                     <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                                         <div className="text-4xl mb-2">📋</div>
-                                        <p>No fields added yet. Click "Add Field" to get started.</p>
+                                        <p>No fields added yet. Click &quot;Add Field&quot; to get started.</p>
                                     </div>
                                 )}
 
@@ -1572,7 +1572,7 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName }) => {
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Category
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">"{categoryName}"</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
                 <div className="flex justify-end gap-3 mt-6">
                     <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
                     <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
@@ -1599,7 +1599,7 @@ const DeleteLocationModal = ({ open, onClose, onConfirm, locationName, warning, 
                                 ⚠️ Cannot Delete Location
                             </p>
                             <p className="text-yellow-700 text-sm">
-                                The location <span className="font-semibold">"{locationName}"</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
+                                The location <span className="font-semibold">&quot;{locationName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
                             </p>
                         </div>
                         
@@ -1627,7 +1627,7 @@ const DeleteLocationModal = ({ open, onClose, onConfirm, locationName, warning, 
                     </div>
                 ) : (
                     <p className="mb-4 text-gray-700">
-                        Are you sure you want to delete the location <span className="font-semibold">"{locationName}"</span>?<br/>
+                        Are you sure you want to delete the location <span className="font-semibold">&quot;{locationName}&quot;</span>?<br/>
                         This action <span className="text-red-600 font-semibold">cannot be undone</span>.
                     </p>
                 )}
@@ -1664,7 +1664,7 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName, warning, asse
                                 ⚠️ Cannot Delete Status Label
                             </p>
                             <p className="text-yellow-700 text-sm">
-                                The status label <span className="font-semibold">"{statusName}"</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
+                                The status label <span className="font-semibold">&quot;{statusName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
                             </p>
                         </div>
                         
@@ -1692,7 +1692,7 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName, warning, asse
                     </div>
                 ) : (
                     <p className="mb-4 text-gray-700">
-                        Are you sure you want to delete the status label <span className="font-semibold">"{statusName}"</span>?<br/>
+                        Are you sure you want to delete the status label <span className="font-semibold">&quot;{statusName}&quot;</span>?<br/>
                         This action <span className="text-red-600 font-semibold">cannot be undone</span>.
                     </p>
                 )}
@@ -2978,7 +2978,7 @@ const AssetSettingsPage = () => {
                     <div className="flex justify-between items-center">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Asset Management Settings</h1>
-                            <p className="text-gray-500 mt-1">Configure and standardize your company's asset tracking system.</p>
+                            <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
                         </div>
                     </div>
                     
