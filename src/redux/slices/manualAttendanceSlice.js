@@ -200,4 +200,4 @@ const manualAttendanceSlice = createSlice({
 
 export const { clearError, clearSuccess, resetState } = manualAttendanceSlice.actions;
 
-export default manualAttendanceSlice.reducer;
+export default manualAttendanceSlice.reducer; 
