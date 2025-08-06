@@ -47,11 +47,11 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     projectType: '',
     address: '',
     area: '',
-    budget: '',
-    designStyle: '',
+    // budget: '',
+    // designStyle: '',
     leadSource: '',
     notes: '',
-    priority: 'Low',
+    // priority: 'Low',
     rating: 0,
     salesRep: null,
     designer: null,
@@ -77,7 +77,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...initialData, area: initialData.area || '', priority: initialData.priority || 'Low', dateOfCreation: initialData.dateOfCreation || new Date().toISOString().split('T')[0] });
+      setFormData({ ...initialData, area: initialData.area || '', /* priority: initialData.priority || 'Low', */ dateOfCreation: initialData.dateOfCreation || new Date().toISOString().split('T')[0] });
     }
   }, [initialData]);
 
@@ -91,11 +91,11 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         projectType: '',
         address: '',
         area: '',
-        budget: '',
-        designStyle: '',
+        // budget: '',
+        // designStyle: '',
         leadSource: '',
         notes: '',
-        priority: 'Low',
+        // priority: 'Low',
         rating: 0,
         salesRep: null,
         designer: null,
@@ -164,14 +164,14 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     }
 
     // Budget validation
-    if (formData.budget.trim()) {
-      const budgetValue = parseFloat(formData.budget.replace(/[^\d.]/g, ''));
-      if (isNaN(budgetValue) || budgetValue < 0) {
-        newErrors.budget = 'Budget must be a valid positive number';
-      } else if (budgetValue > 999999999) {
-        newErrors.budget = 'Budget cannot exceed 999,999,999';
-      }
-    }
+    // if (formData.budget.trim()) {
+    //   const budgetValue = parseFloat(formData.budget.replace(/[^\d.]/g, ''));
+    //   if (isNaN(budgetValue) || budgetValue < 0) {
+    //     newErrors.budget = 'Budget must be a valid positive number';
+    //   } else if (budgetValue > 999999999) {
+    //     newErrors.budget = 'Budget cannot exceed 999,999,999';
+    //   }
+    // }
 
     // Address validation
     if (formData.address.trim()) {
@@ -236,15 +236,15 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         processedValue = value.slice(0, 100);
         break;
       
-      case 'budget':
-        // Only allow numbers and decimal point
-        processedValue = value.replace(/[^\d.]/g, '');
-        // Prevent multiple decimal points
-        const decimalCount = (processedValue.match(/\./g) || []).length;
-        if (decimalCount > 1) {
-          processedValue = processedValue.replace(/\.+$/, '');
-        }
-        break;
+      // case 'budget':
+      //   // Only allow numbers and decimal point
+      //   processedValue = value.replace(/[^\d.]/g, '');
+      //   // Prevent multiple decimal points
+      //   const decimalCount = (processedValue.match(/\./g) || []).length;
+      //   if (decimalCount > 1) {
+      //     processedValue = processedValue.replace(/\.+$/, '');
+      //   }
+      //   break;
       
       case 'address':
         // Allow alphanumeric, spaces, and common address characters
@@ -389,7 +389,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
             </div>
 
                         {/* Budget Field with Rupee Icon */}
-                        <div>
+                        {/* <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Estimated Budget
               </label>
@@ -405,7 +405,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                   className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 pl-8"
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* Email Field */}
             <div>
@@ -438,7 +438,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
             
 
             {/* Priority Row (replaces Status) */}
-            <div className="grid grid-cols-2 gap-4 items-end">
+            {/* <div className="grid grid-cols-2 gap-4 items-end">
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-2">
@@ -474,49 +474,38 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
               {/* Area Field (optional) */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Area (sq. ft.) <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-              <Input
-                type="number"
-                min="0"
-                placeholder="Enter area in sq. ft."
-                value={formData.area}
-                onChange={(e) => handleInputChange('area', e.target.value)}
-                className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
-              />
-            </div>
-            </div>
-
-            {/* Design Style and Date of Creation Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className='grid grid-cols-2 gap-4'>
+                <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Design Style
+                  Area (sq. ft.) <span className="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <Input
-                  type="text"
-                  placeholder="Enter design style preference"
-                  value={formData.designStyle}
-                  onChange={(e) => handleInputChange('designStyle', e.target.value)}
+                  type="number"
+                  min="0"
+                  placeholder="Enter area in sq. ft."
+                  value={formData.area}
+                  onChange={(e) => handleInputChange('area', e.target.value)}
                   className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Date of Creation
-                </label>
-                  <Input
-                    type="date"
-                    value={formData.dateOfCreation}
-                    onChange={e => handleInputChange('dateOfCreation', e.target.value)}
-                  className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
-                  />
-              </div>
+              {/* Date of Creation Row */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Date of Creation
+              </label>
+                <Input
+                  type="date"
+                  value={formData.dateOfCreation}
+                  onChange={e => handleInputChange('dateOfCreation', e.target.value)}
+                className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
+                />
             </div>
+            </div>
+            {/* </div> */}
+
+            
 
             
 

@@ -6,6 +6,7 @@ import withAuth from "@/components/withAuth";
 import AttendanceTracker from "@/components/Attendance/AttendanceTracker";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchEmployees } from "@/redux/slices/employeeSlice";
+import { fetchPayrollSettings } from "@/redux/slices/payrollSettingsSlice";
 
 function Attendance() {
   const router = useRouter();
@@ -30,6 +31,12 @@ function Attendance() {
       setError("Failed to fetch employees");
       console.error("Error fetching employees:", err);
     });
+    
+    // Fetch payroll settings
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (companyId) {
+      dispatch(fetchPayrollSettings(companyId));
+    }
   }, [dispatch]);
 
   if (error) {
