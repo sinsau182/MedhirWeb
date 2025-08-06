@@ -6,6 +6,34 @@ const { publicRuntimeConfig } = getConfig();
 
 const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/custom-fields";
 
+/**
+ * AVAILABLE CUSTOM FIELDS ENDPOINTS:
+ * 
+ * 1. GET /api/asset-settings/custom-fields?categoryId={categoryId}
+ *    - Fetch custom fields by category ID (query parameter)
+ *    - Used by: fetchCustomFields()
+ * 
+ * 2. GET /api/asset-settings/custom-fields/category/{categoryId}
+ *    - Fetch custom fields by category ID (path parameter)
+ *    - Used by: fetchCustomFieldsByCategoryId()
+ * 
+ * 3. POST /api/asset-settings/custom-fields
+ *    - Create a new custom field
+ *    - Used by: addCustomField()
+ * 
+ * 4. PATCH /api/asset-settings/custom-fields/{id}/enable
+ *    - Toggle custom field status (enable/disable)
+ *    - Used by: toggleCustomFieldStatus()
+ * 
+ * 5. DELETE /api/asset-settings/custom-fields/{id}
+ *    - Delete a custom field
+ *    - Used by: deleteCustomField()
+ * 
+ * 6. PATCH /api/asset-settings/custom-fields/category/{categoryId}
+ *    - Update custom fields for a category (batch update)
+ *    - Used by: updateCustomFieldsForCategory()
+ */
+
 // Fetch custom fields for a category
 export const fetchCustomFields = createAsyncThunk(
   'customFields/fetchByCategory',
@@ -36,6 +64,48 @@ export const fetchCustomFields = createAsyncThunk(
     } catch (error) {
       console.error('Redux: Error fetching custom fields for category', categoryId, ':', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch custom fields');
+    }
+  }
+);
+
+// Fetch custom fields by category ID (specific endpoint)
+export const fetchCustomFieldsByCategoryId = createAsyncThunk(
+  'customFields/fetchByCategoryId',
+  async (categoryId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage('token', null);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      console.log('Redux: Fetching custom fields by category ID:', categoryId);
+      const response = await axios.get(`${API_BASE}/category/${categoryId}`, { 
+        headers,
+        timeout: 10000
+      });
+      
+      console.log('Redux: Custom Fields by Category ID API Response:', response.data);
+      
+      // Handle different response formats
+      let fields = [];
+      if (Array.isArray(response.data)) {
+        fields = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        fields = response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        fields = Array.isArray(response.data.data) ? response.data.data : [response.data.data];
+      }
+      
+      // Map _id to id for consistency
+      const mappedFields = fields.map(field => ({
+        ...field,
+        id: field.id || field._id || field.fieldId,
+        name: field.name || field.title,
+        required: field.required !== undefined ? field.required : false
+      }));
+      
+      return { categoryId, fields: mappedFields };
+    } catch (error) {
+      console.error('Redux: Error fetching custom fields by category ID:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch custom fields by category ID');
     }
   }
 );
@@ -154,6 +224,22 @@ const customFieldsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      
+      // Fetch custom fields by category ID
+      .addCase(fetchCustomFieldsByCategoryId.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCustomFieldsByCategoryId.fulfilled, (state, action) => {
+        state.loading = false;
+        const { categoryId, fields } = action.payload;
+        state.fieldsByCategory[categoryId] = fields;
+      })
+      .addCase(fetchCustomFieldsByCategoryId.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
       // Add custom field
       .addCase(addCustomField.pending, (state) => {
         state.loading = true;
