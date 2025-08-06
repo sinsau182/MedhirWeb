@@ -1,5 +1,3 @@
-
-///
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import getConfig from 'next/config';
@@ -8,18 +6,6 @@ const { publicRuntimeConfig } = getConfig();
 
 const ASSET_API_BASE = publicRuntimeConfig.apiURL + "/api/assets";
 
-// Debug API configuration
-console.log('=== API CONFIGURATION DEBUG ===');
-console.log('publicRuntimeConfig:', publicRuntimeConfig);
-console.log('apiURL:', publicRuntimeConfig.apiURL);
-console.log('ASSET_API_BASE:', ASSET_API_BASE);
-
-// Check if API URL is configured
-if (!publicRuntimeConfig.apiURL) {
-    console.error('❌ API URL is not configured! Please set NEXT_PUBLIC_API_URL environment variable.');
-} else {
-    console.log('✅ API URL is configured:', publicRuntimeConfig.apiURL);
-}
 
 /**
  * ASSET MANAGEMENT ENDPOINTS (Based on AssetController.java):
