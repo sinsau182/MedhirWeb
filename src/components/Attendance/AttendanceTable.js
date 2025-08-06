@@ -33,6 +33,7 @@ const AttendanceTable = ({
   calendarRef,
   handleMonthSelection,
   isSingleEmployeeModalOpen,
+  isDateEditable,
 }) => {
   // Helper function to get attendance status for a specific date from the new API format
   const getAttendanceStatusForDate = (attendanceRecord, dayNumber) => {
@@ -712,6 +713,9 @@ const AttendanceTable = ({
                   const editableStatuses = ["P", "A", "P/A", null, ""];
                   const isReadOnlyStatus = attendanceForDay.label && 
                     !editableStatuses.includes(attendanceForDay.label.toUpperCase());
+                  
+                  // Check if date is outside editable range
+                  const isDateOutsideRange = isDateEditable && !isDateEditable(dateString);
 
                   return (
                     <td
@@ -757,6 +761,8 @@ const AttendanceTable = ({
                               ? `Cannot edit future date: ${dateString}`
                               : isNaStatus
                               ? `Cannot edit NA status: ${dateString}`
+                              : isDateOutsideRange
+                              ? `Click to view attendance history (read-only): ${dateString}`
                               : `View/Edit attendance for ${employee.name} on ${dateString}`
                           }
                           disabled={isFutureDate || isNaStatus || popoverOpenCell === cellKey}
@@ -791,6 +797,8 @@ const AttendanceTable = ({
                           title={
                             isFutureDate
                               ? `Cannot edit future date: ${dateString}`
+                              : isDateOutsideRange
+                              ? `Click to view attendance history (read-only): ${dateString}`
                               : `Mark attendance for ${employee.name} on ${dateString}`
                           }
                           disabled={isFutureDate || popoverOpenCell === cellKey}
