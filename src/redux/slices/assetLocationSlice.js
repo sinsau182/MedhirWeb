@@ -21,6 +21,10 @@ export const fetchAssetLocations = createAsyncThunk(
       // Handle both old and new API response formats
       const data = response.data?.data || response.data;
       return data;
+      
+      // Handle both old and new API response formats
+      const data = response.data?.data || response.data;
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch locations"
@@ -41,9 +45,32 @@ export const addAssetLocation = createAsyncThunk(
       
       const data = response.data?.data || response.data;
       return data;
+      
+      const data = response.data?.data || response.data;
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to add location"
+      );
+    }
+  }
+);
+
+// Update a location
+export const updateAssetLocation = createAsyncThunk(
+  "assetLocations/update",
+  async ({ locationId, locationData }, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.patch(`${API_BASE}/${locationId}`, locationData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      const data = response.data?.data || response.data;
+      return { ...data, locationId };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update location"
       );
     }
   }
@@ -99,6 +126,9 @@ export const batchUpdateAssetLocations = createAsyncThunk(
       
       const data = response.data?.data?.locations || response.data;
       return data;
+      
+      const data = response.data?.data?.locations || response.data;
+      return data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to batch update locations"
@@ -113,6 +143,21 @@ const assetLocationSlice = createSlice({
     locations: [],
     loading: false,
     error: null,
+  },
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    },
+    // Local state management for inline editing
+    updateLocationLocal: (state, action) => {
+      const { locationId, field, value } = action.payload;
+      const location = state.locations.find(loc => 
+        loc.locationId === locationId || loc.id === locationId
+      );
+      if (location) {
+        location[field] = value;
+      }
+    },
   },
   reducers: {
     clearError: (state) => {
@@ -144,6 +189,7 @@ const assetLocationSlice = createSlice({
         state.error = action.payload;
       })
       
+      
       .addCase(addAssetLocation.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -156,6 +202,25 @@ const assetLocationSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      
+      .addCase(updateAssetLocation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateAssetLocation.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.locations.findIndex(loc => 
+          loc.locationId === action.payload.locationId || loc.id === action.payload.locationId
+        );
+        if (index !== -1) {
+          state.locations[index] = { ...state.locations[index], ...action.payload };
+        }
+      })
+      .addCase(updateAssetLocation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
       
       .addCase(updateAssetLocation.pending, (state) => {
         state.loading = true;
@@ -191,6 +256,7 @@ const assetLocationSlice = createSlice({
         state.error = action.payload;
       })
       
+      
       .addCase(batchUpdateAssetLocations.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -207,6 +273,8 @@ const assetLocationSlice = createSlice({
       });
   },
 });
+
+export const { clearError, updateLocationLocal } = assetLocationSlice.actions;
 
 export const { clearError, updateLocationLocal } = assetLocationSlice.actions;
 
