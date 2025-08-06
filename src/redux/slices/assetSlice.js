@@ -149,7 +149,6 @@ export const fetchAllAssetsDetailed = createAsyncThunk(
 );
 
 // Fetch asset by MongoDB ID
-// Fetch asset by MongoDB ID
 export const fetchAssetById = createAsyncThunk(
   'assets/fetchById',
   async (id, { rejectWithValue }) => {
@@ -296,18 +295,40 @@ export const createAssetWithDTO = createAsyncThunk(
                 'Content-Type': 'multipart/form-data'
               } 
             });
-            
             console.log('Asset created successfully with FormData + base endpoint');
-            return response.data;
           } catch (formDataBaseError) {
-            console.log('FormData + base endpoint failed:', formDataBaseError.response?.data);
-            throw new Error('All asset creation methods failed');
+            console.log('FormData + base failed:', formDataBaseError.response?.data);
+            
+            // Fourth try: JSON with base endpoint
+            console.log('Trying JSON with base endpoint...');
+            response = await axios.post(`${ASSET_API_BASE}`, minimalAsset, { 
+              headers: { 
+                ...headers,
+                'Content-Type': 'application/json'
+              } 
+            });
+            console.log('Asset created successfully with JSON + base endpoint');
           }
         }
       }
+      
+      console.log('Asset creation response:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Error creating asset:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to create asset');
+      console.error('Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to create asset'
+      );
     }
   }
 );
