@@ -9,6 +9,7 @@ const steps = [
   { label: 'Basic Details' },
   { label: 'Contact & Address' },
   { label: 'Compliance & Banking' },
+  { label: 'documents'},
 ];
 
 const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
