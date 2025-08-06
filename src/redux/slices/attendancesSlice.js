@@ -49,14 +49,29 @@ export const fetchEmployeeAttendanceHistory = createAsyncThunk(
                 }
             });
 
-            const data = await response.json();
+            // Check if response is empty or has no content
+            const responseText = await response.text();
+            
+            if (!responseText || responseText.trim() === '') {
+                return rejectWithValue("No attendance data available for this date");
+            }
+
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseError) {
+                return rejectWithValue("Invalid response format from server");
+            }
 
             if (!response.ok) {
-                return rejectWithValue(data.message || "Failed to fetch attendance history");
+                return rejectWithValue(data.message || `Server error: ${response.status}`);
             }
             return data;
         
         } catch (error) {
+            if (error.message.includes("Failed to fetch")) {
+                return rejectWithValue("Network connection issue. Please check your internet connection.");
+            }
             return rejectWithValue(error.message || "Network Error");
         }
     }
@@ -102,6 +117,10 @@ export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
             const data = await response.json();
 
             if (!response.ok) {
+                if (response.status === 404) {
+                    // Handle 404 gracefully - return empty data instead of error
+                    return { days: {}, monthlyAttendance: [] };
+                }
                 return rejectWithValue(data.message || "Something went wrong"); // backend error
             }
             return data;

@@ -203,18 +203,18 @@ const PotentialModal = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <FaDollarSign className="w-4 h-4 text-green-600" />
-                Consultation Fee *
+                Refundable Token Amount *
               </label>
               <input
                 type="text"
                 value={formData.consultationFee}
                 onChange={(e) => handleInputChange('consultationFee', e.target.value)}
-                placeholder="Enter consultation fee (e.g., ₹5,000)"
+                placeholder="Enter refundable token amount (e.g., ₹5,000)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Enter the consultation fee amount
+                Enter the refundable token amount
               </p>
             </div>
 
@@ -244,7 +244,7 @@ const PotentialModal = ({
               <div className="text-sm text-green-700 space-y-1">
                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
                 <p><strong>Requirements:</strong> {formData.requirements ? "Provided" : "Not provided"}</p>
-                <p><strong>Consultation Fee:</strong> {formData.consultationFee || "Not specified"}</p>
+                <p><strong>Refundable Token Amount:</strong> {formData.consultationFee || "Not specified"}</p>
                 <p><strong>Design Consultation:</strong> {formData.designConsultation}</p>
               </div>
             </div>

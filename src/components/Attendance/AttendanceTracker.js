@@ -20,6 +20,7 @@ import {
   clearError,
   clearSuccess,
 } from "@/redux/slices/manualAttendanceSlice";
+import { fetchPayrollSettings } from "@/redux/slices/payrollSettingsSlice";
 import { toast } from "sonner";
 import AttendanceTable from "./AttendanceTable";
 import LeaveTable from "./LeaveTable";
@@ -60,6 +61,8 @@ function AttendanceTracker({
     success: manualAttendanceSuccess,
     message: manualAttendanceMessage,
   } = useSelector((state) => state.manualAttendance);
+
+  const { settings: payrollSettings } = useSelector((state) => state.payrollSettings);
 
   // State variables
   const [searchInput, setSearchInput] = useState("");
@@ -1077,6 +1080,14 @@ function AttendanceTracker({
   };
 
   const setDayStatus = (day, status) => {
+    // Check if this date is outside the editable range
+    const dateString = `${monthYear.year}-${String(new Date(`${monthYear.month} 1, ${monthYear.year}`).getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    
+    if (!isDateEditable(dateString)) {
+      toast.error("Cannot edit dates outside the editable range");
+      return;
+    }
+    
     setMonthAttendanceData((prev) => ({
       ...prev,
       [day]: status,
@@ -1106,7 +1117,7 @@ function AttendanceTracker({
         // Only include if status has changed from original
         const originalStatus = originalMonthAttendanceData[day];
         if (status !== originalStatus) {
-          dateStatusMap[date] = status;
+        dateStatusMap[date] = status;
         }
       }
     });
@@ -1114,6 +1125,13 @@ function AttendanceTracker({
     // Check if there are any changes
     if (Object.keys(dateStatusMap).length === 0) {
       toast.error("No changes detected");
+      return;
+    }
+
+    // Check if any dates are outside the editable range
+    const invalidDates = Object.keys(dateStatusMap).filter(date => !isDateEditable(date));
+    if (invalidDates.length > 0) {
+      toast.error(`Cannot save changes for dates outside editable range: ${invalidDates.join(', ')}`);
       return;
     }
 
@@ -1169,6 +1187,12 @@ function AttendanceTracker({
   };
 
   const setEmployeeStatus = (employeeId, status) => {
+    // Check if the selected date is outside the editable range
+    if (selectedDateForAll && !isDateEditable(selectedDateForAll)) {
+      toast.error("Cannot edit attendance for dates outside the editable range");
+      return;
+    }
+    
     setAllEmployeesAttendanceData((prev) => ({
       ...prev,
       [employeeId]: status,
@@ -1200,6 +1224,12 @@ function AttendanceTracker({
       return;
     }
 
+    // Check if the selected date is outside the editable range
+    if (!isDateEditable(dateToUse)) {
+      toast.error("Cannot mark attendance for dates outside editable range (current month + previous month only)");
+      return;
+    }
+
     // Prepare data in new API format - only changed statuses
     const employeeStatuses = [];
 
@@ -1209,10 +1239,10 @@ function AttendanceTracker({
           // Only include if status has changed from original
           const originalStatus = originalAllEmployeesAttendanceData[employeeId];
           if (status !== originalStatus) {
-            employeeStatuses.push({
-              employeeId,
-              statusCode: status,
-            });
+          employeeStatuses.push({
+            employeeId,
+            statusCode: status,
+          });
           }
         }
       }
@@ -1527,10 +1557,64 @@ function AttendanceTracker({
     cellPopoverAnchorRef.current = event.target;
   };
 
+  // Check if a date is editable based on payroll settings and month restrictions
+  const isDateEditable = (dateString) => {
+    if (!dateString) return false;
+    
+    const targetDate = new Date(dateString);
+    const currentDate = new Date();
+    
+    // Get current month and year
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth(); // 0-11
+    const currentDay = currentDate.getDate();
+    
+    // Get target month and year
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth(); // 0-11
+    const targetDay = targetDate.getDate();
+    
+    // If payroll settings are available, use them for freeze logic
+    if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+      const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+      const freezeAfterDays = payrollSettings.freezeAfterDays;
+      
+      // Check if current date is past the freeze date for current month
+      const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+      
+      if (targetYear === currentYear) {
+        if (targetMonth === currentMonth) {
+          // Current month: always editable
+          return true;
+        } else if (targetMonth === currentMonth - 1) {
+          // Previous month: check if it's frozen
+          return !isCurrentMonthFrozen;
+        }
+      } else if (targetYear === currentYear - 1) {
+        // Previous year: only allow if it's December and current month is January
+        return targetMonth === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+      }
+    } else {
+      // Fallback to original logic if payroll settings not available
+      if (targetYear === currentYear) {
+        // Same year: allow current month and previous month
+        return targetMonth >= currentMonth - 1;
+      } else if (targetYear === currentYear - 1) {
+        // Previous year: only allow if it's December (previous month)
+        return targetMonth === 11 && currentMonth === 0;
+      }
+    }
+    
+    return false;
+  };
+
   // Check if the current cell is editable
   const isCurrentCellEditable = () => {
     const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
-    return editableStatuses.includes(cellPopoverStatus);
+    const statusEditable = editableStatuses.includes(cellPopoverStatus);
+    
+    // Also check if the date is within editable range
+    return statusEditable && isDateEditable(cellPopoverDate);
   };
 
   // Calculate optimal popup dimensions based on viewport
@@ -2009,22 +2093,52 @@ function AttendanceTracker({
                             const isSelected =
                               monthYear.month === fullMonthName;
 
-                            // Check if this month/year combination is in the future
+                            // Check if this month/year combination is editable based on payroll settings
                             const currentDate = new Date();
                             const currentYear = currentDate.getFullYear();
                             const currentMonth = currentDate.getMonth();
-                            const isFutureMonth =
-                              parseInt(monthYear.year) > currentYear ||
-                              (parseInt(monthYear.year) === currentYear &&
-                                index > currentMonth);
+                            const currentDay = currentDate.getDate();
+                            
+                            // Check if payroll settings are available for freeze logic
+                            let isEditableMonth = true;
+                            if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+                              const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+                              const freezeAfterDays = payrollSettings.freezeAfterDays;
+                              const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+                              
+                              if (parseInt(monthYear.year) === currentYear) {
+                                if (index === currentMonth) {
+                                  // Current month: always editable
+                                  isEditableMonth = true;
+                                } else if (index === currentMonth - 1) {
+                                  // Previous month: check if it's frozen
+                                  isEditableMonth = !isCurrentMonthFrozen;
+                                } else {
+                                  // Other months: not editable
+                                  isEditableMonth = false;
+                                }
+                              } else if (parseInt(monthYear.year) === currentYear - 1) {
+                                // Previous year: only allow if it's December and current month is January
+                                isEditableMonth = index === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+                              } else {
+                                isEditableMonth = false;
+                              }
+                            } else {
+                              // Fallback to original logic if payroll settings not available
+                              const isFutureMonth =
+                                parseInt(monthYear.year) > currentYear ||
+                                (parseInt(monthYear.year) === currentYear &&
+                                  index > currentMonth);
+                              isEditableMonth = !isFutureMonth;
+                            }
 
                             return (
                               <button
                                 key={month}
                                 onClick={() => {
-                                  if (isFutureMonth) {
+                                  if (!isEditableMonth) {
                                     toast.error(
-                                      "Cannot select future months for attendance"
+                                      "Cannot select month outside editable range"
                                     );
                                     return;
                                   }
@@ -2036,14 +2150,14 @@ function AttendanceTracker({
                                 className={`p-2 text-sm rounded-md transition-colors ${
                                   isSelected
                                     ? "bg-blue-100 text-blue-600 font-medium"
-                                    : isFutureMonth
+                                    : !isEditableMonth
                                     ? "text-gray-300 cursor-not-allowed"
                                     : "hover:bg-gray-100 text-gray-700"
                                 }`}
-                                disabled={isFutureMonth}
+                                disabled={!isEditableMonth}
                                 title={
-                                  isFutureMonth
-                                    ? "Cannot select future months"
+                                  !isEditableMonth
+                                    ? "Cannot select month outside editable range"
                                     : ""
                                 }
                               >
@@ -2456,7 +2570,11 @@ function AttendanceTracker({
                               const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
                               const isReadOnlyStatus = value && !editableStatuses.includes(value);
                               
-                              if (isReadOnlyStatus) {
+                              // Check if this date is outside the editable range
+                              const dateString = `${monthYear.year}-${String(new Date(`${monthYear.month} 1, ${monthYear.year}`).getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                              const isDateOutsideRange = !isDateEditable(dateString);
+                              
+                              if (isReadOnlyStatus || isDateOutsideRange) {
                                 // Render read-only cell (like NA but with original color)
                                 const selected = statusOptions.find((opt) => opt.value === value);
                                 const bgColor = selected ? selected.color : "#fff";
@@ -2464,7 +2582,7 @@ function AttendanceTracker({
                                   <div 
                                     className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm cursor-not-allowed opacity-75"
                                     style={{ backgroundColor: bgColor }}
-                                    title="Read only"
+                                    title={isDateOutsideRange ? "Date outside editable range" : "Read only"}
                                   >
                                     <span className="flex items-center gap-2">
                                       {selected ? (
@@ -2698,6 +2816,7 @@ function AttendanceTracker({
             calendarRef={calendarRef}
             handleMonthSelection={handleMonthSelection}
             isSingleEmployeeModalOpen={isSingleEmployeeModalOpen}
+            isDateEditable={isDateEditable}
           />
         ) : (
           <LeaveTable
@@ -2896,25 +3015,55 @@ function AttendanceTracker({
                           selectedDateForAll &&
                           new Date(selectedDateForAll).getMonth() === index;
 
-                        // Check if this month/year combination is in the future
+                        // Check if this month/year combination is editable based on payroll settings
                         const currentDate = new Date();
                         const currentYear = currentDate.getFullYear();
                         const currentMonth = currentDate.getMonth();
+                        const currentDay = currentDate.getDate();
                         const selectedYear = selectedDateForAll
                           ? new Date(selectedDateForAll).getFullYear()
                           : currentYear;
-                        const isFutureMonth =
-                          selectedYear > currentYear ||
-                          (selectedYear === currentYear &&
-                            index > currentMonth);
+                        
+                        // Check if payroll settings are available for freeze logic
+                        let isEditableMonth = true;
+                        if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+                          const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+                          const freezeAfterDays = payrollSettings.freezeAfterDays;
+                          const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+                          
+                          if (selectedYear === currentYear) {
+                            if (index === currentMonth) {
+                              // Current month: always editable
+                              isEditableMonth = true;
+                            } else if (index === currentMonth - 1) {
+                              // Previous month: check if it's frozen
+                              isEditableMonth = !isCurrentMonthFrozen;
+                            } else {
+                              // Other months: not editable
+                              isEditableMonth = false;
+                            }
+                          } else if (selectedYear === currentYear - 1) {
+                            // Previous year: only allow if it's December and current month is January
+                            isEditableMonth = index === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+                          } else {
+                            isEditableMonth = false;
+                          }
+                        } else {
+                          // Fallback to original logic if payroll settings not available
+                          const isFutureMonth =
+                            selectedYear > currentYear ||
+                            (selectedYear === currentYear &&
+                              index > currentMonth);
+                          isEditableMonth = !isFutureMonth;
+                        }
 
                         return (
                           <button
                             key={month}
                             onClick={() => {
-                              if (isFutureMonth) {
+                              if (!isEditableMonth) {
                                 toast.error(
-                                  "Cannot select future months for attendance"
+                                  "Cannot select month outside editable range"
                                 );
                                 return;
                               }
@@ -2961,13 +3110,13 @@ function AttendanceTracker({
                             className={`p-2 text-sm rounded-md transition-colors ${
                               isSelected
                                 ? "bg-blue-100 text-blue-600 font-medium"
-                                : isFutureMonth
+                                : !isEditableMonth
                                 ? "text-gray-300 cursor-not-allowed"
                                 : "hover:bg-gray-100 text-gray-700"
                             }`}
-                            disabled={isFutureMonth}
+                            disabled={!isEditableMonth}
                             title={
-                              isFutureMonth ? "Cannot select future months" : ""
+                              !isEditableMonth ? "Cannot select month outside editable range" : ""
                             }
                           >
                             {month}
@@ -3452,59 +3601,69 @@ function AttendanceTracker({
           >
                         {!isHistoryExpanded ? (
               <>
-                                 <div className="text-sm font-bold text-gray-800 mb-1">
+            <div className="text-sm font-bold text-gray-800 mb-1">
                    {cellPopoverEmployee.name || "Unknown Employee"} ({cellPopoverEmployee.id})
-                 </div>
-                 <div className="text-sm font-bold text-gray-700 mb-2">
+            </div>
+            <div className="text-sm font-bold text-gray-700 mb-2">
                    {cellPopoverDate || "Invalid Date"}
-                 </div>
+            </div>
+                 
 
-                 {/* Current Status */}
+
+            {/* Current Status */}
                  <div className="flex items-center gap-2 mb-3">
-                  {cellPopoverStatus ? (
-                    <span
-                      className="inline-block w-3 h-3 rounded-full"
-                      style={{
-                        backgroundColor: statusOptions.find(
-                          (opt) => opt.value === cellPopoverStatus
-                        )?.color,
-                      }}
-                    ></span>
-                  ) : null}
-                  <span className="text-sm font-medium text-gray-800">
-                    {cellPopoverStatus
-                      ? statusOptions.find((opt) => opt.value === cellPopoverStatus)
+              {cellPopoverStatus ? (
+                <span
+                  className="inline-block w-3 h-3 rounded-full"
+                  style={{
+                    backgroundColor: statusOptions.find(
+                      (opt) => opt.value === cellPopoverStatus
+                    )?.color,
+                  }}
+                ></span>
+              ) : null}
+              <span className="text-sm font-medium text-gray-800">
+                {cellPopoverStatus
+                  ? statusOptions.find((opt) => opt.value === cellPopoverStatus)
                           ?.label || `Unknown Status (${cellPopoverStatus})`
-                      : "No attendance marked"}
-                  </span>
-                </div>
+                  : "No attendance marked"}
+              </span>
+            </div>
 
                                  {/* Change to Dropdown - Only show if cell is editable */}
                  {isCurrentCellEditable() ? (
                    <div className="w-full mb-3">
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Change to:
-                    </label>
-                    <select
-                      value={cellPopoverStatus}
-                      onChange={(e) => setCellPopoverStatus(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                    >
-                      <option value="">Select status...</option>
-                      {dropdownStatusOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+              <label className="block text-xs text-gray-500 mb-1">
+                Change to:
+              </label>
+              <select
+                value={cellPopoverStatus}
+                onChange={(e) => setCellPopoverStatus(e.target.value)}
+                className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs bg-white shadow-sm hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              >
+                <option value="">Select status...</option>
+                {dropdownStatusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
                   </div>
-                                 ) : (
-                   <div className="w-full mb-3">
+                                                 ) : (
+                  <div className="w-full mb-3">
                     <div className="text-xs text-gray-500 mb-1">
-                      Status: <span className="text-gray-700 font-medium">Read Only</span>
+                      Status: <span className="text-gray-700 font-medium">
+                        {cellPopoverStatus 
+                          ? statusOptions.find((opt) => opt.value === cellPopoverStatus)?.label || `Unknown Status (${cellPopoverStatus})`
+                          : "No attendance marked"
+                        }
+                      </span>
                     </div>
                     <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                      This attendance record cannot be modified. Use "View History" to see details.
+                      {!isDateEditable(cellPopoverDate) 
+                        ? "Cannot edit. Click 'View History' to see details."
+                        : "This attendance record cannot be modified. Click 'View History' to see details."
+                      }
                     </div>
                   </div>
                 )}
@@ -3517,7 +3676,7 @@ function AttendanceTracker({
                 </div>
                 <div className="text-sm font-bold text-gray-700 mb-2">
                   {cellPopoverDate || "Invalid Date"} - History
-                </div>
+            </div>
 
                 {/* History Content */}
                 {historyLoading ? (
@@ -3526,8 +3685,8 @@ function AttendanceTracker({
                     <span className="ml-2 text-sm text-gray-600">Loading history...</span>
                   </div>
                 ) : historyError ? (
-                  <div className="text-sm text-red-600 py-2">
-                    Error loading history: {historyError}
+                  <div className="text-sm text-gray-600 py-2">
+                    No history found
                   </div>
                 ) : attendanceHistory ? (
                                      <div className="w-full space-y-2">
@@ -3636,7 +3795,7 @@ function AttendanceTracker({
                   </div>
                 ) : (
                   <div className="text-sm text-gray-600 py-2">
-                    No history available
+                    No history found
                   </div>
                 )}
               </>
@@ -3645,36 +3804,40 @@ function AttendanceTracker({
                         <div className="flex justify-between items-center mt-1 w-full">
               {!isHistoryExpanded ? (
                 <button
-                  className="px-2 py-1 bg-gray-50 text-gray-600 rounded border border-gray-200 hover:bg-gray-100 text-xs"
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                    !isCurrentCellEditable() 
+                      ? "bg-blue-500 text-white hover:bg-blue-600 border border-blue-500" 
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }`}
                   onClick={handleViewHistory}
                 >
-                  View History
+                  {!isCurrentCellEditable() ? "View History" : "View History"}
                 </button>
               ) : (
                 <button
-                  className="px-2 py-1 bg-gray-50 text-gray-600 rounded border border-gray-200 hover:bg-gray-100 text-xs"
+                  className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded border border-gray-200 hover:bg-gray-100 text-xs font-medium"
                   onClick={() => setIsHistoryExpanded(false)}
                 >
                   Back to Edit
                 </button>
               )}
               <div className="flex gap-2">
-                <button
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
-                  onClick={closePopover}
-                >
-                  Cancel
-                </button>
+              <button
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
+                onClick={closePopover}
+              >
+                Cancel
+              </button>
                 {!isHistoryExpanded && isCurrentCellEditable() && (
-                  <button
-                    className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
-                    onClick={() => {
-                      handleCellPopoverSave();
-                      closePopover();
-                    }}
-                  >
-                    Save
-                  </button>
+              <button
+                className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                onClick={() => {
+                  handleCellPopoverSave();
+                  closePopover();
+                }}
+              >
+                Save
+              </button>
                 )}
               </div>
             </div>

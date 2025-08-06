@@ -216,7 +216,10 @@ const EmployeeAttendance = () => {
       setAttendanceData(formattedData);
       setMonthlySummary(summaryCounts);
     } else if (error && prevErrorRef.current !== error) {
-      toast.error(`Failed to fetch attendance data: ${error}`);
+      // Don't show toast for 404 errors (no data found)
+      if (!error.includes('404')) {
+        toast.error(`Failed to fetch attendance data: ${error}`);
+      }
       prevErrorRef.current = error;
       setAttendanceData([]);
       setMonthlySummary({});
@@ -294,6 +297,11 @@ const EmployeeAttendance = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          // Handle 404 gracefully - no data found, set empty data
+          setDailyAttendanceData(null);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -321,7 +329,10 @@ const EmployeeAttendance = () => {
         return updatedData;
       });
     } catch (error) {
-      toast.error(`Failed to fetch attendance data: ${error.message}`);
+      // Don't show toast for 404 errors (no data found)
+      if (!error.message.includes('404')) {
+        toast.error(`Failed to fetch attendance data: ${error.message}`);
+      }
     }
   };
 

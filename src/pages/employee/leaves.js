@@ -20,6 +20,7 @@ import CustomDatePicker from "@/components/CustomDatePicker";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import withAuth from "@/components/withAuth";
 import { fetchEmployeeLeavePolicy } from "@/redux/slices/leavePolicySlice";
+import { fetchPayrollSettings } from "@/redux/slices/payrollSettingsSlice";
 
 // Helper to format numbers: show two decimals only if not whole
 function formatNumber(num) {
@@ -181,6 +182,13 @@ const Leaves = () => {
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const openModal = async () => {
     await dispatch(fetchEmployeeLeavePolicy(employeeId));
+    
+    // Fetch payroll settings for date restrictions
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (companyId) {
+      await dispatch(fetchPayrollSettings(companyId));
+    }
+    
     setIsModalOpen(true);
   };
   const closeModal = () => {
@@ -192,6 +200,13 @@ const Leaves = () => {
 
   const openCompOffModal = async () => {
     await dispatch(fetchEmployeeLeavePolicy(employeeId));
+    
+    // Fetch payroll settings for date restrictions
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (companyId) {
+      await dispatch(fetchPayrollSettings(companyId));
+    }
+    
     setIsCompOffModalOpen(true);
   };
   const closeCompOffModal = () => {
