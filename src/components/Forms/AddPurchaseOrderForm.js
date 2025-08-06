@@ -202,8 +202,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
     if (!selectedVendor) newErrors.vendor = "Vendor is required";
     if (!formData.orderDate) newErrors.orderDate = 'Order date is required.';
     if (!formData.deliveryDate) newErrors.deliveryDate = 'Delivery date is required.';
-    if (!formData.company) newErrors.company = 'Company is required.';
-    if (!formData.shippingAddress) newErrors.shippingAddress = 'Shipping address is required.';
+   
     if (new Date(formData.deliveryDate) < new Date(formData.orderDate)) {
       newErrors.deliveryDate = 'Delivery date cannot be before order date.';
     }
@@ -390,7 +389,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 <FaShippingFast className="text-gray-400" /> Ship To
             </h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Company <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company </label>
               <select
                 className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-300'}`}
                 value={formData.company?._id || formData.company?.companyId || ''}
@@ -407,7 +406,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
               {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address </label>
               <textarea
                 rows="5"
                 className={`w-full border rounded-lg px-3 py-2 ${errors.shippingAddress ? 'border-red-500' : 'border-gray-300'}`}

@@ -33,13 +33,23 @@ export const addVendor = createAsyncThunk(
   async (vendor, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      
+      // Create FormData for multipart/form-data
+      const formData = new FormData();
+      formData.append('vendor', JSON.stringify(vendor));
+      
+      // Add attachment if it exists in the vendor object
+      if (vendor.attachment) {
+        formData.append('attachment', vendor.attachment);
+      }
+      
       const response = await fetch(`${API_BASE_URL}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          // Remove Content-Type header to let browser set it automatically for FormData
         },
-        body: JSON.stringify(vendor),
+        body: formData,
       });
       const data = await response.json();
       if (!response.ok) {
@@ -58,13 +68,23 @@ export const updateVendor = createAsyncThunk(
   async (vendor, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      
+      // Create FormData for multipart/form-data
+      const formData = new FormData();
+      formData.append('vendor', JSON.stringify(vendor));
+      
+      // Add attachment if it exists in the vendor object
+      if (vendor.attachment) {
+        formData.append('attachment', vendor.attachment);
+      }
+      
       const response = await fetch(`${API_BASE_URL}/${vendor.vendorId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          // Remove Content-Type header to let browser set it automatically for FormData
         },
-        body: JSON.stringify(vendor),
+        body: formData,
       });
       const data = await response.json();
       if (!response.ok) {

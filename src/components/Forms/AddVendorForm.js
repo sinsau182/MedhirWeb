@@ -742,6 +742,12 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
         tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null
       };
       
+      // Add attachment if there are uploaded files
+      if (formData.documents.attachments.length > 0) {
+        // For now, we'll use the first attachment. In a real scenario, you might want to handle multiple files
+        submitData.attachment = formData.documents.attachments[0].file;
+      }
+      
       try {
         if (isEditMode) {
           const result = await dispatch(updateVendor(submitData)).unwrap();
@@ -1428,7 +1434,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Bills Upload Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-gray-800 mb-4">Bills & Invoices</h3>
+                <h3 className="text-md font-semibold text-gray-800 mb-4">Bank passbook</h3>
                 
                 {/* Upload Area */}
                 <div
@@ -1445,7 +1451,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-gray-700">Click to upload a bill</p>
+                      <p className="text-lg font-semibold text-gray-700">Click to upload bank passbook</p>
                       <p className="text-sm text-gray-500 mt-1">or drag and drop files here</p>
                     </div>
                     <div className="text-xs text-gray-400">
@@ -1562,19 +1568,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
             </div>
 
             {/* Summary */}
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-medium text-blue-800">Document Summary</h4>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Bills: {formData.documents.bills.length} • Attachments: {formData.documents.attachments.length}
-                  </p>
-                </div>
-                <div className="text-xs text-blue-600">
-                  Total: {formData.documents.bills.length + formData.documents.attachments.length} documents
-                </div>
-              </div>
-            </div>
+      
           </>
         );
       default:
