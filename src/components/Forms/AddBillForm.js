@@ -263,20 +263,20 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
     );
 };
 
-const mockCompanies = [
-  {
-    id: 1,
-    name: "ABC Pvt Ltd",
-    gstin: "27DEFGH5678I2A6",
-    departments: ["IT Department", "Finance", "HR"],
-  },
-  {
-    id: 2,
-    name: "DEF Solutions",
-    gstin: "29LMNOP1234Q5Z6",
-    departments: ["Operations", "Sales"],
-  },
-];
+//const mockCompanies = [
+//  {
+//    id: 1,
+//    name: "ABC Pvt Ltd",
+//    gstin: "27DEFGH5678I2A6",
+//    departments: ["IT Department", "Finance", "HR"],
+//  },
+//  {
+//    id: 2,
+//    name: "DEF Solutions",
+//    gstin: "29LMNOP1234Q5Z6",
+//    departments: ["Operations", "Sales"],
+//  },
+//];
 
 const BillForm = ({ bill, onCancel }) => {
   const companyId = sessionStorage.getItem("employeeCompanyId");
@@ -294,7 +294,7 @@ const BillForm = ({ bill, onCancel }) => {
   }, [dispatch]);
   const { vendors, loading, error: vendorError } = useSelector((state) => state.vendors);
 
-  const [companies] = useState(mockCompanies);
+  //const [companies] = useState(mockCompanies);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState("");
@@ -399,11 +399,11 @@ const BillForm = ({ bill, onCancel }) => {
     setSelectedVendor(v);
   };
 
-  const handleCompanyChange = (e) => {
-    const c = companies.find((c) => c.id === Number(e.target.value));
-    setSelectedCompany(c);
-    setSelectedDepartment("");
-  };
+  //const handleCompanyChange = (e) => {
+  //  const c = companies.find((c) => c.id === Number(e.target.value));
+  //  setSelectedCompany(c);
+  //  setSelectedDepartment("");
+  //};
 
   const handleDepartmentChange = (e) => {
     setSelectedDepartment(e.target.value);
@@ -455,8 +455,8 @@ const BillForm = ({ bill, onCancel }) => {
     const billData = {
       companyId: companyId,
       vendorId: selectedVendor?.vendorId,
-      gstin: selectedVendor?.gstin || "",
-      vendorAddress: selectedVendor?.addressLine1 || "",
+      //gstin: selectedVendor?.gstin || "",
+      //vendorAddress: selectedVendor?.addressLine1 || "",
       tdsPercentage: selectedVendor?.tdsPercentage || null,
       billNumber: billNumber,
       billReference: reference,
@@ -580,7 +580,7 @@ const BillForm = ({ bill, onCancel }) => {
                   </select>
                   {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
                 </div>
-                <div>
+                {/*<div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
                   <input 
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
@@ -588,8 +588,8 @@ const BillForm = ({ bill, onCancel }) => {
                     placeholder="Auto-filled from vendor"
                     readOnly 
                   />
-                </div>
-                <div>
+                </div>*/}
+                {/*<div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
                   <textarea 
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
@@ -598,7 +598,7 @@ const BillForm = ({ bill, onCancel }) => {
                     rows={3}
                     readOnly 
                   />
-                </div>
+                </div>*/}
               </div>
 
               {/* Bill Details */}
@@ -704,7 +704,7 @@ const BillForm = ({ bill, onCancel }) => {
                       <tr className="border-b border-gray-200">
                           <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Sr. No.</th>
                           <th className="w-[30%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                          <th className="w-[15%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">HSN Code</th>
+                        
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">UOM</th>
                           <th className="w-[12%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Rate</th>
@@ -734,14 +734,7 @@ const BillForm = ({ bill, onCancel }) => {
                                 />
                                 {errors[`item${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`item${idx}`]}</div>}
                               </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
-                                  value={line.hsn}
-                                  onChange={e => handleLineChange(idx, 'hsn', e.target.value)}
-                                  placeholder="HSN Code"
-                                />
-                              </td>
+                             
                               <td className="px-4 py-3 text-center">
                                 <input 
                                   type="text" 
@@ -924,7 +917,7 @@ const BillForm = ({ bill, onCancel }) => {
           <div className="flex justify-between items-center">
             <div className="text-lg font-bold">
               Total Bill Amount: <span className="text-blue-600">₹{total.toLocaleString('en-IN')}</span>
-              {isEditMode && <span className="text-sm text-gray-500 ml-2">(Edit Mode)</span>}
+             
             </div>
             <div className="flex gap-3">
               <button 

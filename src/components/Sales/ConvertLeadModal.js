@@ -7,6 +7,7 @@ import axios from 'axios';
 import getConfig from 'next/config';
 import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { toast } from 'sonner';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;

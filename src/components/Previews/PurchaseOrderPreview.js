@@ -5,8 +5,11 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
 
   const {
     poNumber,
+    purchaseOrderNumber,
     orderDate,
+    purchaseOrderDate,
     deliveryDate,
+    purchaseOrderDeliveryDate,
     vendor,
     company,
     shippingAddress,
@@ -14,7 +17,8 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
     notes,
     subtotal,
     totalGst,
-    grandTotal
+    grandTotal,
+    finalAmount
   } = poData;
 
   return (
@@ -29,7 +33,7 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
             <header className="flex justify-between items-start pb-6 border-b">
                 <div className="text-left">
                     <h1 className="text-3xl font-bold text-gray-800">PURCHASE ORDER</h1>
-                    <p className="text-gray-500">PO #: {poNumber}</p>
+                    <p className="text-gray-500">PO #: {poNumber || purchaseOrderNumber}</p>
                 </div>
                 <div className="text-right">
                     <h2 className="text-xl font-bold">{company?.name || 'Your Company'}</h2>
@@ -41,9 +45,9 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
             <section className="grid grid-cols-3 gap-8 py-6 border-b">
                 <div>
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Vendor</h3>
-                    <p className="font-bold text-gray-800">{vendor?.name || 'N/A'}</p>
+                    <p className="font-bold text-gray-800">{vendor?.name || vendor?.vendorName || 'N/A'}</p>
                     <p className="text-gray-600 text-sm whitespace-pre-line">{vendor?.address || ''}</p>
-                    <p className="text-gray-600 text-sm">GSTIN: {vendor?.gstin || 'N/A'}</p>
+                    
                 </div>
                 <div>
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Ship To</h3>
@@ -54,9 +58,9 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Details</h3>
                     <div className="grid grid-cols-2 text-sm">
                         <span className="text-gray-500">Order Date:</span>
-                        <span className="text-gray-800 font-medium">{orderDate}</span>
+                        <span className="text-gray-800 font-medium">{orderDate || purchaseOrderDate}</span>
                         <span className="text-gray-500">Delivery Date:</span>
-                        <span className="text-gray-800 font-medium">{deliveryDate}</span>
+                        <span className="text-gray-800 font-medium">{deliveryDate || purchaseOrderDeliveryDate}</span>
                     </div>
                 </div>
             </section>
@@ -75,16 +79,22 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {items.map(item => (
-                            <tr key={item.id} className="border-b">
-                                <td className="p-3">{item.itemName}</td>
-                                <td className="p-3 text-gray-600">{item.description}</td>
-                                <td className="p-3 text-right">{item.quantity} {item.unit}</td>
-                                <td className="p-3 text-right">₹{item.rate.toFixed(2)}</td>
-                                <td className="p-3 text-right">{item.gstRate}%</td>
-                                <td className="p-3 text-right">₹{(item.quantity * item.rate).toFixed(2)}</td>
+                        {items && items.length > 0 ? (
+                            items.map(item => (
+                                <tr key={item.id || Math.random()} className="border-b">
+                                    <td className="p-3">{item.itemName || 'N/A'}</td>
+                                    <td className="p-3 text-gray-600">{item.description || 'N/A'}</td>
+                                    <td className="p-3 text-right">{item.quantity || 0} {item.uom || item.unit || ''}</td>
+                                    <td className="p-3 text-right">₹{(item.rate || 0).toFixed(2)}</td>
+                                    <td className="p-3 text-right">{item.gstPercent || item.gstRate || 0}%</td>
+                                    <td className="p-3 text-right">₹{(item.amount || ((item.quantity || 0) * (item.rate || 0))).toFixed(2)}</td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="6" className="p-3 text-center text-gray-500">No items found</td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </section>
@@ -94,15 +104,15 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                 <div className="w-64 space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-medium text-gray-800">₹{subtotal.toFixed(2)}</span>
+                        <span className="font-medium text-gray-800">₹{(subtotal || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-600">Total GST:</span>
-                        <span className="font-medium text-gray-800">₹{totalGst.toFixed(2)}</span>
+                        <span className="font-medium text-gray-800">₹{(totalGst || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t mt-2 pt-2">
                         <span>Grand Total:</span>
-                        <span>₹{grandTotal.toFixed(2)}</span>
+                        <span>₹{(grandTotal || finalAmount || 0).toFixed(2)}</span>
                     </div>
                 </div>
             </section>
