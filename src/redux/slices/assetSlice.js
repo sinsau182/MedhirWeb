@@ -5,6 +5,7 @@ import { getItemFromSessionStorage } from './sessionStorageSlice';
 const { publicRuntimeConfig } = getConfig();
 
 const ASSET_API_BASE = publicRuntimeConfig.apiURL + "/api/assets";
+
 /**
  * ASSET MANAGEMENT ENDPOINTS (Based on AssetController.java):
  * 
