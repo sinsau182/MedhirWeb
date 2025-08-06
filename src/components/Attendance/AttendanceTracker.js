@@ -1089,11 +1089,12 @@ function AttendanceTracker({
       return;
     }
 
-    // Build dateStatusMap for all days
+    // Build dateStatusMap for only changed days
     const dateStatusMap = {};
     const monthIndex = new Date(
       `${monthYear.month} 1, ${monthYear.year}`
     ).getMonth();
+    
     Object.entries(monthAttendanceData).forEach(([day, status]) => {
       if (status) {
         // Format date without timezone issues
@@ -1101,9 +1102,20 @@ function AttendanceTracker({
           2,
           "0"
         )}-${String(parseInt(day)).padStart(2, "0")}`;
-        dateStatusMap[date] = status;
+        
+        // Only include if status has changed from original
+        const originalStatus = originalMonthAttendanceData[day];
+        if (status !== originalStatus) {
+          dateStatusMap[date] = status;
+        }
       }
     });
+
+    // Check if there are any changes
+    if (Object.keys(dateStatusMap).length === 0) {
+      toast.error("No changes detected");
+      return;
+    }
 
     const payload = buildManualAttendancePayload(
       selectedEmployeeForMonth.id,
@@ -1188,23 +1200,27 @@ function AttendanceTracker({
       return;
     }
 
-    // Prepare data in new API format
+    // Prepare data in new API format - only changed statuses
     const employeeStatuses = [];
 
     Object.entries(allEmployeesAttendanceData).forEach(
       ([employeeId, status]) => {
         if (status) {
-          employeeStatuses.push({
-            employeeId,
-            statusCode: status,
-          });
+          // Only include if status has changed from original
+          const originalStatus = originalAllEmployeesAttendanceData[employeeId];
+          if (status !== originalStatus) {
+            employeeStatuses.push({
+              employeeId,
+              statusCode: status,
+            });
+          }
         }
       }
     );
 
-    // If no employees are marked, show error
+    // If no employees are marked or no changes detected, show error
     if (employeeStatuses.length === 0) {
-      toast.error("Please mark attendance for at least one employee");
+      toast.error("No changes detected. Please mark attendance for at least one employee or make changes to existing attendance.");
       return;
     }
 
@@ -1415,7 +1431,10 @@ function AttendanceTracker({
       return;
     }
 
-    setCellPopoverEmployee(employee);
+    setCellPopoverEmployee({
+      ...employee,
+      originalStatus: status // Store the original status for comparison
+    });
     setCellPopoverDate(date);
     setCellPopoverStatus(status);
     setCellPopoverOpen(true);
@@ -1520,8 +1539,8 @@ function AttendanceTracker({
     const viewportHeight = window.innerHeight;
     const margin = 48; // Increased margin for better safety
     
-    const baseWidth = isHistoryExpanded ? 400 : 320;
-    const baseHeight = 280; // Further reduced base height
+    const baseWidth = isHistoryExpanded ? 450 : 350;
+    const baseHeight = isHistoryExpanded ? 400 : 300;
     
     return {
       width: Math.min(baseWidth, viewportWidth - margin),
@@ -1590,6 +1609,16 @@ function AttendanceTracker({
     const employeeId = cellPopoverEmployee.id;
     const date = cellPopoverDate;
     const status = cellPopoverStatus;
+    
+    // Get the original status for this cell
+    const originalStatus = cellPopoverEmployee.originalStatus || null;
+    
+    // Only send if status has actually changed
+    if (status === originalStatus) {
+      toast.error("No changes detected");
+      return;
+    }
+    
     // Build dateStatusMap for this single change
     const dateStatusMap = { [date]: status };
     const payload = buildManualAttendancePayload(employeeId, dateStatusMap);
@@ -3540,18 +3569,18 @@ function AttendanceTracker({
                             })() : "-"}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Working Hours:</span>
-                        <span className="text-xs font-medium">
-                          {attendanceHistory.workingHours > 0 ? `${attendanceHistory.workingHours}h` : "-"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Leave Utilized:</span>
-                        <span className="text-xs font-medium">
-                          {attendanceHistory.leaveUtilized > 0 ? (attendanceHistory.leaveUtilized % 1 === 0 ? `${attendanceHistory.leaveUtilized}h` : `${attendanceHistory.leaveUtilized.toFixed(1)}h`) : "-"}
-                        </span>
-                      </div>
+                                             <div className="flex justify-between items-center">
+                         <span className="text-xs text-gray-600">Working Hours:</span>
+                         <span className="text-xs font-medium">
+                           {attendanceHistory.workingHours > 0 ? attendanceHistory.workingHours : "-"}
+                         </span>
+                       </div>
+                       <div className="flex justify-between items-center">
+                         <span className="text-xs text-gray-600">Leave Utilized:</span>
+                         <span className="text-xs font-medium">
+                           {attendanceHistory.leaveUtilized > 0 ? attendanceHistory.leaveUtilized : "-"}
+                         </span>
+                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-600">Holiday:</span>
                         <span className="text-xs font-medium">
@@ -3578,13 +3607,19 @@ function AttendanceTracker({
                                 </div>
                                                                  <div className="text-right">
                                    <div className="font-semibold text-gray-800">
-                                     {activity.hours && !isNaN(activity.hours) ? `${activity.hours}h` : "N/A"}
+                                     {activity.hours && !isNaN(activity.hours) ? activity.hours : "N/A"}
                                    </div>
                                    <div className="text-gray-500 text-xs">
                                      {activity.updatedAt ? 
                                        (() => {
                                          try {
-                                           const date = new Date(activity.updatedAt * 1000);
+                                           // Handle both timestamp (number) and date string formats
+                                           let date;
+                                           if (typeof activity.updatedAt === 'number') {
+                                             date = new Date(activity.updatedAt * 1000);
+                                           } else {
+                                             date = new Date(activity.updatedAt);
+                                           }
                                            return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
                                          } catch (error) {
                                            return "Invalid Date";
