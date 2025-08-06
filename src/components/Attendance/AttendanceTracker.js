@@ -1473,6 +1473,9 @@ function AttendanceTracker({
     // Reset history state when opening new popup
     setIsHistoryExpanded(false);
     
+    // Prevent background scrolling when popup is open
+    document.body.style.overflow = 'hidden';
+    
     // Position popover with viewport-aware positioning
     const cellRect = event.target.getBoundingClientRect();
     const tableContainer = document.getElementById(
@@ -1483,42 +1486,42 @@ function AttendanceTracker({
       containerRect = tableContainer.getBoundingClientRect();
     }
     
-    // Dynamic popover size based on content
-    const popoverWidth = 320;
-    const popoverHeight = 180;
-    const minMargin = 16; // Increased margin for better spacing
-    
-    // Get viewport dimensions
+    // Dynamic popover size based on content and viewport
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const minMargin = 24; // Increased margin for better spacing
     
-    // Try multiple positioning strategies
+    // Calculate optimal popup size based on viewport
+    const maxPopupWidth = Math.min(450, viewportWidth - (minMargin * 2));
+    const maxPopupHeight = Math.min(500, viewportHeight - (minMargin * 2));
+    
+    // Try multiple positioning strategies with dynamic sizing
     let left, top;
     const strategies = [
-      // Strategy 1: Above the cell, centered
+      // Strategy 1: Center of viewport (most reliable)
       () => ({
-        left: cellRect.left + (cellRect.width / 2) - (popoverWidth / 2),
-        top: cellRect.top - popoverHeight - 8
+        left: (viewportWidth - maxPopupWidth) / 2,
+        top: (viewportHeight - maxPopupHeight) / 2
       }),
-      // Strategy 2: Below the cell, centered
+      // Strategy 2: Above the cell, centered
       () => ({
-        left: cellRect.left + (cellRect.width / 2) - (popoverWidth / 2),
-        top: cellRect.bottom + 8
+        left: cellRect.left + (cellRect.width / 2) - (maxPopupWidth / 2),
+        top: Math.max(minMargin, cellRect.top - maxPopupHeight - 8)
       }),
-      // Strategy 3: Above the cell, left-aligned
+      // Strategy 3: Below the cell, centered
       () => ({
-        left: cellRect.left,
-        top: cellRect.top - popoverHeight - 8
+        left: cellRect.left + (cellRect.width / 2) - (maxPopupWidth / 2),
+        top: Math.min(viewportHeight - maxPopupHeight - minMargin, cellRect.bottom + 8)
       }),
-      // Strategy 4: Below the cell, left-aligned
+      // Strategy 4: Right of the cell
       () => ({
-        left: cellRect.left,
-        top: cellRect.bottom + 8
+        left: Math.min(viewportWidth - maxPopupWidth - minMargin, cellRect.right + 8),
+        top: cellRect.top + (cellRect.height / 2) - (maxPopupHeight / 2)
       }),
-      // Strategy 5: Center of viewport (fallback)
+      // Strategy 5: Left of the cell
       () => ({
-        left: (viewportWidth - popoverWidth) / 2,
-        top: (viewportHeight - popoverHeight) / 2
+        left: Math.max(minMargin, cellRect.left - maxPopupWidth - 8),
+        top: cellRect.top + (cellRect.height / 2) - (maxPopupHeight / 2)
       })
     ];
 
@@ -1531,27 +1534,15 @@ function AttendanceTracker({
       // Check if this position works
       if (left >= minMargin && 
           top >= minMargin && 
-          left + popoverWidth <= viewportWidth - minMargin && 
-          top + popoverHeight <= viewportHeight - minMargin) {
+          left + maxPopupWidth <= viewportWidth - minMargin && 
+          top + maxPopupHeight <= viewportHeight - minMargin) {
         break;
       }
     }
     
-    // Edge case: If popup is still too wide for viewport, reduce width and reposition
-    if (popoverWidth > viewportWidth - (minMargin * 2)) {
-      left = minMargin;
-    }
-    
-    // Edge case: If popup is still too tall for viewport, reduce height and reposition
-    if (popoverHeight > viewportHeight - (minMargin * 2)) {
-      top = minMargin;
-    }
-    
     // Final safety check: ensure popup is always within viewport
-    if (left < 0) left = minMargin;
-    if (top < 0) top = minMargin;
-    if (left + popoverWidth > viewportWidth) left = viewportWidth - popoverWidth - minMargin;
-    if (top + popoverHeight > viewportHeight) top = viewportHeight - popoverHeight - minMargin;
+    left = Math.max(minMargin, Math.min(left, viewportWidth - maxPopupWidth - minMargin));
+    top = Math.max(minMargin, Math.min(top, viewportHeight - maxPopupHeight - minMargin));
     
     setCellPopoverPosition({ top, left });
     cellPopoverAnchorRef.current = event.target;
@@ -1624,7 +1615,7 @@ function AttendanceTracker({
     const margin = 48; // Increased margin for better safety
     
     const baseWidth = isHistoryExpanded ? 450 : 350;
-    const baseHeight = isHistoryExpanded ? 400 : 300;
+    const baseHeight = isHistoryExpanded ? 500 : 300;
     
     return {
       width: Math.min(baseWidth, viewportWidth - margin),
@@ -1639,6 +1630,10 @@ function AttendanceTracker({
     setCellPopoverOpen(false);
     setPopoverOpenCell(null);
     setIsHistoryExpanded(false);
+    
+    // Restore background scrolling
+    document.body.style.overflow = 'auto';
+    
     // Clear any potential memory leaks by resetting refs
     if (cellPopoverAnchorRef.current) {
       cellPopoverAnchorRef.current = null;
@@ -3594,7 +3589,7 @@ function AttendanceTracker({
               minWidth: getPopupDimensions().width * 0.9,
               maxWidth: getPopupDimensions().maxWidth,
               maxHeight: getPopupDimensions().maxHeight,
-              overflowX: "hidden",
+              overflow: "hidden",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
             }}
             className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 flex flex-col items-center"
@@ -3752,7 +3747,7 @@ function AttendanceTracker({
                      {attendanceHistory.activity && attendanceHistory.activity.length > 0 && (
                        <div className="border border-gray-200 rounded p-2">
                          <h4 className="text-xs font-semibold text-gray-700 mb-1">Activity History</h4>
-                         <div className="space-y-1 max-h-20 overflow-y-auto pr-1">
+                         <div className="space-y-1">
                           {attendanceHistory.activity.map((activity, index) => (
                             <div key={index} className="border-l-2 border-gray-300 pl-2 py-1">
                               <div className="flex justify-between items-start text-xs">

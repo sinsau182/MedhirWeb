@@ -135,7 +135,7 @@ const EmployeeAttendance = () => {
       // Initialize summary counts from the response statusCounts
       const summaryCounts = {
         Present: attendance.statusCounts?.P || 0,
-        "Approved Leave": attendance.statusCounts?.AL || 0,
+        "Approved Leave": attendance.statusCounts?.L || 0, // Changed from AL to L
 
         "Half Day": 0, // Will be calculated from days
         "Approved half day Leave": 0, // Will be calculated from days
@@ -433,7 +433,7 @@ const EmployeeAttendance = () => {
                   {/* Approved Leave */}
                   <div className="flex flex-col bg-[#E5E5CC] p-3 rounded-lg">
                     <span className="font-medium text-yellow-800">
-                      Approved Leave (AL)
+                      Approved Leave (L)
                     </span>
                     <span className="text-2xl font-bold">
                       {monthlySummary["Approved Leave"] || 0}
@@ -834,14 +834,14 @@ const EmployeeAttendance = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Total Hours:</span>
                           <span className="text-sm font-medium">
-                            {workingHours > 0 ? `${workingHours.toFixed(1)}h` : "-"}
+                            {workingHours > 0 ? workingHours : "-"}
                           </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Leave Utilized:</span>
                           <span className="text-sm font-medium">
-                            {leaveUtilized > 0 ? (leaveUtilized % 1 === 0 ? `${leaveUtilized}h` : `${leaveUtilized.toFixed(1)}h`) : "-"}
+                            {leaveUtilized > 0 ? leaveUtilized : "-"}
                           </span>
                         </div>
                         
