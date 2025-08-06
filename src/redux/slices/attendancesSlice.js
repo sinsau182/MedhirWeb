@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getItemFromSessionStorage } from "./sessionStorageSlice";
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
-const API_BASE_URL = publicRuntimeConfig.attendanceURL + "/attendance-summary";
+const API_BASE_URL = publicRuntimeConfig.attendanceURL + "/attendance";
 
 export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
     "attendances/fetchAllEmployeeAttendanceOneMonth",
@@ -32,6 +32,33 @@ export const fetchAllEmployeeAttendanceOneMonth = createAsyncThunk(
             throw new Error("Failed to fetch attendance by employee ID");
         }
         return await response.json();
+    }
+);
+
+// Async thunk for fetching employee attendance history by date
+export const fetchEmployeeAttendanceHistory = createAsyncThunk(
+    "attendances/fetchEmployeeAttendanceHistory",
+    async ({ employeeId, year, month, day }, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            
+            const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/date/${year}/${month}/${day}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Failed to fetch attendance history");
+            }
+            return data;
+        
+        } catch (error) {
+            return rejectWithValue(error.message || "Network Error");
+        }
     }
 );
 
@@ -65,7 +92,7 @@ export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
             const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
             const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
             
-            const response = await fetch(`${API_BASE_URL}/${employeeId}/${year}/${numericMonth}`, {
+            const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/${year}/${numericMonth}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
@@ -89,6 +116,9 @@ export const attendancesSlice = createSlice({
     name: "attendances",
     initialState: {
         attendance: [],
+        attendanceHistory: null,
+        historyLoading: false,
+        historyError: null,
         loading: false,
         error: null
     },
@@ -140,6 +170,19 @@ export const attendancesSlice = createSlice({
         builder.addCase(fetchOneEmployeeAttendanceOneMonth.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload;
+        })
+        // Fetch Employee Attendance History
+        .addCase(fetchEmployeeAttendanceHistory.pending, (state) => {
+            state.historyLoading = true;
+            state.historyError = null;
+        })
+        .addCase(fetchEmployeeAttendanceHistory.fulfilled, (state, action) => {
+            state.historyLoading = false;
+            state.attendanceHistory = action.payload;
+        })
+        .addCase(fetchEmployeeAttendanceHistory.rejected, (state, action) => {
+            state.historyLoading = false;
+            state.historyError = action.payload;
         });
     }
 });
