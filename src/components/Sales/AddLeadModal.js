@@ -42,6 +42,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
   const [formData, setFormData] = useState({
     name: '',
     contactNumber: '',
+    alternateContactNumber: '',
     email: '',
     projectType: '',
     address: '',
@@ -85,6 +86,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
       setFormData({
         name: '',
         contactNumber: '',
+        alternateContactNumber: '',
         email: '',
         projectType: '',
         address: '',
@@ -139,17 +141,6 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
       newErrors.contactNumber = 'Contact number must be exactly 10 digits';
     } else if (formData.contactNumber.replace(/\D/g, '').startsWith('0')) {
       newErrors.contactNumber = 'Contact number cannot start with 0';
-    }
-
-    // Alternate phone validation
-    if (formData.alternateContactNumber.trim()) {
-      if (!/^\d{10}$/.test(formData.alternateContactNumber.replace(/\D/g, ''))) {
-        newErrors.alternateContactNumber = 'Alternate phone must be exactly 10 digits';
-      } else if (formData.alternateContactNumber.replace(/\D/g, '').startsWith('0')) {
-        newErrors.alternateContactNumber = 'Alternate phone cannot start with 0';
-      } else if (formData.alternateContactNumber.replace(/\D/g, '') === formData.contactNumber.replace(/\D/g, '')) {
-        newErrors.alternateContactNumber = 'Alternate phone cannot be same as main contact number';
-      }
     }
 
     // Email validation

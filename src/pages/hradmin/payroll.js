@@ -10,79 +10,125 @@ import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
-import { generatePayroll, getPayroll } from "@/redux/slices/payrollSlice";
 
 function PayrollManagement() {
   const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
 
   const { attendance } = useSelector((state) => state.attendances);
-  const { payroll } = useSelector((state) => state.payroll);
+
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [showCheckboxes, setShowCheckboxes] = useState(false);
-  const [selectedEmployees, setSelectedEmployees] = useState([]);
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-  const [isCalculatePayrollClicked, setIsCalculatePayrollClicked] = useState(false);
-  const [payrollErrorDetails, setPayrollErrorDetails] = useState(null);
-  const [isCalculatingPayroll, setIsCalculatingPayroll] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const currentDate = new Date();
-    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-    return latestAvailableMonth.toLocaleString("default", { month: "long" });
-  });
-  const [selectedYear, setSelectedYear] = useState(() => {
-    const currentDate = new Date();
-    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-    return latestAvailableMonth.getFullYear().toString();
-  });
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toLocaleString("default", { month: "long" })
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString()
+  );
 
-
+  const monthDays =
+    selectedMonth === "Jan"
+      ? 31
+      : selectedMonth === "Feb"
+      ? 28
+      : selectedMonth === "Mar"
+      ? 31
+      : selectedMonth === "Apr"
+      ? 30
+      : selectedMonth === "May"
+      ? 31
+      : selectedMonth === "Jun"
+      ? 30
+      : selectedMonth === "Jul"
+      ? 31
+      : selectedMonth === "Aug"
+      ? 31
+      : selectedMonth === "Sep"
+      ? 30
+      : selectedMonth === "Oct"
+      ? 31
+      : selectedMonth === "Nov"
+      ? 30
+      : selectedMonth === "Dec"
+      ? 31
+      : 30;
 
   const { employees, loading, err } = useSelector((state) => state.employees);
+  const [tdsData, setTdsData] = useState([]);
+  const [ptaxData, setPtaxData] = useState([]);
+  const [editingOvertime, setEditingOvertime] = useState(null);
+  const [overtimeValue, setOvertimeValue] = useState("");
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
   const { publicRuntimeConfig } = getConfig();
 
-  // Check if selected month is the latest available month (current month - 1)
-  const isLatestAvailableMonth = () => {
-    const currentDate = new Date();
-    const latestAvailableMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-    const latestMonth = latestAvailableMonth.toLocaleString("default", { month: "long" });
-    const latestYear = latestAvailableMonth.getFullYear().toString();
-    return selectedMonth === latestMonth && selectedYear === latestYear;
-  };
-
   const handleMonthSelection = (month, year) => {
-    // Convert short month name to full month name
-    const monthMap = {
-      "Jan": "January",
-      "Feb": "February", 
-      "Mar": "March",
-      "Apr": "April",
-      "May": "May",
-      "Jun": "June",
-      "Jul": "July",
-      "Aug": "August",
-      "Sep": "September",
-      "Oct": "October",
-      "Nov": "November",
-      "Dec": "December"
-    };
-    
-    const fullMonthName = monthMap[month] || month;
-    setSelectedMonth(fullMonthName);
+    setSelectedMonth(month);
     setSelectedYear(year);
     setIsCalendarOpen(false);
-    // Reset Calculate Payroll state when month changes
-    setIsCalculatePayrollClicked(false);
-    setShowCheckboxes(false);
-    setSelectedEmployees([]);
   };
 
+  const fetchTDS = useCallback(async () => {
+    const token = getItemFromSessionStorage("token", null);
+    const response = await fetch(
+      publicRuntimeConfig.apiURL +
+        "/tds-settings/company/" +
+        selectedCompanyId,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
+    if (response.status === 404) {
+      // Return default TDS settings when not found
+      return {
+        tdsRate: 0,
+        description: "Default TDS settings",
+      };
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch TDS");
+    }
+    return data;
+  }, [publicRuntimeConfig.apiURL, selectedCompanyId]);
+
+  const fetchPTAX = useCallback(async () => {
+    const token = getItemFromSessionStorage("token", null);
+    const response = await fetch(
+      publicRuntimeConfig.apiURL +
+        "/professional-tax-settings/company/" +
+        selectedCompanyId,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status === 404) {
+      // Return default professional tax settings when not found
+      return {
+        monthlySalaryThreshold: 25000,
+        amountAboveThreshold: 200,
+        amountBelowThreshold: 0,
+        description: "Default Professional Tax settings",
+      };
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to fetch Professional Tax");
+    }
+    return data;
+  }, [publicRuntimeConfig.apiURL, selectedCompanyId]);
 
   useEffect(() => {
     dispatch(
@@ -96,176 +142,271 @@ function PayrollManagement() {
 
   useEffect(() => {
     dispatch(fetchEmployees());
-  }, [dispatch]);
-
-  useEffect(() => {
-    // Convert month name to month number
-    const monthMap = {
-      "January": 1, "February": 2, "March": 3, "April": 4,
-      "May": 5, "June": 6, "July": 7, "August": 8,
-      "September": 9, "October": 10, "November": 11, "December": 12
+    const fetchData = async () => {
+      try {
+        setTdsData(await fetchTDS());
+        setPtaxData(await fetchPTAX());
+      } catch (error) {
+        toast.error("Failed to fetch data");
+      }
     };
-    
-    const params = {
-      companyId: selectedCompanyId,
-      year: parseInt(selectedYear),
-      month: monthMap[selectedMonth]
-    };
-    
-    dispatch(getPayroll(params));
-  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
+    fetchData();
+  }, [dispatch, fetchTDS, fetchPTAX]);
 
-  console.log(payroll);
+  const handleOvertimeEdit = (employeeId, currentValue) => {
+    setEditingOvertime(employeeId);
+    setOvertimeValue(currentValue);
+  };
 
+  const handleOvertimeSave = async (employeeId) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(
+        `http://192.168.0.200:8083/api/employees/${employeeId}/overtime`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            overtimePay: parseFloat(overtimeValue) || 0,
+          }),
+        }
+      );
 
+      if (!response.ok) {
+        throw new Error("Failed to update overtime pay");
+      }
+
+      // Refresh the employee data
+      dispatch(fetchEmployees());
+      setEditingOvertime(null);
+      setOvertimeValue("");
+    } catch (error) {
+      toast.error("Failed to update overtime pay");
+    }
+  };
+
+  const handleOvertimeCancel = () => {
+    setEditingOvertime(null);
+    setOvertimeValue("");
+  };
+
+  const handleOvertimeKeyPress = (e, employeeId) => {
+    if (e.key === "Enter") {
+      handleOvertimeSave(employeeId);
+    }
+  };
   
 
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
         <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
+          <thead className="top-0 bg-gray-50">
             <tr>
-              {showCheckboxes && (
-                <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={selectedEmployees.length === employees.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedEmployees(employees.map(emp => emp.employeeId));
-                      } else {
-                        setSelectedEmployees([]);
-                      }
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-              )}
-                            <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
-                EMPLOYEE <br /> ID
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                EMPLOYEE ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 NAME
               </th>
-              
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
-                MONTHLY <br /> CTC
-              </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 PAID DAYS
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
-                THIS MONTH <br /> SALARY
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                MONTHLY CTC
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                THIS MONTH
+              </th>
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 BASIC
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 HRA
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
-                OTHER <br /> ALLOWANCES
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                ALLOWANCE
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
-               Fuel <br /> REIMB.
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                OVERTIME PAY
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
-                Phone <br /> REIMB.
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                REIMB.
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
-                ARREARS
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                EMP. PF
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
-               EMPLOYEE <br /> PF
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                EMPR. PF
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
-                EMPLOYER <br /> PF
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                DEDUCTIONS
               </th>
-               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
-                 DEDUCTIONS
-               </th>
-               
-               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-blue-50">
-                 NET PAY
-               </th>
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                NET PAY
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
-                employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                // Find corresponding payroll data for this employee
-                const payrollItem = payroll && Array.isArray(payroll) 
-                  ? payroll.find(item => item.employeeId === employee.employeeId)
-                  : null;
-                
+                // Fix: Use new attendance response format
+                const employeeAttendance = attendance?.monthlyAttendance?.find(
+                  (record) => record.employeeId === employee.employeeId
+                );
+                // Use paidDays from the new response, fallback to 0
+                const paidDays = employeeAttendance?.paidDays ?? 0;
+
+                const basic = parseFloat(
+                  (
+                    employee.salaryDetails.basicSalary *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const hra = parseFloat(
+                  (employee.salaryDetails.hra * (paidDays / monthDays)).toFixed(
+                    0
+                  )
+                );
+                const allowance = parseFloat(
+                  (
+                    employee.salaryDetails.allowances *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const overtimePay = parseFloat(employee.overtimePay || 0);
+                const reimbursement = parseFloat(employee.reimbursement || 0);
+                const employeePF = parseFloat(
+                  (
+                    employee.salaryDetails.employeePfContribution *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const employerPF = parseFloat(
+                  (
+                    employee.salaryDetails.employerPfContribution *
+                    (paidDays / monthDays)
+                  ).toFixed(0)
+                );
+                const tds = parseFloat(
+                  (
+                    employee.salaryDetails.monthlyCtc *
+                    (tdsData.tdsRate / 100)
+                  ).toFixed(0)
+                );
+                const profTax =
+                  employee.salaryDetails.monthlyCtc >
+                  ptaxData.monthlySalaryThreshold
+                    ? ptaxData.amountAboveThreshold
+                    : 0;
+                const advanceAdjusted = parseFloat(
+                  employee.advanceAdjusted || 0
+                );
+                const deductions = parseFloat(
+                  (tds + advanceAdjusted + profTax).toFixed(0)
+                );
+                const netPay = Math.max(0, parseFloat(
+                  (
+                    basic +
+                    hra +
+                    allowance +
+                    overtimePay +
+                    reimbursement -
+                    deductions
+                  ).toFixed(0)
+                ));
+
                 return (
                   <tr key={index} className="hover:bg-gray-50">
-                    {showCheckboxes && (
-                      <td className="py-2 px-2 text-xs text-gray-600">
-                        <input
-                          type="checkbox"
-                          checked={selectedEmployees.includes(employee.employeeId)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEmployees([...selectedEmployees, employee.employeeId]);
-                            } else {
-                              setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                    )}
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       {employee.employeeId}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
+                    <td className="py-2 px-2 text-xs text-gray-600">
                       {employee.name}
                     </td>
-                   
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
-                      {payrollItem ? `₹${(payrollItem.monthlyCTC || 0).toFixed(2)}` : `₹${(employee.salaryDetails?.monthlyCtc || 0).toFixed(2)}`}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      {paidDays}
                     </td>
-                                         <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                       {payrollItem ? (payrollItem.paidDays || 0) : '0'}
-                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.thisMonthSalary || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{employee.salaryDetails.monthlyCtc}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.basicThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.monthlyCtc *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      )}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.hraThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{basic}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.otherAllowancesThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">₹{hra}</td>
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{allowance}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.fuelReimbursement || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      {editingOvertime === employee.employeeId ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={overtimeValue}
+                            onChange={(e) => setOvertimeValue(e.target.value)}
+                            onKeyPress={(e) =>
+                              handleOvertimeKeyPress(e, employee.employeeId)
+                            }
+                            className="w-24 px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter amount"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() =>
+                              handleOvertimeSave(employee.employeeId)
+                            }
+                            className="p-1 text-green-600 hover:text-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={handleOvertimeCancel}
+                            className="p-1 text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className="flex items-center gap-2 cursor-pointer hover:text-blue-600"
+                          // onClick={() =>
+                          //   handleOvertimeEdit(employee.employeeId, overtimePay)
+                          // }
+                        >
+                          ₹{overtimePay}
+                          <Pencil className="h-3 w-3 text-gray-400 hover:text-blue-600" />
+                        </div>
+                      )}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.phoneReimbursement || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{reimbursement}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.arrears || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{employeePF}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹${(payrollItem.employeePFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{employerPF}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹${(payrollItem.employerPFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{deductions || 0}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.employerPFDeduction || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
-                    </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-blue-50 font-semibold">
-                      {payrollItem ? `₹${(payrollItem.netPay || 0).toFixed(2)}` : '₹0.00'}
+                    <td className="py-2 px-2 text-xs text-gray-600">
+                      ₹{netPay || 0}
                     </td>
                   </tr>
                 );
@@ -282,22 +423,6 @@ function PayrollManagement() {
         <table className="w-full">
           <thead className="sticky top-0 bg-gray-50">
             <tr>
-              {showCheckboxes && (
-                <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={selectedEmployees.length === employees.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedEmployees(employees.map(emp => emp.employeeId));
-                      } else {
-                        setSelectedEmployees([]);
-                      }
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-              )}
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee ID
               </th>
@@ -314,13 +439,13 @@ function PayrollManagement() {
                 Employer PF
               </th>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                TDS
+              </th>
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Professional Tax
               </th>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Advance Adjusted
-              </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                Other Deduction
               </th>
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Net Deductions
@@ -330,33 +455,16 @@ function PayrollManagement() {
           <tbody className="divide-y divide-gray-200">
             {employees
               .filter((employee) =>
-                employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                employee.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => {
-                // Find corresponding payroll data for this employee
-                const payrollItem = payroll && Array.isArray(payroll) 
-                  ? payroll.find(item => item.employeeId === employee.employeeId)
-                  : null;
+                // Fix: Use new attendance response format
+                const employeeAttendance = attendance?.monthlyAttendance?.find(record => record.employeeId === employee.employeeId);
+                // Use paidDays from the new response, fallback to 0
+                const paidDays = employeeAttendance?.paidDays ?? 0;
                 
                 return (
                   <tr key={index} className="hover:bg-gray-50">
-                    {showCheckboxes && (
-                      <td className="py-2 px-2 text-xs text-gray-600">
-                        <input
-                          type="checkbox"
-                          checked={selectedEmployees.includes(employee.employeeId)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEmployees([...selectedEmployees, employee.employeeId]);
-                            } else {
-                              setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                    )}
                     <td className="py-2 px-2 text-xs text-gray-600">
                       {employee.employeeId}
                     </td>
@@ -367,22 +475,57 @@ function PayrollManagement() {
                       {employee.departmentName}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.employeePFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.employeePfContribution *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      ) || 0}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.employerPFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.employerPfContribution *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      ) || 0}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.professionalTax || 0).toFixed(2)}` : '₹0.00'}
+                      ₹
+                      {parseFloat(
+                        (
+                          employee.salaryDetails.monthlyCtc *
+                          (tdsData.tdsRate / 100)
+                        ).toFixed(0)
+                      ) || 0}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.advanceAdjusted || 0).toFixed(2)}` : '₹0.00'}
+                      ₹
+                      {employee.salaryDetails.monthlyCtc >
+                      ptaxData.monthlySalaryThreshold
+                        ? ptaxData.amountAboveThreshold
+                        : 0}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.otherDeductions || 0).toFixed(2)}` : '₹0.00'}
+                      ₹{employee.advanceAdjusted}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${((payrollItem.employeePFPerMonth || 0) + (payrollItem.employerPFPerMonth || 0) + (payrollItem.professionalTax || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
+                      ₹
+                      {parseFloat(
+                        (
+                          (employee.salaryDetails.employerPfContribution +
+                            employee.salaryDetails.employeePfContribution +
+                            employee.salaryDetails.monthlyCtc *
+                              (tdsData.tdsRate / 100) +
+                            (employee.salaryDetails.monthlyCtc >
+                            ptaxData.monthlySalaryThreshold
+                              ? ptaxData.amountAboveThreshold
+                              : 0)) *
+                          (paidDays / monthDays)
+                        ).toFixed(0)
+                      ) || 0}
                     </td>
                   </tr>
                 );
@@ -399,22 +542,6 @@ function PayrollManagement() {
         <table className="w-full">
           <thead className="sticky top-0 bg-gray-50">
             <tr>
-              {showCheckboxes && (
-                <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={selectedEmployees.length === employees.length}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedEmployees(employees.map(emp => emp.employeeId));
-                      } else {
-                        setSelectedEmployees([]);
-                      }
-                    }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                </th>
-              )}
               <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
                 Employee ID
               </th>
@@ -445,22 +572,6 @@ function PayrollManagement() {
               )
               .map((employee, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  {showCheckboxes && (
-                    <td className="py-2 px-2 text-xs text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={selectedEmployees.includes(employee.employeeId)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedEmployees([...selectedEmployees, employee.employeeId]);
-                          } else {
-                            setSelectedEmployees(selectedEmployees.filter(id => id !== employee.employeeId));
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                  )}
                   <td className="py-2 px-2 text-xs text-gray-600">
                     {employee.employeeId}
                   </td>
@@ -644,127 +755,20 @@ function PayrollManagement() {
         <div className="p-6 mt-16 h-[calc(100vh-64px)] overflow-y-auto">
           {/* Header with Search and Title */}
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-4">
-              <h1 className="text-xl font-semibold text-gray-800">
-                Payroll Management
-              </h1>
-              <button
-                disabled={!isLatestAvailableMonth() || isCalculatingPayroll}
-                onClick={async () => {
-                  if (isLatestAvailableMonth() && !isCalculatingPayroll) {
-                    setIsCalculatingPayroll(true);
-                    setPayrollErrorDetails(null); // Clear any previous errors
-                    
-                    try {
-                      console.log("Starting payroll calculation...");
-                      
-                      // Convert month name to month number
-                      const monthMap = {
-                        "January": 1, "February": 2, "March": 3, "April": 4,
-                        "May": 5, "June": 6, "July": 7, "August": 8,
-                        "September": 9, "October": 10, "November": 11, "December": 12
-                      };
-                      
-                      const requestBody = {
-                        companyId: selectedCompanyId,
-                        year: parseInt(selectedYear),
-                        month: monthMap[selectedMonth]
-                      };
-                      
-                      console.log("Calling generatePayroll API with:", requestBody);
-                      
-                      // First, generate payroll (POST request)
-                      const generateResult = await dispatch(generatePayroll(requestBody)).unwrap();
-                      console.log("Generate payroll result:", generateResult);
-                      toast.success("Payroll calculation completed!");
-                      
-                      // Then, fetch the generated payroll data (GET request)
-                      const params = {
-                        companyId: selectedCompanyId,
-                        year: parseInt(selectedYear),
-                        month: monthMap[selectedMonth]
-                      };
-                      
-                      console.log("Calling getPayroll API with:", params);
-                      
-                      const getResult = await dispatch(getPayroll(params)).unwrap();
-                      console.log("Get payroll result:", getResult);
-                      
-                      setIsCalculatePayrollClicked(true);
-                      toast.success("Payroll data loaded successfully!");
-                      
-                    } catch (error) {
-                      console.log("Payroll error:", error);
-                      
-                      // Check for different error structures
-                      const isPayrollError = 
-                        error?.status === 409 || 
-                        error?.error === "Payroll Generation Incomplete" ||
-                        error?.message?.includes("Payroll generation failed") ||
-                        error?.message?.includes("Failed to generate payroll") ||
-                        error?.validationErrors?.failedEmployeeIds;
-                      
-                      if (isPayrollError) {
-                        console.log("Showing payroll error message");
-                        console.log("Error details:", error);
-                        setPayrollErrorDetails(error);
-                      } else {
-                        console.log("Showing generic error toast");
-                        toast.error(error?.message || "Failed to process payroll");
-                      }
-                    } finally {
-                      setIsCalculatingPayroll(false);
-                    }
-                  }
-                }}
-                className={`px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                  isLatestAvailableMonth() && !isCalculatingPayroll
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
-                }`}
-              >
-                {isCalculatingPayroll ? "Calculating..." : "Calculate Payroll"}
-              </button>
-              {isCalculatePayrollClicked && isLatestAvailableMonth() && (
-                <button
-                  onClick={() => {
-                    if (showCheckboxes) {
-                      setShowConfirmationModal(true);
-                    } else {
-                      setShowCheckboxes(true);
-                      setSelectedEmployees(employees.map(emp => emp.employeeId));
-                    }
-                  }}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md font-medium text-sm transition-all duration-200 hover:bg-green-700"
-                >
-                  Send Payslip
-                </button>
-              )}
-              {showCheckboxes && (
-                <button
-                  onClick={() => {
-                    setShowCheckboxes(false);
-                    setSelectedEmployees([]);
-                  }}
-                  className="px-6 py-2 bg-red-500 text-white rounded-md font-medium text-sm transition-all duration-200 hover:bg-red-600"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
+            <h1 className="text-xl font-semibold text-gray-800">
+              Payroll Management
+            </h1>
             <div className="flex gap-4">
-              {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                </div>
-              )}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full md:w-72 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Search className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              </div>
               <div className="relative">
                 <Badge
                   variant="outline"
@@ -799,7 +803,7 @@ function PayrollManagement() {
                         "Nov",
                         "Dec",
                       ]
-                        .slice(0, new Date().getMonth())
+                        .slice(0, new Date().getMonth() + 1)
                         .map((month) => (
                           <button
                             key={month}
@@ -825,149 +829,38 @@ function PayrollManagement() {
             </div>
           </div>
 
-          {/* Payroll Error Message - Below Calculate Payroll Button */}
-          {payrollErrorDetails && (
-            <div className="mt-4">
-              <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-4">
-                <h3 className="text-lg font-semibold text-red-600 mb-3">
-                  Payroll Generation Failed
-                </h3>
-                
-                <div className="mb-3">
-                  <p className="text-gray-700 mb-1">
-                    <strong>Reason:</strong> Attendance records incomplete for {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(',').length || 0} employees.
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Complete attendance data for {selectedMonth} {selectedYear} to generate payroll.
-                  </p>
-                </div>
-                
-                <div className="mb-3">
-                  <p className="text-sm text-gray-700 mb-1">
-                    <strong>Affected Employees:</strong>
-                  </p>
-                  <div className="bg-gray-50 border border-gray-200 rounded p-2 max-h-24 overflow-y-auto">
-                    <div className="flex flex-wrap gap-1">
-                      {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(',').map((id, index) => (
-                        <span key={index} className="text-xs bg-white px-2 py-1 border rounded">
-                          {id.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      setPayrollErrorDetails(null);
-                      window.location.href = '/hradmin/attendance';
-                    }}
-                    className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                  >
-                    Go to Attendance
-                  </button>
-                  <button
-                    onClick={() => setPayrollErrorDetails(null)}
-                    className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Tabs - Only show when there's data or payroll has been calculated */}
-          {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
-            <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
-              <div className="flex min-w-max">
-                {[
-                  "Salary Statement",
-                  "Deductions",
-                  "Advance",
-                  "Reimbursement",
-                  "Payment History",
-                ].map((section) => {
-                  const isDisabled = section === "Reimbursement" || section === "Payment History";
-                  return (
-                    <button
-                      key={section}
-                      className={`px-8 py-4 text-sm font-medium transition-colors relative ${
-                        isDisabled
-                          ? "text-gray-400 cursor-not-allowed opacity-50"
-                          : selectedSection === section
-                          ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg"
-                          : "text-gray-500 hover:text-gray-700"
-                      }`}
-                      onClick={() => !isDisabled && setSelectedSection(section)}
-                      disabled={isDisabled}
-                    >
-                      {section}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
-            <>
-              {selectedSection === "Salary Statement" && renderPayrollTable()}
-              {selectedSection === "Deductions" && renderDeductionsTable()}
-              {selectedSection === "Advance" && renderAdvanceTable()}
-              {selectedSection === "Reimbursement" && renderReimbursementTable()}
-              {selectedSection === "Payment History" && renderPaymentHistoryTable()}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Confirmation Modal */}
-      {showConfirmationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Confirm Send Payslip
-              </h2>
-              <button
-                onClick={() => setShowConfirmationModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="mb-6">
-              <p className="text-gray-600 mb-4">
-                Are you sure you want to send payslips to the selected employees?
-              </p>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirmationModal(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  // Here you would typically make an API call to send payslips
-                  toast.success(`Payslips sent to ${selectedEmployees.length} employees successfully!`);
-                  setShowConfirmationModal(false);
-                  setShowCheckboxes(false);
-                  setSelectedEmployees([]);
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                Send Payslips
-              </button>
+          {/* Tabs */}
+          <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
+            <div className="flex min-w-max">
+              {[
+                "Salary Statement",
+                "Deductions",
+                "Advance",
+                "Reimbursement",
+                "Payment History",
+              ].map((section) => (
+                <button
+                  key={section}
+                  className={`px-8 py-4 text-sm font-medium transition-colors relative ${
+                    selectedSection === section
+                      ? "text-blue-600 bg-white shadow-[0_-1px_4px_rgba(0,0,0,0.1)] rounded-t-lg"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  onClick={() => setSelectedSection(section)}
+                >
+                  {section}
+                </button>
+              ))}
             </div>
           </div>
+
+          {selectedSection === "Salary Statement" && renderPayrollTable()}
+          {selectedSection === "Deductions" && renderDeductionsTable()}
+          {selectedSection === "Advance" && renderAdvanceTable()}
+          {selectedSection === "Reimbursement" && renderReimbursementTable()}
+          {selectedSection === "Payment History" && renderPaymentHistoryTable()}
         </div>
-      )}
-
-
+      </div>
     </div>
   );
 }

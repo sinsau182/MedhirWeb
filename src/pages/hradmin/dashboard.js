@@ -69,6 +69,14 @@ const Overview = () => {
       totalAbsent: 0,
     });
 
+  console.log(currentDayAttendanceSummary);
+
+  // Animation state for Total Employees card
+  const [loadingNumbers, setLoadingNumbers] = useState(true);
+  const [displayedTotal, setDisplayedTotal] = useState(0);
+  const [displayedPresent, setDisplayedPresent] = useState(0);
+  const [displayedAbsent, setDisplayedAbsent] = useState(0);
+
   const dispatch = useDispatch();
   // Update the useSelector hook
   const { employees, loading: employeesLoading } = useSelector(
@@ -79,7 +87,6 @@ const Overview = () => {
     loading: attendanceLoading,
     err: attendanceErr,
   } = useSelector((state) => state.attendances || {}); // Add attendance state
-
 
   const { publicRuntimeConfig } = getConfig();
   useEffect(() => {
@@ -104,55 +111,88 @@ const Overview = () => {
 
   // Calculate current day summary whenever attendance data changes
   useEffect(() => {
-    if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0 && employees && employees.length > 0) {
+    if (attendance && attendance.monthlyAttendance && attendance.monthlyAttendance.length > 0) {
       let presentCount = 0;
       let absentCount = 0;
       const today = new Date();
       const currentDay = today.getDate();
       
-      // Get employee IDs from both sources
-      const employeeIdsFromEmployees = employees.map(emp => emp.employeeId);
-      const employeeIdsFromAttendance = attendance.monthlyAttendance.map(emp => emp.employeeId);
-      
-      // Find common employee IDs (employees that exist in both lists)
-      const commonEmployeeIds = employeeIdsFromEmployees.filter(id => 
-        employeeIdsFromAttendance.includes(id)
-      );
-      
-      
-      // Process attendance for only the common employee IDs
+      // Process each employee's attendance for today
       attendance.monthlyAttendance.forEach((employeeRecord) => {
-        // Only process if this employee ID exists in both lists
-        if (commonEmployeeIds.includes(employeeRecord.employeeId)) {
-          if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
-            const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
-            
-            // Only count actual "Present" status as present
-            if (dayStatus === 'P') {
-              presentCount++;
-            }
-            // Count only "Absent" status as absent
-            else if (dayStatus === 'A') {
-              absentCount++;
-            }
-            // For all other statuses (L, PH, P/L, P/A, H, etc.), don't count as either present or absent
+        if (employeeRecord.days && employeeRecord.days[currentDay.toString()]) {
+          const dayStatus = employeeRecord.days[currentDay.toString()].statusCode;
+          
+          // Check if employee is present (P, AL, PH, etc.)
+          if (dayStatus === 'P' || dayStatus === 'AL' || dayStatus === 'PH' || dayStatus === 'PH/A') {
+            presentCount++;
           }
+          // Check if employee is absent (A, LOP, etc.)
+          else if (dayStatus === 'A' || dayStatus === 'LOP') {
+            absentCount++;
+          }
+          // If no status or other status, consider as absent
+          else {
+            absentCount++;
+          }
+        } else {
+          // No attendance record for today, consider as absent
+          absentCount++;
         }
       });
-
 
       setCurrentDayAttendanceSummary({
         totalPresent: presentCount,
         totalAbsent: absentCount,
       });
     } else {
-      // If no attendance data fetched or no employees, reset summary
+      // If no attendance data fetched, reset summary
       setCurrentDayAttendanceSummary({
         totalPresent: 0,
         totalAbsent: 0,
       });
     }
-  }, [attendance, employees]); // Added employees as dependency
+  }, [attendance]); // Dependency on attendance state
+
+  useEffect(() => {
+    setLoadingNumbers(true);
+    const timer = setTimeout(() => {
+      setLoadingNumbers(false);
+    }, 1000); // 1 second loading
+    return () => clearTimeout(timer);
+  }, [employees, currentDayAttendanceSummary]);
+
+  // Count up animation for numbers
+  useEffect(() => {
+    if (!loadingNumbers) {
+      let total = employees?.length ?? 0;
+      let present = currentDayAttendanceSummary.totalPresent;
+      let absent = currentDayAttendanceSummary.totalAbsent;
+      let duration = 500; // ms
+      let steps = 20;
+      let stepTime = duration / steps;
+      let i = 0;
+      let totalStep = total / steps;
+      let presentStep = present / steps;
+      let absentStep = absent / steps;
+      const interval = setInterval(() => {
+        i++;
+        setDisplayedTotal(Math.round(Math.min(total, i * totalStep)));
+        setDisplayedPresent(Math.round(Math.min(present, i * presentStep)));
+        setDisplayedAbsent(Math.round(Math.min(absent, i * absentStep)));
+        if (i >= steps) {
+          setDisplayedTotal(total);
+          setDisplayedPresent(present);
+          setDisplayedAbsent(absent);
+          clearInterval(interval);
+        }
+      }, stepTime);
+      return () => clearInterval(interval);
+    } else {
+      setDisplayedTotal(0);
+      setDisplayedPresent(0);
+      setDisplayedAbsent(0);
+    }
+  }, [loadingNumbers, employees, currentDayAttendanceSummary]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -367,7 +407,7 @@ const Overview = () => {
                       {/* Total Employees */}
                       <div className="flex flex-col items-center justify-center flex-1">
                         <span className="text-7xl font-extrabold text-gray-800 leading-tight">
-                          {employees?.length ?? 0}
+                          {displayedTotal}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
                           Total
@@ -381,7 +421,7 @@ const Overview = () => {
                           className="text-7xl font-extrabold text-green-700 leading-tight cursor-pointer hover:underline transition"
                           onClick={() => handleAttendanceCountClick("P")}
                         >
-                          {currentDayAttendanceSummary.totalPresent}
+                          {displayedPresent}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
                           Present
@@ -395,7 +435,7 @@ const Overview = () => {
                           className="text-7xl font-extrabold text-red-400 leading-tight cursor-pointer hover:underline transition"
                           onClick={() => handleAttendanceCountClick("A")}
                         >
-                          {currentDayAttendanceSummary.totalAbsent}
+                          {displayedAbsent}
                         </span>
                         <span className="text-sm text-gray-400 mt-2 tracking-wide">
                           Absent
