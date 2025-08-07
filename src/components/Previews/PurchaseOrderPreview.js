@@ -73,7 +73,6 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                             <th className="p-3 font-semibold text-gray-600">Item</th>
                             <th className="p-3 font-semibold text-gray-600">Description</th>
                             <th className="p-3 font-semibold text-gray-600 text-right">Qty</th>
-                            <th className="p-3 font-semibold text-gray-600 text-right">Rate</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -83,12 +82,11 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                                     <td className="p-3">{item.itemName || 'N/A'}</td>
                                     <td className="p-3 text-gray-600">{item.description || 'N/A'}</td>
                                     <td className="p-3 text-right">{item.quantity || 0} {item.uom || item.unit || ''}</td>
-                                    <td className="p-3 text-right">₹{(item.rate || 0).toFixed(2)}</td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="4" className="p-3 text-center text-gray-500">No items found</td>
+                                <td colSpan="3" className="p-3 text-center text-gray-500">No items found</td>
                             </tr>
                         )}
                     </tbody>

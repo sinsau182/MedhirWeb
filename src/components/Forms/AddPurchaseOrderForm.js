@@ -43,7 +43,6 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         description: 'A sample item for this PO.',
         //hsnCode: '998877',
         quantity: 2,
-        rate: 0,
         unit: 'PCS'
       }],
       attachments: []
@@ -68,7 +67,6 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         description: 'A sample item for this PO.',
         //hsnCode: '998877',
         quantity: 2,
-        rate: 0,
         unit: 'PCS'
       }],
       attachments: []
@@ -156,7 +154,6 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       description: '',
       //hsnCode: '',
       quantity: 1,
-      rate: 0,
       unit: 'PCS'
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
@@ -184,7 +181,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
   };
 
   const calculateTotals = () => {
-    const subtotal = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+    const subtotal = 0; // No rate calculation needed
     const grandTotal = subtotal;
     return { subtotal, grandTotal };
   };
@@ -234,21 +231,16 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       purchaseOrderDeliveryDate: formData.deliveryDate,
       purchaseOrderLineItems: formData.items.map(item => {
         const qty = Number(item.quantity) || 0;
-        const rate = Number(item.rate) || 0;
-        const amount = qty * rate;
         
         return {
           itemName: item.itemName,
           description: item.description,
           //hsnOrSac: item.hsnCode,
           quantity: qty,
-          uom: item.unit,
-          rate: rate,
-          amount: amount,
-          totalAmount: amount
+          uom: item.unit
         };
       }),
-      totalBeforeGST: subtotal
+      totalBeforeGST: 0
     };
 
     console.log('Purchase Order Data:', poData);
@@ -455,12 +447,11 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100">
                     <tr className="text-left text-gray-600 font-medium">
-                      <th className="p-3 w-1/4">Item</th>
-                      <th className="p-3 w-1/3">Description</th>
+                      <th className="p-3 w-1/3">Item</th>
+                      <th className="p-3 w-2/5">Description</th>
                       {/*<th className="p-3">HSN</th>*/}
                       <th className="p-3">Qty</th>
                       <th className="p-3">Unit</th>
-                      <th className="p-3">Rate</th>
                       <th className="p-3"></th>
                     </tr>
                   </thead>
@@ -476,7 +467,6 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                               {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
                           </td>
-                          <td className="p-2"><input type="number" placeholder="0.00" value={item.rate} onChange={e => handleItemChange(item.id, 'rate', parseFloat(e.target.value) || 0)} className="w-24 border border-gray-200 rounded-md p-2" /></td>
                           <td className="p-2 text-center"><button type="button" onClick={() => handleDeleteLine(index)} className="text-gray-400 hover:text-red-500"><FaTrash /></button></td>
                         </tr>
                     ))}
