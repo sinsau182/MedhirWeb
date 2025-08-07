@@ -1,5 +1,6 @@
 // src/components/ConvertLeadModal.js (Apply these changes manually)
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 // Receive leadData object containing id and initialQuote
 const ConvertLeadModal = ({ isOpen, onClose, onSubmit, leadData }) => {
@@ -56,11 +57,11 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, leadData }) => {
     e.preventDefault();
     // Validate Final Quotation and Sign-up Amount
     if (!finalQuotation || !signupAmount) {
-       alert("Please fill in Final Quotation and Sign-up Amount.");
+       toast.error("Please fill in Final Quotation and Sign-up Amount.");
        return;
     }
      if (isNaN(parseFloat(finalQuotation)) || isNaN(parseFloat(signupAmount))) {
-         alert("Quotation and Sign-up Amount must be valid numbers.");
+         toast.error("Quotation and Sign-up Amount must be valid numbers.");
          return;
      }
 

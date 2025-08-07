@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaFileAlt, FaCalendarAlt, FaDollarSign, FaExclamationTriangle, FaCheck } from "react-icons/fa";
+import { FaTimes, FaFileAlt, FaCalendarAlt, FaDollarSign, FaExclamationTriangle, FaCheck, FaUpload } from "react-icons/fa";
 import { toast } from "sonner";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchLeadById } from "@/redux/slices/leadsSlice";
+import axios from "axios";
+import getConfig from "next/config";
+import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.apiURL;
 
 const SemiContactedModal = ({ 
   isOpen, 
@@ -8,53 +16,48 @@ const SemiContactedModal = ({
   lead, 
   onSuccess
 }) => {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
-    floorPlan: "",
-    estimatedBudget: "",
+    budget: "",
     firstMeetingDate: "",
     priority: "MEDIUM"
   });
+  const [floorPlanFile, setFloorPlanFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { lead: leadData } = useSelector((state) => state.leads);
+  console.log("SemiContactedModal - Lead Data:", leadData);
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
+      dispatch(fetchLeadById(lead.leadId));
       setFormData({
-        floorPlan: "",
-        estimatedBudget: "",
+        budget: "",
         firstMeetingDate: "",
         priority: "MEDIUM"
       });
+      setFloorPlanFile(null);
       setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, lead]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Enhanced validation
-    if (!formData.floorPlan.trim()) {
-      toast.error("Please provide the floor plan");
-      return;
-    }
-    
-    if (formData.floorPlan.trim().length < 5) {
-      toast.error("Floor plan must be at least 5 characters");
-      return;
-    }
-    
-    if (formData.floorPlan.trim().length > 200) {
-      toast.error("Floor plan must be less than 200 characters");
+    if (!floorPlanFile) {
+      toast.error("Please upload a floor plan file");
       return;
     }
 
-    if (!formData.estimatedBudget.trim()) {
+    if (!formData.budget.trim()) {
       toast.error("Please provide the estimated budget");
       return;
     }
     
     // Validate budget format
-    const budgetValue = parseFloat(formData.estimatedBudget.replace(/[^\d.]/g, ''));
+    const budgetValue = parseFloat(formData.budget.replace(/[^\d.]/g, ''));
     if (isNaN(budgetValue) || budgetValue <= 0) {
       toast.error("Budget must be a valid positive number");
       return;
@@ -83,19 +86,47 @@ const SemiContactedModal = ({
     setIsSubmitting(true);
     
     try {
-      await onSuccess({
-        leadId: lead.leadId,
-        floorPlan: formData.floorPlan.trim(),
-        estimatedBudget: formData.estimatedBudget.trim(),
+      // Create FormData for multipart request
+      const formDataToSend = new FormData();
+      
+      // Prepare lead data as JSON string
+      const leadData = {
+        budget: formData.budget.trim(),
         firstMeetingDate: formData.firstMeetingDate,
         priority: formData.priority
-      });
+      };
       
-      toast.success("Lead updated successfully!");
-      onClose();
+      formDataToSend.append('leadData', JSON.stringify(leadData));
+      
+      // Add file if selected
+      if (floorPlanFile) {
+        formDataToSend.append('floorPlanFile', floorPlanFile);
+      }
+      
+      // Make API call
+      const token = getItemFromSessionStorage('token') || '';
+      const response = await axios.put(
+        `${API_BASE_URL}/leads/semi/${lead.leadId}`,
+        formDataToSend,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      if (response.status === 200) {
+        toast.success("Lead updated successfully!");
+        onClose();
+        // Call onSuccess with the updated lead data
+        if (onSuccess) {
+          await onSuccess(response.data);
+        }
+      }
     } catch (error) {
-      toast.error("Failed to update lead");
       console.error("Semi contacted update error:", error);
+      toast.error(error.response?.data?.message || "Failed to update lead");
     } finally {
       setIsSubmitting(false);
     }
@@ -105,17 +136,32 @@ const SemiContactedModal = ({
     onClose();
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Please select a valid file type (JPEG, PNG, GIF, PDF, DOC, DOCX)");
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
+      }
+      
+      setFloorPlanFile(file);
+    }
+  };
+
   const handleInputChange = (field, value) => {
     let processedValue = value;
 
     // Apply input restrictions based on field type
     switch (field) {
-      case 'floorPlan':
-        // Allow alphanumeric, spaces, and common characters
-        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 200);
-        break;
-      
-      case 'estimatedBudget':
+      case 'budget':
         // Only allow numbers and decimal point
         processedValue = value.replace(/[^\d.]/g, '');
         // Prevent multiple decimal points
@@ -188,38 +234,46 @@ const SemiContactedModal = ({
               </div>
               <div>
                 <span className="font-medium text-gray-700">Contact:</span>
-                <p className="text-gray-900">{lead?.contactNumber || "N/A"}</p>
+                <p className="text-gray-900">{leadData?.contactNumber || "N/A"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Email:</span>
-                <p className="text-gray-900">{lead?.email || "N/A"}</p>
+                <p className="text-gray-900">{leadData?.email || "N/A"}</p>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Project Type:</span>
-                <p className="text-gray-900">{lead?.projectType || "N/A"}</p>
+                <p className="text-gray-900">{leadData?.projectType || "N/A"}</p>
               </div>
             </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Floor Plan */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaFileAlt className="w-4 h-4 text-blue-600" />
-                Floor Plan *
-              </label>
-              <textarea
-                value={formData.floorPlan}
-                onChange={(e) => handleInputChange('floorPlan', e.target.value)}
-                placeholder="Describe the floor plan requirements..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white resize-none"
-                rows="3"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Provide details about the floor plan specifications
-              </p>
+                     {/* Form */}
+           <form onSubmit={handleSubmit} className="space-y-6">
+                          {/* Floor Plan File Upload */}
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                 <FaUpload className="w-4 h-4 text-green-600" />
+                 Floor Plan File *
+               </label>
+              <div className="relative">
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                />
+              </div>
+              {floorPlanFile && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700 flex items-center gap-2">
+                    <FaFileAlt className="w-4 h-4" />
+                    Selected: {floorPlanFile.name}
+                  </p>
+                </div>
+              )}
+                             <p className="text-xs text-gray-500 mt-1">
+                 Upload floor plan file (JPEG, PNG, GIF, PDF, DOC, DOCX, max 5MB) - Required
+               </p>
             </div>
 
             {/* Estimated Budget */}
@@ -230,8 +284,8 @@ const SemiContactedModal = ({
               </label>
               <input
                 type="text"
-                value={formData.estimatedBudget}
-                onChange={(e) => handleInputChange('estimatedBudget', e.target.value)}
+                value={formData.budget}
+                onChange={(e) => handleInputChange('budget', e.target.value)}
                 placeholder="Enter estimated budget (e.g., ₹50,00,000)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
                 required
@@ -283,13 +337,13 @@ const SemiContactedModal = ({
             {/* Summary */}
             <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <h4 className="font-medium text-orange-800 mb-2">Update Summary</h4>
-              <div className="text-sm text-orange-700 space-y-1">
-                <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                <p><strong>Floor Plan:</strong> {formData.floorPlan ? "Provided" : "Not provided"}</p>
-                <p><strong>Budget:</strong> {formData.estimatedBudget || "Not specified"}</p>
-                <p><strong>Meeting Date:</strong> {formData.firstMeetingDate ? new Date(formData.firstMeetingDate).toLocaleString() : "Not scheduled"}</p>
-                <p><strong>Priority:</strong> {formData.priority}</p>
-              </div>
+                             <div className="text-sm text-orange-700 space-y-1">
+                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
+                 <p><strong>Floor Plan File:</strong> {floorPlanFile ? floorPlanFile.name : "Not uploaded"}</p>
+                 <p><strong>Budget:</strong> {formData.budget || "Not specified"}</p>
+                 <p><strong>Meeting Date:</strong> {formData.firstMeetingDate ? new Date(formData.firstMeetingDate).toLocaleString() : "Not scheduled"}</p>
+                 <p><strong>Priority:</strong> {formData.priority}</p>
+               </div>
             </div>
           </form>
         </div>
@@ -307,7 +361,7 @@ const SemiContactedModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.floorPlan.trim() || !formData.estimatedBudget.trim() || !formData.firstMeetingDate}
+                         disabled={isSubmitting || !floorPlanFile || !formData.budget.trim() || !formData.firstMeetingDate}
             className="px-6 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
           >
             {isSubmitting ? (

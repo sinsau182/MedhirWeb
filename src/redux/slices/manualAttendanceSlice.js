@@ -8,14 +8,18 @@ export const markManualAttendance = createAsyncThunk(
   "manualAttendance/markManualAttendance",
   async (attendanceData, { rejectWithValue }) => {
     try {
+      // Get the HR employee ID from session storage
+      const hrEmployeeId = sessionStorage.getItem("employeeId");
+      
+      // Use the new API endpoint with HR employee ID in the URL path
       const response = await fetch(
-        `${publicRuntimeConfig.attendanceURL}/attendance-summary/employee/manual-bulk-checkin`,
+        `${publicRuntimeConfig.attendanceURL}/attendance/bulk-employee/${hrEmployeeId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(attendanceData),
+          body: JSON.stringify(attendanceData), // Keep the original payload structure
         }
       );
 
@@ -46,14 +50,18 @@ export const markSingleEmployeeMonthAttendance = createAsyncThunk(
   "manualAttendance/markSingleEmployeeMonthAttendance",
   async (attendanceData, { rejectWithValue }) => {
     try {
+      // Get the HR employee ID from session storage
+      const hrEmployeeId = sessionStorage.getItem("employeeId");
+      
+      // Use the new API endpoint with HR employee ID in the URL path
       const response = await fetch(
-        `${publicRuntimeConfig.attendanceURL}/attendance-summary/employee/manual-bulk-checkin`,
+        `${publicRuntimeConfig.attendanceURL}/attendance/bulk-employee/${hrEmployeeId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(attendanceData),
+          body: JSON.stringify(attendanceData), // Keep the original payload structure
         }
       );
 
@@ -75,14 +83,18 @@ export const markAllEmployeesDateAttendance = createAsyncThunk(
   "manualAttendance/markAllEmployeesDateAttendance",
   async (attendanceData, { rejectWithValue }) => {
     try {
+      // Get the HR employee ID from session storage
+      const hrEmployeeId = sessionStorage.getItem("employeeId");
+      
+      // Use the new API endpoint with HR employee ID in the URL path
       const response = await fetch(
-        `${publicRuntimeConfig.attendanceURL}/attendance-summary/date/bulk-attendance`,
+        `${publicRuntimeConfig.attendanceURL}/attendance/bulk-date/${hrEmployeeId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(attendanceData),
+          body: JSON.stringify(attendanceData), // Keep the original payload structure
         }
       );
 

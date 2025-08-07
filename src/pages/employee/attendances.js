@@ -135,8 +135,8 @@ const EmployeeAttendance = () => {
       // Initialize summary counts from the response statusCounts
       const summaryCounts = {
         Present: attendance.statusCounts?.P || 0,
-        "Approved Leave": attendance.statusCounts?.AL || 0,
-        "Present on Holiday": 0, // Will be calculated from days
+        "Approved Leave": attendance.statusCounts?.L || 0, // Changed from AL to L
+
         "Half Day": 0, // Will be calculated from days
         "Approved half day Leave": 0, // Will be calculated from days
         "On Leave": 0,
@@ -181,10 +181,7 @@ const EmployeeAttendance = () => {
             case "W":
               fullStatus = "Weekend";
               break;
-            case "PH":
-              fullStatus = "Present on Holiday";
-              leaveType = "On Holiday";
-              break;
+
             case "P/A":
               fullStatus = "Half Day";
               leaveType = "Half Day";
@@ -211,7 +208,7 @@ const EmployeeAttendance = () => {
         });
 
         // Update summary counts for statuses that need to be calculated from days
-        if (fullStatus === "Present on Holiday" || fullStatus === "Half Day" || 
+        if (fullStatus === "Half Day" || 
             fullStatus === "Approved half day Leave") {
           summaryCounts[fullStatus] = (summaryCounts[fullStatus] || 0) + 1;
         }
@@ -219,7 +216,10 @@ const EmployeeAttendance = () => {
       setAttendanceData(formattedData);
       setMonthlySummary(summaryCounts);
     } else if (error && prevErrorRef.current !== error) {
-      toast.error(`Failed to fetch attendance data: ${error}`);
+      // Don't show toast for 404 errors (no data found)
+      if (!error.includes('404')) {
+        toast.error(`Failed to fetch attendance data: ${error}`);
+      }
       prevErrorRef.current = error;
       setAttendanceData([]);
       setMonthlySummary({});
@@ -286,8 +286,8 @@ const EmployeeAttendance = () => {
       const day = String(selectedDate.getDate()).padStart(2, "0");
       const formattedDate = `${year}-${month}-${day}`;
 
-      // Construct the URL in the new format: /employee/{employeeId}/month/{monthShortName}/year/{fullYear}
-      const url = `${API_BASE_URL}/employee/daily/${employeeId}/${formattedDate}`;
+      // Construct the URL in the new format: /attendance/employee/{employeeId}/date/{year}/{month}/{day}
+      const url = `${API_BASE_URL}/attendance/employee/${employeeId}/date/${year}/${parseInt(month)}/${parseInt(day)}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -297,6 +297,11 @@ const EmployeeAttendance = () => {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          // Handle 404 gracefully - no data found, set empty data
+          setDailyAttendanceData(null);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -324,7 +329,10 @@ const EmployeeAttendance = () => {
         return updatedData;
       });
     } catch (error) {
-      toast.error(`Failed to fetch attendance data: ${error.message}`);
+      // Don't show toast for 404 errors (no data found)
+      if (!error.message.includes('404')) {
+        toast.error(`Failed to fetch attendance data: ${error.message}`);
+      }
     }
   };
 
@@ -332,18 +340,8 @@ const EmployeeAttendance = () => {
   const handleDateClick = (day) => {
     setDate(day);
     
-    // Find attendance data for the selected date
-    const selectedDayData = attendanceData.find(
-      (d) => d.date.toDateString() === day.toDateString()
-    );
-    
-    // Only fetch daily attendance data for present dates
-    if (selectedDayData && (selectedDayData.status === "Present" || selectedDayData.status === "Approved half day Leave")) {
-      fetchAttendanceData(day);
-    } else {
-      // Clear daily attendance data for non-present dates
-      setDailyAttendanceData(null);
-    }
+    // Fetch daily attendance data for all dates (not just present dates)
+    fetchAttendanceData(day);
   };
 
   const calendarDays = generateCalendarDays();
@@ -435,7 +433,7 @@ const EmployeeAttendance = () => {
                   {/* Approved Leave */}
                   <div className="flex flex-col bg-[#E5E5CC] p-3 rounded-lg">
                     <span className="font-medium text-yellow-800">
-                      Approved Leave (AL)
+                      Approved Leave (L)
                     </span>
                     <span className="text-2xl font-bold">
                       {monthlySummary["Approved Leave"] || 0}
@@ -475,15 +473,7 @@ const EmployeeAttendance = () => {
                       {monthlySummary["Holiday"] || 0}
                     </span>
                   </div>
-                  {/* Present on Holiday */}
-                  <div className="flex flex-col bg-[#5cbf85] p-3 rounded-lg">
-                    <span className="font-medium text-white">
-                      Present on Holiday (PH)
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {monthlySummary["Present on Holiday"] || 0}
-                    </span>
-                  </div>
+
 
                 </div>
               </div>
@@ -682,10 +672,7 @@ const EmployeeAttendance = () => {
                             bgColorClass =
                               "bg-[#E0E0E0] hover:bg-[#D4D4D4] text-gray-700";
                             break;
-                          case "Present on Holiday":
-                            bgColorClass =
-                              "bg-[#5cbf85] hover:bg-[#4CAF50] text-white";
-                            break;
+
                           case "Half Day on Holiday":
                             bgColorClass =
                               "bg-[#ffcc80] hover:bg-[#FFB74D] text-orange-800";
@@ -786,6 +773,13 @@ const EmployeeAttendance = () => {
                     const checkOutTime = isPresentDate ? attendanceDataForDate?.lastCheckout : null;
                     const workingHoursTillNow = isPresentDate ? attendanceDataForDate?.workingHoursTillNow : null;
                     
+                    // Get new API response fields
+                    const firstCheckIn = attendanceDataForDate?.firstCheckIn;
+                    const lastCheckOut = attendanceDataForDate?.lastCheckOut;
+                    const workingHours = attendanceDataForDate?.workingHours || 0.0;
+                    const isHoliday = attendanceDataForDate?.holiday || false;
+                    const leaveUtilized = attendanceDataForDate?.leaveUtilized || 0.0;
+                    
                     // Determine if employee is currently checked in (has latest check-in after last check-out)
                     const isCurrentlyCheckedIn = isPresentDate && 
                       attendanceDataForDate?.latestCheckin && 
@@ -793,7 +787,7 @@ const EmployeeAttendance = () => {
                       new Date(attendanceDataForDate.latestCheckin) > new Date(attendanceDataForDate.lastCheckout);
 
                     return (
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Status:</span>
                           <span
@@ -808,8 +802,6 @@ const EmployeeAttendance = () => {
                                 ? "bg-[#FFFFCC] text-yellow-800"
                                 : status === "Holiday"
                                 ? "bg-[#E0E0E0] text-gray-700"
-                                : status === "Present on Holiday"
-                                ? "bg-[#5cbf85] text-white"
                                 : status === "Approved half day Leave"
                                 ? "bg-[#ffcc80] text-orange-800"
                                 : status === "No Data"
@@ -820,53 +812,43 @@ const EmployeeAttendance = () => {
                             {status}
                           </span>
                         </div>
+                        
                         <div className="flex justify-between items-center">
                           <span className="text-sm flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-blue-500" /> Check In
+                            <Clock className="h-4 w-4 text-gray-500" /> First Check In
                           </span>
-                          <span>
-                            {isPresentDate && checkInTime
-                              ? formatTime(checkInTime)
-                              : checkinTimes?.[0]
-                              ? formatTime(checkinTimes[0])
-                              : "-"}
+                          <span className="text-sm">
+                            {firstCheckIn ? formatTime(firstCheckIn) : "-"}
                           </span>
                         </div>
+                        
                         <div className="flex justify-between items-center">
                           <span className="text-sm flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-blue-500" /> Check
-                            Out
+                            <Clock className="h-4 w-4 text-gray-500" /> Last Check Out
                           </span>
-                          <span className="flex items-center gap-1">
-                            {isPresentDate && isCurrentlyCheckedIn ? (
-                              <>
-                                <Play className="h-4 w-4 text-green-500 animate-pulse" />
-                                <span className="text-green-600 font-medium">Running</span>
-                              </>
-                            ) : isPresentDate && checkOutTime ? (
-                              formatTime(checkOutTime)
-                            ) : checkoutTimes?.[0] ? (
-                              formatTime(checkoutTimes[0])
-                            ) : (
-                              "-"
-                            )}
+                          <span className="text-sm">
+                            {lastCheckOut ? formatTime(lastCheckOut) : "-"}
                           </span>
                         </div>
+                        
                         <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Total Hours:</span>
                           <span className="text-sm font-medium">
-                            Total Working Hours:
+                            {workingHours > 0 ? workingHours : "-"}
                           </span>
-                          <span>
-                            {isPresentDate && workingHoursTillNow ? (
-                              isCurrentlyCheckedIn ? (
-                                formatLiveWorkingHours(workingHoursTillNow, attendanceDataForDate?.latestCheckin)
-                              ) : (
-                                // For past days or when not currently checked in, show workingHoursTillNow in xh ym format
-                                formatWorkingHoursString(workingHoursTillNow)
-                              )
-                            ) : (
-                              `${totalWorkingHours}h`
-                            )}
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Leave Utilized:</span>
+                          <span className="text-sm font-medium">
+                            {leaveUtilized > 0 ? leaveUtilized : "-"}
+                          </span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Holiday:</span>
+                          <span className="text-sm">
+                            {isHoliday ? "Yes" : "No"}
                           </span>
                         </div>
                       </div>

@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllEmployeeAttendanceOneMonth,
   fetchOneEmployeeAttendanceOneMonth,
+  fetchEmployeeAttendanceHistory,
 } from "@/redux/slices/attendancesSlice";
 import {
   markSingleEmployeeMonthAttendance,
@@ -19,6 +20,7 @@ import {
   clearError,
   clearSuccess,
 } from "@/redux/slices/manualAttendanceSlice";
+import { fetchPayrollSettings } from "@/redux/slices/payrollSettingsSlice";
 import { toast } from "sonner";
 import AttendanceTable from "./AttendanceTable";
 import LeaveTable from "./LeaveTable";
@@ -49,7 +51,7 @@ function AttendanceTracker({
 }) {
   const dispatch = useDispatch();
 
-  const { attendance, loading, err } = useSelector(
+  const { attendance, attendanceHistory, historyLoading, historyError, loading, err } = useSelector(
     (state) => state.attendances
   );
 
@@ -59,6 +61,8 @@ function AttendanceTracker({
     success: manualAttendanceSuccess,
     message: manualAttendanceMessage,
   } = useSelector((state) => state.manualAttendance);
+
+  const { settings: payrollSettings } = useSelector((state) => state.payrollSettings);
 
   // State variables
   const [searchInput, setSearchInput] = useState("");
@@ -121,6 +125,7 @@ function AttendanceTracker({
   });
   const cellPopoverAnchorRef = useRef(null);
   const [popoverOpenCell, setPopoverOpenCell] = useState(null);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
   // Ref to track if we're currently fetching employee data
   const isFetchingEmployeeDataRef = useRef(false);
@@ -235,7 +240,6 @@ function AttendanceTracker({
   const statusOptions = [
     { value: "P", label: "Present", color: "#CCFFCC" },
     { value: "L", label: "Approved Leave", color: "#E5E5CC" },
-    { value: "PH", label: "Present on Holiday", color: "#5cbf85" },
     { value: "P/A", label: "Half Day", color: "#FFFFCC" },
     { value: "P/L", label: "Approved half day Leave", color: "#ffcc80" },
     { value: "A", label: "Absent", color: "#FFCCCC" },
@@ -369,6 +373,7 @@ function AttendanceTracker({
     }
   }, [selectedMonth, selectedYear]);
 
+  // Call API on component mount with initial date
   useEffect(() => {
     // Convert month name to numeric month (1-12)
     const monthIndex = new Date(
@@ -377,20 +382,8 @@ function AttendanceTracker({
     const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
     const year = selectedYear;
 
-    const today = new Date();
-    const currentDay = today.getDate();
-
     // Prepare API parameters
-    let apiParams = { month: numericMonth, year, role };
-
-    // If no date is selected, use current date
-    let dateToUse = selectedDate;
-    if (dateToUse === null) {
-      dateToUse = currentDay;
-    }
-
-    // Add date parameter
-    apiParams.date = dateToUse;
+    let apiParams = { month: numericMonth, year, role, date: selectedDate };
 
     // Add status filter if any statuses are selected
     if (selectedStatuses.length > 0) {
@@ -424,26 +417,27 @@ function AttendanceTracker({
     dispatch,
   ]);
 
-  useEffect(() => {
-    // Refresh attendance data when both modals are closed (returning to Attendance Tracker)
-    if (!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen) {
-      // Convert month name to numeric month (1-12)
-      const monthIndex = new Date(
-        `${selectedMonth} 1, ${selectedYear}`
-      ).getMonth();
-      const numericMonth = monthIndex + 1;
-      const year = selectedYear;
-      let apiParams = { month: numericMonth, year, role };
-      dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
-    }
-  }, [
-    isSingleEmployeeModalOpen,
-    isAllEmployeesDateModalOpen,
-    selectedMonth,
-    selectedYear,
-    role,
-    dispatch,
-  ]);
+  // Remove automatic API call when modals are closed - only call when date is selected
+  // useEffect(() => {
+  //   // Refresh attendance data when both modals are closed (returning to Attendance Tracker)
+  //   if (!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen) {
+  //     // Convert month name to numeric month (1-12)
+  //     const monthIndex = new Date(
+  //       `${selectedMonth} 1, ${selectedYear}`
+  //     ).getMonth();
+  //     const numericMonth = monthIndex + 1;
+  //     const year = selectedYear;
+  //     let apiParams = { month: numericMonth, year, role };
+  //     dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+  //   }
+  // }, [
+  //   isSingleEmployeeModalOpen,
+  //   isAllEmployeesDateModalOpen,
+  //   selectedMonth,
+  //   selectedYear,
+  //   role,
+  //   dispatch,
+  // ]);
 
   // Close cell popover when switching views or opening modals
   useEffect(() => {
@@ -456,6 +450,55 @@ function AttendanceTracker({
       setPopoverOpenCell(null);
     }
   }, [isSingleEmployeeModalOpen, isAllEmployeesDateModalOpen, activeTab]);
+
+  // Handle window resize to reposition popup if needed
+  useEffect(() => {
+    const handleResize = () => {
+      if (cellPopoverOpen && cellPopoverAnchorRef.current) {
+        // Reposition popup on window resize
+        const cellRect = cellPopoverAnchorRef.current.getBoundingClientRect();
+        const popoverWidth = getPopupDimensions().width;
+        const popoverHeight = getPopupDimensions().maxHeight;
+        const minMargin = 16;
+        
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        let left = cellRect.left + (cellRect.width / 2) - (popoverWidth / 2);
+        let top = cellRect.top - popoverHeight - 8;
+        
+        // Adjust position if needed
+        if (top < minMargin) {
+          top = cellRect.bottom + 8;
+        }
+        if (top + popoverHeight > viewportHeight - minMargin) {
+          top = cellRect.top - (popoverHeight / 2) - 8;
+        }
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + popoverWidth > viewportWidth - minMargin) {
+          left = viewportWidth - popoverWidth - minMargin;
+        }
+        
+        setCellPopoverPosition({ top, left });
+      }
+    };
+
+    const handleClickOutside = (event) => {
+      if (cellPopoverOpen && !event.target.closest('[data-cell-popover]') && !event.target.closest('[data-employee]')) {
+        closePopover();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [cellPopoverOpen]);
 
   // Fetch employee attendance data when month/year changes in Single Employee modal
   useEffect(() => {
@@ -641,11 +684,12 @@ function AttendanceTracker({
         );
       }
 
+      // If no attendance record found, return employee data with empty attendance
       if (!attendanceRecord) {
         return {
-          id: employee.employeeId,
-          name: employee.name,
-          department: employee.departmentName,
+          id: employee.employeeId || employee.id,
+          name: employee.employeeName || employee.name,
+          department: employee.departmentName || employee.department,
           p_twd: "0/0",
           attendance: Array(dates.length).fill({ value: null, label: null }),
         };
@@ -739,9 +783,6 @@ function AttendanceTracker({
             case "H":
               value = "holiday";
               break;
-            case "PH":
-              value = "holiday";
-              break;
             case "P/L":
               value = "half";
               break;
@@ -752,10 +793,10 @@ function AttendanceTracker({
         });
 
       return {
-        id: employee.employeeId,
-        name: employee.name,
-        department: employee.departmentName,
-        p_twd: `${attendanceRecord.payableDays || 0}/${
+        id: employee.employeeId || employee.id,
+        name: employee.employeeName || employee.name,
+        department: employee.departmentName || employee.department,
+        p_twd: `${attendanceRecord.paidDays || 0}/${
           attendanceRecord.workingDays || 0
         }`,
         attendance: attendanceArray,
@@ -803,7 +844,6 @@ function AttendanceTracker({
     if (upperStatus === "P/A") return "bg-[#FFFFCC]";
     if (upperStatus === "A") return "bg-[#FFCCCC]";
     if (upperStatus === "H") return "bg-[#E0E0E0]";
-    if (upperStatus === "PH") return "bg-[#5cbf85]";
     if (upperStatus === "P/L") return "bg-[#ffcc80]";
     if (upperStatus === "WEEKEND") return "bg-gray-300";
     return "";
@@ -820,7 +860,27 @@ function AttendanceTracker({
   const handleDateClick = useCallback((day) => {
     setSelectedDate((prevDate) => (prevDate === day ? null : day));
     setSelectedEmployeeId(null);
-  }, []);
+    
+    // Call API when a date is selected
+    if (day) {
+      // Convert month name to numeric month (1-12)
+      const monthIndex = new Date(
+        `${selectedMonth} 1, ${selectedYear}`
+      ).getMonth();
+      const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
+      const year = selectedYear;
+
+      // Prepare API parameters
+      let apiParams = { month: numericMonth, year, role, date: day };
+
+      // Add status filter if any statuses are selected
+      if (selectedStatuses.length > 0) {
+        apiParams.status = selectedStatuses.join(",");
+      }
+
+      dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+    }
+  }, [selectedMonth, selectedYear, selectedStatuses, role, dispatch]);
 
   const toggleDepartment = useCallback((department) => {
     setSelectedDepartments((prev) =>
@@ -889,23 +949,29 @@ function AttendanceTracker({
     return r * 0.299 + g * 0.587 + b * 0.114 > 186;
   }
 
-  // Memoized values
+  // Memoized values - Use monthlyAttendance from API response instead of employees prop
   const filteredEmployees = useMemo(
-    () =>
-      employees
+    () => {
+      // Use monthlyAttendance from API response if available, otherwise fallback to employees prop
+      const employeeList = attendance?.monthlyAttendance || employees;
+      
+      return employeeList
         .filter(
-          (employee) =>
-            employee.name.toLowerCase().includes(searchInput.toLowerCase()) ||
-            employee.employeeId
-              .toLowerCase()
-              .includes(searchInput.toLowerCase()) ||
-            (employee.departmentName &&
-              employee.departmentName
-                .toLowerCase()
-                .includes(searchInput.toLowerCase()))
+          (employee) => {
+            const name = employee.employeeName || employee.name || "";
+            const employeeId = employee.employeeId || employee.id || "";
+            const department = employee.departmentName || employee.department || "";
+            
+            return (
+              name.toLowerCase().includes(searchInput.toLowerCase()) ||
+              employeeId.toLowerCase().includes(searchInput.toLowerCase()) ||
+              department.toLowerCase().includes(searchInput.toLowerCase())
+            );
+          }
         )
-        .map(generateAttendanceData),
-    [searchInput, employees, generateAttendanceData]
+        .map(generateAttendanceData);
+    },
+    [searchInput, attendance, employees, generateAttendanceData]
   );
 
   // Load existing data when All Employees Date modal opens
@@ -965,16 +1031,19 @@ function AttendanceTracker({
 
   const departmentOptions = useMemo(() => {
     const departments = new Set();
-    employees.forEach((employee) => {
-      if (employee.departmentName) {
-        departments.add(employee.departmentName);
+    const employeeList = attendance?.monthlyAttendance || employees;
+    
+    employeeList.forEach((employee) => {
+      const department = employee.departmentName || employee.department;
+      if (department) {
+        departments.add(department);
       }
     });
     return Array.from(departments).map((dept) => ({
       value: dept,
       label: dept,
     }));
-  }, [employees]);
+  }, [attendance, employees]);
 
   // Single Employee Month Modal Functions
   const generateMonthDates = useCallback((month, year) => {
@@ -1011,6 +1080,14 @@ function AttendanceTracker({
   };
 
   const setDayStatus = (day, status) => {
+    // Check if this date is outside the editable range
+    const dateString = `${monthYear.year}-${String(new Date(`${monthYear.month} 1, ${monthYear.year}`).getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    
+    if (!isDateEditable(dateString)) {
+      toast.error("Cannot edit dates outside the editable range");
+      return;
+    }
+    
     setMonthAttendanceData((prev) => ({
       ...prev,
       [day]: status,
@@ -1023,11 +1100,12 @@ function AttendanceTracker({
       return;
     }
 
-    // Build dateStatusMap for all days
+    // Build dateStatusMap for only changed days
     const dateStatusMap = {};
     const monthIndex = new Date(
       `${monthYear.month} 1, ${monthYear.year}`
     ).getMonth();
+    
     Object.entries(monthAttendanceData).forEach(([day, status]) => {
       if (status) {
         // Format date without timezone issues
@@ -1035,9 +1113,27 @@ function AttendanceTracker({
           2,
           "0"
         )}-${String(parseInt(day)).padStart(2, "0")}`;
+        
+        // Only include if status has changed from original
+        const originalStatus = originalMonthAttendanceData[day];
+        if (status !== originalStatus) {
         dateStatusMap[date] = status;
+        }
       }
     });
+
+    // Check if there are any changes
+    if (Object.keys(dateStatusMap).length === 0) {
+      toast.error("No changes detected");
+      return;
+    }
+
+    // Check if any dates are outside the editable range
+    const invalidDates = Object.keys(dateStatusMap).filter(date => !isDateEditable(date));
+    if (invalidDates.length > 0) {
+      toast.error(`Cannot save changes for dates outside editable range: ${invalidDates.join(', ')}`);
+      return;
+    }
 
     const payload = buildManualAttendancePayload(
       selectedEmployeeForMonth.id,
@@ -1091,6 +1187,12 @@ function AttendanceTracker({
   };
 
   const setEmployeeStatus = (employeeId, status) => {
+    // Check if the selected date is outside the editable range
+    if (selectedDateForAll && !isDateEditable(selectedDateForAll)) {
+      toast.error("Cannot edit attendance for dates outside the editable range");
+      return;
+    }
+    
     setAllEmployeesAttendanceData((prev) => ({
       ...prev,
       [employeeId]: status,
@@ -1122,23 +1224,33 @@ function AttendanceTracker({
       return;
     }
 
-    // Prepare data in new API format
+    // Check if the selected date is outside the editable range
+    if (!isDateEditable(dateToUse)) {
+      toast.error("Cannot mark attendance for dates outside editable range (current month + previous month only)");
+      return;
+    }
+
+    // Prepare data in new API format - only changed statuses
     const employeeStatuses = [];
 
     Object.entries(allEmployeesAttendanceData).forEach(
       ([employeeId, status]) => {
         if (status) {
+          // Only include if status has changed from original
+          const originalStatus = originalAllEmployeesAttendanceData[employeeId];
+          if (status !== originalStatus) {
           employeeStatuses.push({
             employeeId,
             statusCode: status,
           });
+          }
         }
       }
     );
 
-    // If no employees are marked, show error
+    // If no employees are marked or no changes detected, show error
     if (employeeStatuses.length === 0) {
-      toast.error("Please mark attendance for at least one employee");
+      toast.error("No changes detected. Please mark attendance for at least one employee or make changes to existing attendance.");
       return;
     }
 
@@ -1209,7 +1321,6 @@ function AttendanceTracker({
       let totalAbsent = 0;
       let totalHalfDay = 0;
       let totalHoliday = 0;
-      let totalPresentOnHoliday = 0;
       let totalHalfDayOnHoliday = 0;
       let totalApprovedLeave = 0;
 
@@ -1246,9 +1357,6 @@ function AttendanceTracker({
               case "H":
                 totalHoliday++;
                 break;
-              case "PH":
-                totalPresentOnHoliday++;
-                break;
               case "P/L":
                 totalHalfDayOnHoliday++;
                 break;
@@ -1273,9 +1381,6 @@ function AttendanceTracker({
                 case "H":
                   totalHoliday++;
                   break;
-                case "PH":
-                  totalPresentOnHoliday++;
-                  break;
                 case "P/L":
                   totalHalfDayOnHoliday++;
                   break;
@@ -1290,7 +1395,6 @@ function AttendanceTracker({
         totalAbsent,
         totalHalfDay,
         totalHoliday,
-        totalPresentOnHoliday,
         totalHalfDayOnHoliday,
         totalApprovedLeave,
       };
@@ -1345,12 +1449,34 @@ function AttendanceTracker({
 
   // Handler to open popover from AttendanceTable
   const handleCellClick = (employee, date, status, event) => {
-    setCellPopoverEmployee(employee);
+    // Edge case: Check if employee and date are valid
+    if (!employee || !employee.id || !date) {
+      console.warn("Invalid employee or date data");
+      return;
+    }
+
+    // Edge case: Check if event target exists
+    if (!event || !event.target) {
+      console.warn("Invalid event target");
+      return;
+    }
+
+    setCellPopoverEmployee({
+      ...employee,
+      originalStatus: status // Store the original status for comparison
+    });
     setCellPopoverDate(date);
     setCellPopoverStatus(status);
     setCellPopoverOpen(true);
     setPopoverOpenCell(`${employee.id}-${date}`);
-    // Position popover just above the clicked cell button, centered horizontally
+    
+    // Reset history state when opening new popup
+    setIsHistoryExpanded(false);
+    
+    // Prevent background scrolling when popup is open
+    document.body.style.overflow = 'hidden';
+    
+    // Position popover with viewport-aware positioning
     const cellRect = event.target.getBoundingClientRect();
     const tableContainer = document.getElementById(
       "attendance-table-container"
@@ -1359,31 +1485,201 @@ function AttendanceTracker({
     if (tableContainer) {
       containerRect = tableContainer.getBoundingClientRect();
     }
-    // Default popover size
-    const popoverWidth = 320;
-    const popoverHeight = 180;
-    // Calculate left so popover is centered above the cell
-    let left =
-      cellRect.left -
-      containerRect.left +
-      cellRect.width / 2 -
-      popoverWidth / 2;
-    // Calculate top so popover is just above the cell
-    let top = cellRect.top - containerRect.top - popoverHeight - 8;
-    // If not enough space above, show below
-    if (top < 0) {
-      top = cellRect.bottom - containerRect.top + 8;
+    
+    // Dynamic popover size based on content and viewport
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const minMargin = 24; // Increased margin for better spacing
+    
+    // Calculate optimal popup size based on viewport
+    const maxPopupWidth = Math.min(450, viewportWidth - (minMargin * 2));
+    const maxPopupHeight = Math.min(500, viewportHeight - (minMargin * 2));
+    
+    // Try multiple positioning strategies with dynamic sizing
+    let left, top;
+    const strategies = [
+      // Strategy 1: Center of viewport (most reliable)
+      () => ({
+        left: (viewportWidth - maxPopupWidth) / 2,
+        top: (viewportHeight - maxPopupHeight) / 2
+      }),
+      // Strategy 2: Above the cell, centered
+      () => ({
+        left: cellRect.left + (cellRect.width / 2) - (maxPopupWidth / 2),
+        top: Math.max(minMargin, cellRect.top - maxPopupHeight - 8)
+      }),
+      // Strategy 3: Below the cell, centered
+      () => ({
+        left: cellRect.left + (cellRect.width / 2) - (maxPopupWidth / 2),
+        top: Math.min(viewportHeight - maxPopupHeight - minMargin, cellRect.bottom + 8)
+      }),
+      // Strategy 4: Right of the cell
+      () => ({
+        left: Math.min(viewportWidth - maxPopupWidth - minMargin, cellRect.right + 8),
+        top: cellRect.top + (cellRect.height / 2) - (maxPopupHeight / 2)
+      }),
+      // Strategy 5: Left of the cell
+      () => ({
+        left: Math.max(minMargin, cellRect.left - maxPopupWidth - 8),
+        top: cellRect.top + (cellRect.height / 2) - (maxPopupHeight / 2)
+      })
+    ];
+
+    // Try each strategy until we find one that fits
+    for (const strategy of strategies) {
+      const position = strategy();
+      left = position.left;
+      top = position.top;
+      
+      // Check if this position works
+      if (left >= minMargin && 
+          top >= minMargin && 
+          left + maxPopupWidth <= viewportWidth - minMargin && 
+          top + maxPopupHeight <= viewportHeight - minMargin) {
+        break;
+      }
     }
-    // Clamp left to container bounds
-    left = Math.max(8, Math.min(left, containerRect.width - popoverWidth - 8));
+    
+    // Final safety check: ensure popup is always within viewport
+    left = Math.max(minMargin, Math.min(left, viewportWidth - maxPopupWidth - minMargin));
+    top = Math.max(minMargin, Math.min(top, viewportHeight - maxPopupHeight - minMargin));
+    
     setCellPopoverPosition({ top, left });
     cellPopoverAnchorRef.current = event.target;
+  };
+
+  // Check if a date is editable based on payroll settings and month restrictions
+  const isDateEditable = (dateString) => {
+    if (!dateString) return false;
+    
+    const targetDate = new Date(dateString);
+    const currentDate = new Date();
+    
+    // Get current month and year
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth(); // 0-11
+    const currentDay = currentDate.getDate();
+    
+    // Get target month and year
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth(); // 0-11
+    const targetDay = targetDate.getDate();
+    
+    // If payroll settings are available, use them for freeze logic
+    if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+      const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+      const freezeAfterDays = payrollSettings.freezeAfterDays;
+      
+      // Check if current date is past the freeze date for current month
+      const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+      
+      if (targetYear === currentYear) {
+        if (targetMonth === currentMonth) {
+          // Current month: always editable
+          return true;
+        } else if (targetMonth === currentMonth - 1) {
+          // Previous month: check if it's frozen
+          return !isCurrentMonthFrozen;
+        }
+      } else if (targetYear === currentYear - 1) {
+        // Previous year: only allow if it's December and current month is January
+        return targetMonth === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+      }
+    } else {
+      // Fallback to original logic if payroll settings not available
+      if (targetYear === currentYear) {
+        // Same year: allow current month and previous month
+        return targetMonth >= currentMonth - 1;
+      } else if (targetYear === currentYear - 1) {
+        // Previous year: only allow if it's December (previous month)
+        return targetMonth === 11 && currentMonth === 0;
+      }
+    }
+    
+    return false;
+  };
+
+  // Check if the current cell is editable
+  const isCurrentCellEditable = () => {
+    const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
+    const statusEditable = editableStatuses.includes(cellPopoverStatus);
+    
+    // Also check if the date is within editable range
+    return statusEditable && isDateEditable(cellPopoverDate);
+  };
+
+  // Calculate optimal popup dimensions based on viewport
+  const getPopupDimensions = () => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const margin = 48; // Increased margin for better safety
+    
+    const baseWidth = isHistoryExpanded ? 450 : 350;
+    const baseHeight = isHistoryExpanded ? 500 : 300;
+    
+    return {
+      width: Math.min(baseWidth, viewportWidth - margin),
+      height: Math.min(baseHeight, viewportHeight - margin),
+      maxWidth: Math.min(baseWidth, viewportWidth - margin),
+      maxHeight: Math.min(baseHeight, viewportHeight - margin)
+    };
   };
 
   // When closing popover, clear popoverOpenCell
   const closePopover = () => {
     setCellPopoverOpen(false);
     setPopoverOpenCell(null);
+    setIsHistoryExpanded(false);
+    
+    // Restore background scrolling
+    document.body.style.overflow = 'auto';
+    
+    // Clear any potential memory leaks by resetting refs
+    if (cellPopoverAnchorRef.current) {
+      cellPopoverAnchorRef.current = null;
+    }
+  };
+
+  const handleViewHistory = () => {
+    // Edge case: Check if required data exists
+    if (!cellPopoverEmployee || !cellPopoverEmployee.id || !cellPopoverDate) {
+      console.warn("Missing required data for view history");
+      return;
+    }
+    
+    // Edge case: Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(cellPopoverDate)) {
+      console.warn("Invalid date format for view history");
+      return;
+    }
+    
+    // Extract date components from cellPopoverDate (format: YYYY-MM-DD)
+    const [year, month, day] = cellPopoverDate.split('-');
+    
+    // Edge case: Validate date components
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+    
+    if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
+      console.warn("Invalid date components for view history");
+      return;
+    }
+    
+    if (yearNum < 1900 || yearNum > 2100 || monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > 31) {
+      console.warn("Date out of valid range for view history");
+      return;
+    }
+    
+    dispatch(fetchEmployeeAttendanceHistory({
+      employeeId: cellPopoverEmployee.id,
+      year: yearNum,
+      month: monthNum,
+      day: dayNum
+    }));
+    
+    setIsHistoryExpanded(true);
   };
 
   // Handler to save status change
@@ -1392,6 +1688,16 @@ function AttendanceTracker({
     const employeeId = cellPopoverEmployee.id;
     const date = cellPopoverDate;
     const status = cellPopoverStatus;
+    
+    // Get the original status for this cell
+    const originalStatus = cellPopoverEmployee.originalStatus || null;
+    
+    // Only send if status has actually changed
+    if (status === originalStatus) {
+      toast.error("No changes detected");
+      return;
+    }
+    
     // Build dateStatusMap for this single change
     const dateStatusMap = { [date]: status };
     const payload = buildManualAttendancePayload(employeeId, dateStatusMap);
@@ -1782,22 +2088,52 @@ function AttendanceTracker({
                             const isSelected =
                               monthYear.month === fullMonthName;
 
-                            // Check if this month/year combination is in the future
+                            // Check if this month/year combination is editable based on payroll settings
                             const currentDate = new Date();
                             const currentYear = currentDate.getFullYear();
                             const currentMonth = currentDate.getMonth();
-                            const isFutureMonth =
-                              parseInt(monthYear.year) > currentYear ||
-                              (parseInt(monthYear.year) === currentYear &&
-                                index > currentMonth);
+                            const currentDay = currentDate.getDate();
+                            
+                            // Check if payroll settings are available for freeze logic
+                            let isEditableMonth = true;
+                            if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+                              const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+                              const freezeAfterDays = payrollSettings.freezeAfterDays;
+                              const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+                              
+                              if (parseInt(monthYear.year) === currentYear) {
+                                if (index === currentMonth) {
+                                  // Current month: always editable
+                                  isEditableMonth = true;
+                                } else if (index === currentMonth - 1) {
+                                  // Previous month: check if it's frozen
+                                  isEditableMonth = !isCurrentMonthFrozen;
+                                } else {
+                                  // Other months: not editable
+                                  isEditableMonth = false;
+                                }
+                              } else if (parseInt(monthYear.year) === currentYear - 1) {
+                                // Previous year: only allow if it's December and current month is January
+                                isEditableMonth = index === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+                              } else {
+                                isEditableMonth = false;
+                              }
+                            } else {
+                              // Fallback to original logic if payroll settings not available
+                              const isFutureMonth =
+                                parseInt(monthYear.year) > currentYear ||
+                                (parseInt(monthYear.year) === currentYear &&
+                                  index > currentMonth);
+                              isEditableMonth = !isFutureMonth;
+                            }
 
                             return (
                               <button
                                 key={month}
                                 onClick={() => {
-                                  if (isFutureMonth) {
+                                  if (!isEditableMonth) {
                                     toast.error(
-                                      "Cannot select future months for attendance"
+                                      "Cannot select month outside editable range"
                                     );
                                     return;
                                   }
@@ -1809,14 +2145,14 @@ function AttendanceTracker({
                                 className={`p-2 text-sm rounded-md transition-colors ${
                                   isSelected
                                     ? "bg-blue-100 text-blue-600 font-medium"
-                                    : isFutureMonth
+                                    : !isEditableMonth
                                     ? "text-gray-300 cursor-not-allowed"
                                     : "hover:bg-gray-100 text-gray-700"
                                 }`}
-                                disabled={isFutureMonth}
+                                disabled={!isEditableMonth}
                                 title={
-                                  isFutureMonth
-                                    ? "Cannot select future months"
+                                  !isEditableMonth
+                                    ? "Cannot select month outside editable range"
                                     : ""
                                 }
                               >
@@ -2229,7 +2565,11 @@ function AttendanceTracker({
                               const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
                               const isReadOnlyStatus = value && !editableStatuses.includes(value);
                               
-                              if (isReadOnlyStatus) {
+                              // Check if this date is outside the editable range
+                              const dateString = `${monthYear.year}-${String(new Date(`${monthYear.month} 1, ${monthYear.year}`).getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                              const isDateOutsideRange = !isDateEditable(dateString);
+                              
+                              if (isReadOnlyStatus || isDateOutsideRange) {
                                 // Render read-only cell (like NA but with original color)
                                 const selected = statusOptions.find((opt) => opt.value === value);
                                 const bgColor = selected ? selected.color : "#fff";
@@ -2237,7 +2577,7 @@ function AttendanceTracker({
                                   <div 
                                     className="w-full flex items-center justify-between px-2 py-2 border border-gray-300 rounded-md text-sm shadow-sm cursor-not-allowed opacity-75"
                                     style={{ backgroundColor: bgColor }}
-                                    title="Read only"
+                                    title={isDateOutsideRange ? "Date outside editable range" : "Read only"}
                                   >
                                     <span className="flex items-center gap-2">
                                       {selected ? (
@@ -2471,6 +2811,7 @@ function AttendanceTracker({
             calendarRef={calendarRef}
             handleMonthSelection={handleMonthSelection}
             isSingleEmployeeModalOpen={isSingleEmployeeModalOpen}
+            isDateEditable={isDateEditable}
           />
         ) : (
           <LeaveTable
@@ -2669,25 +3010,55 @@ function AttendanceTracker({
                           selectedDateForAll &&
                           new Date(selectedDateForAll).getMonth() === index;
 
-                        // Check if this month/year combination is in the future
+                        // Check if this month/year combination is editable based on payroll settings
                         const currentDate = new Date();
                         const currentYear = currentDate.getFullYear();
                         const currentMonth = currentDate.getMonth();
+                        const currentDay = currentDate.getDate();
                         const selectedYear = selectedDateForAll
                           ? new Date(selectedDateForAll).getFullYear()
                           : currentYear;
-                        const isFutureMonth =
-                          selectedYear > currentYear ||
-                          (selectedYear === currentYear &&
-                            index > currentMonth);
+                        
+                        // Check if payroll settings are available for freeze logic
+                        let isEditableMonth = true;
+                        if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+                          const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+                          const freezeAfterDays = payrollSettings.freezeAfterDays;
+                          const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+                          
+                          if (selectedYear === currentYear) {
+                            if (index === currentMonth) {
+                              // Current month: always editable
+                              isEditableMonth = true;
+                            } else if (index === currentMonth - 1) {
+                              // Previous month: check if it's frozen
+                              isEditableMonth = !isCurrentMonthFrozen;
+                            } else {
+                              // Other months: not editable
+                              isEditableMonth = false;
+                            }
+                          } else if (selectedYear === currentYear - 1) {
+                            // Previous year: only allow if it's December and current month is January
+                            isEditableMonth = index === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+                          } else {
+                            isEditableMonth = false;
+                          }
+                        } else {
+                          // Fallback to original logic if payroll settings not available
+                          const isFutureMonth =
+                            selectedYear > currentYear ||
+                            (selectedYear === currentYear &&
+                              index > currentMonth);
+                          isEditableMonth = !isFutureMonth;
+                        }
 
                         return (
                           <button
                             key={month}
                             onClick={() => {
-                              if (isFutureMonth) {
+                              if (!isEditableMonth) {
                                 toast.error(
-                                  "Cannot select future months for attendance"
+                                  "Cannot select month outside editable range"
                                 );
                                 return;
                               }
@@ -2734,13 +3105,13 @@ function AttendanceTracker({
                             className={`p-2 text-sm rounded-md transition-colors ${
                               isSelected
                                 ? "bg-blue-100 text-blue-600 font-medium"
-                                : isFutureMonth
+                                : !isEditableMonth
                                 ? "text-gray-300 cursor-not-allowed"
                                 : "hover:bg-gray-100 text-gray-700"
                             }`}
-                            disabled={isFutureMonth}
+                            disabled={!isEditableMonth}
                             title={
-                              isFutureMonth ? "Cannot select future months" : ""
+                              !isEditableMonth ? "Cannot select month outside editable range" : ""
                             }
                           >
                             {month}
@@ -3206,30 +3577,36 @@ function AttendanceTracker({
           </div>
         )}
         {/* Attendance Cell Popover */}
-        {cellPopoverOpen && cellPopoverEmployee && cellPopoverDate && (
+        {cellPopoverOpen && cellPopoverEmployee && cellPopoverEmployee.id && cellPopoverDate && (
           <div
             data-cell-popover
             style={{
-              position: "absolute",
+              position: "fixed",
               top: cellPopoverPosition.top,
               left: cellPopoverPosition.left,
               zIndex: 9999,
-              width: 320,
-              minWidth: 280,
-              maxWidth: 360,
+              width: getPopupDimensions().width,
+              minWidth: getPopupDimensions().width * 0.9,
+              maxWidth: getPopupDimensions().maxWidth,
+              maxHeight: getPopupDimensions().maxHeight,
+              overflow: "hidden",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
             }}
-            className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 flex flex-col items-center"
+            className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 flex flex-col items-center"
           >
+                        {!isHistoryExpanded ? (
+              <>
             <div className="text-sm font-bold text-gray-800 mb-1">
-              {cellPopoverEmployee.name} ({cellPopoverEmployee.id})
+                   {cellPopoverEmployee.name || "Unknown Employee"} ({cellPopoverEmployee.id})
             </div>
             <div className="text-sm font-bold text-gray-700 mb-2">
-              {cellPopoverDate}
+                   {cellPopoverDate || "Invalid Date"}
             </div>
+                 
+
 
             {/* Current Status */}
-            <div className="flex items-center gap-2 mb-4">
+                 <div className="flex items-center gap-2 mb-3">
               {cellPopoverStatus ? (
                 <span
                   className="inline-block w-3 h-3 rounded-full"
@@ -3243,13 +3620,14 @@ function AttendanceTracker({
               <span className="text-sm font-medium text-gray-800">
                 {cellPopoverStatus
                   ? statusOptions.find((opt) => opt.value === cellPopoverStatus)
-                      ?.label
+                          ?.label || `Unknown Status (${cellPopoverStatus})`
                   : "No attendance marked"}
               </span>
             </div>
 
-            {/* Change to Dropdown */}
-            <div className="w-full mb-4">
+                                 {/* Change to Dropdown - Only show if cell is editable */}
+                 {isCurrentCellEditable() ? (
+                   <div className="w-full mb-3">
               <label className="block text-xs text-gray-500 mb-1">
                 Change to:
               </label>
@@ -3265,15 +3643,187 @@ function AttendanceTracker({
                   </option>
                 ))}
               </select>
+                  </div>
+                                                 ) : (
+                  <div className="w-full mb-3">
+                    <div className="text-xs text-gray-500 mb-1">
+                      Status: <span className="text-gray-700 font-medium">
+                        {cellPopoverStatus 
+                          ? statusOptions.find((opt) => opt.value === cellPopoverStatus)?.label || `Unknown Status (${cellPopoverStatus})`
+                          : "No attendance marked"
+                        }
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                      {!isDateEditable(cellPopoverDate) 
+                        ? "Cannot edit. Click 'View History' to see details."
+                        : "This attendance record cannot be modified. Click 'View History' to see details."
+                      }
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* History View Header */}
+                <div className="text-sm font-bold text-gray-800 mb-1">
+                  {cellPopoverEmployee.name || "Unknown Employee"} ({cellPopoverEmployee.id})
+                </div>
+                <div className="text-sm font-bold text-gray-700 mb-2">
+                  {cellPopoverDate || "Invalid Date"} - History
             </div>
 
-            <div className="flex justify-end gap-2 mt-2 w-full">
+                {/* History Content */}
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <span className="ml-2 text-sm text-gray-600">Loading history...</span>
+                  </div>
+                ) : historyError ? (
+                  <div className="text-sm text-gray-600 py-2">
+                    No history found
+                  </div>
+                ) : attendanceHistory ? (
+                                     <div className="w-full space-y-2">
+                    {/* Current Status */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Current Status:</span>
+                      <span className="text-sm">
+                        {cellPopoverStatus
+                          ? statusOptions.find((opt) => opt.value === cellPopoverStatus)?.label
+                          : "No attendance marked"}
+                      </span>
+                    </div>
+
+                                         {/* Attendance Details */}
+                     <div className="bg-gray-50 rounded p-2 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">First Check In:</span>
+                        <span className="text-xs font-medium">
+                          {attendanceHistory.firstCheckIn ? 
+                            (() => {
+                              try {
+                                return new Date(attendanceHistory.firstCheckIn).toLocaleTimeString();
+                              } catch (error) {
+                                return "Invalid Time";
+                              }
+                            })() : "-"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Last Check Out:</span>
+                        <span className="text-xs font-medium">
+                          {attendanceHistory.lastCheckOut ? 
+                            (() => {
+                              try {
+                                return new Date(attendanceHistory.lastCheckOut).toLocaleTimeString();
+                              } catch (error) {
+                                return "Invalid Time";
+                              }
+                            })() : "-"}
+                        </span>
+                      </div>
+                                             <div className="flex justify-between items-center">
+                         <span className="text-xs text-gray-600">Working Hours:</span>
+                         <span className="text-xs font-medium">
+                           {attendanceHistory.workingHours > 0 ? attendanceHistory.workingHours : "-"}
+                         </span>
+                       </div>
+                       <div className="flex justify-between items-center">
+                         <span className="text-xs text-gray-600">Leave Utilized:</span>
+                         <span className="text-xs font-medium">
+                           {attendanceHistory.leaveUtilized > 0 ? attendanceHistory.leaveUtilized : "-"}
+                         </span>
+                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Holiday:</span>
+                        <span className="text-xs font-medium">
+                          {attendanceHistory.holiday ? "Yes" : "No"}
+                        </span>
+                      </div>
+                    </div>
+
+                                         {/* Activity History */}
+                     {attendanceHistory.activity && attendanceHistory.activity.length > 0 && (
+                       <div className="border border-gray-200 rounded p-2">
+                         <h4 className="text-xs font-semibold text-gray-700 mb-1">Activity History</h4>
+                         <div className="space-y-1">
+                          {attendanceHistory.activity.map((activity, index) => (
+                            <div key={index} className="border-l-2 border-gray-300 pl-2 py-1">
+                              <div className="flex justify-between items-start text-xs">
+                                <div>
+                                  <div className="text-gray-700 font-medium">
+                                    {activity.type === "manual" ? "Manual Update" : activity.type}
+                                  </div>
+                                  <div className="text-gray-500">
+                                    by {activity.updatedBy}
+                                  </div>
+                                </div>
+                                                                 <div className="text-right">
+                                   <div className="font-semibold text-gray-800">
+                                     {activity.hours && !isNaN(activity.hours) ? activity.hours : "N/A"}
+                                   </div>
+                                   <div className="text-gray-500 text-xs">
+                                     {activity.updatedAt ? 
+                                       (() => {
+                                         try {
+                                           // Handle both timestamp (number) and date string formats
+                                           let date;
+                                           if (typeof activity.updatedAt === 'number') {
+                                             date = new Date(activity.updatedAt * 1000);
+                                           } else {
+                                             date = new Date(activity.updatedAt);
+                                           }
+                                           return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                                         } catch (error) {
+                                           return "Invalid Date";
+                                         }
+                                       })() : "N/A"}
+                                   </div>
+                                 </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600 py-2">
+                    No history found
+                  </div>
+                )}
+              </>
+            )}
+
+                        <div className="flex justify-between items-center mt-1 w-full">
+              {!isHistoryExpanded ? (
+                <button
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                    !isCurrentCellEditable() 
+                      ? "bg-blue-500 text-white hover:bg-blue-600 border border-blue-500" 
+                      : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                  onClick={handleViewHistory}
+                >
+                  {!isCurrentCellEditable() ? "View History" : "View History"}
+                </button>
+              ) : (
+                <button
+                  className="px-3 py-1.5 bg-gray-50 text-gray-600 rounded border border-gray-200 hover:bg-gray-100 text-xs font-medium"
+                  onClick={() => setIsHistoryExpanded(false)}
+                >
+                  Back to Edit
+                </button>
+              )}
+              <div className="flex gap-2">
               <button
                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
                 onClick={closePopover}
               >
                 Cancel
               </button>
+                {!isHistoryExpanded && isCurrentCellEditable() && (
               <button
                 className="px-3 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
                 onClick={() => {
@@ -3283,6 +3833,8 @@ function AttendanceTracker({
               >
                 Save
               </button>
+                )}
+              </div>
             </div>
           </div>
         )}
