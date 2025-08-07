@@ -120,11 +120,12 @@ const modularMenus = {
     label: "Sales & Marketing",
     icon: <FaHandshake className="w-5 h-5" />,
     items: [
-      // {
-      //   label: "Dashboard",
-      //   icon: <ChartColumnIncreasing className="w-4 h-4" />,
-      //   link: "/Sales/dashboard",
-      // },
+      {
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/Sales/dashboard",
+        disabled: true,
+      },
       {
         label: "Lead Management",
         icon: <FaTasks className="w-4 h-4" />,
@@ -135,11 +136,12 @@ const modularMenus = {
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
-      // {
-      //   label: "Sales Settings",
-      //   icon: <Settings className="w-4 h-4" />,
-      //   link: "/SalesManager/setting",
-      // },
+      {
+        label: "Sales Settings",
+        icon: <Settings className="w-4 h-4" />,
+        link: "/SalesManager/setting",
+        disabled: true,
+      },
     ],
   },
 
@@ -700,9 +702,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             </div>
                           </div>
                         ) : (
-                          <Link
-                            href={item.link}
-                            prefetch={true}
+                          <div
                             className={`
                               group flex items-center px-2 py-2 
                               transition-all duration-300 ease-in-out
@@ -713,9 +713,19 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              cursor-pointer
+                              ${item.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
                             `}
                             aria-label={item.label}
+                            title={item.disabled ? "This feature is in progress" : ""}
+                            onClick={(e) => {
+                              if (item.disabled) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                              }
+                              // For non-disabled items, navigate to the link
+                              router.push(item.link);
+                            }}
                           >
                             <span
                               className={`text-base flex-shrink-0 ${
@@ -729,7 +739,12 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             {!isCollapsed && (
                               <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                          </Link>
+                            {item.disabled ? (
+                              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                                This feature is in progress
+                              </div>
+                            ) : null}
+                          </div>
                         )}
                       </div>
                     );
