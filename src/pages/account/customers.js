@@ -1,5 +1,5 @@
 // Updated customers page with PRD implementation
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes, FaFileAlt } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';

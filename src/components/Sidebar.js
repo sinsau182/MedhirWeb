@@ -120,11 +120,11 @@ const modularMenus = {
     label: "Sales & Marketing",
     icon: <FaHandshake className="w-5 h-5" />,
     items: [
-      {
-        label: "Dashboard",
-        icon: <ChartColumnIncreasing className="w-4 h-4" />,
-        link: "/Sales/dashboard",
-      },
+      // {
+      //   label: "Dashboard",
+      //   icon: <ChartColumnIncreasing className="w-4 h-4" />,
+      //   link: "/Sales/dashboard",
+      // },
       {
         label: "Lead Management",
         icon: <FaTasks className="w-4 h-4" />,
