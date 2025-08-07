@@ -39,8 +39,10 @@ import idFormattingReducer from './slices/idFormattingSlice';
 import customFormsReducer from './slices/customFormsSlice'; // New slice
 import assetReducer from './slices/assetSlice';
 import customFormReducer from './slices/customFormSlice'; // Custom Form slice based on CustomFormController.java
+
 import customerReducer from './slices/customerSlice'; // Import customer slice
 import accountSettingsReducer from './slices/accountSettingsSlice'; // Import account settings slice
+
 
 
 export const store = configureStore({
@@ -88,6 +90,7 @@ export const store = configureStore({
     payroll: payrollReducer,
     customers: customerReducer, // Add customers reducer
     accountSettings: accountSettingsReducer, // Add account settings reducer
+
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

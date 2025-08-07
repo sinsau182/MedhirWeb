@@ -139,25 +139,8 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                     className="hidden"
                 />
                 
-                {uploadedImage && (
-                    <div className="absolute top-2 right-2 flex gap-2 z-10">
-                        <button
-                            onClick={handleRemoveClick}
-                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                            title="Remove file"
-                        >
-                            <FaTimes size={14} />
-                        </button>
-                        <button
-                            onClick={handleDownload}
-                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                            title="Download file"
-                        >
-                            <FaDownload size={14} />
-                        </button>
-                    </div>
-                )}
-                
+               
+              
                 {uploadedImage ? (
                     <div className="flex flex-col items-center w-full h-full">
                         <div className="flex-1 flex items-center justify-center w-full relative overflow-hidden">
@@ -302,11 +285,12 @@ const BillForm = ({ bill, onCancel }) => {
   const [billDate, setBillDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState("");
   const [reference, setReference] = useState("");
-  const [billLines, setBillLines] = useState([{ item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18 }]);
+  const [billLines, setBillLines] = useState([{ item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18, cgst: 9, sgst: 9, igst: 18 }]);
   const [showDeleteIdx, setShowDeleteIdx] = useState(null);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
   const [vendorCredits, setVendorCredits] = useState([]);
+  const [placeOfSupply, setPlaceOfSupply] = useState('interstate');
 
   // Pre-fill form data when bill prop is provided (edit mode)
   useEffect(() => {
@@ -315,6 +299,7 @@ const BillForm = ({ bill, onCancel }) => {
       setBillDate(bill.billDate || new Date().toISOString().slice(0, 10));
       setDueDate(bill.dueDate || '');
       setReference(bill.billReference || '');
+      setPlaceOfSupply(bill.placeOfSupply || 'interstate');
       
       if (bill.billLineItems && bill.billLineItems.length > 0) {
         const mappedLines = bill.billLineItems.map(line => ({
@@ -323,11 +308,14 @@ const BillForm = ({ bill, onCancel }) => {
           qty: line.quantity || 1,
           uom: line.uom || 'PCS',
           rate: line.rate || 0,
-          gst: 18
+          gst: line.gstPercent || 18,
+          cgst: line.cgstPercent || 9,
+          sgst: line.sgstPercent || 9,
+          igst: line.igstPercent || 18
         }));
         setBillLines(mappedLines);
       } else {
-        setBillLines([{ item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18 }]);
+        setBillLines([{ item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18, cgst: 9, sgst: 9, igst: 18 }]);
       }
       
       if (bill.vendorId && vendors.length > 0) {
@@ -367,8 +355,10 @@ const BillForm = ({ bill, onCancel }) => {
   // Calculate totals
   const subtotal = billLines.reduce((sum, l) => sum + l.qty * l.rate, 0);
   const totalGST = billLines.reduce((sum, l) => sum + l.qty * l.rate * (l.gst / 100), 0);
-  const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? (subtotal + totalGST) * (selectedVendor.tdsPercentage / 100) : 0;
-  const total = subtotal + totalGST - tdsAmount;
+  const totalCGST = billLines.reduce((sum, l) => sum + l.qty * l.rate * (l.cgst / 100), 0);
+  const totalSGST = billLines.reduce((sum, l) => sum + l.qty * l.rate * (l.sgst / 100), 0);
+  const totalIGST = billLines.reduce((sum, l) => sum + l.qty * l.rate * (l.igst / 100), 0);
+  const total = placeOfSupply === 'interstate' ? subtotal + totalCGST + totalSGST : subtotal + totalIGST;
 
   // Validation helpers
   const validate = () => {
@@ -414,7 +404,7 @@ const BillForm = ({ bill, onCancel }) => {
   };
 
   const handleAddLine = () => {
-    setBillLines((prev) => [...prev, { item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18 }]);
+    setBillLines((prev) => [...prev, { item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18, cgst: 9, sgst: 9, igst: 18 }]);
   };
 
   const handleDeleteLine = (idx) => {
@@ -458,6 +448,7 @@ const BillForm = ({ bill, onCancel }) => {
       //gstin: selectedVendor?.gstin || "",
       //vendorAddress: selectedVendor?.addressLine1 || "",
       tdsPercentage: selectedVendor?.tdsPercentage || null,
+      placeOfSupply: placeOfSupply,
       billNumber: billNumber,
       billReference: reference,
       billDate: billDate,
@@ -465,10 +456,16 @@ const BillForm = ({ bill, onCancel }) => {
       billLineItems: billLines.map(line => {
         const qty = Number(line.qty) || 0;
         const rate = Number(line.rate) || 0;
-        const gst = 18;
+        const gst = Number(line.gst) || 18;
+        const cgst = Number(line.cgst) || 9;
+        const sgst = Number(line.sgst) || 9;
+        const igst = Number(line.igst) || 18;
         const amount = qty * rate;
         const gstAmount = amount * (gst / 100);
-        const totalAmount = amount + gstAmount;
+        const cgstAmount = amount * (cgst / 100);
+        const sgstAmount = amount * (sgst / 100);
+        const igstAmount = amount * (igst / 100);
+        const totalAmount = amount + (placeOfSupply === 'interstate' ? cgstAmount + sgstAmount : igstAmount);
         
         return {
           productOrService: line.item,
@@ -479,13 +476,21 @@ const BillForm = ({ bill, onCancel }) => {
           rate: rate,
           amount: amount,
           gstPercent: gst,
+          cgstPercent: cgst,
+          sgstPercent: sgst,
+          igstPercent: igst,
           gstAmount: gstAmount,
+          cgstAmount: cgstAmount,
+          sgstAmount: sgstAmount,
+          igstAmount: igstAmount,
           totalAmount: totalAmount
         };
       }),
       totalBeforeGST: subtotal,
       totalGST: totalGST,
-      tdsApplied: selectedVendor && selectedVendor.tdsPercentage ? tdsAmount : null,
+      totalCGST: totalCGST,
+      totalSGST: totalSGST,
+      totalIGST: totalIGST,
       finalAmount: total
     };
 
@@ -580,6 +585,45 @@ const BillForm = ({ bill, onCancel }) => {
                   </select>
                   {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vendor GSTIN</label>
+                  <input 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
+                    value={selectedVendor?.gstin || ""} 
+                    placeholder="Auto-filled from vendor"
+                    readOnly 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Place of Supply</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    value={placeOfSupply}
+                    onChange={(e) => {
+                      const newPlaceOfSupply = e.target.value;
+                      setPlaceOfSupply(newPlaceOfSupply);
+                      
+                      // Update line items based on place of supply
+                      if (newPlaceOfSupply === 'intrastate') {
+                        // Convert CGST + SGST to IGST
+                        setBillLines(prev => prev.map(line => ({
+                          ...line,
+                          igst: (Number(line.cgst) + Number(line.sgst)) || 18
+                        })));
+                      } else {
+                        // Convert IGST to CGST and SGST (split equally)
+                        setBillLines(prev => prev.map(line => ({
+                          ...line,
+                          cgst: (Number(line.igst) / 2) || 9,
+                          sgst: (Number(line.igst) / 2) || 9
+                        })));
+                      }
+                    }}
+                  >
+                    <option value="interstate">Interstate</option>
+                    <option value="intrastate">Intrastate</option>
+                  </select>
+                </div>
                 {/*<div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
                   <input 
@@ -654,13 +698,7 @@ const BillForm = ({ bill, onCancel }) => {
                     onChange={e => setReference(e.target.value)} 
                   />
                 </div>
-                <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
-                  {selectedVendor && selectedVendor.tdsPercentage && (
-                    <div className="text-sm text-gray-600 mb-2">
-                      TDS Applied: {selectedVendor.tdsPercentage}%
-                    </div>
-                  )}
-                </div>
+
               </div>
             </div>
 
@@ -701,13 +739,13 @@ const BillForm = ({ bill, onCancel }) => {
                   <div className="overflow-x-auto">
                     <table className="min-w-full">
                       <thead>
-                      <tr className="border-b border-gray-200">
+                                              <tr className="border-b border-gray-200">
                           <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Sr. No.</th>
-                          <th className="w-[30%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                        
+                          <th className="w-[25%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">UOM</th>
                           <th className="w-[12%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Rate</th>
+                          <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">GST%</th>
                           <th className="w-[15%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Amount</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                         </tr>
@@ -716,7 +754,9 @@ const BillForm = ({ bill, onCancel }) => {
                         {billLines.map((line, idx) => {
                           const qty = Number(line.qty) || 0;
                           const rate = Number(line.rate) || 0;
-                          const gst = 18;
+                          const gst = Number(line.gst) || 18;
+                          const cgst = Number(line.cgst) || 9;
+                          const sgst = Number(line.sgst) || 9;
                           const amount = qty * rate;
                           const gstAmount = amount * (gst / 100);
                           const total = amount + gstAmount;
@@ -766,6 +806,20 @@ const BillForm = ({ bill, onCancel }) => {
                                 </div>
                                 {errors[`rate${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`rate${idx}`]}</div>}
                               </td>
+                              <td className="px-4 py-3 text-center">
+                                <select
+                                  className="w-full text-center bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
+                                  value={line.gst}
+                                  onChange={e => handleLineChange(idx, 'gst', Number(e.target.value))}
+                                >
+                                  <option value={0}>0%</option>
+                                  <option value={5}>5%</option>
+                                  <option value={12}>12%</option>
+                                  <option value={18}>18%</option>
+                                  <option value={28}>28%</option>
+                                </select>
+                              </td>
+
                               <td className="px-4 py-3 text-right text-sm font-semibold">
                                 ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                               </td>
@@ -798,22 +852,95 @@ const BillForm = ({ bill, onCancel }) => {
                     </table>
                   </div>
 
-                  {/* Totals */}
+                                    {/* Totals */}
                   <div className="bg-gray-50 rounded-lg mt-6 p-4">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-gray-700">Subtotal (before GST):</span>
                       <span className="text-gray-900 font-medium">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-gray-700">Total GST:</span>
-                      <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    {selectedVendor && selectedVendor.tdsPercentage && (
-                      <div className="flex justify-between items-center mb-1 text-red-600">
-                        <span className="font-medium">TDS/TCS Deducted ({selectedVendor?.tdsPercentage}%):</span>
-                        <span className="font-medium">- ₹{tdsAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    
+                    {placeOfSupply === 'interstate' ? (
+                      <>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-gray-700">CGST:</span>
+                          <div className="flex items-center">
+                            <span className="text-gray-500 mr-1">₹</span>
+                            <input
+                              type="number"
+                              className="w-24 text-right bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={totalCGST.toFixed(2)}
+                              onChange={(e) => {
+                                const newCGST = parseFloat(e.target.value) || 0;
+                                // Update all line items to reflect the new CGST total
+                                const cgstPerLine = newCGST / billLines.length;
+                                setBillLines(prev => prev.map(line => {
+                                  const lineAmount = Number(line.qty) * Number(line.rate);
+                                  return {
+                                    ...line,
+                                    cgst: lineAmount > 0 ? (cgstPerLine / lineAmount) * 100 : 0
+                                  };
+                                }));
+                              }}
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-gray-700">SGST:</span>
+                          <div className="flex items-center">
+                            <span className="text-gray-500 mr-1">₹</span>
+                            <input
+                              type="number"
+                              className="w-24 text-right bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              value={totalSGST.toFixed(2)}
+                              onChange={(e) => {
+                                const newSGST = parseFloat(e.target.value) || 0;
+                                // Update all line items to reflect the new SGST total
+                                const sgstPerLine = newSGST / billLines.length;
+                                setBillLines(prev => prev.map(line => {
+                                  const lineAmount = Number(line.qty) * Number(line.rate);
+                                  return {
+                                    ...line,
+                                    sgst: lineAmount > 0 ? (sgstPerLine / lineAmount) * 100 : 0
+                                  };
+                                }));
+                              }}
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-gray-700">IGST:</span>
+                        <div className="flex items-center">
+                          <span className="text-gray-500 mr-1">₹</span>
+                          <input
+                            type="number"
+                            className="w-24 text-right bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            value={totalIGST.toFixed(2)}
+                            onChange={(e) => {
+                              const newIGST = parseFloat(e.target.value) || 0;
+                              // Update all line items to reflect the new IGST total
+                              const igstPerLine = newIGST / billLines.length;
+                              setBillLines(prev => prev.map(line => {
+                                const lineAmount = Number(line.qty) * Number(line.rate);
+                                return {
+                                  ...line,
+                                  igst: lineAmount > 0 ? (igstPerLine / lineAmount) * 100 : 0
+                                };
+                              }));
+                            }}
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
                       </div>
                     )}
+                    
                     <hr className="my-2" />
                     <div className="flex justify-between items-center mt-2">
                       <span className="font-bold text-lg">Final Amount:</span>

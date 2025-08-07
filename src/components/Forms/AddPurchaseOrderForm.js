@@ -45,7 +45,6 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         itemName: item.itemName || '',
         description: item.description || '',
         //hsnCode: item.hsnOrSac || '',
-        gstRate: item.gstPercent || 18,
         quantity: item.quantity || 1,
         rate: item.rate || 0,
         unit: item.uom || 'PCS'
@@ -54,9 +53,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         itemName: 'Sample Item',
         description: 'A sample item for this PO.',
         //hsnCode: '998877',
-        gstRate: 18,
         quantity: 2,
-        rate: 150,
         unit: 'PCS'
       }],
       attachments: []
@@ -80,9 +77,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
         itemName: 'Sample Item',
         description: 'A sample item for this PO.',
         //hsnCode: '998877',
-        gstRate: 18,
         quantity: 2,
-        rate: 150,
         unit: 'PCS'
       }],
       attachments: []
@@ -126,7 +121,6 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
   // Companies are now fetched from Redux state
 
   const unitOptions = ['PCS', 'KG', 'LTR', 'MTR', 'NOS', 'BOX', 'SET'];
-  const gstRates = [0, 5, 12, 18, 28];
   
   // Handlers
   const handleVendorChange = (e) => {
@@ -170,9 +164,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       itemName: '',
       description: '',
       //hsnCode: '',
-      gstRate: 18,
       quantity: 1,
-      rate: 0,
       unit: 'PCS'
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
@@ -200,28 +192,27 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
   };
 
   const calculateTotals = () => {
-    const subtotal = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-    const totalGst = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate * (item.gstRate / 100)), 0);
-    const grandTotal = subtotal + totalGst;
-    return { subtotal, totalGst, grandTotal };
+    const subtotal = 0; // No rate calculation needed
+    const grandTotal = subtotal;
+    return { subtotal, grandTotal };
   };
   
-  const { subtotal, totalGst, grandTotal } = calculateTotals();
+  const { subtotal, grandTotal } = calculateTotals();
 
   const validateForm = () => {
     const newErrors = {};
     if (!selectedVendor) newErrors.vendor = "Vendor is required";
     if (!formData.orderDate) newErrors.orderDate = 'Order date is required.';
-    if (!formData.deliveryDate) newErrors.deliveryDate = 'Delivery date is required.';
-    if (!formData.company) newErrors.company = 'Company is required.';
-    if (!formData.shippingAddress) newErrors.shippingAddress = 'Shipping address is required.';
-    if (new Date(formData.deliveryDate) < new Date(formData.orderDate)) {
+    
+    // Only validate delivery date if it's provided
+    if (formData.deliveryDate && new Date(formData.deliveryDate) < new Date(formData.orderDate)) {
       newErrors.deliveryDate = 'Delivery date cannot be before order date.';
     }
+    
     formData.items.forEach((item, index) => {
       if (!item.itemName) newErrors[`itemName_${index}`] = 'Item name is required.';
       if (item.quantity <= 0) newErrors[`quantity_${index}`] = 'Qty must be > 0.';
-      if (item.rate <= 0) newErrors[`rate_${index}`] = 'Rate must be > 0.';
+      // Rate is no longer required - removed validation
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -234,6 +225,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       console.log(errors);
       return;
     }
+
 
     // Calculate TDS amount
     const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
@@ -251,6 +243,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       }
     }
 
+
     // Prepare the purchase order data matching your API structure
     const poData = {
       purchaseOrderId: finalPONumber,
@@ -265,29 +258,16 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       purchaseOrderDeliveryDate: formData.deliveryDate,
       purchaseOrderLineItems: formData.items.map(item => {
         const qty = Number(item.quantity) || 0;
-        const rate = Number(item.rate) || 0;
-        const gstRate = Number(item.gstRate) || 0;
-        const amount = qty * rate;
-        const gstAmount = amount * (gstRate / 100);
-        const totalAmount = amount + gstAmount;
         
         return {
           itemName: item.itemName,
           description: item.description,
           //hsnOrSac: item.hsnCode,
           quantity: qty,
-          uom: item.unit,
-          rate: rate,
-          amount: amount,
-          gstPercent: gstRate,
-          gstAmount: gstAmount,
-          totalAmount: totalAmount
+          uom: item.unit
         };
       }),
-      totalBeforeGST: subtotal,
-      totalGST: totalGst,
-      tdsApplied: tdsAmount,
-      finalAmount: grandTotal - tdsAmount
+      totalBeforeGST: 0
     };
 
     console.log('Purchase Order Data:', poData);
@@ -342,6 +322,15 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
               </select>
               {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Vendor GSTIN</label>
+              <input 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
+                value={selectedVendor?.gstin || ""} 
+                placeholder="Auto-filled from vendor"
+                readOnly 
+              />
+            </div>
             {/*<div>
               <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
               <input 
@@ -386,7 +375,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 {errors.orderDate && <p className="text-xs text-red-500 mt-1">{errors.orderDate}</p>}
               </div>
               <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date</label>
                 <input 
                   type="date" 
                   className={`w-full border rounded-lg px-3 py-2 ${errors.deliveryDate ? 'border-red-500' : 'border-gray-300'}`}
@@ -415,7 +404,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 <FaShippingFast className="text-gray-400" /> Ship To
             </h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Company <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company </label>
               <select
                 className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-300'}`}
                 value={formData.company?._id || formData.company?.companyId || ''}
@@ -432,7 +421,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
               {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address </label>
               <textarea
                 rows="5"
                 className={`w-full border rounded-lg px-3 py-2 ${errors.shippingAddress ? 'border-red-500' : 'border-gray-300'}`}
@@ -487,13 +476,11 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100">
                     <tr className="text-left text-gray-600 font-medium">
-                      <th className="p-3 w-1/4">Item</th>
-                      <th className="p-3 w-1/3">Description</th>
+                      <th className="p-3 w-1/3">Item</th>
+                      <th className="p-3 w-2/5">Description</th>
                       {/*<th className="p-3">HSN</th>*/}
                       <th className="p-3">Qty</th>
                       <th className="p-3">Unit</th>
-                      <th className="p-3">Rate</th>
-                      <th className="p-3">GST%</th>
                       <th className="p-3"></th>
                     </tr>
                   </thead>
@@ -509,25 +496,13 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                               {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
                           </td>
-                          <td className="p-2"><input type="number" placeholder="0.00" value={item.rate} onChange={e => handleItemChange(item.id, 'rate', parseFloat(e.target.value) || 0)} className={`w-24 border rounded-md p-2 ${errors[`rate_${index}`] ? 'border-red-400' : 'border-gray-200'}`} /></td>
-                          <td className="p-2">
-                            <select value={item.gstRate} onChange={e => handleItemChange(item.id, 'gstRate', parseFloat(e.target.value))} className="w-full border-gray-200 rounded-md p-2">
-                              {gstRates.map(r => <option key={r} value={r}>{r}%</option>)}
-                            </select>
-                          </td>
                           <td className="p-2 text-center"><button type="button" onClick={() => handleDeleteLine(index)} className="text-gray-400 hover:text-red-500"><FaTrash /></button></td>
                         </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-50 p-4 flex justify-end">
-                <div className="w-64 space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Subtotal</span><span>{subtotal.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>GST</span><span>{totalGst.toFixed(2)}</span></div>
-                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>Total</span><span>{grandTotal.toFixed(2)}</span></div>
-                </div>
-              </div>
+
             </div>
           )}
 
@@ -587,11 +562,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       
       {/* Sticky Footer */}
     <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 sticky bottom-0 z-20">
-    <div className="flex justify-between items-center">
-      <div className="text-lg font-bold">
-        Grand Total: <span className="text-blue-600">₹{grandTotal.toLocaleString('en-IN')}</span>
-        {mode === 'edit' }
-      </div>
+    <div className="flex justify-end items-center">
       <div className="flex gap-3">
         <button
           type="button"
@@ -620,7 +591,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
       {/* PO Preview Modal */}
       {showPreview && (
         <PurchaseOrderPreview 
-            poData={{...formData, subtotal, totalGst, grandTotal}}
+            poData={{...formData, vendor: selectedVendor, subtotal, grandTotal}}
             onClose={() => setShowPreview(false)}
         />
       )}
