@@ -679,7 +679,7 @@ const handleSubmit = async (e) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Received Bank Account <span className="text-red-500">*</span></label>
                   <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
                     <option value="">Select bank account</option>
                     {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
@@ -718,7 +718,7 @@ const handleSubmit = async (e) => {
                 <div>
                   <div className="grid grid-cols-2 gap-4 mb-6 text-center">
                       <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency((projectReceiptData.totalUnallocatedAmount || 0) + receiptAmount - totalAllocatedInModal)}</div></div>
+                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency((projectReceiptData.totalUnallocatedAmount || 0) + receiptAmount - totalAllocatedInModal)}</div></div>
                   </div>
                   {invoicesToLink.length > 0 ? (
                     <table className="w-full text-sm">
