@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaFileInvoiceDollar, FaChevronDown, FaChevronRight, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProjectCustomerList } from '../../redux/slices/invoiceSlice';
+import { toast } from 'sonner';
+import { fetchProjectCustomerList, getNextInvoiceNumber, generateNextInvoiceNumber } from '../../redux/slices/invoiceSlice';
 
 const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
@@ -28,7 +29,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     // const projects = [...];
 
     const dispatch = useDispatch();
-    const { projectCustomerList, loading } = useSelector(state => state.invoices);
+    const { projectCustomerList, nextInvoiceNumber, loading } = useSelector(state => state.invoices);
 
     // Extract unique projects from projectCustomerList
     const projects = projectCustomerList?.map(p => ({
@@ -39,11 +40,46 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         address: p.address
     })) || [];
 
+    // Get company ID from session storage
+    const companyId = typeof window !== 'undefined' ? 
+        sessionStorage.getItem("employeeCompanyId") || 
+        sessionStorage.getItem("companyId") || 
+        sessionStorage.getItem("company") : null;
+
+    // Function to fetch next invoice number (generates and increments)
+    const fetchNextInvoiceNumber = async () => {
+        if (companyId) {
+            try {
+                await dispatch(getNextInvoiceNumber(companyId)).unwrap();
+            } catch (error) {
+                console.error('Failed to fetch next invoice number:', error);
+                // Don't show error toast as this is optional functionality
+            }
+        }
+    };
+
     useEffect(() => {
         if (!projectCustomerList || projectCustomerList.length === 0) {
             dispatch(fetchProjectCustomerList());
         }
     }, [dispatch, projectCustomerList]);
+
+    // Auto-fill invoice number on form load
+    useEffect(() => {
+        if (companyId) {
+            fetchNextInvoiceNumber();
+        }
+    }, [companyId]);
+
+    // Auto-populate invoice number when next invoice number is generated (always updates the field)
+    useEffect(() => {
+        if (nextInvoiceNumber) {
+            setFormData(prev => ({
+                ...prev,
+                invoiceNumber: nextInvoiceNumber
+            }));
+        }
+    }, [nextInvoiceNumber]);
 
     // When project changes, auto-set customer and store IDs
     const handleProjectChange = (e) => {
@@ -126,7 +162,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateForm()) {
             // Calculate totals
@@ -142,18 +178,38 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                 rate: line.rate,
                 gst: line.gst
             }));
-            // Prepare payload for backend
-            const payload = {
-                ...formData,
-                projectId: formData.projectId,
-                customerId: formData.customerId,
-                subtotal, 
-                totalGst, 
-                totalAmount,
-                items, 
-            };
-            delete payload.invoiceLines; // remove invoiceLines from payload
-            onSubmit(payload);
+            
+            try {
+                // Generate the actual invoice number (this will increment the counter)
+                let finalInvoiceNumber = formData.invoiceNumber;
+                if (companyId) {
+                    try {
+                        const result = await dispatch(generateNextInvoiceNumber(companyId)).unwrap();
+                        finalInvoiceNumber = result.nextInvoiceNumber;
+                    } catch (error) {
+                        console.error('Failed to generate invoice number:', error);
+                        // Continue with the current number if generation fails
+                    }
+                }
+                
+                // Prepare payload for backend
+                const payload = {
+                    ...formData,
+                    companyId: companyId, // Add companyId to the payload
+                    projectId: formData.projectId,
+                    customerId: formData.customerId,
+                    invoiceNumber: finalInvoiceNumber, // Use the generated number
+                    subtotal, 
+                    totalGst, 
+                    totalAmount,
+                    items, 
+                };
+                delete payload.invoiceLines; // remove invoiceLines from payload
+                onSubmit(payload);
+            } catch (error) {
+                console.error('Invoice submission error:', error);
+                toast.error('Failed to generate invoice number');
+            }
         }
     };
 
@@ -232,7 +288,14 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number <span className="text-red-500">*</span></label>
-                            <input type="text" name="invoiceNumber" value={formData.invoiceNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg ${errors.invoiceNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="e.g., INV-2025-001" />
+                            <input 
+                                type="text" 
+                                name="invoiceNumber" 
+                                value={formData.invoiceNumber} 
+                                onChange={handleChange} 
+                                className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.invoiceNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                                placeholder="e.g., INV-2025-001" 
+                            />
                             {errors.invoiceNumber && <p className="text-red-500 text-sm mt-1">{errors.invoiceNumber}</p>}
                         </div>
                         <div className="flex space-x-4">

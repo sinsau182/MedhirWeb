@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaLink, FaUpload, FaFileAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { addReceipt } from "../../redux/slices/receiptSlice";
+import { addReceipt, getNextReceiptNumber, generateNextReceiptNumber } from "../../redux/slices/receiptSlice";
 import { fetchProjectCustomerList, fetchInvoicesByProject, fetchReceiptsByProject } from "@/redux/slices/receiptSlice";
 
 
@@ -22,7 +22,7 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     linkedInvoices: [],
   });
 const dispatch = useDispatch();
-  const { projectCustomerList, invoicesByProject, receiptsByProject } = useSelector((state) => state.receipts);
+  const { projectCustomerList, invoicesByProject, receiptsByProject, nextReceiptNumber, loading } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
 
@@ -49,6 +49,26 @@ const dispatch = useDispatch();
     { id: 3, name: 'Pioneer Builders' }
   ];
 
+  // Get company ID from session storage
+  const companyId = typeof window !== 'undefined' ? 
+    sessionStorage.getItem("employeeCompanyId") || 
+    sessionStorage.getItem("companyId") || 
+    sessionStorage.getItem("company") : null;
+
+  // Function to fetch next receipt number (generates and increments)
+  const fetchNextReceiptNumber = async () => {
+    if (companyId) {
+      try {
+        await dispatch(getNextReceiptNumber(companyId)).unwrap();
+      } catch (error) {
+        console.error('Failed to fetch next receipt number:', error);
+        // Don't show error toast as this is optional functionality
+      }
+    }
+  };
+
+
+
   const paymentMethods = ['Bank Transfer', 'Cheque', 'UPI', 'Cash', 'Credit Card', 'Debit Card'];
   const bankAccounts = ['HDFC Bank - *****5678', 'SBI Bank - *****1234', 'ICICI Bank - *****4321'];
 
@@ -72,6 +92,23 @@ const dispatch = useDispatch();
     return allInvoices[customerName] || [];
   };
   
+  // Auto-fill receipt number on form load
+  useEffect(() => {
+    if (companyId) {
+      fetchNextReceiptNumber();
+    }
+  }, [companyId]);
+
+  // Auto-populate receipt number when next receipt number is generated (always updates the field)
+  useEffect(() => {
+    if (nextReceiptNumber) {
+      setFormData(prev => ({
+        ...prev,
+        receiptNumber: nextReceiptNumber
+      }));
+    }
+  }, [nextReceiptNumber]);
+
   // useEffect(() => {
   //   if (initialData) {
   //     setFormData(prev => ({
@@ -394,24 +431,36 @@ const handleSubmit = async (e) => {
       return;
     }
     
-    // Create receipt data object - only include fields that DTO expects
-    const receiptData = {
-      customerId: formData.customerId,
-      projectId: formData.leadId,
-      amountReceived: currentReceiptAmount,
-      linkedInvoices: currentLinkedInvoices,
-      receiptDate: formData.receiptDate,
-      paymentMethod: formData.paymentMethod,
-      receiptNumber: formData.receiptNumber,
-      paymentTransactionId:
-        formData.reference ||
-        formData.chequeNumber ||
-        formData.upiTransactionId ||
-        '',
-      bankAccountId: formData.bankAccount || null, // Add if your DTO has this field
-    };
-    
     try {
+      // Generate the actual receipt number (this will increment the counter)
+      let finalReceiptNumber = formData.receiptNumber;
+      if (companyId) {
+        try {
+          const result = await dispatch(generateNextReceiptNumber(companyId)).unwrap();
+          finalReceiptNumber = result.nextReceiptNumber;
+        } catch (error) {
+          console.error('Failed to generate receipt number:', error);
+          // Continue with the current number if generation fails
+        }
+      }
+      
+      // Create receipt data object - only include fields that DTO expects
+      const receiptData = {
+        customerId: formData.customerId,
+        projectId: formData.leadId,
+        amountReceived: currentReceiptAmount,
+        linkedInvoices: currentLinkedInvoices,
+        receiptDate: formData.receiptDate,
+        paymentMethod: formData.paymentMethod,
+        receiptNumber: finalReceiptNumber,
+        paymentTransactionId:
+          formData.reference ||
+          formData.chequeNumber ||
+          formData.upiTransactionId ||
+          '',
+        bankAccountId: formData.bankAccount || null, // Add if your DTO has this field
+      };
+      
       // Always send as FormData since backend expects multipart form data
       const formDataToSend = new FormData();
       
@@ -433,7 +482,7 @@ const handleSubmit = async (e) => {
       toast.success('Receipt added successfully!');
       // Add small delay to prevent duplicate messages
       setTimeout(() => {
-      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+        if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
       }, 100);
     } catch (error) {
       console.error('Receipt submission error:', error);
@@ -601,7 +650,14 @@ const handleSubmit = async (e) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Number <span className="text-red-500">*</span></label>
-                  <input type="text" name="receiptNumber" value={formData.receiptNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="e.g., REC-2025-001" />
+                  <input 
+                    type="text" 
+                    name="receiptNumber" 
+                    value={formData.receiptNumber} 
+                    onChange={handleChange} 
+                    className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                    placeholder="e.g., REC-2025-001" 
+                  />
                   {errors.receiptNumber && <p className="text-red-500 text-sm mt-1">{errors.receiptNumber}</p>}
                 </div>
               </div>

@@ -39,7 +39,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
         }
         
         onFileUpload(file);
-        setZoomLevel(1); // Reset zoom when new file is uploaded
+        setZoomLevel(1); // reset the zoom when new functionality is uploaded
     };
 
     const validateFile = (file) => {
