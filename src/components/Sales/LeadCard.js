@@ -108,64 +108,63 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {...attributes}
       {...listeners}
       className={`
-        bg-white p-4 rounded-xl shadow border border-gray-100 hover:shadow-lg transition-all duration-200 cursor-grab
-        ${isDragging ? 'opacity-50 shadow-lg scale-105 rotate-1' : 'hover:shadow-lg'}
+        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab
+        ${isDragging ? 'opacity-50 shadow-lg scale-105 rotate-1' : 'hover:shadow-md'}
         ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
         ${isDragging ? 'z-50' : ''}
       `}
     >
-      {/* Top: Name, then Stars below, both left-aligned */}
-      <div className="mb-1">
-        <h3 className="font-semibold text-gray-900 text-base truncate">{lead.name}</h3>
-        <div className="mt-1 flex items-center">{renderStars(priorityToStars(lead.priority))}</div>
+      {/* Header: Name and Priority */}
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="font-semibold text-gray-900 text-sm truncate flex-1 mr-2">{lead.name}</h3>
+        <div className="flex items-center">{renderStars(priorityToStars(lead.priority))  || ''}</div>
       </div>
-      {/* Second row: Budget • Date of Creation */}
-      <div className="flex items-center gap-2 mb-2 text-sm text-gray-700">
-        <span className="flex items-center gap-1 font-semibold">
-          <FaRupeeSign className="text-blue-500" />
+      
+      {/* Budget and Date */}
+      <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
+        <span className="flex items-center gap-1 font-medium">
+          <FaRupeeSign className="text-blue-500 text-xs" />
           {lead.budget ? Number(lead.budget).toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '0'}
         </span>
-        <span className="text-gray-300 text-lg mx-1">•</span>
+        <span className="text-gray-300">•</span>
         <span className="flex items-center gap-1">
-          <FaCalendarAlt className="text-gray-400" />
+          <FaCalendarAlt className="text-gray-400 text-xs" />
           {formatDate(lead.dateOfCreation)}
         </span>
       </div>
-      {/* Team/summary row */}
+      
+      {/* Team Members */}
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          {/* Overlapping initials */}
-          <div className="flex -space-x-2">
-            <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person`}>
-              <span
-                className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm cursor-pointer border-2 border-white shadow"
-              >
-                {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
-              </span>
-            </CustomTooltip>
-            <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner`}>
-              <span
-                className="w-7 h-7 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-sm cursor-pointer border-2 border-white shadow"
-              >
-                {getInitial(lead.assignDesignerEmpId, lead.designer)}
-              </span>
-            </CustomTooltip>
-          </div>
+        <div className="flex items-center gap-2">
+          <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person`}>
+            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm">
+              {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
+            </span>
+          </CustomTooltip>
+          <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner`}>
+            <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm">
+              {getInitial(lead.assignDesignerEmpId, lead.designer)}
+            </span>
+          </CustomTooltip>
         </div>
-      </div>
-      {/* Horizontal divider and activity row at the bottom */}
-      <div className="mt-4 border-t border-gray-200 mb-0.5" />
-      <div className="flex items-center justify-between mt-2 mb-2">
+        
+        {/* Activity Button */}
         <button
           type="button"
           title="Schedule Activity"
           onClick={() => onScheduleActivity && onScheduleActivity(lead)}
-          className="hover:bg-blue-50 rounded-full p-1 transition-colors text-gray-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="hover:bg-blue-50 rounded-full p-1 transition-colors text-gray-400 hover:text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-300"
         >
-          <FaRegClock size={20} />
+          <FaRegClock size={14} />
         </button>
-        <span className="text-xs text-gray-400 ml-2">{lead.latestActivityTitle || ''}</span>
       </div>
+      
+      {/* Activity Status */}
+      {lead.latestActivityTitle && (
+        <div className="text-xs text-gray-400 truncate">
+          {lead.latestActivityTitle}
+        </div>
+      )}
     </div>
   );
 };

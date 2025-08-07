@@ -21,9 +21,7 @@ const MainLayout = ({ children }) => {
           paddingLeft: isSidebarCollapsed ? '64px' : '224px' // Adjusts based on sidebar width
         }}
       >
-        <div className="p-6">
-          {children}
-        </div>
+        {children}
       </main>
     </div>
   );
