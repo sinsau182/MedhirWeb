@@ -74,6 +74,30 @@ export const addPayment = createAsyncThunk(
     }
 );
 
+// update payment
+export const updatePayment = createAsyncThunk(
+    "payments/updatePayment",
+    async ({ paymentId, payment }, { rejectWithValue }) => {
+        try {
+        const token = getItemFromSessionStorage("token", null);
+        const response = await fetch(`${API_BASE_URL}/${paymentId}`, {
+            method: "PUT",
+            headers: {
+            Authorization: `Bearer ${token}`,
+            },
+            body: payment,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            return rejectWithValue(data.message || "Something went wrong");
+        }
+        return data;
+        } catch (error) {
+        return rejectWithValue(error.message || "Network Error");
+        }
+    }
+);
+
 const paymentSlice = createSlice({
     name: "payments",
     initialState: {
@@ -117,6 +141,21 @@ const paymentSlice = createSlice({
             state.payments.push(action.payload);
         });
         builder.addCase(addPayment.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload;
+        });
+        builder.addCase(updatePayment.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        });
+        builder.addCase(updatePayment.fulfilled, (state, action) => {
+            state.loading = false;
+            const index = state.payments.findIndex(p => p.id === action.payload.id);
+            if (index !== -1) {
+                state.payments[index] = action.payload;
+            }
+        });
+        builder.addCase(updatePayment.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload;
         });

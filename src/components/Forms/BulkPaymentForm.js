@@ -3,7 +3,8 @@ import { FaPlus, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaUpload } from '
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBillsOfVendor } from '../../redux/slices/BillSlice';
-import { addPayment } from '../../redux/slices/paymentSlice';
+import { addPayment, updatePayment } from '../../redux/slices/paymentSlice';
+import { toast } from 'sonner';
 
 // Payment Receipt Upload UI Component
 const PaymentReceiptUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
@@ -23,16 +24,16 @@ const PaymentReceiptUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFi
   const validateFile = (file) => {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
-      alert('Please select a valid file (JPG, PNG, BMP, TIFF, PDF)');
+      toast.error('Please select a valid file (JPG, PNG, BMP, TIFF, PDF)');
       return false;
     }
     
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size should be less than 10MB');
+      toast.error('File size should be less than 10MB');
       return false;
     }
     
-    alert(`File "${file.name}" uploaded successfully (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    toast.success(`File "${file.name}" uploaded successfully (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     return true;
   };
 
@@ -137,7 +138,7 @@ const PaymentReceiptUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFi
   );
 };
 
-const BulkPaymentForm = ({ onSubmit, onCancel }) => {
+const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel }) => {
   const dispatch = useDispatch();
   const { vendors, loading: vendorsLoading, error } = useSelector((state) => state.vendors);
   const { vendorBills: vendorBills, loading: billsLoading } = useSelector((state) => state.bills);
@@ -171,6 +172,49 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
     tdsApplied: false,
     notes: ''
   });
+
+  // Initialize form data when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialData) {
+      // Find the vendor for this payment
+      const vendor = vendors.find(v => v.vendorId === initialData.vendorId);
+      if (vendor) {
+        setSelectedVendor(vendor);
+        // Fetch bills for this vendor
+        dispatch(fetchBillsOfVendor(vendor.vendorId));
+        setFormData({
+          vendor: vendor.vendorName,
+          gstin: vendor.gstin,
+          paymentDate: initialData.paymentDate,
+          company: initialData.company || 'ABC Enterprises Ltd.',
+          journal: initialData.journal || '',
+          paymentMethod: initialData.paymentMethod,
+          bankAccount: initialData.bankAccount,
+          currency: initialData.currency || 'INR',
+          reference: initialData.paymentTransactionId || '',
+          tdsApplied: initialData.tdsApplied || false,
+          notes: initialData.notes || ''
+        });
+        
+        // Set selected bills based on initial data
+        if (initialData.billPayments && initialData.billPayments.length > 0) {
+          const billsWithPaymentAmount = initialData.billPayments.map(billPayment => {
+            const bill = vendorBills.find(b => b.billId === billPayment.billId);
+            return {
+              ...bill,
+              paymentAmount: billPayment.paidAmount
+            };
+          });
+          setSelectedBills(billsWithPaymentAmount);
+        }
+        
+        // Set payment receipt if available
+        if (initialData.paymentProofUrl) {
+          setUploadedReceipt(initialData.paymentProofUrl);
+        }
+      }
+    }
+  }, [mode, initialData, vendors, vendorBills, dispatch]);
 
   // Handlers
   const handleVendorChange = (e) => {
@@ -222,11 +266,14 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
 
   useEffect(() => {
     if (selectedVendor) {
-      // Filter only unpaid bills
-      const unpaidBills = vendorBills.filter(bill => 
-        bill.paymentStatus === 'UN_PAID' || bill.paymentStatus === 'UNPAID' || bill.paymentStatus === 'PARTIALLY_PAID'
-      );
-      setAvailableBills(unpaidBills);
+      // In edit mode, show all bills (including paid ones) so we can see what was paid
+      // In add mode, filter only unpaid bills
+      const billsToShow = mode === 'edit' 
+        ? vendorBills 
+        : vendorBills.filter(bill => 
+            bill.paymentStatus === 'UN_PAID' || bill.paymentStatus === 'UNPAID' || bill.paymentStatus === 'PARTIALLY_PAID'
+          );
+      setAvailableBills(billsToShow);
       setFormData(prev => ({ 
         ...prev, 
         gstin: selectedVendor.gstin,
@@ -240,7 +287,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
       setAvailableCredit(0);
       setAppliedCredit(0);
     }
-  }, [selectedVendor, vendorBills]);
+  }, [selectedVendor, vendorBills, mode]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -338,6 +385,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
 
   // Payment receipt upload handlers
   const handleReceiptUpload = (file) => {
+    console.log('Receipt upload handler called with file:', file.name, file.size, file.type);
     setUploadedReceipt(file);
     setUploadError('');
   };
@@ -400,12 +448,14 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
         adjustedAmountFromCredits: finalPaymentAmount-selectedVendor.totalCredit < 0 ? finalPaymentAmount : selectedVendor.totalCredit,
         tdsApplied: formData.tdsApplied,
         notes: formData.notes,
-        paymentProofUrl: null, // Will be set after file upload if needed
+        paymentProofUrl: null, // Will be set by backend after file upload
         billPayments: selectedBills.map(bill => ({
           billId: bill.billId,
           paidAmount: bill.paymentAmount
         }))
       };
+
+      console.log('Payment data to be sent:', paymentData);
 
       // Always use FormData since backend doesn't support JSON
       const formDataToSend = new FormData();
@@ -418,16 +468,45 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
 
       // Add payment receipt if uploaded
       if (uploadedReceipt) {
-        formDataToSend.append('paymentReceipt', uploadedReceipt);
+        formDataToSend.append('paymentProof', uploadedReceipt);
+        console.log('Payment proof added to form data:', uploadedReceipt.name, uploadedReceipt.size, uploadedReceipt.type);
+      } else {
+        console.log('No payment proof uploaded');
+      }
+
+      // Debug: Log FormData contents
+      console.log('FormData contents:');
+      for (let [key, value] of formDataToSend.entries()) {
+        console.log(key, value);
       }
 
       try {
-        dispatch(addPayment(formDataToSend));
-        onCancel();
-        } catch (error){
-          // Handle error
-          console.error('Payment failed:', result.payload);
+        let result;
+        if (mode === 'edit' && initialData) {
+          // Update existing payment
+          result = await dispatch(updatePayment({ 
+            paymentId: initialData.id, 
+            payment: formDataToSend 
+          }));
+        } else {
+          // Add new payment
+          result = await dispatch(addPayment(formDataToSend));
         }
+        
+        console.log('Payment submission result:', result);
+        if (result.error) {
+          console.error('Payment failed:', result.error);
+          toast.error(mode === 'edit' ? 'Payment update failed. Please try again.' : 'Payment failed. Please try again.');
+        } else {
+          toast.success(mode === 'edit' ? 'Payment updated successfully!' : 'Payment submitted successfully!');
+          console.log('Payment payload:', result.payload);
+          onSubmit && onSubmit(result.payload);
+          onCancel();
+        }
+      } catch (error) {
+        console.error('Payment submission error:', error);
+        toast.error(mode === 'edit' ? 'Payment update failed. Please try again.' : 'Payment submission failed. Please try again.');
+      }
     } else {
       console.log(errors);
     }
@@ -469,7 +548,9 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
         {/* Form Panel (Left) */}
         <div className="lg:col-span-1 overflow-y-auto p-6 border-r border-gray-200 pb-24">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Bulk Payment</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {mode === 'edit' ? 'Edit Bulk Payment' : 'Bulk Payment'}
+            </h2>
           </div>
           
           {/* Form Content */}
@@ -498,14 +579,15 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
                         type="text"
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                           errors.vendor ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        } ${mode === 'edit' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                         placeholder="Select vendor"
                         value={formData.vendor}
                         onChange={handleVendorChange}
-                        onFocus={() => setShowVendorDropdown(true)}
+                        onFocus={() => mode !== 'edit' && setShowVendorDropdown(true)}
                         autoComplete="off"
+                        disabled={mode === 'edit'}
                       />
-                      {showVendorDropdown && (
+                      {showVendorDropdown && mode !== 'edit' && (
                         <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                           {vendors.map(vendor => (
                             <div
@@ -859,7 +941,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
                 onClick={handleSubmit}
               >
-                Confirm Payment
+                {mode === 'edit' ? 'Update Payment' : 'Confirm Payment'}
               </button>
             </div>
           </div>

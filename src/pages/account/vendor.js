@@ -101,6 +101,8 @@ const Vendor = () => {
   const [selectedVendor, setSelectedVendor] = useState(null);
   // State for selected bill for editing
   const [selectedBill, setSelectedBill] = useState(null);
+  // State for selected payment for editing
+  const [selectedPayment, setSelectedPayment] = useState(null);
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
    const [previewFile, setPreviewFile] = useState(null);
@@ -147,6 +149,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     } else if (activeTab === 'purchaseOrders') {
       setShowAddForm('po');
     } else if (activeTab === 'payments') {
+      setSelectedPayment(null); // Clear selected payment for new payment
       setShowAddForm('payment');
     } else if (activeTab === 'vendors') {
       setSelectedVendor(null); // Clear selected vendor for new vendor
@@ -154,12 +157,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     }
   };
 
-  console.log(payments)
+  console.log('Payments data:', payments);
+  console.log('Payment with proof URL:', payments.find(p => p.paymentProofUrl));
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
     setSelectedVendor(null);
     setSelectedBill(null);
+    setSelectedPayment(null);
      setEditingPO(null);
   };
 
@@ -176,6 +181,12 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   const handlePORowClick = (po) => {
     setEditingPO(po);
     setShowAddForm('po');
+  };
+
+  // Handle payment row click for editing
+  const handlePaymentRowClick = (payment) => {
+    setSelectedPayment(payment);
+    setShowAddForm('payment');
   };
 
   const handlePurchaseOrderPreview = async (po) => {
@@ -421,9 +432,13 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add Vendor Payment</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedPayment ? 'Edit Vendor Payment' : 'Add Vendor Payment'}
+              </h2>
             </div>
             <BulkPaymentForm
+              mode={selectedPayment ? 'edit' : 'add'}
+              initialData={selectedPayment}
               onSubmit={handlePaymentSubmit}
               onCancel={handleBackFromForm}
             />
@@ -727,7 +742,11 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={payment.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => handlePaymentRowClick(payment)}
+                    >
                                             <td className="px-4 py-4 text-sm text-gray-700 w-32">{payment.paymentDate}</td>
                       <td className="px-4 py-4 w-48">
                         <span className="text-sm font-medium text-gray-900 truncate block">{payment.vendorName}</span>
@@ -774,12 +793,20 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
                       </td>
                       <td className="px-4 py-4 w-20 text-center">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                          payment.attachments === 'Yes' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {payment.attachments === 'Yes' ? '📎' : '-'}
+                        <span 
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                            payment.paymentProofUrl 
+                              ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (payment.paymentProofUrl) {
+                              handleViewFile(payment.paymentProofUrl, 'Payment Receipt');
+                            }
+                          }}
+                        >
+                          {payment.paymentProofUrl ? '📎' : '-'}
                         </span>
                       </td>
                     </tr>
