@@ -180,6 +180,7 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
       const vendor = vendors.find(v => v.vendorId === initialData.vendorId);
       if (vendor) {
         setSelectedVendor(vendor);
+        setVendorSearch(vendor.vendorName);
         // Fetch bills for this vendor
         dispatch(fetchBillsOfVendor(vendor.vendorId));
         setFormData({
@@ -196,38 +197,15 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
           notes: initialData.notes || ''
         });
         
-        // Set selected bills based on initial data
-        if (initialData.billPayments && initialData.billPayments.length > 0) {
-          const billsWithPaymentAmount = initialData.billPayments.map(billPayment => {
-            const bill = vendorBills.find(b => b.billId === billPayment.billId);
-            return {
-              ...bill,
-              paymentAmount: billPayment.paidAmount
-            };
-          });
-          setSelectedBills(billsWithPaymentAmount);
-        }
-        
         // Set payment receipt if available
         if (initialData.paymentProofUrl) {
           setUploadedReceipt(initialData.paymentProofUrl);
         }
       }
     }
-  }, [mode, initialData, vendors, vendorBills, dispatch]);
+  }, [mode, initialData, vendors, dispatch]);
 
-  // Handlers
-  const handleVendorChange = (e) => {
-    const selectedValue = e.target.value;
-    
-    if (!vendors || vendors.length === 0) {
-      setSelectedVendor(null);
-      return;
-    }
-    
-    const v = vendors.find((v) => v.vendorId === selectedValue);
-    setSelectedVendor(v);
-  };
+
 
   const [selectedBills, setSelectedBills] = useState([]);
   const [availableBills, setAvailableBills] = useState([]);
@@ -280,6 +258,24 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
         tdsApplied: selectedVendor.tdsApplicable || false
       }));
       setAvailableCredit(selectedVendor.availableCredit || 0);
+      
+      // In edit mode, if we have initial data, make sure selected bills are properly set
+      if (mode === 'edit' && initialData && initialData.billPayments) {
+        const billsWithPaymentAmount = initialData.billPayments.map(billPayment => {
+          const bill = vendorBills.find(b => b.billId === billPayment.billId);
+          if (bill) {
+            return {
+              ...bill,
+              paymentAmount: billPayment.paidAmount
+            };
+          }
+          return null;
+        }).filter(bill => bill !== null);
+        
+        if (billsWithPaymentAmount.length > 0) {
+          setSelectedBills(billsWithPaymentAmount);
+        }
+      }
     } else {
       setAvailableBills([]);
       setSelectedBills([]);
@@ -287,7 +283,7 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
       setAvailableCredit(0);
       setAppliedCredit(0);
     }
-  }, [selectedVendor, vendorBills, mode]);
+  }, [selectedVendor, vendorBills, mode, initialData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -318,9 +314,16 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
   const handleBillSelection = (billId, checked) => {
     if (checked) {
       const bill = availableBills.find(b => b.billId === billId);
+      // In edit mode, if this bill was already paid, use the original payment amount
+      // In add mode, use the due amount
+      const existingSelectedBill = selectedBills.find(sb => sb.billId === billId);
+      const paymentAmount = mode === 'edit' && existingSelectedBill 
+        ? existingSelectedBill.paymentAmount 
+        : bill.dueAmount;
+      
       const billWithPaymentAmount = {
         ...bill,
-        paymentAmount: bill.dueAmount // Default to due amount
+        paymentAmount: paymentAmount
       };
       setSelectedBills(prev => [...prev, billWithPaymentAmount]);
     } else {
@@ -365,10 +368,18 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      const billsWithPaymentAmount = availableBills.map(bill => ({
-        ...bill,
-        paymentAmount: bill.dueAmount // Default to due amount
-      }));
+      const billsWithPaymentAmount = availableBills.map(bill => {
+        // In edit mode, if this bill was already selected, use the existing payment amount
+        const existingSelectedBill = selectedBills.find(sb => sb.billId === bill.billId);
+        const paymentAmount = mode === 'edit' && existingSelectedBill 
+          ? existingSelectedBill.paymentAmount 
+          : bill.dueAmount;
+        
+        return {
+          ...bill,
+          paymentAmount: paymentAmount
+        };
+      });
       setSelectedBills(billsWithPaymentAmount);
     } else {
       setSelectedBills([]);
@@ -579,15 +590,14 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                         type="text"
                         className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                           errors.vendor ? 'border-red-500' : 'border-gray-300'
-                        } ${mode === 'edit' ? 'bg-gray-50 cursor-not-allowed' : ''}`}
+                        }`}
                         placeholder="Select vendor"
                         value={formData.vendor}
-                        onChange={handleVendorChange}
-                        onFocus={() => mode !== 'edit' && setShowVendorDropdown(true)}
+                        onChange={handleVendorInput}
+                        onFocus={() => setShowVendorDropdown(true)}
                         autoComplete="off"
-                        disabled={mode === 'edit'}
                       />
-                      {showVendorDropdown && mode !== 'edit' && (
+                      {showVendorDropdown && (
                         <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                           {vendors.map(vendor => (
                             <div
@@ -729,10 +739,12 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center">
                         <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                        <h2 className="text-lg font-semibold text-gray-900">Select Bills to Pay</h2>
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          {mode === 'edit' ? 'Bills in Payment' : 'Select Bills to Pay'}
+                        </h2>
                       </div>
                       <div className="text-sm text-gray-600">
-                        💡 Tip: You can pay partial amounts for each bill
+                        💡 Tip: {mode === 'edit' ? 'You can modify payment amounts for each bill' : 'You can pay partial amounts for each bill'}
                       </div>
                     </div>
                     {!selectedVendor ? (
@@ -749,8 +761,15 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                     ) : availableBills.length === 0 ? (
                       <div className="text-center py-16">
                         <div className="text-6xl mb-4">📄</div>
-                        <p className="text-lg font-medium text-gray-600">No unpaid bills found</p>
-                        <p className="text-sm text-gray-500 mt-2">This vendor has no outstanding bills</p>
+                        <p className="text-lg font-medium text-gray-600">
+                          {mode === 'edit' ? 'No bills found' : 'No unpaid bills found'}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          {mode === 'edit' 
+                            ? 'This vendor has no bills' 
+                            : 'This vendor has no outstanding bills'
+                          }
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -779,8 +798,8 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                               {availableBills.map((bill) => {
                                 const isSelected = selectedBills.some(sb => sb.billId === bill.billId);
                                 const selectedBill = selectedBills.find(sb => sb.billId === bill.billId);
-                                // Don't fallback to bill.dueAmount if paymentAmount is 0
-                                const paymentAmount = selectedBill ? selectedBill.paymentAmount : bill.dueAmount;
+                                // In edit mode, show the actual payment amount, otherwise show due amount
+                                const paymentAmount = selectedBill ? selectedBill.paymentAmount : (mode === 'edit' ? 0 : bill.dueAmount);
                                 
                                 return (
                                   <tr key={bill.billId} className="hover:bg-gray-50 transition-colors">
