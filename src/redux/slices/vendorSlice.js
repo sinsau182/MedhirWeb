@@ -36,11 +36,22 @@ export const addVendor = createAsyncThunk(
       
       // Create FormData for multipart/form-data
       const formData = new FormData();
-      formData.append('vendor', JSON.stringify(vendor));
       
-      // Add attachment if it exists in the vendor object
-      if (vendor.attachment) {
-        formData.append('attachment', vendor.attachment);
+      // Create a clean version of vendor data without file objects for JSON
+      const cleanVendorData = { ...vendor };
+      delete cleanVendorData.gstDocument;
+      delete cleanVendorData.bankPassbook;
+      
+      formData.append('vendor', JSON.stringify(cleanVendorData));
+      
+      // Add GST document if it exists
+      if (vendor.gstDocument) {
+        formData.append('gstDocument', vendor.gstDocument);
+      }
+      
+      // Add bank passbook if it exists
+      if (vendor.bankPassbook) {
+        formData.append('bankPassbook', vendor.bankPassbook);
       }
       
       const response = await fetch(`${API_BASE_URL}`, {
@@ -71,11 +82,22 @@ export const updateVendor = createAsyncThunk(
       
       // Create FormData for multipart/form-data
       const formData = new FormData();
-      formData.append('vendor', JSON.stringify(vendor));
       
-      // Add attachment if it exists in the vendor object
-      if (vendor.attachment) {
-        formData.append('attachment', vendor.attachment);
+      // Create a clean version of vendor data without file objects for JSON
+      const cleanVendorData = { ...vendor };
+      delete cleanVendorData.gstDocument;
+      delete cleanVendorData.bankPassbook;
+      
+      formData.append('vendor', JSON.stringify(cleanVendorData));
+      
+      // Add GST document if it exists
+      if (vendor.gstDocument) {
+        formData.append('gstDocument', vendor.gstDocument);
+      }
+      
+      // Add bank passbook if it exists
+      if (vendor.bankPassbook) {
+        formData.append('bankPassbook', vendor.bankPassbook);
       }
       
       const response = await fetch(`${API_BASE_URL}/${vendor.vendorId}`, {

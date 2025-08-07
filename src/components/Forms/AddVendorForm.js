@@ -66,11 +66,9 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
       upiId: ''
     },
     
-    // Documents
-    documents: {
-      bills: [],
-      attachments: []
-    }
+    // Documents - Updated to match backend expectations
+    gstDocument: null,
+    bankPassbook: null
   });
 
   // Pre-fill form data when vendor prop is provided (edit mode)
@@ -104,10 +102,8 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
           ifscCode: vendor.bankDetails?.ifscCode || '',
           upiId: vendor.bankDetails?.upiId || ''
         },
-        documents: {
-          bills: vendor.documents?.bills || [],
-          attachments: vendor.documents?.attachments || []
-        }
+        gstDocument: null, // Will be handled separately for file uploads
+        bankPassbook: null // Will be handled separately for file uploads
       });
       
       // Set TDS related state
@@ -639,7 +635,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Document handling functions
+  // Document handling functions - Updated for GST and Bank Passbook
   const handleFileUpload = (files, documentType) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
     const maxSize = 10 * 1024 * 1024; // 10MB
@@ -657,34 +653,22 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
     });
 
     if (validFiles.length > 0) {
-      const newDocuments = validFiles.map(file => ({
-        id: Date.now() + Math.random(),
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        file: file,
-        uploadedAt: new Date().toISOString()
-      }));
-
+      // For GST Document and Bank Passbook, we only allow one file each
+      const file = validFiles[0]; // Take the first file
+      
       setFormData(prev => ({
         ...prev,
-        documents: {
-          ...prev.documents,
-          [documentType]: [...prev.documents[documentType], ...newDocuments]
-        }
+        [documentType]: file
       }));
 
-      toast.success(`${validFiles.length} file(s) uploaded successfully!`);
+      toast.success(`${file.name} uploaded successfully!`);
     }
   };
 
-  const removeDocument = (documentType, documentId) => {
+  const removeDocument = (documentType) => {
     setFormData(prev => ({
       ...prev,
-      documents: {
-        ...prev.documents,
-        [documentType]: prev.documents[documentType].filter(doc => doc.id !== documentId)
-      }
+      [documentType]: null
     }));
     toast.success('Document removed successfully!');
   };
@@ -739,14 +723,11 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
         createdAt: vendor?.createdAt || new Date().toISOString(),
         updatedAt: isEditMode ? new Date().toISOString() : undefined,
         // Convert tdsPercentage to double type
-        tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null
+        tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null,
+        // Include file objects for backend
+        gstDocument: formData.gstDocument,
+        bankPassbook: formData.bankPassbook
       };
-      
-      // Add attachment if there are uploaded files
-      if (formData.documents.attachments.length > 0) {
-        // For now, we'll use the first attachment. In a real scenario, you might want to handle multiple files
-        submitData.attachment = formData.documents.attachments[0].file;
-      }
       
       try {
         if (isEditMode) {
@@ -1432,17 +1413,17 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Bills Upload Section */}
+              {/* Bank Passbook Upload Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-gray-800 mb-4">Bank passbook</h3>
+                <h3 className="text-md font-semibold text-gray-800 mb-4">Bank Passbook</h3>
                 
                 {/* Upload Area */}
                 <div
                   className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, 'bills')}
-                  onClick={() => document.getElementById('bills-upload').click()}
+                  onDrop={(e) => handleDrop(e, 'bankPassbook')}
+                  onClick={() => document.getElementById('bankPassbook-upload').click()}
                 >
                   <div className="flex flex-col items-center space-y-4">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -1452,7 +1433,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                     </div>
                     <div>
                       <p className="text-lg font-semibold text-gray-700">Click to upload bank passbook</p>
-                      <p className="text-sm text-gray-500 mt-1">or drag and drop files here</p>
+                      <p className="text-sm text-gray-500 mt-1">or drag and drop file here</p>
                     </div>
                     <div className="text-xs text-gray-400">
                       <p>JPG, PNG, BMP, TIFF, PDF supported</p>
@@ -1460,56 +1441,51 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                     </div>
                   </div>
                   <input
-                    id="bills-upload"
+                    id="bankPassbook-upload"
                     type="file"
-                    multiple
                     accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
                     className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files, 'bills')}
+                    onChange={(e) => handleFileUpload(e.target.files, 'bankPassbook')}
                   />
                 </div>
 
-                {/* Uploaded Bills List */}
-                {formData.documents.bills.length > 0 && (
+                {/* Uploaded Bank Passbook */}
+                {formData.bankPassbook && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Uploaded Bills:</h4>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {formData.documents.bills.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <FaFileAlt className="w-4 h-4 text-blue-500" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{doc.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {(doc.size / 1024 / 1024).toFixed(2)} MB • {new Date(doc.uploadedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeDocument('bills', doc.id)}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <FaTrash className="w-4 h-4" />
-                          </button>
+                    <h4 className="text-sm font-medium text-gray-700">Uploaded Bank Passbook:</h4>
+                    <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <FaFileAlt className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">{formData.bankPassbook.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(formData.bankPassbook.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
                         </div>
-                      ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeDocument('bankPassbook')}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <FaTrash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Attachments Upload Section */}
+              {/* GST Document Upload Section */}
               <div className="space-y-4">
-                <h3 className="text-md font-semibold text-gray-800 mb-4">Attachments & Documents</h3>
+                <h3 className="text-md font-semibold text-gray-800 mb-4">GST Document</h3>
                 
                 {/* Upload Area */}
                 <div
                   className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, 'attachments')}
-                  onClick={() => document.getElementById('attachments-upload').click()}
+                  onDrop={(e) => handleDrop(e, 'gstDocument')}
+                  onClick={() => document.getElementById('gstDocument-upload').click()}
                 >
                   <div className="flex flex-col items-center space-y-4">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -1518,8 +1494,8 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-lg font-semibold text-gray-700">Click to upload documents</p>
-                      <p className="text-sm text-gray-500 mt-1">or drag and drop files here</p>
+                      <p className="text-lg font-semibold text-gray-700">Click to upload GST document</p>
+                      <p className="text-sm text-gray-500 mt-1">or drag and drop file here</p>
                     </div>
                     <div className="text-xs text-gray-400">
                       <p>JPG, PNG, BMP, TIFF, PDF supported</p>
@@ -1527,48 +1503,40 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
                     </div>
                   </div>
                   <input
-                    id="attachments-upload"
+                    id="gstDocument-upload"
                     type="file"
-                    multiple
                     accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
                     className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files, 'attachments')}
+                    onChange={(e) => handleFileUpload(e.target.files, 'gstDocument')}
                   />
                 </div>
 
-                {/* Uploaded Attachments List */}
-                {formData.documents.attachments.length > 0 && (
+                {/* Uploaded GST Document */}
+                {formData.gstDocument && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">Uploaded Documents:</h4>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {formData.documents.attachments.map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <FaFileAlt className="w-4 h-4 text-blue-500" />
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{doc.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {(doc.size / 1024 / 1024).toFixed(2)} MB • {new Date(doc.uploadedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeDocument('attachments', doc.id)}
-                            className="text-red-500 hover:text-red-700 transition-colors"
-                          >
-                            <FaTrash className="w-4 h-4" />
-                          </button>
+                    <h4 className="text-sm font-medium text-gray-700">Uploaded GST Document:</h4>
+                    <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <FaFileAlt className="w-4 h-4 text-blue-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">{formData.gstDocument.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(formData.gstDocument.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
                         </div>
-                      ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeDocument('gstDocument')}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <FaTrash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Summary */}
-      
           </>
         );
       default:
