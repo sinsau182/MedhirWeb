@@ -126,6 +126,32 @@ export const savePTAX = createAsyncThunk(
   }
 );
 
+export const fetchPayrollSettings = createAsyncThunk(
+    "payrollSettings/fetchPayrollSettings",
+    async (companyId, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            
+            const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/payroll/company/${companyId}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data;
+        
+        } catch (error) {
+            return rejectWithValue(error.message || "Failed to fetch payroll settings");
+        }
+    }
+);
+
 const initialState = {
   tdsData: null,
   ptaxData: null,
