@@ -159,6 +159,7 @@ const initialState = {
   error: null,
   isTdsConfigured: false,
   isPtaxConfigured: false,
+  settings: null,
 };
 
 const payrollSettingsSlice = createSlice({
@@ -236,7 +237,19 @@ const payrollSettingsSlice = createSlice({
       .addCase(savePTAX.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+      .addCase(fetchPayrollSettings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+    })
+    .addCase(fetchPayrollSettings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.settings = action.payload;
+    })
+    .addCase(fetchPayrollSettings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+    });
   },
 });
 
