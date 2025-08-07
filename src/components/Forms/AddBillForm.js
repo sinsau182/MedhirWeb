@@ -290,6 +290,7 @@ const BillForm = ({ bill, onCancel }) => {
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('billLines');
   const [vendorCredits, setVendorCredits] = useState([]);
+  const [placeOfSupply, setPlaceOfSupply] = useState('interstate');
 
   // Pre-fill form data when bill prop is provided (edit mode)
   useEffect(() => {
@@ -298,6 +299,7 @@ const BillForm = ({ bill, onCancel }) => {
       setBillDate(bill.billDate || new Date().toISOString().slice(0, 10));
       setDueDate(bill.dueDate || '');
       setReference(bill.billReference || '');
+      setPlaceOfSupply(bill.placeOfSupply || 'interstate');
       
       if (bill.billLineItems && bill.billLineItems.length > 0) {
         const mappedLines = bill.billLineItems.map(line => ({
@@ -306,7 +308,7 @@ const BillForm = ({ bill, onCancel }) => {
           qty: line.quantity || 1,
           uom: line.uom || 'PCS',
           rate: line.rate || 0,
-          gst: 18
+          gst: line.gstPercent || 18
         }));
         setBillLines(mappedLines);
       } else {
@@ -441,6 +443,7 @@ const BillForm = ({ bill, onCancel }) => {
       //gstin: selectedVendor?.gstin || "",
       //vendorAddress: selectedVendor?.addressLine1 || "",
       tdsPercentage: selectedVendor?.tdsPercentage || null,
+      placeOfSupply: placeOfSupply,
       billNumber: billNumber,
       billReference: reference,
       billDate: billDate,
@@ -448,7 +451,7 @@ const BillForm = ({ bill, onCancel }) => {
       billLineItems: billLines.map(line => {
         const qty = Number(line.qty) || 0;
         const rate = Number(line.rate) || 0;
-        const gst = 18;
+        const gst = Number(line.gst) || 18;
         const amount = qty * rate;
         const gstAmount = amount * (gst / 100);
         const totalAmount = amount + gstAmount;
@@ -562,6 +565,26 @@ const BillForm = ({ bill, onCancel }) => {
                     ))}
                   </select>
                   {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vendor GSTIN</label>
+                  <input 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
+                    value={selectedVendor?.gstin || ""} 
+                    placeholder="Auto-filled from vendor"
+                    readOnly 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Place of Supply</label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    value={placeOfSupply}
+                    onChange={(e) => setPlaceOfSupply(e.target.value)}
+                  >
+                    <option value="interstate">Interstate</option>
+                    <option value="intrastate">Intrastate</option>
+                  </select>
                 </div>
                 {/*<div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
@@ -686,11 +709,11 @@ const BillForm = ({ bill, onCancel }) => {
                       <thead>
                       <tr className="border-b border-gray-200">
                           <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Sr. No.</th>
-                          <th className="w-[30%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                        
+                          <th className="w-[25%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">UOM</th>
                           <th className="w-[12%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Rate</th>
+                          <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">GST%</th>
                           <th className="w-[15%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Amount</th>
                           <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                         </tr>
@@ -699,7 +722,7 @@ const BillForm = ({ bill, onCancel }) => {
                         {billLines.map((line, idx) => {
                           const qty = Number(line.qty) || 0;
                           const rate = Number(line.rate) || 0;
-                          const gst = 18;
+                          const gst = Number(line.gst) || 18;
                           const amount = qty * rate;
                           const gstAmount = amount * (gst / 100);
                           const total = amount + gstAmount;
@@ -749,6 +772,19 @@ const BillForm = ({ bill, onCancel }) => {
                                 </div>
                                 {errors[`rate${idx}`] && <div className="text-xs text-red-500 mt-1">{errors[`rate${idx}`]}</div>}
                               </td>
+                              <td className="px-4 py-3 text-center">
+                                <select
+                                  className="w-full text-center bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
+                                  value={line.gst}
+                                  onChange={e => handleLineChange(idx, 'gst', Number(e.target.value))}
+                                >
+                                  <option value={0}>0%</option>
+                                  <option value={5}>5%</option>
+                                  <option value={12}>12%</option>
+                                  <option value={18}>18%</option>
+                                  <option value={28}>28%</option>
+                                </select>
+                              </td>
                               <td className="px-4 py-3 text-right text-sm font-semibold">
                                 ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                               </td>
@@ -787,10 +823,26 @@ const BillForm = ({ bill, onCancel }) => {
                       <span className="text-gray-700">Subtotal (before GST):</span>
                       <span className="text-gray-900 font-medium">₹{subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-gray-700">Total GST:</span>
-                      <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                    </div>
+                    
+                    {/* Conditional GST Display */}
+                    {placeOfSupply === 'interstate' ? (
+                      <>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-gray-700">CGST:</span>
+                          <span className="text-gray-900 font-medium">₹{(totalGST / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-gray-700">SGST:</span>
+                          <span className="text-gray-900 font-medium">₹{(totalGST / 2).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-gray-700">IGST:</span>
+                        <span className="text-gray-900 font-medium">₹{totalGST.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                    
                     {selectedVendor && selectedVendor.tdsPercentage && (
                       <div className="flex justify-between items-center mb-1 text-red-600">
                         <span className="font-medium">TDS/TCS Deducted ({selectedVendor?.tdsPercentage}%):</span>
