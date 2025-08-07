@@ -135,11 +135,11 @@ const modularMenus = {
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
-      {
-        label: "Sales Settings",
-        icon: <Settings className="w-4 h-4" />,
-        link: "/SalesManager/setting",
-      },
+      // {
+      //   label: "Sales Settings",
+      //   icon: <Settings className="w-4 h-4" />,
+      //   link: "/SalesManager/setting",
+      // },
     ],
   },
 
