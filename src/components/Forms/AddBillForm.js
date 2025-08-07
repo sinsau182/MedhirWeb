@@ -139,25 +139,8 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                     className="hidden"
                 />
                 
-                {uploadedImage && (
-                    <div className="absolute top-2 right-2 flex gap-2 z-10">
-                        <button
-                            onClick={handleRemoveClick}
-                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                            title="Remove file"
-                        >
-                            <FaTimes size={14} />
-                        </button>
-                        <button
-                            onClick={handleDownload}
-                            className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                            title="Download file"
-                        >
-                            <FaDownload size={14} />
-                        </button>
-                    </div>
-                )}
-                
+               
+              
                 {uploadedImage ? (
                     <div className="flex flex-col items-center w-full h-full">
                         <div className="flex-1 flex items-center justify-center w-full relative overflow-hidden">
