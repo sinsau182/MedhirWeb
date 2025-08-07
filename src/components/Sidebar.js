@@ -132,16 +132,16 @@ const modularMenus = {
         link: "/Sales/LeadManagement",
       },
       {
-        label: "Team Management",
+        label: "Team Leads",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
-      {
-        label: "Sales Settings",
-        icon: <Settings className="w-4 h-4" />,
-        link: "/SalesManager/setting",
-        disabled: true,
-      },
+      // {
+      //   label: "Sales Settings",
+      //   icon: <Settings className="w-4 h-4" />,
+      //   link: "/SalesManager/setting",
+      //   disabled: true,
+      // },
     ],
   },
 
