@@ -4,18 +4,29 @@ import PurchaseOrderPreview from '../Previews/PurchaseOrderPreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchCompanies } from '../../redux/slices/companiesSlice';
-import { createPurchaseOrder, updatePurchaseOrder } from '../../redux/slices/PurchaseOrderSlice';
+import { createPurchaseOrder, updatePurchaseOrder, getNextPurchaseOrderNumber, generateNextPurchaseOrderNumber } from '../../redux/slices/PurchaseOrderSlice';
 
 const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = null }) => {
   const companyId = sessionStorage.getItem('employeeCompanyId');
   const dispatch = useDispatch();
   const { vendors, loading: vendorsLoading, error } = useSelector((state) => state.vendors);
   const { companies, loading: companiesLoading } = useSelector((state) => state.companies);
+  const { nextPurchaseOrderNumber, loading: poNumberLoading, error: poNumberError } = useSelector((state) => state.purchaseOrders);
 
   useEffect(() => {
     dispatch(fetchVendors());
     dispatch(fetchCompanies());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (mode === 'add' && companyId) {
+      dispatch(getNextPurchaseOrderNumber(companyId)).then((action) => {
+        if (action.payload && action.payload.nextPurchaseOrderNumber) {
+          setFormData((prev) => ({ ...prev, poNumber: action.payload.nextPurchaseOrderNumber }));
+        }
+      });
+    }
+  }, [dispatch, mode, companyId]);
 
   // Transform API data to form format for edit mode
   const transformApiDataToFormData = (apiData) => {
@@ -216,7 +227,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
       console.log("Validation failed");
@@ -227,11 +238,23 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
     // Calculate TDS amount
     const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
       (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
+    let finalPONumber = formData.poNumber;
+    if (mode === 'add' && companyId) {
+      try {
+        const result = await dispatch(generateNextPurchaseOrderNumber(companyId)).unwrap();
+        if (result && result.nextPurchaseOrderNumber) {
+          finalPONumber = result.nextPurchaseOrderNumber;
+        }
+      } catch (error) {
+        console.error('Failed to generate PO number:', error);
+        // fallback to preview or existing number
+      }
+    }
 
     // Prepare the purchase order data matching your API structure
     const poData = {
-      purchaseOrderId: formData.poNumber,
-      purchaseOrderNumber: formData.poNumber,
+      purchaseOrderId: finalPONumber,
+      purchaseOrderNumber: finalPONumber,
       companyId: formData.company?._id || formData.company?.companyId || companyId, // Use selected company ID
       companyAddress: formData.shippingAddress,
       vendorId: selectedVendor.vendorId,
@@ -348,6 +371,8 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">PO Number</label>
               <input type="text" readOnly value={formData.poNumber} className="w-full bg-gray-50 border-gray-300 rounded-lg px-3 py-2"/>
+              {poNumberLoading && <p className="text-xs text-gray-500 mt-1">Generating PO number...</p>}
+              {poNumberError && <p className="text-xs text-red-500 mt-1">{poNumberError}</p>}
             </div>
             <div className="flex gap-4">
               <div className="w-1/2">

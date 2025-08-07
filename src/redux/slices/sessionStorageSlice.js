@@ -34,23 +34,16 @@ const getItemFromSessionStorage = (key, defaultValue = null) => {
   if (typeof window === 'undefined') return defaultValue;
   
   try {
-    const item = sessionStorage.getItem(key);
-    if (!item) return defaultValue;
+    const encryptedItem = sessionStorage.getItem(key);
+    if (!encryptedItem) return defaultValue;
     
     // Check if the item is encrypted (starts with U2F)
-    if (item.startsWith('U2F')) {
-      const decrypted = decryptData(item);
-      return decrypted !== null ? decrypted : defaultValue;
+    if (encryptedItem.startsWith('U2F')) {
+      return decryptData(encryptedItem);
     }
     
-    // Try to parse as JSON first
-    try {
-      return JSON.parse(item);
-    } catch (jsonError) {
-      // If JSON parsing fails, return the raw string value
-      // This handles cases where the value is a plain string like "CID1948311"
-      return item;
-    }
+    // For backward compatibility with non-encrypted items
+    return JSON.parse(encryptedItem);
   } catch (error) {
     console.error(`Error getting item ${key} from sessionStorage:`, error);
     return defaultValue;
