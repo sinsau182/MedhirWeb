@@ -695,8 +695,8 @@ const ManagerContent = ({ role }) => {
     );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-[calc(100vh-64px)] bg-gray-50 overflow-hidden flex flex-col">
+      <div className="flex justify-between items-center p-4 bg-white border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center space-x-6">
           <Tooltip content="Add a new lead to the pipeline">
             <button
@@ -714,44 +714,52 @@ const ManagerContent = ({ role }) => {
         </div>
       </div>
 
-      {loading && <p className="text-center">Loading opportunities...</p>}
-      {error && (
-        <p className="text-center text-red-500">
-          Error: {error.message || "Could not fetch opportunities."}
-        </p>
-      )}
+      <div className="flex-1 overflow-hidden">
+        {loading && <p className="text-center p-4">Loading opportunities...</p>}
+        {error && (
+          <p className="text-center text-red-500 p-4">
+            Error: {error.message || "Could not fetch opportunities."}
+          </p>
+        )}
 
-   
-{viewMode === "kanban" && (
-  <KanbanBoardClientOnly
-    leadsByStatus={Object.fromEntries(
-      Object.entries(leadsByStatus).map(([status, leads]) => [
-        status,
-        leads.filter((lead) =>
-          lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-          lead.contactNumber?.includes(filterText) ||
-          lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
-        ),
-      ])
-    )}
-    statuses={pipelines.map((p) => p.name)}
-    kanbanStatuses={pipelines}
-    onScheduleActivity={handleScheduleActivity}
-    onDragEnd={handleDragEnd}
-    debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
-  />
-)}
+        {!loading && !error && (
+          <>
+            {viewMode === "kanban" && (
+              <div className="h-full w-full">
+                <KanbanBoardClientOnly
+                  leadsByStatus={Object.fromEntries(
+                    Object.entries(leadsByStatus).map(([status, leads]) => [
+                      status,
+                      leads.filter((lead) =>
+                        lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                        lead.contactNumber?.includes(filterText) ||
+                        lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                      ),
+                    ])
+                  )}
+                  statuses={pipelines.map((p) => p.name)}
+                  kanbanStatuses={pipelines}
+                  onScheduleActivity={handleScheduleActivity}
+                  onDragEnd={handleDragEnd}
+                  debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+                />
+              </div>
+            )}
 
-{viewMode === "table" && (
-  <LeadsTable
-    leads={dedupedLeads.filter((lead) =>
-      lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-      lead.contactNumber?.includes(filterText) ||
-      lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
-    )}
-  />
-)}
-
+            {viewMode === "table" && (
+              <div className="h-full w-full overflow-auto">
+                <LeadsTable
+                  leads={dedupedLeads.filter((lead) =>
+                    lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                    lead.contactNumber?.includes(filterText) ||
+                    lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                  )}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <AddLeadModal
         isOpen={showAddLeadModal}
