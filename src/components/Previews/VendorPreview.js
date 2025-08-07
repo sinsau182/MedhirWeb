@@ -139,4 +139,4 @@ const VendorPreview = ({ vendorData, onClose }) => {
   );
 };
 
-export default VendorPreview; 
+export default VendorPreview;
