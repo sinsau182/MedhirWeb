@@ -113,7 +113,7 @@ const PaymentReceiptUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFi
               )}
             </div>
             <div className="mt-4 text-center">
-              <span className="text-green-600 font-semibold">✅ File uploaded successfully</span>
+            
               <p className="text-sm text-gray-500 mt-1">Click to upload a different file</p>
             </div>
           </div>
@@ -538,7 +538,7 @@ const BulkPaymentForm = ({ onSubmit, onCancel }) => {
                   </div>
                   {/* Bank Account */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Paid From Bank Account</label>
                     <select
                       name="bankAccount"
                       value={formData.bankAccount}
