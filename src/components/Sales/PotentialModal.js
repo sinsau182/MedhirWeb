@@ -200,7 +200,7 @@ const PotentialModal = ({
             </div>
 
             {/* Consultation Fee */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <FaDollarSign className="w-4 h-4 text-green-600" />
                 Refundable Token Amount *
@@ -216,7 +216,7 @@ const PotentialModal = ({
               <p className="text-xs text-gray-500 mt-1">
                 Enter the refundable token amount
               </p>
-            </div>
+            </div> */}
 
             {/* Design Consultation */}
             <div>
