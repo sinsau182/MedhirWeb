@@ -188,7 +188,9 @@ const CompanyBankDetails = ({ bankDetails, onBankDetailsChange, errors = {} }) =
             onKeyDown={handleAlphaSpaceKeyDown}
             onPaste={onPasteSanitize(/^[A-Za-z ]+$/)}
             placeholder="e.g., State Bank of India"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
+            disabled
+            aria-disabled="true"
+            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
           />
           {errors.bankName && <p className="text-xs text-red-600 mt-1">{errors.bankName}</p>}
         </div>
@@ -202,7 +204,9 @@ const CompanyBankDetails = ({ bankDetails, onBankDetailsChange, errors = {} }) =
             onPaste={(e)=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/^\d+$/.test(t)) e.preventDefault(); }}
             placeholder="e.g., 123456789"
             maxLength={18}
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
+            disabled
+            aria-disabled="true"
+            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
           />
           {errors.accountNumber && <p className="text-xs text-red-600 mt-1">{errors.accountNumber}</p>}
         </div>
@@ -215,7 +219,9 @@ const CompanyBankDetails = ({ bankDetails, onBankDetailsChange, errors = {} }) =
             onKeyDown={handleAlphaNumKeyDown}
             onPaste={(e)=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/^[A-Za-z0-9]+$/.test(t)) e.preventDefault(); }}
             placeholder="e.g., SBIN0001234"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm uppercase"
+            disabled
+            aria-disabled="true"
+            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm uppercase bg-gray-50 opacity-75 cursor-not-allowed"
           />
           {errors.ifscCode && <p className="text-xs text-red-600 mt-1">{errors.ifscCode}</p>}
         </div>
@@ -228,7 +234,9 @@ const CompanyBankDetails = ({ bankDetails, onBankDetailsChange, errors = {} }) =
             onKeyDown={handleAlphaSpaceKeyDown}
             onPaste={onPasteSanitize(/^[A-Za-z ]+$/)}
             placeholder="e.g., MG Road, Bengaluru"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
+            disabled
+            aria-disabled="true"
+            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
           />
           {errors.branchName && <p className="text-xs text-red-600 mt-1">{errors.branchName}</p>}
         </div>

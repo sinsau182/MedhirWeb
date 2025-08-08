@@ -529,17 +529,15 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
           {activeTab === 'attachments' && (
             <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-                <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-pointer">
+                <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-not-allowed pointer-events-none opacity-60">
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-2">
                         <FaPaperclip className="text-2xl text-blue-500" />
                     </div>
                     <button
                         type="button"
-                        className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                        onClick={e => {
-                            e.preventDefault();
-                            if (inputRef.current) inputRef.current.click();
-                        }}
+                        disabled
+                        aria-disabled="true"
+                        className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium"
                     >
                         Add Attachment
                     </button>
@@ -549,11 +547,13 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                         accept=".pdf,.jpg,.jpeg,.png"
                         multiple
                         className="hidden"
+                        disabled
+                        aria-disabled="true"
                         onChange={handleAttachmentChange}
                         ref={inputRef}
                     />
                 </label>
-                <div className="text-sm text-gray-400 mt-2 mb-6">PDF, JPG, PNG allowed</div>
+                <div className="text-sm text-gray-400 mt-2 mb-6">Attachments are disabled</div>
                 
                 {formData.attachments.length > 0 && (
                   <div className="w-full max-w-2xl">
