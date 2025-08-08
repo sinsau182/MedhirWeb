@@ -748,9 +748,10 @@ const LeadManagementContent = ({ role }) => {
       // Update the lead with potential data
       await dispatch(updateLead({
         leadId: formData.leadId,
+        firstMeetingDate: formData.firstMeetingDate,
         requirements: formData.requirements,
-        // consultationFee: formData.consultationFee,
-        designConsultation: formData.designConsultation
+        priority: formData.priority,
+        initialQuote: formData.initialQuote
       }));
       
       // Move the lead to the target pipeline

@@ -533,7 +533,12 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{bill.gstin}</span>
+                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                          {(() => {
+                            const vendor = vendors.find(v => v.vendorId === bill.vendorId);
+                            return vendor?.gstin || bill.gstin || '-';
+                          })()}
+                        </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>

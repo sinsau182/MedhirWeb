@@ -633,9 +633,10 @@ const ManagerContent = ({ role }) => {
       // Update the lead with potential information
       await dispatch(updateLead({
         leadId: potentialData.leadId,
+        firstMeetingDate: potentialData.firstMeetingDate,
         requirements: potentialData.requirements,
-        consultationFee: potentialData.consultationFee,
-        designConsultation: potentialData.designConsultation
+        priority: potentialData.priority,
+        initialQuote: potentialData.initialQuote
       }));
       
       // Move the lead to the target pipeline

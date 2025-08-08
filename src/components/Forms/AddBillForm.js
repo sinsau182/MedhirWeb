@@ -29,6 +29,15 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
     const fileInputRef = useRef(null);
     const [zoomLevel, setZoomLevel] = useState(1);
     const [showZoomControls, setShowZoomControls] = useState(false);
+    
+    const isPdf = (value) => {
+        if (!value) return false;
+        if (typeof value !== 'string') {
+            return value.type === 'application/pdf';
+        }
+        const lower = value.toLowerCase();
+        return lower.endsWith('.pdf') || lower.includes('application%2Fpdf') || lower.includes('content-type=application/pdf');
+    };
 
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
@@ -144,7 +153,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                 {uploadedImage ? (
                     <div className="flex flex-col items-center w-full h-full">
                         <div className="flex-1 flex items-center justify-center w-full relative overflow-hidden">
-                            {uploadedImage.type === 'application/pdf' ? (
+                            {isPdf(uploadedImage) ? (
                                 <div className="relative w-full h-full flex flex-col">
                                     <div className="absolute top-2 right-2 flex gap-2 z-10">
                                         <button
@@ -155,7 +164,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                                             <FaTimes size={14} />
                                         </button>
                                         <button
-                                            onClick={handleDownload}
+                                            onClick={(e) => { e.stopPropagation(); handleDownload(); }}
                                             className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
                                             title="Download file"
                                         >
@@ -190,7 +199,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                                     {showZoomControls && (
                                         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
                                             <button
-                                                onClick={handleZoomOut}
+                                                onClick={(e) => { e.stopPropagation(); handleZoomOut(); }}
                                                 className="p-2 rounded-md hover:bg-gray-200 transition-colors"
                                                 title="Zoom Out"
                                                 disabled={zoomLevel <= 0.25}
@@ -201,7 +210,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
                                                 {Math.round(zoomLevel * 100)}%
                                             </span>
                                             <button
-                                                onClick={handleZoomIn}
+                                                onClick={(e) => { e.stopPropagation(); handleZoomIn(); }}
                                                 className="p-2 rounded-md hover:bg-gray-200 transition-colors"
                                                 title="Zoom In"
                                                 disabled={zoomLevel >= 3}
@@ -320,6 +329,23 @@ const BillForm = ({ bill, onCancel }) => {
         setBillLines([{ item: '', hsn: '', qty: 1, uom: 'PCS', rate: 0, gst: 18, cgst: 9, sgst: 9, igst: 18 }]);
       }
       
+      // Auto-load first attachment into preview if present
+      try {
+        const attachmentSource = bill.attachmentUrls;
+        let firstUrl = null;
+        if (Array.isArray(attachmentSource) && attachmentSource.length > 0) {
+          firstUrl = attachmentSource[0];
+        } else if (typeof attachmentSource === 'string' && attachmentSource.trim().length > 0 && attachmentSource !== 'Yes') {
+          firstUrl = attachmentSource;
+        }
+        if (firstUrl) {
+          setUploadedImage(firstUrl);
+          setUploadedFile(null);
+        }
+      } catch (e) {
+        // Ignore attachment preload errors
+      }
+
       if (bill.vendorId && vendors.length > 0) {
         const vendor = vendors.find(v => v.vendorId === bill.vendorId);
         if (vendor) {
@@ -402,7 +428,29 @@ const BillForm = ({ bill, onCancel }) => {
   };
 
   const handleLineChange = (idx, field, value) => {
-    setBillLines((prev) => prev.map((line, i) => i === idx ? { ...line, [field]: value } : line));
+    setBillLines((previousLines) => {
+      const updatedLines = [...previousLines];
+      const line = { ...updatedLines[idx] };
+      if (field === 'gst') {
+        const gstValue = Number(value) || 0;
+        line.gst = gstValue;
+        if (placeOfSupply === 'interstate') {
+          // Split equally between CGST and SGST, no IGST
+          line.cgst = gstValue / 2;
+          line.sgst = gstValue / 2;
+          line.igst = 0;
+        } else {
+          // Use IGST only
+          line.igst = gstValue;
+          line.cgst = 0;
+          line.sgst = 0;
+        }
+      } else {
+        line[field] = value;
+      }
+      updatedLines[idx] = line;
+      return updatedLines;
+    });
   };
 
   const handleAddLine = () => {
@@ -580,6 +628,19 @@ const BillForm = ({ bill, onCancel }) => {
                     <FaUser className="text-gray-400" /> Vendor Details
                   </h2>
                 </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                  <div className="flex gap-4">
+                    <label className="inline-flex items-center">
+                      <input type="checkbox" checked={projectType.includes('Project')} onChange={() => handleProjectTypeChange('Project')} className="form-checkbox" />
+                      <span className="ml-2">Project</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="checkbox" checked={projectType.includes('Non Project')} onChange={() => handleProjectTypeChange('Non Project')} className="form-checkbox" />
+                      <span className="ml-2">Non Project</span>
+                    </label>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Vendor Name <span className="text-red-500">*</span>
@@ -617,17 +678,28 @@ const BillForm = ({ bill, onCancel }) => {
                       // Update line items based on place of supply
                       if (newPlaceOfSupply === 'intrastate') {
                         // Convert CGST + SGST to IGST
-                        setBillLines(prev => prev.map(line => ({
-                          ...line,
-                          igst: (Number(line.cgst) + Number(line.sgst)) || 18
-                        })));
+                         setBillLines(prev => prev.map(line => {
+                           const igst = (Number(line.cgst) + Number(line.sgst)) || 0;
+                           return {
+                             ...line,
+                             igst,
+                             cgst: 0,
+                             sgst: 0,
+                             gst: igst,
+                           };
+                         }));
                       } else {
                         // Convert IGST to CGST and SGST (split equally)
-                        setBillLines(prev => prev.map(line => ({
-                          ...line,
-                          cgst: (Number(line.igst) / 2) || 9,
-                          sgst: (Number(line.igst) / 2) || 9
-                        })));
+                         setBillLines(prev => prev.map(line => {
+                           const total = Number(line.igst) || 0;
+                           return {
+                             ...line,
+                             cgst: total / 2,
+                             sgst: total / 2,
+                             igst: 0,
+                             gst: total,
+                           };
+                         }));
                       }
                     }}
                   >
@@ -676,19 +748,7 @@ const BillForm = ({ bill, onCancel }) => {
                   />
                   {errors.billNumber && <div className="text-xs text-red-500 mt-1">{errors.billNumber}</div>}
                 </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
-                  <div className="flex gap-4">
-                    <label className="inline-flex items-center">
-                      <input type="checkbox" checked={projectType.includes('Project')} onChange={() => handleProjectTypeChange('Project')} className="form-checkbox" />
-                      <span className="ml-2">Project</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input type="checkbox" checked={projectType.includes('Non Project')} onChange={() => handleProjectTypeChange('Non Project')} className="form-checkbox" />
-                      <span className="ml-2">Non Project</span>
-                    </label>
-                  </div>
-                </div>
+                
                 <div className="flex gap-4">
                   <div className="w-1/2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">

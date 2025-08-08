@@ -193,11 +193,12 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
   const calculateTotals = () => {
     const subtotal = 0; // No rate calculation needed
-    const grandTotal = subtotal;
-    return { subtotal, grandTotal };
+    const totalGst = 0; // GST not calculated in this simplified form
+    const grandTotal = subtotal + totalGst;
+    return { subtotal, totalGst, grandTotal };
   };
   
-  const { subtotal, grandTotal } = calculateTotals();
+  const { subtotal, totalGst, grandTotal } = calculateTotals();
 
   const validateForm = () => {
     const newErrors = {};
@@ -229,7 +230,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
     // Calculate TDS amount
     const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
-      subtotal * (selectedVendor.tdsPercentage / 100) : 0;
+      (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
     let finalPONumber = formData.poNumber;
     if (mode === 'add' && companyId) {
       try {
@@ -264,10 +265,30 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
           description: item.description,
           //hsnOrSac: item.hsnCode,
           quantity: qty,
-          uom: item.unit
+          uom: item.unit,
+          // Provide numeric fields expected by backend to avoid null BigDecimal operations
+          rate: 0,
+          amount: 0,
+          gstPercent: 0,
+          cgstPercent: 0,
+          sgstPercent: 0,
+          igstPercent: 0,
+          gstAmount: 0,
+          cgstAmount: 0,
+          sgstAmount: 0,
+          igstAmount: 0,
+          totalAmount: 0
         };
       }),
-      totalBeforeGST: 0
+      // Top-level totals mirrored from bills API to satisfy backend schema
+      totalBeforeGST: subtotal,
+      totalGST: totalGst,
+      totalCGST: 0,
+      totalSGST: 0,
+      totalIGST: 0,
+      finalAmount: grandTotal,
+      tdsAmount: tdsAmount || 0,
+      notes: formData.notes || ''
     };
 
     console.log('Purchase Order Data:', poData);
@@ -508,17 +529,15 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
           {activeTab === 'attachments' && (
             <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-                <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-pointer">
+                <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-not-allowed pointer-events-none opacity-60">
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-2">
                         <FaPaperclip className="text-2xl text-blue-500" />
                     </div>
                     <button
                         type="button"
-                        className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                        onClick={e => {
-                            e.preventDefault();
-                            if (inputRef.current) inputRef.current.click();
-                        }}
+                        disabled
+                        aria-disabled="true"
+                        className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium"
                     >
                         Add Attachment
                     </button>
@@ -528,11 +547,13 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
                         accept=".pdf,.jpg,.jpeg,.png"
                         multiple
                         className="hidden"
+                        disabled
+                        aria-disabled="true"
                         onChange={handleAttachmentChange}
                         ref={inputRef}
                     />
                 </label>
-                <div className="text-sm text-gray-400 mt-2 mb-6">PDF, JPG, PNG allowed</div>
+                <div className="text-sm text-gray-400 mt-2 mb-6">Attachments are disabled</div>
                 
                 {formData.attachments.length > 0 && (
                   <div className="w-full max-w-2xl">
