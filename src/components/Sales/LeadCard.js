@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useDispatch, useSelector } from 'react-redux';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -14,17 +15,32 @@ import {
   FaCommentDots,
   FaRegClock,
   FaTrash,
+  FaSnowflake,
 } from "react-icons/fa";
 import LeadActions from './LeadActions';
+import { fetchPipelines } from '@/redux/slices/pipelineSlice';
 import TeamMemberAssignmentModal from './TeamMemberAssignmentModal';
+import { toast } from 'sonner';
+import axios from 'axios';
+import getConfig from 'next/config';
 
-const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, onMoveToJunk, managerEmployees = [], allowAssignment = false }) => {
+const { publicRuntimeConfig } = getConfig();
+const API_BASE_URL = publicRuntimeConfig.apiURL;
+
+const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [], allowAssignment = false }) => {
   const router = useRouter();
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamModalRole, setTeamModalRole] = useState('');
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  const [isFreezing, setIsFreezing] = useState(false);
+  const dispatch = useDispatch();
+  const { pipelines } = useSelector((state) => state.pipelines);
 
-  console.log(managerEmployees)
+  useEffect(() => {
+    dispatch(fetchPipelines());
+  }, [dispatch]);
+
+  console.log(pipelines)
   
   const {
     attributes,
@@ -45,17 +61,10 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
   };
 
   const handleCardDoubleClick = (e) => {
-    if (e.target.closest('.lead-actions') || e.target.closest('.junk-button')) {
+    if (e.target.closest('.lead-actions')) {
       return;
     }
     router.push(`/Sales/leads/${lead.leadId}`);
-  };
-
-  const handleMoveToJunk = (e) => {
-    e.stopPropagation();
-    if (onMoveToJunk) {
-      onMoveToJunk(lead.leadId);
-    }
   };
 
   const renderStars = (priority) => {
@@ -133,6 +142,46 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     setShowTeamModal(false);
   };
 
+  // Check if lead is in High Potential stage
+  const isHighPotential = () => {
+    return lead.stageName && lead.stageName.toLowerCase().includes('high potential');
+  };
+
+  // Handle freeze lead
+  const handleFreezeLead = async (e) => {
+    e.stopPropagation();
+    
+    if (isFreezing) return;
+    
+    setIsFreezing(true);
+    try {
+      const token = sessionStorage.getItem("token") || "";
+      const response = await axios.post(
+        `${API_BASE_URL}/leads/freeze/${lead.leadId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      toast.success("Lead frozen successfully!");
+      
+      // Optionally refresh the leads list or update the UI
+      // You might want to call a callback function here to refresh the leads
+      if (window.location.reload) {
+        window.location.reload();
+      }
+      
+    } catch (error) {
+      console.error("Failed to freeze lead:", error);
+      toast.error("Failed to freeze lead. Please try again.");
+    } finally {
+      setIsFreezing(false);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -141,7 +190,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {...attributes}
       {...listeners}
       className={`
-        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab relative
+        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab
         ${isDragging ? 'opacity-50 shadow-lg scale-105 rotate-1' : 'hover:shadow-md'}
         ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
         ${isDragging ? 'z-50' : ''}
@@ -150,7 +199,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {/* Header: Name and Priority */}
       <div className="flex items-start justify-between mb-2">
         <h3 className="font-semibold text-gray-900 text-sm truncate flex-1 mr-2">{lead.name}</h3>
-        <div className="flex items-center">{renderStars(priorityToStars(lead.priority))  || ''}</div>
+        {/* <div className="flex items-center">{renderStars(priorityToStars(lead.priority))  || ''}</div> */}
       </div>
       
       {/* Budget and Date */}
@@ -199,7 +248,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
             </>
           )}
         </div>
-        
+        <div className="flex items-center gap-2">
         {/* Activity Button */}
         <button
           type="button"
@@ -209,6 +258,31 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
         >
           <FaRegClock size={14} />
         </button>
+
+        {/* Freeze Button - Only show for High Potential leads */}
+        {isHighPotential() && (
+          <CustomTooltip text="Freeze Lead">
+            <button
+              type="button"
+              title="Freeze Lead"
+              onClick={handleFreezeLead}
+              disabled={isFreezing}
+              className="hover:bg-purple-50 rounded-full p-1 transition-colors text-gray-400 hover:text-purple-600 focus:outline-none focus:ring-1 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaSnowflake size={14} className={isFreezing ? 'animate-spin' : ''} />
+            </button>
+          </CustomTooltip>
+        )}
+
+        <button
+          type="button"
+          title="Move to Junk"
+          onClick={() => onMarkJunk && onMarkJunk(lead.leadId)}
+          className="hover:bg-red-50 rounded-full p-1 transition-colors text-gray-400 hover:text-red-600 focus:outline-none focus:ring-1 focus:ring-red-300"
+        >
+          <FaTrash size={14} />
+        </button>
+        </div>
       </div>
       
       {/* Activity Status */}
@@ -217,15 +291,6 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
           {lead.latestActivityTitle}
         </div>
       )}
-
-      {/* Junk Button - Bottom Right Corner */}
-      <button
-        onClick={handleMoveToJunk}
-        className="junk-button absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
-        title="Move to Junk"
-      >
-        <FaTrash size={12} />
-      </button>
 
       {/* Team Member Assignment Modal */}
       <TeamMemberAssignmentModal

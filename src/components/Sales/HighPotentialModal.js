@@ -9,10 +9,10 @@ const HighPotentialModal = ({
   onSuccess
 }) => {
   const [formData, setFormData] = useState({
-    quotationDetails: "",
-    initialQuotedAmount: "",
-    finalQuotedAmount: "",
-    discountPercent: "",
+    requirements: "",
+    initialQuote: "",
+    finalQuotation: "",
+    discount: "",
     designTimeline: "",
     completionTimeline: ""
   });
@@ -22,10 +22,10 @@ const HighPotentialModal = ({
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        quotationDetails: "",
-        initialQuotedAmount: "",
-        finalQuotedAmount: "",
-        discountPercent: "",
+        requirements: "",
+        initialQuote: "",
+        finalQuotation: "",
+        discount: "",
         designTimeline: "",
         completionTimeline: ""
       });
@@ -37,28 +37,28 @@ const HighPotentialModal = ({
     e.preventDefault();
     
     // Enhanced validation
-    if (!formData.quotationDetails.trim()) {
+    if (!formData.requirements.trim()) {
       toast.error("Please provide the quotation details");
       return;
     }
     
-    if (formData.quotationDetails.trim().length < 10) {
+    if (formData.requirements.trim().length < 10) {
       toast.error("Quotation details must be at least 10 characters");
       return;
     }
     
-    if (formData.quotationDetails.trim().length > 500) {
+    if (formData.requirements.trim().length > 500) {
       toast.error("Quotation details must be less than 500 characters");
       return;
     }
 
-    if (!formData.initialQuotedAmount.trim()) {
+    if (!formData.initialQuote.trim()) {
       toast.error("Please provide the initial quoted amount");
       return;
     }
     
     // Validate initial quoted amount
-    const initialAmount = parseFloat(formData.initialQuotedAmount.replace(/[^\d.]/g, ''));
+    const initialAmount = parseFloat(formData.initialQuote.replace(/[^\d.]/g, ''));
     if (isNaN(initialAmount) || initialAmount <= 0) {
       toast.error("Initial quoted amount must be a valid positive number");
       return;
@@ -69,13 +69,13 @@ const HighPotentialModal = ({
       return;
     }
 
-    if (!formData.finalQuotedAmount.trim()) {
+    if (!formData.finalQuotation.trim()) {
       toast.error("Please provide the final quoted amount");
       return;
     }
     
     // Validate final quoted amount
-    const finalAmount = parseFloat(formData.finalQuotedAmount.replace(/[^\d.]/g, ''));
+    const finalAmount = parseFloat(formData.finalQuotation.replace(/[^\d.]/g, ''));
     if (isNaN(finalAmount) || finalAmount <= 0) {
       toast.error("Final quoted amount must be a valid positive number");
       return;
@@ -92,13 +92,13 @@ const HighPotentialModal = ({
       return;
     }
 
-    if (!formData.discountPercent.trim()) {
+    if (!formData.discount.trim()) {
       toast.error("Please provide the discount percentage");
       return;
     }
     
     // Validate discount percentage
-    const discountPercent = parseFloat(formData.discountPercent.replace(/[^\d.]/g, ''));
+    const discountPercent = parseFloat(formData.discount.replace(/[^\d.]/g, ''));
     if (isNaN(discountPercent) || discountPercent < 0 || discountPercent > 100) {
       toast.error("Discount percentage must be between 0 and 100");
       return;
@@ -139,10 +139,10 @@ const HighPotentialModal = ({
     try {
       await onSuccess({
         leadId: lead.leadId,
-        quotationDetails: formData.quotationDetails.trim(),
-        initialQuotedAmount: formData.initialQuotedAmount.trim(),
-        finalQuotedAmount: formData.finalQuotedAmount.trim(),
-        discountPercent: formData.discountPercent.trim(),
+        requirements: formData.requirements.trim(),
+        initialQuote: parseFloat(formData.initialQuote.replace(/[^\d.]/g, '')),
+        finalQuotation: parseFloat(formData.finalQuotation.replace(/[^\d.]/g, '')),
+        discount: parseFloat(formData.discount.replace(/[^\d.]/g, '')),
         designTimeline: formData.designTimeline.trim(),
         completionTimeline: formData.completionTimeline.trim()
       });
@@ -166,13 +166,13 @@ const HighPotentialModal = ({
 
     // Apply input restrictions based on field type
     switch (field) {
-      case 'quotationDetails':
+      case 'requirements':
         // Allow alphanumeric, spaces, and common characters
         processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 500);
         break;
       
-      case 'initialQuotedAmount':
-      case 'finalQuotedAmount':
+      case 'initialQuote':
+      case 'finalQuotation':
         // Only allow numbers and decimal point
         processedValue = value.replace(/[^\d.]/g, '');
         // Prevent multiple decimal points
@@ -182,7 +182,7 @@ const HighPotentialModal = ({
         }
         break;
       
-      case 'discountPercent':
+      case 'discount':
         // Only allow numbers and decimal point, max 100
         processedValue = value.replace(/[^\d.]/g, '');
         const discountValue = parseFloat(processedValue);
@@ -272,8 +272,8 @@ const HighPotentialModal = ({
                 Quotation Details *
               </label>
               <textarea
-                value={formData.quotationDetails}
-                onChange={(e) => handleInputChange('quotationDetails', e.target.value)}
+                value={formData.requirements}
+                onChange={(e) => handleInputChange('requirements', e.target.value)}
                 placeholder="Provide detailed quotation information..."
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white resize-none"
                 rows="3"
@@ -292,8 +292,8 @@ const HighPotentialModal = ({
               </label>
               <input
                 type="text"
-                value={formData.initialQuotedAmount}
-                onChange={(e) => handleInputChange('initialQuotedAmount', e.target.value)}
+                value={formData.initialQuote}
+                onChange={(e) => handleInputChange('initialQuote', e.target.value)}
                 placeholder="Enter initial quoted amount (e.g., ₹10,00,000)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
                 required
@@ -311,8 +311,8 @@ const HighPotentialModal = ({
               </label>
               <input
                 type="text"
-                value={formData.finalQuotedAmount}
-                onChange={(e) => handleInputChange('finalQuotedAmount', e.target.value)}
+                value={formData.finalQuotation}
+                onChange={(e) => handleInputChange('finalQuotation', e.target.value)}
                 placeholder="Enter final quoted amount (e.g., ₹9,50,000)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
                 required
@@ -330,8 +330,8 @@ const HighPotentialModal = ({
               </label>
               <input
                 type="text"
-                value={formData.discountPercent}
-                onChange={(e) => handleInputChange('discountPercent', e.target.value)}
+                value={formData.discount}
+                onChange={(e) => handleInputChange('discount', e.target.value)}
                 placeholder="Enter discount percentage (e.g., 5%)"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
                 required
@@ -384,10 +384,10 @@ const HighPotentialModal = ({
               <h4 className="font-medium text-purple-800 mb-2">Update Summary</h4>
               <div className="text-sm text-purple-700 space-y-1">
                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                <p><strong>Quotation Details:</strong> {formData.quotationDetails ? "Provided" : "Not provided"}</p>
-                <p><strong>Initial Amount:</strong> {formData.initialQuotedAmount || "Not specified"}</p>
-                <p><strong>Final Amount:</strong> {formData.finalQuotedAmount || "Not specified"}</p>
-                <p><strong>Discount:</strong> {formData.discountPercent || "Not specified"}</p>
+                <p><strong>Quotation Details:</strong> {formData.requirements ? "Provided" : "Not provided"}</p>
+                <p><strong>Initial Amount:</strong> {formData.initialQuote || "Not specified"}</p>
+                <p><strong>Final Amount:</strong> {formData.finalQuotation || "Not specified"}</p>
+                <p><strong>Discount:</strong> {formData.discount || "Not specified"}</p>
                 <p><strong>Design Timeline:</strong> {formData.designTimeline || "Not specified"}</p>
                 <p><strong>Completion Timeline:</strong> {formData.completionTimeline || "Not specified"}</p>
               </div>
@@ -408,7 +408,7 @@ const HighPotentialModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.quotationDetails.trim() || !formData.initialQuotedAmount.trim() || !formData.finalQuotedAmount.trim() || !formData.discountPercent.trim() || !formData.designTimeline.trim() || !formData.completionTimeline.trim()}
+            disabled={isSubmitting || !formData.requirements.trim() || !formData.initialQuote.trim() || !formData.finalQuotation.trim() || !formData.discount.trim() || !formData.designTimeline.trim() || !formData.completionTimeline.trim()}
             className="px-6 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
           >
             {isSubmitting ? (

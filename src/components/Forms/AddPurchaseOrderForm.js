@@ -229,7 +229,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
     // Calculate TDS amount
     const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
-      (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
+      subtotal * (selectedVendor.tdsPercentage / 100) : 0;
     let finalPONumber = formData.poNumber;
     if (mode === 'add' && companyId) {
       try {
