@@ -575,6 +575,32 @@ const ManagerContent = ({ role }) => {
     }
   };
 
+  // Team assignment handler for LeadCard
+  const handleTeamAssign = async (assignmentData) => {
+    try {
+      console.log('Manager - handleTeamAssign called with:', assignmentData);
+      
+      // Update the lead with sales rep and designer assignments
+      // The modal sends salesRep and designer fields, so we need to map them correctly
+      const updatePayload = {
+        leadId: assignmentData.leadId,
+        salesRep: assignmentData.salesRep,
+        designer: assignmentData.designer
+      };
+      
+      console.log('Manager - Update payload:', updatePayload);
+      
+      const result = await dispatch(updateLead(updatePayload));
+      console.log('Manager - Update result:', result);
+      
+      // Refresh leads to get the updated grouped format
+      dispatch(fetchLeads());
+    } catch (error) {
+      console.error("Team assignment error:", error);
+      throw error;
+    }
+  };
+
   // Semi contacted handler for SemiContactedModal
   const handleSemiContactedSuccess = async (semiContactedData) => {
     try {
@@ -745,6 +771,9 @@ const ManagerContent = ({ role }) => {
                   kanbanStatuses={pipelines.filter(p => p.name.toLowerCase() !== 'assigned' && p.name.toLowerCase() !== 'freeze' && p.name.toLowerCase() !== 'lost' && p.name.toLowerCase() !== 'junk')}
                   onScheduleActivity={handleScheduleActivity}
                   onDragEnd={handleDragEnd}
+                  onTeamAssign={handleTeamAssign}
+                  managerEmployees={managerEmployees || []}
+                  allowAssignment={true}
                   debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
                 />
               </div>

@@ -21,6 +21,7 @@ const KanbanBoard = ({
   onScheduleActivity,
   onTeamAssign,
   managerEmployees = [],
+  allowAssignment = false,
   setIsForm,
   setStageColor,
   stageColor,
@@ -114,6 +115,7 @@ const KanbanBoard = ({
                 onScheduleActivity={onScheduleActivity}
                 onTeamAssign={onTeamAssign}
                 managerEmployees={managerEmployees}
+                allowAssignment={allowAssignment}
               />
             );
           })}

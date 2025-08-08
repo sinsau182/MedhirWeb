@@ -17,11 +17,13 @@ import {
 import LeadActions from './LeadActions';
 import TeamMemberAssignmentModal from './TeamMemberAssignmentModal';
 
-const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [] }) => {
+const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [], allowAssignment = false }) => {
   const router = useRouter();
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamModalRole, setTeamModalRole] = useState('');
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+
+  console.log(managerEmployees)
   
   const {
     attributes,
@@ -159,22 +161,35 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {/* Team Members */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person\nClick to assign`}>
-            <button
-              onClick={(e) => handleTeamMemberClick('sales', e)}
-              className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-blue-200 hover:scale-110 transition-all duration-200"
-            >
-              {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
-            </button>
-          </CustomTooltip>
-          <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner\nClick to assign`}>
-            <button
-              onClick={(e) => handleTeamMemberClick('designer', e)}
-              className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-green-200 hover:scale-110 transition-all duration-200"
-            >
-              {getInitial(lead.assignDesignerEmpId, lead.designer)}
-            </button>
-          </CustomTooltip>
+          {allowAssignment ? (
+            <>
+              <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person\nClick to assign`}>
+                <button
+                  onClick={(e) => handleTeamMemberClick('sales', e)}
+                  className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-blue-200 hover:scale-110 transition-all duration-200"
+                >
+                  {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
+                </button>
+              </CustomTooltip>
+              <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner\nClick to assign`}>
+                <button
+                  onClick={(e) => handleTeamMemberClick('designer', e)}
+                  className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-green-200 hover:scale-110 transition-all duration-200"
+                >
+                  {getInitial(lead.assignDesignerEmpId, lead.designer)}
+                </button>
+              </CustomTooltip>
+            </>
+          ) : (
+            <>
+              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-white shadow-sm">
+                {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
+              </div>
+              <div className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs border border-white shadow-sm">
+                {getInitial(lead.assignDesignerEmpId, lead.designer)}
+              </div>
+            </>
+          )}
         </div>
         
         {/* Activity Button */}

@@ -33,7 +33,8 @@ const KanbanColumn = ({
   onAddLead,
   onScheduleActivity,
   onTeamAssign,
-  managerEmployees = []
+  managerEmployees = [],
+  allowAssignment = false
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -115,6 +116,7 @@ const KanbanColumn = ({
             onScheduleActivity={onScheduleActivity}
             onTeamAssign={onTeamAssign}
             managerEmployees={managerEmployees}
+            allowAssignment={allowAssignment}
           />
         ))}
         
