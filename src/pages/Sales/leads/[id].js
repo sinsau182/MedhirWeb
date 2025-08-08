@@ -52,9 +52,16 @@ import LostLeadModal from "@/components/Sales/LostLeadModal";
 import axios from "axios";
 import getConfig from "next/config";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
+import AssignLeadModal from "@/components/Sales/AssignLeadModal";
+import SemiContactedModal from "@/components/Sales/SemiContactedModal";
+import PotentialModal from "@/components/Sales/PotentialModal";
+import HighPotentialModal from "@/components/Sales/HighPotentialModal";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import { jwtDecode } from "jwt-decode";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+// Add Minio image system imports
+import MinioImage from "@/components/ui/MinioImage";
+import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -236,6 +243,7 @@ const OdooDetailBody = ({
   const [expandedActivities, setExpandedActivities] = useState({});
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [showAllActivityLogs, setShowAllActivityLogs] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState({});
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
 
@@ -246,6 +254,7 @@ const OdooDetailBody = ({
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
     contactNumber: lead.contactNumber || "",
+    alternateContactNumber: lead.alternateContactNumber || "",
     email: lead.email || "",
   });
 
@@ -253,21 +262,21 @@ const OdooDetailBody = ({
 
   // --- Assigned Team Edit State ---
   const [isEditingTeam, setIsEditingTeam] = useState(false);
-  const [assignedSalesRep, setAssignedSalesRep] = useState(lead.salesRep || "");
-  const [assignedDesigner, setAssignedDesigner] = useState(lead.designer || "");
-  const [assignedSalesRepId, setAssignedSalesRepId] = useState(
-    lead.salesRepId || ""
-  );
-  const [assignedDesignerId, setAssignedDesignerId] = useState(
-    lead.designerId || ""
-  );
+  const [assignedSalesRep, setAssignedSalesRep] = useState("");
+  const [assignedDesigner, setAssignedDesigner] = useState("");
+  const [assignedSalesRepId, setAssignedSalesRepId] = useState("");
+  const [assignedDesignerId, setAssignedDesignerId] = useState("");
 
   useEffect(() => {
-    setAssignedSalesRep(lead.salesRep || "");
-    setAssignedDesigner(lead.designer || "");
-    setAssignedSalesRepId(lead.salesRepId || "");
-    setAssignedDesignerId(lead.designerId || "");
-  }, [lead]);
+    // Convert employee IDs to names for display
+    const salesRepEmployee = managerEmployees.find(emp => emp.employeeId === lead.salesRep);
+    const designerEmployee = managerEmployees.find(emp => emp.employeeId === lead.designer);
+    
+    setAssignedSalesRep(salesRepEmployee?.name || "");
+    setAssignedDesigner(designerEmployee?.name || "");
+    setAssignedSalesRepId(lead.salesRep || "");
+    setAssignedDesignerId(lead.designer || "");
+  }, [lead, managerEmployees]);
   // --- End Assigned Team Edit State ---
 
   useEffect(() => {
@@ -283,44 +292,199 @@ const OdooDetailBody = ({
   }, [lead, isEditing]);
 
   const handleContactFieldChange = (field, value) => {
-    setContactFields((prev) => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Apply runtime validation and input restrictions
+    switch (field) {
+      case 'name':
+        // Only allow letters, spaces, and common punctuation
+        processedValue = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+        break;
+      case 'contactNumber':
+      case 'alternateContactNumber':
+        // Only allow digits, max 10 digits
+        processedValue = value.replace(/\D/g, '').slice(0, 10);
+        break;
+      case 'email':
+        // Allow email characters, max 100 characters
+        processedValue = value.slice(0, 100);
+        break;
+      default:
+        processedValue = value;
+    }
+    
+    setContactFields((prev) => ({ ...prev, [field]: processedValue }));
   };
 
   const handleDownloadFile = async (url) => {
-    const response = await fetch(url);
-    const blob = await response.blob();
+    try {
+      // Use Minio system for authenticated file access
+      const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+      
+      // Create a temporary link to download the file
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = url.split("/").pop().split("?")[0];
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up blob URL
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      toast.error('Failed to download file. Please try again.');
+    }
+  };
 
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = blobUrl;
-    a.download = url.split("/").pop().split("?")[0];
+  const handleOpenFile = async (url, fileName) => {
+    try {
+      // Use Minio system for authenticated file access
+      const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+      
+      // Open file in new window
+      const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        newWindow.document.title = fileName || 'File Preview';
+        newWindow.focus();
+      }
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      toast.error('Failed to open file. Please try again.');
+    }
+  };
 
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const toggleNoteExpansion = (noteId) => {
+    setExpandedNotes(prev => ({
+      ...prev,
+      [noteId]: !prev[noteId]
+    }));
+  };
 
-    // Clean up blob URL
-    URL.revokeObjectURL(blobUrl);
+  const renderNoteContent = (content, noteId) => {
+    const isExpanded = expandedNotes[noteId];
+    const isLongNote = content.length > 60;
+    
+    if (!isLongNote) {
+      return <span>{content}</span>;
+    }
+    
+    // Split content into 60-character chunks
+    const chunks = [];
+    for (let i = 0; i < content.length; i += 60) {
+      chunks.push(content.slice(i, i + 60));
+    }
+    
+    const visibleChunks = isExpanded ? chunks : chunks.slice(0, 1);
+    
+    return (
+      <div className="space-y-1">
+        <div className="whitespace-pre-wrap">
+          {visibleChunks.map((chunk, index) => (
+            <div key={index} className="text-sm">
+              {chunk}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => toggleNoteExpansion(noteId)}
+          className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
+        >
+          {isExpanded ? (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              Show Less
+            </>
+          ) : (
+            <>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+              Show More
+            </>
+          )}
+        </button>
+      </div>
+    );
   };
 
   const handleSaveContact = async () => {
     try {
+      // Validate form data before submission
+      const errors = {};
+      
+      // Name validation
+      if (!contactFields.name.trim()) {
+        errors.name = "Name is required";
+      } else if (contactFields.name.trim().length < 2) {
+        errors.name = "Name must be at least 2 characters";
+      } else if (contactFields.name.trim().length > 50) {
+        errors.name = "Name must be less than 50 characters";
+      }
+      
+      // Contact number validation
+      if (!contactFields.contactNumber.trim()) {
+        errors.contactNumber = "Contact number is required";
+      } else if (!/^\d{10}$/.test(contactFields.contactNumber.trim())) {
+        errors.contactNumber = "Contact number must be exactly 10 digits";
+      } else if (contactFields.contactNumber.trim().startsWith('0')) {
+        errors.contactNumber = "Contact number cannot start with 0";
+      }
+      
+      // Alternate phone validation (optional)
+      if (contactFields.alternateContactNumber.trim()) {
+        if (!/^\d{10}$/.test(contactFields.alternateContactNumber.trim())) {
+          errors.alternateContactNumber = "Alternate phone must be exactly 10 digits";
+        } else if (contactFields.alternateContactNumber.trim().startsWith('0')) {
+          errors.alternateContactNumber = "Alternate phone cannot start with 0";
+        } else if (contactFields.alternateContactNumber.trim() === contactFields.contactNumber.trim()) {
+          errors.alternateContactNumber = "Alternate phone cannot be same as main contact";
+        }
+      }
+      
+      // Email validation (optional)
+      if (contactFields.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(contactFields.email.trim())) {
+          errors.email = "Please enter a valid email address";
+        } else if (contactFields.email.trim().length > 100) {
+          errors.email = "Email must be less than 100 characters";
+        }
+      }
+      
+      // If there are validation errors, show them and return
+      if (Object.keys(errors).length > 0) {
+        Object.values(errors).forEach(error => {
+          toast.error(error);
+        });
+        return;
+      }
+      
       await axios.put(
         `${API_BASE_URL}/leads/${lead.leadId}`,
         {
-          name: contactFields.name,
-          contactNumber: contactFields.contactNumber,
-          email: contactFields.email,
+          name: contactFields.name.trim(),
+          contactNumber: contactFields.contactNumber.trim(),
+          alternateContactNumber: contactFields.alternateContactNumber.trim(),
+          email: contactFields.email.trim(),
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
-      onFieldChange("name", contactFields.name);
-      onFieldChange("contactNumber", contactFields.contactNumber);
-      onFieldChange("email", contactFields.email);
+      onFieldChange("name", contactFields.name.trim());
+      onFieldChange("contactNumber", contactFields.contactNumber.trim());
+      onFieldChange("alternateContactNumber", contactFields.alternateContactNumber.trim());
+      onFieldChange("email", contactFields.email.trim());
       setIsEditingContact(false);
       await dispatch(fetchLeadById(lead.leadId));
       toast.success("Contact details updated!");
@@ -338,7 +502,7 @@ const OdooDetailBody = ({
     try {
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, projectFields, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
         },
       });
       Object.entries(projectFields).forEach(([field, value]) => {
@@ -360,7 +524,7 @@ const OdooDetailBody = ({
       if (assignedDesignerId) body.designer = assignedDesignerId;
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, body, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
         },
       });
       setIsEditingTeam(false);
@@ -437,7 +601,7 @@ const OdooDetailBody = ({
           { content: noteContent },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
         );
@@ -454,7 +618,7 @@ const OdooDetailBody = ({
           { content: noteContent },
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
         );
@@ -560,7 +724,7 @@ const OdooDetailBody = ({
                   field: "leadSource",
                   type: "select",
                   options: sources,
-                  required: true,
+                  required: false,
                 },
                 { label: "Design Style", field: "designStyle", type: "text" },
               ].map(({ label, field, type, options, required, optional }) => (
@@ -740,9 +904,9 @@ const OdooDetailBody = ({
                             {formatRelativeTime(note.time)}
                           </span>
                         </p>
-                        <p className="text-sm group-hover:text-blue-600">
-                          {note.content}
-                        </p>
+                        <div className="text-sm group-hover:text-blue-600">
+                          {renderNoteContent(note.content, `note-${note.noteId || idx}`)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -765,9 +929,11 @@ const OdooDetailBody = ({
                       const completedActivities = activities
                         .filter((a) => a.status === "done")
                         .sort(
-                          (a, b) =>
-                            new Date(b.dueDate || b.updatedAt || b.createdAt) -
-                            new Date(a.dueDate || a.updatedAt || a.createdAt)
+                          (a, b) => {
+                            const dateA = new Date(`${a.dueDate}T${a.dueTime || '00:00'}`);
+                            const dateB = new Date(`${b.dueDate}T${b.dueTime || '00:00'}`);
+                            return dateB - dateA;
+                          }
                         );
                       
                       const visibleActivities = showAllActivityLogs
@@ -841,10 +1007,23 @@ const OdooDetailBody = ({
                                     })
                                   : ""}
                               </div>
+                              {activity.attachment && (
+                                <div className="text-sm mb-2">
+                                  <button
+                                    onClick={() => handleOpenFile(activity.attachment, activity.title)}
+                                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span className="text-xs">View File</span>
+                                  </button>
+                                </div>
+                              )}
                               {activity.notes && (
                                 <div className="text-sm">
                                   <span className="font-semibold">Notes:</span>{" "}
-                                  {activity.notes}
+                                  {renderNoteContent(activity.notes, activity.id)}
                                 </div>
                               )}
                             </div>
@@ -885,55 +1064,73 @@ const OdooDetailBody = ({
                   </h3>
                   {activities
                     .filter((activity) => activity.attachment)
+                    .sort((a, b) => {
+                      const dateA = new Date(`${a.dueDate}T${a.dueTime || '00:00'}`);
+                      const dateB = new Date(`${b.dueDate}T${b.dueTime || '00:00'}`);
+                      return dateB - dateA;
+                    })
                     .map((activity) => (
                       <div
                         key={activity.id}
                         className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 mb-2 border"
                       >
-                        <div>
-                          <a
-                            href={activity.attachment}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-gray-800 hover:text-blue-600 flex items-center gap-2"
-                          >
-                            <span className="inline-block mr-2">
-                              {/* You can use a file icon here */}
-                              <svg
-                                className="w-5 h-5 text-gray-400"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M4 4v16h16V8l-6-6H4z" />
+                        <div className="flex items-center gap-3">
+                          {/* File Icon */}
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            {activity.attachment.toLowerCase().includes('.pdf') ? (
+                              <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
                               </svg>
-                            </span>
-                            {activity.attachmentName ||
-                              activity.attachment.split("/").pop()}
-                          </a>
-                          <div className="text-xs text-gray-500 mt-1">
-                            Uploaded by {activity.user || "Unknown"}{" "}
-                            {/* {activity.createdAt
-                                        ? new Date(activity.createdAt).toLocaleDateString("en-GB", {
-                                            day: "2-digit",
-                                            month: "short",
-                                            year: "numeric",
-                                          })
-                                        : "Unknown date"} */}
+                            ) : activity.attachment.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                              <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                              </svg>
+                            ) : (
+                              <svg className="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          
+                          {/* File Info */}
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-800 hover:text-blue-600 flex items-center gap-2">
+                              {activity.attachmentName || activity.attachment.split("/").pop()}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Uploaded by {activity.user || "Unknown"}
+                            </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() =>
-                            handleDownloadFile(activity.attachment)
-                          }
-                          className="text-gray-500 hover:text-blue-600 p-2"
-                        >
-                          <FaDownload className="w-4 h-4" />
-                        </button>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2">
+                          {/* View Button */}
+                          <button
+                            onClick={() => handleOpenFile(activity.attachment, activity.attachmentName || activity.attachment.split("/").pop())}
+                            className="text-blue-600 hover:text-blue-800 p-2"
+                            title="View File"
+                          >
+                            <FaFileAlt className="w-4 h-4" />
+                          </button>
+                          
+                          {/* Download Button */}
+                          <button
+                            onClick={() => handleDownloadFile(activity.attachment)}
+                            className="text-gray-500 hover:text-blue-600 p-2"
+                            title="Download File"
+                          >
+                            <FaDownload className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
-                  <div className="border-b border-gray-200 mb-6"></div>
+                  {activities.filter((activity) => activity.attachment).length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500 text-lg">No files available</p>
+                      <p className="text-gray-400 text-sm mt-2">No attachments have been uploaded for this lead</p>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === "status" && (
@@ -982,22 +1179,17 @@ const OdooDetailBody = ({
                               {lead.signupAmount || "N/A"}
                             </div>
                             <div>
-                              <strong>PAN Number:</strong>{" "}
-                              {lead.panNumber || "N/A"}
-                            </div>
-                            <div>
                               <strong>Discount:</strong>{" "}
                               {lead.discount || "N/A"}
                             </div>
                             <div>
                               <strong>Payment Proof:</strong>{" "}
                               {lead.paymentDetailsFileName ? (
-                                <a
-                                  href={lead.paymentDetailsFileName}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <span style={{ wordBreak: "break-all" }}>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenFile(lead.paymentDetailsFileName, lead.paymentDetailsFileName.split("/").pop())}
+                                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                                  >
                                     {(() => {
                                       const name = lead.paymentDetailsFileName
                                         .split("/")
@@ -1007,8 +1199,15 @@ const OdooDetailBody = ({
                                         name
                                       );
                                     })()}
-                                  </span>
-                                </a>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadFile(lead.paymentDetailsFileName)}
+                                    className="text-gray-500 hover:text-blue-600 p-1"
+                                    title="Download"
+                                  >
+                                    <FaDownload className="w-3 h-3" />
+                                  </button>
+                                </div>
                               ) : (
                                 "No file uploaded"
                               )}
@@ -1024,22 +1223,25 @@ const OdooDetailBody = ({
                               {lead.paymentMode || "N/A"}
                             </div>
                             <div>
-                              <strong>Payment Transaction ID:</strong>{" "}
-                              {lead.paymentTransactionId || "N/A"}
+                              <strong>PAN Number:</strong>{" "}
+                              {lead.panNumber || "N/A"}
                             </div>
                             <div>
                               <strong>Project Timeline:</strong>{" "}
                               {lead.projectTimeline || "N/A"}
                             </div>
                             <div>
+                              <strong>Discount:</strong>{" "}
+                              {lead.discount || "N/A"}
+                            </div>
+                            <div>
                               <strong>Booking Form:</strong>{" "}
                               {lead.bookingFormFileName ? (
-                                <a
-                                  href={lead.bookingFormFileName}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <span style={{ wordBreak: "break-all" }}>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenFile(lead.bookingFormFileName, lead.bookingFormFileName.split("/").pop())}
+                                    className="text-blue-600 hover:text-blue-800 text-sm underline"
+                                  >
                                     {(() => {
                                       const name = lead.bookingFormFileName
                                         .split("/")
@@ -1049,8 +1251,15 @@ const OdooDetailBody = ({
                                         name
                                       );
                                     })()}
-                                  </span>
-                                </a>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDownloadFile(lead.bookingFormFileName)}
+                                    className="text-gray-500 hover:text-blue-600 p-1"
+                                    title="Download"
+                                  >
+                                    <FaDownload className="w-3 h-3" />
+                                  </button>
+                                </div>
                               ) : (
                                 "No file uploaded"
                               )}
@@ -1324,9 +1533,9 @@ const OdooDetailBody = ({
                                 </span>
                                 {/* Optional: show notes/content if present */}
                                 {log.metadata?.notes && (
-                                  <span className="text-sm text-gray-600 mt-1">
-                                    {log.metadata.notes}
-                                  </span>
+                                  <div className="text-sm text-gray-600 mt-1">
+                                    {renderNoteContent(log.metadata.notes, `history-${log.id || idx}`)}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -1387,6 +1596,7 @@ const OdooDetailBody = ({
                     handleContactFieldChange("name", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Full Name"
                 />
                 <input
                   value={contactFields.contactNumber}
@@ -1394,6 +1604,15 @@ const OdooDetailBody = ({
                     handleContactFieldChange("contactNumber", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Contact Number"
+                />
+                <input
+                  value={contactFields.alternateContactNumber}
+                  onChange={(e) =>
+                    handleContactFieldChange("alternateContactNumber", e.target.value)
+                  }
+                  className="w-full p-1 border-b"
+                  placeholder="Alternate Phone Number (Optional)"
                 />
                 <input
                   value={contactFields.email}
@@ -1401,6 +1620,7 @@ const OdooDetailBody = ({
                     handleContactFieldChange("email", e.target.value)
                   }
                   className="w-full p-1 border-b"
+                  placeholder="Email (Optional)"
                 />
                 <button
                   onClick={handleSaveContact}
@@ -1421,6 +1641,14 @@ const OdooDetailBody = ({
                     {lead.contactNumber ? `+91 ${lead.contactNumber}` : "N/A"}
                   </span>
                 </div>
+                {lead.alternateContactNumber && (
+                  <div className="flex items-center gap-3">
+                    <FaPhone className="text-gray-400" />
+                    <span className="text-gray-900 font-medium">
+                      {`+91 ${lead.alternateContactNumber}`}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <FaEnvelope className="text-gray-400" />
                   <span className="text-gray-900 font-medium">
@@ -1437,7 +1665,7 @@ const OdooDetailBody = ({
               <h3 className="text-base font-semibold text-gray-800">
                 Assigned Team
               </h3>
-              {isEditingTeam ? (
+              {/* {isEditingTeam ? (
                 <div className="flex gap-2">
                   <button
                     onClick={() => setIsEditingTeam(false)}
@@ -1460,7 +1688,7 @@ const OdooDetailBody = ({
                 >
                   <FaPencilAlt className="w-3 h-3" /> Edit
                 </button>
-              )}
+              )} */}
             </div>
             <div className="border-b border-gray-200 mb-4"></div>
             {isEditingTeam ? (
@@ -1553,7 +1781,9 @@ const OdooDetailBody = ({
                         : "text-gray-400 font-medium"
                     }
                   >
-                    {lead.salesRep || "Unassigned"}
+                    {lead.salesRep ? 
+                      (managerEmployees.find(emp => emp.employeeId === lead.salesRep)?.name || lead.salesRep) 
+                      : "Unassigned"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1565,7 +1795,9 @@ const OdooDetailBody = ({
                         : "text-gray-400 font-medium"
                     }
                   >
-                    {lead.designer || "Unassigned"}
+                    {lead.designer ? 
+                      (managerEmployees.find(emp => emp.employeeId === lead.designer)?.name || lead.designer) 
+                      : "Unassigned"}
                   </span>
                 </div>
               </div>
@@ -1873,6 +2105,7 @@ const LeadDetailContent = () => {
   const { pipelines, status: pipelinesStatus } = useSelector(
     (state) => state.pipelines
   );
+  const { employees: managerEmployees } = useSelector((state) => state.managerEmployee);
 
   // All state hooks - MUST be called before any conditional returns
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -1889,6 +2122,10 @@ const LeadDetailContent = () => {
   const [showJunkModal, setShowJunkModal] = useState(false);
   const [showLostModal, setShowLostModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showSemiContactedModal, setShowSemiContactedModal] = useState(false);
+  const [showPotentialModal, setShowPotentialModal] = useState(false);
+  const [showHighPotentialModal, setShowHighPotentialModal] = useState(false);
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1928,7 +2165,7 @@ const LeadDetailContent = () => {
     if (lead && lead.leadId) {
       const fetchActivities = async () => {
         try {
-          const token = localStorage.getItem("token") || "";
+          const token = getItemFromSessionStorage("token") || "";
           const response = await axios.get(
             `${API_BASE_URL}/leads/${lead.leadId}/activities`,
             {
@@ -1952,7 +2189,7 @@ const LeadDetailContent = () => {
   // Add fetchActivityLogs function
   const fetchActivityLogs = async (leadId) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = getItemFromSessionStorage("token") || "";
       const response = await axios.get(
         `${API_BASE_URL}/leads/${leadId}/activity-logs`,
         {
@@ -2037,6 +2274,10 @@ const LeadDetailContent = () => {
     if (!lead) return;
     const stage = pipelines.find((p) => p.name === stageName);
     if (!stage) return;
+    
+
+    
+    // Handle different form types
     if (stage.formType === "LOST") {
       setShowLostModal(true);
       return;
@@ -2049,6 +2290,23 @@ const LeadDetailContent = () => {
       setShowConvertModal(true);
       return;
     }
+    if (stage.formType === "ASSIGNED") {
+      setShowAssignModal(true);
+      return;
+    }
+    if (stage.formType === "SEMI") {
+      setShowSemiContactedModal(true);
+      return;
+    }
+    if (stage.formType === "POTENTIAL") {
+      setShowPotentialModal(true);
+      return;
+    }
+    if (stage.formType === "HIGHPOTENTIAL") {
+      setShowHighPotentialModal(true);
+      return;
+    }
+    
     // For all other stages, update stageId directly
     try {
       await axios.patch(
@@ -2056,7 +2314,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2128,7 +2386,7 @@ const LeadDetailContent = () => {
 
   const fetchActivities = async (leadId) => {
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = getItemFromSessionStorage("token") || "";
       const response = await axios.get(
         `${API_BASE_URL}/leads/${leadId}/activities`,
         {
@@ -2219,7 +2477,7 @@ const LeadDetailContent = () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2245,7 +2503,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2268,7 +2526,7 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
@@ -2287,13 +2545,129 @@ const LeadDetailContent = () => {
         {},
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
           },
         }
       );
     }
     await dispatch(fetchLeadById(lead.leadId));
     toast.success("Lead marked as Converted!");
+  };
+
+  const handleAssignSuccess = async (assignmentData) => {
+    setShowAssignModal(false);
+    
+    // Update lead with assignment data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      salesRep: assignmentData.salesRep,
+      designer: assignmentData.designer
+    }));
+    
+    // Move to assigned stage
+    const assignedStage = pipelines.find((p) => p.formType === "ASSIGNED");
+    if (assignedStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${assignedStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Lead assigned successfully!");
+  };
+
+  const handleSemiContactedSuccess = async (semiContactedData) => {
+    setShowSemiContactedModal(false);
+    
+    // Update lead with semi contacted data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      floorPlan: semiContactedData.floorPlan,
+      estimatedBudget: semiContactedData.estimatedBudget,
+      firstMeetingDate: semiContactedData.firstMeetingDate,
+      priority: semiContactedData.priority
+    }));
+    
+    // Move to semi contacted stage
+    const semiStage = pipelines.find((p) => p.formType === "SEMI");
+    if (semiStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${semiStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Semi contacted details saved!");
+  };
+
+  const handlePotentialSuccess = async (potentialData) => {
+    setShowPotentialModal(false);
+    
+    // Update lead with potential data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      firstMeetingDate: potentialData.firstMeetingDate,
+      requirements: potentialData.requirements,
+      priority: potentialData.priority,
+      initialQuote: potentialData.initialQuote
+    }));
+    
+    // Move to potential stage
+    const potentialStage = pipelines.find((p) => p.formType === "POTENTIAL");
+    if (potentialStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${potentialStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("Potential details saved!");
+  };
+
+  const handleHighPotentialSuccess = async (highPotentialData) => {
+    setShowHighPotentialModal(false);
+    
+    // Update lead with high potential data
+    await dispatch(updateLead({
+      leadId: lead.leadId,
+      quotationDetails: highPotentialData.quotationDetails,
+      initialQuotedAmount: highPotentialData.initialQuotedAmount,
+      finalQuotedAmount: highPotentialData.finalQuotedAmount,
+      discountPercent: highPotentialData.discountPercent,
+      designTimeline: highPotentialData.designTimeline,
+      completionTimeline: highPotentialData.completionTimeline
+    }));
+    
+    // Move to high potential stage
+    const highPotentialStage = pipelines.find((p) => p.formType === "HIGHPOTENTIAL");
+    if (highPotentialStage) {
+      await axios.patch(
+        `${API_BASE_URL}/leads/${lead.leadId}/stage/${highPotentialStage.stageId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
+      );
+    }
+    await dispatch(fetchLeadById(lead.leadId));
+    toast.success("High potential details saved!");
   };
 
   // Add the edit handler
@@ -2382,6 +2756,31 @@ const LeadDetailContent = () => {
         lead={showConvertModal ? lead : null}
         onClose={() => setShowConvertModal(false)}
         onSuccess={handleConvertSuccess}
+      />
+      <AssignLeadModal
+        isOpen={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        lead={lead}
+        onAssign={handleAssignSuccess}
+        salesEmployees={managerEmployees || []}
+      />
+      <SemiContactedModal
+        isOpen={showSemiContactedModal}
+        onClose={() => setShowSemiContactedModal(false)}
+        lead={lead}
+        onSuccess={handleSemiContactedSuccess}
+      />
+      <PotentialModal
+        isOpen={showPotentialModal}
+        onClose={() => setShowPotentialModal(false)}
+        lead={lead}
+        onSuccess={handlePotentialSuccess}
+      />
+      <HighPotentialModal
+        isOpen={showHighPotentialModal}
+        onClose={() => setShowHighPotentialModal(false)}
+        lead={lead}
+        onSuccess={handleHighPotentialSuccess}
       />
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">

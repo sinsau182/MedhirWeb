@@ -72,6 +72,24 @@ const modularMenus = {
         link: "/hradmin/payroll",
       },
       {
+        label: "Asset Management",
+        icon: <FaBoxes className="w-4 h-4" />,
+        hasSubmenu: true,
+        menuKey: "hr-asset",
+        subItems: [
+          {
+            label: "Home",
+            icon: <FaBuilding className="w-4 h-4" />,
+            link: "/asset-management",
+          },
+          {
+            label: "Settings",
+            icon: <Settings className="w-4 h-4" />,
+            link: "/asset-management/settings",
+          },
+        ],
+      },
+      {
         label: "Settings",
         icon: <Settings className="w-4 h-4" />,
         hasSubmenu: true,
@@ -103,20 +121,27 @@ const modularMenus = {
     icon: <FaHandshake className="w-5 h-5" />,
     items: [
       {
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/Sales/dashboard",
+        disabled: true,
+      },
+      {
         label: "Lead Management",
         icon: <FaTasks className="w-4 h-4" />,
         link: "/Sales/LeadManagement",
       },
       {
-        label: "Team Management",
+        label: "Team Leads",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
-      {
-        label: "Sales Settings",
-        icon: <Settings className="w-4 h-4" />,
-        link: "/SalesManager/setting",
-      },
+      // {
+      //   label: "Sales Settings",
+      //   icon: <Settings className="w-4 h-4" />,
+      //   link: "/SalesManager/setting",
+      //   disabled: true,
+      // },
     ],
   },
 
@@ -232,6 +257,19 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
 
   const isActiveLink = (link) => {
     if (!link) return false;
+    
+    // Special handling for asset management routes
+    if (link === "/asset-management") {
+      // Home should only be active on exact match, not on subpages
+      return router.pathname === link;
+    }
+    
+    // Special handling for employees route to include addNewEmployee
+    if (link === "/hradmin/employees") {
+      return router.pathname === link || router.pathname.startsWith("/hradmin/addNewEmployee");
+    }
+    
+    // For other routes, use the existing logic
     return router.pathname === link || router.pathname.startsWith(link);
   };
 
@@ -675,17 +713,17 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                                   ? "text-blue-600 bg-blue-50"
                                   : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                               }
-                              ${item.label === "Account Settings" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                              ${item.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
                             `}
                             aria-label={item.label}
-                            title={item.label === "Account Settings" ? "This feature is in progress" : ""}
+                            title={item.disabled ? "This feature is in progress" : ""}
                             onClick={(e) => {
-                              if (item.label === "Account Settings") {
+                              if (item.disabled) {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 return;
                               }
-                              // For other items, navigate to the link
+                              // For non-disabled items, navigate to the link
                               router.push(item.link);
                             }}
                           >
@@ -701,7 +739,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
                             {!isCollapsed && (
                               <span className="text-sm min-w-0 truncate">{item.label}</span>
                             )}
-                            {item.label === "Account Settings" ? (
+                            {item.disabled ? (
                               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                                 This feature is in progress
                               </div>

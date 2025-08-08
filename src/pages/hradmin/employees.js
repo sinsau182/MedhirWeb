@@ -72,13 +72,15 @@ function Employees() {
 
   const handleViewDoc = async (imageUrl) => {
     // Check if it's a Minio URL (starts with http)
-    if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+    if (typeof imageUrl === "string" && imageUrl.startsWith("http")) {
       try {
         // For Minio URLs, fetch the image securely and open in new tab
-        const { dataUrl } = await dispatch(fetchImageFromMinio({ url: imageUrl })).unwrap();
-        window.open(dataUrl, '_blank');
+        const { dataUrl } = await dispatch(
+          fetchImageFromMinio({ url: imageUrl })
+        ).unwrap();
+        window.open(dataUrl, "_blank");
       } catch (error) {
-        toast.error('Failed to preview document.');
+        toast.error("Failed to preview document.");
       }
     } else {
       // For regular URLs, keep the existing modal behavior
@@ -132,13 +134,15 @@ function Employees() {
         return [
           { key: "employeeId", label: "Employee ID" },
           { key: "name", label: "Name" },
-          { key: "annualCtc", label: "Annual CTC" },
+          // { key: "annualCtc", label: "Annual CTC" },
           { key: "monthlyCtc", label: "Monthly CTC" },
           { key: "basicSalary", label: "Basic" },
           { key: "hra", label: "HRA" },
-          { key: "allowances", label: "Allowance" },
+          { key: "allowances", label: "Other Allowances" },
           { key: "employerPfContribution", label: "Employer PF" },
           { key: "employeePfContribution", label: "Employee PF" },
+          { key: "phoneReimbursements", label: "Phone Reimbursements" },
+          { key: "fuelReimbursements", label: "Fuel Reimbursements" }
         ];
       case "Bank Details":
         return [
@@ -328,7 +332,7 @@ function Employees() {
                       {headers.map((header) => (
                         <th
                           key={header.key}
-                          className="text-left py-3 px-3 text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                          className="text-left py-3 px-2 text-xs font-semibold text-gray-700 uppercase tracking-wider"
                         >
                           {header.label}
                         </th>
@@ -469,19 +473,19 @@ function Employees() {
                 </svg>
               </button>
             </div>
-            {selectedImage && selectedImage.toLowerCase().endsWith('.pdf') ? (
+            {selectedImage && selectedImage.toLowerCase().endsWith(".pdf") ? (
               <iframe
                 src={selectedImage}
                 title="Passbook PDF"
                 className="w-full max-w-2xl"
-                style={{ minHeight: '60vh', maxHeight: '90vh' }}
+                style={{ minHeight: "60vh", maxHeight: "90vh" }}
               />
             ) : (
               <img
                 src={selectedImage}
                 alt="Passbook Document"
                 className="h-auto w-auto max-w-2xl max-h-[80vh] object-contain rounded shadow"
-                style={{ display: 'block', margin: '0 auto' }}
+                style={{ display: "block", margin: "0 auto" }}
               />
             )}
           </div>

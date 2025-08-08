@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 const AttendanceTable = ({
   dates,
   statusOptions,
+  dropdownStatusOptions,
   selectedStatuses,
   isStatusFilterOpen,
   toggleStatus,
@@ -32,6 +33,7 @@ const AttendanceTable = ({
   calendarRef,
   handleMonthSelection,
   isSingleEmployeeModalOpen,
+  isDateEditable,
 }) => {
   // Helper function to get attendance status for a specific date from the new API format
   const getAttendanceStatusForDate = (attendanceRecord, dayNumber) => {
@@ -439,16 +441,17 @@ const AttendanceTable = ({
                       {isActive && (
                         <button
                           type="button"
-                          className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none"
+                          className="ml-1 text-gray-500 hover:text-red-600 focus:outline-none w-5 h-5 flex items-center justify-center text-base font-bold rounded-full hover:bg-red-100 transition-colors"
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             setSelectedStatuses((prev) =>
                               prev.filter((s) => s !== status)
                             );
                           }}
                           aria-label={`Remove ${found ? found.label : status}`}
                         >
-                          &times;
+                          ×
                         </button>
                       )}
                     </span>
@@ -459,7 +462,7 @@ const AttendanceTable = ({
           </button>
 
           {isStatusFilterOpen && (
-            <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg">
+            <div className="absolute top-full left-0 mt-1 w-64 bg-white border rounded-md shadow-lg z-50">
               <div className="p-2 max-h-48 overflow-y-auto">
                 {statusOptions.map((status) => (
                   <label
@@ -702,6 +705,18 @@ const AttendanceTable = ({
                   const isFutureDateWithAbsent =
                     isFutureDate && attendanceForDay.label === "A";
 
+                  // Check if this cell has "NA" status
+                  const isNaStatus = attendanceForDay.label === "NA";
+
+                  // Check if this cell has read-only statuses (from backend)
+                  // Only Present, Absent, Half Day, and empty cells can be edited
+                  const editableStatuses = ["P", "A", "P/A", null, ""];
+                  const isReadOnlyStatus = attendanceForDay.label && 
+                    !editableStatuses.includes(attendanceForDay.label.toUpperCase());
+                  
+                  // Check if date is outside editable range
+                  const isDateOutsideRange = isDateEditable && !isDateEditable(dateString);
+
                   return (
                     <td
                       key={dateIdx}
@@ -709,6 +724,8 @@ const AttendanceTable = ({
                       className={`py-0.5 px-0 text-center text-[10px] border-r border-black ${
                         isFutureDateWithAbsent
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : isNaStatus
+                          ? "bg-gray-50 text-gray-900 cursor-not-allowed"
                           : getAttendanceColor(attendanceForDay.label)
                       }`}
                     >
@@ -716,16 +733,17 @@ const AttendanceTable = ({
                         <button
                           type="button"
                           className={`w-full h-full flex items-center justify-center focus:outline-none rounded transition ${
-                            isFutureDate
+                            isFutureDate || isNaStatus
                               ? "cursor-not-allowed opacity-50"
                               : "focus:ring-2 focus:ring-blue-400 hover:shadow-sm cursor-pointer"
                           }`}
                           style={{ background: "transparent" }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            // Only allow editing if it's not a future date
+                            // Allow view history on all cells, but only allow editing for editable cells
                             if (
                               !isFutureDate &&
+                              !isNaStatus &&
                               onCellClick &&
                               (!popoverOpenCell || popoverOpenCell !== cellKey)
                             ) {
@@ -737,13 +755,17 @@ const AttendanceTable = ({
                               );
                             }
                           }}
-                          tabIndex={isFutureDate ? -1 : 0}
+                          tabIndex={isFutureDate || isNaStatus ? -1 : 0}
                           title={
                             isFutureDate
                               ? `Cannot edit future date: ${dateString}`
-                              : `Edit attendance for ${employee.name} on ${dateString}`
+                              : isNaStatus
+                              ? `Cannot edit NA status: ${dateString}`
+                              : isDateOutsideRange
+                              ? `Click to view attendance history (read-only): ${dateString}`
+                              : `View/Edit attendance for ${employee.name} on ${dateString}`
                           }
-                          disabled={isFutureDate || popoverOpenCell === cellKey}
+                          disabled={isFutureDate || isNaStatus || popoverOpenCell === cellKey}
                         >
                           {/* Hide "A" text for future dates, show all other statuses */}
                           {isFutureDateWithAbsent
@@ -775,6 +797,8 @@ const AttendanceTable = ({
                           title={
                             isFutureDate
                               ? `Cannot edit future date: ${dateString}`
+                              : isDateOutsideRange
+                              ? `Click to view attendance history (read-only): ${dateString}`
                               : `Mark attendance for ${employee.name} on ${dateString}`
                           }
                           disabled={isFutureDate || popoverOpenCell === cellKey}

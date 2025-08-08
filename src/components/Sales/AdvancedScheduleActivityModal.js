@@ -2,29 +2,34 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { FaCheck, FaEnvelope, FaPhone, FaUsers, FaPaperclip, FaTimes } from 'react-icons/fa';
 import axios from 'axios';
 import getConfig from 'next/config';
+import { useDispatch } from 'react-redux';
+import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
 const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onSuccess, onActivityChange }) => {
+  const dispatch = useDispatch();
+  
   const [activeType, setActiveType] = useState('To-Do');
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueTime, setDueTime] = useState('');
-  const [meetingLink, setMeetingLink] = useState('');
-  const [attendees, setAttendees] = useState([{ id: 1, name: '' }]);
-  const [callPurpose, setCallPurpose] = useState('');
+  // Remove unused global state variables since we're using per-tab state
+  // const [meetingLink, setMeetingLink] = useState('');
+  // const [attendees, setAttendees] = useState([{ id: 1, name: '' }]);
+  // const [callPurpose, setCallPurpose] = useState('');
   const [callOutcome, setCallOutcome] = useState('');
-  const [nextFollowUpDate, setNextFollowUpDate] = useState('');
-  const [nextFollowUpTime, setNextFollowUpTime] = useState('');
-  const [meetingVenue, setMeetingVenue] = useState('In Office');
+  // const [nextFollowUpDate, setNextFollowUpDate] = useState('');
+  // const [nextFollowUpTime, setNextFollowUpTime] = useState('');
+  // const [meetingVenue, setMeetingVenue] = useState('In Office');
   const [title, setTitle] = useState('');
-  const [note, setNote] = useState('');
-  const [attachment, setAttachment] = useState(null);
-  const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
 
   // Add separate state for each outcome field
   const [meetingOutcome, setMeetingOutcome] = useState('');
   const [emailOutcome, setEmailOutcome] = useState('');
+  const [attachmentLoading, setAttachmentLoading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState(null);
 
   // Add a flag to determine if editing and which tab is being edited
   const isEditingActivity = !!(initialData && initialData.id);
@@ -35,7 +40,6 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
   const [email, setEmail] = useState({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '' });
   const [call, setCall] = useState({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '' });
   const [meeting, setMeeting] = useState({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '' });
-  const [attachmentPreviewTab, setAttachmentPreviewTab] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -43,11 +47,13 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
   useEffect(() => {
     if (isOpen) {
       if (initialData && (initialData.id || initialData._id)) {
-        setActiveType(initialData.type || 'To-Do');
-        if (initialData.type === 'To-Do') setTodo({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, ...initialData });
-        if (initialData.type === 'Email') setEmail({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '', ...initialData });
-        if (initialData.type === 'Call') setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '', ...initialData });
-        if (initialData.type === 'Meeting') setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '', ...initialData });
+        // This useEffect is conflicting with the second one below
+        // Remove this entire block to avoid conflicts
+        // setActiveType(initialData.type || 'To-Do');
+        // if (initialData.type === 'To-Do') setTodo({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, ...initialData, note: initialData.note || initialData.notes || '' });
+        // if (initialData.type === 'Email') setEmail({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callOutcome: '', ...initialData, note: initialData.note || initialData.notes || '' });
+        // if (initialData.type === 'Call') setCall({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, callPurpose: '', callOutcome: '', nextFollowUpDate: '', nextFollowUpTime: '', ...initialData, note: initialData.note || initialData.notes || '' });
+        // if (initialData.type === 'Meeting') setMeeting({ title: '', dueDate: new Date().toISOString().split('T')[0], dueTime: '', note: '', attachment: null, meetingVenue: 'In Office', meetingLink: '', attendees: [{ id: 1, name: '' }], callOutcome: '', ...initialData, note: initialData.note || initialData.notes || '' });
       } else {
         // Reset to default values when creating new activity
         setActiveType('To-Do');
@@ -62,20 +68,113 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
   useEffect(() => {
     if (initialData && isOpen) {
       setActiveType(initialData.type || 'To-Do');
-      setTitle(initialData.title || '');
-      setDueDate(initialData.dueDate || new Date().toISOString().split('T')[0]);
-      setDueTime(initialData.dueTime || '');
-      setMeetingLink(initialData.meetingLink || '');
-      setAttendees(initialData.attendees || [{ id: 1, name: '' }]);
-      setCallPurpose(initialData.callPurpose || '');
+      // Remove global state setting since we're using per-tab state
+      // setTitle(initialData.title || '');
+      // setDueDate(initialData.dueDate || new Date().toISOString().split('T')[0]);
+      // setDueTime(initialData.dueTime || '');
+      // Remove global state setting and use per-tab state instead
+      // setAttendees(initialData.attendees || [{ id: 1, name: '' }]);
+      // setCallPurpose(initialData.callPurpose || '');
       setCallOutcome(initialData.type === 'Call' ? initialData.callOutcome || '' : '');
-      setNextFollowUpDate(initialData.nextFollowUpDate || '');
-      setNextFollowUpTime(initialData.nextFollowUpTime || '');
-      setMeetingVenue(initialData.meetingVenue || 'In Office');
-      setNote(initialData.note || '');
-      setAttachment(initialData.attachment || null);
+      // setNextFollowUpDate(initialData.nextFollowUpDate || '');
+      // setNextFollowUpTime(initialData.nextFollowUpTime || '');
+      // setMeetingVenue(initialData.meetingVenue || 'In Office');
+      // Remove global attachment setting since we're using per-tab state
+      // setAttachment(initialData.attachment || null);
       setMeetingOutcome(initialData.type === 'Meeting' ? initialData.callOutcome || '' : '');
       setEmailOutcome(initialData.type === 'Email' ? initialData.callOutcome || '' : '');
+      
+      // Set the note and other fields in the appropriate per-tab state based on activity type
+      if (initialData.type === 'To-Do') {
+        // Create a custom attachment object for existing attachments
+        const attachmentObj = initialData.attachment ? {
+          name: initialData.attachment.split('/').pop() || 'attachment',
+          type: 'application/octet-stream',
+          url: initialData.attachment,
+          isExisting: true
+        } : null;
+        
+        setTodo(prev => ({ 
+          ...prev, 
+          note: initialData.note || initialData.notes || '',
+          title: initialData.title || '',
+          dueDate: initialData.dueDate || new Date().toISOString().split('T')[0],
+          dueTime: initialData.dueTime || '',
+          attachment: attachmentObj
+        }));
+      } else if (initialData.type === 'Email') {
+        // Create a custom attachment object for existing attachments
+        const attachmentObj = initialData.attachment ? {
+          name: initialData.attachment.split('/').pop() || 'attachment',
+          type: 'application/octet-stream',
+          url: initialData.attachment,
+          isExisting: true
+        } : null;
+        
+        setEmail(prev => ({ 
+          ...prev, 
+          note: initialData.note || initialData.notes || '',
+          title: initialData.title || '',
+          dueDate: initialData.dueDate || new Date().toISOString().split('T')[0],
+          dueTime: initialData.dueTime || '',
+          attachment: attachmentObj
+        }));
+      } else if (initialData.type === 'Call') {
+        // Create a custom attachment object for existing attachments
+        const attachmentObj = initialData.attachment ? {
+          name: initialData.attachment.split('/').pop() || 'attachment',
+          type: 'application/octet-stream',
+          url: initialData.attachment,
+          isExisting: true
+        } : null;
+        
+        setCall(prev => ({ 
+          ...prev, 
+          note: initialData.note || initialData.notes || '',
+          title: initialData.title || '',
+          dueDate: initialData.dueDate || new Date().toISOString().split('T')[0],
+          dueTime: initialData.dueTime || '',
+          callPurpose: initialData.callPurpose || '',
+          nextFollowUpDate: initialData.nextFollowUpDate || '',
+          nextFollowUpTime: initialData.nextFollowUpTime || '',
+          attachment: attachmentObj
+        }));
+      } else if (initialData.type === 'Meeting') {
+        // Convert attendees from array of strings to array of objects with id and name
+        let attendeesArray = [{ id: 1, name: '' }];
+        if (initialData.attendees && Array.isArray(initialData.attendees)) {
+          if (initialData.attendees.length > 0 && typeof initialData.attendees[0] === 'string') {
+            // Convert from array of strings to array of objects
+            attendeesArray = initialData.attendees.map((name, index) => ({ 
+              id: index + 1, 
+              name: name || '' 
+            }));
+          } else if (initialData.attendees.length > 0 && typeof initialData.attendees[0] === 'object') {
+            // Already in correct format
+            attendeesArray = initialData.attendees;
+          }
+        }
+        
+        // Create a custom attachment object for existing attachments
+        const attachmentObj = initialData.attachment ? {
+          name: initialData.attachment.split('/').pop() || 'attachment',
+          type: 'application/octet-stream',
+          url: initialData.attachment,
+          isExisting: true
+        } : null;
+        
+        setMeeting(prev => ({ 
+          ...prev, 
+          note: initialData.note || initialData.notes || '',
+          title: initialData.title || '',
+          dueDate: initialData.dueDate || new Date().toISOString().split('T')[0],
+          dueTime: initialData.dueTime || '',
+          meetingVenue: initialData.meetingVenue || 'In Office',
+          meetingLink: initialData.meetingLink || '',
+          attendees: attendeesArray,
+          attachment: attachmentObj
+        }));
+      }
     }
   }, [initialData, isOpen]);
 
@@ -84,22 +183,25 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
     if (!isOpen) {
       // Reset all state when modal closes
       setActiveType('To-Do');
-      setTitle('');
-      setDueDate(new Date().toISOString().split('T')[0]);
-      setDueTime('');
-      setMeetingLink('');
-      setAttendees([{ id: 1, name: '' }]);
-      setCallPurpose('');
+      // Remove global state reset since we're using per-tab state
+      // setTitle('');
+      // setDueDate(new Date().toISOString().split('T')[0]);
+      // setDueTime('');
+      // setMeetingLink('');
+      // setAttendees([{ id: 1, name: '' }]);
+      // setCallPurpose('');
       setCallOutcome('');
-      setNextFollowUpDate('');
-      setNextFollowUpTime('');
-      setMeetingVenue('In Office');
-      setNote('');
-      setAttachment(null);
+      // setNextFollowUpDate('');
+      // setNextFollowUpTime('');
+      // setMeetingVenue('In Office');
+      // Remove the global note reset since we're using per-tab state
+      // setNote('');
+      // Remove global attachment reset since we're using per-tab state
+      // setAttachment(null);
       setMeetingOutcome('');
       setEmailOutcome('');
-      setShowAttachmentPreview(false);
-      setAttachmentPreviewTab(null);
+      setAttachmentLoading(false);
+      setAttachmentError(null);
     }
   }, [isOpen]);
 
@@ -119,7 +221,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
   // Save: if editing, only update the selected activity; if creating, create all filled tabs
   const handleSave = useCallback(async (statusOverride) => {
     try {
-      const token = localStorage.getItem('token') || '';
+      const token = getItemFromSessionStorage('token') || '';
       let formData = new FormData();
       let activities = [];
       // If editing, only update the selected activity
@@ -208,46 +310,60 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
         }
         
         // Handle file upload for editing
-        if (editingType === 'To-Do' && todo.attachment instanceof File) {
+        console.log('Saving activity with attachments:');
+        console.log('Todo attachment:', todo.attachment);
+        console.log('Email attachment:', email.attachment);
+        console.log('Call attachment:', call.attachment);
+        console.log('Meeting attachment:', meeting.attachment);
+        
+        if (editingType === 'To-Do' && todo.attachment && todo.attachment instanceof File) {
+          console.log('Saving To-Do with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
-          editFormData.append('files', todo.attachment);
+          editFormData.append('file', todo.attachment);
           await axios.put(
             `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
             editFormData,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
-        } else if (editingType === 'Email' && email.attachment instanceof File) {
+        } else if (editingType === 'Email' && email.attachment && email.attachment instanceof File) {
+          console.log('Saving Email with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
-          editFormData.append('files', email.attachment);
+          editFormData.append('file', email.attachment);
           await axios.put(
             `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
             editFormData,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
-        } else if (editingType === 'Call' && call.attachment instanceof File) {
+        } else if (editingType === 'Call' && call.attachment && call.attachment instanceof File) {
+          console.log('Saving Call with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
-          editFormData.append('files', call.attachment);
+          editFormData.append('file', call.attachment);
           await axios.put(
             `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
             editFormData,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
-        } else if (editingType === 'Meeting' && meeting.attachment instanceof File) {
+        } else if (editingType === 'Meeting' && meeting.attachment && meeting.attachment instanceof File) {
+          console.log('Saving Meeting with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
-          editFormData.append('files', meeting.attachment);
+          editFormData.append('file', meeting.attachment);
           await axios.put(
             `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
             editFormData,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
         } else {
+          console.log('Saving without file attachment');
+          // Even without files, we need to send as FormData
+          let editFormData = new FormData();
+          editFormData.append('activity', JSON.stringify(activityToSend));
           await axios.put(
             `${API_BASE_URL}/leads/${lead.leadId}/activities/${initialData.id}`,
-            activityToSend,
+            editFormData,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
         }
@@ -433,8 +549,8 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                 <textarea
                   className="w-full h-16 p-2 border rounded-md text-xs focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 border-gray-300"
                   placeholder="Add purpose of the call..."
-                  value={callPurpose}
-                  onChange={e => setCallPurpose(e.target.value)}
+                  value={call.callPurpose}
+                  onChange={e => setCall(prev => ({ ...prev, callPurpose: e.target.value }))}
                 />
               </div>
               <div>
@@ -453,15 +569,15 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                     <div className="flex gap-2">
                       <input
                         type="date"
-                        value={nextFollowUpDate}
-                        onChange={e => setNextFollowUpDate(e.target.value)}
+                        value={call.nextFollowUpDate}
+                        onChange={e => setCall(prev => ({ ...prev, nextFollowUpDate: e.target.value }))}
                         className="w-full p-2 border rounded-md text-xs focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 border-gray-300"
                         placeholder="Next Date"
                       />
                       <input
                         type="time"
-                        value={nextFollowUpTime}
-                        onChange={e => setNextFollowUpTime(e.target.value)}
+                        value={call.nextFollowUpTime}
+                        onChange={e => setCall(prev => ({ ...prev, nextFollowUpTime: e.target.value }))}
                         className="w-full p-2 border rounded-md text-xs focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 border-gray-300"
                         placeholder="Call Time"
                       />
@@ -493,7 +609,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                   <label className="text-xs font-medium text-gray-700">Meeting Venue</label>
                   <select
                     className="w-full p-2 mt-1 border rounded-md text-xs focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-gray-100 border-gray-300 text-gray-800 pr-10 pl-3 hover:border-blue-400 transition-all"
-                    value={meetingVenue}
+                    value={meeting.meetingVenue}
                     onChange={e => setMeeting(m => ({ ...m, meetingVenue: e.target.value }))}
                     style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
                   >
@@ -559,43 +675,85 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
               onChange={e => setTabData({ ...tabData, note: e.target.value })}
             />
             <div className="flex items-center gap-2 mt-2">
-              <label className="cursor-pointer flex items-center gap-1 text-blue-600 hover:text-blue-800">
+              <input
+                type="file"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={e => {
+                  console.log('File input changed:', e.target.files);
+                  if (e.target.files && e.target.files[0]) {
+                    const selectedFile = e.target.files[0];
+                    console.log('Selected file:', selectedFile);
+                    setTabData({ ...tabData, attachment: selectedFile });
+                    setAttachmentError(null); // Clear any previous errors
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="cursor-pointer flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                onClick={() => {
+                  console.log('File input button clicked');
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+              >
                 <FaPaperclip />
-                <input
-                  type="file"
-                  className="hidden"
-                  ref={fileInputRef}
-                  onChange={e => {
-                    if (e.target.files && e.target.files[0]) {
-                      setTabData({ ...tabData, attachment: e.target.files[0] });
-                      // Reset the input so the same file can be selected again
-                      e.target.value = "";
+                <span className="text-xs font-medium">Attach</span>
+              </button>
+              {tabData.attachment && (
+                <span 
+                  className={`px-2 py-1 rounded flex items-center gap-1 text-xs ${attachmentLoading ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-blue-100 text-blue-700 cursor-pointer hover:bg-blue-200'}`}
+                  onClick={async () => {
+                    if (attachmentLoading) return; // Prevent multiple clicks while loading
+                    if (tabData.attachment.isExisting && tabData.attachment.url) {
+                      // For existing attachments, fetch through Minio and open in new tab
+                      try {
+                        setAttachmentLoading(true);
+                        const result = await dispatch(fetchImageFromMinio({ url: tabData.attachment.url })).unwrap();
+                        if (result && result.dataUrl) {
+                          window.open(result.dataUrl, '_blank');
+                        } else {
+                          console.error('Failed to fetch attachment from Minio');
+                        }
+                                              } catch (error) {
+                          console.error('Error fetching attachment:', error);
+                          setAttachmentError('Failed to load attachment');
+                        } finally {
+                          setAttachmentLoading(false);
+                        }
+                    } else if (tabData.attachment instanceof File) {
+                      // For new files, create a blob URL and open in new tab
+                      const blobUrl = URL.createObjectURL(tabData.attachment);
+                      window.open(blobUrl, '_blank');
                     }
                   }}
-                />
-                <span className="text-xs font-medium">Attach</span>
-              </label>
-              {tabData.attachment && (
-                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center gap-1 cursor-pointer text-xs" onClick={() => setShowAttachmentPreview(true)}>
-                  {tabData.attachment.name}
-                  <FaTimes className="ml-1 text-xs hover:text-red-500" onClick={e => { e.stopPropagation(); setTabData({ ...tabData, attachment: null }); }} />
+                >
+                                     {attachmentLoading ? (
+                     <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                   </svg>
+                 ) : attachmentError ? (
+                   <span className="text-red-600 text-xs" title={attachmentError}>
+                     ❌ {tabData.attachment.name}
+                   </span>
+                 ) : (
+                   <>
+                     {tabData.attachment.isExisting ? '📎 ' : ''}{tabData.attachment.name}
+                     <FaTimes 
+                       className="ml-1 text-xs hover:text-red-500" 
+                       onClick={e => { 
+                         e.stopPropagation(); 
+                         setTabData({ ...tabData, attachment: null }); 
+                       }} 
+                     />
+                   </>
+                 )}
                 </span>
               )}
             </div>
-            {/* Attachment Preview Popup */}
-            {showAttachmentPreview && tabData.attachment && (
-              <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center">
-                <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full relative">
-                  <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700" onClick={() => setShowAttachmentPreview(false)}><FaTimes /></button>
-                  <div className="text-xs font-semibold mb-2">{tabData.attachment.name}</div>
-                  {tabData.attachment.type && tabData.attachment.type.startsWith('image/') ? (
-                    <img src={URL.createObjectURL(tabData.attachment)} alt="Attachment Preview" className="max-h-96 w-auto mx-auto rounded" />
-                  ) : (
-                    <div className="bg-gray-100 p-4 rounded text-center">Preview not available for this file type.</div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
         <div className="bg-white border-t shadow-lg flex items-center justify-end gap-2 p-4 z-10 rounded-b-2xl sticky bottom-0">

@@ -33,13 +33,80 @@ export const addVendor = createAsyncThunk(
   async (vendor, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      
+      // Create FormData for multipart/form-data
+      const formData = new FormData();
+      
+      // Create a clean version of vendor data without file objects for JSON
+      const cleanVendorData = { ...vendor };
+      delete cleanVendorData.gstDocument;
+      delete cleanVendorData.bankPassbook;
+      
+      formData.append('vendor', JSON.stringify(cleanVendorData));
+      
+      // Add GST document if it exists
+      if (vendor.gstDocument) {
+        formData.append('gstDocument', vendor.gstDocument);
+      }
+      
+      // Add bank passbook if it exists
+      if (vendor.bankPassbook) {
+        formData.append('bankPassbook', vendor.bankPassbook);
+      }
+      
       const response = await fetch(`${API_BASE_URL}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          // Remove Content-Type header to let browser set it automatically for FormData
         },
-        body: JSON.stringify(vendor),
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Something went wrong"); // backend error
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
+// Update vendor
+export const updateVendor = createAsyncThunk(
+  "vendors/updateVendor",
+  async (vendor, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      
+      // Create FormData for multipart/form-data
+      const formData = new FormData();
+      
+      // Create a clean version of vendor data without file objects for JSON
+      const cleanVendorData = { ...vendor };
+      delete cleanVendorData.gstDocument;
+      delete cleanVendorData.bankPassbook;
+      
+      formData.append('vendor', JSON.stringify(cleanVendorData));
+      
+      // Add GST document if it exists
+      if (vendor.gstDocument) {
+        formData.append('gstDocument', vendor.gstDocument);
+      }
+      
+      // Add bank passbook if it exists
+      if (vendor.bankPassbook) {
+        formData.append('bankPassbook', vendor.bankPassbook);
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/${vendor.vendorId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Remove Content-Type header to let browser set it automatically for FormData
+        },
+        body: formData,
       });
       const data = await response.json();
       if (!response.ok) {
@@ -130,6 +197,21 @@ export const vendorSlice = createSlice({
       state.vendors.push(action.payload);
     });
     builder.addCase(addVendor.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    });
+    builder.addCase(updateVendor.pending, (state) => {
+      state.loading = true;
+    });
+    builder.addCase(updateVendor.fulfilled, (state, action) => {
+      state.loading = false;
+      // Update the vendor in the vendors array
+      const index = state.vendors.findIndex(v => v.vendorId === action.payload.vendorId);
+      if (index !== -1) {
+        state.vendors[index] = action.payload;
+      }
+    });
+    builder.addCase(updateVendor.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload;
     });

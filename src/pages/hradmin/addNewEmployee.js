@@ -741,13 +741,14 @@ function EmployeeForm() {
       passbookImgUrl: null,
     },
     salaryDetails: {
-      annualCtc: "",
       monthlyCtc: "",
       basicSalary: "",
       hra: "",
       allowances: "",
       employerPfContribution: "",
       employeePfContribution: "",
+      phoneReimbursements: "",
+      fuelReimbursements: "",
     },
   });
 
@@ -821,7 +822,6 @@ function EmployeeForm() {
             passbookImgUrl: parsedEmployee.bankDetails?.passbookImgUrl || "",
           },
           salaryDetails: {
-            annualCtc: parsedEmployee.salaryDetails?.annualCtc || "",
             monthlyCtc: parsedEmployee.salaryDetails?.monthlyCtc || "",
             basicSalary: parsedEmployee.salaryDetails?.basicSalary || "",
             hra: parsedEmployee.salaryDetails?.hra || "",
@@ -830,6 +830,8 @@ function EmployeeForm() {
               parsedEmployee.salaryDetails?.employerPfContribution || "",
             employeePfContribution:
               parsedEmployee.salaryDetails?.employeePfContribution || "",
+            phoneReimbursements: parsedEmployee.salaryDetails?.phoneReimbursements || "",
+            fuelReimbursements: parsedEmployee.salaryDetails?.fuelReimbursements || "",
           },
         }));
 
@@ -842,18 +844,22 @@ function EmployeeForm() {
 
   const calculatePFContributions = (basicSalary) => {
     const basic = parseFloat(basicSalary) || 0;
+    const calculatedPF = basic * 0.12; // 12% of basic salary
+    const maxPF = 1800; // Maximum PF contribution cap
+    
+    // Cap PF at ₹1,800
+    const actualPF = Math.min(calculatedPF, maxPF);
+    
     return {
-      employer: (basic * 0.12).toFixed(2), // 12% of basic salary
-      employee: (basic * 0.12).toFixed(2), // 12% of basic salary
+      employer: actualPF.toFixed(2),
+      employee: actualPF.toFixed(2),
+      excessAmount: Math.max(0, calculatedPF - maxPF).toFixed(2), // Amount that exceeds the cap
     };
   };
 
-  const calculateSalaryDetails = (annualCtc, basicSalary) => {
-    const annual = parseFloat(annualCtc) || 0;
+  const calculateSalaryDetails = (monthlyCtc, basicSalary) => {
+    const monthly = parseFloat(monthlyCtc) || 0;
     const basic = parseFloat(basicSalary) || 0;
-
-    // Calculate monthly CTC
-    const monthlyCtc = (annual / 12).toFixed(2);
 
     // Calculate HRA (40% of basic)
     const hra = (basic * 0.4).toFixed(2);
@@ -861,20 +867,23 @@ function EmployeeForm() {
     // Calculate PF contributions if enrolled
     const pfContributions = formData.employee.pfEnrolled
       ? calculatePFContributions(basic)
-      : { employer: 0, employee: 0 };
+      : { employer: 0, employee: 0, excessAmount: 0 };
 
-    // Calculate allowances
-    const allowances = (
-      parseFloat(monthlyCtc) -
+    // Calculate allowances (including excess PF amount)
+    const baseAllowances = (
+      monthly -
       parseFloat(basic) -
       parseFloat(hra) -
-      parseFloat(pfContributions.employee)
-    ).toFixed(2);
+      parseFloat(pfContributions.employee) -
+      parseFloat(pfContributions.employer)
+    );
+    
+    // Add excess PF amount to allowances
+    const totalAllowances = (baseAllowances).toFixed(2);
 
     return {
-      monthlyCtc,
       hra,
-      allowances,
+      allowances: totalAllowances,
       employerPfContribution: pfContributions.employer,
       employeePfContribution: pfContributions.employee,
     };
@@ -918,11 +927,11 @@ function EmployeeForm() {
         },
       };
 
-      // Calculate salary details when annual CTC or basic salary changes
+      // Calculate salary details when monthly CTC or basic salary changes
       if (section === "salaryDetails") {
-        if (field === "annualCtc" || field === "basicSalary") {
+        if (field === "monthlyCtc" || field === "basicSalary") {
           const salaryDetails = calculateSalaryDetails(
-            field === "annualCtc" ? value : updatedData.salaryDetails.annualCtc,
+            field === "monthlyCtc" ? value : updatedData.salaryDetails.monthlyCtc,
             field === "basicSalary"
               ? value
               : updatedData.salaryDetails.basicSalary
@@ -931,6 +940,21 @@ function EmployeeForm() {
           updatedData.salaryDetails = {
             ...updatedData.salaryDetails,
             ...salaryDetails,
+          };
+        }
+        
+        // Auto-calculate basic salary as 40% of monthly CTC when monthly CTC changes
+        if (field === "monthlyCtc") {
+          const monthlyCtc = parseFloat(value) || 0;
+          const basicSalary = (monthlyCtc * 0.4).toFixed(2);
+          
+          updatedData.salaryDetails.basicSalary = basicSalary;
+          
+          // Recalculate other salary components based on new basic salary
+          const recalculatedSalaryDetails = calculateSalaryDetails(monthlyCtc, basicSalary);
+          updatedData.salaryDetails = {
+            ...updatedData.salaryDetails,
+            ...recalculatedSalaryDetails,
           };
         }
       }
@@ -1300,7 +1324,7 @@ function EmployeeForm() {
             "upiContactName",
           ],
         },
-        { tab: "salary", fields: ["annualCtc", "basicSalary"] },
+        { tab: "salary", fields: ["monthlyCtc", "basicSalary"] },
       ];
       for (const { tab, fields } of tabFieldMap) {
         if (
@@ -1813,7 +1837,7 @@ function EmployeeForm() {
   };
 
   const checkSalaryDetailsCompletion = () => {
-    const requiredFields = ["annualCtc", "basicSalary"];
+    const requiredFields = ["monthlyCtc", "basicSalary"];
     return requiredFields.every((field) => {
       const value = formData.salaryDetails[field];
       return value && value.toString().trim() !== "";
@@ -4268,11 +4292,10 @@ function EmployeeForm() {
                       </h3>
                       <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                         {[
-                          { label: "Annual CTC", field: "annualCtc" },
                           { label: "Monthly CTC", field: "monthlyCtc" },
                           { label: "Basic Salary", field: "basicSalary" },
                           { label: "HRA", field: "hra" },
-                          { label: "Allowances", field: "allowances" },
+                          { label: "Other Allowances", field: "allowances" },
                         ].map(({ label, field }) => (
                           <div key={field} className={inputGroupClass}>
                             <label className={inputLabelClass}>{label}</label>
@@ -4283,8 +4306,7 @@ function EmployeeForm() {
                               <input
                                 type="number"
                                 min="0"
-                                className={`${inputClass} pl-8 ${field === "monthlyCtc" ||
-                                  field === "allowances" ||
+                                className={`${inputClass} pl-8 ${field === "allowances" ||
                                   field === "hra"
                                   ? "bg-gray-50"
                                   : ""
@@ -4311,7 +4333,6 @@ function EmployeeForm() {
                                     e.preventDefault();
                                 }}
                                 readOnly={
-                                  field === "monthlyCtc" ||
                                   field === "allowances" ||
                                   field === "hra"
                                 }
@@ -4370,6 +4391,79 @@ function EmployeeForm() {
                             </div>
                           </>
                         )}
+
+                        {/* Reimbursement Fields */}
+                        <div className={inputGroupClass}>
+                          <label className={inputLabelClass}>Phone Reimbursement</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              ₹
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              className={inputClass + " pl-8"}
+                              placeholder="Enter phone reimbursement amount"
+                              value={formData.salaryDetails.phoneReimbursements || ""}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(
+                                  /[^\d.]/g,
+                                  ""
+                                ); // Remove all except digits and dot
+                                if (val.startsWith(".")) val = ""; // Prevent leading dot
+                                if (val && parseFloat(val) < 0) val = ""; // Prevent negative
+                                // Prevent negative or plus sign in pasted value
+                                if (val.includes("-") || val.includes("+"))
+                                  val = val.replace(/[-+]/g, "");
+                                handleInputChange(
+                                  "salaryDetails",
+                                  "phoneReimbursements",
+                                  val
+                                );
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "-" || e.key === "+")
+                                  e.preventDefault();
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className={inputGroupClass}>
+                          <label className={inputLabelClass}>Fuel Reimbursement</label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              ₹
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              className={inputClass + " pl-8"}
+                              placeholder="Enter fuel reimbursement amount"
+                              value={formData.salaryDetails.fuelReimbursements || ""}
+                              onChange={(e) => {
+                                let val = e.target.value.replace(
+                                  /[^\d.]/g,
+                                  ""
+                                ); // Remove all except digits and dot
+                                if (val.startsWith(".")) val = ""; // Prevent leading dot
+                                if (val && parseFloat(val) < 0) val = ""; // Prevent negative
+                                // Prevent negative or plus sign in pasted value
+                                if (val.includes("-") || val.includes("+"))
+                                  val = val.replace(/[-+]/g, "");
+                                handleInputChange(
+                                  "salaryDetails",
+                                  "fuelReimbursements",
+                                  val
+                                );
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "-" || e.key === "+")
+                                  e.preventDefault();
+                              }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

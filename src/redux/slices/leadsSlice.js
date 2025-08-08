@@ -12,12 +12,22 @@ const token = getItemFromSessionStorage("token", null);
 
 export const fetchLeads = createAsyncThunk(
   'leads/fetchLeads',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/leads/kanban-cards`, {
-        headers: getAuthHeaders(),
-      });
-      return res.data;
+        const companyId = sessionStorage.getItem("employeeCompanyId");
+        
+        let url = `${API_BASE_URL}/leads/kanban-cards/${companyId}`;
+        
+        // Only add employeeId filter if explicitly provided (for Lead Management)
+        // Manager pages will call fetchLeads() without params to get all leads
+        if (params.employeeId) {
+          url += `?assignedSalesRep=${params.employeeId}`;
+        }
+        
+        const res = await axios.get(url, {
+          headers: getAuthHeaders(),
+        });
+        return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -53,7 +63,6 @@ export const createLead = createAsyncThunk(
     async (leadData, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-
             const response = await fetch(`${API_BASE_URL}/leads`, {
                 method: "POST",
                 headers: {
@@ -81,11 +90,14 @@ export const updateLead = createAsyncThunk(
         try {
             const token = getItemFromSessionStorage("token", null);
             const leadId = leadData.leadId; // Handle both id and leadId
-            console.log(leadData);
+            console.log('updateLead - Input data:', leadData);
 
             if (!leadId) {
                 throw new Error("Lead ID is required for update");
             }
+
+            console.log('updateLead - Making API call to:', `${API_BASE_URL}/leads/${leadId}`);
+            console.log('updateLead - Request body:', JSON.stringify(leadData, null, 2));
 
             const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
                 method: "PUT",  
@@ -96,13 +108,21 @@ export const updateLead = createAsyncThunk(
                 body: JSON.stringify(leadData)
             });
 
+            console.log('updateLead - Response status:', response.status);
+            console.log('updateLead - Response ok:', response.ok);
+
             if (!response.ok) {
                 const errorData = await response.json();
+                console.log('updateLead - Error response:', errorData);
                 throw new Error(errorData.message || "Failed to update lead");
             }
-            return await response.json();
+            
+            const result = await response.json();
+            console.log('updateLead - Success response:', result);
+            return result;
 
         } catch (error) {
+            console.log('updateLead - Error:', error);
             return rejectWithValue(error.message);
         }
     }
@@ -166,10 +186,26 @@ const leadsSlice = createSlice({
             .addCase(updateLead.fulfilled, (state, action) => {
                 state.loading = false;
                 state.error = null;
-                // Update the lead in the leads array
-                const index = state.leads.findIndex(lead => lead.leadId === action.payload.leadId);
-                if (index !== -1) {
-                    state.leads[index] = action.payload;
+                // Update the lead in the leads array (handle both grouped and flat formats)
+                if (Array.isArray(state.leads) && state.leads.length > 0) {
+                    // Check if leads are in grouped format (with stageId and leads properties)
+                    if (state.leads[0].stageId && state.leads[0].leads) {
+                        // Grouped format: search through all stage groups
+                        state.leads.forEach(stageGroup => {
+                            if (stageGroup.leads) {
+                                const leadIndex = stageGroup.leads.findIndex(lead => lead.leadId === action.payload.leadId);
+                                if (leadIndex !== -1) {
+                                    stageGroup.leads[leadIndex] = action.payload;
+                                }
+                            }
+                        });
+                    } else {
+                        // Flat format: direct array of leads
+                        const index = state.leads.findIndex(lead => lead.leadId === action.payload.leadId);
+                        if (index !== -1) {
+                            state.leads[index] = action.payload;
+                        }
+                    }
                 }
             })
             .addCase(updateLead.rejected, (state, action) => {

@@ -3,37 +3,85 @@ import { FaBuilding, FaPaperclip, FaPlus, FaTrash, FaShippingFast, FaFilePdf, Fa
 import PurchaseOrderPreview from '../Previews/PurchaseOrderPreview';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
-import { createPurchaseOrder } from '../../redux/slices/PurchaseOrderSlice';
+import { fetchCompanies } from '../../redux/slices/companiesSlice';
+import { createPurchaseOrder, updatePurchaseOrder, getNextPurchaseOrderNumber, generateNextPurchaseOrderNumber } from '../../redux/slices/PurchaseOrderSlice';
 
-const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
+const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = null }) => {
   const companyId = sessionStorage.getItem('employeeCompanyId');
   const dispatch = useDispatch();
   const { vendors, loading: vendorsLoading, error } = useSelector((state) => state.vendors);
+  const { companies, loading: companiesLoading } = useSelector((state) => state.companies);
+  const { nextPurchaseOrderNumber, loading: poNumberLoading, error: poNumberError } = useSelector((state) => state.purchaseOrders);
 
   useEffect(() => {
     dispatch(fetchVendors());
+    dispatch(fetchCompanies());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (mode === 'add' && companyId) {
+      dispatch(getNextPurchaseOrderNumber(companyId)).then((action) => {
+        if (action.payload && action.payload.nextPurchaseOrderNumber) {
+          setFormData((prev) => ({ ...prev, poNumber: action.payload.nextPurchaseOrderNumber }));
+        }
+      });
+    }
+  }, [dispatch, mode, companyId]);
 
-  const [formData, setFormData] = useState({
-    poNumber: `PO-${Date.now().toString().slice(-6)}`,
-    vendor: null,
-    orderDate: new Date().toISOString().split('T')[0],
-    deliveryDate: '',
-    notes: '',
-    company: null,
-    shippingAddress: '',
-    items: [{
-      id: 1,
-      itemName: 'Sample Item',
-      description: 'A sample item for this PO.',
-      hsnCode: '998877',
-      gstRate: 18,
-      quantity: 2,
-      rate: 150,
-      unit: 'PCS'
-    }],
-    attachments: []
+  // Transform API data to form format for edit mode
+  const transformApiDataToFormData = (apiData) => {
+    if (!apiData) return null;
+    
+    return {
+      poNumber: apiData.purchaseOrderNumber || `PO-${Date.now().toString().slice(-6)}`,
+      vendor: null, // Will be set when vendors are loaded
+      orderDate: apiData.purchaseOrderDate || new Date().toISOString().split('T')[0],
+      deliveryDate: apiData.purchaseOrderDeliveryDate || '',
+      notes: apiData.notes || '',
+      company: null, // Will be set based on company address
+      shippingAddress: apiData.companyAddress || '',
+      items: apiData.purchaseOrderLineItems ? apiData.purchaseOrderLineItems.map((item, index) => ({
+        id: index + 1,
+        itemName: item.itemName || '',
+        description: item.description || '',
+        //hsnCode: item.hsnOrSac || '',
+        quantity: item.quantity || 1,
+        rate: item.rate || 0,
+        unit: item.uom || 'PCS'
+      })) : [{
+        id: 1,
+        itemName: 'Sample Item',
+        description: 'A sample item for this PO.',
+        //hsnCode: '998877',
+        quantity: 2,
+        unit: 'PCS'
+      }],
+      attachments: []
+    };
+  };
+
+  const [formData, setFormData] = useState(() => {
+    if (mode === 'edit' && initialData) {
+      return transformApiDataToFormData(initialData);
+    }
+    return {
+      poNumber: `PO-${Date.now().toString().slice(-6)}`,
+      vendor: null,
+      orderDate: new Date().toISOString().split('T')[0],
+      deliveryDate: '',
+      notes: '',
+      company: null,
+      shippingAddress: '',
+      items: [{
+        id: 1,
+        itemName: 'Sample Item',
+        description: 'A sample item for this PO.',
+        //hsnCode: '998877',
+        quantity: 2,
+        unit: 'PCS'
+      }],
+      attachments: []
+    };
   });
 
   const [errors, setErrors] = useState({});
@@ -44,20 +92,35 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
 
-  // // In a real app, this would come from an API
-  // const [vendors] = useState([
-  //   { id: 1, name: 'Acme Ltd.', gstin: '27ABCDE1234F1Z5', address: '123 Business Park, Mumbai' },
-  //   { id: 2, name: 'XYZ India', gstin: '29XYZE5678K9Z2', address: '456 Tech Park, Pune' },
-  //   { id: 3, name: 'Tech Solutions', gstin: '29TECH5678K9Z3', address: '789 Innovation Hub, Bangalore' },
-  // ]);
+  // Set selected vendor when vendors are loaded and we're in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialData && vendors.length > 0) {
+      const vendor = vendors.find(v => v.vendorId === initialData.vendorId);
+      setSelectedVendor(vendor);
+    }
+  }, [mode, initialData, vendors]);
 
-  const [companies] = useState([
-    { id: 1, name: 'ABC Pvt Ltd', gstin: '27AABCU9876A1Z5', address: '1st Floor, Innovation Tower,\nCybercity, Ebene,\nMauritius' },
-    { id: 2, name: 'DEF Solutions', gstin: '29AABCD1234A1Z5', address: 'Global Village Tech Park,\nRR Nagar, Bangalore,\nIndia - 560098' },
-  ]);
+  // Set company when in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && initialData && initialData.companyAddress && companies && companies.length > 0) {
+      const company = companies.find(c => 
+        c.regAdd?.includes(initialData.companyAddress) || 
+        initialData.companyAddress?.includes(c.name) ||
+        c.name?.includes(initialData.companyAddress)
+      );
+      if (company) {
+        setFormData(prev => ({
+          ...prev,
+          company: company,
+          shippingAddress: company.regAdd || company.address || initialData.companyAddress
+        }));
+      }
+    }
+  }, [mode, initialData, companies]);
+
+  // Companies are now fetched from Redux state
 
   const unitOptions = ['PCS', 'KG', 'LTR', 'MTR', 'NOS', 'BOX', 'SET'];
-  const gstRates = [0, 5, 12, 18, 28];
   
   // Handlers
   const handleVendorChange = (e) => {
@@ -74,11 +137,11 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
 
   const handleCompanyChange = (e) => {
     const companyId = e.target.value;
-    const selected = companies.find(c => c.id === Number(companyId));
+    const selected = companies.find(c => c._id === companyId || c.companyId === companyId);
     setFormData(prev => ({
         ...prev,
         company: selected,
-        shippingAddress: selected ? selected.address : ''
+        shippingAddress: selected ? selected.regAdd : ''
     }));
     if (errors.company) setErrors(prev => ({...prev, company: null}));
   };
@@ -100,10 +163,8 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
       id: Date.now(),
       itemName: '',
       description: '',
-      hsnCode: '',
-      gstRate: 18,
+      //hsnCode: '',
       quantity: 1,
-      rate: 0,
       unit: 'PCS'
     };
     setFormData(prev => ({ ...prev, items: [...prev.items, newItem] }));
@@ -131,8 +192,8 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
   };
 
   const calculateTotals = () => {
-    const subtotal = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-    const totalGst = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate * (item.gstRate / 100)), 0);
+    const subtotal = 0; // No rate calculation needed
+    const totalGst = 0; // GST not calculated in this simplified form
     const grandTotal = subtotal + totalGst;
     return { subtotal, totalGst, grandTotal };
   };
@@ -143,22 +204,22 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
     const newErrors = {};
     if (!selectedVendor) newErrors.vendor = "Vendor is required";
     if (!formData.orderDate) newErrors.orderDate = 'Order date is required.';
-    if (!formData.deliveryDate) newErrors.deliveryDate = 'Delivery date is required.';
-    if (!formData.company) newErrors.company = 'Company is required.';
-    if (!formData.shippingAddress) newErrors.shippingAddress = 'Shipping address is required.';
-    if (new Date(formData.deliveryDate) < new Date(formData.orderDate)) {
+    
+    // Only validate delivery date if it's provided
+    if (formData.deliveryDate && new Date(formData.deliveryDate) < new Date(formData.orderDate)) {
       newErrors.deliveryDate = 'Delivery date cannot be before order date.';
     }
+    
     formData.items.forEach((item, index) => {
       if (!item.itemName) newErrors[`itemName_${index}`] = 'Item name is required.';
       if (item.quantity <= 0) newErrors[`quantity_${index}`] = 'Qty must be > 0.';
-      if (item.rate <= 0) newErrors[`rate_${index}`] = 'Rate must be > 0.';
+      // Rate is no longer required - removed validation
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-    const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
       console.log("Validation failed");
@@ -166,67 +227,92 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
       return;
     }
 
-    if (validateForm()) {
-      // Calculate TDS amount
-      const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
-        (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
 
-      // Prepare the purchase order data matching your API structure
-      const poData = {
-        purchaseOrderId: formData.poNumber,
-        purchaseOrderNumber: formData.poNumber,
-        companyId: companyId,
-        companyAddress: formData.shippingAddress,
-        vendorId: selectedVendor.vendorId,
-        gstin: selectedVendor.gstin,
-        vendorAddress: selectedVendor.addressLine1,
-        tdsPercentage: selectedVendor.tdsPercentage || 0,
-        purchaseOrderDate: formData.orderDate,
-        purchaseOrderDeliveryDate: formData.deliveryDate,
-        purchaseOrderLineItems: formData.items.map(item => {
-          const qty = Number(item.quantity) || 0;
-          const rate = Number(item.rate) || 0;
-          const gstRate = Number(item.gstRate) || 0;
-          const amount = qty * rate;
-          const gstAmount = amount * (gstRate / 100);
-          const totalAmount = amount + gstAmount;
-          
-          return {
-            itemName: item.itemName,
-            description: item.description,
-            hsnOrSac: item.hsnCode,
-            quantity: qty,
-            uom: item.unit,
-            rate: rate,
-            amount: amount,
-            gstPercent: gstRate,
-            gstAmount: gstAmount,
-            totalAmount: totalAmount
-          };
-        }),
-        totalBeforeGST: subtotal,
-        totalGST: totalGst,
-        tdsApplied: tdsAmount,
-        finalAmount: grandTotal - tdsAmount
-      };
-
-      console.log('Purchase Order Data:', poData);
-
-      // Create FormData for multipart upload
-      const formDataToSend = new FormData();
-      formDataToSend.append('purchaseOrder', JSON.stringify(poData));
-      
-      // Add attachments as separate files
-      formData.attachments.forEach((file, index) => {
-        formDataToSend.append('attachment', file);
-      });
-
+    // Calculate TDS amount
+    const tdsAmount = selectedVendor && selectedVendor.tdsPercentage ? 
+      (subtotal + totalGst) * (selectedVendor.tdsPercentage / 100) : 0;
+    let finalPONumber = formData.poNumber;
+    if (mode === 'add' && companyId) {
       try {
-        dispatch(createPurchaseOrder(formDataToSend));
-        onCancel();
+        const result = await dispatch(generateNextPurchaseOrderNumber(companyId)).unwrap();
+        if (result && result.nextPurchaseOrderNumber) {
+          finalPONumber = result.nextPurchaseOrderNumber;
+        }
       } catch (error) {
-        console.error('Error creating purchase order:', error);
+        console.error('Failed to generate PO number:', error);
+        // fallback to preview or existing number
       }
+    }
+
+
+    // Prepare the purchase order data matching your API structure
+    const poData = {
+      purchaseOrderId: finalPONumber,
+      purchaseOrderNumber: finalPONumber,
+      companyId: formData.company?._id || formData.company?.companyId || companyId, // Use selected company ID
+      companyAddress: formData.shippingAddress,
+      vendorId: selectedVendor.vendorId,
+      //gstin: selectedVendor.gstin,
+      vendorAddress: selectedVendor.addressLine1,
+      tdsPercentage: selectedVendor.tdsPercentage || 0,
+      purchaseOrderDate: formData.orderDate,
+      purchaseOrderDeliveryDate: formData.deliveryDate,
+      purchaseOrderLineItems: formData.items.map(item => {
+        const qty = Number(item.quantity) || 0;
+        
+        return {
+          itemName: item.itemName,
+          description: item.description,
+          //hsnOrSac: item.hsnCode,
+          quantity: qty,
+          uom: item.unit,
+          // Provide numeric fields expected by backend to avoid null BigDecimal operations
+          rate: 0,
+          amount: 0,
+          gstPercent: 0,
+          cgstPercent: 0,
+          sgstPercent: 0,
+          igstPercent: 0,
+          gstAmount: 0,
+          cgstAmount: 0,
+          sgstAmount: 0,
+          igstAmount: 0,
+          totalAmount: 0
+        };
+      }),
+      // Top-level totals mirrored from bills API to satisfy backend schema
+      totalBeforeGST: subtotal,
+      totalGST: totalGst,
+      totalCGST: 0,
+      totalSGST: 0,
+      totalIGST: 0,
+      finalAmount: grandTotal,
+      tdsAmount: tdsAmount || 0,
+      notes: formData.notes || ''
+    };
+
+    console.log('Purchase Order Data:', poData);
+    console.log('Selected Company:', formData.company);
+    console.log('Company ID being saved:', formData.company?._id || formData.company?.companyId || companyId);
+
+    // Create FormData for multipart upload
+    const formDataToSend = new FormData();
+    formDataToSend.append('purchaseOrder', JSON.stringify(poData));
+    
+    // Add attachments as separate files
+    formData.attachments.forEach((file, index) => {
+      formDataToSend.append('attachment', file);
+    });
+
+    try {
+      if (mode === 'add') {
+        dispatch(createPurchaseOrder(formDataToSend));
+      } else if (mode === 'edit') {
+        dispatch(updatePurchaseOrder({ purchaseOrderId: initialData.purchaseOrderId, purchaseOrder: formDataToSend }));
+      }
+      onCancel();
+    } catch (error) {
+      console.error('Error creating purchase order:', error);
     }
   };
 
@@ -258,7 +344,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
               {errors.vendor && <div className="text-xs text-red-500 mt-1">{errors.vendor}</div>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Vendor GSTIN</label>
               <input 
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
                 value={selectedVendor?.gstin || ""} 
@@ -266,7 +352,16 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                 readOnly 
               />
             </div>
-            <div>
+            {/*<div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">GSTIN</label>
+              <input 
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
+                value={selectedVendor?.gstin || ""} 
+                placeholder="Auto-filled from vendor"
+                readOnly 
+              />
+            </div>*/}
+            {/*<div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
               <textarea 
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 focus:outline-none" 
@@ -275,7 +370,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                 rows={3}
                 readOnly 
               />
-            </div>
+            </div>*/}
           </div>
           
           {/* PO Details */}
@@ -286,6 +381,8 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">PO Number</label>
               <input type="text" readOnly value={formData.poNumber} className="w-full bg-gray-50 border-gray-300 rounded-lg px-3 py-2"/>
+              {poNumberLoading && <p className="text-xs text-gray-500 mt-1">Generating PO number...</p>}
+              {poNumberError && <p className="text-xs text-red-500 mt-1">{poNumberError}</p>}
             </div>
             <div className="flex gap-4">
               <div className="w-1/2">
@@ -299,7 +396,7 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                 {errors.orderDate && <p className="text-xs text-red-500 mt-1">{errors.orderDate}</p>}
               </div>
               <div className="w-1/2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Date</label>
                 <input 
                   type="date" 
                   className={`w-full border rounded-lg px-3 py-2 ${errors.deliveryDate ? 'border-red-500' : 'border-gray-300'}`}
@@ -328,19 +425,24 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                 <FaShippingFast className="text-gray-400" /> Ship To
             </h2>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Company <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Company </label>
               <select
                 className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-300'}`}
-                value={formData.company?.id || ''}
+                value={formData.company?._id || formData.company?.companyId || ''}
                 onChange={handleCompanyChange}
+                disabled={companiesLoading}
               >
-                <option value="">Select Company</option>
-                {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                <option value="">{companiesLoading ? 'Loading companies...' : 'Select Company'}</option>
+                {companies && companies.map(c => (
+                  <option key={c._id || c.companyId} value={c._id || c.companyId}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
               {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company}</p>}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Shipping Address </label>
               <textarea
                 rows="5"
                 className={`w-full border rounded-lg px-3 py-2 ${errors.shippingAddress ? 'border-red-500' : 'border-gray-300'}`}
@@ -395,13 +497,11 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-100">
                     <tr className="text-left text-gray-600 font-medium">
-                      <th className="p-3 w-1/4">Item</th>
-                      <th className="p-3 w-1/3">Description</th>
-                      <th className="p-3">HSN</th>
+                      <th className="p-3 w-1/3">Item</th>
+                      <th className="p-3 w-2/5">Description</th>
+                      {/*<th className="p-3">HSN</th>*/}
                       <th className="p-3">Qty</th>
                       <th className="p-3">Unit</th>
-                      <th className="p-3">Rate</th>
-                      <th className="p-3">GST%</th>
                       <th className="p-3"></th>
                     </tr>
                   </thead>
@@ -410,17 +510,11 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                         <tr key={item.id} className="border-t">
                           <td className="p-2"><input type="text" placeholder="Item Name" value={item.itemName} onChange={e => handleItemChange(item.id, 'itemName', e.target.value)} className={`w-full border rounded-md p-2 ${errors[`itemName_${index}`] ? 'border-red-400' : 'border-gray-200'}`} /></td>
                           <td className="p-2"><input type="text" placeholder="Description" value={item.description} onChange={e => handleItemChange(item.id, 'description', e.target.value)} className="w-full border-gray-200 rounded-md p-2" /></td>
-                          <td className="p-2"><input type="text" placeholder="HSN" value={item.hsnCode} onChange={e => handleItemChange(item.id, 'hsnCode', e.target.value)} className="w-full border-gray-200 rounded-md p-2" /></td>
+                          {/*<td className="p-2"><input type="text" placeholder="HSN" value={item.hsnCode} onChange={e => handleItemChange(item.id, 'hsnCode', e.target.value)} className="w-full border-gray-200 rounded-md p-2" /></td>*/}
                           <td className="p-2"><input type="number" placeholder="1" value={item.quantity} onChange={e => handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)} className={`w-20 border rounded-md p-2 ${errors[`quantity_${index}`] ? 'border-red-400' : 'border-gray-200'}`} /></td>
                           <td className="p-2">
                             <select value={item.unit} onChange={e => handleItemChange(item.id, 'unit', e.target.value)} className="w-full border-gray-200 rounded-md p-2">
                               {unitOptions.map(u => <option key={u} value={u}>{u}</option>)}
-                            </select>
-                          </td>
-                          <td className="p-2"><input type="number" placeholder="0.00" value={item.rate} onChange={e => handleItemChange(item.id, 'rate', parseFloat(e.target.value) || 0)} className={`w-24 border rounded-md p-2 ${errors[`rate_${index}`] ? 'border-red-400' : 'border-gray-200'}`} /></td>
-                          <td className="p-2">
-                            <select value={item.gstRate} onChange={e => handleItemChange(item.id, 'gstRate', parseFloat(e.target.value))} className="w-full border-gray-200 rounded-md p-2">
-                              {gstRates.map(r => <option key={r} value={r}>{r}%</option>)}
                             </select>
                           </td>
                           <td className="p-2 text-center"><button type="button" onClick={() => handleDeleteLine(index)} className="text-gray-400 hover:text-red-500"><FaTrash /></button></td>
@@ -429,29 +523,21 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                   </tbody>
                 </table>
               </div>
-              <div className="bg-gray-50 p-4 flex justify-end">
-                <div className="w-64 space-y-2 text-sm">
-                    <div className="flex justify-between"><span>Subtotal</span><span>{subtotal.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>GST</span><span>{totalGst.toFixed(2)}</span></div>
-                    <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>Total</span><span>{grandTotal.toFixed(2)}</span></div>
-                </div>
-              </div>
+
             </div>
           )}
 
           {activeTab === 'attachments' && (
             <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-                <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-pointer">
+                <label htmlFor="attachment-upload" className="flex flex-col items-center justify-center cursor-not-allowed pointer-events-none opacity-60">
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-2">
                         <FaPaperclip className="text-2xl text-blue-500" />
                     </div>
                     <button
                         type="button"
-                        className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium hover:bg-blue-200 transition-colors"
-                        onClick={e => {
-                            e.preventDefault();
-                            if (inputRef.current) inputRef.current.click();
-                        }}
+                        disabled
+                        aria-disabled="true"
+                        className="px-6 py-2 bg-blue-100 text-blue-700 rounded-lg font-medium"
                     >
                         Add Attachment
                     </button>
@@ -461,11 +547,13 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
                         accept=".pdf,.jpg,.jpeg,.png"
                         multiple
                         className="hidden"
+                        disabled
+                        aria-disabled="true"
                         onChange={handleAttachmentChange}
                         ref={inputRef}
                     />
                 </label>
-                <div className="text-sm text-gray-400 mt-2 mb-6">PDF, JPG, PNG allowed</div>
+                <div className="text-sm text-gray-400 mt-2 mb-6">Attachments are disabled</div>
                 
                 {formData.attachments.length > 0 && (
                   <div className="w-full max-w-2xl">
@@ -494,25 +582,37 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel }) => {
       </div>
       
       {/* Sticky Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-                <div className="text-lg font-bold">
-                    Grand Total: <span className="text-blue-600">₹{grandTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex gap-2">
-                   <button type="button" onClick={() => setShowPreview(true)} className="bg-white border border-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-100">Preview</button>
-                   <button type="button" onClick={onCancel} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
-                   <button type="button" onClick={handleSubmit} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Save PO</button>
-                </div>
-            </div>
-        </div>
+    <div className="border-t border-gray-200 bg-gray-50 px-6 py-4 sticky bottom-0 z-20">
+    <div className="flex justify-end items-center">
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => setShowPreview(true)}
+          className="px-6 py-2 border border-gray-300 rounded-lg transition-colors bg-white text-gray-800 font-bold hover:bg-gray-50"
+        >
+          Preview
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-6 py-2 border border-gray-300 rounded-lg transition-colors bg-gray-200 text-gray-800 font-bold hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="px-6 py-2 rounded-lg transition-colors font-medium bg-blue-600 text-white hover:bg-blue-700"
+        >
+          {mode === 'edit' ? 'Update PO' : 'Save PO'}
+        </button>
       </div>
-
+    </div>
+  </div>
       {/* PO Preview Modal */}
       {showPreview && (
         <PurchaseOrderPreview 
-            poData={{...formData, subtotal, totalGst, grandTotal}}
+            poData={{...formData, vendor: selectedVendor, subtotal, grandTotal}}
             onClose={() => setShowPreview(false)}
         />
       )}

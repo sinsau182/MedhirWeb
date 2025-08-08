@@ -1,8 +1,10 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye, FaFileAlt } from 'react-icons/fa';
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
+import VendorPreview from '../../components/Previews/VendorPreview';
+import PurchaseOrderPreview from '../../components/Previews/PurchaseOrderPreview';
 import Sidebar from "../../components/Sidebar";
 import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
@@ -10,27 +12,112 @@ import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBills } from '../../redux/slices/BillSlice';
 import { fetchPayments } from '../../redux/slices/paymentSlice';
 import { fetchPurchaseOrders } from '../../redux/slices/PurchaseOrderSlice';
+import { fetchCompanies } from '../../redux/slices/companiesSlice';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { generatePresignedUrl, fetchImageFromMinio } from '../../redux/slices/minioSlice';
+import getConfig from 'next/config';
+
+const { publicRuntimeConfig } = getConfig();
 
 const Vendor = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
+  
+  // File handling functions using minioSlice directly
+  const handleViewFile = async (url, fileName = null) => {
+    try {
+      // Try to generate pre-signed URL first (preferred method)
+      try {
+        const { presignedUrl } = await dispatch(generatePresignedUrl({ url, action: 'view' })).unwrap();
+        const newWindow = window.open(presignedUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = fileName || 'File Preview';
+          newWindow.focus();
+        }
+      } catch (presignedError) {
+        console.warn('Pre-signed URL generation failed, falling back to fetch method:', presignedError);
+        // Fallback to the old method if pre-signed URL generation fails
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+        const newWindow = window.open(dataUrl, '_blank', 'noopener,noreferrer');
+        if (newWindow) {
+          newWindow.document.title = fileName || 'File Preview';
+          newWindow.focus();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to open file:', error);
+      toast.error('Failed to open file. Please try again.');
+    }
+  };
+
+  const handleDownloadFile = async (url, fileName = null) => {
+    try {
+      // Try to generate pre-signed URL first (preferred method)
+      try {
+        const { presignedUrl } = await dispatch(generatePresignedUrl({ url, action: 'download' })).unwrap();
+        const a = document.createElement("a");
+        a.href = presignedUrl;
+        a.download = fileName || url.split("/").pop().split("?")[0];
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (presignedError) {
+        console.warn('Pre-signed URL generation failed, falling back to fetch method:', presignedError);
+        // Fallback to the old method if pre-signed URL generation fails
+        const { dataUrl } = await dispatch(fetchImageFromMinio({ url })).unwrap();
+        
+        // Create a temporary link to download the file
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = fileName || url.split("/").pop().split("?")[0];
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Clean up blob URL
+        URL.revokeObjectURL(blobUrl);
+      }
+    } catch (error) {
+      console.error('Failed to download file:', error);
+      toast.error('Failed to download file. Please try again.');
+    }
+  };
   const { vendors, loading, error } = useSelector((state) => state.vendors);
   const { bills, loading: billsLoading, error: billsError } = useSelector((state) => state.bills);
   const { payments, loading: paymentsLoading, error: paymentsError } = useSelector((state) => state.payments);
   const { purchaseOrders, loading: purchaseOrdersLoading, error: purchaseOrdersError } = useSelector((state) => state.purchaseOrders);
+  const { companies } = useSelector((state) => state.companies);
   // State for attachment modal
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [selectedAttachments, setSelectedAttachments] = useState([]);
   const [selectedBillVendor, setSelectedBillVendor] = useState('');
-
+  // State for selected vendor for editing
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  // State for selected bill for editing
+  const [selectedBill, setSelectedBill] = useState(null);
+  // State for selected payment for editing
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
+  // Only support creation of new purchase orders
+   const [previewFile, setPreviewFile] = useState(null);
+   const [showPurchaseOrderPreview, setShowPurchaseOrderPreview] = useState(false);
+   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
+   // State for vendor preview modal
+   const [showVendorPreview, setShowVendorPreview] = useState(false);
+   const [formData, setFormData] = useState({ attachments: [] });
+   const [previewVendorData, setPreviewVendorData] = useState(null);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
       dispatch(fetchPayments());
       dispatch(fetchPurchaseOrders());
+      dispatch(fetchCompanies());
     }, [dispatch]);
 
     console.log(bills);
@@ -39,7 +126,7 @@ const Vendor = () => {
   };
   const [activeTab, setActiveTab] = useState('bills'); // Default to bills tab
   const [showAddForm, setShowAddForm] = useState(null); // 'bill' | 'refund' | 'payment' | 'vendor' | null
-
+const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Refetch vendors when form is closed and we're on vendors tab
   useEffect(() => {
     if (showAddForm === null && activeTab === 'vendors') {
@@ -57,30 +144,156 @@ const Vendor = () => {
   // Context-aware Add button handler
   const handleAddClick = () => {
     if (activeTab === 'bills') {
+      setSelectedBill(null); // Clear selected bill for new bill
       setShowAddForm('bill');
     } else if (activeTab === 'purchaseOrders') {
       setShowAddForm('po');
     } else if (activeTab === 'payments') {
+      setSelectedPayment(null); // Clear selected payment for new payment
       setShowAddForm('payment');
     } else if (activeTab === 'vendors') {
+      setSelectedVendor(null); // Clear selected vendor for new vendor
       setShowAddForm('vendor');
     }
   };
 
-  console.log(payments)
+  console.log('Payments data:', payments);
+  console.log('Payment with proof URL:', payments.find(p => p.paymentProofUrl));
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
+    setSelectedVendor(null);
+    setSelectedBill(null);
+    setSelectedPayment(null);
+     setEditingPO(null);
   };
 
   // Handle attachment icon click
   const handleAttachmentClick = (bill) => {
     const attachments = bill.attachmentUrls || [];
-    setSelectedAttachments(attachments);
-    setSelectedBillVendor(bill.vendorName);
-    setShowAttachmentModal(true);
+    if (attachments.length > 0) {
+      // Open the first attachment directly in a new tab
+      const firstAttachment = attachments[0];
+      window.open(firstAttachment, '_blank');
+    }
+  };
+  // Handle PO row click for editing
+  const handlePORowClick = (po) => {
+    setEditingPO(po);
+    setShowAddForm('po');
   };
 
+  // Handle payment row click for editing
+  const handlePaymentRowClick = (payment) => {
+    setSelectedPayment(payment);
+    setShowAddForm('payment');
+  };
+
+  const handlePurchaseOrderPreview = async (po) => {
+    // Transform the purchase order data to match the preview component's expected format
+    const vendor = vendors.find(v => v.vendorId === po.vendorId);
+    console.log('Original PO data:', po);
+    console.log('Found vendor:', vendor);
+    
+    // Get company details from Redux state
+    let companyDetails = {
+      name: 'Your Company',
+      address: 'Your Company Address'
+    };
+    
+    try {
+      const companyId = sessionStorage.getItem('employeeCompanyId');
+      console.log('Company ID from session:', companyId);
+      console.log('Available companies:', companies);
+      
+      if (companyId && companies && companies.length > 0) {
+        // Find the company in the Redux state
+        const company = companies.find(c => c.companyId === companyId || c._id === companyId);
+        console.log('Found company in Redux:', company);
+        
+        if (company) {
+          companyDetails = {
+            name: company.name || 'Your Company',
+            address: company.regAdd || 'Your Company Address'
+          };
+          console.log('Processed company details:', companyDetails);
+        } else {
+          console.log('Company not found in Redux state, trying direct API call');
+          
+          // Fallback to direct API call if not found in Redux
+          const token = sessionStorage.getItem('token');
+          const apiUrl = `${publicRuntimeConfig.apiURL}/superadmin/companies/${companyId}`;
+          console.log('API URL:', apiUrl);
+          
+          const response = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('API Response status:', response.status);
+          
+          if (response.ok) {
+            const companyData = await response.json();
+            console.log('Company data received:', companyData);
+            
+            companyDetails = {
+              name: companyData.name || companyData.companyName || 'Your Company',
+              address: companyData.regAdd || companyData.address || companyData.registeredAddress || 'Your Company Address'
+            };
+            
+            console.log('Processed company details:', companyDetails);
+          } else {
+            console.error('API response not ok:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
+          }
+        }
+      } else {
+        console.log('No company ID found in session storage or no companies loaded');
+      }
+    } catch (error) {
+      console.error('Error fetching company details:', error);
+    }
+    
+    const transformedPo = {
+      ...po,
+      poNumber: po.purchaseOrderNumber,
+      orderDate: po.purchaseOrderDate,
+      deliveryDate: po.purchaseOrderDeliveryDate,
+      vendor: vendor ? {
+        name: vendor.vendorName,
+        address: vendor.addressLine1,
+        gstin: vendor.gstin
+      } : null,
+      company: companyDetails,
+      shippingAddress: po.companyAddress || companyDetails.address,
+      items: po.purchaseOrderLineItems || [],
+      notes: po.notes || '',
+      subtotal: po.totalBeforeGST || 0,
+      totalGst: po.totalGST || 0,
+      grandTotal: po.finalAmount || 0
+    };
+    console.log('Transformed PO data:', transformedPo);
+    setSelectedPurchaseOrder(transformedPo);
+    setShowPurchaseOrderPreview(true);
+  };
+  
+  const handleAttachmentChange = (e) => {
+    const files = Array.from(e.target.files);
+    const allowed = files.filter(f => /pdf|jpg|jpeg|png/i.test(f.type));
+    setFormData(prev => ({...prev, attachments: [...prev.attachments, ...allowed]}));
+  };
+
+  const handleRemoveAttachment = (idx) => {
+    setFormData(prev => ({...prev, attachments: prev.attachments.filter((_, i) => i !== idx)}));
+  };
+
+  const handlePreviewAttachment = (file) => {
+    setPreviewFile(file);
+  };
+   
   // Close attachment modal
   const closeAttachmentModal = () => {
     setShowAttachmentModal(false);
@@ -89,92 +302,63 @@ const Vendor = () => {
   };
 
   const handlePaymentSubmit = (paymentData) => {
-    setPayments(prev => [...prev, {
-      id: prev.length + 1,
-      paymentNo: `PAY-${String(prev.length + 1001).padStart(4, '0')}`,
-      paymentDate: paymentData.paymentDate,
-      vendorName: paymentData.vendor,
-      billReference: paymentData.selectedBills.map(bill => bill.billNo).join(', '),
-      gstin: paymentData.gstin,
-      paymentMethod: paymentData.paymentMethod,
-      journal: paymentData.journal,
-      amount: paymentData.totalAmount,
-      currency: paymentData.currency,
-      status: 'Draft',
-      tdsApplied: paymentData.tdsApplied ? 'Yes' : 'No',
-      company: paymentData.company,
-      paymentReference: paymentData.reference,
-      attachments: 'No'
-    }]);
+    // The payment submission is handled by the form component itself
+    // We just need to refresh the payments list and close the form
+    dispatch(fetchPayments());
     setShowAddForm(null);
     console.log('Payment added successfully:', paymentData);
   };
 
   const handleBillSubmit = (billData) => {
-    setBills(prev => [...prev, {
-      id: prev.length + 1,
-      billNo: billData.billReference || `VB-${String(prev.length + 1001).padStart(4, '0')}`,
-      vendorName: billData.vendor,
-      billDate: billData.billDate,
-      dueDate: billData.dueDate,
-      gstin: billData.gstin,
-      gstTreatment: billData.gstTreatment,
-      totalAmount: billData.billLines.reduce((sum, line) => sum + line.total, 0),
-      status: billData.status || 'Draft',
-      paymentStatus: 'Unpaid',
-      company: billData.company,
-      journal: billData.journal,
-      referencePo: billData.billReference,
-      reverseCharge: billData.reverseCharge ? 'Yes' : 'No',
-      attachments: 'No'
-    }]);
+    // The AddBillForm now handles the Redux dispatch internally
+    // We just need to refresh the bills list and close the form
+    dispatch(fetchBills());
     setShowAddForm(null);
-    console.log('Bill added successfully:', billData);
+    setSelectedBill(null);
+    console.log('Bill operation completed:', billData);
   };
 
   const handleVendorSubmit = (vendorData) => {
-    setVendorsList(prev => [...prev, {
-      id: prev.length + 1,
-      vendorName: vendorData.vendorName,
-      companyType: vendorData.companyType,
-      gstin: vendorData.gstin,
-      pan: vendorData.pan,
-      phone: vendorData.mobile,
-      email: vendorData.email,
-      city: vendorData.city,
-      state: vendorData.state,
-      paymentTerms: vendorData.paymentTerms,
-      vendorTags: vendorData.vendorTags,
-      status: vendorData.status
-    }]);
-    toast.success('Vendor added successfully!');
+    // The form submission is handled by the AddVendorForm component itself
+    // This function is called after successful submission
     dispatch(fetchVendors());
     setShowAddForm(null);
-    console.log('Vendor added successfully:', vendorData);
+    setSelectedVendor(null);
+    console.log('Vendor operation completed:', vendorData);
   };
 
   const handlePurchaseOrderSubmit = (poData) => {
-    const newPO = {
-      id: purchaseOrders.length + 1,
-      poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
-      vendorName: poData.vendorName,
-      vendorGstin: poData.vendorGstin,
-      orderDate: poData.orderDate,
-      deliveryDate: poData.deliveryDate,
-      status: poData.status || 'Draft',
-      subtotal: poData.subtotal,
-      totalGst: poData.totalGst,
-      grandTotal: poData.grandTotal,
-      currency: poData.currency,
-      company: poData.company,
-      items: poData.items,
-      notes: poData.notes
-    };
-    
-    dispatch(fetchPurchaseOrders());
-    toast.success('Purchase Order created successfully!');
-    setShowAddForm(null);
-    console.log('Purchase Order created successfully:', poData);
+    if (editingPO) {
+      // Update existing PO
+      dispatch(fetchPurchaseOrders());
+      toast.success('Purchase Order updated successfully!');
+      setShowAddForm(null);
+      setEditingPO(null);
+      console.log('Purchase Order updated successfully:', poData);
+    } else {
+      // Create new PO
+      const newPO = {
+        id: purchaseOrders.length + 1,
+        poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
+        vendorName: poData.vendorName,
+        vendorGstin: poData.vendorGstin,
+        orderDate: poData.orderDate,
+        deliveryDate: poData.deliveryDate,
+        status: poData.status || 'Draft',
+        subtotal: poData.subtotal,
+        totalGst: poData.totalGst,
+        grandTotal: poData.grandTotal,
+        currency: poData.currency,
+        company: poData.company,
+        items: poData.items,
+        notes: poData.notes
+      };
+      
+      dispatch(fetchPurchaseOrders());
+      toast.success('Purchase Order created successfully!');
+      setShowAddForm(null);
+      console.log('Purchase Order created successfully:', poData);
+    }
   };
 
   const tabs = [
@@ -208,27 +392,34 @@ const Vendor = () => {
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add New Bill</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedBill ? 'Edit Bill' : 'Add New Bill'}
+              </h2>
             </div>
             <AddBillForm
+              bill={selectedBill}
               onSubmit={handleBillSubmit}
               onSuccess={() => {
-                toast.success('Bill added successfully!');
+                toast.success(selectedBill ? 'Bill updated successfully!' : 'Bill added successfully!');
               }}
               onCancel={handleBackFromForm}
             />
           </div>
         );
-        case 'po':
+           case 'po':
           return (
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center mb-4">
                 <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                   <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
                 </button>
-                <h2 className="text-xl font-bold text-gray-900">Create Purchase Order</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingPO ? 'Edit Purchase Order' : 'Create Purchase Order'}
+                </h2>
               </div>
               <AddPurchaseOrderForm
+                mode={editingPO ? 'edit' : 'add'}
+                initialData={editingPO}
                 onSubmit={handlePurchaseOrderSubmit}
                 onCancel={handleBackFromForm}
               />
@@ -241,9 +432,13 @@ const Vendor = () => {
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add Vendor Payment</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedPayment ? 'Edit Vendor Payment' : 'Add Vendor Payment'}
+              </h2>
             </div>
             <BulkPaymentForm
+              mode={selectedPayment ? 'edit' : 'add'}
+              initialData={selectedPayment}
               onSubmit={handlePaymentSubmit}
               onCancel={handleBackFromForm}
             />
@@ -256,12 +451,15 @@ const Vendor = () => {
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add New Vendor</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedVendor ? 'Edit Vendor' : 'Add New Vendor'}
+              </h2>
             </div>
             <AddVendorForm
+              vendor={selectedVendor}
               onSubmit={handleVendorSubmit}
               onSuccess={() => {
-                toast.success('Vendor added successfully!');
+                toast.success(selectedVendor ? 'Vendor updated successfully!' : 'Vendor added successfully!');
               }}
               onCancel={handleBackFromForm}
             />
@@ -280,16 +478,6 @@ const Vendor = () => {
       case 'bills':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search bills..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-            </div>
             {bills.length === 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -323,12 +511,19 @@ const Vendor = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                      <th className="px-1 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {bills.map((bill) => (
-                    <tr key={bill.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={bill.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedBill(bill);
+                        setShowAddForm('bill');
+                      }}
+                    >
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{bill.billNumber || 'N/A'}</span>
                       </td>
@@ -338,7 +533,12 @@ const Vendor = () => {
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{bill.gstin}</span>
+                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                          {(() => {
+                            const vendor = vendors.find(v => v.vendorId === bill.vendorId);
+                            return vendor?.gstin || bill.gstin || '-';
+                          })()}
+                        </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
@@ -375,7 +575,8 @@ const Vendor = () => {
                               ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
                               : 'bg-gray-100 text-gray-500'
                           }`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation()
                             if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
                                 bill.attachmentUrls === 'Yes' || 
                                 bill.attachmentUrls === true) {
@@ -399,16 +600,6 @@ const Vendor = () => {
         case 'purchaseOrders':
           return (
             <div>
-              <div className="flex justify-between items-center mb-6">
-                <div className="relative">
-                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search purchase orders..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
-                </div>
-              </div>
               {purchaseOrders.length === 0 ? (
                 <div className="bg-white rounded-lg shadow border border-gray-200">
                   <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -438,14 +629,18 @@ const Vendor = () => {
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Currency</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {purchaseOrders.map((po) => (
-                      <tr key={po.id} className="hover:bg-gray-50 transition-colors">
+                      <tr 
+                        key={po.id} 
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handlePORowClick(po)}
+                      >
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>
                         </td>
@@ -462,21 +657,47 @@ const Vendor = () => {
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            po.status === 'Approved' 
-                              ? 'bg-green-100 text-green-800' 
-                              : po.status === 'Draft'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {po.status}
-                          </span>
-                        </td>
+                        
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.currency}</td>
+
+                 <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <span 
+                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                             (po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
+                                  }`}
+                            onClick={(e) => {
+   e.stopPropagation();
+   if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
+     // Open the first attachment directly in a new tab
+     const firstAttachment = po.attachmentUrls[0];
+     window.open(firstAttachment, '_blank');
+   } else if (typeof po.attachmentUrls === 'string') {
+     // Open the string attachment directly in a new tab
+     window.open(po.attachmentUrls, '_blank');
+   }
+ }}
+                                          >
+                                {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                   po.attachmentUrls === 'Yes' || 
+                                   po.attachmentUrls === true ? '📎' : '-'}
+                             </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePurchaseOrderPreview(po);
+                          }}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                          title="Preview Purchase Order"
+                        >
+                          <FaEye className="w-4 h-4" />
+                        </button>
+                      </td>
+
                       </tr>
                     ))}
                   </tbody>
@@ -488,16 +709,6 @@ const Vendor = () => {
       case 'payments':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search payments..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-            </div>
             {payments.length === 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -536,7 +747,11 @@ const Vendor = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={payment.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => handlePaymentRowClick(payment)}
+                    >
                                             <td className="px-4 py-4 text-sm text-gray-700 w-32">{payment.paymentDate}</td>
                       <td className="px-4 py-4 w-48">
                         <span className="text-sm font-medium text-gray-900 truncate block">{payment.vendorName}</span>
@@ -583,12 +798,20 @@ const Vendor = () => {
                         <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
                       </td>
                       <td className="px-4 py-4 w-20 text-center">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                          payment.attachments === 'Yes' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {payment.attachments === 'Yes' ? '📎' : '-'}
+                        <span 
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                            payment.paymentProofUrl 
+                              ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (payment.paymentProofUrl) {
+                              handleViewFile(payment.paymentProofUrl, 'Payment Receipt');
+                            }
+                          }}
+                        >
+                          {payment.paymentProofUrl ? '📎' : '-'}
                         </span>
                       </td>
                     </tr>
@@ -602,16 +825,6 @@ const Vendor = () => {
       case 'vendors':
         return (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search vendors..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
-              </div>
-            </div>
             {vendors.length === 0 ? (
               <div className="bg-white rounded-lg shadow border border-gray-200">
                 <div className="flex flex-col items-center justify-center py-16 px-8">
@@ -644,11 +857,20 @@ const Vendor = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Documents</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {vendors.map((vendor) => (
-                    <tr key={vendor.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
+                    <tr
+                      key={vendor.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedVendor(vendor);
+                        setShowAddForm('vendor');
+                      }}
+                    >
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
                       </td>
@@ -677,6 +899,61 @@ const Vendor = () => {
                             </span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                                                     {/* Bank Passbook Icon */}
+                           <button
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (vendor.bankPassbookUrl) {
+                                 handleViewFile(vendor.bankPassbookUrl, 'Bank Passbook');
+                               } else {
+                                 toast.error('Bank Passbook not uploaded');
+                               }
+                             }}
+                             className={`p-2 rounded-full transition-colors ${
+                               vendor.bankPassbookUrl 
+                                 ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' 
+                                 : 'text-gray-400 cursor-not-allowed'
+                             }`}
+                             title={vendor.bankPassbookUrl ? 'View Bank Passbook' : 'Bank Passbook not uploaded'}
+                           >
+                             <FaFileAlt className="w-4 h-4" />
+                           </button>
+                          
+                          {/* GST Document Icon */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (vendor.gstDocumentUrl) {
+                                handleViewFile(vendor.gstDocumentUrl, 'GST Document');
+                              } else {
+                                toast.error('GST Document not uploaded');
+                              }
+                            }}
+                            className={`p-2 rounded-full transition-colors ${
+                              vendor.gstDocumentUrl 
+                                ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
+                                : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                            title={vendor.gstDocumentUrl ? 'View GST Document' : 'GST Document not uploaded'}
+                          >
+                            <FaFileAlt className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewVendorData(vendor);
+                            setShowVendorPreview(true);
+                          }}
+                          className="text-gray-600 hover:text-blue-600"
+                        >
+                          <FaEye className="w-5 h-5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -711,39 +988,48 @@ const Vendor = () => {
 
         {/* Main Content Area */}
         <div className="mt-20 p-6">
-          {/* Vendors heading and Add Button + Tabs as a single block, pushed down together */}
-          <div className="mb-0">
+          <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Vendors</h1>
-            <div className="flex items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
-              {/* Add Button */}
+          </div>
+
+          <div className="flex justify-between items-center mb-6">
+            <nav className="flex space-x-6">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setShowAddForm(null); // Always reset form on tab switch
+                  }}
+                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none py-1 ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                  style={{ minWidth: 110 }}
+                >
+                  <tab.icon className="w-5 h-5" />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="flex items-center space-x-4">
               <button
                 onClick={handleAddClick}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm mr-6 text-sm"
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
                 style={{ minWidth: 120 }}
               >
                 {getAddButtonIcon()} <span>{getAddButtonLabel()}</span>
               </button>
-              {/* Tabs */}
-              <nav className="flex space-x-6">
-                {tabs.map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      setShowAddForm(null); // Always reset form on tab switch
-                    }}
-                    className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none py-1 ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                    style={{ minWidth: 110 }}
-                  >
-                    <tab.icon className="w-5 h-5" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </nav>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab}...`}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                />
+              </div>
             </div>
           </div>
 
@@ -752,82 +1038,20 @@ const Vendor = () => {
         </div>
       </div>
 
-      {/* Attachment Modal */}
-      {showAttachmentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Attachments - {selectedBillVendor}
-              </h3>
-              <button
-                onClick={closeAttachmentModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {selectedAttachments.length > 0 ? (
-                <div className="space-y-4">
-                  {selectedAttachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          {attachment.toLowerCase().includes('.pdf') ? (
-                            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                            </svg>
-                          ) : (
-                            <svg className="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                            {typeof attachment === 'string' ? attachment.split('/').pop() || attachment : `Attachment ${index + 1}`}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {typeof attachment === 'string' ? 'File' : 'Attachment'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => window.open(attachment, '_blank')}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = attachment;
-                            link.download = typeof attachment === 'string' ? attachment.split('/').pop() || 'attachment' : `attachment-${index + 1}`;
-                            link.click();
-                          }}
-                          className="px-3 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-                        >
-                          Download
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-6xl mb-4">📎</div>
-                  <p className="text-gray-500 text-lg">No attachments available</p>
-                  <p className="text-gray-400 text-sm mt-2">This bill doesn&apos;t have any attachments</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Vendor Preview Modal */}
+       {showVendorPreview && previewVendorData && (
+         <VendorPreview
+           vendorData={previewVendorData}
+           onClose={() => setShowVendorPreview(false)}
+         />
+       )}
+
+      {/* Purchase Order Preview Modal */}
+      {showPurchaseOrderPreview && selectedPurchaseOrder && (
+        <PurchaseOrderPreview
+          poData={selectedPurchaseOrder}
+          onClose={() => setShowPurchaseOrderPreview(false)}
+        />
       )}
     </div>
   );

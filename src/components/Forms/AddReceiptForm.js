@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaUpload, FaLink } from 'react-icons/fa';
+import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaLink, FaUpload, FaFileAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { addReceipt } from "../../redux/slices/receiptSlice";
-import { fetchProjectCustomerList, fetchInvoicesByProject } from "@/redux/slices/receiptSlice";
+import { toast } from 'sonner';
+import { addReceipt, getNextReceiptNumber, generateNextReceiptNumber } from "../../redux/slices/receiptSlice";
+import { fetchProjectCustomerList, fetchInvoicesByProject, fetchReceiptsByProject } from "@/redux/slices/receiptSlice";
 
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
@@ -17,17 +18,29 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     bankAccount: '',
     chequeNumber: '',
     upiTransactionId: '',
-    attachment: null,
+
     linkedInvoices: [],
   });
 const dispatch = useDispatch();
-  const { projectCustomerList, invoicesByProject } = useSelector((state) => state.receipts);
+  const { projectCustomerList, invoicesByProject, receiptsByProject, nextReceiptNumber, loading } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
-  const [attachmentPreview, setAttachmentPreview] = useState(null);
+
   const [isInvoiceLinkModalOpen, setIsInvoiceLinkModalOpen] = useState(false);
   const [invoicesToLink, setInvoicesToLink] = useState([]);
   const [activeTab, setActiveTab] = useState('linking');
+  
+  // File upload state
+  const [paymentProof, setPaymentProof] = useState(null);
+  const [paymentProofPreview, setPaymentProofPreview] = useState(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  
+  // New state for project-specific data
+  const [projectReceiptData, setProjectReceiptData] = useState({
+    totalAmountReceived: 0,
+    totalUnallocatedAmount: 0,
+    previousReceipts: []
+  });
 
   // Static data - in real app, these would come from APIs
   const customers = [
@@ -35,6 +48,26 @@ const dispatch = useDispatch();
     { id: 2, name: 'Horizon Dynamics' },
     { id: 3, name: 'Pioneer Builders' }
   ];
+
+  // Get company ID from session storage
+  const companyId = typeof window !== 'undefined' ? 
+    sessionStorage.getItem("employeeCompanyId") || 
+    sessionStorage.getItem("companyId") || 
+    sessionStorage.getItem("company") : null;
+
+  // Function to fetch next receipt number (generates and increments)
+  const fetchNextReceiptNumber = async () => {
+    if (companyId) {
+      try {
+        await dispatch(getNextReceiptNumber(companyId)).unwrap();
+      } catch (error) {
+        console.error('Failed to fetch next receipt number:', error);
+        // Don't show error toast as this is optional functionality
+      }
+    }
+  };
+
+
 
   const paymentMethods = ['Bank Transfer', 'Cheque', 'UPI', 'Cash', 'Credit Card', 'Debit Card'];
   const bankAccounts = ['HDFC Bank - *****5678', 'SBI Bank - *****1234', 'ICICI Bank - *****4321'];
@@ -59,6 +92,23 @@ const dispatch = useDispatch();
     return allInvoices[customerName] || [];
   };
   
+  // Auto-fill receipt number on form load
+  useEffect(() => {
+    if (companyId) {
+      fetchNextReceiptNumber();
+    }
+  }, [companyId]);
+
+  // Auto-populate receipt number when next receipt number is generated (always updates the field)
+  useEffect(() => {
+    if (nextReceiptNumber) {
+      setFormData(prev => ({
+        ...prev,
+        receiptNumber: nextReceiptNumber
+      }));
+    }
+  }, [nextReceiptNumber]);
+
   // useEffect(() => {
   //   if (initialData) {
   //     setFormData(prev => ({
@@ -94,12 +144,51 @@ useEffect(() => {
   dispatch(fetchProjectCustomerList());
 }, [dispatch]);
 
+// Calculate project-specific receipt data when receiptsByProject changes
+useEffect(() => {
+  if (receiptsByProject) {
+    if (receiptsByProject.length > 0) {
+      const totalReceived = receiptsByProject.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+      const totalAllocated = receiptsByProject.reduce((sum, receipt) => {
+        const allocated = receipt.linkedInvoices ? 
+          receipt.linkedInvoices.reduce((invSum, inv) => invSum + (inv.amountAllocated || 0), 0) : 0;
+        return sum + allocated;
+      }, 0);
+      
+      // Use backend's totalUnallocatedAmount if available, otherwise calculate
+      const unallocatedAmount = receiptsByProject.totalUnallocatedAmount || (totalReceived - totalAllocated);
+      
+      setProjectReceiptData({
+        totalAmountReceived: totalReceived,
+        totalUnallocatedAmount: unallocatedAmount,
+        previousReceipts: receiptsByProject
+      });
+    } else {
+      // First receipt for this project - no previous receipts
+      setProjectReceiptData({
+        totalAmountReceived: 0,
+        totalUnallocatedAmount: 0,
+        previousReceipts: []
+      });
+    }
+    
+    // Remove auto-population - user must manually enter amount
+  }
+}, [receiptsByProject]);
 
 
   useEffect(() => {
     if (formData.leadId && invoicesByProject[formData.leadId]) {
       const apiInvoices = invoicesByProject[formData.leadId];
-      let invoicesWithPayments = apiInvoices.map(inv => ({ ...inv, payment: 0 }));
+      console.log('API Invoices loaded:', apiInvoices);
+      
+      // Filter out invoices that are already fully paid
+      const unpaidInvoices = apiInvoices.filter(inv => {
+        const amountRemaining = inv.totalAmount - (inv.amountReceived || 0);
+        return amountRemaining > 0; // Only include invoices with remaining amount > 0
+      });
+      
+      let invoicesWithPayments = unpaidInvoices.map(inv => ({ ...inv, payment: 0 }));
       setInvoicesToLink(invoicesWithPayments);
     }
   }, [formData.leadId, invoicesByProject]);
@@ -110,24 +199,61 @@ useEffect(() => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  // File upload handlers
+  const handleFileSelect = (file) => {
     if (file) {
-      setFormData(prev => ({ ...prev, attachment: file }));
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please select a valid file type (PNG, JPG, PDF)');
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        toast.error('File size must be less than 10MB');
+        return;
+      }
+      
+      setPaymentProof(file);
+      
+      // Create preview for images
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (ev) => setAttachmentPreview(ev.target.result);
+        reader.onload = (e) => setPaymentProofPreview(e.target.result);
         reader.readAsDataURL(file);
       } else {
-        setAttachmentPreview(null);
+        setPaymentProofPreview(null);
       }
     }
   };
 
-  const removeAttachment = () => {
-    setFormData(prev => ({ ...prev, attachment: null }));
-    setAttachmentPreview(null);
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
   };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const removeFile = () => {
+    setPaymentProof(null);
+    setPaymentProofPreview(null);
+  };
+
+
 
   const toggleAccountingSection = () => {
     setIsAccountingCollapsed(!isAccountingCollapsed);
@@ -139,7 +265,14 @@ useEffect(() => {
       return;
     }
     const customerInvoices = getInvoicesForCustomer(formData.customerName);
-    const initialInvoices = customerInvoices.map(inv => {
+    
+    // Filter out invoices that are already fully paid
+    const unpaidInvoices = customerInvoices.filter(inv => {
+      const amountRemaining = inv.totalAmount - (inv.amountReceived || 0);
+      return amountRemaining > 0; // Only include invoices with remaining amount > 0
+    });
+    
+    const initialInvoices = unpaidInvoices.map(inv => {
       const linked = formData.linkedInvoices.find(li => li.invoiceNumber === inv.number);
       return { ...inv, payment: linked ? linked.amountAllocated : 0 };
     });
@@ -155,18 +288,53 @@ useEffect(() => {
     
     let newPayment = parseFloat(paymentAmount) || 0;
     if (newPayment < 0) newPayment = 0;
-    if (newPayment > amountRemaining) newPayment = amountRemaining;
+    if (newPayment > amountRemaining) {
+      newPayment = amountRemaining;
+      toast.error(`Cannot allocate more than remaining amount: ₹${amountRemaining.toLocaleString()}`);
+    }
     invoice.payment = newPayment;
     
     const totalAllocated = updatedInvoices.reduce((sum, inv) => sum + (inv.payment || 0), 0);
-    if (totalAllocated > receiptAmount) {
-      invoice.payment -= (totalAllocated - receiptAmount);
+    
+    // Calculate unallocated amount from previous receipts + current receipt amount
+    const previousUnallocatedAmount = projectReceiptData.totalUnallocatedAmount || 0;
+    const totalUnallocatedAmount = previousUnallocatedAmount + receiptAmount;
+    
+    if (totalAllocated > totalUnallocatedAmount) {
+      invoice.payment -= (totalAllocated - totalUnallocatedAmount);
       if (invoice.payment < 0) invoice.payment = 0;
+      toast.error(`Total allocation cannot exceed unallocated amount: ₹${totalUnallocatedAmount.toLocaleString()}`);
     }
+    
+    // Check for duplicate invoice numbers
+    const currentInvoiceNumber = invoice.invoiceNumber || invoice.number;
+    const duplicateInvoices = updatedInvoices.filter((inv, idx) => 
+      idx !== index && (inv.invoiceNumber === currentInvoiceNumber || inv.number === currentInvoiceNumber)
+    );
+    
+    if (duplicateInvoices.length > 0) {
+      toast.error('Invoice number already exists!');
+      return;
+    }
+    
     setInvoicesToLink(updatedInvoices);
   };
   
   const handleSaveInvoiceLinks = () => {
+    // Calculate total allocated amount
+    const totalAllocated = invoicesToLink.reduce((sum, inv) => sum + (inv.payment || 0), 0);
+    
+    // Calculate unallocated amount from previous receipts + current receipt amount
+    const previousUnallocatedAmount = projectReceiptData.totalUnallocatedAmount || 0;
+    const currentReceiptAmount = parseFloat(formData.amount) || 0;
+    const totalUnallocatedAmount = previousUnallocatedAmount + currentReceiptAmount;
+    
+    // Validate that total allocated doesn't exceed unallocated amount
+    if (totalAllocated > totalUnallocatedAmount) {
+      toast.error(`Total allocation (₹${totalAllocated.toLocaleString()}) cannot exceed unallocated amount (₹${totalUnallocatedAmount.toLocaleString()})`);
+      return;
+    }
+    
     // Save as per backend structure: { invoiceNumber, amountAllocated }
     const linked = invoicesToLink.filter(inv => inv.payment > 0).map(inv => ({
       invoiceNumber: inv.number,
@@ -178,9 +346,33 @@ useEffect(() => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.customerName) newErrors.customerName = 'Customer name is required';
-    if (!formData.receiptNumber.trim()) newErrors.receiptNumber = 'Receipt number is required';
-    if (!formData.amount || parseFloat(formData.amount) <= 0) newErrors.amount = 'Valid amount is required';
+    if (!formData.customerName) {
+      newErrors.customerName = 'Customer name is required';
+      toast.error('Customer name is required');
+    }
+    if (!formData.receiptNumber.trim()) {
+      newErrors.receiptNumber = 'Receipt number is required';
+      toast.error('Receipt number is required');
+    } else if (checkReceiptNumberExists(formData.receiptNumber.trim())) {
+      newErrors.receiptNumber = 'Receipt number already exists';
+      toast.error('Receipt number already exists');
+    }
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      newErrors.amount = 'Valid amount is required';
+      toast.error('Valid amount is required');
+    }
+    
+    // Validate cheque number if payment method is Cheque
+    if (formData.paymentMethod === 'Cheque') {
+      if (!formData.chequeNumber || !formData.chequeNumber.trim()) {
+        newErrors.chequeNumber = 'Cheque number is required';
+        toast.error('Cheque number is required');
+      } else if (!validateChequeNumber(formData.chequeNumber.trim())) {
+        newErrors.chequeNumber = 'Cheque number must be exactly 6 digits';
+        toast.error('Cheque number must be exactly 6 digits');
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -216,35 +408,108 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   if (validateForm()) {
     const selectedCustomer = customers.find(c => c.name === formData.customerName);
-    // Use linkedInvoices as per backend structure
-    const receiptData = {
-      ...formData,
-      customerId: formData.customerId, // ✅ directly use the one already set from dropdown
-      projectId: formData.leadId,      // ✅ use leadId as projectId
-      customerName: formData.customerName,
-      projectName: formData.projectName,
-      amountReceived: parseFloat(formData.amount),
-      amount: parseFloat(formData.amount),
-      linkedInvoices: formData.linkedInvoices, // Already in correct structure
-      attachment: formData.attachment ? formData.attachment.name : null,
-      receiptDate: formData.receiptDate,
-      paymentMethod: formData.paymentMethod,
-      receiptNumber: formData.receiptNumber,
-      paymentTransactionId:
-        formData.reference ||
-        formData.chequeNumber ||
-        formData.upiTransactionId ||
-        '',
-    };
+    
+    // Convert current invoicesToLink allocations to linkedInvoices format
+    const currentLinkedInvoices = invoicesToLink
+      .filter(inv => inv.payment > 0)
+      .map(inv => ({
+        invoiceNumber: inv.invoiceNumber || inv.number || inv.invoiceNo,
+        amountAllocated: inv.payment,
+      }));
+    
+    // Calculate total allocated amount
+    const totalAllocated = currentLinkedInvoices.reduce((sum, inv) => sum + inv.amountAllocated, 0);
+    
+    // Calculate unallocated amount from previous receipts + current receipt amount
+    const previousUnallocatedAmount = projectReceiptData.totalUnallocatedAmount || 0;
+    const currentReceiptAmount = parseFloat(formData.amount) || 0;
+    const totalUnallocatedAmount = previousUnallocatedAmount + currentReceiptAmount;
+    
+    // Validate that total allocated doesn't exceed unallocated amount
+    if (totalAllocated > totalUnallocatedAmount) {
+      toast.error(`Total allocation (₹${totalAllocated.toLocaleString()}) cannot exceed unallocated amount (₹${totalUnallocatedAmount.toLocaleString()})`);
+      return;
+    }
+    
     try {
-      await dispatch(addReceipt(receiptData)).unwrap();
-      if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+      // Generate the actual receipt number (this will increment the counter)
+      let finalReceiptNumber = formData.receiptNumber;
+      if (companyId) {
+        try {
+          const result = await dispatch(generateNextReceiptNumber(companyId)).unwrap();
+          finalReceiptNumber = result.nextReceiptNumber;
+        } catch (error) {
+          console.error('Failed to generate receipt number:', error);
+          // Continue with the current number if generation fails
+        }
+      }
+      
+      // Create receipt data object - only include fields that DTO expects
+      const receiptData = {
+        customerId: formData.customerId,
+        projectId: formData.leadId,
+        amountReceived: currentReceiptAmount,
+        linkedInvoices: currentLinkedInvoices,
+        receiptDate: formData.receiptDate,
+        paymentMethod: formData.paymentMethod,
+        receiptNumber: finalReceiptNumber,
+        paymentTransactionId:
+          formData.reference ||
+          formData.chequeNumber ||
+          formData.upiTransactionId ||
+          '',
+        bankAccountId: formData.bankAccount || null, // Add if your DTO has this field
+      };
+      
+      // Always send as FormData since backend expects multipart form data
+      const formDataToSend = new FormData();
+      
+      // Append receipt data as a JSON string (like bill endpoint)
+      formDataToSend.append('receipt', JSON.stringify(receiptData));
+      
+      // Add file if selected (optional)
+      if (paymentProof) {
+        formDataToSend.append('file', paymentProof);
+      }
+      
+      await dispatch(addReceipt(formDataToSend)).unwrap();
+      
+      // Debug: Log the data being sent
+      console.log('Receipt Data being sent:', receiptData);
+      console.log('Linked Invoices:', currentLinkedInvoices);
+      console.log('Invoices to Link:', invoicesToLink);
+      console.log('Payment Proof:', paymentProof);
+      toast.success('Receipt added successfully!');
+      // Add small delay to prevent duplicate messages
+      setTimeout(() => {
+        if (onSubmit) onSubmit(); // Notify parent to refresh UI and close form
+      }, 100);
     } catch (error) {
+      console.error('Receipt submission error:', error);
+      toast.error(error?.message || 'Failed to add receipt');
       setErrors({ submit: error?.message || 'Failed to add receipt' });
     }
   }
 };
   const formatCurrency = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+
+  // Validate cheque number format
+  function validateChequeNumber(chequeNumber) {
+    const regex = /^\d{6}$/;
+    return regex.test(chequeNumber);
+  }
+
+  // Check if receipt number already exists
+  function checkReceiptNumberExists(receiptNumber) {
+    if (!receiptsByProject || receiptsByProject.length === 0) return false;
+    return receiptsByProject.some(receipt => receipt.receiptNumber === receiptNumber);
+  }
+
+  // Check if invoice number already exists
+  function checkInvoiceNumberExists(invoiceNumber) {
+    if (!invoicesToLink || invoicesToLink.length === 0) return false;
+    return invoicesToLink.some(invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber);
+  }
 
   const totalAllocatedInModal = invoicesToLink.reduce((sum, inv) => sum + (inv.payment || 0), 0);
   const receiptAmount = parseFloat(formData.amount) || 0;
@@ -350,6 +615,8 @@ const handleSubmit = async (e) => {
             setIsOpen(false);
             // Fetch invoices for this project
             dispatch(fetchInvoicesByProject(project.projectId));
+            // Fetch receipts for this project
+            dispatch(fetchReceiptsByProject(project.projectId));
           }}
           className="px-4 py-2 cursor-pointer hover:bg-gray-100"
         >
@@ -359,9 +626,6 @@ const handleSubmit = async (e) => {
     </ul>
   )}
                 </div>
-
-
-
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
@@ -386,7 +650,14 @@ const handleSubmit = async (e) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Number <span className="text-red-500">*</span></label>
-                  <input type="text" name="receiptNumber" value={formData.receiptNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="e.g., REC-2025-001" />
+                  <input 
+                    type="text" 
+                    name="receiptNumber" 
+                    value={formData.receiptNumber} 
+                    onChange={handleChange} 
+                    className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                    placeholder="e.g., REC-2025-001" 
+                  />
                   {errors.receiptNumber && <p className="text-red-500 text-sm mt-1">{errors.receiptNumber}</p>}
                 </div>
               </div>
@@ -407,27 +678,21 @@ const handleSubmit = async (e) => {
                     {paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}
                   </select>
                 </div>
-                {['Bank Transfer', 'Cheque'].includes(formData.paymentMethod) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bank Account <span className="text-red-500">*</span></label>
-                    <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
-                      <option value="">Select bank account</option>
-                      {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Received Bank Account <span className="text-red-500">*</span></label>
+                  <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
+                    <option value="">Select bank account</option>
+                    {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
+                  </select>
+                </div>
                 {formData.paymentMethod === 'Cheque' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cheque Number <span className="text-red-500">*</span></label>
-                    <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter cheque number" />
+                    <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.chequeNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="Enter 6-digit cheque number" />
+                    {errors.chequeNumber && <p className="text-red-500 text-sm mt-1">{errors.chequeNumber}</p>}
                   </div>
                 )}
-                {formData.paymentMethod === 'UPI' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">UPI Transaction ID <span className="text-red-500">*</span></label>
-                    <input type="text" name="upiTransactionId" value={formData.upiTransactionId} onChange={handleChange} className="w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500" placeholder="Enter UPI transaction ID" />
-                  </div>
-                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Payment trans. ID</label>
                   <input type="text" name="reference" value={formData.reference} onChange={handleChange} className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Bank transaction ID" />
@@ -453,7 +718,7 @@ const handleSubmit = async (e) => {
                 <div>
                   <div className="grid grid-cols-2 gap-4 mb-6 text-center">
                       <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency(receiptAmount - totalAllocatedInModal)}</div></div>
+                      <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Unallocated Amount</div><div className="text-lg font-bold text-green-700">{formatCurrency((projectReceiptData.totalUnallocatedAmount || 0) + receiptAmount - totalAllocatedInModal)}</div></div>
                   </div>
                   {invoicesToLink.length > 0 ? (
                     <table className="w-full text-sm">
@@ -489,31 +754,102 @@ const handleSubmit = async (e) => {
                   ) : (
                     <div className="text-center py-10">
                       <FaLink className="mx-auto text-4xl text-gray-300" />
-                      <p className="mt-4 text-gray-500">Select a customer to see their outstanding invoices.</p>
+                      <p className="mt-4 text-gray-500">
+                        {formData.customerName 
+                          ? "All invoices for this customer are already fully paid." 
+                          : "Select a customer to see their outstanding invoices."}
+                      </p>
                     </div>
                   )}
                 </div>
               )}
+              
               {activeTab === 'attachment' && (
                 <div>
-                  {!formData.attachment ? (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
-                      <input type="file" onChange={handleFileChange} accept="image/*,.pdf" className="hidden" id="attachment-upload" />
-                      <label htmlFor="attachment-upload" className="cursor-pointer">
-                        <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                        <p className="text-lg font-medium text-gray-700 mb-2">Upload Payment Proof</p>
-                        <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-                        <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF up to 10MB</p>
-                      </label>
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Proof Upload</h3>
+                    <p className="text-sm text-gray-600 mb-4">Upload a photo or PDF of the payment proof for this receipt.</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* File Upload Area */}
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                        isDragOver 
+                          ? 'border-green-400 bg-green-50' 
+                          : paymentProof 
+                            ? 'border-green-300 bg-green-50' 
+                            : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      onDrop={handleFileDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                    >
+                      {!paymentProof ? (
+                        <div>
+                          <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
+                          <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Payment Proof</h3>
+                          <p className="text-gray-500 mb-4">Click to upload or drag and drop</p>
+                          <p className="text-sm text-gray-400">PNG, JPG, PDF up to 10MB</p>
+                          <input
+                            type="file"
+                            accept=".png,.jpg,.jpeg,.pdf"
+                            onChange={(e) => handleFileSelect(e.target.files[0])}
+                            className="hidden"
+                            id="payment-proof-upload"
+                          />
+                          <label
+                            htmlFor="payment-proof-upload"
+                            className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
+                          >
+                            <FaUpload className="w-4 h-4 mr-2" />
+                            Choose File
+                          </label>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-center mb-4">
+                            {paymentProofPreview ? (
+                              <img 
+                                src={paymentProofPreview} 
+                                alt="Payment proof preview" 
+                                className="max-h-32 max-w-full rounded-lg"
+                              />
+                            ) : (
+                              <FaFileAlt className="text-4xl text-gray-400" />
+                            )}
+                          </div>
+                          <div className="mb-4">
+                            <p className="font-semibold text-gray-700">{paymentProof.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {(paymentProof.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removeFile}
+                            className="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                          >
+                            <FaTimes className="w-3 h-3 mr-1" />
+                            Remove File
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="border border-gray-300 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3"><div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">{formData.attachment.type.startsWith('image/') ? '🖼️' : '📄'}</div><div><p className="text-sm font-medium text-gray-900">{formData.attachment.name}</p><p className="text-xs text-gray-500">{(formData.attachment.size / 1024 / 1024).toFixed(2)} MB</p></div></div>
-                        <button type="button" onClick={removeAttachment} className="text-red-600 hover:text-red-800 p-1"><FaTimes /></button>
+                    
+                    {/* File Info */}
+                    {paymentProof && (
+                      <div className="bg-blue-50 rounded-lg p-4">
+                        <div className="flex items-start">
+                          <FaInfoCircle className="text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                          <div className="text-sm text-blue-700">
+                            <p className="font-semibold mb-1">File uploaded successfully!</p>
+                            <p>This file will be attached to the receipt when you save.</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -547,7 +883,7 @@ const handleSubmit = async (e) => {
             <div className="p-6 max-h-[60vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-4 mb-4 text-center">
                     <div className="bg-blue-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Total Receipt Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount)}</div></div>
-                    <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold">{formatCurrency(receiptAmount - totalAllocatedInModal)}</div></div>
+                    <div className="bg-green-50 p-3 rounded-lg"><div className="text-sm text-gray-600">Unallocated Amount</div><div className="text-lg font-bold">{formatCurrency((projectReceiptData.totalUnallocatedAmount || 0) + receiptAmount - totalAllocatedInModal)}</div></div>
                 </div>
                 <table className="w-full text-sm">
                     <thead>

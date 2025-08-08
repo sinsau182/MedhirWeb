@@ -14,11 +14,13 @@ import {
   resetLeaveBalanceState,
 } from "@/redux/slices/leaveBalanceSlice";
 import { fetchPublicHolidays } from "@/redux/slices/publicHolidaySlice";
+import { fetchEmployeeDetails } from "@/redux/slices/payslipSlice";
 import { toast } from "sonner";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import withAuth from "@/components/withAuth";
 import { fetchEmployeeLeavePolicy } from "@/redux/slices/leavePolicySlice";
+import { fetchPayrollSettings } from "@/redux/slices/payrollSettingsSlice";
 
 // Helper to format numbers: show two decimals only if not whole
 function formatNumber(num) {
@@ -65,6 +67,7 @@ const Leaves = () => {
     loading: holidayLoading,
     error: holidayError,
   } = useSelector((state) => state.publicHoliday);
+  const { employeeData } = useSelector((state) => state.payslip);
   const calendarRef = useRef(null);
 
   const [requestedDays, setRequestedDays] = useState(0);
@@ -145,6 +148,7 @@ const Leaves = () => {
     dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
     dispatch(fetchPublicHolidays());
     dispatch(fetchEmployeeLeavePolicy(employeeId));
+    dispatch(fetchEmployeeDetails(employeeId)); // Fetch employee details for joining date
 
     return () => {
       dispatch(clearErrors());
@@ -178,6 +182,13 @@ const Leaves = () => {
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const openModal = async () => {
     await dispatch(fetchEmployeeLeavePolicy(employeeId));
+    
+    // Fetch payroll settings for date restrictions
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (companyId) {
+      await dispatch(fetchPayrollSettings(companyId));
+    }
+    
     setIsModalOpen(true);
   };
   const closeModal = () => {
@@ -189,6 +200,13 @@ const Leaves = () => {
 
   const openCompOffModal = async () => {
     await dispatch(fetchEmployeeLeavePolicy(employeeId));
+    
+    // Fetch payroll settings for date restrictions
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (companyId) {
+      await dispatch(fetchPayrollSettings(companyId));
+    }
+    
     setIsCompOffModalOpen(true);
   };
   const closeCompOffModal = () => {
@@ -370,7 +388,7 @@ const Leaves = () => {
                       Leave carried from previous year
                     </p>
                     <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.annualLeavesCarryForwarded)}
+                      {formatNumber(leaveBalance.leavesCarriedFromPreviousYear)}
                     </p>
                   </div>
                   <div className="flex justify-between">
@@ -689,6 +707,7 @@ const Leaves = () => {
                       leavePolicy={leavePolicy}
                       weeklyOffs={weeklyOffs}
                       disabledDates={getDisabledDates()}
+                      joiningDate={employeeData?.joiningDate}
                     />
                     {/* {getDisabledDates().length > 0 && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center">
@@ -786,6 +805,7 @@ const Leaves = () => {
                         }));
                       }}
                       disabledDates={getDisabledDates()}
+                      joiningDate={employeeData?.joiningDate}
                     />
                     {/* {getDisabledDates().length > 0 && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center">

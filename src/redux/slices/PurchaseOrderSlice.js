@@ -51,6 +51,72 @@ export const createPurchaseOrder = createAsyncThunk(
     }
 );
 
+// update purchase order
+export const updatePurchaseOrder = createAsyncThunk(
+    "purchase-orders/updatePurchaseOrder",
+    async ({ purchaseOrderId, purchaseOrder }, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const response = await fetch(`${API_BASE_URL}/${purchaseOrderId}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                },
+                body: purchaseOrder,
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                return rejectWithValue(data.message);
+            }
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.response.data.message);
+        }
+    }
+);
+
+// Purchase Order Numbering Thunks
+export const getNextPurchaseOrderNumber = createAsyncThunk(
+  "purchase-orders/getNextPurchaseOrderNumber",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/preview-purchase-order-number`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return rejectWithValue(data.message || "Failed to preview next PO number");
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
+export const generateNextPurchaseOrderNumber = createAsyncThunk(
+  "purchase-orders/generateNextPurchaseOrderNumber",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/generate-purchase-order-number`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return rejectWithValue(data.message || "Failed to generate next PO number");
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
 
 export const purchaseOrderSlice = createSlice({
     name: "purchase-orders",
@@ -58,6 +124,7 @@ export const purchaseOrderSlice = createSlice({
         purchaseOrders: [],
         loading: false,
         error: null,
+        nextPurchaseOrderNumber: null,
     },
     extraReducers: (builder) => {
         builder.addCase(fetchPurchaseOrders.pending, (state) => {
@@ -82,6 +149,45 @@ export const purchaseOrderSlice = createSlice({
             state.loading = false;
             state.error = action.payload;
         });
+        builder.addCase(updatePurchaseOrder.pending, (state) => {
+            state.loading = true;
+        });
+        builder.addCase(updatePurchaseOrder.fulfilled, (state, action) => {
+            state.loading = false;
+            const index = state.purchaseOrders.findIndex(po => po.purchaseOrderId === action.payload.purchaseOrderId);
+            if (index !== -1) {
+                state.purchaseOrders[index] = action.payload;
+            }
+        });
+        builder.addCase(updatePurchaseOrder.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload;
+        });
+        builder
+      .addCase(getNextPurchaseOrderNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getNextPurchaseOrderNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.nextPurchaseOrderNumber = action.payload.nextPurchaseOrderNumber;
+      })
+      .addCase(getNextPurchaseOrderNumber.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(generateNextPurchaseOrderNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(generateNextPurchaseOrderNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.nextPurchaseOrderNumber = action.payload.nextPurchaseOrderNumber;
+      })
+      .addCase(generateNextPurchaseOrderNumber.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
     },
 });
 

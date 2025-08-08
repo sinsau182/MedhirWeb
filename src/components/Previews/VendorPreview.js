@@ -24,12 +24,23 @@ const VendorPreview = ({ vendorData, onClose }) => {
     gstin, pan, taxTreatment, tdsApplies, tdsPercentage,
     contactAddresses,
     vendorTags,
-    bankName, accountNumber, ifscCode, accountHolderName, branchName, accountType,
+    bankDetails,
     paymentTerms, priceList, fiscalPosition,
     notes, upiId
   } = vendorData;
 
   const fullAddress = [addressLine1, addressLine2, city, state, pinCode, country].filter(Boolean).join(',\n');
+
+  // Check if any bank details exist
+  const hasBankDetails = bankDetails && (
+    bankDetails.accountHolderName || 
+    bankDetails.branchName || 
+    bankDetails.bankName || 
+    bankDetails.accountType || 
+    bankDetails.accountNumber || 
+    bankDetails.ifscCode || 
+    bankDetails.upiId
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={onClose}>
@@ -72,15 +83,17 @@ const VendorPreview = ({ vendorData, onClose }) => {
                 {tdsApplies && <DetailItem label="TDS Percentage" value={`${tdsPercentage}%`} />}
             </Section>
 
-            <Section title="Banking Information" icon={<FaUniversity className="text-gray-400" />}>
-                <DetailItem label="Account Holder Name" value={accountHolderName} />
-                <DetailItem label="Bank Name" value={bankName} />
-                <DetailItem label="Account Type" value={accountType} />
-                <DetailItem label="Account Number" value={accountNumber} />
-                <DetailItem label="IFSC Code" value={ifscCode} />
-                <DetailItem label="Branch Name" value={branchName} />
-                <DetailItem label="UPI ID" value={upiId} />
-            </Section>
+            {hasBankDetails && (
+              <Section title="Banking Information" icon={<FaUniversity className="text-gray-400" />}>
+                  {bankDetails.accountHolderName && <DetailItem label="Account Holder Name" value={bankDetails.accountHolderName} />}
+                  {bankDetails.branchName && <DetailItem label="Branch Name" value={bankDetails.branchName} />}
+                  {bankDetails.bankName && <DetailItem label="Bank Name" value={bankDetails.bankName} />}
+                  {bankDetails.accountType && <DetailItem label="Account Type" value={bankDetails.accountType} />}
+                  {bankDetails.accountNumber && <DetailItem label="Account Number" value={bankDetails.accountNumber} />}
+                  {bankDetails.ifscCode && <DetailItem label="IFSC Code" value={bankDetails.ifscCode} />}
+                  {bankDetails.upiId && <DetailItem label="UPI ID" value={bankDetails.upiId} />}
+              </Section>
+            )}
             
             {contactAddresses && contactAddresses.length > 0 &&
                 <div>
@@ -126,4 +139,4 @@ const VendorPreview = ({ vendorData, onClose }) => {
   );
 };
 
-export default VendorPreview; 
+export default VendorPreview;

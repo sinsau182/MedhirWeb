@@ -5,6 +5,9 @@ import { updateLead, moveLeadToPipeline } from '@/redux/slices/leadsSlice';
 import { FaRupeeSign, FaTimes, FaFilePdf } from 'react-icons/fa';
 import axios from 'axios';
 import getConfig from 'next/config';
+import { fetchImageFromMinio } from '@/redux/slices/minioSlice';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { toast } from 'sonner';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -24,6 +27,8 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
   const [paymentDetailsFile, setPaymentDetailsFile] = useState(null);
   const [bookingFormFile, setBookingFormFile] = useState(null);
   const [quotedAmount, setQuotedAmount] = useState(lead?.quotedAmount || '');
+  const [fileLoading, setFileLoading] = useState({ payment: false, booking: false });
+  const [fileError, setFileError] = useState({ payment: null, booking: null });
 
   const formRef = useRef(null);
 
@@ -45,6 +50,25 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
       setProjectTimeline(lead.projectTimeline || '');
       setDiscount(lead.discount || '');
       setQuotedAmount(lead.quotedAmount || '');
+      
+      // Handle existing files
+      if (lead.paymentDetailsFileName) {
+        setPaymentDetailsFile({
+          name: lead.paymentDetailsFileName,
+          url: lead.paymentDetailsFileName, // This should be the full URL from backend
+          isExisting: true,
+          type: 'application/octet-stream'
+        });
+      }
+      
+      if (lead.bookingFormFileName) {
+        setBookingFormFile({
+          name: lead.bookingFormFileName,
+          url: lead.bookingFormFileName, // This should be the full URL from backend
+          isExisting: true,
+          type: 'application/octet-stream'
+        });
+      }
     }
   }, [lead]);
 
@@ -59,8 +83,10 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
     if (files.length > 0) {
       if (name === 'paymentDetailsFile') {
         setPaymentDetailsFile(files[0]);
+        setFileError(prev => ({ ...prev, payment: null }));
       } else if (name === 'bookingFormFile') {
         setBookingFormFile(files[0]);
+        setFileError(prev => ({ ...prev, booking: null }));
       }
     } else {
       if (name === 'paymentDetailsFile') setPaymentDetailsFile(null);
@@ -69,62 +95,221 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
   };
 
   const handleRemoveFile = (type) => {
-    if (type === 'payment') setPaymentDetailsFile(null);
-    if (type === 'booking') setBookingFormFile(null);
+    if (type === 'payment') {
+      setPaymentDetailsFile(null);
+      setFileError(prev => ({ ...prev, payment: null }));
+    }
+    if (type === 'booking') {
+      setBookingFormFile(null);
+      setFileError(prev => ({ ...prev, booking: null }));
+    }
+  };
+
+  // Input restriction helpers
+  const handleNumberInput = (value, setter) => {
+    // Only allow numbers and decimal point
+    let processedValue = value.replace(/[^\d.]/g, '');
+    // Prevent multiple decimal points
+    const decimalCount = (processedValue.match(/\./g) || []).length;
+    if (decimalCount > 1) {
+      processedValue = processedValue.replace(/\.+$/, '');
+    }
+    setter(processedValue);
+  };
+
+  const handlePanInput = (value) => {
+    // Only allow uppercase letters and numbers, max 10 characters
+    const processedValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 10);
+    setPanNumber(processedValue);
+  };
+
+  const handleTransactionIdInput = (value) => {
+    // Allow alphanumeric and common characters
+    const processedValue = value.replace(/[^a-zA-Z0-9\s\-_]/g, '').slice(0, 50);
+    setPaymentTransactionId(processedValue);
+  };
+
+  const handleTimelineInput = (value) => {
+    // Allow alphanumeric, spaces, and common characters
+    const processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 200);
+    setProjectTimeline(processedValue);
+  };
+
+  const handleOpenFile = async (file, type) => {
+    if (!file) return;
+    
+    try {
+      setFileLoading(prev => ({ ...prev, [type]: true }));
+      setFileError(prev => ({ ...prev, [type]: null }));
+      
+      if (file.isExisting && file.url) {
+        // For existing files, fetch through Minio
+        const result = await dispatch(fetchImageFromMinio({ url: file.url })).unwrap();
+        if (result && result.dataUrl) {
+          window.open(result.dataUrl, '_blank');
+        } else {
+          throw new Error('Failed to fetch file from Minio');
+        }
+      } else if (file instanceof File) {
+        // For new files, create blob URL
+        const blobUrl = URL.createObjectURL(file);
+        window.open(blobUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error opening file:', error);
+      setFileError(prev => ({ ...prev, [type]: 'Failed to open file' }));
+    } finally {
+      setFileLoading(prev => ({ ...prev, [type]: false }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Enhanced validation
     if (!lead) {
-      alert("No lead selected.");
+      toast.error("No lead selected.");
       return;
     }
-    if (!finalQuotation || !signupAmount) {
-      alert("Please fill in Final Quotation and Sign-up Amount.");
+    
+    if (!finalQuotation || !finalQuotation.trim()) {
+      toast.error("Please fill in Final Quotation.");
       return;
     }
-    if (isNaN(parseFloat(finalQuotation)) || isNaN(parseFloat(signupAmount))) {
-      alert("Quotation and Sign-up Amount must be valid numbers.");
+    
+    if (!signupAmount || !signupAmount.trim()) {
+      toast.error("Please fill in Sign-up Amount.");
       return;
+    }
+    
+    // Validate final quotation
+    const finalQuotationValue = parseFloat(finalQuotation.replace(/[^\d.]/g, ''));
+    if (isNaN(finalQuotationValue) || finalQuotationValue <= 0) {
+      toast.error("Final Quotation must be a valid positive number.");
+      return;
+    }
+    
+    if (finalQuotationValue > 999999999) {
+      toast.error("Final Quotation cannot exceed 999,999,999.");
+      return;
+    }
+    
+    // Validate signup amount
+    const signupAmountValue = parseFloat(signupAmount.replace(/[^\d.]/g, ''));
+    if (isNaN(signupAmountValue) || signupAmountValue <= 0) {
+      toast.error("Sign-up Amount must be a valid positive number.");
+      return;
+    }
+    
+    if (signupAmountValue > 999999999) {
+      toast.error("Sign-up Amount cannot exceed 999,999,999.");
+      return;
+    }
+    
+    // Validate signup amount is not greater than final quotation
+    if (signupAmountValue > finalQuotationValue) {
+      toast.error("Sign-up Amount cannot be greater than Final Quotation.");
+      return;
+    }
+    
+    // Validate quoted amount if provided
+    if (quotedAmount && quotedAmount.trim()) {
+      const quotedAmountValue = parseFloat(quotedAmount.replace(/[^\d.]/g, ''));
+      if (isNaN(quotedAmountValue) || quotedAmountValue <= 0) {
+        toast.error("Initial Quoted Amount must be a valid positive number.");
+        return;
+      }
+      
+      if (quotedAmountValue > 999999999) {
+        toast.error("Initial Quoted Amount cannot exceed 999,999,999.");
+        return;
+      }
+    }
+    
+    // Validate discount if provided
+    if (discount && discount.trim()) {
+      const discountValue = parseFloat(discount.replace(/[^\d.]/g, ''));
+      if (isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
+        toast.error("Discount must be between 0 and 100.");
+        return;
+      }
+    }
+    
+    // Validate PAN number if provided
+    if (panNumber && panNumber.trim()) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(panNumber.trim().toUpperCase())) {
+        toast.error("Please enter a valid PAN number (e.g., ABCDE1234F).");
+        return;
+      }
+    }
+    
+    // Validate payment transaction ID if provided
+    if (paymentTransactionId && paymentTransactionId.trim()) {
+      if (paymentTransactionId.trim().length < 5) {
+        toast.error("Payment Transaction ID must be at least 5 characters.");
+        return;
+      }
+      
+      if (paymentTransactionId.trim().length > 50) {
+        toast.error("Payment Transaction ID must be less than 50 characters.");
+        return;
+      }
+    }
+    
+    // Validate project timeline if provided
+    if (projectTimeline && projectTimeline.trim()) {
+      if (projectTimeline.trim().length < 5) {
+        toast.error("Project Timeline must be at least 5 characters.");
+        return;
+      }
+      
+      if (projectTimeline.trim().length > 200) {
+        toast.error("Project Timeline must be less than 200 characters.");
+        return;
+      }
     }
     try {
-      // Prepare FormData for file upload
+      // Prepare FormData for file upload - ALWAYS use FormData since backend expects multipart/form-data
       const formData = new FormData();
       formData.append('finalQuotation', finalQuotation);
       formData.append('signupAmount', signupAmount);
-      formData.append('initialQuote', quotedAmount);
-      formData.append('paymentDate', paymentDate);
-      formData.append('paymentMode', paymentMode);
-      formData.append('paymentTransactionId', paymentTransactionId);
-      formData.append('panNumber', panNumber);
-      formData.append('projectTimeline', projectTimeline);
-      formData.append('discount', discount);
+      formData.append('initialQuote', quotedAmount || '');
+      formData.append('paymentDate', paymentDate || '');
+      formData.append('paymentMode', paymentMode || '');
+      formData.append('paymentTransactionId', paymentTransactionId || '');
+      formData.append('panNumber', panNumber || '');
+      formData.append('projectTimeline', projectTimeline || '');
+      formData.append('discount', discount || '');
+
       if (paymentDetailsFile) formData.append('paymentDetailsFile', paymentDetailsFile);
       if (bookingFormFile) formData.append('bookingFormFile', bookingFormFile);
 
       // If conversion details already exist, use PUT to update
       if (lead.finalQuotation || lead.signupAmount || lead.paymentDate || lead.paymentMode || lead.panNumber || lead.discount || lead.paymentDetailsFileName || lead.bookingFormFileName || lead.initialQuote || lead.projectTimeline) {
         await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, {
-          finalQuotation,
-          signupAmount,
-          initialQuote: quotedAmount,
+          finalQuotation: parseFloat(finalQuotation),
+          signupAmount: parseFloat(signupAmount),
+          initialQuote: quotedAmount ? parseFloat(quotedAmount) : null,
           paymentDate,
           paymentMode,
           paymentTransactionId,
           panNumber,
           projectTimeline,
-          discount
+          discount: discount ? parseFloat(discount) : null
         }, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`,
+            'Content-Type': 'application/json'
           }
         });
         // Optionally handle file uploads separately if needed
       } else {
-        // Call the convert-with-docs API
+        // Always use FormData since backend expects multipart/form-data
         await axios.post(`${API_BASE_URL}/leads/${lead.leadId}/convert-with-docs`, formData, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+            'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`
+            // Don't set Content-Type for FormData, let browser set it automatically to multipart/form-data
           }
         });
       }
@@ -143,6 +328,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Error converting lead:', error);
+      console.error('Error details:', error.response?.data);
       alert('Failed to convert lead. Please try again.');
     }
   };
@@ -163,13 +349,11 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FaRupeeSign /></span>
                 <input
-                  type="number"
+                  type="text"
                   value={quotedAmount}
-                  onChange={e => setQuotedAmount(e.target.value)}
+                  onChange={e => handleNumberInput(e.target.value, setQuotedAmount)}
                   className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all"
                   placeholder="Enter initial quoted amount"
-                  min="0"
-                  step="any"
                 />
               </div>
             </div>
@@ -178,13 +362,11 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FaRupeeSign /></span>
                 <input
-                  type="number"
+                  type="text"
                   value={finalQuotation}
-                  onChange={(e) => setFinalQuotation(e.target.value)}
+                  onChange={(e) => handleNumberInput(e.target.value, setFinalQuotation)}
                   className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all"
                   required
-                  min="0"
-                  step="any"
                 />
               </div>
             </div>
@@ -194,13 +376,11 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FaRupeeSign /></span>
               <input
-                type="number"
+                type="text"
                 value={signupAmount}
-                onChange={(e) => setSignupAmount(e.target.value)}
+                onChange={(e) => handleNumberInput(e.target.value, setSignupAmount)}
                 className="pl-9 pr-3 py-2 block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all"
                 required
-                min="0"
-                step="any"
               />
             </div>
           </div>
@@ -233,7 +413,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             <input
               type="text"
               value={paymentTransactionId}
-              onChange={(e) => setPaymentTransactionId(e.target.value)}
+              onChange={(e) => handleTransactionIdInput(e.target.value)}
               className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
               placeholder="Enter transaction ID"
             />
@@ -244,8 +424,9 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <input
                 type="text"
                 value={panNumber}
-                onChange={(e) => setPanNumber(e.target.value)}
+                onChange={(e) => handlePanInput(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
+                placeholder="ABCDE1234F"
               />
             </div>
             <div>
@@ -253,7 +434,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               <input
                 type="text"
                 value={projectTimeline}
-                onChange={(e) => setProjectTimeline(e.target.value)}
+                onChange={(e) => handleTimelineInput(e.target.value)}
                 className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
                 placeholder="e.g., 6 Months, Jan-Mar 2025"
               />
@@ -264,7 +445,7 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
             <input
               type="text"
               value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
+              onChange={(e) => handleNumberInput(e.target.value, setDiscount)}
               className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
               placeholder="e.g., 10% or 5000"
             />
@@ -282,16 +463,35 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               />
               {paymentDetailsFile && (
                 <div className="relative mt-3">
-                  {paymentDetailsFile.type.startsWith('image/') ? (
-                    <img
-                      src={URL.createObjectURL(paymentDetailsFile)}
-                      alt="Payment Proof Preview"
-                      className="w-full max-h-56 object-contain rounded border"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
-                      <FaFilePdf className="text-red-600 text-2xl" />
-                      <span className="truncate">{paymentDetailsFile.name}</span>
+                  <div 
+                    className={`cursor-pointer ${fileLoading.payment ? 'opacity-50' : 'hover:opacity-80'}`}
+                    onClick={() => handleOpenFile(paymentDetailsFile, 'payment')}
+                    title="Click to open in new tab"
+                  >
+                    {paymentDetailsFile.type.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(paymentDetailsFile)}
+                        alt="Payment Proof Preview"
+                        className="w-full max-h-56 object-contain rounded border"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
+                        <FaFilePdf className="text-red-600 text-2xl" />
+                        <span className="truncate">{paymentDetailsFile.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  {fileLoading.payment && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+                      <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  )}
+                  {fileError.payment && (
+                    <div className="absolute top-2 left-2 bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                      {fileError.payment}
                     </div>
                   )}
                   <button
@@ -316,16 +516,35 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               />
               {bookingFormFile && (
                 <div className="relative mt-3">
-                  {bookingFormFile.type.startsWith('image/') ? (
-                    <img
-                      src={URL.createObjectURL(bookingFormFile)}
-                      alt="Booking Form Preview"
-                      className="w-full max-h-56 object-contain rounded border"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
-                      <FaFilePdf className="text-red-600 text-2xl" />
-                      <span className="truncate">{bookingFormFile.name}</span>
+                  <div 
+                    className={`cursor-pointer ${fileLoading.booking ? 'opacity-50' : 'hover:opacity-80'}`}
+                    onClick={() => handleOpenFile(bookingFormFile, 'booking')}
+                    title="Click to open in new tab"
+                  >
+                    {bookingFormFile.type.startsWith('image/') ? (
+                      <img
+                        src={URL.createObjectURL(bookingFormFile)}
+                        alt="Booking Form Preview"
+                        className="w-full max-h-56 object-contain rounded border"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
+                        <FaFilePdf className="text-red-600 text-2xl" />
+                        <span className="truncate">{bookingFormFile.name}</span>
+                      </div>
+                    )}
+                  </div>
+                  {fileLoading.booking && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+                      <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  )}
+                  {fileError.booking && (
+                    <div className="absolute top-2 left-2 bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                      {fileError.booking}
                     </div>
                   )}
                   <button

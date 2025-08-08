@@ -1,21 +1,25 @@
-// This script generates src/version.js with version and build time info from package.json
-const fs = require('fs');
-const path = require('path');
-const pkg = require('../package.json');
+// This script generates src/version.js with version and build time info from meta.json
+const fs = require("fs");
+const path = require("path");
 
-const versionParts = pkg.version.split('.');
-const major = versionParts[0] || '0';
-const minor = versionParts[1] || '0';
+// Read version from meta.json (same as used by cache buster)
+const metaPath = path.join(__dirname, "../public/meta.json");
+let version;
 
-const buildNumberFile = path.join(__dirname, '../.build_number');
-let build = 0;
-if (fs.existsSync(buildNumberFile)) {
-  build = parseInt(fs.readFileSync(buildNumberFile, 'utf8'), 10) || 0;
+try {
+  const metaContent = fs.readFileSync(metaPath, "utf8");
+  const meta = JSON.parse(metaContent);
+  version = meta.version;
+  console.log(`📦 Using version from meta.json: ${version}`);
+} catch (error) {
+  console.error("❌ Error reading meta.json:", error.message);
+  console.log("📦 Falling back to package.json version...");
+
+  // Fallback to package.json if meta.json doesn't exist
+  const pkg = require("../package.json");
+  version = pkg.version;
 }
-build += 1;
-fs.writeFileSync(buildNumberFile, build.toString());
 
-const version = `${major}.${minor}.${build}`;
 const buildTime = new Date().toISOString();
 
 const content = `// This file is auto-generated during build. Do not edit manually.
@@ -25,5 +29,10 @@ module.exports = {
 };
 `;
 
-fs.writeFileSync(path.join(__dirname, '../src/version.js'), content);
-console.log('Generated src/version.js with version', version, 'and build time', buildTime); 
+fs.writeFileSync(path.join(__dirname, "../src/version.js"), content);
+console.log(
+  "Generated src/version.js with version",
+  version,
+  "and build time",
+  buildTime
+);

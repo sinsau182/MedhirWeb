@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { updateLead, moveLeadToPipeline } from '@/redux/slices/leadsSlice';
 import axios from 'axios';
 import getConfig from 'next/config';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -33,7 +34,7 @@ const JunkReasonModal = ({ lead, onClose, onSuccess }) => {
         reasonForJunk: reason.trim()
       }, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`
         }
       });
       // Move the lead to the junk stage (update stageId)

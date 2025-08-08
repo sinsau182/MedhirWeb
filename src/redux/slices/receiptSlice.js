@@ -104,19 +104,75 @@ export const fetchUnallocatedReceipts = createAsyncThunk(
   }
 );
 
+// Get next receipt number (preview only, no increment)
+export const getNextReceiptNumber = createAsyncThunk(
+  "receipts/getNextReceiptNumber",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const token = getTokenOrThrow();
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/preview-receipt-number`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.error || "Failed to get next receipt number");
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
+// Generate next receipt number (increments counter)
+export const generateNextReceiptNumber = createAsyncThunk(
+  "receipts/generateNextReceiptNumber",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const token = getTokenOrThrow();
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/generate-receipt-number`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.error || "Failed to generate next receipt number");
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 // Add a receipt
 export const addReceipt = createAsyncThunk(
   "receipts/addReceipt",
   async (receiptData, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
+      
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+      
+      // Don't set Content-Type for FormData, let browser handle it
+      const isFormData = receiptData instanceof FormData;
+      if (!isFormData) {
+        headers["Content-Type"] = "application/json";
+      }
+      
       const response = await fetch(`${API_BASE_URL}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(receiptData),
+        headers,
+        body: isFormData ? receiptData : JSON.stringify(receiptData),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -174,12 +230,16 @@ export const fetchInvoicesByProject = createAsyncThunk(
 );
 
 
+
+
 const receiptSlice = createSlice({
   name: "receipts",
   initialState: {
     receipts: [],
     projectCustomerList: [],
     invoicesByProject: {}, // Add this to store invoices by projectId
+    receiptsByProject: [], // Add this to store receipts by project name
+    nextReceiptNumber: null,
     loading: false,
     error: null,
   },
@@ -234,6 +294,42 @@ const receiptSlice = createSlice({
         }
       })
       .addCase(fetchInvoicesByProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchReceiptsByProject.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchReceiptsByProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.receiptsByProject = action.payload;
+      })
+      .addCase(fetchReceiptsByProject.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(getNextReceiptNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getNextReceiptNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.nextReceiptNumber = action.payload.nextReceiptNumber;
+      })
+      .addCase(getNextReceiptNumber.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(generateNextReceiptNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(generateNextReceiptNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.nextReceiptNumber = action.payload.nextReceiptNumber;
+      })
+      .addCase(generateNextReceiptNumber.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
