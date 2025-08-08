@@ -113,7 +113,19 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
           onSubmit(customerData);
         }
       } catch (error) {
-        toast.error('Failed to add customer: ' + (error?.message || 'Unknown error'));
+        const message = typeof error === 'string' ? error : (error?.message || '');
+        const fieldErrors = {};
+        if (/email/i.test(message) && /exist/i.test(message)) {
+          fieldErrors.email = 'Email already exists';
+        }
+        if (/(phone|mobile|contact)/i.test(message) && /exist/i.test(message)) {
+          fieldErrors.contactNumber = 'Phone number already exists';
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(prev => ({ ...prev, ...fieldErrors }));
+        } else {
+          toast.error('Failed to add customer: ' + (message || 'Unknown error'));
+        }
       }
     }
   };
@@ -154,7 +166,6 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                       value={formData.email} 
                       onChange={handleChange} 
                       className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`} 
-                      placeholder="Optional"
                     />
                     <div className="text-xs text-gray-400 mt-1">Format: username@domain.com</div>
                     {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
@@ -174,14 +185,13 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                     {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
                 </div>
                 <div>
-                    <label>GST Number</label>
+                    <label>GST Number <span className="text-gray-400 text-xs">(Optional)</span></label>
                     <input
                       type="text"
                       name="gst"
                       value={formData.gst}
                       onChange={handleChange}
                       className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.gst ? 'border-red-500' : 'border-gray-300'}`}
-                      placeholder="Optional"
                       maxLength={15}
                     />
                     <div className="text-xs text-gray-400 mt-1">Format: 27AAECS1234F1Z2 (15 characters length)</div>

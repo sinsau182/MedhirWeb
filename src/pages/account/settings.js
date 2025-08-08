@@ -30,7 +30,14 @@ const DocumentSettings = ({ settings, onSettingsChange }) => {
                   <span className="text-xs text-gray-400">No Logo</span>
                 )}
               </div>
-              <input type="file" accept="image/*" onChange={handleFileChange} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled
+                aria-disabled="true"
+                className="cursor-not-allowed opacity-50 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
             </div>
           </div>
           <div>
@@ -39,7 +46,9 @@ const DocumentSettings = ({ settings, onSettingsChange }) => {
               value={settings.terms}
               onChange={(e) => onSettingsChange('terms', e.target.value)}
               rows="5"
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              disabled
+              aria-disabled="true"
+              className="w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
               placeholder="e.g., Payment due within 30 days of invoice date."
             />
           </div>
@@ -191,7 +200,8 @@ const CompanyBankDetails = ({ bankDetails, onBankDetailsChange, errors = {} }) =
             onChange={(e) => onChangeDigits('accountNumber', e.target.value)}
             onKeyDown={handleDigitsKeyDown}
             onPaste={(e)=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/^\d+$/.test(t)) e.preventDefault(); }}
-            placeholder="e.g., 123456789012"
+            placeholder="e.g., 123456789"
+            maxLength={18}
             className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
           />
           {errors.accountNumber && <p className="text-xs text-red-600 mt-1">{errors.accountNumber}</p>}
@@ -263,13 +273,13 @@ const AccountSettingsPage = () => {
     if (!bankDetails.bankName?.trim()) {
       errors.bankName = 'BANK NAME IS REQUIRED';
     } else if (!/^[A-Z ]{3,}$/.test(bankDetails.bankName)) {
-      errors.bankName = 'ONLY LETTERS AND SPACES, MIN 3 CHARACTERS';
+      errors.bankName = 'ONLY CAPITAL LETTERS AND SPACES, MIN 3 CHARACTERS';
     }
-    // ACCOUNT NUMBER: 8-20 digits
+    // ACCOUNT NUMBER: 9-18 digits
     if (!bankDetails.accountNumber?.trim()) {
       errors.accountNumber = 'ACCOUNT NUMBER IS REQUIRED';
-    } else if (!/^\d{8,20}$/.test(bankDetails.accountNumber)) {
-      errors.accountNumber = 'ACCOUNT NUMBER MUST BE 8-20 DIGITS';
+    } else if (!/^\d{9,18}$/.test(bankDetails.accountNumber)) {
+      errors.accountNumber = 'ACCOUNT NUMBER MUST BE 9-18 DIGITS';
     }
     // IFSC: 4 letters + 0 + 6 alphanumerics
     if (!bankDetails.ifscCode?.trim()) {
@@ -277,11 +287,11 @@ const AccountSettingsPage = () => {
     } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode)) {
       errors.ifscCode = 'INVALID IFSC CODE FORMAT (e.g., SBIN0001234)';
     }
-    // BRANCH NAME: required, 3+ chars, caps
+    // BRANCH NAME: required, 3+ chars, only capital letters and spaces
     if (!bankDetails.branchName?.trim()) {
       errors.branchName = 'BRANCH NAME IS REQUIRED';
-    } else if (!/^[A-Z0-9 ,.-]{3,}$/.test(bankDetails.branchName)) {
-      errors.branchName = 'USE CAPITAL LETTERS; MIN 3 CHARACTERS';
+    } else if (!/^[A-Z ]{3,}$/.test(bankDetails.branchName)) {
+      errors.branchName = 'ONLY CAPITAL LETTERS AND SPACES; MIN 3 CHARACTERS';
     }
     setBankErrors(errors);
     return Object.keys(errors).length === 0;
