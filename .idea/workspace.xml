@@ -5,9 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="db6e59f9-b2df-44ad-a89f-a42d68807a14" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/src/pages/account/dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/account/dashboard.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/account/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/account/settings.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/asset-management/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/asset-management/[id].js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Forms/AddPurchaseOrderForm.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Forms/AddPurchaseOrderForm.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Sales/KanbanBoard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Sales/KanbanBoard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Sales/KanbanColumn.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Sales/KanbanColumn.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Sales/LeadCard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Sales/LeadCard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Sales/TeamMemberAssignmentModal.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Sales/TeamMemberAssignmentModal.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/Sales/LeadManagement.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/Sales/LeadManagement.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/SalesManager/Manager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/SalesManager/Manager.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,24 +22,25 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 4
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
   <component name="ProjectId" id="30xUN3XkkyIQqG1QiXNL8uuYrkq" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "AnkitMatwa",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "/Users/ankitmatwa/blockchain/Divine/MEDHIR CODE/NEwUIcloned/MedhirWeb"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Merging AnkitMatwa&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/ankitmatwa/blockchain/Divine/MEDHIR CODE/NEwUIcloned/MedhirWeb&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
