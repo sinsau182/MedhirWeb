@@ -772,16 +772,30 @@ const LeadManagementContent = ({ role }) => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <KanbanBoardClientOnly
-        leadsByStatus={leadsByStatus}
-        statuses={pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name)}
-        kanbanStatuses={pipelines.filter((p) => p.name.toLowerCase() !== "new")}
-        onScheduleActivity={handleScheduleActivity}
-        onDragEnd={handleDragEnd}
-        // Debug props
-        debugProps={{ leadsByStatus, statuses: pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name) }}
-      />
+    <div className="h-[calc(100vh-64px)] bg-gray-50 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden">
+        <KanbanBoardClientOnly
+          leadsByStatus={leadsByStatus}
+          statuses={pipelines
+            .filter((p) => 
+              p.name.toLowerCase() !== "new" && 
+              p.name.toLowerCase() !== "freeze" && 
+              p.name.toLowerCase() !== "lost" && 
+              p.name.toLowerCase() !== "junk"
+            )
+            .map((p) => p.name)}
+          kanbanStatuses={pipelines.filter((p) => 
+            p.name.toLowerCase() !== "new" && 
+            p.name.toLowerCase() !== "freeze" && 
+            p.name.toLowerCase() !== "lost" && 
+            p.name.toLowerCase() !== "junk"
+          )}
+          onScheduleActivity={handleScheduleActivity}
+          onDragEnd={handleDragEnd}
+          // Debug props
+          debugProps={{ leadsByStatus, statuses: pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name) }}
+        />
+      </div>
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}
         onClose={() => setShowDeletePipelineModal(false)}

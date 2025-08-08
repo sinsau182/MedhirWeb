@@ -14,11 +14,7 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
     company,
     shippingAddress,
     items,
-    notes,
-    subtotal,
-    totalGst,
-    grandTotal,
-    finalAmount
+    notes
   } = poData;
 
   return (
@@ -35,24 +31,28 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                     <h1 className="text-3xl font-bold text-gray-800">PURCHASE ORDER</h1>
                     <p className="text-gray-500">PO #: {poNumber || purchaseOrderNumber}</p>
                 </div>
-                <div className="text-right">
-                    <h2 className="text-xl font-bold">{company?.name || 'Your Company'}</h2>
-                    <p className="text-sm text-gray-500 whitespace-pre-line">{company?.address || 'Your Company Address'}</p>
-                </div>
             </header>
 
             {/* PO Details */}
             <section className="grid grid-cols-3 gap-8 py-6 border-b">
                 <div>
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Vendor</h3>
-                    <p className="font-bold text-gray-800">{vendor?.name || vendor?.vendorName || 'N/A'}</p>
-                    <p className="text-gray-600 text-sm whitespace-pre-line">{vendor?.address || ''}</p>
-                    
+                    <p className="font-bold text-gray-800">{vendor?.vendorName || vendor?.name || 'N/A'}</p>
+                    <p className="text-gray-600 text-sm whitespace-pre-line">
+                        {vendor?.addressLine1 || vendor?.address || ''}
+                        {vendor?.addressLine2 && <br />}{vendor?.addressLine2}
+                        {vendor?.city && <br />}{vendor?.city}
+                        {vendor?.state && <br />}{vendor?.state}
+                        {vendor?.pincode && <br />}{vendor?.pincode}
+                        {vendor?.gstin && <><br />GSTIN: {vendor?.gstin}</>}
+                    </p>
                 </div>
                 <div>
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Ship To</h3>
                     <p className="font-bold text-gray-800">{company?.name || 'N/A'}</p>
-                    <p className="text-gray-600 text-sm whitespace-pre-line">{shippingAddress || 'N/A'}</p>
+                    <p className="text-gray-600 text-sm whitespace-pre-line">
+                        {shippingAddress || company?.regAdd || company?.address || 'N/A'}
+                    </p>
                 </div>
                 <div>
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Details</h3>
@@ -73,9 +73,6 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                             <th className="p-3 font-semibold text-gray-600">Item</th>
                             <th className="p-3 font-semibold text-gray-600">Description</th>
                             <th className="p-3 font-semibold text-gray-600 text-right">Qty</th>
-                            <th className="p-3 font-semibold text-gray-600 text-right">Rate</th>
-                            <th className="p-3 font-semibold text-gray-600 text-right">GST %</th>
-                            <th className="p-3 font-semibold text-gray-600 text-right">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,37 +82,18 @@ const PurchaseOrderPreview = ({ poData, onClose }) => {
                                     <td className="p-3">{item.itemName || 'N/A'}</td>
                                     <td className="p-3 text-gray-600">{item.description || 'N/A'}</td>
                                     <td className="p-3 text-right">{item.quantity || 0} {item.uom || item.unit || ''}</td>
-                                    <td className="p-3 text-right">₹{(item.rate || 0).toFixed(2)}</td>
-                                    <td className="p-3 text-right">{item.gstPercent || item.gstRate || 0}%</td>
-                                    <td className="p-3 text-right">₹{(item.amount || ((item.quantity || 0) * (item.rate || 0))).toFixed(2)}</td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" className="p-3 text-center text-gray-500">No items found</td>
+                                <td colSpan="3" className="p-3 text-center text-gray-500">No items found</td>
                             </tr>
                         )}
                     </tbody>
                 </table>
             </section>
             
-            {/* Totals */}
-            <section className="flex justify-end pt-6">
-                <div className="w-64 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-medium text-gray-800">₹{(subtotal || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-gray-600">Total GST:</span>
-                        <span className="font-medium text-gray-800">₹{(totalGst || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-lg font-bold border-t mt-2 pt-2">
-                        <span>Grand Total:</span>
-                        <span>₹{(grandTotal || finalAmount || 0).toFixed(2)}</span>
-                    </div>
-                </div>
-            </section>
+
 
             {/* Notes */}
             {notes && (
