@@ -13,11 +13,19 @@ import {
   FaEnvelope,
   FaCommentDots,
   FaRegClock,
+  FaTrash,
 } from "react-icons/fa";
 import LeadActions from './LeadActions';
+import TeamMemberAssignmentModal from './TeamMemberAssignmentModal';
 
-const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity }) => {
+const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, onMoveToJunk, managerEmployees = [], allowAssignment = false }) => {
   const router = useRouter();
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [teamModalRole, setTeamModalRole] = useState('');
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+
+  console.log(managerEmployees)
+  
   const {
     attributes,
     listeners,
@@ -37,10 +45,17 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
   };
 
   const handleCardDoubleClick = (e) => {
-    if (e.target.closest('.lead-actions')) {
+    if (e.target.closest('.lead-actions') || e.target.closest('.junk-button')) {
       return;
     }
     router.push(`/Sales/leads/${lead.leadId}`);
+  };
+
+  const handleMoveToJunk = (e) => {
+    e.stopPropagation();
+    if (onMoveToJunk) {
+      onMoveToJunk(lead.leadId);
+    }
   };
 
   const renderStars = (priority) => {
@@ -100,6 +115,24 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     );
   }
 
+  const handleTeamMemberClick = (role, e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setModalPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top
+    });
+    setTeamModalRole(role);
+    setShowTeamModal(true);
+  };
+
+  const handleTeamAssignment = (assignmentData) => {
+    if (onTeamAssign) {
+      onTeamAssign(assignmentData);
+    }
+    setShowTeamModal(false);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -108,7 +141,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {...attributes}
       {...listeners}
       className={`
-        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab
+        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab relative
         ${isDragging ? 'opacity-50 shadow-lg scale-105 rotate-1' : 'hover:shadow-md'}
         ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
         ${isDragging ? 'z-50' : ''}
@@ -136,16 +169,35 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {/* Team Members */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person`}>
-            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm">
-              {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
-            </span>
-          </CustomTooltip>
-          <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner`}>
-            <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm">
-              {getInitial(lead.assignDesignerEmpId, lead.designer)}
-            </span>
-          </CustomTooltip>
+          {allowAssignment ? (
+            <>
+              <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person\nClick to assign`}>
+                <button
+                  onClick={(e) => handleTeamMemberClick('sales', e)}
+                  className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-blue-200 hover:scale-110 transition-all duration-200"
+                >
+                  {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
+                </button>
+              </CustomTooltip>
+              <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner\nClick to assign`}>
+                <button
+                  onClick={(e) => handleTeamMemberClick('designer', e)}
+                  className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-green-200 hover:scale-110 transition-all duration-200"
+                >
+                  {getInitial(lead.assignDesignerEmpId, lead.designer)}
+                </button>
+              </CustomTooltip>
+            </>
+          ) : (
+            <>
+              <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs border border-white shadow-sm">
+                {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
+              </div>
+              <div className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs border border-white shadow-sm">
+                {getInitial(lead.assignDesignerEmpId, lead.designer)}
+              </div>
+            </>
+          )}
         </div>
         
         {/* Activity Button */}
@@ -165,6 +217,26 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
           {lead.latestActivityTitle}
         </div>
       )}
+
+      {/* Junk Button - Bottom Right Corner */}
+      <button
+        onClick={handleMoveToJunk}
+        className="junk-button absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+        title="Move to Junk"
+      >
+        <FaTrash size={12} />
+      </button>
+
+      {/* Team Member Assignment Modal */}
+      <TeamMemberAssignmentModal
+        isOpen={showTeamModal}
+        onClose={() => setShowTeamModal(false)}
+        lead={lead}
+        onAssign={handleTeamAssignment}
+        role={teamModalRole}
+        salesEmployees={managerEmployees}
+        position={modalPosition}
+      />
     </div>
   );
 };

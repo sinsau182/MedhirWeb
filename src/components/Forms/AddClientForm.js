@@ -12,6 +12,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
     email: '',
     contactNumber: '',
     address: '',
+    gst: '', // NEW FIELD
     addressDetails: {
       address: '',
       city: '',
@@ -24,9 +25,19 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.startsWith('addressDetails.')) {
+
+    if (name === 'customerName') {
+      const sanitized = value.toUpperCase().replace(/[^A-Z\s]/g, '');
+      setFormData((prev) => ({ ...prev, customerName: sanitized }));
+    } else if (name === 'contactNumber') {
+      const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+      setFormData((prev) => ({ ...prev, contactNumber: digitsOnly }));
+    } else if (name === 'gst') {
+      const sanitized = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+      setFormData((prev) => ({ ...prev, gst: sanitized }));
+    } else if (name.startsWith('addressDetails.')) {
       const field = name.split('.')[1];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         addressDetails: {
           ...prev.addressDetails,
@@ -34,16 +45,46 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
         }
       }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
+  const validateGST = (gst) => {
+    const normalized = (gst || '').toUpperCase().trim();
+    if (normalized === '') return true; // Optional
+    const gstRegex = /^[0-3][0-9][A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+    return gstRegex.test(normalized);
+  };
+
+  const validateEmail = (email) => {
+    const trimmed = (email || '').trim();
+    if (trimmed === '') return true; // Optional
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
+
+  const validateContactNumber = (num) => {
+    return /^\d{10}$/.test(num || '');
+  };
+
+  const validateCustomerName = (name) => {
+    const normalized = (name || '').trim();
+    if (normalized.length === 0) return false;
+    return /^[A-Z\s]+$/.test(normalized);
+  };
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
-    if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format';
-    if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required';
+    if (!validateCustomerName(formData.customerName)) {
+      newErrors.customerName = 'Customer name must be uppercase letters and spaces only';
+    }
+    if (!validateEmail(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    if (formData.contactNumber.trim() && !validateContactNumber(formData.contactNumber)) {
+      newErrors.contactNumber = 'Contact number must be exactly 10 digits';
+    }
+    if (formData.gst && !validateGST(formData.gst)) newErrors.gst = 'Invalid GST number';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -72,7 +113,19 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
           onSubmit(customerData);
         }
       } catch (error) {
-        toast.error('Failed to add customer: ' + (error?.message || 'Unknown error'));
+        const message = typeof error === 'string' ? error : (error?.message || '');
+        const fieldErrors = {};
+        if (/email/i.test(message) && /exist/i.test(message)) {
+          fieldErrors.email = 'Email already exists';
+        }
+        if (/(phone|mobile|contact)/i.test(message) && /exist/i.test(message)) {
+          fieldErrors.contactNumber = 'Phone number already exists';
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(prev => ({ ...prev, ...fieldErrors }));
+        } else {
+          toast.error('Failed to add customer: ' + (message || 'Unknown error'));
+        }
       }
     }
   };
@@ -92,6 +145,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                       onChange={handleChange} 
                       className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`} 
                     />
+                    <div className="text-xs text-gray-400 mt-1">Only uppercase letters and spaces (e.g., JOHN DOE)</div>
                     {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
                 </div>
                 <div>
@@ -112,8 +166,8 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                       value={formData.email} 
                       onChange={handleChange} 
                       className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`} 
-                      placeholder="Optional"
                     />
+                    <div className="text-xs text-gray-400 mt-1">Format: username@domain.com</div>
                     {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                 </div>
                  <div>
@@ -123,9 +177,25 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                       name="contactNumber" 
                       value={formData.contactNumber} 
                       onChange={handleChange} 
+                      inputMode="numeric"
+                      maxLength={10}
                       className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'}`} 
                     />
+                    <div className="text-xs text-gray-400 mt-1">Format: 10 digits only (e.g., 9876543210)</div>
                     {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
+                </div>
+                <div>
+                    <label>GST Number <span className="text-gray-400 text-xs">(Optional)</span></label>
+                    <input
+                      type="text"
+                      name="gst"
+                      value={formData.gst}
+                      onChange={handleChange}
+                      className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.gst ? 'border-red-500' : 'border-gray-300'}`}
+                      maxLength={15}
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Format: 27AAECS1234F1Z2 (15 characters length)</div>
+                    {errors.gst && <p className="text-red-500 text-sm mt-1">{errors.gst}</p>}
                 </div>
             </div>
         </div>
