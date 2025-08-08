@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="db6e59f9-b2df-44ad-a89f-a42d68807a14" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/src/pages/account/dashboard.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/account/dashboard.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/account/settings.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/account/settings.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/asset-management/[id].js" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/asset-management/[id].js" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="30xUN3XkkyIQqG1QiXNL8uuYrkq" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "AnkitMatwa",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/ankitmatwa/blockchain/Divine/MEDHIR CODE/NEwUIcloned/MedhirWeb"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.23892.409" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="db6e59f9-b2df-44ad-a89f-a42d68807a14" name="Changes" comment="" />
+      <created>1754568674416</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1754568674416</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

@@ -193,11 +193,12 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
 
   const calculateTotals = () => {
     const subtotal = 0; // No rate calculation needed
-    const grandTotal = subtotal;
-    return { subtotal, grandTotal };
+    const totalGst = 0; // GST not calculated in this simplified form
+    const grandTotal = subtotal + totalGst;
+    return { subtotal, totalGst, grandTotal };
   };
   
-  const { subtotal, grandTotal } = calculateTotals();
+  const { subtotal, totalGst, grandTotal } = calculateTotals();
 
   const validateForm = () => {
     const newErrors = {};
@@ -264,10 +265,30 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
           description: item.description,
           //hsnOrSac: item.hsnCode,
           quantity: qty,
-          uom: item.unit
+          uom: item.unit,
+          // Provide numeric fields expected by backend to avoid null BigDecimal operations
+          rate: 0,
+          amount: 0,
+          gstPercent: 0,
+          cgstPercent: 0,
+          sgstPercent: 0,
+          igstPercent: 0,
+          gstAmount: 0,
+          cgstAmount: 0,
+          sgstAmount: 0,
+          igstAmount: 0,
+          totalAmount: 0
         };
       }),
-      totalBeforeGST: 0
+      // Top-level totals mirrored from bills API to satisfy backend schema
+      totalBeforeGST: subtotal,
+      totalGST: totalGst,
+      totalCGST: 0,
+      totalSGST: 0,
+      totalIGST: 0,
+      finalAmount: grandTotal,
+      tdsAmount: tdsAmount || 0,
+      notes: formData.notes || ''
     };
 
     console.log('Purchase Order Data:', poData);
