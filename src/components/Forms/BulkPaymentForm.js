@@ -496,7 +496,7 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
         if (mode === 'edit' && initialData) {
           // Update existing payment
           result = await dispatch(updatePayment({ 
-            paymentId: initialData.id, 
+            paymentId: initialData.paymentId, 
             payment: formDataToSend 
           }));
         } else {
