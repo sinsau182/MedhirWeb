@@ -67,28 +67,13 @@ const KanbanColumn = ({
             </div>
             <div className="flex flex-col">
               <h3 className="text-sm font-semibold text-gray-900 truncate">{status}</h3>
-              <div className="flex items-center gap-1 mt-0.5">
-                <FaUsers className="text-gray-400 text-xs" />
-                <span className="text-xs text-gray-500 font-medium">
-                  {leads.length} {leads.length === 1 ? 'lead' : 'leads'}
-                </span>
-              </div>
             </div>
           </div>
           
-          {/* Progress indicator */}
-          <div className="flex flex-col items-end">
-            <div className="w-10 h-1 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full rounded-full transition-all duration-300"
-                style={{ 
-                  backgroundColor: stage?.color || '#64748b',
-                  width: `${Math.min((leads.length / 10) * 100, 100)}%`
-                }}
-              ></div>
-            </div>
-            <span className="text-xs text-gray-400 mt-0.5">
-              {Math.min(leads.length, 10)}/10
+          <div className="flex items-center gap-1 mt-0.5">
+            <FaUsers className="text-gray-400 text-xs" />
+            <span className="text-xs text-gray-500 font-medium">
+              {leads.length} {leads.length === 1 ? 'lead' : 'leads'}
             </span>
           </div>
         </div>
