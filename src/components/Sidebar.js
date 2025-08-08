@@ -151,6 +151,11 @@ const modularMenus = {
     icon: <FaFileInvoiceDollar className="w-5 h-5" />,
     items: [
       {
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/account/dashboard",
+      },
+      {
         label: "Customers",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/account/customers",
