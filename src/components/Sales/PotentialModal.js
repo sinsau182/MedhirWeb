@@ -10,7 +10,7 @@ const PotentialModal = ({
 }) => {
   const [formData, setFormData] = useState({
     requirements: "",
-    consultationFee: "",
+    // consultationFee: "",
     designConsultation: "NO"
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,7 +20,7 @@ const PotentialModal = ({
     if (isOpen) {
       setFormData({
         requirements: "",
-        consultationFee: "",
+        // consultationFee: "",
         designConsultation: "NO"
       });
       setIsSubmitting(false);
@@ -46,22 +46,22 @@ const PotentialModal = ({
       return;
     }
 
-    if (!formData.consultationFee.trim()) {
-      toast.error("Please provide the consultation fee");
-      return;
-    }
+    // if (!formData.consultationFee.trim()) {
+    //   toast.error("Please provide the consultation fee");
+    //   return;
+    // }
     
-    // Validate consultation fee
-    const consultationFee = parseFloat(formData.consultationFee.replace(/[^\d.]/g, ''));
-    if (isNaN(consultationFee) || consultationFee < 0) {
-      toast.error("Consultation fee must be a valid positive number");
-      return;
-    }
+    // // Validate consultation fee
+    // const consultationFee = parseFloat(formData.consultationFee.replace(/[^\d.]/g, ''));
+    // if (isNaN(consultationFee) || consultationFee < 0) {
+    //   toast.error("Consultation fee must be a valid positive number");
+    //   return;
+    // }
     
-    if (consultationFee > 999999) {
-      toast.error("Consultation fee cannot exceed 999,999");
-      return;
-    }
+    // if (consultationFee > 999999) {
+    //   toast.error("Consultation fee cannot exceed 999,999");
+    //   return;
+    // }
 
     setIsSubmitting(true);
     
@@ -69,7 +69,7 @@ const PotentialModal = ({
       await onSuccess({
         leadId: lead.leadId,
         requirements: formData.requirements.trim(),
-        consultationFee: formData.consultationFee.trim(),
+        // consultationFee: formData.consultationFee.trim(),
         designConsultation: formData.designConsultation
       });
       
@@ -264,7 +264,7 @@ const PotentialModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.requirements.trim() || !formData.consultationFee.trim()}
+            disabled={isSubmitting || !formData.requirements.trim()}
             className="px-6 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
           >
             {isSubmitting ? (

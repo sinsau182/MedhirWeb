@@ -98,6 +98,50 @@ export const createInvoice = createAsyncThunk(
   }
 );
 
+// Get next invoice number (preview only, no increment)
+export const getNextInvoiceNumber = createAsyncThunk(
+  "invoices/getNextInvoiceNumber",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const token = getTokenOrThrow();
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/preview-invoice-number`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return rejectWithValue(data.message || "Failed to get next invoice number");
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
+// Generate next invoice number (increments counter)
+export const generateNextInvoiceNumber = createAsyncThunk(
+  "invoices/generateNextInvoiceNumber",
+  async (companyId, { rejectWithValue }) => {
+    try {
+      const token = getTokenOrThrow();
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/generate-invoice-number`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) return rejectWithValue(data.message || "Failed to generate next invoice number");
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 export const fetchProjectCustomerList = createAsyncThunk(
   "receipts/fetchProjectCustomerList",
   async (_, { rejectWithValue }) => {
@@ -126,6 +170,7 @@ const invoiceSlice = createSlice({
     invoiceDetails: {},
     projectInvoices: {},
     projectCustomerList: [],
+    nextInvoiceNumber: null,
     loading: false,
     error: null,
   },
@@ -189,6 +234,21 @@ const invoiceSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+
+      // Get next invoice number
+      .addCase(getNextInvoiceNumber.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getNextInvoiceNumber.fulfilled, (state, action) => {
+        state.loading = false;
+        state.nextInvoiceNumber = action.payload.nextInvoiceNumber;
+      })
+      .addCase(getNextInvoiceNumber.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
        .addCase(fetchProjectCustomerList.fulfilled, (state, action) => {
               state.loading = false;
               state.projectCustomerList = action.payload;
@@ -196,7 +256,19 @@ const invoiceSlice = createSlice({
          .addCase(fetchProjectCustomerList.rejected, (state, action) => {
               state.loading = false;
               state.error = action.payload;
-            });
+            })
+         .addCase(generateNextInvoiceNumber.pending, (state) => {
+           state.loading = true;
+           state.error = null;
+         })
+         .addCase(generateNextInvoiceNumber.fulfilled, (state, action) => {
+           state.loading = false;
+           state.nextInvoiceNumber = action.payload.nextInvoiceNumber;
+         })
+         .addCase(generateNextInvoiceNumber.rejected, (state, action) => {
+           state.loading = false;
+           state.error = action.payload;
+         });
   },
 });
 

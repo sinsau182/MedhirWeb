@@ -19,6 +19,8 @@ const KanbanBoard = ({
   onAddStage,
   onCancelAddStage,
   onScheduleActivity,
+  onTeamAssign,
+  managerEmployees = [],
   setIsForm,
   setStageColor,
   stageColor,
@@ -110,6 +112,8 @@ const KanbanBoard = ({
                 onMarkJunk={onMarkJunk}
                 onAddLead={onAddLead}
                 onScheduleActivity={onScheduleActivity}
+                onTeamAssign={onTeamAssign}
+                managerEmployees={managerEmployees}
               />
             );
           })}
@@ -246,6 +250,8 @@ const KanbanBoard = ({
                 onMarkLost={onMarkLost}
                 onMarkJunk={onMarkJunk}
                 onScheduleActivity={onScheduleActivity}
+                onTeamAssign={onTeamAssign}
+                managerEmployees={managerEmployees}
               />
             </div>
           ) : null}

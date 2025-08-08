@@ -689,6 +689,25 @@ const LeadManagementContent = ({ role }) => {
     }
   };
 
+  // Team assignment handler for LeadCard
+  const handleTeamAssign = async (assignmentData) => {
+    try {
+      // Update the lead with sales rep and designer assignments
+      await dispatch(updateLead({
+        leadId: assignmentData.leadId,
+        assignSalesPersonEmpId: assignmentData.salesRep,
+        assignDesignerEmpId: assignmentData.designer
+      }));
+      
+      // Refresh leads to get the updated grouped format
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
+    } catch (error) {
+      console.error("Team assignment error:", error);
+      throw error;
+    }
+  };
+
   // Semi contacted handler
   const handleSemiContactedSuccess = async (formData) => {
     try {
@@ -723,7 +742,7 @@ const LeadManagementContent = ({ role }) => {
       await dispatch(updateLead({
         leadId: formData.leadId,
         requirements: formData.requirements,
-        consultationFee: formData.consultationFee,
+        // consultationFee: formData.consultationFee,
         designConsultation: formData.designConsultation
       }));
       
@@ -778,20 +797,22 @@ const LeadManagementContent = ({ role }) => {
           leadsByStatus={leadsByStatus}
           statuses={pipelines
             .filter((p) => 
-              p.name.toLowerCase() !== "new" && 
+              // p.name.toLowerCase() !== "new" && 
               p.name.toLowerCase() !== "freeze" && 
               p.name.toLowerCase() !== "lost" && 
               p.name.toLowerCase() !== "junk"
             )
             .map((p) => p.name)}
           kanbanStatuses={pipelines.filter((p) => 
-            p.name.toLowerCase() !== "new" && 
+            // p.name.toLowerCase() !== "new" && 
             p.name.toLowerCase() !== "freeze" && 
             p.name.toLowerCase() !== "lost" && 
             p.name.toLowerCase() !== "junk"
           )}
           onScheduleActivity={handleScheduleActivity}
           onDragEnd={handleDragEnd}
+          onTeamAssign={handleTeamAssign}
+          managerEmployees={managerEmployees || []}
           // Debug props
           debugProps={{ leadsByStatus, statuses: pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name) }}
         />

@@ -15,9 +15,14 @@ import {
   FaRegClock,
 } from "react-icons/fa";
 import LeadActions from './LeadActions';
+import TeamMemberAssignmentModal from './TeamMemberAssignmentModal';
 
-const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity }) => {
+const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [] }) => {
   const router = useRouter();
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [teamModalRole, setTeamModalRole] = useState('');
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  
   const {
     attributes,
     listeners,
@@ -100,6 +105,24 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     );
   }
 
+  const handleTeamMemberClick = (role, e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setModalPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top
+    });
+    setTeamModalRole(role);
+    setShowTeamModal(true);
+  };
+
+  const handleTeamAssignment = (assignmentData) => {
+    if (onTeamAssign) {
+      onTeamAssign(assignmentData);
+    }
+    setShowTeamModal(false);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -136,15 +159,21 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {/* Team Members */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person`}>
-            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm">
+          <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person\nClick to assign`}>
+            <button
+              onClick={(e) => handleTeamMemberClick('sales', e)}
+              className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-blue-200 hover:scale-110 transition-all duration-200"
+            >
               {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
-            </span>
+            </button>
           </CustomTooltip>
-          <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner`}>
-            <span className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm">
+          <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner\nClick to assign`}>
+            <button
+              onClick={(e) => handleTeamMemberClick('designer', e)}
+              className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-green-200 hover:scale-110 transition-all duration-200"
+            >
               {getInitial(lead.assignDesignerEmpId, lead.designer)}
-            </span>
+            </button>
           </CustomTooltip>
         </div>
         
@@ -165,6 +194,17 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
           {lead.latestActivityTitle}
         </div>
       )}
+
+      {/* Team Member Assignment Modal */}
+      <TeamMemberAssignmentModal
+        isOpen={showTeamModal}
+        onClose={() => setShowTeamModal(false)}
+        lead={lead}
+        onAssign={handleTeamAssignment}
+        role={teamModalRole}
+        salesEmployees={managerEmployees}
+        position={modalPosition}
+      />
     </div>
   );
 };

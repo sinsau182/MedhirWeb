@@ -40,7 +40,7 @@ import customFormsReducer from './slices/customFormsSlice'; // New slice
 import assetReducer from './slices/assetSlice';
 import customFormReducer from './slices/customFormSlice'; // Custom Form slice based on CustomFormController.java
 import customerReducer from './slices/customerSlice';
-
+import accountSettingsReducer from './slices/accountSettingsSlice'; // Import account settings slice
 
 export const store = configureStore({
   reducer: {
@@ -86,6 +86,7 @@ export const store = configureStore({
     receipts: receiptReducer,
     payroll: payrollReducer,
     customers: customerReducer,
+    accountSettings: accountSettingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
