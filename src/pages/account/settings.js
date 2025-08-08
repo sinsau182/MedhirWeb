@@ -226,6 +226,7 @@ const AccountSettingsPage = () => {
 
   return (
     <MainLayout>
+      <div className="p-6">
         <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200 max-w-5xl mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Account Settings</h1>
             <p className="text-gray-500 mb-8">Manage financial documents, taxes, and global configurations for the accounting module.</p>
@@ -263,6 +264,7 @@ const AccountSettingsPage = () => {
                 </main>
             </div>
         </div>
+      </div>
     </MainLayout>
   );
 };

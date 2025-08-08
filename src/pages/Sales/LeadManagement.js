@@ -776,8 +776,20 @@ const LeadManagementContent = ({ role }) => {
       <div className="flex-1 overflow-hidden">
         <KanbanBoardClientOnly
           leadsByStatus={leadsByStatus}
-          statuses={pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name)}
-          kanbanStatuses={pipelines.filter((p) => p.name.toLowerCase() !== "new")}
+          statuses={pipelines
+            .filter((p) => 
+              p.name.toLowerCase() !== "new" && 
+              p.name.toLowerCase() !== "freeze" && 
+              p.name.toLowerCase() !== "lost" && 
+              p.name.toLowerCase() !== "junk"
+            )
+            .map((p) => p.name)}
+          kanbanStatuses={pipelines.filter((p) => 
+            p.name.toLowerCase() !== "new" && 
+            p.name.toLowerCase() !== "freeze" && 
+            p.name.toLowerCase() !== "lost" && 
+            p.name.toLowerCase() !== "junk"
+          )}
           onScheduleActivity={handleScheduleActivity}
           onDragEnd={handleDragEnd}
           // Debug props
