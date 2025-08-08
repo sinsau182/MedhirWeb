@@ -20,6 +20,7 @@ const KanbanBoard = ({
   onCancelAddStage,
   onScheduleActivity,
   onTeamAssign,
+  onMoveToJunk,
   managerEmployees = [],
   allowAssignment = false,
   setIsForm,

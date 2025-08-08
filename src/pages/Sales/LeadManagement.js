@@ -715,6 +715,41 @@ const LeadManagementContent = ({ role }) => {
     }
   };
 
+  // Move to junk handler
+  const handleMoveToJunk = async (leadId) => {
+    try {
+      console.log('LeadManagement - handleMoveToJunk called with:', leadId);
+      
+      // Find the junk stage (orderIndex 6, name "junk")
+      const junkStage = pipelines.find(p => p.orderIndex === 6 && p.name.toLowerCase() === 'junk');
+      
+      if (!junkStage) {
+        console.error('Junk stage not found');
+        toast.error("Junk stage not found");
+        return;
+      }
+      
+      console.log('LeadManagement - Moving lead to junk stage:', junkStage);
+      
+      // Move the lead to the junk stage
+      await dispatch(moveLeadToPipeline({
+        leadId: leadId,
+        newPipelineId: junkStage.stageId
+      }));
+      
+      console.log('LeadManagement - Lead moved to junk successfully');
+      toast.success("Lead moved to junk successfully!");
+      
+      // Refresh leads to get the updated grouped format
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
+    } catch (error) {
+      console.error("Move to junk error:", error);
+      toast.error("Failed to move lead to junk");
+      throw error;
+    }
+  };
+
   // Semi contacted handler
   const handleSemiContactedSuccess = async (formData) => {
     try {
@@ -819,6 +854,7 @@ const LeadManagementContent = ({ role }) => {
           onScheduleActivity={handleScheduleActivity}
           onDragEnd={handleDragEnd}
           onTeamAssign={handleTeamAssign}
+          onMoveToJunk={handleMoveToJunk}
           managerEmployees={managerEmployees || []}
           allowAssignment={false}
           // Debug props

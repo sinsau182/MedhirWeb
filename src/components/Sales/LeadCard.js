@@ -13,11 +13,12 @@ import {
   FaEnvelope,
   FaCommentDots,
   FaRegClock,
+  FaTrash,
 } from "react-icons/fa";
 import LeadActions from './LeadActions';
 import TeamMemberAssignmentModal from './TeamMemberAssignmentModal';
 
-const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [], allowAssignment = false }) => {
+const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, onMoveToJunk, managerEmployees = [], allowAssignment = false }) => {
   const router = useRouter();
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamModalRole, setTeamModalRole] = useState('');
@@ -44,10 +45,17 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
   };
 
   const handleCardDoubleClick = (e) => {
-    if (e.target.closest('.lead-actions')) {
+    if (e.target.closest('.lead-actions') || e.target.closest('.junk-button')) {
       return;
     }
     router.push(`/Sales/leads/${lead.leadId}`);
+  };
+
+  const handleMoveToJunk = (e) => {
+    e.stopPropagation();
+    if (onMoveToJunk) {
+      onMoveToJunk(lead.leadId);
+    }
   };
 
   const renderStars = (priority) => {
@@ -133,7 +141,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {...attributes}
       {...listeners}
       className={`
-        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab
+        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab relative
         ${isDragging ? 'opacity-50 shadow-lg scale-105 rotate-1' : 'hover:shadow-md'}
         ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
         ${isDragging ? 'z-50' : ''}
@@ -209,6 +217,15 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
           {lead.latestActivityTitle}
         </div>
       )}
+
+      {/* Junk Button - Bottom Right Corner */}
+      <button
+        onClick={handleMoveToJunk}
+        className="junk-button absolute bottom-2 right-2 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100 z-10"
+        title="Move to Junk"
+      >
+        <FaTrash size={12} />
+      </button>
 
       {/* Team Member Assignment Modal */}
       <TeamMemberAssignmentModal

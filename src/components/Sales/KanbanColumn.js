@@ -33,6 +33,7 @@ const KanbanColumn = ({
   onAddLead,
   onScheduleActivity,
   onTeamAssign,
+  onMoveToJunk,
   managerEmployees = [],
   allowAssignment = false
 }) => {
@@ -100,6 +101,7 @@ const KanbanColumn = ({
             onMarkJunk={onMarkJunk}
             onScheduleActivity={onScheduleActivity}
             onTeamAssign={onTeamAssign}
+            onMoveToJunk={onMoveToJunk}
             managerEmployees={managerEmployees}
             allowAssignment={allowAssignment}
           />
