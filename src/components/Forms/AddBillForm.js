@@ -1190,8 +1190,6 @@ const BillForm = ({ bill, onCancel }) => {
           </div>
         </div>
       )}
-
-
     </div>
   );
 };
