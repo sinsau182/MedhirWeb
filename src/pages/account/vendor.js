@@ -1,6 +1,6 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye, FaFileAlt } from 'react-icons/fa';
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
 import VendorPreview from '../../components/Previews/VendorPreview';
@@ -101,6 +101,8 @@ const Vendor = () => {
   const [selectedVendor, setSelectedVendor] = useState(null);
   // State for selected bill for editing
   const [selectedBill, setSelectedBill] = useState(null);
+  // State for selected payment for editing
+  const [selectedPayment, setSelectedPayment] = useState(null);
   // Remove selectedPurchaseOrder state, purchaseOrder prop, and edit mode logic for purchase orders
   // Only support creation of new purchase orders
    const [previewFile, setPreviewFile] = useState(null);
@@ -147,6 +149,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     } else if (activeTab === 'purchaseOrders') {
       setShowAddForm('po');
     } else if (activeTab === 'payments') {
+      setSelectedPayment(null); // Clear selected payment for new payment
       setShowAddForm('payment');
     } else if (activeTab === 'vendors') {
       setSelectedVendor(null); // Clear selected vendor for new vendor
@@ -154,12 +157,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     }
   };
 
-  console.log(payments)
+  console.log('Payments data:', payments);
+  console.log('Payment with proof URL:', payments.find(p => p.paymentProofUrl));
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
     setSelectedVendor(null);
     setSelectedBill(null);
+    setSelectedPayment(null);
      setEditingPO(null);
   };
 
@@ -178,85 +183,75 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     setShowAddForm('po');
   };
 
+  // Handle payment row click for editing
+  const handlePaymentRowClick = (payment) => {
+    setSelectedPayment(payment);
+    setShowAddForm('payment');
+  };
+
   const handlePurchaseOrderPreview = async (po) => {
     // Transform the purchase order data to match the preview component's expected format
     const vendor = vendors.find(v => v.vendorId === po.vendorId);
     console.log('Original PO data:', po);
     console.log('Found vendor:', vendor);
     
-    // Get company details - use the company that was selected when creating the PO
+    // Get company details from Redux state
     let companyDetails = {
       name: 'Your Company',
       address: 'Your Company Address'
     };
     
     try {
-      // First, try to find the company using the companyId from the purchase order
-      // This should be the company that was selected when creating the PO
-      const poCompanyId = po.companyId;
-      console.log('PO Company ID:', poCompanyId);
+      const companyId = sessionStorage.getItem('employeeCompanyId');
+      console.log('Company ID from session:', companyId);
       console.log('Available companies:', companies);
       
-      if (poCompanyId && companies && companies.length > 0) {
-        // Find the company that was selected when creating this PO
-        const company = companies.find(c => c.companyId === poCompanyId || c._id === poCompanyId);
-        console.log('Found company for this PO:', company);
+      if (companyId && companies && companies.length > 0) {
+        // Find the company in the Redux state
+        const company = companies.find(c => c.companyId === companyId || c._id === companyId);
+        console.log('Found company in Redux:', company);
         
         if (company) {
           companyDetails = {
             name: company.name || 'Your Company',
             address: company.regAdd || 'Your Company Address'
           };
-          console.log('Processed company details for PO:', companyDetails);
+          console.log('Processed company details:', companyDetails);
         } else {
-          console.log('Company not found for this PO, trying to find by address match');
+          console.log('Company not found in Redux state, trying direct API call');
           
-          // If company not found by ID, try to find by address matching
-          const company = companies.find(c => 
-            c.regAdd === po.companyAddress || 
-            c.name === po.companyAddress ||
-            po.companyAddress?.includes(c.name) ||
-            c.regAdd?.includes(po.companyAddress)
-          );
+          // Fallback to direct API call if not found in Redux
+          const token = sessionStorage.getItem('token');
+          const apiUrl = `${publicRuntimeConfig.apiURL}/superadmin/companies/${companyId}`;
+          console.log('API URL:', apiUrl);
           
-          if (company) {
-            companyDetails = {
-              name: company.name || 'Your Company',
-              address: company.regAdd || 'Your Company Address'
-            };
-            console.log('Found company by address match:', companyDetails);
-          } else {
-            console.log('No company match found, using logged-in company as fallback');
-            
-            // Fallback to logged-in company if no match found
-            const loggedInCompanyId = sessionStorage.getItem('employeeCompanyId');
-            if (loggedInCompanyId) {
-              const loggedInCompany = companies.find(c => c.companyId === loggedInCompanyId || c._id === loggedInCompanyId);
-              if (loggedInCompany) {
-                companyDetails = {
-                  name: loggedInCompany.name || 'Your Company',
-                  address: loggedInCompany.regAdd || 'Your Company Address'
-                };
-                console.log('Using logged-in company as fallback:', companyDetails);
-              }
+          const response = await fetch(apiUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
             }
+          });
+          
+          console.log('API Response status:', response.status);
+          
+          if (response.ok) {
+            const companyData = await response.json();
+            console.log('Company data received:', companyData);
+            
+            companyDetails = {
+              name: companyData.name || companyData.companyName || 'Your Company',
+              address: companyData.regAdd || companyData.address || companyData.registeredAddress || 'Your Company Address'
+            };
+            
+            console.log('Processed company details:', companyDetails);
+          } else {
+            console.error('API response not ok:', response.status, response.statusText);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
           }
         }
       } else {
-        console.log('No PO company ID or companies loaded, using logged-in company');
-        
-        // Fallback to logged-in company
-        const loggedInCompanyId = sessionStorage.getItem('employeeCompanyId');
-        if (loggedInCompanyId && companies && companies.length > 0) {
-          const loggedInCompany = companies.find(c => c.companyId === loggedInCompanyId || c._id === loggedInCompanyId);
-          if (loggedInCompany) {
-            companyDetails = {
-              name: loggedInCompany.name || 'Your Company',
-              address: loggedInCompany.regAdd || 'Your Company Address'
-            };
-            console.log('Using logged-in company:', companyDetails);
-          }
-        }
+        console.log('No company ID found in session storage or no companies loaded');
       }
     } catch (error) {
       console.error('Error fetching company details:', error);
@@ -280,8 +275,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
       totalGst: po.totalGST || 0,
       grandTotal: po.finalAmount || 0
     };
-    
-    console.log('Final transformed PO for preview:', transformedPo);
     console.log('Transformed PO data:', transformedPo);
     setSelectedPurchaseOrder(transformedPo);
     setShowPurchaseOrderPreview(true);
@@ -348,7 +341,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         id: purchaseOrders.length + 1,
         poNumber: `PO-2025-${String(purchaseOrders.length + 1).padStart(3, '0')}`,
         vendorName: poData.vendorName,
-        
+        vendorGstin: poData.vendorGstin,
         orderDate: poData.orderDate,
         deliveryDate: poData.deliveryDate,
         status: poData.status || 'Draft',
@@ -439,9 +432,13 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
                 <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">Add Vendor Payment</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedPayment ? 'Edit Vendor Payment' : 'Add Vendor Payment'}
+              </h2>
             </div>
             <BulkPaymentForm
+              mode={selectedPayment ? 'edit' : 'add'}
+              initialData={selectedPayment}
               onSubmit={handlePaymentSubmit}
               onCancel={handleBackFromForm}
             />
@@ -509,7 +506,8 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
-                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
@@ -534,7 +532,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
-                                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{bill.gstin}</span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
@@ -620,7 +621,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PO Number</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                      
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
@@ -646,7 +647,9 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             })()}
                           </span>
                         </td>
-                       
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{po.gstin}</span>
+                        </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
                         
@@ -683,7 +686,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             e.stopPropagation();
                             handlePurchaseOrderPreview(po);
                           }}
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
                           title="Preview Purchase Order"
                         >
                           <FaEye className="w-4 h-4" />
@@ -739,7 +742,11 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                    <tr 
+                      key={payment.id} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => handlePaymentRowClick(payment)}
+                    >
                                             <td className="px-4 py-4 text-sm text-gray-700 w-32">{payment.paymentDate}</td>
                       <td className="px-4 py-4 w-48">
                         <span className="text-sm font-medium text-gray-900 truncate block">{payment.vendorName}</span>
@@ -786,12 +793,20 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
                       </td>
                       <td className="px-4 py-4 w-20 text-center">
-                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                          payment.attachments === 'Yes' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {payment.attachments === 'Yes' ? '📎' : '-'}
+                        <span 
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                            payment.paymentProofUrl 
+                              ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (payment.paymentProofUrl) {
+                              handleViewFile(payment.paymentProofUrl, 'Payment Receipt');
+                            }
+                          }}
+                        >
+                          {payment.paymentProofUrl ? '📎' : '-'}
                         </span>
                       </td>
                     </tr>
@@ -837,6 +852,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Documents</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
@@ -877,6 +893,49 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                               +{vendor.vendorTags?.length - 2}
                             </span>
                           )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                                                     {/* Bank Passbook Icon */}
+                           <button
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (vendor.bankPassbookUrl) {
+                                 handleViewFile(vendor.bankPassbookUrl, 'Bank Passbook');
+                               } else {
+                                 toast.error('Bank Passbook not uploaded');
+                               }
+                             }}
+                             className={`p-2 rounded-full transition-colors ${
+                               vendor.bankPassbookUrl 
+                                 ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' 
+                                 : 'text-gray-400 cursor-not-allowed'
+                             }`}
+                             title={vendor.bankPassbookUrl ? 'View Bank Passbook' : 'Bank Passbook not uploaded'}
+                           >
+                             <FaFileAlt className="w-4 h-4" />
+                           </button>
+                          
+                          {/* GST Document Icon */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (vendor.gstDocumentUrl) {
+                                handleViewFile(vendor.gstDocumentUrl, 'GST Document');
+                              } else {
+                                toast.error('GST Document not uploaded');
+                              }
+                            }}
+                            className={`p-2 rounded-full transition-colors ${
+                              vendor.gstDocumentUrl 
+                                ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
+                                : 'text-gray-400 cursor-not-allowed'
+                            }`}
+                            title={vendor.gstDocumentUrl ? 'View GST Document' : 'GST Document not uploaded'}
+                          >
+                            <FaFileAlt className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-center">

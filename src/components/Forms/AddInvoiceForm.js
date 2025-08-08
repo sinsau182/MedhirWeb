@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaFileInvoiceDollar, FaChevronDown, FaChevronRight, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProjectCustomerList } from '../../redux/slices/invoiceSlice';
+import { toast } from 'sonner';
+import { fetchProjectCustomerList, getNextInvoiceNumber, generateNextInvoiceNumber } from '../../redux/slices/invoiceSlice';
 
 const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [formData, setFormData] = useState({
@@ -14,8 +15,10 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         invoiceDate: new Date().toISOString().split('T')[0],
         dueDate: '',
         invoiceLines: [
-            { id: 1, item: '', hsn: '', quantity: 1, uom: 'NOS', rate: 0, gst: 18 }
+            { id: 1, item: '', hsn: '', quantity: 1, uom: 'NOS', rate: 0, gst: 18, cgst: 9, sgst: 9, igst: 18 }
         ],
+        projectType: [], // NEW FIELD
+        placeOfSupply: 'interstate', // NEW FIELD
     });
 
     const [errors, setErrors] = useState({});
@@ -28,7 +31,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     // const projects = [...];
 
     const dispatch = useDispatch();
-    const { projectCustomerList, loading } = useSelector(state => state.invoices);
+    const { projectCustomerList, nextInvoiceNumber, loading } = useSelector(state => state.invoices);
 
     // Extract unique projects from projectCustomerList
     const projects = projectCustomerList?.map(p => ({
@@ -39,11 +42,46 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         address: p.address
     })) || [];
 
+    // Get company ID from session storage
+    const companyId = typeof window !== 'undefined' ? 
+        sessionStorage.getItem("employeeCompanyId") || 
+        sessionStorage.getItem("companyId") || 
+        sessionStorage.getItem("company") : null;
+
+    // Function to fetch next invoice number (generates and increments)
+    const fetchNextInvoiceNumber = async () => {
+        if (companyId) {
+            try {
+                await dispatch(getNextInvoiceNumber(companyId)).unwrap();
+            } catch (error) {
+                console.error('Failed to fetch next invoice number:', error);
+                // Don't show error toast as this is optional functionality
+            }
+        }
+    };
+
     useEffect(() => {
         if (!projectCustomerList || projectCustomerList.length === 0) {
             dispatch(fetchProjectCustomerList());
         }
     }, [dispatch, projectCustomerList]);
+
+    // Auto-fill invoice number on form load
+    useEffect(() => {
+        if (companyId) {
+            fetchNextInvoiceNumber();
+        }
+    }, [companyId]);
+
+    // Auto-populate invoice number when next invoice number is generated (always updates the field)
+    useEffect(() => {
+        if (nextInvoiceNumber) {
+            setFormData(prev => ({
+                ...prev,
+                invoiceNumber: nextInvoiceNumber
+            }));
+        }
+    }, [nextInvoiceNumber]);
 
     // When project changes, auto-set customer and store IDs
     const handleProjectChange = (e) => {
@@ -93,7 +131,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         setFormData(prev => ({
             ...prev,
             invoiceLines: [...prev.invoiceLines, {
-                id: Date.now(), item: '', hsn: '', quantity: 1, uom: 'NOS', rate: 0, gst: 18
+                id: Date.now(), item: '', hsn: '', quantity: 1, uom: 'NOS', rate: 0, gst: 18, cgst: 9, sgst: 9, igst: 18
             }]
         }));
     };
@@ -109,14 +147,20 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
     const calculateLineTotal = (line) => (line.quantity * line.rate) * (1 + line.gst / 100);
     const calculateSubtotal = () => formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate), 0);
-    const calculateTotalGST = () => formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * line.gst / 100), 0);
+    const calculateTotalGST = () => {
+        if (formData.placeOfSupply === 'interstate') {
+            return formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.cgst / 100)), 0) +
+                   formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.sgst / 100)), 0);
+        } else {
+            return formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.igst / 100)), 0);
+        }
+    };
     const calculateTotal = () => calculateSubtotal() + calculateTotalGST();
 
     const validateForm = () => {
         const newErrors = {};
         if (!formData.customerName) newErrors.customerName = 'Customer name is required';
         if (!formData.invoiceNumber.trim()) newErrors.invoiceNumber = 'Invoice number is required';
-        if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
         formData.invoiceLines.forEach((line, index) => {
             if (!line.item.trim()) newErrors[`item_${index}`] = 'Item required';
             if (line.quantity <= 0) newErrors[`quantity_${index}`] = 'Qty must be > 0';
@@ -126,7 +170,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (validateForm()) {
             // Calculate totals
@@ -142,18 +186,38 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                 rate: line.rate,
                 gst: line.gst
             }));
-            // Prepare payload for backend
-            const payload = {
-                ...formData,
-                projectId: formData.projectId,
-                customerId: formData.customerId,
-                subtotal, 
-                totalGst, 
-                totalAmount,
-                items, 
-            };
-            delete payload.invoiceLines; // remove invoiceLines from payload
-            onSubmit(payload);
+            
+            try {
+                // Generate the actual invoice number (this will increment the counter)
+                let finalInvoiceNumber = formData.invoiceNumber;
+                if (companyId) {
+                    try {
+                        const result = await dispatch(generateNextInvoiceNumber(companyId)).unwrap();
+                        finalInvoiceNumber = result.nextInvoiceNumber;
+                    } catch (error) {
+                        console.error('Failed to generate invoice number:', error);
+                        // Continue with the current number if generation fails
+                    }
+                }
+                
+                // Prepare payload for backend
+                const payload = {
+                    ...formData,
+                    companyId: companyId, // Add companyId to the payload
+                    projectId: formData.projectId,
+                    customerId: formData.customerId,
+                    invoiceNumber: finalInvoiceNumber, // Use the generated number
+                    subtotal, 
+                    totalGst, 
+                    totalAmount,
+                    items, 
+                };
+                delete payload.invoiceLines; // remove invoiceLines from payload
+                onSubmit(payload);
+            } catch (error) {
+                console.error('Invoice submission error:', error);
+                toast.error('Failed to generate invoice number');
+            }
         }
     };
 
@@ -161,6 +225,18 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
     const toggleAccountingSection = () => {
         setIsAccountingCollapsed(!isAccountingCollapsed);
+    };
+
+    const handleProjectTypeChange = (type) => {
+        setFormData(prev => {
+            const exists = prev.projectType.includes(type);
+            return {
+                ...prev,
+                projectType: exists
+                    ? prev.projectType.filter(t => t !== type)
+                    : [...prev.projectType, type]
+            };
+        });
     };
 
     return (
@@ -172,7 +248,21 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                         Invoice Details
                         <span className="ml-2 text-red-500">*</span>
                     </h3>
+                    <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                            <div className="flex gap-4">
+                                <label className="inline-flex items-center">
+                                    <input type="checkbox" checked={formData.projectType.includes('Project')} onChange={() => handleProjectTypeChange('Project')} className="form-checkbox" />
+                                    <span className="ml-2">Project</span>
+                                </label>
+                                <label className="inline-flex items-center">
+                                    <input type="checkbox" checked={formData.projectType.includes('Non Project')} onChange={() => handleProjectTypeChange('Non Project')} className="form-checkbox" />
+                                    <span className="ml-2">Non Project</span>
+                                </label>
+                            </div>
+                        </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
                         <div className="relative inline-block w-full">
                             <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
                             <button
@@ -230,9 +320,66 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Site Address</label>
                             <textarea name="siteAddress" value={formData.address} onChange={handleChange} rows="2" className="w-full px-4 py-3 text-base border rounded-lg border-gray-300" placeholder="Enter site address or location"></textarea>
                         </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Place of Supply</label>
+                            <select
+                                name="placeOfSupply"
+                                value={formData.placeOfSupply}
+                                onChange={(e) => {
+                                    const newPlaceOfSupply = e.target.value;
+                                    setFormData(prev => ({ ...prev, placeOfSupply: newPlaceOfSupply }));
+                                    
+                                    // Update line items based on place of supply
+                                    if (newPlaceOfSupply === 'intrastate') {
+                                        // Convert CGST + SGST to IGST
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            invoiceLines: prev.invoiceLines.map(line => ({
+                                                ...line,
+                                                igst: (Number(line.cgst) + Number(line.sgst)) || 18
+                                            }))
+                                        }));
+                                    } else {
+                                        // Convert IGST to CGST and SGST (split equally)
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            invoiceLines: prev.invoiceLines.map(line => ({
+                                                ...line,
+                                                cgst: (Number(line.igst) / 2) || 9,
+                                                sgst: (Number(line.igst) / 2) || 9
+                                            }))
+                                        }));
+                                    }
+                                }}
+                                className="w-full px-4 py-3 text-base border rounded-lg border-gray-300"
+                            >
+                                <option value="interstate">Interstate</option>
+                                <option value="intrastate">Intrastate</option>
+                            </select>
+                        </div>
+                        {/* <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                            <div className="flex gap-4">
+                                <label className="inline-flex items-center">
+                                    <input type="checkbox" checked={formData.projectType.includes('Project')} onChange={() => handleProjectTypeChange('Project')} className="form-checkbox" />
+                                    <span className="ml-2">Project</span>
+                                </label>
+                                <label className="inline-flex items-center">
+                                    <input type="checkbox" checked={formData.projectType.includes('Non Project')} onChange={() => handleProjectTypeChange('Non Project')} className="form-checkbox" />
+                                    <span className="ml-2">Non Project</span>
+                                </label>
+                            </div>
+                        </div> */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number <span className="text-red-500">*</span></label>
-                            <input type="text" name="invoiceNumber" value={formData.invoiceNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg ${errors.invoiceNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="e.g., INV-2025-001" />
+                            <input 
+                                type="text" 
+                                name="invoiceNumber" 
+                                value={formData.invoiceNumber} 
+                                onChange={handleChange} 
+                                className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.invoiceNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                                placeholder="e.g., INV-2025-001" 
+                            />
                             {errors.invoiceNumber && <p className="text-red-500 text-sm mt-1">{errors.invoiceNumber}</p>}
                         </div>
                         <div className="flex space-x-4">
@@ -241,9 +388,8 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                                 <input type="date" name="invoiceDate" value={formData.invoiceDate} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg border-gray-300`} />
                             </div>
                             <div className="flex-1">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date <span className="text-red-500">*</span></label>
-                                <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg ${errors.dueDate ? 'border-red-500' : 'border-gray-300'}`} />
-                                {errors.dueDate && <p className="text-red-500 text-sm mt-1">{errors.dueDate}</p>}
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                                <input type="date" name="dueDate" value={formData.dueDate} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg border-gray-300`} />
                             </div>
                         </div>
                     </div>
@@ -310,7 +456,92 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                         <div className="flex justify-end">
                             <div className="w-80 space-y-2">
                                 <div className="flex justify-between text-sm"><span className="text-gray-600">Subtotal:</span><span className="font-medium">{formatCurrency(calculateSubtotal())}</span></div>
-                                <div className="flex justify-between text-sm"><span className="text-gray-600">Total GST:</span><span className="font-medium">{formatCurrency(calculateTotalGST())}</span></div>
+                                {formData.placeOfSupply === 'interstate' ? (
+                                    <>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-gray-700">CGST:</span>
+                                            <div className="flex items-center">
+                                                <span className="text-gray-500 mr-1">₹</span>
+                                                <input
+                                                    type="number"
+                                                    className="w-24 text-right bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                    value={formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.cgst / 100)), 0).toFixed(2)}
+                                                    onChange={(e) => {
+                                                        const newCGST = parseFloat(e.target.value) || 0;
+                                                        const cgstPerLine = newCGST / formData.invoiceLines.length;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            invoiceLines: prev.invoiceLines.map(line => {
+                                                                const lineAmount = Number(line.quantity) * Number(line.rate);
+                                                                return {
+                                                                    ...line,
+                                                                    cgst: lineAmount > 0 ? (cgstPerLine / lineAmount) * 100 : 0
+                                                                };
+                                                            })
+                                                        }));
+                                                    }}
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-gray-700">SGST:</span>
+                                            <div className="flex items-center">
+                                                <span className="text-gray-500 mr-1">₹</span>
+                                                <input
+                                                    type="number"
+                                                    className="w-24 text-right bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                    value={formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.sgst / 100)), 0).toFixed(2)}
+                                                    onChange={(e) => {
+                                                        const newSGST = parseFloat(e.target.value) || 0;
+                                                        const sgstPerLine = newSGST / formData.invoiceLines.length;
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            invoiceLines: prev.invoiceLines.map(line => {
+                                                                const lineAmount = Number(line.quantity) * Number(line.rate);
+                                                                return {
+                                                                    ...line,
+                                                                    sgst: lineAmount > 0 ? (sgstPerLine / lineAmount) * 100 : 0
+                                                                };
+                                                            })
+                                                        }));
+                                                    }}
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-gray-700">IGST:</span>
+                                        <div className="flex items-center">
+                                            <span className="text-gray-500 mr-1">₹</span>
+                                            <input
+                                                type="number"
+                                                className="w-24 text-right bg-white border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                value={formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.igst / 100)), 0).toFixed(2)}
+                                                onChange={(e) => {
+                                                    const newIGST = parseFloat(e.target.value) || 0;
+                                                    const igstPerLine = newIGST / formData.invoiceLines.length;
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        invoiceLines: prev.invoiceLines.map(line => {
+                                                            const lineAmount = Number(line.quantity) * Number(line.rate);
+                                                            return {
+                                                                ...line,
+                                                                igst: lineAmount > 0 ? (igstPerLine / lineAmount) * 100 : 0
+                                                            };
+                                                        })
+                                                    }));
+                                                }}
+                                                min="0"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="border-t border-gray-300 pt-2 flex justify-between font-semibold"><span>Total Amount:</span><span className="text-lg">{formatCurrency(calculateTotal())}</span></div>
                             </div>
                         </div>

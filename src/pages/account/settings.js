@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaFileInvoice, FaPercentage, FaPlus, FaTrash } from 'react-icons/fa';
 import MainLayout from '@/components/MainLayout';
 import { toast } from 'sonner';
+import { 
+    fetchAccountSettings, 
+    createDefaultAccountSettings, 
+    updateAccountSettings,
+    updateDocumentSettings
+} from '@/redux/slices/accountSettingsSlice';
 
 const DocumentSettings = ({ settings, onSettingsChange }) => {
   const handleFileChange = (e) => {
@@ -190,34 +197,95 @@ const TaxSettings = ({ taxes, onTaxesChange }) => {
 
 
 const AccountSettingsPage = () => {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('documents');
   
-  const [documentSettings, setDocumentSettings] = useState({
-    logo: null,
-    terms: 'Payment is due within 30 days of the invoice date.',
-    invoicePrefix: 'INV-',
-    invoiceStartNumber: 1001,
-    poPrefix: 'PO-',
-    poStartNumber: 1001,
-    receiptPrefix: 'RCPT-',
-    receiptStartNumber: 1001,
-  });
-  
-  const [taxRates, setTaxRates] = useState([
-    { id: 'gst5', name: 'GST 5%', rate: 5 },
-    { id: 'gst12', name: 'GST 12%', rate: 12 },
-    { id: 'gst18', name: 'GST 18%', rate: 18 },
-  ]);
+  // Get account settings from Redux store
+  const { 
+    documentSettings, 
+    taxRates, 
+    loading, 
+    error, 
+    lastUpdated
+  } = useSelector((state) => state.accountSettings);
+
+  // Get company ID from session storage
+  const companyId = typeof window !== 'undefined' ? 
+    sessionStorage.getItem("employeeCompanyId") || 
+    sessionStorage.getItem("companyId") || 
+    sessionStorage.getItem("company") : null;
+
+  // Fetch account settings on component mount
+  useEffect(() => {
+    if (companyId) {
+      dispatch(fetchAccountSettings(companyId));
+    }
+  }, [dispatch, companyId]);
+
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
 
   const handleDocumentSettingsChange = (key, value) => {
-    setDocumentSettings(prev => ({ ...prev, [key]: value }));
+    dispatch(updateDocumentSettings({ [key]: value }));
   };
 
-  const handleSaveChanges = () => {
-    // In a real app, this would send the state to your backend API
-    console.log("Saving settings:", { documentSettings, taxRates });
-    toast.success("Settings saved successfully!");
+  const handleTaxRatesChange = (newTaxRates) => {
+    dispatch(updateTaxRates(newTaxRates));
   };
+
+  const handleSaveChanges = async () => {
+    if (!companyId) {
+      toast.error("Company ID not found. Please login again.");
+      return;
+    }
+
+    try {
+      // Prepare the complete settings object with all required fields
+      const completeSettings = {
+        ...documentSettings,
+        taxRates,
+        // Ensure all required fields are present with default values if missing
+        invoicePrefix: documentSettings.invoicePrefix || 'INV-',
+        invoiceStartNumber: documentSettings.invoiceStartNumber || 1001,
+        invoiceCurrentNumber: documentSettings.invoiceCurrentNumber || 1001,
+        receiptPrefix: documentSettings.receiptPrefix || 'RCPT-',
+        receiptStartNumber: documentSettings.receiptStartNumber || 1001,
+        receiptCurrentNumber: documentSettings.receiptCurrentNumber || 1001,
+        // Map frontend field names to backend field names
+        purchaseOrderPrefix: documentSettings.poPrefix || 'PO-',
+        purchaseOrderStartingNumber: documentSettings.poStartNumber || 1001,
+        purchaseOrderCurrentNumber: documentSettings.poCurrentNumber || 1001,
+        invoiceStartingNumber: documentSettings.invoiceStartNumber || 1001,
+        receiptStartingNumber: documentSettings.receiptStartNumber || 1001,
+        companyId: companyId
+      };
+
+      try {
+        // Try to update existing settings
+        await dispatch(updateAccountSettings({ 
+          companyId, 
+          settings: completeSettings
+        })).unwrap();
+        toast.success("Settings saved successfully!");
+      } catch (updateError) {
+        // If update fails (likely because settings don't exist), create default settings
+        console.log("Update failed, creating default settings:", updateError);
+        await dispatch(createDefaultAccountSettings({ 
+          companyId, 
+          customDefaults: completeSettings
+        })).unwrap();
+        toast.success("Default settings created successfully!");
+      }
+    } catch (error) {
+      toast.error("Failed to save settings: " + error);
+    }
+  };
+
+
 
   const settingsTabs = [
     { id: 'documents', label: 'Document Settings', icon: FaFileInvoice },
@@ -226,10 +294,24 @@ const AccountSettingsPage = () => {
 
   return (
     <MainLayout>
-      <div className="p-6">
         <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200 max-w-5xl mx-auto">
+            <div className="flex justify-between items-start mb-8">
+                <div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">Account Settings</h1>
-            <p className="text-gray-500 mb-8">Manage financial documents, taxes, and global configurations for the accounting module.</p>
+                    <p className="text-gray-500">Manage financial documents, taxes, and global configurations for the accounting module.</p>
+                </div>
+                {lastUpdated && (
+                    <div className="text-sm text-gray-500">
+                        Last updated: {new Date(lastUpdated).toLocaleString()}
+                    </div>
+                )}
+            </div>
+            {loading && !documentSettings ? (
+                <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600">Loading account settings...</span>
+                </div>
+            ) : (
             <div className="flex gap-8">
                 <aside className="w-1/4 border-r border-gray-200 pr-8">
                     <nav className="flex flex-col gap-2">
@@ -250,21 +332,29 @@ const AccountSettingsPage = () => {
                     </nav>
                 </aside>
                 <main className="w-3/4">
-                    {activeTab === 'documents' && <DocumentSettings settings={documentSettings} onSettingsChange={handleDocumentSettingsChange} />}
-                    {activeTab === 'tax' && <TaxSettings taxes={taxRates} onTaxesChange={setTaxRates} />}
+                                                 {activeTab === 'documents' && <DocumentSettings settings={documentSettings} onSettingsChange={handleDocumentSettingsChange} />}
+                        {activeTab === 'tax' && <TaxSettings taxes={taxRates} onTaxesChange={handleTaxRatesChange} />}
                     
                     <div className="mt-8 pt-6 border-t flex justify-end">
                         <button
                             onClick={handleSaveChanges}
-                            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 shadow-sm"
-                        >
-                            Save All Changes
+                                disabled={loading}
+                                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save All Changes'
+                                )}
                         </button>
                     </div>
                 </main>
             </div>
+            )}
         </div>
-      </div>
     </MainLayout>
   );
 };

@@ -12,6 +12,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
     email: '',
     contactNumber: '',
     address: '',
+    gst: '', // NEW FIELD
     addressDetails: {
       address: '',
       city: '',
@@ -39,11 +40,17 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
+  const validateGST = (gst) => {
+    // GSTIN: 15 chars, alphanumeric, format: 2 digits + 10 chars + 1 char + Z + 1 char
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[A-Z0-9]{1}Z[A-Z0-9]{1}$/i;
+    return gst.trim() === '' || gstRegex.test(gst.trim());
+  };
   const validateForm = () => {
     const newErrors = {};
     if (!formData.customerName.trim()) newErrors.customerName = 'Customer name is required';
     if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format';
     if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact number is required';
+    if (formData.gst && !validateGST(formData.gst)) newErrors.gst = 'Invalid GST number';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -126,6 +133,19 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                       className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'}`} 
                     />
                     {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
+                </div>
+                <div>
+                    <label>GST Number</label>
+                    <input
+                      type="text"
+                      name="gst"
+                      value={formData.gst}
+                      onChange={handleChange}
+                      className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.gst ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="Optional"
+                      maxLength={15}
+                    />
+                    {errors.gst && <p className="text-red-500 text-sm mt-1">{errors.gst}</p>}
                 </div>
             </div>
         </div>

@@ -39,7 +39,7 @@ const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
         }
         
         onFileUpload(file);
-        setZoomLevel(1); // Reset zoom when new file is uploaded
+        setZoomLevel(1); // reset the zoom when new functionality is uploaded
     };
 
     const validateFile = (file) => {
@@ -291,6 +291,8 @@ const BillForm = ({ bill, onCancel }) => {
   const [activeTab, setActiveTab] = useState('billLines');
   const [vendorCredits, setVendorCredits] = useState([]);
   const [placeOfSupply, setPlaceOfSupply] = useState('interstate');
+  // Add state for projectType
+  const [projectType, setProjectType] = useState([]); // NEW
 
   // Pre-fill form data when bill prop is provided (edit mode)
   useEffect(() => {
@@ -432,6 +434,14 @@ const BillForm = ({ bill, onCancel }) => {
     setVendorCredits(prev => prev.filter(vc => vc.id !== id));
   };
 
+  // Add handler for project type checkbox
+  const handleProjectTypeChange = (type) => {
+    setProjectType(prev => {
+      const exists = prev.includes(type);
+      return exists ? prev.filter(t => t !== type) : [...prev, type];
+    });
+  };
+
   // Handle form submission
   const handleSubmit = async () => {
     if (!validate()) {
@@ -453,6 +463,7 @@ const BillForm = ({ bill, onCancel }) => {
       billReference: reference,
       billDate: billDate,
       dueDate: dueDate,
+      projectType: projectType, // Add projectType to billData
       billLineItems: billLines.map(line => {
         const qty = Number(line.qty) || 0;
         const rate = Number(line.rate) || 0;
@@ -664,6 +675,19 @@ const BillForm = ({ bill, onCancel }) => {
                     onChange={e => setBillNumber(e.target.value)} 
                   />
                   {errors.billNumber && <div className="text-xs text-red-500 mt-1">{errors.billNumber}</div>}
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                  <div className="flex gap-4">
+                    <label className="inline-flex items-center">
+                      <input type="checkbox" checked={projectType.includes('Project')} onChange={() => handleProjectTypeChange('Project')} className="form-checkbox" />
+                      <span className="ml-2">Project</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="checkbox" checked={projectType.includes('Non Project')} onChange={() => handleProjectTypeChange('Non Project')} className="form-checkbox" />
+                      <span className="ml-2">Non Project</span>
+                    </label>
+                  </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-1/2">
