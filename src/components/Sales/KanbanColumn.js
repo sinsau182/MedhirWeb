@@ -31,7 +31,9 @@ const KanbanColumn = ({
   onMarkLost,
   onMarkJunk,
   onAddLead,
-  onScheduleActivity
+  onScheduleActivity,
+  onTeamAssign,
+  managerEmployees = []
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
@@ -43,7 +45,7 @@ const KanbanColumn = ({
     <div
       ref={setNodeRef}
       className={`
-        flex-shrink-0 w-[240px] h-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/60 transition-all duration-300 flex flex-col
+        flex-1 min-w-[200px] max-w-[400px] h-full bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/60 transition-all duration-300 flex flex-col
         ${isOver ? 'bg-blue-50/90 border-blue-300 shadow-xl scale-[1.02] ring-2 ring-blue-200/50' : 'hover:shadow-xl hover:bg-white/90'}
       `}
     >
@@ -111,6 +113,8 @@ const KanbanColumn = ({
             onMarkLost={onMarkLost}
             onMarkJunk={onMarkJunk}
             onScheduleActivity={onScheduleActivity}
+            onTeamAssign={onTeamAssign}
+            managerEmployees={managerEmployees}
           />
         ))}
         

@@ -728,17 +728,21 @@ const ManagerContent = ({ role }) => {
               <div className="h-full w-full">
                 <KanbanBoardClientOnly
                   leadsByStatus={Object.fromEntries(
-                    Object.entries(leadsByStatus).map(([status, leads]) => [
-                      status,
-                      leads.filter((lead) =>
-                        lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-                        lead.contactNumber?.includes(filterText) ||
-                        lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
-                      ),
-                    ])
+                    Object.entries(leadsByStatus)
+                      .filter(([status]) => status.toLowerCase() !== 'assigned' && status.toLowerCase() !== 'freeze' && status.toLowerCase() !== 'lost' && status.toLowerCase() !== 'junk')
+                      .map(([status, leads]) => [
+                        status,
+                        leads.filter((lead) =>
+                          lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                          lead.contactNumber?.includes(filterText) ||
+                          lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                        ),
+                      ])
                   )}
-                  statuses={pipelines.map((p) => p.name)}
-                  kanbanStatuses={pipelines}
+                  statuses={pipelines
+                    .filter(p => p.name.toLowerCase() !== 'assigned' && p.name.toLowerCase() !== 'freeze' && p.name.toLowerCase() !== 'lost' && p.name.toLowerCase() !== 'junk')
+                    .map((p) => p.name)}
+                  kanbanStatuses={pipelines.filter(p => p.name.toLowerCase() !== 'assigned' && p.name.toLowerCase() !== 'freeze' && p.name.toLowerCase() !== 'lost' && p.name.toLowerCase() !== 'junk')}
                   onScheduleActivity={handleScheduleActivity}
                   onDragEnd={handleDragEnd}
                   debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}

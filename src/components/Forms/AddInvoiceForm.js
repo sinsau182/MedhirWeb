@@ -200,20 +200,20 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                     }
                 }
                 
-                // Prepare payload for backend
-                const payload = {
-                    ...formData,
+            // Prepare payload for backend
+            const payload = {
+                ...formData,
                     companyId: companyId, // Add companyId to the payload
-                    projectId: formData.projectId,
-                    customerId: formData.customerId,
+                projectId: formData.projectId,
+                customerId: formData.customerId,
                     invoiceNumber: finalInvoiceNumber, // Use the generated number
-                    subtotal, 
-                    totalGst, 
-                    totalAmount,
-                    items, 
-                };
-                delete payload.invoiceLines; // remove invoiceLines from payload
-                onSubmit(payload);
+                subtotal, 
+                totalGst, 
+                totalAmount,
+                items, 
+            };
+            delete payload.invoiceLines; // remove invoiceLines from payload
+            onSubmit(payload);
             } catch (error) {
                 console.error('Invoice submission error:', error);
                 toast.error('Failed to generate invoice number');

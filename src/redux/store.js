@@ -39,11 +39,8 @@ import idFormattingReducer from './slices/idFormattingSlice';
 import customFormsReducer from './slices/customFormsSlice'; // New slice
 import assetReducer from './slices/assetSlice';
 import customFormReducer from './slices/customFormSlice'; // Custom Form slice based on CustomFormController.java
-
-import customerReducer from './slices/customerSlice'; // Import customer slice
+import customerReducer from './slices/customerSlice';
 import accountSettingsReducer from './slices/accountSettingsSlice'; // Import account settings slice
-
-
 
 export const store = configureStore({
   reducer: {
@@ -88,9 +85,8 @@ export const store = configureStore({
     invoices: invoiceReducer,
     receipts: receiptReducer,
     payroll: payrollReducer,
-    customers: customerReducer, // Add customers reducer
-    accountSettings: accountSettingsReducer, // Add account settings reducer
-
+    customers: customerReducer,
+    accountSettings: accountSettingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

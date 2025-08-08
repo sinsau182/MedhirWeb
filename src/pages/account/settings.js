@@ -270,7 +270,7 @@ const AccountSettingsPage = () => {
           companyId, 
           settings: completeSettings
         })).unwrap();
-        toast.success("Settings saved successfully!");
+    toast.success("Settings saved successfully!");
       } catch (updateError) {
         // If update fails (likely because settings don't exist), create default settings
         console.log("Update failed, creating default settings:", updateError);
@@ -332,7 +332,7 @@ const AccountSettingsPage = () => {
                     </nav>
                 </aside>
                 <main className="w-3/4">
-                                                 {activeTab === 'documents' && <DocumentSettings settings={documentSettings} onSettingsChange={handleDocumentSettingsChange} />}
+                    {activeTab === 'documents' && <DocumentSettings settings={documentSettings} onSettingsChange={handleDocumentSettingsChange} />}
                         {activeTab === 'tax' && <TaxSettings taxes={taxRates} onTaxesChange={handleTaxRatesChange} />}
                     
                     <div className="mt-8 pt-6 border-t flex justify-end">
