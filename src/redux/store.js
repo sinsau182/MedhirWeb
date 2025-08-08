@@ -36,11 +36,11 @@ import assetLocationReducer from './slices/assetLocationSlice';
 import assetStatusReducer from './slices/assetStatusSlice';
 import customFieldsReducer from './slices/customFieldsSlice';
 import idFormattingReducer from './slices/idFormattingSlice';
-import customFormsReducer from './slices/customFormsSlice'; // New slice
 import assetReducer from './slices/assetSlice';
-import customFormReducer from './slices/customFormSlice'; // Custom Form slice based on CustomFormController.java
-import customerReducer from './slices/customerSlice';
-import accountSettingsReducer from './slices/accountSettingsSlice'; // Import account settings slice
+import customersReducer from "./slices/customerSlice";
+import customFormsReducer from "./slices/customFormsSlice";
+import customFormReducer from "./slices/customFormSlice";
+
 
 export const store = configureStore({
   reducer: {
@@ -79,20 +79,17 @@ export const store = configureStore({
     assetStatuses: assetStatusReducer,
     customFields: customFieldsReducer,
     idFormatting: idFormattingReducer,
-    customForms: customFormsReducer, // New reducer
-    customForm: customFormReducer, // Custom Form reducer based on CustomFormController.java
     assets: assetReducer,
     invoices: invoiceReducer,
     receipts: receiptReducer,
     payroll: payrollReducer,
-    customers: customerReducer,
-    accountSettings: accountSettingsReducer,
+    customers: customersReducer,
+    customForms: customFormsReducer,
+    customForm: customFormReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST'],
-      },
+      serializableCheck: false, // Prevents serialization errors with async actions
     }),
   devTools: process.env.NODE_ENV !== "production", // Enables Redux DevTools in development mode
 });

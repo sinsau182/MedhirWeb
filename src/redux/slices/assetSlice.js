@@ -38,6 +38,70 @@ export const addAsset = createAsyncThunk(
     }
 );
 
+// Create asset using structured DTO + optional file (FormData under the hood)
+export const createAssetWithDTO = createAsyncThunk(
+    'assets/createAssetWithDTO',
+    async (payload, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage('token', null);
+
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            const formData = new FormData();
+
+            // Append invoice scan file if provided
+            if (payload?.invoiceScan) {
+                formData.append('invoiceScan', payload.invoiceScan);
+            }
+
+            // Determine endpoint and how to send the asset part
+            const endpointOption = payload?.endpoint; // 'default' | 'create' | string path
+            let urlPath = '/api/assets';
+            if (endpointOption === 'create' || endpointOption === '/api/assets/create') {
+                urlPath = '/api/assets/create';
+            } else if (typeof endpointOption === 'string' && endpointOption.startsWith('/')) {
+                urlPath = endpointOption;
+            }
+
+            // Decide whether to send the asset as a raw string or JSON blob
+            const sendAsString = typeof payload?.sendAsString === 'boolean'
+                ? payload.sendAsString
+                : (urlPath === '/api/assets'); // default behavior
+
+            // Append asset DTO
+            if (payload?.asset) {
+                const assetJson = JSON.stringify(payload.asset);
+                if (sendAsString) {
+                    formData.append('asset', assetJson);
+                } else {
+                    formData.append('asset', new Blob([assetJson], { type: 'application/json' }));
+                }
+            }
+
+            const response = await fetch(publicRuntimeConfig.apiURL + urlPath, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    // Do not set Content-Type for FormData
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || `Failed to add asset (status ${response.status})`);
+            }
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
 // Fetch assets (for future use)
 export const fetchAssets = createAsyncThunk(
     'assets/fetchAssets',
@@ -67,6 +131,9 @@ export const fetchAssets = createAsyncThunk(
         }
     }
 );
+
+// Convenience thunk so existing callers can use fetchAllAssets()
+export const fetchAllAssets = () => (dispatch) => dispatch(fetchAssets());
 
 // Fetch single asset by assetId
 export const fetchAssetById = createAsyncThunk(
@@ -112,7 +179,7 @@ export const updateAsset = createAsyncThunk(
                 throw new Error('Authentication token not found');
             }
 
-            const response = await fetch(`${publicRuntimeConfig.apiUrl}/api/assets/asset/${assetId}`, {
+            const response = await fetch(`${publicRuntimeConfig.apiURL}/api/assets/asset/${assetId}`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -142,6 +209,7 @@ const assetSlice = createSlice({
         loading: false,
         error: null,
         addingAsset: false,
+        creatingAsset: false,
         addAssetError: null,
         fetchingAsset: false,
         fetchAssetError: null,
@@ -174,6 +242,19 @@ const assetSlice = createSlice({
             .addCase(addAsset.rejected, (state, action) => {
                 state.addingAsset = false;
                 state.addAssetError = action.payload;
+            })
+            // Create asset with DTO cases
+            .addCase(createAssetWithDTO.pending, (state) => {
+                state.creatingAsset = true;
+                state.error = null;
+            })
+            .addCase(createAssetWithDTO.fulfilled, (state, action) => {
+                state.creatingAsset = false;
+                state.assets.unshift(action.payload);
+            })
+            .addCase(createAssetWithDTO.rejected, (state, action) => {
+                state.creatingAsset = false;
+                state.error = action.payload;
             })
             // Fetch assets cases
             .addCase(fetchAssets.pending, (state) => {

@@ -500,19 +500,24 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 allKeys: Object.keys(sessionStorage)
             });
             
-            // Prepare asset data according to new API structure
+            // Prepare asset data according to API structure requested
             const assetData = {
                 companyId: companyId,
                 categoryId: categoryData?.categoryId || categoryData?.id,
-                subcategoryId: subcategoryData?.subCategoryId || subcategoryData?.id,
                 assetId: generatedAssetId,
+                subcategoryId: subcategoryData?.subCategoryId || subcategoryData?.id,
                 locationId: formData.location,
+                statusLabelId: formData.statusLabelId || undefined,
+                assignedTo: formData.assignedTo || undefined,
+                assignedToTeam: formData.team || undefined,
+                assignmentDate: formData.assignmentDate || undefined,
                 purchaseDate: formData.purchaseDate,
                 purchaseCost: parseFloat(formData.purchaseCost),
                 invoiceNumber: formData.invoiceNumber || '',
                 warrantyExpiryDate: formData.warrantyExpiry || null,
+                vendorId: formData.vendorId || undefined,
                 gstRate: parseFloat(formData.gstRate || '0'),
-                inputTaxCreditEligible: true, // Default value
+                inputTaxCreditEligible: true,
                 createdBy: employeeId,
             };
             
@@ -553,39 +558,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     }
                 });
                 
+                // Align to contract: send customFormData and also formData for compatibility
+                assetData.customFormData = formDataMap;
                 assetData.formData = formDataMap;
             }
-            
-            // Add custom form data with proper structure
-            if (Object.keys(customFormData).length > 0) {
-                // Structure the custom form data for backend
-                const structuredFormData = {
-                    forms: Object.keys(customFormData).map(formId => {
-                        const form = finalCustomForms.find(f => f.id === formId);
-                        return {
-                            formId: formId,
-                            formName: form?.name || 'Unknown Form',
-                            categoryId: categoryData?.categoryId || categoryData?.id,
-                            fields: Object.keys(customFormData[formId]).map(fieldId => {
-                                const field = form?.fields?.find(f => f.id === fieldId);
-                                const fieldName = field?.name || field?.fieldName || field?.fieldLabel || 'Unknown Field';
-                                const fieldType = field?.type || field?.fieldType || 'text';
-                                const isRequired = field?.required !== undefined ? field.required : false;
-                                return {
-                                    fieldId: fieldId,
-                                    fieldName: fieldName,
-                                    fieldType: fieldType,
-                                    fieldValue: customFormData[formId][fieldId],
-                                    isRequired: isRequired
-                                };
-                            })
-                        };
-                    })
-                };
-                
-                assetData.customFormData = structuredFormData;
-                console.log('Structured custom form data:', structuredFormData);
-            }
+
             
             // Debug: Log the data being sent
             console.log('Submitting asset data:', assetData);
@@ -599,7 +576,10 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             // Create the request payload according to new API structure
             const requestPayload = {
                 asset: assetData,
-                invoiceScan: formData.invoiceScan
+                invoiceScan: formData.invoiceScan,
+                // choose default endpoint behavior (/api/assets) which expects stringified asset
+                endpoint: '/api/assets',
+                sendAsString: true,
             };
             
             console.log('=== FINAL REQUEST PAYLOAD ===');
@@ -607,12 +587,20 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             console.log('Asset data keys:', Object.keys(assetData));
             console.log('Form data keys:', Object.keys(customFormData));
             
-            // Dispatch the createAssetWithDTO action with new structure
-            const result = await dispatch(createAssetWithDTO(requestPayload)).unwrap();
-            
-            toast.success('Asset added successfully!');
-            onSubmit(result); // Pass the response back to parent
+            // Fire-and-close: start save, close modal immediately; update when done
+            const savePromise = dispatch(createAssetWithDTO(requestPayload)).unwrap();
+
+            // Close modal fast for better UX; show promise-based toast
             onClose();
+
+            toast.promise(savePromise, {
+                loading: 'Saving asset...',
+                success: 'Asset added successfully!',
+                error: (e) => e?.message || 'Failed to add asset',
+            });
+
+            const result = await savePromise;
+            onSubmit(result); // Pass the response back to parent (triggers list refresh)
             
             // Reset form
             setFormData({
@@ -1051,6 +1039,33 @@ const AssetManagementPage = () => {
         return status ? status.name : 'Unknown Status';
     };
 
+    // Safely extract a display label from potentially nested formData
+    const getDisplayFromFormData = (formData) => {
+        if (!formData || typeof formData !== 'object') return '';
+        // Prefer string/number/boolean values
+        for (const value of Object.values(formData)) {
+            if (value == null) continue;
+            const t = typeof value;
+            if (t === 'string' || t === 'number') return String(value);
+            if (t === 'boolean') return value ? 'Yes' : 'No';
+        }
+        // If values are objects/arrays (legacy structured form), fallback to asset name
+        return '';
+    };
+
+    // Determine asset name for listing
+    const getAssetName = (asset) => {
+        if (!asset) return 'Asset';
+        if (asset.name) return asset.name;
+        const fd = asset.formData || asset.customFields || {};
+        // Common name-like keys
+        const nameKeys = ['name', 'assetName', 'Asset Name', 'model', 'title'];
+        for (const k of nameKeys) {
+            if (fd && fd[k]) return String(fd[k]);
+        }
+        return getDisplayFromFormData(fd) || asset.assetId || 'Asset';
+    };
+
     const handleAddAsset = (newAssetData) => {
         // Handle the API response - the newAssetData will be the response from the server
         console.log('Asset added successfully:', newAssetData);
@@ -1103,7 +1118,7 @@ const AssetManagementPage = () => {
                             <thead className="bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="text-left p-4 font-semibold text-gray-700">Asset ID</th>
-                                    <th className="text-left p-4 font-semibold text-gray-700">Asset Details</th>
+                                    <th className="text-left p-4 font-semibold text-gray-700">Asset Name</th>
                                     <th className="text-left p-4 font-semibold text-gray-700">Category</th>
                                     <th className="text-left p-4 font-semibold text-gray-700">Status</th>
                                     <th className="text-left p-4 font-semibold text-gray-700">Location</th>
@@ -1114,16 +1129,13 @@ const AssetManagementPage = () => {
                                 {Array.isArray(assets) && assets.length > 0 ? (
                                     assets.map((asset) => (
                                         <tr 
-                                            key={asset.id} 
+                                            key={asset.assetId || asset.id} 
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                                             onClick={() => router.push(`/asset-management/${asset.assetId}`)}
                                         >
                                             <td className="p-4 font-mono text-sm">{asset.assetId}</td>
                                             <td className="p-4 font-medium">
-                                                {/* Show first form data field as asset name, or use a default */}
-                                                {asset.formData && Object.keys(asset.formData).length > 0 
-                                                    ? Object.values(asset.formData)[0] 
-                                                    : 'Asset'}
+                                                {getAssetName(asset)}
                                             </td>
                                             <td className="p-4 text-gray-600">
                                                 {asset.categoryName || getCategoryName(asset.categoryId)}

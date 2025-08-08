@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useDispatch, useSelector } from 'react-redux';
 import AssetManagementLayout from '@/components/AssetManagementLayout';
-import { fetchAssetById, updateAsset, clearCurrentAsset } from '@/redux/slices/assetSlice';
+import { fetchAssetById, updateAsset, clearCurrentAsset, createAssetWithDTO } from '@/redux/slices/assetSlice';
 import { fetchAssetCategories } from '@/redux/slices/assetCategorySlice';
 import { fetchAssetLocations } from '@/redux/slices/assetLocationSlice';
 import { fetchAssetStatuses } from '@/redux/slices/assetStatusSlice';
@@ -288,6 +288,23 @@ const AssetDetailPage = () => {
             toast.error(`Failed to update asset: ${error}`);
         }
     };
+
+    // Optional: support re-upload invoice from detail page in future
+    const handleUploadInvoice = async (file) => {
+        if (!asset) return;
+        try {
+            const payload = {
+                endpoint: '/api/assets/create',
+                sendAsString: false,
+                asset: { assetId: asset.assetId },
+                invoiceScan: file,
+            };
+            await dispatch(createAssetWithDTO(payload)).unwrap();
+            toast.success('Invoice uploaded');
+        } catch (e) {
+            toast.error('Failed to upload invoice');
+        }
+    };
     
     const getStatusColor = (status) => {
         switch (status) {
@@ -488,10 +505,12 @@ const AssetDetailPage = () => {
                         )}
                         
                         {/* Specifications Tab */}
-                        {activeTab === 'specifications' && getCategoryName(asset.categoryId) === 'IT Equipment' && (
+                        {activeTab === 'specifications' && (
                             <div className="space-y-6">
-                                <h3 className="text-lg font-semibold text-gray-800">IT Equipment Specifications</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {getCategoryName(asset.categoryId) === 'IT Equipment' && (
+                                  <>
+                                  <h3 className="text-lg font-semibold text-gray-800">IT Equipment Specifications</h3>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-3">
                                             <FaLaptop className="text-blue-600" />
@@ -538,12 +557,28 @@ const AssetDetailPage = () => {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                
-                                <div className="mt-6">
-                                    <h4 className="font-semibold text-gray-800 mb-2">Accessories</h4>
-                                    <p className="text-gray-600">{asset.customFields?.accessories || 'N/A'}</p>
-                                </div>
+                                  </div>
+                                  <div className="mt-6">
+                                      <h4 className="font-semibold text-gray-800 mb-2">Accessories</h4>
+                                      <p className="text-gray-600">{asset.customFields?.accessories || 'N/A'}</p>
+                                  </div>
+                                  </>
+                                )}
+
+                                {/* Generic specifications from formData */}
+                                {asset.formData && Object.keys(asset.formData).length > 0 && (
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">Specifications (Form Data)</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                      {Object.entries(asset.formData).map(([key, value]) => (
+                                        <div key={key} className="bg-white p-4 rounded-lg border border-gray-200">
+                                          <p className="text-xs text-gray-500">{key}</p>
+                                          <p className="font-medium break-all">{String(value)}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                             </div>
                         )}
                         
