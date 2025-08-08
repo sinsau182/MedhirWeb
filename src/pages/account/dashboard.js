@@ -188,8 +188,6 @@ export default function AccountDashboard() {
           <QuickActionCard icon={FaReceipt} label="Record Receipt" onClick={() => setShowReceiptForm(true)} />
           <QuickActionCard icon={FaFileAlt} label="Add Bill" onClick={() => setShowBillForm(true)} />
           <QuickActionCard icon={FaTruckLoading} label="Purchase Order" onClick={() => setShowPOForm(true)} />
-          <QuickActionCard icon={FaUserTie} label="Add Vendor" onClick={() => setShowVendorForm(true)} />
-          <QuickActionCard icon={FaUsers} label="Add Customer" onClick={() => setShowCustomerForm(true)} />
           <QuickActionCard icon={FaMoneyBillWave} label="Bulk Payment" onClick={() => setShowBulkPaymentForm(true)} />
         </div>
 
