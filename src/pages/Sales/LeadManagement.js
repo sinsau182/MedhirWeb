@@ -358,8 +358,8 @@ const LeadManagementContent = ({ role }) => {
   const leadsByStatus = useMemo(() => {
     const grouped = {};
 
-    // Filter out the "New" stage from pipelines
-    const filteredPipelines = pipelines.filter((p) => p.name.toLowerCase() !== "new");
+    // Include all pipelines including "New" stage
+    const filteredPipelines = pipelines;
 
     // Check if leads is in the new grouped format
     if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
@@ -376,11 +376,11 @@ const LeadManagementContent = ({ role }) => {
         if (pipeline) {
           grouped[pipeline.name] = stageLeads;
         } else {
-          // Create a fallback name if pipeline not found (but only if it's not the "New" stage)
+          // Create a fallback name if pipeline not found
           const originalPipeline = pipelines.find(p => 
             p.stageId === stageId || p.pipelineId === stageId
           );
-          if (originalPipeline && originalPipeline.name.toLowerCase() !== "new") {
+          if (originalPipeline) {
             grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
           }
         }
@@ -409,7 +409,7 @@ const LeadManagementContent = ({ role }) => {
         grouped[pipeline.name] = matchingLeads;
       });
 
-      // Handle leads without pipelineId - assign to first non-"New" stage
+      // Handle leads without pipelineId - assign to first stage
       const leadsWithoutPipeline = leads.filter((lead) => {
         if (usedLeadIds.has(lead.leadId)) {
           return false;
@@ -419,12 +419,12 @@ const LeadManagementContent = ({ role }) => {
       });
 
       if (leadsWithoutPipeline.length > 0) {
-        const firstNonNewStage = filteredPipelines[0];
-        if (firstNonNewStage) {
-          if (!grouped[firstNonNewStage.name]) {
-            grouped[firstNonNewStage.name] = [];
+        const firstStage = filteredPipelines[0];
+        if (firstStage) {
+          if (!grouped[firstStage.name]) {
+            grouped[firstStage.name] = [];
           }
-          grouped[firstNonNewStage.name] = [...grouped[firstNonNewStage.name], ...leadsWithoutPipeline];
+          grouped[firstStage.name] = [...grouped[firstStage.name], ...leadsWithoutPipeline];
         }
       }
     }
@@ -692,18 +692,60 @@ const LeadManagementContent = ({ role }) => {
   // Team assignment handler for LeadCard
   const handleTeamAssign = async (assignmentData) => {
     try {
+      console.log('LeadManagement - handleTeamAssign called with:', assignmentData);
+      
       // Update the lead with sales rep and designer assignments
-      await dispatch(updateLead({
+      const updatePayload = {
         leadId: assignmentData.leadId,
         assignSalesPersonEmpId: assignmentData.salesRep,
         assignDesignerEmpId: assignmentData.designer
-      }));
+      };
+      
+      console.log('LeadManagement - Update payload:', updatePayload);
+      
+      const result = await dispatch(updateLead(updatePayload));
+      console.log('LeadManagement - Update result:', result);
       
       // Refresh leads to get the updated grouped format
       const employeeId = sessionStorage.getItem("employeeId");
       dispatch(fetchLeads({ employeeId }));
     } catch (error) {
       console.error("Team assignment error:", error);
+      throw error;
+    }
+  };
+
+  // Move to junk handler
+  const handleMoveToJunk = async (leadId) => {
+    try {
+      console.log('LeadManagement - handleMoveToJunk called with:', leadId);
+      
+      // Find the junk stage (orderIndex 6, name "junk")
+      const junkStage = pipelines.find(p => p.orderIndex === 6 && p.name.toLowerCase() === 'junk');
+      
+      if (!junkStage) {
+        console.error('Junk stage not found');
+        toast.error("Junk stage not found");
+        return;
+      }
+      
+      console.log('LeadManagement - Moving lead to junk stage:', junkStage);
+      
+      // Move the lead to the junk stage
+      await dispatch(moveLeadToPipeline({
+        leadId: leadId,
+        newPipelineId: junkStage.stageId
+      }));
+      
+      console.log('LeadManagement - Lead moved to junk successfully');
+      toast.success("Lead moved to junk successfully!");
+      
+      // Refresh leads to get the updated grouped format
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId }));
+    } catch (error) {
+      console.error("Move to junk error:", error);
+      toast.error("Failed to move lead to junk");
       throw error;
     }
   };
@@ -790,6 +832,8 @@ const LeadManagementContent = ({ role }) => {
     }
   };
 
+  console.log(managerEmployees)
+
   return (
     <div className="h-[calc(100vh-64px)] bg-gray-50 overflow-hidden flex flex-col">
       <div className="flex-1 overflow-hidden">
@@ -797,14 +841,12 @@ const LeadManagementContent = ({ role }) => {
           leadsByStatus={leadsByStatus}
           statuses={pipelines
             .filter((p) => 
-              // p.name.toLowerCase() !== "new" && 
               p.name.toLowerCase() !== "freeze" && 
               p.name.toLowerCase() !== "lost" && 
               p.name.toLowerCase() !== "junk"
             )
             .map((p) => p.name)}
           kanbanStatuses={pipelines.filter((p) => 
-            // p.name.toLowerCase() !== "new" && 
             p.name.toLowerCase() !== "freeze" && 
             p.name.toLowerCase() !== "lost" && 
             p.name.toLowerCase() !== "junk"
@@ -812,9 +854,11 @@ const LeadManagementContent = ({ role }) => {
           onScheduleActivity={handleScheduleActivity}
           onDragEnd={handleDragEnd}
           onTeamAssign={handleTeamAssign}
+          onMoveToJunk={handleMoveToJunk}
           managerEmployees={managerEmployees || []}
+          allowAssignment={false}
           // Debug props
-          debugProps={{ leadsByStatus, statuses: pipelines.filter((p) => p.name.toLowerCase() !== "new").map((p) => p.name) }}
+          debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
         />
       </div>
       <DeletePipelineModal

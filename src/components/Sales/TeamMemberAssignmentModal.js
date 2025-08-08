@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FaUserTie, FaPalette } from "react-icons/fa";
+import { FaUserTie, FaPalette, FaCheck } from "react-icons/fa";
 import { toast } from "sonner";
 
 const TeamMemberAssignmentModal = ({ 
@@ -25,30 +25,61 @@ const TeamMemberAssignmentModal = ({
       }
       setIsSubmitting(false);
       
-      // Debug: Log the employee data
-      console.log('TeamMemberAssignmentModal - Role:', role);
-      console.log('TeamMemberAssignmentModal - Sales Employees:', salesEmployees);
-      console.log('TeamMemberAssignmentModal - Total Employees:', salesEmployees.length);
+             // Debug: Log the employee data
+       console.log('TeamMemberAssignmentModal - Role:', role);
+       console.log('TeamMemberAssignmentModal - Sales Employees:', salesEmployees);
+       console.log('TeamMemberAssignmentModal - Total Employees:', salesEmployees.length);
+       console.log('TeamMemberAssignmentModal - Employee sample:', salesEmployees.slice(0, 2));
+       console.log('TeamMemberAssignmentModal - Employee fields:', salesEmployees.length > 0 ? Object.keys(salesEmployees[0]) : 'No employees');
     }
   }, [isOpen, lead, role, salesEmployees]);
 
-  const handleEmployeeChange = async (e) => {
+  const handleEmployeeChange = (e) => {
     const newEmployeeId = e.target.value;
     setSelectedEmployee(newEmployeeId);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    if (isSubmitting) return;
+    // Enhanced validation
+    if (!selectedEmployee) {
+      toast.error(`Please select a ${role === 'sales' ? 'Sales Representative' : 'Designer'}`);
+      return;
+    }
+
+    // Validate that selected employee exists in the list
+    const employeeExists = salesEmployees.some(emp => (emp.employeeId || emp._id || emp.id) === selectedEmployee);
+
+    if (!employeeExists) {
+      toast.error(`Selected ${role === 'sales' ? 'Sales Representative' : 'Designer'} is not available`);
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
       const assignmentData = {
         leadId: lead.leadId,
-        salesRep: role === 'sales' ? newEmployeeId : lead?.assignSalesPersonEmpId,
-        designer: role === 'designer' ? newEmployeeId : lead?.assignDesignerEmpId
+        salesRep: role === 'sales' ? selectedEmployee : lead?.assignSalesPersonEmpId,
+        designer: role === 'designer' ? selectedEmployee : lead?.assignDesignerEmpId
       };
+      
+      console.log('TeamMemberAssignmentModal - Assignment Data:', assignmentData);
+      console.log('TeamMemberAssignmentModal - Role:', role);
+      console.log('TeamMemberAssignmentModal - Selected Employee ID:', selectedEmployee);
+      console.log('TeamMemberAssignmentModal - Lead data:', lead);
+      console.log('TeamMemberAssignmentModal - Current assignments:', {
+        assignSalesPersonEmpId: lead?.assignSalesPersonEmpId,
+        assignDesignerEmpId: lead?.assignDesignerEmpId,
+        salesRep: lead?.salesRep,
+        designer: lead?.designer
+      });
       
       await onAssign(assignmentData);
       
       toast.success(`${role === 'sales' ? 'Sales Person' : 'Designer'} assigned successfully!`);
+      onClose();
     } catch (error) {
       toast.error(`Failed to assign ${role === 'sales' ? 'sales person' : 'designer'}`);
       console.error("Assignment error:", error);
@@ -116,7 +147,7 @@ const TeamMemberAssignmentModal = ({
       onClick={onClose}
     >
       <div 
-        className="absolute bg-white rounded-lg shadow-xl border border-gray-200 p-3 min-w-[200px]"
+        className="absolute bg-white rounded-lg shadow-xl border border-gray-200 p-4 min-w-[280px]"
         style={{
           position: 'fixed',
           left: adjustedPosition.x,
@@ -127,46 +158,89 @@ const TeamMemberAssignmentModal = ({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Assignment Field */}
-                 <div className="space-y-2">
-           <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
-             <IconComponent className={`w-4 h-4 text-${roleInfo.color}-600`} />
-             {roleInfo.label}
-             {selectedEmployee && (
-               <span className="text-xs text-gray-500 ml-1">
-                 (Current: {salesEmployees.find(emp => emp.employeeId === selectedEmployee)?.name || 'Unknown'})
-               </span>
-             )}
-           </label>
-                     <select
-             value={selectedEmployee}
-             onChange={handleEmployeeChange}
-             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
-             disabled={isSubmitting}
-           >
-             <option value="">Unassigned</option>
-             {salesEmployees.length === 0 ? (
-               <option value="" disabled>No employees available ({salesEmployees.length})</option>
-             ) : (
-               salesEmployees.map((employee) => {
-                 const displayName = employee.name || employee.employeeName || employee.employeeId || 'Unknown';
-                 return (
-                   <option key={employee.employeeId} value={employee.employeeId}>
-                     {displayName} {employee.role ? `(${employee.role})` : ''}
-                   </option>
-                 );
-               })
-             )}
-           </select>
-          {isSubmitting && (
-            <div className="flex items-center justify-center py-1">
-              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
+          <IconComponent className={`w-4 h-4 text-${roleInfo.color}-600`} />
+          <h3 className="font-semibold text-gray-800 text-sm">
+            Assign {roleInfo.label}
+          </h3>
+        </div>
+
+        {/* Assignment Form */}
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {roleInfo.label} *
+            </label>
+            <select
+              value={selectedEmployee}
+              onChange={handleEmployeeChange}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+              disabled={isSubmitting}
+              required
+            >
+              <option value="">Select {roleInfo.label}</option>
+              {salesEmployees.length === 0 ? (
+                <option value="" disabled>No employees available</option>
+              ) : (
+                salesEmployees.map((employee) => {
+                  const displayName = employee.name || employee.employeeName || employee.employeeId || 'Unknown';
+                  const employeeId = employee.employeeId || employee._id || employee.id;
+                  console.log('TeamMemberAssignmentModal - Employee in dropdown:', { employee, employeeId, displayName });
+                  return (
+                    <option key={employeeId} value={employeeId}>
+                      {displayName} {employee.role ? `(${employee.role})` : ''}
+                    </option>
+                  );
+                })
+              )}
+            </select>
+          </div>
+
+          {/* Assignment Summary */}
+          {selectedEmployee && (
+            <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+              <p className="text-blue-700">
+                <strong>Lead:</strong> {lead?.name || "N/A"}
+              </p>
+              <p className="text-blue-700">
+                <strong>{roleInfo.label}:</strong> {salesEmployees.find(emp => (emp.employeeId || emp._id || emp.id) === selectedEmployee)?.name || 'Unknown'}
+              </p>
             </div>
           )}
-                 </div>
-       </div>
-     </div>
-   );
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 transition-colors font-medium"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || !selectedEmployee}
+              className="flex-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-1"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  Assigning...
+                </>
+              ) : (
+                <>
+                  <FaCheck className="w-3 h-3" />
+                  Assign
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 
   // Use portal to render at document body level
   return createPortal(modalContent, document.body);
