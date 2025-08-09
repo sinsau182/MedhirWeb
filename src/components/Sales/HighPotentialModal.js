@@ -10,7 +10,6 @@ const HighPotentialModal = ({
 }) => {
   const [formData, setFormData] = useState({
     requirements: "",
-    initialQuote: "",
     finalQuotation: "",
     discount: "",
     designTimeline: "",
@@ -23,7 +22,6 @@ const HighPotentialModal = ({
     if (isOpen) {
       setFormData({
         requirements: "",
-        initialQuote: "",
         finalQuotation: "",
         discount: "",
         designTimeline: "",
@@ -52,23 +50,6 @@ const HighPotentialModal = ({
       return;
     }
 
-    if (!formData.initialQuote.trim()) {
-      toast.error("Please provide the initial quoted amount");
-      return;
-    }
-    
-    // Validate initial quoted amount
-    const initialAmount = parseFloat(formData.initialQuote.replace(/[^\d.]/g, ''));
-    if (isNaN(initialAmount) || initialAmount <= 0) {
-      toast.error("Initial quoted amount must be a valid positive number");
-      return;
-    }
-    
-    if (initialAmount > 999999999) {
-      toast.error("Initial quoted amount cannot exceed 999,999,999");
-      return;
-    }
-
     if (!formData.finalQuotation.trim()) {
       toast.error("Please provide the final quoted amount");
       return;
@@ -83,12 +64,6 @@ const HighPotentialModal = ({
     
     if (finalAmount > 999999999) {
       toast.error("Final quoted amount cannot exceed 999,999,999");
-      return;
-    }
-    
-    // Validate final amount is not greater than initial amount
-    if (finalAmount > initialAmount) {
-      toast.error("Final quoted amount cannot be greater than initial quoted amount");
       return;
     }
 
@@ -140,7 +115,6 @@ const HighPotentialModal = ({
       await onSuccess({
         leadId: lead.leadId,
         requirements: formData.requirements.trim(),
-        initialQuote: parseFloat(formData.initialQuote.replace(/[^\d.]/g, '')),
         finalQuotation: parseFloat(formData.finalQuotation.replace(/[^\d.]/g, '')),
         discount: parseFloat(formData.discount.replace(/[^\d.]/g, '')),
         designTimeline: formData.designTimeline.trim(),
@@ -171,7 +145,6 @@ const HighPotentialModal = ({
         processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 500);
         break;
       
-      case 'initialQuote':
       case 'finalQuotation':
         // Only allow numbers and decimal point
         processedValue = value.replace(/[^\d.]/g, '');
@@ -284,25 +257,6 @@ const HighPotentialModal = ({
               </p>
             </div>
 
-            {/* Initial Quoted Amount */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaDollarSign className="w-4 h-4 text-green-600" />
-                Initial Quoted Amount *
-              </label>
-              <input
-                type="text"
-                value={formData.initialQuote}
-                onChange={(e) => handleInputChange('initialQuote', e.target.value)}
-                placeholder="Enter initial quoted amount (e.g., ₹10,00,000)"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the initial quoted amount
-              </p>
-            </div>
-
             {/* Final Quoted Amount */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -385,7 +339,6 @@ const HighPotentialModal = ({
               <div className="text-sm text-purple-700 space-y-1">
                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
                 <p><strong>Quotation Details:</strong> {formData.requirements ? "Provided" : "Not provided"}</p>
-                <p><strong>Initial Amount:</strong> {formData.initialQuote || "Not specified"}</p>
                 <p><strong>Final Amount:</strong> {formData.finalQuotation || "Not specified"}</p>
                 <p><strong>Discount:</strong> {formData.discount || "Not specified"}</p>
                 <p><strong>Design Timeline:</strong> {formData.designTimeline || "Not specified"}</p>
@@ -408,7 +361,7 @@ const HighPotentialModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.requirements.trim() || !formData.initialQuote.trim() || !formData.finalQuotation.trim() || !formData.discount.trim() || !formData.designTimeline.trim() || !formData.completionTimeline.trim()}
+            disabled={isSubmitting || !formData.requirements.trim() || !formData.finalQuotation.trim() || !formData.discount.trim() || !formData.designTimeline.trim() || !formData.completionTimeline.trim()}
             className="px-6 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
           >
             {isSubmitting ? (

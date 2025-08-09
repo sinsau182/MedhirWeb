@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { FaFileInvoice, FaUniversity } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { FaFileInvoice } from 'react-icons/fa';
 import MainLayout from '@/components/MainLayout';
 import { toast } from 'sonner';
+import getConfig from 'next/config';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+
+const { publicRuntimeConfig } = getConfig();
 
 const DocumentSettings = ({ settings, onSettingsChange }) => {
   const handleFileChange = (e) => {
@@ -132,192 +136,156 @@ const DocumentSettings = ({ settings, onSettingsChange }) => {
   );
 };
 
-const CompanyBankDetails = ({ bankDetails, onBankDetailsChange, errors = {} }) => {
-  const onChangeUpper = (key, value) => {
-    const upper = (value || '').toUpperCase();
-    onBankDetailsChange(key, upper);
-  };
-  const onChangeDigits = (key, value) => {
-    const digits = (value || '').replace(/[^0-9]/g, '');
-    onBankDetailsChange(key, digits);
-  };
-
-  // Keyboard-level restrictions
-  const allowControl = (e) => {
-    const controlKeys = ['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
-    if (controlKeys.includes(e.key)) return true;
-    if (e.ctrlKey || e.metaKey) return true; // allow copy/paste, select-all, etc.
-    return false;
-  };
-  const handleAlphaSpaceKeyDown = (e) => {
-    if (allowControl(e)) return;
-    if (/^[A-Za-z ]$/.test(e.key)) return;
-    e.preventDefault();
-  };
-  const handleDigitsKeyDown = (e) => {
-    if (allowControl(e)) return;
-    if (/^[0-9]$/.test(e.key)) return;
-    e.preventDefault();
-  };
-  const handleAlphaNumKeyDown = (e) => {
-    if (allowControl(e)) return;
-    if (/^[A-Za-z0-9]$/.test(e.key)) return;
-    e.preventDefault();
-  };
-
-  // Paste sanitization to enforce the same restriction
-  const onPasteSanitize = (pattern) => (e) => {
-    const text = (e.clipboardData || window.clipboardData).getData('text');
-    if (!pattern.test(text)) {
-      e.preventDefault();
-      const sanitized = text.replace(/[^A-Za-z ]/g, '');
-      // Let caller update value via change handler if needed
-    }
-  };
-
-  return (
-    <div className="space-y-6 mt-10">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Company Bank Details</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Bank Name</label>
-          <input
-            type="text"
-            value={bankDetails.bankName}
-            onChange={(e) => onChangeUpper('bankName', e.target.value)}
-            onKeyDown={handleAlphaSpaceKeyDown}
-            onPaste={onPasteSanitize(/^[A-Za-z ]+$/)}
-            placeholder="e.g., State Bank of India"
-            disabled
-            aria-disabled="true"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
-          />
-          {errors.bankName && <p className="text-xs text-red-600 mt-1">{errors.bankName}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Account Number</label>
-          <input
-            type="text"
-            value={bankDetails.accountNumber}
-            onChange={(e) => onChangeDigits('accountNumber', e.target.value)}
-            onKeyDown={handleDigitsKeyDown}
-            onPaste={(e)=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/^\d+$/.test(t)) e.preventDefault(); }}
-            placeholder="e.g., 123456789"
-            maxLength={18}
-            disabled
-            aria-disabled="true"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
-          />
-          {errors.accountNumber && <p className="text-xs text-red-600 mt-1">{errors.accountNumber}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">IFSC Code</label>
-          <input
-            type="text"
-            value={bankDetails.ifscCode}
-            onChange={(e) => onChangeUpper('ifscCode', e.target.value)}
-            onKeyDown={handleAlphaNumKeyDown}
-            onPaste={(e)=>{ const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/^[A-Za-z0-9]+$/.test(t)) e.preventDefault(); }}
-            placeholder="e.g., SBIN0001234"
-            disabled
-            aria-disabled="true"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm uppercase bg-gray-50 opacity-75 cursor-not-allowed"
-          />
-          {errors.ifscCode && <p className="text-xs text-red-600 mt-1">{errors.ifscCode}</p>}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Branch Name</label>
-          <input
-            type="text"
-            value={bankDetails.branchName}
-            onChange={(e) => onChangeUpper('branchName', e.target.value)}
-            onKeyDown={handleAlphaSpaceKeyDown}
-            onPaste={onPasteSanitize(/^[A-Za-z ]+$/)}
-            placeholder="e.g., MG Road, Bengaluru"
-            disabled
-            aria-disabled="true"
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 opacity-75 cursor-not-allowed"
-          />
-          {errors.branchName && <p className="text-xs text-red-600 mt-1">{errors.branchName}</p>}
-        </div>
-      </div>
-    </div>
-  );
-};
+// Removed CompanyBankDetails per request
 
 const AccountSettingsPage = () => {
   const [activeTab, setActiveTab] = useState('documents');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasExistingSettings, setHasExistingSettings] = useState(false);
+
+  const buildAuthHeaders = (token) => ({
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  });
   
   const [documentSettings, setDocumentSettings] = useState({
     logo: null,
     terms: 'Payment is due within 30 days of the invoice date.',
     invoicePrefix: 'INV-',
     invoiceStartNumber: 1001,
+    invoiceCurrentNumber: 1001,
     poPrefix: 'PO-',
     poStartNumber: 1001,
+    poCurrentNumber: 1001,
     receiptPrefix: 'RCPT-',
     receiptStartNumber: 1001,
+    receiptCurrentNumber: 1001,
   });
 
-  const [bankDetails, setBankDetails] = useState({
-    bankName: '',
-    accountNumber: '',
-    ifscCode: '',
-    branchName: '',
-  });
-  const [bankErrors, setBankErrors] = useState({});
+  // Removed bank details state
 
   const handleDocumentSettingsChange = (key, value) => {
     setDocumentSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleBankDetailsChange = (key, value) => {
-    setBankDetails(prev => ({ ...prev, [key]: value }));
-  };
+  // Removed bank details handler
 
-  const validateBankDetails = () => {
-    const errors = {};
-    // BANK NAME: required, letters & spaces, 3+ chars
-    if (!bankDetails.bankName?.trim()) {
-      errors.bankName = 'BANK NAME IS REQUIRED';
-    } else if (!/^[A-Z ]{3,}$/.test(bankDetails.bankName)) {
-      errors.bankName = 'ONLY CAPITAL LETTERS AND SPACES, MIN 3 CHARACTERS';
-    }
-    // ACCOUNT NUMBER: 9-18 digits
-    if (!bankDetails.accountNumber?.trim()) {
-      errors.accountNumber = 'ACCOUNT NUMBER IS REQUIRED';
-    } else if (!/^\d{9,18}$/.test(bankDetails.accountNumber)) {
-      errors.accountNumber = 'ACCOUNT NUMBER MUST BE 9-18 DIGITS';
-    }
-    // IFSC: 4 letters + 0 + 6 alphanumerics
-    if (!bankDetails.ifscCode?.trim()) {
-      errors.ifscCode = 'IFSC CODE IS REQUIRED';
-    } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankDetails.ifscCode)) {
-      errors.ifscCode = 'INVALID IFSC CODE FORMAT (e.g., SBIN0001234)';
-    }
-    // BRANCH NAME: required, 3+ chars, only capital letters and spaces
-    if (!bankDetails.branchName?.trim()) {
-      errors.branchName = 'BRANCH NAME IS REQUIRED';
-    } else if (!/^[A-Z ]{3,}$/.test(bankDetails.branchName)) {
-      errors.branchName = 'ONLY CAPITAL LETTERS AND SPACES; MIN 3 CHARACTERS';
-    }
-    setBankErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  // Removed bank validation
 
-  const handleSaveChanges = () => {
-    // Validate bank details before save
-    if (!validateBankDetails()) {
-      toast.error('PLEASE FIX BANK DETAILS');
-      return;
+  // Fetch existing settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const companyId = getItemFromSessionStorage('employeeCompanyId')
+          || getItemFromSessionStorage('companyId')
+          || getItemFromSessionStorage('company');
+        if (!companyId) return;
+        const token = getItemFromSessionStorage('token', null);
+        setIsLoading(true);
+        const res = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/company/${companyId}`, {
+          headers: buildAuthHeaders(token),
+        });
+        if (res.status === 401) {
+          toast.error('Authentication required. Please sign in again.');
+          setHasExistingSettings(false);
+          setIsLoading(false);
+          return;
+        }
+        if (res.status === 404) {
+          setHasExistingSettings(false);
+          setIsLoading(false);
+          return;
+        }
+        if (!res.ok) {
+          setHasExistingSettings(false);
+          setIsLoading(false);
+          return;
+        }
+        const data = await res.json();
+        setHasExistingSettings(true);
+        setDocumentSettings(prev => ({
+          ...prev,
+          invoicePrefix: data.invoicePrefix ?? prev.invoicePrefix,
+          invoiceStartNumber: data.invoiceStartingNumber ?? data.invoiceStartNumber ?? prev.invoiceStartNumber,
+          invoiceCurrentNumber: data.invoiceCurrentNumber ?? prev.invoiceCurrentNumber,
+          poPrefix: data.purchaseOrderPrefix ?? data.poPrefix ?? prev.poPrefix,
+          poStartNumber: data.purchaseOrderStartingNumber ?? data.purchaseOrderStartNumber ?? data.poStartNumber ?? prev.poStartNumber,
+          poCurrentNumber: data.purchaseOrderCurrentNumber ?? prev.poCurrentNumber,
+          receiptPrefix: data.receiptPrefix ?? prev.receiptPrefix,
+          receiptStartNumber: data.receiptStartingNumber ?? data.receiptStartNumber ?? prev.receiptStartNumber,
+          receiptCurrentNumber: data.receiptCurrentNumber ?? prev.receiptCurrentNumber,
+        }));
+        setIsLoading(false);
+      } catch (e) {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSaveChanges = async () => {
+    try {
+      const companyId = getItemFromSessionStorage('employeeCompanyId')
+        || getItemFromSessionStorage('companyId')
+        || getItemFromSessionStorage('company');
+      if (!companyId) {
+        toast.error('Company ID not found.');
+        return;
+      }
+      const token = getItemFromSessionStorage('token', null);
+      if (!token) {
+        toast.error('You are not signed in. Please sign in and try again.');
+        return;
+      }
+      setIsSaving(true);
+      const invoiceStartingNumber = Number(documentSettings.invoiceStartNumber) || 1;
+      const poStartingNumber = Number(documentSettings.poStartNumber) || 1;
+      const receiptStartingNumber = Number(documentSettings.receiptStartNumber) || 1;
+
+      const payload = {
+        companyId,
+        invoicePrefix: documentSettings.invoicePrefix,
+        invoiceStartingNumber,
+        invoiceCurrentNumber: hasExistingSettings
+          ? Number(documentSettings.invoiceCurrentNumber ?? invoiceStartingNumber)
+          : invoiceStartingNumber,
+        purchaseOrderPrefix: documentSettings.poPrefix,
+        purchaseOrderStartingNumber: poStartingNumber,
+        purchaseOrderCurrentNumber: hasExistingSettings
+          ? Number(documentSettings.poCurrentNumber ?? poStartingNumber)
+          : poStartingNumber,
+        receiptPrefix: documentSettings.receiptPrefix,
+        receiptStartingNumber,
+        receiptCurrentNumber: hasExistingSettings
+          ? Number(documentSettings.receiptCurrentNumber ?? receiptStartingNumber)
+          : receiptStartingNumber,
+      };
+      const method = hasExistingSettings ? 'PUT' : 'POST';
+      const res = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/company/${companyId}`, {
+        method,
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) {
+        toast.error('Authentication required. Please sign in again.');
+        return;
+      }
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Failed to save settings');
+      }
+      setHasExistingSettings(true);
+      toast.success('Settings saved successfully!');
+    } catch (err) {
+      toast.error(`Failed to save settings: ${err.message || 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
     }
-    console.log('Saving settings:', { documentSettings, bankDetails });
-    toast.success('Settings saved successfully!');
   };
 
   const settingsTabs = [
     { id: 'documents', label: 'Document Settings', icon: FaFileInvoice },
-    { id: 'bank', label: 'Company Bank Details', icon: FaUniversity },
   ];
 
   return (
@@ -349,9 +317,7 @@ const AccountSettingsPage = () => {
                     {activeTab === 'documents' && (
                         <DocumentSettings settings={documentSettings} onSettingsChange={handleDocumentSettingsChange} />
                     )}
-                    {activeTab === 'bank' && (
-                        <CompanyBankDetails bankDetails={bankDetails} onBankDetailsChange={handleBankDetailsChange} errors={bankErrors} />
-                    )}
+                    {/* Company bank details removed */}
                     
                     <div className="mt-8 pt-6 border-t flex justify-end">
                         <button

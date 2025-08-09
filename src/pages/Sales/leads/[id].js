@@ -2645,10 +2645,9 @@ const LeadDetailContent = () => {
     // Update lead with high potential data
     await dispatch(updateLead({
       leadId: lead.leadId,
-      quotationDetails: highPotentialData.quotationDetails,
-      initialQuotedAmount: highPotentialData.initialQuotedAmount,
-      finalQuotedAmount: highPotentialData.finalQuotedAmount,
-      discountPercent: highPotentialData.discountPercent,
+      requirements: highPotentialData.requirements,
+      finalQuotation: highPotentialData.finalQuotation,
+      discount: highPotentialData.discount,
       designTimeline: highPotentialData.designTimeline,
       completionTimeline: highPotentialData.completionTimeline
     }));

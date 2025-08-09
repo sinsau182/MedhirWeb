@@ -659,10 +659,9 @@ const ManagerContent = ({ role }) => {
       // Update the lead with high potential information
       await dispatch(updateLead({
         leadId: highPotentialData.leadId,
-        quotationDetails: highPotentialData.quotationDetails,
-        initialQuotedAmount: highPotentialData.initialQuotedAmount,
-        finalQuotedAmount: highPotentialData.finalQuotedAmount,
-        discountPercent: highPotentialData.discountPercent,
+        requirements: highPotentialData.requirements,
+        finalQuotation: highPotentialData.finalQuotation,
+        discount: highPotentialData.discount,
         designTimeline: highPotentialData.designTimeline,
         completionTimeline: highPotentialData.completionTimeline
       }));
