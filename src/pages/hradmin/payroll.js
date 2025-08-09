@@ -257,13 +257,13 @@ function PayrollManagement() {
                       {payrollItem ? `₹ ${(payrollItem.arrears || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹ ${(payrollItem.employeePFPerMonth || 0)}` : '₹ 0'}
+                      {payrollItem ? `₹ ${(payrollItem.employeePFThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹ ${(payrollItem.employerPFPerMonth || 0)}` : '₹ 0'}
+                      {payrollItem ? `₹ ${(payrollItem.employerPFThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹ ${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.employerPFDeduction || 0) + (payrollItem.otherDeductions || 0))}` : '₹ 0'}
+                      {payrollItem ? `₹ ${((payrollItem.professionalTax || 0) + (payrollItem.employeePFThisMonth || 0) + (payrollItem.employerPFThisMonth || 0) + (payrollItem.otherDeductions || 0))}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-blue-50 font-semibold">
                       {payrollItem ? `₹ ${(payrollItem.netPay || 0)}` : '₹ 0'}
@@ -368,10 +368,10 @@ function PayrollManagement() {
                       {employee.departmentName}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹ ${(payrollItem.employeePFPerMonth || 0)}` : '₹ 0'}
+                      {payrollItem ? `₹ ${(payrollItem.employeePFThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹ ${(payrollItem.employerPFPerMonth || 0)}` : '₹ 0'}
+                      {payrollItem ? `₹ ${(payrollItem.employerPFThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
                       {payrollItem ? `₹ ${(payrollItem.professionalTax || 0)}` : '₹ 0'}
@@ -383,7 +383,7 @@ function PayrollManagement() {
                       {payrollItem ? `₹ ${(payrollItem.otherDeductions || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹ ${((payrollItem.employeePFPerMonth || 0) + (payrollItem.employerPFPerMonth || 0) + (payrollItem.professionalTax || 0) + (payrollItem.otherDeductions || 0))}` : '₹ 0'}
+                      {payrollItem ? `₹ ${((payrollItem.employeePFThisMonth || 0) + (payrollItem.employerPFThisMonth || 0) + (payrollItem.professionalTax || 0) + (payrollItem.otherDeductions || 0))}` : '₹ 0'}
                     </td>
                   </tr>
                 );
