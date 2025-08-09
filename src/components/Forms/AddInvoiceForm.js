@@ -122,9 +122,29 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     };
 
     const handleLineChange = (index, field, value) => {
-        const newLines = [...formData.invoiceLines];
-        newLines[index][field] = value;
-        setFormData(prev => ({ ...prev, invoiceLines: newLines }));
+        setFormData(prev => {
+            const newLines = [...prev.invoiceLines];
+
+            if (field === 'gst') {
+                const gstValue = Number(value) || 0;
+                newLines[index].gst = gstValue;
+                if (prev.placeOfSupply === 'interstate') {
+                    // Use CGST + SGST
+                    newLines[index].cgst = gstValue / 2;
+                    newLines[index].sgst = gstValue / 2;
+                    newLines[index].igst = 0;
+                } else {
+                    // Use IGST
+                    newLines[index].igst = gstValue;
+                    newLines[index].cgst = 0;
+                    newLines[index].sgst = 0;
+                }
+            } else {
+                newLines[index][field] = value;
+            }
+
+            return { ...prev, invoiceLines: newLines };
+        });
     };
 
     const addInvoiceLine = () => {
@@ -145,15 +165,11 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         }
     };
 
-    const calculateLineTotal = (line) => (line.quantity * line.rate) * (1 + line.gst / 100);
+    const calculateLineTotal = (line) => (line.quantity * line.rate) * (1 + ((Number(line.gst) || 0) / 100));
     const calculateSubtotal = () => formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate), 0);
     const calculateTotalGST = () => {
-        if (formData.placeOfSupply === 'interstate') {
-            return formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.cgst / 100)), 0) +
-                   formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.sgst / 100)), 0);
-        } else {
-            return formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * (line.igst / 100)), 0);
-        }
+        // Compute from synced gst percentage
+        return formData.invoiceLines.reduce((sum, line) => sum + (line.quantity * line.rate * ((Number(line.gst) || 0) / 100)), 0);
     };
     const calculateTotal = () => calculateSubtotal() + calculateTotalGST();
 
@@ -331,23 +347,35 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                                     
                                     // Update line items based on place of supply
                                     if (newPlaceOfSupply === 'intrastate') {
-                                        // Convert CGST + SGST to IGST
+                                        // Convert CGST + SGST to IGST, keep gst equal to total tax percent
                                         setFormData(prev => ({
                                             ...prev,
-                                            invoiceLines: prev.invoiceLines.map(line => ({
-                                                ...line,
-                                                igst: (Number(line.cgst) + Number(line.sgst)) || 18
-                                            }))
+                                            invoiceLines: prev.invoiceLines.map(line => {
+                                                const igst = (Number(line.cgst) + Number(line.sgst)) || 0;
+                                                return {
+                                                    ...line,
+                                                    igst,
+                                                    cgst: 0,
+                                                    sgst: 0,
+                                                    gst: igst,
+                                                };
+                                            })
                                         }));
                                     } else {
-                                        // Convert IGST to CGST and SGST (split equally)
+                                        // Convert IGST to CGST and SGST (split equally), keep gst equal to total tax percent
                                         setFormData(prev => ({
                                             ...prev,
-                                            invoiceLines: prev.invoiceLines.map(line => ({
-                                                ...line,
-                                                cgst: (Number(line.igst) / 2) || 9,
-                                                sgst: (Number(line.igst) / 2) || 9
-                                            }))
+                                            invoiceLines: prev.invoiceLines.map(line => {
+                                                const half = (Number(line.igst) || 0) / 2;
+                                                const total = (Number(line.igst) || 0);
+                                                return {
+                                                    ...line,
+                                                    cgst: half,
+                                                    sgst: half,
+                                                    igst: 0,
+                                                    gst: total,
+                                                };
+                                            })
                                         }));
                                     }
                                 }}

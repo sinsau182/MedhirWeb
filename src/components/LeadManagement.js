@@ -12,7 +12,7 @@ import {
 } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import { jwtDecode } from "jwt-decode";
-import ConvertLeadModal from "./ConvertLeadModal";
+import ConvertLeadModal from "./Sales/ConvertLeadModal";
 import LostLeadModal from "./LostLeadModal";
 import JunkReasonModal from "./JunkReasonModal";
 import {

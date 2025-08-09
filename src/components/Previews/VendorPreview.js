@@ -81,6 +81,7 @@ const VendorPreview = ({ vendorData, onClose }) => {
                 <DetailItem label="PAN" value={pan} />
                 <DetailItem label="TDS Applies" value={tdsApplies ? 'Yes' : 'No'} />
                 {tdsApplies && <DetailItem label="TDS Percentage" value={`${tdsPercentage}%`} />}
+
             </Section>
 
             {hasBankDetails && (

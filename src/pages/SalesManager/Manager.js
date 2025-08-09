@@ -13,6 +13,7 @@ import {
   FaTrash,
   FaTimes,
   FaMagic,
+  FaFilter,
 } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
@@ -169,6 +170,10 @@ const ManagerContent = ({ role }) => {
   // Initialize pipeline state
   const [isInitializing, setIsInitializing] = useState(false);
 
+  // NEW: Filters
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("all");
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
+
   // Fetch pipelines and all leads on mount
   useEffect(() => {
     dispatch(fetchPipelines());
@@ -176,7 +181,17 @@ const ManagerContent = ({ role }) => {
     dispatch(fetchManagerEmployees());
   }, [dispatch]);
 
-
+  // Refetch leads when filters change
+  useEffect(() => {
+    if (unassignedOnly) {
+      // Need all leads to filter unassigned client-side
+      dispatch(fetchLeads());
+    } else if (selectedEmployeeId && selectedEmployeeId !== "all") {
+      dispatch(fetchLeads({ employeeId: selectedEmployeeId }));
+    } else {
+      dispatch(fetchLeads());
+    }
+  }, [dispatch, selectedEmployeeId, unassignedOnly]);
 
   // Deduplicate leads by leadId (keep first occurrence) - Manager specific
   const dedupedLeads = useFlattenedLeads(leads);
@@ -190,7 +205,12 @@ const ManagerContent = ({ role }) => {
       // New format: leads grouped by stageId
       leads.forEach((stageGroup) => {
         const stageId = stageGroup.stageId;
-        const stageLeads = stageGroup.leads || [];
+        let stageLeads = stageGroup.leads || [];
+
+        // Apply unassigned filter if needed
+        if (unassignedOnly) {
+          stageLeads = stageLeads.filter(l => !l.salesRep);
+        }
         
         // Find the pipeline/stage name for this stageId
         const pipeline = pipelines.find(p => 
@@ -223,7 +243,7 @@ const ManagerContent = ({ role }) => {
           }
 
           return isMatch;
-        });
+        }).filter(l => (unassignedOnly ? !l.salesRep : true));
 
         grouped[pipeline.name] = matchingLeads;
       });
@@ -235,7 +255,7 @@ const ManagerContent = ({ role }) => {
         }
         const leadPipelineId = lead.pipelineId || lead.stageId;
         return !leadPipelineId || leadPipelineId === null || leadPipelineId === undefined;
-      });
+      }).filter(l => (unassignedOnly ? !l.salesRep : true));
 
       if (leadsWithoutPipeline.length > 0) {
         const newStage = pipelines.find((p) => p.name.toLowerCase() === "new") || pipelines[0];
@@ -249,9 +269,7 @@ const ManagerContent = ({ role }) => {
     }
 
     return grouped;
-  }, [pipelines, leads]);
-
-
+  }, [pipelines, leads, unassignedOnly]);
 
   // Add pipeline handler
   const handleAddStage = () => {
@@ -633,9 +651,10 @@ const ManagerContent = ({ role }) => {
       // Update the lead with potential information
       await dispatch(updateLead({
         leadId: potentialData.leadId,
+        firstMeetingDate: potentialData.firstMeetingDate,
         requirements: potentialData.requirements,
-        consultationFee: potentialData.consultationFee,
-        designConsultation: potentialData.designConsultation
+        priority: potentialData.priority,
+        initialQuote: potentialData.initialQuote
       }));
       
       // Move the lead to the target pipeline
@@ -658,10 +677,9 @@ const ManagerContent = ({ role }) => {
       // Update the lead with high potential information
       await dispatch(updateLead({
         leadId: highPotentialData.leadId,
-        quotationDetails: highPotentialData.quotationDetails,
-        initialQuotedAmount: highPotentialData.initialQuotedAmount,
-        finalQuotedAmount: highPotentialData.finalQuotedAmount,
-        discountPercent: highPotentialData.discountPercent,
+        requirements: highPotentialData.requirements,
+        finalQuotation: highPotentialData.finalQuotation,
+        discount: highPotentialData.discount,
         designTimeline: highPotentialData.designTimeline,
         completionTimeline: highPotentialData.completionTimeline
       }));
@@ -735,6 +753,45 @@ const ManagerContent = ({ role }) => {
         </div>
 
         <div className="flex items-center space-x-4">
+          {/* Filters */}
+          <div className="flex items-center gap-2">
+            <FaFilter className="text-gray-500" />
+            <select
+              className="border border-gray-300 rounded-md text-sm px-2 py-1"
+              value={selectedEmployeeId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedEmployeeId(val);
+                // If selecting specific employee, turn off unassigned
+                if (val !== "all") setUnassignedOnly(false);
+              }}
+            >
+              <option value="all">All Team Members</option>
+              {Array.isArray(managerEmployees) && managerEmployees.map(emp => (
+                <option key={emp.employeeId || emp.id} value={emp.employeeId || emp.id}>
+                  {emp.name || emp.employeeName || emp.email}
+                </option>
+              ))}
+            </select>
+            <label className="flex items-center gap-1 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={unassignedOnly}
+                onChange={(e) => {
+                  setUnassignedOnly(e.target.checked);
+                  if (e.target.checked) setSelectedEmployeeId("all");
+                }}
+              />
+              Unassigned only
+            </label>
+            <button
+              className="text-xs text-gray-600 underline"
+              onClick={() => { setSelectedEmployeeId("all"); setUnassignedOnly(false); }}
+            >
+              Clear
+            </button>
+          </div>
+
           <SearchBar filterText={filterText} setFilterText={setFilterText} />
           <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
         </div>
@@ -759,9 +816,11 @@ const ManagerContent = ({ role }) => {
                       .map(([status, leads]) => [
                         status,
                         leads.filter((lead) =>
-                          lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-                          lead.contactNumber?.includes(filterText) ||
-                          lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                          (unassignedOnly ? !lead.salesRep : true) && (
+                            lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                            lead.contactNumber?.includes(filterText) ||
+                            lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                          )
                         ),
                       ])
                   )}
@@ -783,9 +842,11 @@ const ManagerContent = ({ role }) => {
               <div className="h-full w-full overflow-auto">
                 <LeadsTable
                   leads={dedupedLeads.filter((lead) =>
-                    lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-                    lead.contactNumber?.includes(filterText) ||
-                    lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                    (unassignedOnly ? !lead.salesRep : true) && (
+                      lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                      lead.contactNumber?.includes(filterText) ||
+                      lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                    )
                   )}
                 />
               </div>

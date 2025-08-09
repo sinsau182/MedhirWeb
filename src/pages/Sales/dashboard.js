@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import {
@@ -38,6 +38,7 @@ import MainLayout from '@/components/MainLayout';
 import AddLeadModal from '@/components/Sales/AddLeadModal';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { fetchPipelines } from '@/redux/slices/pipelineSlice';
 
 // --- MOCK DATA (Replace with API data) ---
 const MOCK_DATA = {
@@ -219,11 +220,11 @@ function KpiCard({ icon, label, value, change, currency = false, convertedCount 
               {convertedCount} converted this month
             </p>
           )}
-                        </div>
-                      </div>
+        </div>
+      </div>
       <p className={`text-sm mt-2 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
         {change >= 0 ? `+${change}%` : `${change}%`} vs last month
-                        </p>
+      </p>
     </div>
   );
 }
@@ -236,26 +237,26 @@ function ActionItem({ icon, title, subtitle, action }) {
         <div>
           <p className="font-semibold text-gray-800 text-sm">{title}</p>
           <p className="text-xs text-gray-500">{subtitle}</p>
-                          </div>
-                        </div>
+        </div>
+      </div>
       {action}
-                      </div>
+    </div>
   );
 }
 
 function SectionCard({ title, children, viewAllLink }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow border border-gray-200 h-full">
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-lg text-gray-800">{title}</h3>
-            {viewAllLink && (
-                 <Link href={viewAllLink} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-                    View All <FaExternalLinkAlt size={12}/>
-                </Link>
-            )}
-                    </div>
-        <div className="space-y-4">{children}</div>
-                        </div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-bold text-lg text-gray-800">{title}</h3>
+        {viewAllLink && (
+          <Link href={viewAllLink} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+            View All <FaExternalLinkAlt size={12}/>
+          </Link>
+        )}
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
   );
 }
 
@@ -264,7 +265,7 @@ function ActivityItem({ activity }) {
     <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-md">
       <div className="flex-shrink-0 mt-1">
         {getActivityIcon(activity.type)}
-                      </div>
+      </div>
       <div className="flex-grow min-w-0">
         <p className="text-sm text-gray-800 font-medium">
           <Link href={`/Sales/leads/${activity.leadId}`} className="text-blue-600 hover:underline">
@@ -276,82 +277,82 @@ function ActivityItem({ activity }) {
           <span className="text-xs text-gray-500">{activity.timestamp}</span>
           <span className="text-xs text-gray-400">•</span>
           <span className="text-xs text-gray-500">by {activity.user}</span>
-                          </div>
-                        </div>
-                      </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
 // --- Dashboard Sections ---
 function ActionCenter({ data, onAssign }) {
-    const [selectedSalesRep, setSelectedSalesRep] = useState({});
+  const [selectedSalesRep, setSelectedSalesRep] = useState({});
 
-    const handleAssign = (leadId) => {
-        const repName = selectedSalesRep[leadId];
-        if (!repName) {
-            toast.error("Please select a sales rep.");
-            return;
-        }
-        onAssign(leadId, repName);
-        toast.success(`Lead ${leadId} assigned to ${repName}.`);
-    };
+  const handleAssign = (leadId) => {
+    const repName = selectedSalesRep[leadId];
+    if (!repName) {
+      toast.error("Please select a sales rep.");
+      return;
+    }
+    onAssign(leadId, repName);
+    toast.success(`Lead ${leadId} assigned to ${repName}.`);
+  };
 
-    return (
-        <SectionCard title="Action Center">
-            <div>
-                <h4 className="font-semibold text-sm text-gray-600 mb-2">Unassigned Leads ({data.unassignedLeads.length})</h4>
-                {data.unassignedLeads.map(lead => (
-                    <ActionItem
-                        key={lead.id}
-                        icon={<FaUserPlus size={20} />}
-                        title={lead.name}
-                        subtitle={`Source: ${lead.source}`}
-                        action={
-                            <div className="flex items-center gap-2">
-                                <select 
-                                    className="text-xs border-gray-300 rounded-md shadow-sm p-1"
-                                    onChange={(e) => setSelectedSalesRep(prev => ({...prev, [lead.id]: e.target.value}))}
-                                >
-                                    <option value="">Assign to...</option>
-                                    {/* salesPersons.map(p => <option key={p.id} value={p.name}>{p.name}</option>) */}
-                                </select>
-                                <button 
-                                    onClick={() => handleAssign(lead.id)}
-                                    className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                                >
-                                    Assign
-                                </button>
-          </div>
-                        }
-                    />
-                ))}
-            </div>
-             <div className="border-t border-gray-200 pt-4 mt-4">
-                <h4 className="font-semibold text-sm text-gray-600 mb-2">Leads with Overdue Activities ({data.overdueActivities.length})</h4>
-                {data.overdueActivities.map(lead => (
-                    <ActionItem
-                        key={lead.id}
-                        icon={<FaExclamationCircle className="text-red-500" size={20} />}
-                        title={lead.name}
-                        subtitle={`${lead.task} - Overdue by ${lead.overdueBy}`}
-                        action={ <Link href={`/Sales/leads/${lead.id}`} className="text-xs text-blue-600 hover:underline">View</Link> }
-                    />
-                ))}
-            </div>
-            <div className="border-t border-gray-200 pt-4 mt-4">
-                <h4 className="font-semibold text-sm text-gray-600 mb-2">Stale Leads ({data.staleLeads.length})</h4>
-                {data.staleLeads.map(lead => (
-                    <ActionItem
-                        key={lead.id}
-                        icon={<FaHourglassHalf className="text-yellow-500" size={20} />}
-                        title={lead.name}
-                        subtitle={`Last activity: ${lead.lastActivity}`}
-                        action={ <Link href={`/Sales/leads/${lead.id}`} className="text-xs text-blue-600 hover:underline">View</Link> }
-                    />
-                ))}
-            </div>
-        </SectionCard>
-    );
+  return (
+    <SectionCard title="Action Center">
+      <div>
+        <h4 className="font-semibold text-sm text-gray-600 mb-2">Unassigned Leads ({data.unassignedLeads.length})</h4>
+        {data.unassignedLeads.map(lead => (
+          <ActionItem
+            key={lead.id}
+            icon={<FaUserPlus size={20} />}
+            title={lead.name}
+            subtitle={`Source: ${lead.source}`}
+            action={
+              <div className="flex items-center gap-2">
+                <select 
+                  className="text-xs border-gray-300 rounded-md shadow-sm p-1"
+                  onChange={(e) => setSelectedSalesRep(prev => ({...prev, [lead.id]: e.target.value}))}
+                >
+                  <option value="">Assign to...</option>
+                  {/* salesPersons.map(p => <option key={p.id} value={p.name}>{p.name}</option>) */}
+                </select>
+                <button 
+                  onClick={() => handleAssign(lead.id)}
+                  className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                >
+                  Assign
+                </button>
+              </div>
+            }
+          />
+        ))}
+      </div>
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h4 className="font-semibold text-sm text-gray-600 mb-2">Leads with Overdue Activities ({data.overdueActivities.length})</h4>
+        {data.overdueActivities.map(lead => (
+          <ActionItem
+            key={lead.id}
+            icon={<FaExclamationCircle className="text-red-500" size={20} />}
+            title={lead.name}
+            subtitle={`${lead.task} - Overdue by ${lead.overdueBy}`}
+            action={ <Link href={`/Sales/leads/${lead.id}`} className="text-xs text-blue-600 hover:underline">View</Link> }
+          />
+        ))}
+      </div>
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <h4 className="font-semibold text-sm text-gray-600 mb-2">Stale Leads ({data.staleLeads.length})</h4>
+        {data.staleLeads.map(lead => (
+          <ActionItem
+            key={lead.id}
+            icon={<FaHourglassHalf className="text-yellow-500" size={20} />}
+            title={lead.name}
+            subtitle={`Last activity: ${lead.lastActivity}`}
+            action={ <Link href={`/Sales/leads/${lead.id}`} className="text-xs text-blue-600 hover:underline">View</Link> }
+          />
+        ))}
+      </div>
+    </SectionCard>
+  );
 }
 
 function RecentActivity({ activities = [] }) {
@@ -376,16 +377,16 @@ function RecentActivity({ activities = [] }) {
 function SalesPipelineFunnel({ data }) {
   return (
     <SectionCard title="Sales Pipeline Funnel">
-        <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 12 }} />
-                <Tooltip cursor={{ fill: '#f3f4f6' }} />
-                <Bar dataKey="value" fill="#3B82F6" barSize={30}>
-                    {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <XAxis type="number" hide />
+          <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+          <Tooltip cursor={{ fill: '#f3f4f6' }} />
+          <Bar dataKey="value" fill="#3B82F6" barSize={30}>
+            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </SectionCard>
   );
 }
@@ -393,49 +394,49 @@ function SalesPipelineFunnel({ data }) {
 function RevenueForecast({ data }) {
   return (
     <SectionCard title="Revenue Forecast (Weighted)">
-        <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-                <thead>
-                    <tr className="text-left text-gray-500">
-                        <th className="p-2">Stage</th>
-                        <th className="p-2">Probability</th>
-                        <th className="p-2 text-right">Forecast</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.forecast.map(item => (
-                        <tr key={item.stage} className="border-b border-gray-100">
-                            <td className="p-2 font-semibold">{item.stage}</td>
-                            <td className="p-2 text-gray-600">{item.probability}</td>
-                            <td className="p-2 text-right font-bold text-gray-800">₹{item.forecastValue.toLocaleString('en-IN')}</td>
-                        </tr>
-                    ))}
-                    <tr className="font-bold bg-gray-50">
-                        <td colSpan="2" className="p-2 text-right">Total Forecast</td>
-                        <td className="p-2 text-right text-blue-600">₹{data.forecast.reduce((acc, i) => acc + i.forecastValue, 0).toLocaleString('en-IN')}</td>
-                    </tr>
-                </tbody>
-            </table>
-              </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="text-left text-gray-500">
+              <th className="p-2">Stage</th>
+              <th className="p-2">Probability</th>
+              <th className="p-2 text-right">Forecast</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.forecast.map(item => (
+              <tr key={item.stage} className="border-b border-gray-100">
+                <td className="p-2 font-semibold">{item.stage}</td>
+                <td className="p-2 text-gray-600">{item.probability}</td>
+                <td className="p-2 text-right font-bold text-gray-800">₹{item.forecastValue.toLocaleString('en-IN')}</td>
+              </tr>
+            ))}
+            <tr className="font-bold bg-gray-50">
+              <td colSpan="2" className="p-2 text-right">Total Forecast</td>
+              <td className="p-2 text-right text-blue-600">₹{data.forecast.reduce((acc, i) => acc + i.forecastValue, 0).toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </SectionCard>
   );
 }
 
 function TeamLeaderboard({ data }) {
   return (
-     <SectionCard title="Team Leaderboard" viewAllLink="/manager/team">
-        {data.map(member => (
-            <div key={member.rank} className="flex items-center gap-4 text-sm">
-                <div className="font-bold text-gray-500 w-6">{member.rank === 1 ? <FaCrown className="text-yellow-500"/> : member.rank}.</div>
-                <div className="flex-grow font-semibold text-gray-800">{member.name}</div>
-                <div className="text-right">
-                    <p className="font-semibold">{member.dealsWon} <span className="text-gray-500 font-normal">deals</span></p>
-                </div>
-                <div className="text-right">
-                     <p className="font-semibold">{member.activities} <span className="text-gray-500 font-normal">activities</span></p>
-                </div>
-            </div>
-        ))}
+    <SectionCard title="Team Leaderboard" viewAllLink="/manager/team">
+      {data.map(member => (
+        <div key={member.rank} className="flex items-center gap-4 text-sm">
+          <div className="font-bold text-gray-500 w-6">{member.rank === 1 ? <FaCrown className="text-yellow-500"/> : member.rank}.</div>
+          <div className="flex-grow font-semibold text-gray-800">{member.name}</div>
+          <div className="text-right">
+            <p className="font-semibold">{member.dealsWon} <span className="text-gray-500 font-normal">deals</span></p>
+          </div>
+          <div className="text-right">
+            <p className="font-semibold">{member.activities} <span className="text-gray-500 font-normal">activities</span></p>
+          </div>
+        </div>
+      ))}
     </SectionCard>
   );
 }
@@ -443,159 +444,181 @@ function TeamLeaderboard({ data }) {
 function LeadSourcePerformance({ data }) {
   return (
     <SectionCard title="Lead Source Performance">
-        <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8">
-                    {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                    </Pie>
-                <Tooltip />
-                <Legend iconType="circle" />
-            </PieChart>
-        </ResponsiveContainer>
+      <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8">
+            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+          </Pie>
+          <Tooltip />
+          <Legend iconType="circle" />
+        </PieChart>
+      </ResponsiveContainer>
     </SectionCard>
   );
 }
 
 function MainDashboard() {
-    const [dashboardData, setDashboardData] = useState(MOCK_DATA);
-    const [showAddLeadModal, setShowAddLeadModal] = useState(false);
-    const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
-    const dispatch = useDispatch();
+  const [dashboardData, setDashboardData] = useState(MOCK_DATA);
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  const { pipelines } = useSelector((state) => state.pipelines);
+  const dispatch = useDispatch();
 
-    useEffect(() => {
-        dispatch(fetchManagerEmployees());
-    }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchManagerEmployees());
+  }, [dispatch]);
 
-    const handleAssignLead = (leadId, repName) => {
-        setDashboardData(prev => ({
-            ...prev,
-            actionCenter: {
-                ...prev.actionCenter,
-                unassignedLeads: prev.actionCenter.unassignedLeads.filter(l => l.id !== leadId),
-            }
-        }));
+  // Load pipeline stages for funnel chart
+  useEffect(() => {
+    dispatch(fetchPipelines());
+  }, [dispatch]);
+
+  // Compute funnel data from pipeline stages sorted by orderIndex, excluding the last two
+  const funnelData = useMemo(() => {
+    if (!pipelines || pipelines.length === 0) return MOCK_DATA.pipelineForecast.funnel;
+    const sorted = [...pipelines].sort((a, b) => {
+      const ao = typeof a.orderIndex === 'number' ? a.orderIndex : (a.order || 0);
+      const bo = typeof b.orderIndex === 'number' ? b.orderIndex : (b.order || 0);
+      return ao - bo;
+    });
+    const trimmed = sorted.slice(0, Math.max(0, sorted.length - 2));
+    const total = trimmed.length;
+    return trimmed.map((stage, index) => ({
+      name: stage.name,
+      value: total - index || 1,
+    }));
+  }, [pipelines]);
+
+  const handleAssignLead = (leadId, repName) => {
+    setDashboardData(prev => ({
+      ...prev,
+      actionCenter: {
+        ...prev.actionCenter,
+        unassignedLeads: prev.actionCenter.unassignedLeads.filter(l => l.id !== leadId),
+      }
+    }));
+  };
+
+  const handleAddLeadSubmit = (formData) => {
+    if (!formData.salesRep || !formData.designer) {
+      toast.error('Please assign both Sales Person and Designer.');
+      return;
+    }
+    
+    const leadData = {
+      ...defaultLeadData,
+      ...formData,
+      status: formData.status || "New",
+      submittedBy: "SALESMANAGER",
     };
 
-    const handleAddLeadSubmit = (formData) => {
-        if (!formData.salesRep || !formData.designer) {
-            toast.error('Please assign both Sales Person and Designer.');
-            return;
-        }
-        
-        const leadData = {
-            ...defaultLeadData,
-            ...formData,
-            status: formData.status || "New",
-            submittedBy: "SALESMANAGER",
-        };
+    // Generate a new lead ID
+    const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
+    const newLead = { ...leadData, leadId: newId };
 
-        // Generate a new lead ID
-        const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
-        const newLead = { ...leadData, leadId: newId };
-
-        // Add new activity for lead creation
-        const newActivity = {
-            id: Date.now(),
-            type: 'note',
-            leadName: formData.name,
-            leadId: newId,
-            description: `Manager created new lead and assigned to ${formData.salesRep}`,
-            timestamp: 'Just now',
-            user: 'Manager'
-        };
-
-        // Update the dashboard data to reflect the new lead
-        setDashboardData(prev => ({
-            ...prev,
-            kpis: {
-                ...prev.kpis,
-                newLeads: { ...prev.kpis.newLeads, value: prev.kpis.newLeads.value + 1 }
-            },
-            recentActivities: [newActivity, ...(prev.recentActivities || [])],
-            pipelineForecast: {
-                ...prev.pipelineForecast,
-                funnel: prev.pipelineForecast.funnel.map(stage => 
-                    stage.name === 'New' ? { ...stage, value: stage.value + 1 } : stage
-                )
-            }
-        }));
-
-        toast.success(`Lead "${formData.name}" added successfully!`);
-        setShowAddLeadModal(false);
+    // Add new activity for lead creation
+    const newActivity = {
+      id: Date.now(),
+      type: 'note',
+      leadName: formData.name,
+      leadId: newId,
+      description: `Manager created new lead and assigned to ${formData.salesRep}`,
+      timestamp: 'Just now',
+      user: 'Manager'
     };
 
-    return (
-        <MainLayout>
-            <div className="p-6 bg-gray-50 min-h-screen">
-                <header className="flex justify-between items-center mb-6">
-                        <div>
-                        <h1 className="text-3xl font-bold text-gray-800">Sales Command Center</h1>
-                        <p className="text-gray-600">Welcome back, Manager. Here&apos;s your sales overview for today.</p>
-                            </div>
-                    <div className="flex items-center gap-4">
-                        <button className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2">
-                            <FaFilter /> Quick Filters
-                        </button>
-                        <button 
-                            onClick={() => setShowAddLeadModal(true)}
-                            className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-                        >
-                            <FaPlus /> Add New Lead
-                        </button>
-                         <Link href="/SalesManager/Manager" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                           Go to Pipeline
-                        </Link>
-                        </div>
-                </header>
+    // Update the dashboard data to reflect the new lead
+    setDashboardData(prev => ({
+      ...prev,
+      kpis: {
+        ...prev.kpis,
+        newLeads: { ...prev.kpis.newLeads, value: prev.kpis.newLeads.value + 1 }
+      },
+      recentActivities: [newActivity, ...(prev.recentActivities || [])],
+      pipelineForecast: {
+        ...prev.pipelineForecast,
+        funnel: prev.pipelineForecast.funnel.map(stage => 
+          stage.name === 'New' ? { ...stage, value: stage.value + 1 } : stage
+        )
+      }
+    }));
 
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <KpiCard icon={<FaUsers size={24}/>} label="New Leads" value={dashboardData.kpis.newLeads.value} change={dashboardData.kpis.newLeads.change} />
-                    <KpiCard 
-                        icon={<FaBullseye size={24}/>} 
-                        label="Conversion Rate" 
-                        value={dashboardData.kpis.conversionRate.value} 
-                        change={dashboardData.kpis.conversionRate.change} 
-                        convertedCount={dashboardData.kpis.conversionRate.convertedCount}
-                    />
-                    <KpiCard icon={<FaHandHoldingUsd size={24}/>} label="Avg. Deal Value" value={dashboardData.kpis.avgDealValue.value} change={dashboardData.kpis.avgDealValue.change} currency={true} />
-                    <KpiCard icon={<FaMoneyBillWave size={24}/>} label="Revenue Won" value={dashboardData.kpis.revenueWon.value} change={dashboardData.kpis.revenueWon.change} currency={true} />
-                </div>
+    toast.success(`Lead "${formData.name}" added successfully!`);
+    setShowAddLeadModal(false);
+  };
 
-                {/* Main Dashboard Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Left Column (Action Center) */}
-                    <div className="lg:col-span-1">
-                        <ActionCenter data={dashboardData.actionCenter} onAssign={handleAssignLead} />
-              </div>
+  return (
+    <MainLayout>
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <header className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Sales Command Center</h1>
+            <p className="text-gray-600">Welcome back, Manager. Here&apos;s your sales overview for today.</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2">
+              <FaFilter /> Quick Filters
+            </button>
+            <button 
+              onClick={() => setShowAddLeadModal(true)}
+              className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
+            >
+              <FaPlus /> Add New Lead
+            </button>
+            <Link href="/SalesManager/Manager" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+              Go to Pipeline
+            </Link>
+          </div>
+        </header>
 
-                    {/* Right Column (Charts & Forecasts) */}
-                    <div className="lg:col-span-2 space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                           <SalesPipelineFunnel data={dashboardData.pipelineForecast.funnel} />
-                           <RecentActivity activities={dashboardData.recentActivities} />
-            </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                           <TeamLeaderboard data={dashboardData.teamPerformance.leaderboard} />
-                           <LeadSourcePerformance data={dashboardData.teamPerformance.sourcePerformance} />
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <KpiCard icon={<FaUsers size={24}/>} label="New Leads" value={dashboardData.kpis.newLeads.value} change={dashboardData.kpis.newLeads.change} />
+          <KpiCard 
+            icon={<FaBullseye size={24}/>} 
+            label="Conversion Rate" 
+            value={dashboardData.kpis.conversionRate.value} 
+            change={dashboardData.kpis.conversionRate.change} 
+            convertedCount={dashboardData.kpis.conversionRate.convertedCount}
+          />
+          <KpiCard icon={<FaHandHoldingUsd size={24}/>} label="Avg. Deal Value" value={dashboardData.kpis.avgDealValue.value} change={dashboardData.kpis.avgDealValue.change} currency={true} />
+          <KpiCard icon={<FaMoneyBillWave size={24}/>} label="Revenue Won" value={dashboardData.kpis.revenueWon.value} change={dashboardData.kpis.revenueWon.change} currency={true} />
         </div>
-      </div>
-    </div>
 
-                {/* Add Lead Modal */}
-                <AddLeadModal
-                    isOpen={showAddLeadModal}
-                    onClose={() => setShowAddLeadModal(false)}
-                    onSubmit={handleAddLeadSubmit}
-                    initialData={defaultLeadData}
-                    isManagerView={true}
-                    salesPersons={managerEmployees}
-                    designers={managerEmployees}
-                    salesPersonsLoading={managerEmployeesLoading}
-                    designersLoading={managerEmployeesLoading}
-                />
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column (Action Center) */}
+          <div className="lg:col-span-1">
+            <ActionCenter data={dashboardData.actionCenter} onAssign={handleAssignLead} />
+          </div>
+
+          {/* Right Column (Charts & Forecasts) */}
+          <div className="lg:col-span-2 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <SalesPipelineFunnel data={funnelData} />
+              <RecentActivity activities={dashboardData.recentActivities} />
             </div>
-        </MainLayout>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <TeamLeaderboard data={dashboardData.teamPerformance.leaderboard} />
+              <LeadSourcePerformance data={dashboardData.teamPerformance.sourcePerformance} />
+            </div>
+          </div>
+        </div>
+
+        {/* Add Lead Modal */}
+        <AddLeadModal
+          isOpen={showAddLeadModal}
+          onClose={() => setShowAddLeadModal(false)}
+          onSubmit={handleAddLeadSubmit}
+          initialData={defaultLeadData}
+          isManagerView={true}
+          salesPersons={managerEmployees}
+          designers={managerEmployees}
+          salesPersonsLoading={managerEmployeesLoading}
+          designersLoading={managerEmployeesLoading}
+        />
+      </div>
+    </MainLayout>
   );
 }
 

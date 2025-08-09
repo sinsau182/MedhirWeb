@@ -2616,9 +2616,10 @@ const LeadDetailContent = () => {
     // Update lead with potential data
     await dispatch(updateLead({
       leadId: lead.leadId,
+      firstMeetingDate: potentialData.firstMeetingDate,
       requirements: potentialData.requirements,
-      consultationFee: potentialData.consultationFee,
-      designConsultation: potentialData.designConsultation
+      priority: potentialData.priority,
+      initialQuote: potentialData.initialQuote
     }));
     
     // Move to potential stage
@@ -2644,10 +2645,9 @@ const LeadDetailContent = () => {
     // Update lead with high potential data
     await dispatch(updateLead({
       leadId: lead.leadId,
-      quotationDetails: highPotentialData.quotationDetails,
-      initialQuotedAmount: highPotentialData.initialQuotedAmount,
-      finalQuotedAmount: highPotentialData.finalQuotedAmount,
-      discountPercent: highPotentialData.discountPercent,
+      requirements: highPotentialData.requirements,
+      finalQuotation: highPotentialData.finalQuotation,
+      discount: highPotentialData.discount,
       designTimeline: highPotentialData.designTimeline,
       completionTimeline: highPotentialData.completionTimeline
     }));

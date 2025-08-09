@@ -748,9 +748,10 @@ const LeadManagementContent = ({ role }) => {
       // Update the lead with potential data
       await dispatch(updateLead({
         leadId: formData.leadId,
+        firstMeetingDate: formData.firstMeetingDate,
         requirements: formData.requirements,
-        // consultationFee: formData.consultationFee,
-        designConsultation: formData.designConsultation
+        priority: formData.priority,
+        initialQuote: formData.initialQuote
       }));
       
       // Move the lead to the target pipeline
@@ -774,10 +775,9 @@ const LeadManagementContent = ({ role }) => {
       // Update the lead with high potential data
       await dispatch(updateLead({
         leadId: formData.leadId,
-        quotationDetails: formData.quotationDetails,
-        initialQuotedAmount: formData.initialQuotedAmount,
-        finalQuotedAmount: formData.finalQuotedAmount,
-        discountPercent: formData.discountPercent,
+        requirements: formData.requirements,
+        finalQuotation: formData.finalQuotation,
+        discount: formData.discount,
         designTimeline: formData.designTimeline,
         completionTimeline: formData.completionTimeline
       }));

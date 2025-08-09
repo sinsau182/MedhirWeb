@@ -1004,28 +1004,28 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
               {/* TDS Selection */}
               <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
               <label className="flex items-center">
-                <input 
-                  type="checkbox"
-                  checked={tdsApplied}
-                  onChange={e => {
-                    setTdsApplied(e.target.checked);
-                    if (!e.target.checked) {
-                      // Clear TDS percentage when unchecked
-                      setFormData(prev => ({
-                        ...prev,
-                        tdsPercentage: ''
-                      }));
-                    } else {
-                      // Set TDS percentage when checked
-                      setFormData(prev => ({
-                        ...prev,
-                        tdsPercentage: tdsRate.toString()
-                      }));
-                    }
-                  }}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  disabled={formData.taxTreatment !== 'Registered'}
-                />
+                <input
+  type="checkbox"
+  checked={!!formData.tdsPercentage} // checked if tdsPercentage has a value
+  onChange={e => {
+    if (!e.target.checked) {
+      // Clear TDS percentage when unchecked
+      setFormData(prev => ({
+        ...prev,
+        tdsPercentage: ''
+      }));
+    } else {
+      // Set default TDS percentage when checked
+      setFormData(prev => ({
+        ...prev,
+        tdsPercentage: TDS_RATES[0].toString() // pick first available rate
+      }));
+    }
+  }}
+  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+  disabled={formData.taxTreatment !== 'Registered'}
+/>
+
                 <span className={`ml-2 text-sm font-medium ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>TDS/TCS Applied</span>
               </label>
               {tdsApplied && formData.taxTreatment === 'Registered' && (
