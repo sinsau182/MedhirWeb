@@ -18,16 +18,14 @@ const Section = ({ title, icon, children }) => (
 );
 
 const VendorPreview = ({ vendorData, onClose }) => {
-  const { 
-    vendorName, email, phone, mobile, website,
-    addressLine1, addressLine2, city, state, pinCode, country,
-    gstin, pan, taxTreatment, tdsApplies, tdsPercentage,
-    contactAddresses,
-    vendorTags,
-    bankDetails,
-    paymentTerms, priceList, fiscalPosition,
-    notes, upiId
-  } = vendorData;
+  const {
+  vendorName, email, phone, mobile, website,
+  addressLine1, addressLine2, city, state, pinCode, country,
+  gstin, pan, taxTreatment,
+  contactAddresses, vendorTags, bankDetails,
+  paymentTerms, priceList, fiscalPosition,
+  notes, upiId
+} = vendorData;
 
   const fullAddress = [addressLine1, addressLine2, city, state, pinCode, country].filter(Boolean).join(',\n');
 
@@ -79,8 +77,10 @@ const VendorPreview = ({ vendorData, onClose }) => {
                 <DetailItem label="GST Treatment" value={taxTreatment} />
                 <DetailItem label="GSTIN" value={gstin} />
                 <DetailItem label="PAN" value={pan} />
-                <DetailItem label="TDS Applies" value={tdsApplies ? 'Yes' : 'No'} />
-                {tdsApplies && <DetailItem label="TDS Percentage" value={`${tdsPercentage}%`} />}
+               <DetailItem   label="TDS Percentage"    value={`${vendorData.tdsPercentage}%`}
+  />
+
+
             </Section>
 
             {hasBankDetails && (
