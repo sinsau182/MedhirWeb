@@ -80,6 +80,7 @@ function PayrollManagement() {
     setIsCalculatePayrollClicked(false);
     setShowCheckboxes(false);
     setSelectedEmployees([]);
+    setPayrollErrorDetails(null); // Clear previous month error details on month change
   };
 
 
@@ -229,43 +230,43 @@ function PayrollManagement() {
                     </td>
                    
                     <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
-                      {payrollItem ? `₹${(payrollItem.monthlyCTC || 0).toFixed(2)}` : `₹${(employee.salaryDetails?.monthlyCtc || 0).toFixed(2)}`}
+                      {payrollItem ? `₹ ${(payrollItem.monthlyCTC || 0)}` : `₹ ${(employee.salaryDetails?.monthlyCtc || 0)}`}
                     </td>
                                          <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
                        {payrollItem ? (payrollItem.paidDays || 0) : '0'}
                      </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.thisMonthSalary || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.thisMonthSalary || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.basicThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.basicThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.hraThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.hraThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.otherAllowancesThisMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.otherAllowancesThisMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.fuelReimbursement || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.fuelReimbursement || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.phoneReimbursement || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.phoneReimbursement || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
-                      {payrollItem ? `₹${(payrollItem.arrears || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.arrears || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹${(payrollItem.employeePFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.employeePFPerMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹${(payrollItem.employerPFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.employerPFPerMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
-                      {payrollItem ? `₹${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.employerPFDeduction || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${((payrollItem.professionalTax || 0) + (payrollItem.employeePFDeduction || 0) + (payrollItem.employerPFDeduction || 0) + (payrollItem.otherDeductions || 0))}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600 bg-blue-50 font-semibold">
-                      {payrollItem ? `₹${(payrollItem.netPay || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.netPay || 0)}` : '₹ 0'}
                     </td>
                   </tr>
                 );
@@ -367,22 +368,22 @@ function PayrollManagement() {
                       {employee.departmentName}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.employeePFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.employeePFPerMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.employerPFPerMonth || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.employerPFPerMonth || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.professionalTax || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.professionalTax || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.advanceAdjusted || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.advanceAdjusted || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${(payrollItem.otherDeductions || 0).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${(payrollItem.otherDeductions || 0)}` : '₹ 0'}
                     </td>
                     <td className="py-2 px-2 text-xs text-gray-600">
-                      {payrollItem ? `₹${((payrollItem.employeePFPerMonth || 0) + (payrollItem.employerPFPerMonth || 0) + (payrollItem.professionalTax || 0) + (payrollItem.otherDeductions || 0)).toFixed(2)}` : '₹0.00'}
+                      {payrollItem ? `₹ ${((payrollItem.employeePFPerMonth || 0) + (payrollItem.employerPFPerMonth || 0) + (payrollItem.professionalTax || 0) + (payrollItem.otherDeductions || 0))}` : '₹ 0'}
                     </td>
                   </tr>
                 );

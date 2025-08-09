@@ -50,6 +50,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     // budget: '',
     // designStyle: '',
     leadSource: '',
+    referralName: '',
     notes: '',
     // priority: 'Low',
     rating: 0,
@@ -77,7 +78,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...initialData, area: initialData.area || '', /* priority: initialData.priority || 'Low', */ dateOfCreation: initialData.dateOfCreation || new Date().toISOString().split('T')[0] });
+      setFormData({ ...initialData, area: initialData.area || '', referralName: initialData.referralName || '', /* priority: initialData.priority || 'Low', */ dateOfCreation: initialData.dateOfCreation || new Date().toISOString().split('T')[0] });
     }
   }, [initialData]);
 
@@ -94,6 +95,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         // budget: '',
         // designStyle: '',
         leadSource: '',
+        referralName: '',
         notes: '',
         // priority: 'Low',
         rating: 0,
@@ -143,8 +145,25 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
       newErrors.contactNumber = 'Contact number cannot start with 0';
     }
 
-    // Email validation
-    if (formData.email.trim()) {
+    // Lead source validation
+    if (!formData.leadSource) {
+      newErrors.leadSource = 'Lead source is required';
+    }
+
+    // Email validation - required if lead source is Email
+    if (formData.leadSource === 'Email') {
+      if (!formData.email.trim()) {
+        newErrors.email = 'Email is required when lead source is Email';
+      } else {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(formData.email.trim())) {
+          newErrors.email = 'Please enter a valid email address';
+        } else if (formData.email.trim().length > 100) {
+          newErrors.email = 'Email must be less than 100 characters';
+        }
+      }
+    } else if (formData.email.trim()) {
+      // Optional email validation when provided
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(formData.email.trim())) {
         newErrors.email = 'Please enter a valid email address';
@@ -158,20 +177,18 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
       newErrors.projectType = 'Project type is required';
     }
 
-    // Lead source validation
-    if (!formData.leadSource) {
-      newErrors.leadSource = 'Lead source is required';
+    // Referral name validation - required if lead source is Referral
+    if (formData.leadSource === 'Referral') {
+      if (!formData.referralName.trim()) {
+        newErrors.referralName = 'Referral name is required when lead source is Referral';
+      } else if (formData.referralName.trim().length < 2) {
+        newErrors.referralName = 'Referral name must be at least 2 characters';
+      } else if (formData.referralName.trim().length > 50) {
+        newErrors.referralName = 'Referral name must be less than 50 characters';
+      } else if (!/^[a-zA-Z\s]+$/.test(formData.referralName.trim())) {
+        newErrors.referralName = 'Referral name can only contain letters and spaces';
+      }
     }
-
-    // Budget validation
-    // if (formData.budget.trim()) {
-    //   const budgetValue = parseFloat(formData.budget.replace(/[^\d.]/g, ''));
-    //   if (isNaN(budgetValue) || budgetValue < 0) {
-    //     newErrors.budget = 'Budget must be a valid positive number';
-    //   } else if (budgetValue > 999999999) {
-    //     newErrors.budget = 'Budget cannot exceed 999,999,999';
-    //   }
-    // }
 
     // Address validation
     if (formData.address.trim()) {
@@ -260,6 +277,10 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         // Allow all characters but limit length
         processedValue = value.slice(0, 500);
         break;
+
+      case 'referralName':
+        processedValue = value.replace(/[^a-zA-Z\s]/g, '').slice(0, 50);
+        break;
       
       default:
         processedValue = value;
@@ -269,6 +290,11 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
       ...prev,
       [field]: processedValue
     }));
+
+    // If lead source changes away from Referral, clear referralName
+    if (field === 'leadSource' && value !== 'Referral') {
+      setFormData(prev => ({ ...prev, referralName: '' }));
+    }
 
     // Clear error when user starts typing
     if (errors[field]) {
@@ -342,8 +368,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               {errors.alternateContactNumber && <p className="text-red-500 text-xs mt-1">{errors.alternateContactNumber}</p>}
             </div>
 
-            
-            {/* Project Type Field */}
+            {/* Project Type and Lead Source */}
             <div className='grid grid-cols-2 gap-4'>
               <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -388,39 +413,37 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                
             </div>
 
-                        {/* Budget Field with Rupee Icon */}
-                        {/* <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Estimated Budget
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <FaRupeeSign className="w-4 h-4" />
-                </span>
+            {/* Conditional Referral Name Field */}
+            {formData.leadSource === 'Referral' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Referral Name <span className="text-blue-500 font-bold">*</span>
+                </label>
                 <Input
                   type="text"
-                  placeholder="Enter estimated project budget"
-                  value={formData.budget}
-                  onChange={(e) => handleInputChange('budget', e.target.value)}
-                  className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 pl-8"
+                  placeholder="Enter referrer's name"
+                  value={formData.referralName}
+                  onChange={(e) => handleInputChange('referralName', e.target.value)}
+                  className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.referralName ? 'border-red-500' : ''}`}
                 />
+                {errors.referralName && <p className="text-red-500 text-xs mt-1">{errors.referralName}</p>}
               </div>
-            </div> */}
+            )}
 
-            {/* Email Field */}
+            {/* Email Field (conditionally required) */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Email
+                Email {formData.leadSource === 'Email' && (<span className="text-blue-500 font-bold">*</span>)}
               </label>
               <Input
                 type="email"
                 placeholder="Enter email address"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
+                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.email ? 'border-red-500' : ''}`}
               />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
-
 
             {/* Project Address Field */}
             <div>
@@ -496,10 +519,10 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                 Date of Creation
               </label>
                 <Input
-                  type="date"
-                  value={formData.dateOfCreation}
-                  onChange={e => handleInputChange('dateOfCreation', e.target.value)}
-                className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
+                type="date"
+                value={formData.dateOfCreation}
+                onChange={e => handleInputChange('dateOfCreation', e.target.value)}
+              className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
                 />
             </div>
             </div>
