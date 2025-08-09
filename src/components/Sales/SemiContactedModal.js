@@ -19,8 +19,7 @@ const SemiContactedModal = ({
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     budget: "",
-    firstMeetingDate: "",
-    priority: "MEDIUM"
+    firstCallDate: ""
   });
   const [floorPlanFile, setFloorPlanFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,8 +33,7 @@ const SemiContactedModal = ({
       dispatch(fetchLeadById(lead.leadId));
       setFormData({
         budget: "",
-        firstMeetingDate: "",
-        priority: "MEDIUM"
+        firstCallDate: ""
       });
       setFloorPlanFile(null);
       setIsSubmitting(false);
@@ -68,13 +66,13 @@ const SemiContactedModal = ({
       return;
     }
 
-    if (!formData.firstMeetingDate) {
-      toast.error("Please select the first meeting date");
+    if (!formData.firstCallDate) {
+      toast.error("Please select the first call date");
       return;
     }
     
     // Validate meeting date is not in the past
-    const meetingDate = new Date(formData.firstMeetingDate);
+    const meetingDate = new Date(formData.firstCallDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -92,8 +90,7 @@ const SemiContactedModal = ({
       // Prepare lead data as JSON string
       const leadData = {
         budget: formData.budget.trim(),
-        firstMeetingDate: formData.firstMeetingDate,
-        priority: formData.priority
+        firstCallDate: formData.firstCallDate
       };
       
       formDataToSend.append('leadData', JSON.stringify(leadData));
@@ -171,13 +168,8 @@ const SemiContactedModal = ({
         }
         break;
       
-      case 'firstMeetingDate':
+      case 'firstCallDate':
         // Allow date input
-        processedValue = value;
-        break;
-      
-      case 'priority':
-        // Allow priority selection
         processedValue = value;
         break;
       
@@ -299,38 +291,17 @@ const SemiContactedModal = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <FaCalendarAlt className="w-4 h-4 text-purple-600" />
-                First Meeting Date *
+                First Call Date *
               </label>
               <input
                 type="datetime-local"
-                value={formData.firstMeetingDate}
-                onChange={(e) => handleInputChange('firstMeetingDate', e.target.value)}
+                value={formData.firstCallDate}
+                onChange={(e) => handleInputChange('firstCallDate', e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Schedule the first meeting with the client
-              </p>
-            </div>
-
-            {/* Priority */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaExclamationTriangle className="w-4 h-4 text-red-600" />
-                Priority
-              </label>
-              <select
-                value={formData.priority}
-                onChange={(e) => handleInputChange('priority', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white"
-              >
-                <option value="LOW">Low Priority</option>
-                <option value="MEDIUM">Medium Priority</option>
-                <option value="HIGH">High Priority</option>
-                <option value="URGENT">Urgent</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Set the priority level for this lead
+                Enter the first call date with the client
               </p>
             </div>
 
@@ -341,8 +312,7 @@ const SemiContactedModal = ({
                  <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
                  <p><strong>Floor Plan File:</strong> {floorPlanFile ? floorPlanFile.name : "Not uploaded"}</p>
                  <p><strong>Budget:</strong> {formData.budget || "Not specified"}</p>
-                 <p><strong>Meeting Date:</strong> {formData.firstMeetingDate ? new Date(formData.firstMeetingDate).toLocaleString() : "Not scheduled"}</p>
-                 <p><strong>Priority:</strong> {formData.priority}</p>
+                 <p><strong>Call Date:</strong> {formData.firstCallDate ? new Date(formData.firstCallDate).toLocaleString() : "Not scheduled"}</p>
                </div>
             </div>
           </form>
@@ -361,7 +331,7 @@ const SemiContactedModal = ({
           <button
             type="submit"
             onClick={handleSubmit}
-                         disabled={isSubmitting || !floorPlanFile || !formData.budget.trim() || !formData.firstMeetingDate}
+                         disabled={isSubmitting || !floorPlanFile || !formData.budget.trim() || !formData.firstCallDate}
             className="px-6 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
           >
             {isSubmitting ? (

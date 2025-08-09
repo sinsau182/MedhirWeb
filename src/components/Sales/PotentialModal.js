@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { FaTimes, FaClipboardList, FaDollarSign, FaPalette, FaCheck } from "react-icons/fa";
+import {
+  FaTimes,
+  FaClipboardList,
+  FaPalette,
+  FaCheck,
+  FaCalendarAlt,
+  FaExclamationTriangle,
+  FaDollarSign,
+} from "react-icons/fa";
 import { toast } from "sonner";
 
-const PotentialModal = ({ 
-  isOpen, 
-  onClose, 
-  lead, 
-  onSuccess
-}) => {
+const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
   const [formData, setFormData] = useState({
+    firstMeetingDate: "",
     requirements: "",
-    // consultationFee: "",
-    designConsultation: "NO"
+    priority: "MEDIUM",
+    initialQuote: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,9 +23,10 @@ const PotentialModal = ({
   useEffect(() => {
     if (isOpen) {
       setFormData({
+        firstMeetingDate: "",
         requirements: "",
-        // consultationFee: "",
-        designConsultation: "NO"
+        priority: "MEDIUM",
+        initialQuote: "",
       });
       setIsSubmitting(false);
     }
@@ -29,50 +34,41 @@ const PotentialModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Enhanced validation
     if (!formData.requirements.trim()) {
       toast.error("Please provide the requirements");
       return;
     }
-    
+
     if (formData.requirements.trim().length < 10) {
       toast.error("Requirements must be at least 10 characters");
       return;
     }
-    
+
     if (formData.requirements.trim().length > 500) {
       toast.error("Requirements must be less than 500 characters");
       return;
     }
 
-    // if (!formData.consultationFee.trim()) {
-    //   toast.error("Please provide the consultation fee");
-    //   return;
-    // }
-    
-    // // Validate consultation fee
-    // const consultationFee = parseFloat(formData.consultationFee.replace(/[^\d.]/g, ''));
-    // if (isNaN(consultationFee) || consultationFee < 0) {
-    //   toast.error("Consultation fee must be a valid positive number");
-    //   return;
-    // }
-    
-    // if (consultationFee > 999999) {
-    //   toast.error("Consultation fee cannot exceed 999,999");
-    //   return;
-    // }
+    if (formData.initialQuote && parseFloat(formData.initialQuote) <= 0) {
+      toast.error("Initial quote must be a positive number");
+      return;
+    }
 
     setIsSubmitting(true);
-    
+
     try {
       await onSuccess({
         leadId: lead.leadId,
+        firstMeetingDate: formData.firstMeetingDate,
         requirements: formData.requirements.trim(),
-        // consultationFee: formData.consultationFee.trim(),
-        designConsultation: formData.designConsultation
+        priority: formData.priority,
+        initialQuote: formData.initialQuote ? parseFloat(formData.initialQuote) : null,
       });
-      
+
+      console.log(formData)
+
       toast.success("Lead updated successfully!");
       onClose();
     } catch (error) {
@@ -92,33 +88,28 @@ const PotentialModal = ({
 
     // Apply input restrictions based on field type
     switch (field) {
-      case 'requirements':
+      case "requirements":
         // Allow alphanumeric, spaces, and common characters
-        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 500);
+        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, "").slice(0, 500);
         break;
-      
-      case 'consultationFee':
+
+      case "initialQuote":
         // Only allow numbers and decimal point
-        processedValue = value.replace(/[^\d.]/g, '');
+        processedValue = value.replace(/[^\d.]/g, "");
         // Prevent multiple decimal points
         const decimalCount = (processedValue.match(/\./g) || []).length;
         if (decimalCount > 1) {
-          processedValue = processedValue.replace(/\.+$/, '');
+          processedValue = processedValue.replace(/\.+$/, "");
         }
         break;
-      
-      case 'designConsultation':
-        // Allow alphanumeric, spaces, and common characters
-        processedValue = value.replace(/[^a-zA-Z0-9\s,.-]/g, '').slice(0, 200);
-        break;
-      
+
       default:
         processedValue = value;
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: processedValue
+      [field]: processedValue,
     }));
   };
 
@@ -180,72 +171,116 @@ const PotentialModal = ({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* First Meeting Date */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <FaCalendarAlt className="w-4 h-4 text-blue-600" />
+                First Meeting Date
+              </label>
+              <input
+                type="date"
+                value={formData.firstMeetingDate}
+                onChange={(e) =>
+                  handleInputChange("firstMeetingDate", e.target.value)
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Select the first meeting date with the client
+              </p>
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <FaExclamationTriangle className="w-4 h-4 text-orange-600" />
+                Priority *
+              </label>
+              <select
+                value={formData.priority}
+                onChange={(e) =>
+                  handleInputChange("priority", e.target.value)
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 bg-white"
+                required
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Set the priority level for this lead
+              </p>
+            </div>
+
+            {/* Initial Quote */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <FaDollarSign className="w-4 h-4 text-green-600" />
+                Initial Quote
+              </label>
+              <input
+                type="text"
+                value={formData.initialQuote}
+                onChange={(e) =>
+                  handleInputChange("initialQuote", e.target.value)
+                }
+                placeholder="Enter initial quote amount..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the initial quote amount for the project
+              </p>
+            </div>
+
             {/* Requirements */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaClipboardList className="w-4 h-4 text-blue-600" />
+                <FaClipboardList className="w-4 h-4 text-purple-600" />
                 Requirements *
               </label>
               <textarea
                 value={formData.requirements}
-                onChange={(e) => handleInputChange('requirements', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("requirements", e.target.value)
+                }
                 placeholder="Describe the project requirements in detail..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white resize-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white resize-none"
                 rows="4"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                Provide detailed requirements for the project
-              </p>
-            </div>
-
-            {/* Consultation Fee */}
-            {/* <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaDollarSign className="w-4 h-4 text-green-600" />
-                Refundable Token Amount *
-              </label>
-              <input
-                type="text"
-                value={formData.consultationFee}
-                onChange={(e) => handleInputChange('consultationFee', e.target.value)}
-                placeholder="Enter refundable token amount (e.g., ₹5,000)"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter the refundable token amount
-              </p>
-            </div> */}
-
-            {/* Design Consultation */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaPalette className="w-4 h-4 text-purple-600" />
-                Design Consultation
-              </label>
-              <select
-                value={formData.designConsultation}
-                onChange={(e) => handleInputChange('designConsultation', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white"
-              >
-                <option value="NO">No Design Consultation</option>
-                <option value="YES">Yes, Design Consultation Required</option>
-                <option value="OPTIONAL">Optional Design Consultation</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Select if design consultation is required
+                Provide detailed requirements for the project (10-500 characters)
               </p>
             </div>
 
             {/* Summary */}
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h4 className="font-medium text-green-800 mb-2">Update Summary</h4>
+              <h4 className="font-medium text-green-800 mb-2">
+                Update Summary
+              </h4>
               <div className="text-sm text-green-700 space-y-1">
-                <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                <p><strong>Requirements:</strong> {formData.requirements ? "Provided" : "Not provided"}</p>
-                <p><strong>Refundable Token Amount:</strong> {formData.consultationFee || "Not specified"}</p>
-                <p><strong>Design Consultation:</strong> {formData.designConsultation}</p>
+                <p>
+                  <strong>Lead:</strong> {lead?.name || "N/A"}
+                </p>
+                <p>
+                  <strong>First Meeting Date:</strong>{" "}
+                  {formData.firstMeetingDate
+                    ? new Date(formData.firstMeetingDate).toLocaleDateString()
+                    : "Not scheduled"}
+                </p>
+                <p>
+                  <strong>Priority:</strong> {formData.priority}
+                </p>
+                <p>
+                  <strong>Initial Quote:</strong>{" "}
+                  {formData.initialQuote ? `$${formData.initialQuote}` : "Not provided"}
+                </p>
+                <p>
+                  <strong>Requirements:</strong>{" "}
+                  {formData.requirements ? "Provided" : "Not provided"}
+                </p>
               </div>
             </div>
           </form>
@@ -285,4 +320,4 @@ const PotentialModal = ({
   );
 };
 
-export default PotentialModal; 
+export default PotentialModal;

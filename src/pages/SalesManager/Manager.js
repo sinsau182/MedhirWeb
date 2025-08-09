@@ -601,40 +601,6 @@ const ManagerContent = ({ role }) => {
     }
   };
 
-  // Move to junk handler
-  const handleMoveToJunk = async (leadId) => {
-    try {
-      console.log('Manager - handleMoveToJunk called with:', leadId);
-      
-      // Find the junk stage (orderIndex 6, name "junk")
-      const junkStage = pipelines.find(p => p.orderIndex === 6 && p.name.toLowerCase() === 'junk');
-      
-      if (!junkStage) {
-        console.error('Junk stage not found');
-        toast.error("Junk stage not found");
-        return;
-      }
-      
-      console.log('Manager - Moving lead to junk stage:', junkStage);
-      
-      // Move the lead to the junk stage
-      await dispatch(moveLeadToPipeline({
-        leadId: leadId,
-        newPipelineId: junkStage.stageId
-      }));
-      
-      console.log('Manager - Lead moved to junk successfully');
-      toast.success("Lead moved to junk successfully!");
-      
-      // Refresh leads
-      dispatch(fetchLeads());
-    } catch (error) {
-      console.error("Move to junk error:", error);
-      toast.error("Failed to move lead to junk");
-      throw error;
-    }
-  };
-
   // Semi contacted handler for SemiContactedModal
   const handleSemiContactedSuccess = async (semiContactedData) => {
     try {
@@ -806,7 +772,6 @@ const ManagerContent = ({ role }) => {
                   onScheduleActivity={handleScheduleActivity}
                   onDragEnd={handleDragEnd}
                   onTeamAssign={handleTeamAssign}
-                  onMoveToJunk={handleMoveToJunk}
                   managerEmployees={managerEmployees || []}
                   allowAssignment={true}
                   debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
