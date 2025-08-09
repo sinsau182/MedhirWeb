@@ -60,8 +60,7 @@ const AttendanceTable = ({
       const yearNum = parseInt(selectedYear);
       const monthIdx = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth() + 1;
       const result = await dispatch(processHolidayAttendance({ companyId, yearNum, monthIdx })).unwrap();
-      console.log("Process holiday attendance result:", result);
-      toast.success("Holiday attendance processed successfully");
+      toast.success("Holiday attendance processed successfully:", result);
 
       // Refresh attendance view with current filters
       const apiParams = { month: monthIdx, year: selectedYear };
@@ -70,7 +69,6 @@ const AttendanceTable = ({
       // role not available here; fetch all for month scope used by AttendanceTracker
       await dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
     } catch (err) {
-      console.error("Process holiday attendance error", err);
       toast.error("Something went wrong while processing");
     }
   };
