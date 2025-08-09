@@ -1004,51 +1004,53 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
               {/* TDS Selection */}
               <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
               <label className="flex items-center">
-                <input
+              <input 
   type="checkbox"
-  checked={!!formData.tdsPercentage} // checked if tdsPercentage has a value
+  checked={tdsApplied}
   onChange={e => {
-    if (!e.target.checked) {
-      // Clear TDS percentage when unchecked
-      setFormData(prev => ({
-        ...prev,
-        tdsPercentage: ''
-      }));
-    } else {
-      // Set default TDS percentage when checked
-      setFormData(prev => ({
-        ...prev,
-        tdsPercentage: TDS_RATES[0].toString() // pick first available rate
-      }));
-    }
+    const isChecked = e.target.checked;
+    setTdsApplied(isChecked);
+
+    setFormData(prev => ({
+      ...prev,
+      tdsPercentage: isChecked ? tdsRate.toString() : ''
+    }));
   }}
   className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
   disabled={formData.taxTreatment !== 'Registered'}
 />
 
-                <span className={`ml-2 text-sm font-medium ${formData.taxTreatment !== 'Registered' ? 'text-gray-400' : 'text-gray-700'}`}>TDS/TCS Applied</span>
-              </label>
-              {tdsApplied && formData.taxTreatment === 'Registered' && (
-                <div>
-                  <label className="sr-only">TDS Rate</label>
-                  <select
-                    value={tdsRate}
-                    onChange={e => {
-                      const newRate = Number(e.target.value);
-                      setTdsRate(newRate);
-                      // Update formData.tdsPercentage when rate changes
-                      setFormData(prev => ({
-                        ...prev,
-                        tdsPercentage: newRate.toString()
-                      }));
-                    }}
-                    className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {TDS_RATES.map(rate => (
-                      <option key={rate} value={rate}>{rate}%</option>
-                    ))}
-                  </select>
-                </div>
+                <span
+  className={`ml-2 text-sm font-medium ${
+    formData.taxTreatment !== 'Registered'
+      ? 'text-gray-400'
+      : 'text-gray-700'
+  }`}
+>
+  TDS/TCS Applied
+</span>
+</label>
+
+{formData.tdsPercentage && formData.taxTreatment === 'Registered' && (
+  <div>
+    <label className="sr-only">TDS Rate</label>
+    <select
+      value={formData.tdsPercentage}
+      onChange={e => {
+        setFormData(prev => ({
+          ...prev,
+          tdsPercentage: e.target.value
+        }));
+      }}
+      className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      {TDS_RATES.map(rate => (
+        <option key={rate} value={rate}>
+          {rate}%
+        </option>
+      ))}
+    </select>
+  </div>
               )}
             </div>
             </div>
