@@ -385,36 +385,36 @@ const Leaves = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <p className="text-gray-600">
-                      Leave carried from previous year
+                      Leaves earned in this month
                     </p>
                     <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.leavesCarriedFromPreviousYear)}
+                      {formatNumber(leaveBalance.leavesEarnedInThisMonth)}
                     </p>
                   </div>
                   <div className="flex justify-between">
-                    <p className="text-gray-600">Leaves earned since January</p>
+                    <p className="text-gray-600">Comp-Off earned in this month</p>
                     <p className="text-gray-800 font-medium">
                       {formatNumber(
-                        leaveBalance.totalAnnualLeavesEarnedSinceJanuary
+                        leaveBalance.compOffEarnedInThisMonth
                       )}
+                    </p>
+                  </div>
+                   <div className="flex justify-between">
+                    <p className="text-gray-600">Leaves carried forward</p>
+                    <p className="text-gray-800 font-medium">
+                      {formatNumber(leaveBalance.leavesCarryForwardedFromPreviousMonth)}
                     </p>
                   </div>
                   <div className="flex justify-between">
                     <p className="text-gray-600">Comp-off carried forward</p>
                     <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.compOffLeavesCarryForwarded)}
+                      {formatNumber(leaveBalance.compOffCarryForwardedFromPreviousMonth)}
                     </p>
                   </div>
                   <div className="flex justify-between">
-                    <p className="text-gray-600">Comp-off earned this month</p>
+                    <p className="text-gray-600">Leaves taken in this month</p>
                     <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.compOffLeavesEarned)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="text-gray-600">Leaves taken in this year</p>
-                    <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.leavesTakenThisYear)}
+                      {formatNumber(leaveBalance.leavesTakenInThisMonth)}
                     </p>
                   </div>
                   <hr className="my-4" />
@@ -425,7 +425,7 @@ const Leaves = () => {
                     </p>
                   </div>
                   <div className="mt-2 text-xs text-gray-500">
-                    * Total = Previous year leaves + Earned leaves + Comp-off
+                    * Total = Leaves(carried & earned) + Comp-off
                     (carried & earned) - Taken leaves
                   </div>
                 </div>
