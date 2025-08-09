@@ -169,6 +169,35 @@ const AccountSettingsPage = () => {
     setDocumentSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  // Robust companyId resolver (handles encrypted, plain, and nested data)
+  const resolveCompanyId = () => {
+    try {
+      let cid = getItemFromSessionStorage('employeeCompanyId')
+        || getItemFromSessionStorage('companyId')
+        || getItemFromSessionStorage('company');
+      if (cid) return cid;
+      // Fallback: read raw sessionStorage
+      if (typeof window !== 'undefined') {
+        cid = sessionStorage.getItem('employeeCompanyId')
+          || sessionStorage.getItem('companyId')
+          || sessionStorage.getItem('company');
+        if (cid) return cid;
+        // Try to parse bis_data if present
+        const bisRaw = sessionStorage.getItem('bis_data');
+        if (bisRaw) {
+          try {
+            const bis = JSON.parse(bisRaw);
+            if (bis?.companyId) return bis.companyId;
+            if (bis?.employeeCompanyId) return bis.employeeCompanyId;
+          } catch {}
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   // Removed bank details handler
 
   // Removed bank validation
@@ -177,9 +206,7 @@ const AccountSettingsPage = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const companyId = getItemFromSessionStorage('employeeCompanyId')
-          || getItemFromSessionStorage('companyId')
-          || getItemFromSessionStorage('company');
+        const companyId = resolveCompanyId();
         if (!companyId) return;
         const token = getItemFromSessionStorage('token', null);
         setIsLoading(true);
@@ -226,9 +253,7 @@ const AccountSettingsPage = () => {
 
   const handleSaveChanges = async () => {
     try {
-      const companyId = getItemFromSessionStorage('employeeCompanyId')
-        || getItemFromSessionStorage('companyId')
-        || getItemFromSessionStorage('company');
+      const companyId = resolveCompanyId();
       if (!companyId) {
         toast.error('Company ID not found.');
         return;

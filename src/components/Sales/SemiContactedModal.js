@@ -72,14 +72,14 @@ const SemiContactedModal = ({
     }
     
     // Validate meeting date is not in the past
-    const meetingDate = new Date(formData.firstCallDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // const meetingDate = new Date(formData.firstCallDate);
+    // const today = new Date();
+    // today.setHours(0, 0, 0, 0);
     
-    if (meetingDate < today) {
-      toast.error("Meeting date cannot be in the past");
-      return;
-    }
+    // if (meetingDate < today) {
+    //   toast.error("Meeting date cannot be in the past");
+    //   return;
+    // }
 
     setIsSubmitting(true);
     
