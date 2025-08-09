@@ -300,7 +300,9 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               </select>
             </div>
           </div>
-          <div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Payment Transaction ID</label>
             <input
               type="text"
@@ -310,7 +312,6 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               placeholder="Enter transaction ID"
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">PAN Number</label>
               <input
