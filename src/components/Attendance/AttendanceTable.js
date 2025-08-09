@@ -74,7 +74,6 @@ const AttendanceTable = ({
       toast.error("Something went wrong while processing");
     }
   };
-  
 
   // Determine which data to use for rendering
   let dataToRender = filteredEmployees;
