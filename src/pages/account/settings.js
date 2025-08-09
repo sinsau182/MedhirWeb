@@ -172,9 +172,9 @@ const AccountSettingsPage = () => {
   // Robust companyId resolver (handles encrypted, plain, and nested data)
   const resolveCompanyId = () => {
     try {
-      let cid = getItemFromSessionStorage('employeeCompanyId')
-        || getItemFromSessionStorage('companyId')
-        || getItemFromSessionStorage('company');
+      let cid = sessionStorage.getItem('employeeCompanyId')
+        || sessionStorage.getItem('companyId')
+        || sessionStorage.getItem('company');
       if (cid) return cid;
       // Fallback: read raw sessionStorage
       if (typeof window !== 'undefined') {
