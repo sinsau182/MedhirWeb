@@ -302,14 +302,19 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             };
             modules.push({ key, ...filteredModule });
           } else if (key === "MOD_SALES") {
+            const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
             const filteredItems = module.items.filter(item => {
               if (item.label === "Sales Settings") {
-                return hasAdminRole(); // Only Admins can see Sales Settings
+                return hasAdminRole();
               }
-              if (item.label === "Team Management") {
-                return hasManagerRole(); // Only Managers can see Team Management
+              if (item.label === "Team Leads") {
+                return isManagerOrAdmin;
               }
-              return true; // Keep other items if any
+              if (item.label === "Lead Management") {
+                return true; // visible to everyone, including manager/admin
+              }
+              // Keep Dashboard for everyone
+              return true;
             });
           
             const filteredModule = {
@@ -347,15 +352,19 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             };
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_SALES") {
-            // Filter out Sales Settings menu if user doesn't have admin role
+            const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
+            // Filter Sales items: Dashboard for all; Team Leads only for manager/admin; Lead Management for everyone
             const filteredItems = modularMenus[moduleId].items.filter(item => {
               if (item.label === "Sales Settings") {
-                return hasAdminRole(); // Only Admins can see Sales Settings
+                return hasAdminRole();
               }
-              if (item.label === "Team Management") {
-                return hasManagerRole(); // Only Managers can see Team Management
+              if (item.label === "Team Leads") {
+                return isManagerOrAdmin;
               }
-              return true; // Keep other items if any
+              if (item.label === "Lead Management") {
+                return true; // visible to everyone, including manager/admin
+              }
+              return true; // Dashboard
             });
           
             const filteredModule = {
