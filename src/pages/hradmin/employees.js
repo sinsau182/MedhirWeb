@@ -7,7 +7,7 @@ import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import withAuth from "@/components/withAuth";
 import Sidebar from "@/components/Sidebar";
 import HradminNavbar from "@/components/HradminNavbar";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 function Employees() {
   const [activeTab, setActiveTab] = useState("Basic");

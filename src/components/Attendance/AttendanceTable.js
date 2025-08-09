@@ -1,6 +1,10 @@
 import React from "react";
+import { useDispatch } from "react-redux";
 import { Search, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { processHolidayAttendance } from "@/redux/slices/publicHolidaySlice";
+import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import { toast } from "sonner";
 
 const AttendanceTable = ({
   dates,
@@ -47,6 +51,30 @@ const AttendanceTable = ({
     // Return null if no status code is available (empty box)
     return null;
   };
+
+  const dispatch = useDispatch();
+
+  const handleProcessHolidayAttendance = async () => {
+    try {
+      const companyId = sessionStorage.getItem("employeeCompanyId");
+      const yearNum = parseInt(selectedYear);
+      const monthIdx = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth() + 1;
+      const result = await dispatch(processHolidayAttendance({ companyId, yearNum, monthIdx })).unwrap();
+      console.log("Process holiday attendance result:", result);
+      toast.success("Holiday attendance processed successfully");
+
+      // Refresh attendance view with current filters
+      const apiParams = { month: monthIdx, year: selectedYear };
+      if (selectedStatuses?.length > 0) apiParams.status = selectedStatuses.join(",");
+      if (selectedDate) apiParams.date = selectedDate;
+      // role not available here; fetch all for month scope used by AttendanceTracker
+      await dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+    } catch (err) {
+      console.error("Process holiday attendance error", err);
+      toast.error("Something went wrong while processing");
+    }
+  };
+  
 
   // Determine which data to use for rendering
   let dataToRender = filteredEmployees;
@@ -220,110 +248,122 @@ const AttendanceTable = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-4 space-y-6">
-      {/* Dynamic selection message */}
-      {selectedEmployeeId && !selectedDate && (
-        <div className="mb-2 text-gray-700 font-medium text-base">
-          Showing attendance of an employee with EMP ID{" "}
-          <span className="font-semibold">{selectedEmployeeId}</span> on{" "}
-          {selectedMonth} {selectedYear}
-        </div>
-      )}
-      {!selectedEmployeeId && selectedDate && (
-        <div className="flex items-center gap-4 mb-2">
+      {/* Header row with dynamic message + calendar anchored right */}
+      <div className="flex items-center gap-4 mb-2">
+        {(selectedEmployeeId && !selectedDate) ? (
+          <div className="text-gray-700 font-medium text-base">
+            Showing attendance of an employee with EMP ID{" "}
+            <span className="font-semibold">{selectedEmployeeId}</span> on {selectedMonth} {selectedYear}
+          </div>
+        ) : (!selectedEmployeeId && selectedDate) ? (
           <div className="text-gray-700 font-medium text-base">
             Showing attendance of the employees on{" "}
             <span className="font-semibold">
               {selectedDate} {selectedMonth} {selectedYear}
             </span>
           </div>
-          {/* Calendar - Hide when Single Employee Month is open */}
-          {!isSingleEmployeeModalOpen && (
-            <div className="relative" ref={calendarRef}>
-              <Badge
-                variant="outline"
-                className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-                onClick={toggleCalendar}
-              >
-                <Calendar className="h-4 w-4" />
-                <span className="font-medium text-sm">
-                  {selectedYear}-{selectedMonth}
-                </span>
-              </Badge>
-              {isCalendarOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                  <div className="p-3 border-b flex justify-between items-center">
-                    <div className="text-sm font-medium text-gray-700">
-                      {selectedYear}
-                    </div>
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => {
-                        const newYear = e.target.value;
-                        if (newYear === "2024") {
-                          handleMonthSelection("Aug", newYear);
-                        } else {
-                          handleMonthSelection("Jan", newYear);
-                        }
-                      }}
-                      className="ml-2 border rounded px-2 py-1 text-sm"
-                    >
-                      {[2024, 2025].map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
+        ) : (
+          <div className="text-gray-700 font-medium text-base">
+            Showing attendance of the employees in {selectedMonth} {selectedYear}
+          </div>
+        )}
+        {/* Calendar - Hide only when Single Employee Month is open */}
+        {!isSingleEmployeeModalOpen && (
+          <div className="relative ml-auto" ref={calendarRef}>
+            <Badge
+              variant="outline"
+              className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+              onClick={toggleCalendar}
+            >
+              <Calendar className="h-4 w-4" />
+              <span className="font-medium text-sm">
+                {selectedYear}-{selectedMonth}
+              </span>
+            </Badge>
+            {isCalendarOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                <div className="p-3 border-b flex justify-between items-center">
+                  <div className="text-sm font-medium text-gray-700">
+                    {selectedYear}
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5 p-3">
-                    {(() => {
-                      const currentYear = new Date().getFullYear();
-                      const currentMonthIdx = new Date().getMonth();
-                      let months = [
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "May",
-                        "Jun",
-                        "Jul",
-                        "Aug",
-                        "Sep",
-                        "Oct",
-                        "Nov",
-                        "Dec",
-                      ];
-                      let startIdx = 0;
-                      let endIdx = 11;
-                      if (parseInt(selectedYear) === 2024) {
-                        startIdx = 7;
-                        endIdx = 11;
-                      } else if (parseInt(selectedYear) === 2025) {
-                        startIdx = 0;
-                        endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => {
+                      const newYear = e.target.value;
+                      if (newYear === "2024") {
+                        handleMonthSelection("Aug", newYear);
+                      } else {
+                        handleMonthSelection("Jan", newYear);
                       }
-                      return months.slice(startIdx, endIdx + 1).map((month) => (
-                        <button
-                          key={month}
-                          className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                            month === selectedMonth.slice(0, 3)
-                              ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                              : "hover:bg-gray-50 text-gray-700"
-                          }`}
-                          onClick={() =>
-                            handleMonthSelection(month, selectedYear)
-                          }
-                        >
-                          {month}
-                        </button>
-                      ));
-                    })()}
-                  </div>
+                    }}
+                    className="ml-2 border rounded px-2 py-1 text-sm"
+                  >
+                    {[2024, 2025].map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                <div className="grid grid-cols-3 gap-1.5 p-3">
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const currentMonthIdx = new Date().getMonth();
+                    let months = [
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "May",
+                      "Jun",
+                      "Jul",
+                      "Aug",
+                      "Sep",
+                      "Oct",
+                      "Nov",
+                      "Dec",
+                    ];
+                    let startIdx = 0;
+                    let endIdx = 11;
+                    if (parseInt(selectedYear) === 2024) {
+                      startIdx = 7;
+                      endIdx = 11;
+                    } else if (parseInt(selectedYear) === 2025) {
+                      startIdx = 0;
+                      endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+                    }
+                    return months.slice(startIdx, endIdx + 1).map((month) => (
+                      <button
+                        key={month}
+                        className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                          month === selectedMonth.slice(0, 3)
+                            ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                        onClick={() =>
+                          handleMonthSelection(month, selectedYear)
+                        }
+                      >
+                        {month}
+                      </button>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {!isSingleEmployeeModalOpen && (
+          <button
+            type="button"
+            onClick={handleProcessHolidayAttendance}
+            className="ml-2 px-4 py-2 rounded bg-indigo-500 text-white text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            title="Process holiday attendance for selected month"
+          >
+            Process Holidays
+          </button>
+        )}
+      </div>
       {/* Summary Cards in Single Row */}
       <div className="flex gap-4 overflow-x-auto pb-4 border-b border-gray-200">
         {statusOptions.map((status) => {

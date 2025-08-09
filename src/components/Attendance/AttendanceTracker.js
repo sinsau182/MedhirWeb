@@ -924,11 +924,30 @@ function AttendanceTracker({
   }, []);
 
   const handleEmployeeRowClick = useCallback((employeeId) => {
-    setSelectedEmployeeId((prevId) =>
-      prevId === employeeId ? null : employeeId
-    );
-    setSelectedDate(null);
-  }, []);
+    setSelectedEmployeeId((prevId) => {
+      const nextId = prevId === employeeId ? null : employeeId;
+      if (nextId === null) {
+        // Deselecting employee: keep currently selected month/year
+        // and set date to today if current month, otherwise last day of that month
+        const now = new Date();
+        const selectedMonthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+        const selectedYearNum = parseInt(selectedYear);
+        if (
+          selectedYearNum === now.getFullYear() &&
+          selectedMonthIndex === now.getMonth()
+        ) {
+          setSelectedDate(now.getDate());
+        } else {
+          const daysInSelectedMonth = new Date(selectedYearNum, selectedMonthIndex + 1, 0).getDate();
+          setSelectedDate(daysInSelectedMonth);
+        }
+      } else {
+        // Selecting an employee: clear specific date so employee month view shows
+        setSelectedDate(null);
+      }
+      return nextId;
+    });
+  }, [selectedMonth, selectedYear]);
 
   // Helper to determine if a color is light or dark (for text contrast)
   function isColorLight(hex) {
@@ -1730,184 +1749,140 @@ function AttendanceTracker({
         </h1>
       </div>
 
-      {/* Manual Attendance Buttons/Toggle */}
-      {!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen ? (
-        // Show buttons when no modal is active
-        <div className="flex gap-4 mb-6">
-          <div className="relative" ref={employeeDropdownRef}>
+      {/* Combined Controls Row: action buttons + tabs in one line */}
+      {!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen && (
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          {/* Left: action buttons */}
+          <div className="flex items-center gap-4">
+            <div className="relative" ref={employeeDropdownRef}>
+              <button
+                className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen);
+                }}
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                <span>Single Employee Month</span>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+              {isEmployeeDropdownOpen && (
+                <div
+                  className="absolute top-full left-0 mt-2 w-[350px] bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="p-3 border-b border-gray-100">
+                    <h3 className="text-sm font-semibold text-gray-800">Select Employee</h3>
+                  </div>
+                  <div className="p-3">
+                    <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-gray-50 rounded-md">
+                      <Search className="h-3.5 w-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search employees..."
+                        value={employeeDropdownInput}
+                        onChange={(e) => setEmployeeDropdownInput(e.target.value)}
+                        className="w-full px-2 py-1 border-none outline-none bg-transparent text-gray-800 text-xs"
+                      />
+                    </div>
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                      {filteredEmployees
+                        .filter(
+                          (e) =>
+                            e.name.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                            e.id.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                            (e.department && e.department.toLowerCase().includes(employeeDropdownInput.toLowerCase()))
+                        )
+                        .map((employee) => (
+                          <button
+                            key={employee.id}
+                            className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all border-b border-gray-50 last:border-b-0"
+                            onClick={() => {
+                              setEmployeeDropdownSearch(employee.id);
+                              setIsEmployeeDropdownOpen(false);
+                              setSelectedEmployeeForMonth(employee);
+                              switchToSingleEmployeeTab();
+                              isFetchingEmployeeDataRef.current = false;
+                            }}
+                          >
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
+                              {employee.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-800 truncate text-sm">{employee.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{employee.id} • {employee.department}</div>
+                            </div>
+                          </button>
+                        ))}
+                      {filteredEmployees.filter(
+                        (e) =>
+                          e.name.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                          e.id.toLowerCase().includes(employeeDropdownInput.toLowerCase()) ||
+                          (e.department && e.department.toLowerCase().includes(employeeDropdownInput.toLowerCase()))
+                      ).length === 0 && (
+                        <div className="text-gray-400 text-center py-4 text-xs">No employees found</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen);
+              onClick={() => {
+                switchToAllEmployeesTab();
               }}
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <span>Single Employee Month</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
+              <span>All Employees Date</span>
             </button>
-
-            {/* Employee Selection Dropdown */}
-            {isEmployeeDropdownOpen && (
-              <div
-                className="absolute top-full left-0 mt-2 w-[350px] bg-white border border-gray-200 rounded-lg shadow-lg z-50"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-3 border-b border-gray-100">
-                  <h3 className="text-sm font-semibold text-gray-800">
-                    Select Employee
-                  </h3>
-                </div>
-                <div className="p-3">
-                  {/* Search Input */}
-                  <div className="flex items-center gap-2 mb-3 px-2 py-1.5 bg-gray-50 rounded-md">
-                    <Search className="h-3.5 w-3.5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search employees..."
-                      value={employeeDropdownInput}
-                      onChange={(e) => setEmployeeDropdownInput(e.target.value)}
-                      className="w-full px-2 py-1 border-none outline-none bg-transparent text-gray-800 text-xs"
-                    />
-                  </div>
-
-                  {/* Employee List */}
-                  <div className="max-h-64 overflow-y-auto custom-scrollbar">
-                    {filteredEmployees
-                      .filter(
-                        (e) =>
-                          e.name
-                            .toLowerCase()
-                            .includes(employeeDropdownInput.toLowerCase()) ||
-                          e.id
-                            .toLowerCase()
-                            .includes(employeeDropdownInput.toLowerCase()) ||
-                          (e.department &&
-                            e.department
-                              .toLowerCase()
-                              .includes(employeeDropdownInput.toLowerCase()))
-                      )
-                      .map((employee) => (
-                        <button
-                          key={employee.id}
-                          className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-blue-50 cursor-pointer transition-all border-b border-gray-50 last:border-b-0"
-                          onClick={() => {
-                            setEmployeeDropdownSearch(employee.id);
-                            setIsEmployeeDropdownOpen(false);
-                            setSelectedEmployeeForMonth(employee);
-                            switchToSingleEmployeeTab();
-                            // Reset fetching state to allow the useEffect to handle data fetching
-                            isFetchingEmployeeDataRef.current = false;
-                          }}
-                        >
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center font-semibold text-white text-xs">
-                            {employee.name.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-gray-800 truncate text-sm">
-                              {employee.name}
-                            </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              {employee.id} • {employee.department}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    {filteredEmployees.filter(
-                      (e) =>
-                        e.name
-                          .toLowerCase()
-                          .includes(employeeDropdownInput.toLowerCase()) ||
-                        e.id
-                          .toLowerCase()
-                          .includes(employeeDropdownInput.toLowerCase()) ||
-                        (e.department &&
-                          e.department
-                            .toLowerCase()
-                            .includes(employeeDropdownInput.toLowerCase()))
-                    ).length === 0 && (
-                      <div className="text-gray-400 text-center py-4 text-xs">
-                        No employees found
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          <button
-            className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
-            onClick={() => {
-              switchToAllEmployeesTab();
-            }}
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {/* Right: tabs */}
+          <div className="flex items-center gap-6">
+            <button
+              className={`px-4 py-2 text-sm font-medium ${
+                activeTab === "Attendance Tracker" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-blue-600"
+              }`}
+              onClick={() => setActiveTab("Attendance Tracker")}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <span>All Employees Date</span>
-          </button>
-        </div>
-      ) : // No toggle interface when a modal is active - tabs are hidden
-      null}
-
-      {/* Regular Tabs - Only show when no modal is active */}
-      {!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen && (
-        <div className="flex gap-6 mb-6">
-          <button
-            className={`px-4 py-2 text-sm font-medium ${
-              activeTab === "Attendance Tracker"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-            onClick={() => setActiveTab("Attendance Tracker")}
-          >
-            Attendance Tracker
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${
-              activeTab === "Leave Tracker"
-                ? "text-blue-600 border-b-2 border-blue-600"
-                : "text-gray-600 hover:text-blue-600"
-            }`}
-            onClick={() => setActiveTab("Leave Tracker")}
-          >
-            Leave Tracker
-          </button>
+              Attendance Tracker
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium ${
+                activeTab === "Leave Tracker" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-600 hover:text-blue-600"
+              }`}
+              onClick={() => setActiveTab("Leave Tracker")}
+            >
+              Leave Tracker
+            </button>
+          </div>
         </div>
       )}
 

@@ -29,6 +29,8 @@ function PayrollManagement() {
     useState(false);
   const [payrollErrorDetails, setPayrollErrorDetails] = useState(null);
   const [isCalculatingPayroll, setIsCalculatingPayroll] = useState(false);
+  const [hasAttemptedCalculate, setHasAttemptedCalculate] = useState(false);
+  const [isFetchingView, setIsFetchingView] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const currentDate = new Date();
     const latestAvailableMonth = new Date(
@@ -89,8 +91,9 @@ function PayrollManagement() {
     setSelectedMonth(fullMonthName);
     setSelectedYear(year);
     setIsCalendarOpen(false);
-    // Reset Calculate Payroll state when month changes
+    // Reset state when month changes
     setIsCalculatePayrollClicked(false);
+    setHasAttemptedCalculate(false);
     setShowCheckboxes(false);
     setSelectedEmployees([]);
     setPayrollErrorDetails(null); // Clear previous month error details on month change
@@ -133,7 +136,19 @@ function PayrollManagement() {
       month: monthMap[selectedMonth],
     };
 
-    dispatch(getPayroll(params));
+    // First clear any stale error and fetch; hide UI until resolved
+    setPayrollErrorDetails(null);
+    setIsFetchingView(true);
+    (async () => {
+      try {
+        await dispatch(getPayroll(params)).unwrap();
+        setPayrollErrorDetails(null);
+      } catch (error) {
+        setPayrollErrorDetails(error);
+      } finally {
+        setIsFetchingView(false);
+      }
+    })();
   }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
 
   console.log(payroll);
@@ -760,8 +775,12 @@ function PayrollManagement() {
                 disabled={!isLatestAvailableMonth() || isCalculatingPayroll}
                 onClick={async () => {
                   if (isLatestAvailableMonth() && !isCalculatingPayroll) {
+                    setHasAttemptedCalculate(true);
                     setIsCalculatingPayroll(true);
-                    setPayrollErrorDetails(null); // Clear any previous errors
+                    // Hide tables while we recalculate and fetch fresh data
+                    setIsFetchingView(true);
+                    // Clear previous error while we attempt
+                    setPayrollErrorDetails(null);
 
                     try {
                       console.log("Starting payroll calculation...");
@@ -788,16 +807,11 @@ function PayrollManagement() {
                         month: monthMap[selectedMonth],
                       };
 
-                      console.log(
-                        "Calling generatePayroll API with:",
-                        requestBody
-                      );
+                      console.log("Calling generatePayroll API with:", requestBody);
 
-                      // First, generate payroll (POST request)
-                      const generateResult = await dispatch(
-                        generatePayroll(requestBody)
-                      ).unwrap();
-                      console.log("Generate payroll result:", generateResult);
+                      // Try to generate payroll (POST). If it fails, we'll still query view to surface exact message
+                      await dispatch(generatePayroll(requestBody)).unwrap();
+                      console.log("Generate payroll succeeded");
                       toast.success("Payroll calculation completed!");
 
                       // Then, fetch the generated payroll data (GET request)
@@ -808,36 +822,42 @@ function PayrollManagement() {
                       };
 
                       console.log("Calling getPayroll API with:", params);
-
-                      const getResult = await dispatch(
-                        getPayroll(params)
-                      ).unwrap();
-                      console.log("Get payroll result:", getResult);
-
+                      setIsFetchingView(true);
+                      await dispatch(getPayroll(params)).unwrap();
+                      setIsFetchingView(false);
+                      setPayrollErrorDetails(null);
                       setIsCalculatePayrollClicked(true);
                       toast.success("Payroll data loaded successfully!");
+
                     } catch (error) {
-                      console.log("Payroll error:", error);
-
-                      // Check for different error structures
-                      const isPayrollError =
-                        error?.status === 409 ||
-                        error?.error === "Payroll Generation Incomplete" ||
-                        error?.message?.includes("Payroll generation failed") ||
-                        error?.message?.includes(
-                          "Failed to generate payroll"
-                        ) ||
-                        error?.validationErrors?.failedEmployeeIds;
-
-                      if (isPayrollError) {
-                        console.log("Showing payroll error message");
-                        console.log("Error details:", error);
-                        setPayrollErrorDetails(error);
-                      } else {
-                        console.log("Showing generic error toast");
-                        toast.error(
-                          error?.message || "Failed to process payroll"
-                        );
+                      // Always surface the error coming from getPayroll (view) for precise messaging
+                      try {
+                        const monthMap = {
+                          January: 1,
+                          February: 2,
+                          March: 3,
+                          April: 4,
+                          May: 5,
+                          June: 6,
+                          July: 7,
+                          August: 8,
+                          September: 9,
+                          October: 10,
+                          November: 11,
+                          December: 12,
+                        };
+                        const params = {
+                          companyId: selectedCompanyId,
+                          year: parseInt(selectedYear),
+                          month: monthMap[selectedMonth],
+                        };
+                        setIsFetchingView(true);
+                        await dispatch(getPayroll(params)).unwrap();
+                        setPayrollErrorDetails(null);
+                      } catch (viewError) {
+                        setPayrollErrorDetails(viewError);
+                      } finally {
+                        setIsFetchingView(false);
                       }
                     } finally {
                       setIsCalculatingPayroll(false);
@@ -954,53 +974,59 @@ function PayrollManagement() {
             </div>
           </div>
 
-          {/* Payroll Error Message - Below Calculate Payroll Button */}
-          {payrollErrorDetails && (
+          {/* Minimal centered message before calculate */}
+          {payrollErrorDetails && !hasAttemptedCalculate && !isFetchingView && (
+            <div className="min-h-[60vh] flex items-center justify-center">
+              <div className="text-center max-w-3xl px-4">
+                <p className="text-gray-500 text-lg font-medium mb-3 leading-relaxed">
+                  {payrollErrorDetails?.message || "Payroll not available for this month."}
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Complete attendance data for {selectedMonth} {selectedYear} to generate payroll.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Actionable panel after calculate attempt */}
+          {payrollErrorDetails && hasAttemptedCalculate && !isFetchingView && (
             <div className="mt-4">
               <div className="bg-white border border-gray-300 rounded-lg shadow-sm p-4">
                 <h3 className="text-lg font-semibold text-red-600 mb-3">
                   Payroll Generation Failed
                 </h3>
-
                 <div className="mb-3">
                   <p className="text-gray-700 mb-1">
-                    <strong>Reason:</strong> Attendance records incomplete for{" "}
-                    {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(
-                      ","
-                    ).length || 0}{" "}
-                    employees.
+                    <strong>Reason:</strong> Attendance records incomplete for {payrollErrorDetails?.validationErrors?.failedEmployeeIds?.split(',').length || 0} employees.
                   </p>
                   <p className="text-sm text-gray-600">
-                    Complete attendance data for {selectedMonth} {selectedYear}{" "}
-                    to generate payroll.
+                    Complete attendance data for {selectedMonth} {selectedYear} to generate payroll.
                   </p>
                 </div>
-
-                <div className="mb-3">
-                  <p className="text-sm text-gray-700 mb-1">
-                    <strong>Affected Employees:</strong>
-                  </p>
-                  <div className="bg-gray-50 border border-gray-200 rounded p-2 max-h-24 overflow-y-auto">
-                    <div className="flex flex-wrap gap-1">
-                      {payrollErrorDetails?.validationErrors?.failedEmployeeIds
-                        ?.split(",")
-                        .map((id, index) => (
-                          <span
-                            key={index}
-                            className="text-xs bg-white px-2 py-1 border rounded"
-                          >
-                            {id.trim()}
-                          </span>
-                        ))}
+                {payrollErrorDetails?.validationErrors?.failedEmployeeIds && (
+                  <>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Affected Employees:</p>
+                    <div className="bg-gray-50 border border-gray-200 rounded p-2 max-h-24 overflow-y-auto">
+                      <div className="flex flex-wrap gap-1">
+                        {payrollErrorDetails.validationErrors.failedEmployeeIds
+                          .split(',')
+                          .map((id, index) => (
+                            <span
+                              key={index}
+                              className="text-xs bg-white px-2 py-1 border rounded"
+                            >
+                              {id.trim()}
+                            </span>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
+                  </>
+                )}
+                <div className="flex gap-2 mt-3">
                   <button
                     onClick={() => {
                       setPayrollErrorDetails(null);
-                      window.location.href = "/hradmin/attendance";
+                      window.location.href = '/hradmin/attendance';
                     }}
                     className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                   >
@@ -1018,7 +1044,7 @@ function PayrollManagement() {
           )}
 
           {/* Tabs - Only show when there's data or payroll has been calculated */}
-          {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
+          {!payrollErrorDetails && !isFetchingView && (
             <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
               <div className="flex min-w-max">
                 {[
@@ -1052,7 +1078,7 @@ function PayrollManagement() {
             </div>
           )}
 
-          {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
+          {!payrollErrorDetails && !isFetchingView && (
             <>
               {selectedSection === "Salary Statement" && renderPayrollTable()}
               {selectedSection === "Deductions" && renderDeductionsTable()}

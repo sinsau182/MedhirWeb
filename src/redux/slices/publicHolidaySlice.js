@@ -4,6 +4,7 @@ import axios from "axios";
 import getConfig from "next/config";
 const {publicRuntimeConfig} = getConfig();
 const API_URL = publicRuntimeConfig.apiURL;
+const ATTENDANCE_URL = publicRuntimeConfig.attendanceURL;
 
 export const fetchPublicHolidays = createAsyncThunk(
   "publicHoliday/fetchPublicHolidays",
@@ -113,6 +114,32 @@ export const deletePublicHoliday = createAsyncThunk(
   }
 );
 
+export const processHolidayAttendance = createAsyncThunk(
+  "publicHoliday/processHolidayAttendance",
+  async ({ companyId, yearNum, monthIdx }, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const response = await axios.post(
+        `${ATTENDANCE_URL}/attendance/daily/process-holiday-attendance/${companyId}/${yearNum}/${monthIdx}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        return rejectWithValue(
+          error.response.data.message || "Failed to process holiday attendance"
+        );
+      }
+      return rejectWithValue("Network error: Unable to process holiday attendance");
+    }
+  }
+);
+
 const publicHolidaySlice = createSlice({
   name: "publicHoliday",
   initialState: {
@@ -193,6 +220,18 @@ const publicHolidaySlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.deleteSuccess = false;
+      })
+      .addCase(processHolidayAttendance.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(processHolidayAttendance.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(processHolidayAttendance.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
