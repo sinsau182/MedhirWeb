@@ -21,6 +21,8 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
   const [paymentMode, setPaymentMode] = useState('');
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
   const [panNumber, setPanNumber] = useState('');
+  const [gstAvailable, setGstAvailable] = useState(false);
+  const [gst, setGst] = useState('');
   const [paymentDetailsFile, setPaymentDetailsFile] = useState(null);
   const [bookingFormFile, setBookingFormFile] = useState(null);
   const [fileLoading, setFileLoading] = useState({ payment: false, booking: false });
@@ -41,6 +43,8 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
     setPaymentMode('');
     setPaymentTransactionId('');
     setPanNumber('');
+    setGstAvailable(false);
+    setGst('');
     setPaymentDetailsFile(null);
     setBookingFormFile(null);
     setFileLoading({ payment: false, booking: false });
@@ -57,6 +61,8 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
       setPaymentMode(lead.paymentMode || '');
       setPaymentTransactionId(lead.paymentTransactionId || '');
       setPanNumber(lead.panNumber || '');
+      setGstAvailable(lead.gstAvailable || false);
+      setGst(lead.gst || '');
 
       // Handle existing files
       if (lead.paymentDetailsFileName) {
@@ -136,6 +142,12 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
     setPaymentTransactionId(processedValue);
   };
 
+  const handleGstInput = (value) => {
+    // Only allow uppercase letters and numbers, max 15 characters (GST format: 22AAAAA0000A1Z5)
+    const processedValue = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 15);
+    setGst(processedValue);
+  };
+
   const handleOpenFile = async (file, type) => {
     if (!file) return;
 
@@ -212,6 +224,15 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
       }
     }
 
+    // Validate GST number if GST is available
+    if (gstAvailable && gst && gst.trim()) {
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstRegex.test(gst.trim())) {
+        toast.error("Please enter a valid GST number (e.g., 22AAAAA0000A1Z5).");
+        return;
+      }
+    }
+
     try {
       // Prepare FormData for file upload - ALWAYS use FormData since backend expects multipart/form-data
       const formData = new FormData();
@@ -220,6 +241,8 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
       formData.append('paymentMode', paymentMode || '');
       formData.append('paymentTransactionId', paymentTransactionId || '');
       formData.append('panNumber', panNumber || '');
+      formData.append('gstAvailable', gstAvailable);
+      formData.append('gst', gst || '');
 
       if (paymentDetailsFile) formData.append('paymentDetailsFile', paymentDetailsFile);
       if (bookingFormFile) formData.append('bookingFormFile', bookingFormFile);
@@ -231,7 +254,9 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
           paymentDate,
           paymentMode,
           paymentTransactionId,
-          panNumber
+          panNumber,
+          gstAvailable,
+          gst
         }, {
           headers: {
             'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`,
@@ -455,6 +480,37 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
               )}
             </div>
           </div>
+
+          {/* GST Section */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                id="gstAvailable"
+                checked={gstAvailable}
+                onChange={(e) => setGstAvailable(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="gstAvailable" className="ml-2 block text-sm font-medium text-gray-700">
+                GST is available
+              </label>
+            </div>
+            
+            {gstAvailable && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">GST Number</label>
+                <input
+                  type="text"
+                  value={gst}
+                  onChange={(e) => handleGstInput(e.target.value)}
+                  className="block w-full rounded-md border border-gray-300 shadow-sm focus:border-blue-400 focus:ring-blue-100 bg-gray-50 text-gray-800 placeholder-gray-400 transition-all py-2 px-3"
+                  placeholder="22AAAAA0000A1Z5"
+                />
+                <p className="text-xs text-gray-500 mt-1">Format: 22AAAAA0000A1Z5 (15 characters)</p>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 mt-6">
             <button
               type="button"
