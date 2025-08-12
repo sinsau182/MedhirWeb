@@ -16,6 +16,8 @@ import {
     getNextSequenceNumber,
     SUBCATEGORIES 
 } from '@/utils/assetIdGenerator';
+import getConfig from 'next/config';
+import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 // Mock Data for existing assets display - REMOVED since we now use Redux
 // const MOCK_ASSETS = [
@@ -112,7 +114,6 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                         value={fieldValue}
                         onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
                         placeholder={placeholder}
-                        required={isRequired}
                     />
                 );
             case 'dropdown':
@@ -123,7 +124,6 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                         label={`${fieldName}${isRequired ? ' *' : ''}`}
                         value={fieldValue}
                         onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
-                        required={isRequired}
                     >
                         <option value="">Select {fieldName}...</option>
                         {options && Array.isArray(options) && options.map((option, index) => (
@@ -143,7 +143,6 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             value={fieldValue}
                             onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
                             placeholder={placeholder}
-                            required={isRequired}
                             rows={3}
                             className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
                         />
@@ -157,7 +156,6 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                         type="date"
                         value={fieldValue}
                         onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
-                        required={isRequired}
                     />
                 );
             case 'checkbox':
@@ -183,7 +181,6 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             <input
                                 type="file"
                                 onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.files[0])}
-                                required={isRequired}
                                 className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
                             />
                         </div>
@@ -197,7 +194,6 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             value={fieldValue}
                             onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
                             placeholder={placeholder}
-                            required={isRequired}
                         />
                     );
         }
@@ -206,26 +202,11 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
     return (
         <div className="space-y-6">
             {customForms.map(form => (
-                <div key={form.id || form.formId} className="p-4 border rounded-md bg-purple-50 border-purple-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold text-lg text-purple-800">
-                            📋 {form.name || form.title}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded">
-                                {form.fields?.length || 0} fields
-                            </span>
-                            {form.enabled !== false && (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                    Active
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    
+                <div key={form.id || form.formId} className="p-4 border rounded-md">
+                    <h3 className="font-semibold text-lg mb-4 text-gray-800">{form.name || form.title}</h3>
                     {form.fields && Array.isArray(form.fields) && form.fields.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {form.fields.map((field, index) => {
+                            {form.fields.map((field) => {
                                 // Map backend field structure to frontend expected structure
                                 const fieldName = field.name || field.fieldName || field.fieldLabel || 'Unknown Field';
                                 const fieldType = field.type || field.fieldType || 'text';
@@ -233,25 +214,8 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                                 const placeholder = field.placeholder || field.defaultValue || '';
                                 
                                 return (
-                                    <div key={field.id} className="bg-white p-4 rounded-lg border border-purple-200">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                {/* Removed Required badge - asterisk is shown in field label instead */}
-                                            </div>
-                                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                {fieldType}
-                                            </span>
-                                        </div>
-                                        
-                                        {/* Render the actual field input */}
+                                    <div key={field.id}>
                                         {renderField(form, field)}
-                                        
-                                        {/* Show field description if available */}
-                                        {placeholder && (
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                💡 {placeholder}
-                                            </p>
-                                        )}
                                     </div>
                                 );
                             })}
@@ -303,9 +267,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
 
     const [showITFields, setShowITFields] = useState(false);
     const [generatedAssetId, setGeneratedAssetId] = useState('');
+    const { publicRuntimeConfig } = getConfig();
     const [availableSubcategories, setAvailableSubcategories] = useState([]);
     const [selectedCategoryData, setSelectedCategoryData] = useState(null);
     const [customFormData, setCustomFormData] = useState({});
+    const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('');
 
     // Get custom forms for the selected category (moved after state declarations)
     let customForms = [];
@@ -333,6 +299,16 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     // Use fallback forms if main forms are empty
     const finalCustomForms = customForms.length > 0 ? customForms : fallbackCustomForms;
 
+    // Filter forms by selected subcategory when available
+    const subcategoryFilteredForms = React.useMemo(() => {
+        if (!selectedSubcategoryId) return [];
+        const filtered = (finalCustomForms || []).filter(f => {
+            const sid = f?.subCategoryId || f?.assignedSubCategoryId || f?.subcategoryId || f?.subCategory?.id;
+            return sid != null && String(sid) === String(selectedSubcategoryId);
+        });
+        return filtered;
+    }, [finalCustomForms, selectedSubcategoryId]);
+
 
 
 
@@ -358,20 +334,6 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             
             if (categoryData && Array.isArray(categoryData.subCategories)) {
                 setAvailableSubcategories(categoryData.subCategories);
-                
-                // Fetch custom forms for this category
-                const categoryId = categoryData.categoryId || categoryData.id;
-                if (categoryId) {
-                    console.log('Fetching custom forms for category:', categoryId);
-                    dispatch(fetchCustomFormsByCategory(categoryId)).then((result) => {
-                        if (result.meta.requestStatus === 'fulfilled') {
-                            const forms = result.payload?.forms || [];
-                            if (forms.length > 0) {
-                                toast.success(`Loaded ${forms.length} custom form(s) for ${formData.category}`);
-                            }
-                        }
-                    });
-                }
             } else {
                 setAvailableSubcategories([]);
             }
@@ -388,7 +350,18 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             setSelectedCategoryData(null);
             setFormData(prev => ({ ...prev, subcategory: '' }));
         }
+        // Reset selected subcategory whenever category changes
+        setSelectedSubcategoryId('');
     }, [formData.category, categories, dispatch]);
+
+    // Fetch forms only after a subcategory is chosen (per requirement)
+    useEffect(() => {
+        if (!selectedSubcategoryId || !selectedCategoryData) return;
+        const categoryId = selectedCategoryData.categoryId || selectedCategoryData.id;
+        if (!categoryId) return;
+        console.log('Fetching custom forms for category after subcategory selection:', categoryId);
+        dispatch(fetchCustomFormsByCategory(categoryId));
+    }, [selectedSubcategoryId, selectedCategoryData, dispatch]);
 
     // Clear custom form data when category changes
     useEffect(() => {
@@ -397,22 +370,70 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         }
     }, [formData.category]);
 
-    // Generate asset ID when category or subcategory changes
+    // Generate asset ID by querying backend for the next ID when subcategory is selected
     useEffect(() => {
-        if (formData.category && formData.subcategory && selectedCategoryData) {
-            // Find the subcategory data for the code
-            const subcategoryData = selectedCategoryData.subCategories?.find(sub => sub.name === formData.subcategory);
-            if (subcategoryData) {
-                // In a real app, you would fetch existing assets for this subcategory
-                // and pass them to getNextSequenceNumber
-                const nextSequence = getNextSequenceNumber(formData.category, formData.subcategory, []);
-                const assetId = generateAssetId(formData.category, formData.subcategory, nextSequence);
-                setGeneratedAssetId(assetId);
+        let cancelled = false;
+
+        const fetchNextId = async () => {
+            try {
+                if (!selectedSubcategoryId) {
+                    setGeneratedAssetId('');
+                    return;
+                }
+
+                const subCategoryId = selectedSubcategoryId;
+
+                const tokenRaw = getItemFromSessionStorage('token', null);
+                const token = typeof tokenRaw === 'string'
+                  ? tokenRaw
+                  : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+                const url = `${publicRuntimeConfig.apiURL}/api/assets/next-id/on-subcategory-select?subcategoryId=${encodeURIComponent(subCategoryId)}`;
+                console.log('[next-id] GET', url, 'token?', !!token);
+
+                let resp = null;
+                try {
+                    resp = await fetch(url, { headers });
+                } catch (e) {
+                    // network error; leave resp as null
+                }
+
+                if (cancelled) return;
+
+                if (resp && resp.ok) {
+                    const data = await resp.json().catch(() => ({}));
+                    if (data?.success && data?.nextAssetId) {
+                        setGeneratedAssetId(String(data.nextAssetId));
+                        console.log('Generated Asset ID:', data.nextAssetId, 'Prefix:', data.prefix, 'Subcategory:', data.subcategoryName);
+                        return;
+                    }
+                }
+                if (resp && resp.status === 401) {
+                    toast.error('Authentication required. Please sign in again.');
+                }
+
+                // Fallback: prefix + nextSequence
+                const sub = selectedCategoryData.subCategories?.find(s => (s.subCategoryId || s.id) === subCategoryId);
+                const prefix = (sub?.prefix || '').trim();
+                let nextSeq =
+                    typeof sub?.nextSequence === 'number'
+                      ? sub.nextSequence
+                      : (sub?.autoIdSuffix && parseInt(String(sub.autoIdSuffix).replace(/\D/g, ''), 10)) || 1;
+                nextSeq = Math.max(1, nextSeq);
+                setGeneratedAssetId(`${prefix}-${String(nextSeq).padStart(4, '0')}`);
+            } catch (_) {
+                // Final safety fallback
+                const sub = selectedCategoryData?.subCategories?.find(s => (s.subCategoryId || s.id) === selectedSubcategoryId);
+                const prefix = (sub?.prefix || '').trim();
+                const seq = Math.max(1, typeof sub?.nextSequence === 'number' ? sub.nextSequence : 1);
+                setGeneratedAssetId(`${prefix}-${String(seq).padStart(4, '0')}`);
             }
-        } else {
-            setGeneratedAssetId('');
-        }
-    }, [formData.category, formData.subcategory, selectedCategoryData]);
+        };
+
+        fetchNextId();
+        return () => { cancelled = true; };
+    }, [selectedSubcategoryId, selectedCategoryData, publicRuntimeConfig.apiURL]);
 
     // Handle Redux errors with toast notifications
     useEffect(() => {
@@ -448,12 +469,12 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             return;
         }
         
-        // Validate custom form fields
-        if (finalCustomForms && finalCustomForms.length > 0) {
+        // Validate custom form fields for the selected subcategory only
+        if (selectedSubcategoryId && subcategoryFilteredForms && subcategoryFilteredForms.length > 0) {
             console.log('Validating custom forms:', finalCustomForms);
             console.log('Custom form data:', customFormData);
             
-            for (const form of finalCustomForms) {
+            for (const form of subcategoryFilteredForms) {
                 if (form.fields && Array.isArray(form.fields)) {
                     for (const field of form.fields) {
                         const fieldName = field.name || field.fieldName || field.fieldLabel || 'Unknown Field';
@@ -508,7 +529,10 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 subcategoryId: subcategoryData?.subCategoryId || subcategoryData?.id,
                 locationId: formData.location,
                 statusLabelId: formData.statusLabelId || undefined,
-                assignedTo: formData.assignedTo || undefined,
+                // assignedTo removed; only departmentId requested
+                assignedDepartment: formData.departmentName || undefined,
+                assignedDepartmentId: formData.departmentId || undefined,
+                assignedEmployeeId: formData.employeeId || undefined,
                 assignedToTeam: formData.team || undefined,
                 assignmentDate: formData.assignmentDate || undefined,
                 purchaseDate: formData.purchaseDate,
@@ -540,12 +564,12 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             }
             
             // Add form data from custom forms
-            if (Object.keys(customFormData).length > 0) {
+            if (selectedSubcategoryId && Object.keys(customFormData).length > 0) {
                 // Convert custom form data to the new formData structure
                 const formDataMap = {};
                 
                 Object.keys(customFormData).forEach(formId => {
-                    const form = finalCustomForms.find(f => f.id === formId);
+                    const form = subcategoryFilteredForms.find(f => f.id === formId);
                     if (form && form.fields) {
                         Object.keys(customFormData[formId]).forEach(fieldId => {
                             const field = form.fields.find(f => f.id === fieldId);
@@ -566,17 +590,16 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             
             // Debug: Log the data being sent
             console.log('Submitting asset data:', assetData);
-            console.log('Invoice scan file:', formData.invoiceScan);
+            console.log('Attachment file:', formData.invoiceScan);
             console.log('Custom form data:', customFormData);
             console.log('Request payload structure:', {
                 asset: assetData,
-                invoiceScan: formData.invoiceScan
+                attachment: !!formData.invoiceScan
             });
 
             // Create the request payload according to new API structure
             const requestPayload = {
                 asset: assetData,
-                invoiceScan: formData.invoiceScan,
                 // choose default endpoint behavior (/api/assets) which expects stringified asset
                 endpoint: '/api/assets',
                 sendAsString: true,
@@ -601,6 +624,32 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
 
             const result = await savePromise;
             onSubmit(result); // Pass the response back to parent (triggers list refresh)
+
+            // Upload attachment (if provided) to dedicated endpoint
+            if (formData.invoiceScan) {
+                try {
+                    const tokenRaw = getItemFromSessionStorage('token', null);
+                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                    const fd = new FormData();
+                    const resolvedAssetId = (result && (result.assetId || result.id)) || assetData.assetId;
+                    fd.append('assetId', resolvedAssetId);
+                    fd.append('file', formData.invoiceScan);
+
+                    const uploadUrl = `${publicRuntimeConfig.apiURL}/api/assets/upload-doc`;
+                    console.log('[upload-doc] POST', uploadUrl, { assetId: resolvedAssetId, hasFile: !!formData.invoiceScan });
+                    const uploadResp = await fetch(uploadUrl, { method: 'POST', headers, body: fd });
+                    if (!uploadResp.ok) {
+                        const errJson = await uploadResp.json().catch(() => ({}));
+                        throw new Error(errJson.message || `Attachment upload failed (${uploadResp.status})`);
+                    }
+                    toast.success('Attachment uploaded');
+                } catch (e) {
+                    const message = e?.message || 'Failed to upload attachment';
+                    console.error('[upload-doc] error:', message);
+                    toast.error(message);
+                }
+            }
             
             // Reset form
             setFormData({
@@ -651,9 +700,14 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                             </SelectField>
                             <SelectField 
                                 label="Subcategory" 
-                                name="subcategory" 
-                                value={formData.subcategory}
-                                onChange={handleChange}
+                                name="subcategoryId"
+                                value={selectedSubcategoryId}
+                                onChange={(e) => {
+                                    const id = e.target.value;
+                                    setSelectedSubcategoryId(id);
+                                    const sub = availableSubcategories.find(s => (s.subCategoryId || s.id) === id);
+                                    setFormData(prev => ({ ...prev, subcategory: sub?.name || '' })); // keep name for display/use elsewhere
+                                }}
                                 required
                                 disabled={!formData.category || availableSubcategories.length === 0}
                             >
@@ -663,7 +717,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                      'Select Subcategory...'}
                                 </option>
                                 {availableSubcategories.map(sub => (
-                                    <option key={sub.subCategoryId || sub.id} value={sub.name}>
+                                    <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
                                         {sub.name}
                                     </option>
                                 ))}
@@ -671,7 +725,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     <FaIdCard className="inline mr-1" />
-                                    Asset ID (Auto-generated)
+                                    Asset ID
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <input
@@ -762,7 +816,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 type="date" 
                             />
                             <InputField 
-                                label="Invoice Scan" 
+                                label="Upload Attachment" 
                                 name="invoiceScan" 
                                 onChange={handleChange}
                                 type="file" 
@@ -774,53 +828,33 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     {/* Custom Forms Section */}
                     {formData.category && (
                         <div className="p-4 border rounded-md">
-                            <h3 className="font-semibold text-lg mb-4 text-purple-800">
-                                📋 Custom Forms for {formData.category}
-                            </h3>
+                            
                             
                             {customFormsLoading && (
                                 <div className="text-center py-8">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
-                                    <p className="text-purple-600">Loading custom forms...</p>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                    <p className="text-blue-600">Loading custom forms...</p>
                                 </div>
                             )}
                             
-                            {!customFormsLoading && finalCustomForms.length > 0 && (
+                            {formData.category && selectedSubcategoryId && !customFormsLoading && subcategoryFilteredForms.length > 0 && (
                                 <CustomFormRenderer
-                                    customForms={finalCustomForms}
+                                    customForms={subcategoryFilteredForms}
                                     customFormData={customFormData}
                                     setCustomFormData={setCustomFormData}
                                     selectedCategory={formData.category}
                                 />
                             )}
+                            {formData.category && !selectedSubcategoryId && (
+                                <div className="text-center py-6 text-gray-600">Select a subcategory to load its custom form(s).</div>
+                            )}
                             
                             {/* Static Laptop Form for IT Equipment when no custom forms are loaded */}
-                            {!customFormsLoading && finalCustomForms.length === 0 && formData.category === 'IT Equipment' && (
-                                <div className="p-4 border rounded-md bg-purple-50 border-purple-200">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-semibold text-lg text-purple-800">
-                                            📋 Laptop Form
-                                        </h3>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded">
-                                                4 fields
-                                            </span>
-                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                                                Active
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
+                            {formData.category && selectedSubcategoryId && !customFormsLoading && subcategoryFilteredForms.length === 0 && formData.category === 'IT Equipment' && (
+                                <div className="p-4 border rounded-md">
+                                    <h3 className="font-semibold text-lg mb-4 text-gray-800">Laptop Form</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    {/* Field name will be shown in label */}
-                                                </div>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                    text
-                                                </span>
-                                            </div>
+                                        <div>
                                             <InputField 
                                                 label="Processor *" 
                                                 name="processor" 
@@ -830,16 +864,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 required
                                             />
                                         </div>
-                                        
-                                        <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    {/* Field name will be shown in label */}
-                                                </div>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                    text
-                                                </span>
-                                            </div>
+                                        <div>
                                             <InputField 
                                                 label="RAM *" 
                                                 name="ram" 
@@ -849,16 +874,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 required
                                             />
                                         </div>
-                                        
-                                        <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    {/* Field name will be shown in label */}
-                                                </div>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                    text
-                                                </span>
-                                            </div>
+                                        <div>
                                             <InputField 
                                                 label="Storage *" 
                                                 name="memory" 
@@ -868,16 +884,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 required
                                             />
                                         </div>
-                                        
-                                        <div className="bg-white p-4 rounded-lg border border-purple-200">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    {/* Field name will be shown in label */}
-                                                </div>
-                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                    text
-                                                </span>
-                                            </div>
+                                        <div>
                                             <InputField 
                                                 label="Graphics Card *" 
                                                 name="graphicsCard" 
@@ -1058,12 +1065,28 @@ const AssetManagementPage = () => {
         if (!asset) return 'Asset';
         if (asset.name) return asset.name;
         const fd = asset.formData || asset.customFields || {};
-        // Common name-like keys
-        const nameKeys = ['name', 'assetName', 'Asset Name', 'model', 'title'];
-        for (const k of nameKeys) {
-            if (fd && fd[k]) return String(fd[k]);
+        // Prefer explicit "Asset" field from custom form, then sensible fallbacks
+        const nameKeys = ['Asset', 'asset', 'Asset Name', 'assetName', 'Name', 'name', 'Model', 'model', 'Title', 'title'];
+        for (const key of nameKeys) {
+            const value = fd && fd[key];
+            if (value != null && value !== '') return String(value);
         }
         return getDisplayFromFormData(fd) || asset.assetId || 'Asset';
+    };
+
+    // Derive the displayed Asset ID, preferring the auto-generated assetId
+    const getAssetIdDisplay = (asset) => {
+        if (!asset) return '';
+        // Only show the human-friendly, auto-generated Asset ID
+        if (asset.assetId) return String(asset.assetId);
+        // Sometimes the backend nests it in form data
+        const fd = asset.formData || asset.customFields || {};
+        const formKeys = ['assetId', 'Asset ID', 'AssetId', 'assetID', 'asset_id'];
+        for (const key of formKeys) {
+            const value = fd && fd[key];
+            if (value != null && value !== '') return String(value);
+        }
+        return '';
     };
 
     const handleAddAsset = (newAssetData) => {
@@ -1133,7 +1156,7 @@ const AssetManagementPage = () => {
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                                             onClick={() => router.push(`/asset-management/${asset.assetId}`)}
                                         >
-                                            <td className="p-4 font-mono text-sm">{asset.assetId}</td>
+                                            <td className="p-4 font-mono text-sm">{getAssetIdDisplay(asset)}</td>
                                             <td className="p-4 font-medium">
                                                 {getAssetName(asset)}
                                             </td>

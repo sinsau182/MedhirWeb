@@ -48,7 +48,8 @@ import {
     deleteCustomForm,
     toggleFormStatus,
     setCurrentForm,
-    clearCurrentForm
+     clearCurrentForm,
+     assignFormToSubCategory
 } from '@/redux/slices/customFormsSlice';
 
 import { 
@@ -145,6 +146,7 @@ const CategorySettings = ({
     onCancelIdFormat 
 }) => {
     const isAddDisabled = !newCategory.name || loading;
+    const [newSubCatFieldsByCategory, setNewSubCatFieldsByCategory] = useState({});
     
     console.log('CategorySettings rendered with categories:', editedCategories);
     console.log('Categories structure in CategorySettings:', editedCategories?.map(cat => ({
@@ -160,12 +162,18 @@ const CategorySettings = ({
         return str ? str.substring(0, 3).toUpperCase() : '';
     };
     
-    // Helper function to generate auto ID for sub-category
+    // Helper function to generate auto ID for sub-category (4-digit sequence)
     const generateAutoId = (categoryName, subCategoryName, startNumber = 1) => {
         const categoryCode = getFirstThreeLetters(categoryName);
         const subCategoryCode = getFirstThreeLetters(subCategoryName);
-        const number = startNumber.toString().padStart(3, '0');
+        const number = startNumber.toString().padStart(4, '0');
         return `${categoryCode}-${subCategoryCode}-${number}`;
+    };
+
+    const formatSuffix = (value) => {
+        const onlyDigits = String(value ?? '').replace(/\D/g, '').slice(0, 4);
+        const numeric = parseInt(onlyDigits || '1', 10);
+        return numeric.toString().padStart(4, '0');
     };
     
     return (
@@ -267,38 +275,87 @@ const CategorySettings = ({
                                 </div>
                             </div>
                             
-                            {/* Add Sub-Category Input */}
-                            <div className="mb-6">
-                                <div className="flex items-end gap-3">
-                                    <div className="flex-1">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Add Sub-Category Name
-                                        </label>
-                                        <input 
-                                            placeholder="e.g., Laptop, Monitor, Printer" 
-                                            className="w-full p-3 border border-gray-300 rounded-md text-base" 
-                                            onKeyPress={(e) => {
-                                                if (e.key === 'Enter' && e.target.value.trim()) {
-                                                    onAddSubCategory(categoryId, e.target.value.trim());
-                                                    e.target.value = '';
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={() => {
-                                            const input = document.querySelector(`input[placeholder="e.g., Laptop, Monitor, Printer"]`);
-                                            if (input && input.value.trim()) {
-                                                onAddSubCategory(categoryId, input.value.trim());
-                                                input.value = '';
-                                            }
-                                        }}
-                                        className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 font-medium"
-                                    >
-                                        <FaPlus /> Add Sub-Category
-                                    </button>
+            {/* Add Sub-Category Input */}
+            <div className="mb-6">
+                {(() => {
+                    const current = newSubCatFieldsByCategory[categoryId] || { name: '', prefix: '', numbering: '' };
+                    const setField = (key, val) => {
+                        setNewSubCatFieldsByCategory(prev => ({
+                            ...prev,
+                            [categoryId]: { ...(prev[categoryId] || {}), [key]: val }
+                        }));
+                    };
+                    const sanitizePrefix = (val) => val; // allow arbitrary prefix
+                    const sanitizeNumbering = (val) => val.replace(/\D/g, '').slice(0, 4);
+                    const isValidPrefix = () => Boolean((current.prefix || '').trim());
+                    const isValid = current.name?.trim() && isValidPrefix() && (current.numbering && /\d+/.test(current.numbering));
+                    const previewSuffix = (current.numbering && current.numbering.length > 0) ? String(Math.max(1, Math.min(9999, parseInt(current.numbering, 10)))).padStart(4, '0') : '0001';
+                    const previewPrefix = (current.prefix || '').trim();
+                    const fullPreview = previewPrefix && current.numbering ? `${previewPrefix}-${previewSuffix}` : '';
+                    return (
+                        <div className="space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Sub-Category Name</label>
+                                    <input
+                                        value={current.name}
+                                        onChange={(e) => setField('name', e.target.value)}
+                                        placeholder="e.g., Laptop, Monitor, Printer"
+                                        className="w-full p-3 border border-gray-300 rounded-md text-base"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Asset ID Prefix (e.g., {categoryCode}-{getFirstThreeLetters(current.name)})</label>
+                                    <input
+                                        value={current.prefix}
+                                        onChange={(e) => setField('prefix', sanitizePrefix(e.target.value))}
+                                        placeholder="CAT-SUB"
+                                        className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Numbering (4 digits)</label>
+                                    <input
+                                        value={current.numbering}
+                                        onChange={(e) => setField('numbering', sanitizeNumbering(e.target.value))}
+                                        placeholder="0001"
+                                        className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
+                                    />
                                 </div>
                             </div>
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-gray-600">
+                                    {fullPreview ? (
+                                        <span>Preview: <span className="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">{fullPreview}</span></span>
+                                    ) : (
+                                        <span className="text-gray-400">Enter prefix and numbering to see preview</span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const payload = {
+                                            name: (current.name || '').trim(),
+                                            prefix: (current.prefix || '').replace(/-+$/,''),
+                                            numbering: current.numbering
+                                        };
+                                        if (!payload.name || !isValidPrefix() || !payload.numbering) return;
+                                        try {
+                                            await onAddSubCategory(categoryId, payload);
+                                            setNewSubCatFieldsByCategory(prev => ({ ...prev, [categoryId]: { name: '', prefix: '', numbering: '' } }));
+                                        } catch (e) {
+                                            // Keep inputs for correction
+                                        }
+                                    }}
+                                    disabled={!isValid || loading}
+                                    className={`px-6 py-3 rounded-md flex items-center gap-2 font-medium ${(!isValid || loading) ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                                >
+                                    <FaPlus /> Create Sub-Category
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
+            </div>
                             
                             {/* Sub-Categories Table */}
                             {subCategories.length > 0 && (
@@ -311,7 +368,7 @@ const CategorySettings = ({
                                                     <th className="text-left p-3 font-medium text-gray-700">Sub-Category Name</th>
                                                     <th className="text-left p-3 font-medium text-gray-700">
                                                         <div className="flex items-center gap-2">
-                                                            <span>Auto ID</span>
+                                                            <span>Asset ID</span>
                                                             <button
                                                                 className="text-gray-400 hover:text-gray-600 p-1"
                                                                 title="Asset IDs are automatically generated and can be edited after asset creation. Format: [Category Code]-[Sub-Category Code]-[Number]"
@@ -324,7 +381,7 @@ const CategorySettings = ({
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {subCategories.map((subCat, index) => {
+                                                    {subCategories.map((subCat, index) => {
                                                     console.log(`Rendering subcategory:`, subCat);
                                                     return (
                                                     <tr key={subCat.id || subCat.subCategoryId} className="border-t border-gray-200 hover:bg-gray-50">
@@ -343,12 +400,76 @@ const CategorySettings = ({
                                                         </td>
                                                         <td className="p-3">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                                                    {generateAutoId(cat.name, subCat.name, index + 1)}
-                                                                </span>
+                                                                {(() => {
+                                                                     const prefixBase = (subCat.prefix && String(subCat.prefix).trim())
+                                                                         ? String(subCat.prefix).trim()
+                                                                         : `${getFirstThreeLetters(cat.name)}-${getFirstThreeLetters(subCat.name)}`;
+                                                                     const prefix = `${prefixBase}-`;
+                                                                     const draft = subCat.autoIdSuffixDraft;
+                                                                     const committed = subCat.autoIdSuffix;
+                                                                     const seq = typeof subCat.nextSequence === 'number' ? subCat.nextSequence : undefined;
+                                                                     const displayWhenEditing = draft ?? (committed ?? (seq !== undefined ? formatSuffix(seq) : ''));
+                                                                     const displayWhenReadonly = formatSuffix(committed ?? (seq ?? (index + 1)));
+                                                                     return (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-l select-none">
+                                                                                {prefix}
+                                                                            </span>
+                                                                            {subCat.editing ? (
+                                                                                <input
+                                                                                    className="w-16 font-mono text-sm border border-blue-300 rounded-r px-2 py-1"
+                                                                                    value={displayWhenEditing}
+                                                                                    placeholder="0001"
+                                                                                    maxLength={4}
+                                                                                    onChange={(e) => {
+                                                                                        const raw = e.target.value;
+                                                                                        const digits = raw.replace(/\D/g, '').slice(0, 4);
+                                                                                        onEditSubCategory(
+                                                                                            categoryId,
+                                                                                            subCat.id || subCat.subCategoryId,
+                                                                                            'autoIdSuffixDraft',
+                                                                                            digits
+                                                                                        );
+                                                                                    }}
+                                                                                    onBlur={(e) => {
+                                                                                        const padded = formatSuffix(e.target.value);
+                                                                                        onEditSubCategory(
+                                                                                            categoryId,
+                                                                                            subCat.id || subCat.subCategoryId,
+                                                                                            'autoIdSuffix',
+                                                                                            padded
+                                                                                        );
+                                                                                         // Keep nextSequence in sync locally if present
+                                                                                         if (padded) {
+                                                                                             const numeric = parseInt(String(padded).replace(/\D/g, '') || '0', 10);
+                                                                                             if (!Number.isNaN(numeric) && numeric > 0) {
+                                                                                                 onEditSubCategory(
+                                                                                                     categoryId,
+                                                                                                     subCat.id || subCat.subCategoryId,
+                                                                                                     'nextSequence',
+                                                                                                     numeric
+                                                                                                 );
+                                                                                             }
+                                                                                         }
+                                                                                        onEditSubCategory(
+                                                                                            categoryId,
+                                                                                            subCat.id || subCat.subCategoryId,
+                                                                                            'autoIdSuffixDraft',
+                                                                                            ''
+                                                                                        );
+                                                                                    }}
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-r">
+                                                                                    {displayWhenReadonly}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                                 <button
                                                                     className="text-gray-400 hover:text-gray-600 p-1"
-                                                                    title="Asset ID Format: [Category Code]-[Sub-Category Code]-[Number]. This ID is automatically generated and can be edited after asset creation."
+                                                                    title="Asset ID Format: CAT-SUB-0001. You can manually set the last 4 digits per sub-category while editing."
                                                                 >
                                                                     <FaQuestionCircle className="text-xs" />
                                                                 </button>
@@ -620,6 +741,7 @@ const CustomFormBuilder = ({ editing }) => {
     const [editingFormId, setEditingFormId] = useState(null);
     const [formName, setFormName] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [selectedSubCategory, setSelectedSubCategory] = useState('');
     const [fields, setFields] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -636,6 +758,28 @@ const CustomFormBuilder = ({ editing }) => {
             dispatch(fetchAssetCategories());
         }
     }, [view, dispatch]);
+
+    // Compute sub-categories for the selected category
+    const subCategoriesForSelectedCategory = useMemo(() => {
+        if (!selectedCategory) return [];
+        const matchingCategory = categories.find(cat => 
+            cat.categoryId === selectedCategory || cat.id === selectedCategory
+        );
+        return matchingCategory?.subCategories || [];
+    }, [selectedCategory, categories]);
+
+    // When category changes, clear sub-category if it doesn't belong to the category
+    useEffect(() => {
+        if (!selectedCategory) {
+            setSelectedSubCategory('');
+            return;
+        }
+        const exists = subCategoriesForSelectedCategory.some(sub => {
+            const id = sub.subCategoryId || sub.id;
+            return String(id) === String(selectedSubCategory);
+        });
+        if (!exists) setSelectedSubCategory('');
+    }, [selectedCategory, subCategoriesForSelectedCategory]);
 
     // Ensure selectedCategory is properly set when editing and categories are loaded
     useEffect(() => {
@@ -666,6 +810,13 @@ const CustomFormBuilder = ({ editing }) => {
                     // Still set it in case it's valid but not found due to timing
                     setSelectedCategory(formCategoryId);
                 }
+                // Attempt to set sub-category from form if available
+                const formSubCatId = form?.subCategoryId || form?.assignedSubCategoryId || form?.subCategory?.id;
+                if (formSubCatId) {
+                    setSelectedSubCategory(formSubCatId);
+                } else {
+                    setSelectedSubCategory('');
+                }
             }
         }
     }, [view, editingFormId, categories, forms]);
@@ -692,9 +843,12 @@ const CustomFormBuilder = ({ editing }) => {
                     const mappedFields = mapApiFieldsToFrontend(form.fields);
                     setFields(mappedFields);
                 }
+            } else if (form && (!form.fields || form.fields.length === 0)) {
+                console.log('Form has no fields, clearing fields state');
+                setFields([]);
             }
         }
-    }, [view, editingFormId, forms, fields]);
+    }, [view, editingFormId, forms]);
 
     // Monitor fields state changes for debugging
     useEffect(() => {
@@ -708,6 +862,7 @@ const CustomFormBuilder = ({ editing }) => {
         setView('create');
         setFormName('');
         setSelectedCategory('');
+        setSelectedSubCategory('');
         setFields([]);
         setError('');
         dispatch(clearCurrentForm());
@@ -715,11 +870,16 @@ const CustomFormBuilder = ({ editing }) => {
 
     // Helper function to map API fields to frontend format
     const mapApiFieldsToFrontend = (apiFields) => {
-        if (!apiFields || !Array.isArray(apiFields)) return [];
+        if (!apiFields || !Array.isArray(apiFields)) {
+            console.log('No API fields to map, returning empty array');
+            return [];
+        }
         
-        return apiFields.map((apiField, index) => {
+        console.log('Mapping API fields:', apiFields);
+        
+        const mappedFields = apiFields.map((apiField, index) => {
             const mappedField = {
-                id: apiField.id || `field_${Date.now()}_${index}`,
+                id: apiField.id || `field_${Date.now()}_${index}_${Math.random()}`,
                 name: apiField.fieldLabel || apiField.fieldName || apiField.name || '',
                 type: apiField.fieldType || apiField.type || 'text',
                 required: Boolean(apiField.required),
@@ -730,7 +890,7 @@ const CustomFormBuilder = ({ editing }) => {
             // Handle dropdown options
             if (apiField.options && Array.isArray(apiField.options)) {
                 mappedField.options = apiField.options.map((opt, optIndex) => ({
-                    id: `option_${Date.now()}_${optIndex}`,
+                    id: `option_${Date.now()}_${optIndex}_${Math.random()}`,
                     value: typeof opt === 'string' ? opt : opt.value || opt.label || ''
                 }));
             }
@@ -738,10 +898,13 @@ const CustomFormBuilder = ({ editing }) => {
             console.log('Mapped API field:', { original: apiField, mapped: mappedField });
             return mappedField;
         });
+        
+        console.log('Total mapped fields:', mappedFields.length);
+        return mappedFields;
     };
 
     const handleEditForm = (formId) => {
-        const form = forms.find(f => f.id === formId);
+        const form = forms.find(f => f.id === formId || f.formId === formId);
         console.log('handleEditForm called with:', { formId, form, categoriesCount: categories?.length });
         if (form) {
             setView('edit');
@@ -751,9 +914,18 @@ const CustomFormBuilder = ({ editing }) => {
             const categoryToUse = form.categoryId || form.assignedCategoryId || '';
             setSelectedCategory(categoryToUse);
             
-            // Map API fields to frontend format
-            const mappedFields = mapApiFieldsToFrontend(form.fields);
-            setFields(mappedFields);
+            // Map API fields to frontend format and ensure proper state update
+            const mappedFields = mapApiFieldsToFrontend(form.fields || []);
+            
+            // Clear any existing fields first, then set new ones
+            setFields([]);
+            
+            // Use setTimeout to ensure state is cleared before setting new fields
+            setTimeout(() => {
+                setFields(mappedFields);
+                console.log('Fields set after edit:', mappedFields);
+            }, 0);
+            
             setError('');
             dispatch(setCurrentForm(form));
             
@@ -780,6 +952,7 @@ const CustomFormBuilder = ({ editing }) => {
         setEditingFormId(null);
         setFormName('');
         setSelectedCategory('');
+        setSelectedSubCategory('');
         setFields([]);
         setError('');
         dispatch(clearCurrentForm());
@@ -814,6 +987,8 @@ const CustomFormBuilder = ({ editing }) => {
     };
 
     const addField = () => {
+        console.log('addField called. Current fields count:', fields.length);
+        
         // Check if we've reached the maximum limit of 15 fields
         if (fields.length >= 15) {
             toast.error("Maximum limit of 15 fields reached. Please remove some fields before adding new ones.");
@@ -822,15 +997,22 @@ const CustomFormBuilder = ({ editing }) => {
         
         // Generate a unique ID using timestamp + random number to avoid conflicts
         const newField = {
-            id: Date.now() + Math.random(),
+            id: `field_${Date.now()}_${Math.random()}`,
             name: '',
             type: 'text',
             required: false,
             placeholder: '',
             options: []
         };
-        setFields([...fields, newField]);
-        console.log('Added new field. Total fields:', fields.length + 1);
+        
+        console.log('Creating new field:', newField);
+        
+        // Use functional update to ensure we're working with the latest state
+        setFields(prevFields => {
+            const updatedFields = [...prevFields, newField];
+            console.log('Added new field. Previous count:', prevFields.length, 'New count:', updatedFields.length);
+            return updatedFields;
+        });
     };
 
     const removeField = (fieldId) => {
@@ -928,18 +1110,33 @@ const CustomFormBuilder = ({ editing }) => {
                     ...(field.type === 'dropdown' && { 
                         options: field.options.map(opt => opt.value.trim()) 
                     })
-                }))
+                })),
+                ...(selectedSubCategory ? { subCategoryId: selectedSubCategory } : {})
             };
             
+            let savedFormId = editingFormId;
             if (editingFormId) {
-                await dispatch(updateCustomForm({ 
+                const updated = await dispatch(updateCustomForm({ 
                     formId: editingFormId, 
                     formData 
                 })).unwrap();
+                savedFormId = updated?.id || editingFormId;
                 toast.success("Form updated successfully!");
             } else {
-                await dispatch(createCustomForm(formData)).unwrap();
+                const created = await dispatch(createCustomForm(formData)).unwrap();
+                savedFormId = created?.id || created?.formId;
                 toast.success("Form created successfully!");
+            }
+
+            // Assign to sub-category via dedicated endpoint if provided
+            if (savedFormId && selectedSubCategory) {
+                try {
+                    await dispatch(assignFormToSubCategory({ formId: savedFormId, subCategoryId: selectedSubCategory })).unwrap();
+                    toast.success("Sub-category assigned to form");
+                } catch (e) {
+                    console.error('Failed to assign sub-category:', e);
+                    toast.error("Failed to assign sub-category");
+                }
             }
             
             // Return to listing view
@@ -1250,23 +1447,45 @@ const CustomFormBuilder = ({ editing }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    📂 Select Category
-                                </label>
-                                <select
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md"
-                                    disabled={categoriesLoading}
-                                >
-                                    <option value="">Select a category...</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            📂 Select Category
+                                        </label>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="w-full p-3 border border-gray-300 rounded-md"
+                                            disabled={categoriesLoading}
+                                        >
+                                            <option value="">Select a category...</option>
+                                            {categories.map(cat => (
+                                                <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
+                                                    {cat.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            🧩 Select Sub-Category
+                                        </label>
+                                        <select
+                                            value={selectedSubCategory}
+                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
+                                            className="w-full p-3 border border-gray-300 rounded-md"
+                                            disabled={!selectedCategory || categoriesLoading}
+                                        >
+                                            <option value="">Select a sub-category...</option>
+                                            {subCategoriesForSelectedCategory.map(sub => (
+                                                <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
+                                                    {sub.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -1421,23 +1640,45 @@ const CustomFormBuilder = ({ editing }) => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    📂 Select Category
-                                </label>
-                                <select
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md"
-                                    disabled={categoriesLoading}
-                                >
-                                    <option value="">Select a category...</option>
-                                    {categories.map(cat => (
-                                        <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
-                                            {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            📂 Select Category
+                                        </label>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="w-full p-3 border border-gray-300 rounded-md"
+                                            disabled={categoriesLoading}
+                                        >
+                                            <option value="">Select a category...</option>
+                                            {categories.map(cat => (
+                                                <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
+                                                    {cat.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            🧩 Select Sub-Category
+                                        </label>
+                                        <select
+                                            value={selectedSubCategory}
+                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
+                                            className="w-full p-3 border border-gray-300 rounded-md"
+                                            disabled={!selectedCategory || categoriesLoading}
+                                        >
+                                            <option value="">Select a sub-category...</option>
+                                            {subCategoriesForSelectedCategory.map(sub => (
+                                                <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
+                                                    {sub.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -1983,31 +2224,58 @@ const AssetSettingsPage = () => {
     };
 
     // Enhanced sub-category management functions
-    const handleAddSubCategory = (categoryId, subCategoryName = '') => {
-        console.log('handleAddSubCategory called with:', { categoryId, subCategoryName });
+    const handleAddSubCategory = (categoryId, payloadOrName = '') => {
+        console.log('handleAddSubCategory called with:', { categoryId, payloadOrName });
         console.log('Current editedCategories:', editedCategories.map(cat => ({
             id: cat.id,
             categoryId: cat.categoryId,
             name: cat.name,
             subCategories: cat.subCategories
         })));
-        
+
+        // If called with the new object payload { name, prefix, numbering }
+        if (typeof payloadOrName === 'object' && payloadOrName !== null) {
+            const name = (payloadOrName.name || '').trim();
+            const rawPrefix = (payloadOrName.prefix || '').trim();
+            const numberingRaw = String(payloadOrName.numbering || '');
+            if (!name || !rawPrefix || !numberingRaw) {
+                toast.error('Please provide sub-category name, prefix and numbering');
+                return;
+            }
+            const nextSequence = Math.max(1, Math.min(9999, parseInt(numberingRaw.replace(/\D/g, '') || '1', 10)));
+            const autoIdPreview = `${rawPrefix}-${String(nextSequence).padStart(4, '0')}`;
+
+            console.log('Adding subcategory to server with extended data:', { categoryId, name, prefix: rawPrefix, nextSequence, autoIdPreview });
+            dispatch(addSubCategory({
+                categoryId,
+                subCategoryData: { name, prefix: rawPrefix, nextSequence, autoIdPreview }
+            })).then((result) => {
+                if (result.meta.requestStatus === 'fulfilled') {
+                    console.log('Subcategory added successfully:', result.payload);
+                    toast.success('Sub-category added successfully!');
+                } else {
+                    console.error('Failed to add subcategory:', result.error);
+                    toast.error('Failed to add sub-category');
+                }
+            });
+            return;
+        }
+
+        // Backward-compat: simple name string
+        const subCategoryName = String(payloadOrName || '');
         if (subCategoryName.trim()) {
             // Add to server
-            console.log('Adding subcategory to server:', { categoryId, subCategoryData: { name: subCategoryName.trim() } });
+            console.log('Adding subcategory to server (legacy):', { categoryId, subCategoryData: { name: subCategoryName.trim() } });
             dispatch(addSubCategory({
                 categoryId,
                 subCategoryData: { name: subCategoryName.trim() }
             })).then((result) => {
                 if (result.meta.requestStatus === 'fulfilled') {
                     console.log('Subcategory added successfully:', result.payload);
-                    toast.success("Sub-category added successfully!");
-                    
-                    // Don't refresh categories immediately - let Redux handle the state update
-                    // The addSubCategory.fulfilled case should update the state properly
+                    toast.success('Sub-category added successfully!');
                 } else {
                     console.error('Failed to add subcategory:', result.error);
-                    toast.error("Failed to add sub-category");
+                    toast.error('Failed to add sub-category');
                 }
             });
         } else {
@@ -2048,19 +2316,44 @@ const AssetSettingsPage = () => {
         })));
         
         if (subCategory && subCategory.name && subCategory.name.trim()) {
+            // Derive nextSequence from committed or draft suffix; fallback to position+1
+            const committedSuffixRaw = (subCategory.autoIdSuffix ?? '').toString();
+            const draftSuffixRaw = (subCategory.autoIdSuffixDraft ?? '').toString();
+            const chosenRaw = committedSuffixRaw || draftSuffixRaw;
+            let nextSequence;
+            if (chosenRaw) {
+                const digits = chosenRaw.replace(/\D/g, '').slice(0, 4);
+                nextSequence = digits ? Math.max(1, Math.min(9999, parseInt(digits, 10))) : undefined;
+            }
+            if (nextSequence === undefined) {
+                const idx = category?.subCategories?.findIndex(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId) ?? -1;
+                nextSequence = Math.max(1, (idx >= 0 ? idx + 1 : 1));
+            }
+
+            // Compute codes and full preview ID to send
+            const categoryNameForCode = category?.name || '';
+            const subCategoryNameForCode = subCategory.name || '';
+            const categoryCode = getFirstThreeLetters(categoryNameForCode);
+            const subCategoryCode = getFirstThreeLetters(subCategoryNameForCode);
+            const autoIdPreview = `${categoryCode}-${subCategoryCode}-${String(nextSequence).padStart(4, '0')}`;
+
             if (subCategory.subCategoryId) {
                 // Update existing
-                console.log('Updating existing subcategory:', { categoryId, subCategoryId, name: subCategory.name });
+                console.log('Updating existing subcategory:', { categoryId, subCategoryId, name: subCategory.name, nextSequence });
                 dispatch(updateSubCategory({
                     categoryId,
                     subCategoryId: subCategory.subCategoryId,
-                    subCategoryData: { name: subCategory.name }
+                    subCategoryData: {
+                        name: subCategory.name,
+                        nextSequence,
+                        categoryCode,
+                        subCategoryCode,
+                        autoIdPreview
+                    }
                 })).then((result) => {
                     if (result.meta.requestStatus === 'fulfilled') {
                         console.log('Subcategory updated successfully:', result.payload);
                         toast.success("Sub-category updated successfully!");
-                        
-                        // Don't refresh categories - let Redux handle the state update
                     } else {
                         console.error('Failed to update subcategory:', result.error);
                         toast.error("Failed to update sub-category");
@@ -2068,16 +2361,20 @@ const AssetSettingsPage = () => {
                 });
             } else {
                 // Create new
-                console.log('Creating new subcategory:', { categoryId, name: subCategory.name });
+                console.log('Creating new subcategory:', { categoryId, name: subCategory.name, nextSequence });
                 dispatch(addSubCategory({
                     categoryId,
-                    subCategoryData: { name: subCategory.name }
+                    subCategoryData: {
+                        name: subCategory.name,
+                        nextSequence,
+                        categoryCode,
+                        subCategoryCode,
+                        autoIdPreview
+                    }
                 })).then((result) => {
                     if (result.meta.requestStatus === 'fulfilled') {
                         console.log('Subcategory created successfully:', result.payload);
                         toast.success("Sub-category created successfully!");
-                        
-                        // Don't refresh categories - let Redux handle the state update
                     } else {
                         console.error('Failed to create subcategory:', result.error);
                         toast.error("Failed to create sub-category");

@@ -218,10 +218,21 @@ const ManagerContent = ({ role }) => {
         );
         
         if (pipeline) {
-          grouped[pipeline.name] = stageLeads;
+          // Add stageName and formType to each lead
+          const leadsWithStageName = stageLeads.map(lead => ({
+            ...lead,
+            stageName: pipeline.name,
+            formType: pipeline.formType
+          }));
+          grouped[pipeline.name] = leadsWithStageName;
         } else {
           // Create a fallback name if pipeline not found
-          grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
+          const leadsWithStageName = stageLeads.map(lead => ({
+            ...lead,
+            stageName: `Stage-${stageId.slice(-8)}`,
+            formType: stageGroup.formType
+          }));
+          grouped[`Stage-${stageId.slice(-8)}`] = leadsWithStageName;
         }
       });
     } else {
@@ -245,7 +256,13 @@ const ManagerContent = ({ role }) => {
           return isMatch;
         }).filter(l => (unassignedOnly ? !l.salesRep : true));
 
-        grouped[pipeline.name] = matchingLeads;
+        // Add stageName and formType to each lead
+        const leadsWithStageName = matchingLeads.map(lead => ({
+          ...lead,
+          stageName: pipeline.name,
+          formType: pipeline.formType
+        }));
+        grouped[pipeline.name] = leadsWithStageName;
       });
 
       // Handle leads without pipelineId
@@ -263,7 +280,13 @@ const ManagerContent = ({ role }) => {
           if (!grouped[newStage.name]) {
             grouped[newStage.name] = [];
           }
-          grouped[newStage.name] = [...grouped[newStage.name], ...leadsWithoutPipeline];
+          // Add stageName and formType to leads without pipeline
+          const leadsWithStageName = leadsWithoutPipeline.map(lead => ({
+            ...lead,
+            stageName: newStage.name,
+            formType: newStage.formType
+          }));
+          grouped[newStage.name] = [...grouped[newStage.name], ...leadsWithStageName];
         }
       }
     }

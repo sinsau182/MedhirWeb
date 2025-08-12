@@ -19,20 +19,27 @@ import {
 } from "react-icons/fa";
 import LeadActions from './LeadActions';
 import { fetchPipelines } from '@/redux/slices/pipelineSlice';
+import { moveLeadToPipeline } from '@/redux/slices/leadsSlice';
 import TeamMemberAssignmentModal from './TeamMemberAssignmentModal';
+import FreezeLeadModal from './FreezeLeadModal';
+import JunkReasonModal from './JunkReasonModal';
+import LostLeadModal from './LostLeadModal';
+import LeadActionChoiceModal from './LeadActionChoiceModal';
 import { toast } from 'sonner';
-import axios from 'axios';
-import getConfig from 'next/config';
-
-const { publicRuntimeConfig } = getConfig();
-const API_BASE_URL = publicRuntimeConfig.apiURL;
 
 const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [], allowAssignment = false }) => {
   const router = useRouter();
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamModalRole, setTeamModalRole] = useState('');
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
-  const [isFreezing, setIsFreezing] = useState(false);
+  const [showFreezeModal, setShowFreezeModal] = useState(false);
+  const [freezeModalPosition, setFreezeModalPosition] = useState({ x: 0, y: 0 });
+  const [showJunkModal, setShowJunkModal] = useState(false);
+  const [junkModalPosition, setJunkModalPosition] = useState({ x: 0, y: 0 });
+  const [showLostModal, setShowLostModal] = useState(false);
+  const [lostModalPosition, setLostModalPosition] = useState({ x: 0, y: 0 });
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
+  const [choiceModalPosition, setChoiceModalPosition] = useState({ x: 0, y: 0 });
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
 
@@ -144,43 +151,86 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
 
   // Check if lead is in High Potential stage
   const isHighPotential = () => {
-    return lead.stageName && lead.stageName.toLowerCase().includes('high potential');
+    // Check if the lead has a stageName property
+    if (lead.stageName) {
+      const stageName = lead.stageName.toLowerCase();
+      return stageName.includes('high potential') || 
+             stageName.includes('highpotential') || 
+             stageName === 'high potential' ||
+             stageName === 'highpotential';
+    }
+    
+    // Check if the lead has a formType property (from the grouped data structure)
+    if (lead.formType) {
+      return lead.formType === 'HIGHPOTENTIAL';
+    }
+    
+    // Check if the lead is in a stage with formType HIGHPOTENTIAL
+    // This would be set by the parent component when grouping leads
+    return false;
   };
 
   // Handle freeze lead
-  const handleFreezeLead = async (e) => {
+  const handleFreezeLead = (e) => {
     e.stopPropagation();
     
-    if (isFreezing) return;
+    // Check if lead is already frozen
+    if (lead.isFreeze === true) {
+      toast.info("This lead is already frozen.");
+      return;
+    }
     
-    setIsFreezing(true);
-    try {
-      const token = sessionStorage.getItem("token") || "";
-      const response = await axios.post(
-        `${API_BASE_URL}/leads/freeze/${lead.leadId}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      toast.success("Lead frozen successfully!");
-      
-      // Optionally refresh the leads list or update the UI
-      // You might want to call a callback function here to refresh the leads
-      if (window.location.reload) {
-        window.location.reload();
-      }
-      
-    } catch (error) {
-      console.error("Failed to freeze lead:", error);
-      toast.error("Failed to freeze lead. Please try again.");
-    } finally {
-      setIsFreezing(false);
+    // Get click position for modal placement
+    setFreezeModalPosition({ x: e.clientX, y: e.clientY });
+    setShowFreezeModal(true);
+  };
+
+  // Handle freeze success
+  const handleFreezeSuccess = () => {
+    // Find the Freeze stage in pipelines
+    const freezeStage = pipelines.find(p => 
+      p.name.toLowerCase() === 'freeze' || 
+      p.name.toLowerCase().includes('freeze')
+    );
+    
+    if (freezeStage) {
+      // Move the lead to the Freeze stage using Redux action
+      dispatch(moveLeadToPipeline({
+        leadId: lead.leadId,
+        newPipelineId: freezeStage.pipelineId || freezeStage.stageId
+      }));
     }
   };
+
+  // Handle trash icon click - show choice modal
+  const handleTrashAction = (e) => {
+    e.stopPropagation();
+    // Get click position for modal placement
+    setChoiceModalPosition({ x: e.clientX, y: e.clientY });
+    setShowChoiceModal(true);
+  };
+
+  // Handle choice modal actions
+  const handleChooseLost = () => {
+    setLostModalPosition(choiceModalPosition);
+    setShowLostModal(true);
+  };
+
+  const handleChooseJunk = () => {
+    setJunkModalPosition(choiceModalPosition);
+    setShowJunkModal(true);
+  };
+
+  const handleJunkSuccess = () => {
+    setShowJunkModal(false);
+  };
+
+  const handleLostSuccess = () => {
+    setShowLostModal(false);
+  };
+
+  // Check if lead is frozen in High Potential stage
+  const isFrozenHighPotential = isHighPotential() && lead.isFreeze === true;
 
   return (
     <div
@@ -190,27 +240,55 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       {...attributes}
       {...listeners}
       className={`
-        bg-white p-3 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 cursor-grab
+        p-3 rounded-lg shadow-sm border transition-all duration-200 cursor-grab relative overflow-hidden
+        ${isFrozenHighPotential 
+          ? 'bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200 shadow-blue-100' 
+          : 'bg-white border-gray-100 hover:shadow-md'
+        }
         ${isDragging ? 'opacity-50 shadow-lg scale-105 rotate-1' : 'hover:shadow-md'}
         ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
         ${isDragging ? 'z-50' : ''}
+        ${isFrozenHighPotential ? 'hover:shadow-blue-200' : ''}
       `}
     >
+
       {/* Header: Name and Priority */}
       <div className="flex items-start justify-between mb-2">
-        <h3 className="font-semibold text-gray-900 text-sm truncate flex-1 mr-2">{lead.name}</h3>
-        {/* <div className="flex items-center">{renderStars(priorityToStars(lead.priority))  || ''}</div> */}
+        <div className="flex-1 mr-2">
+          <h3 className={`font-semibold text-sm truncate ${isFrozenHighPotential ? 'text-blue-800' : 'text-gray-900'}`}>
+            {lead.name}
+          </h3>
+        </div>
       </div>
+            {/* Frozen overlay effect */}
+            {isFrozenHighPotential && (
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Snowflake pattern overlay */}
+          <div className="absolute top-1 right-1 text-blue-400 opacity-30 flex items-center gap-1">
+            <FaSnowflake size={12} />
+            <span className="text-xs text-blue-600 font-medium">Frozen</span>
+          </div>
+          <div className="absolute bottom-2 left-2 text-purple-400 opacity-20">
+            <FaSnowflake size={8} />
+          </div>
+          <div className="absolute top-1/2 left-1 text-blue-300 opacity-25">
+            <FaSnowflake size={10} />
+          </div>
+          
+          {/* Subtle frost effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-30"></div>
+        </div>
+      )}
       
       {/* Budget and Date */}
-      <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
+      <div className={`flex items-center gap-2 mb-2 text-xs ${isFrozenHighPotential ? 'text-blue-700' : 'text-gray-600'}`}>
         <span className="flex items-center gap-1 font-medium">
-          <FaRupeeSign className="text-blue-500 text-xs" />
+          <FaRupeeSign className={`text-xs ${isFrozenHighPotential ? 'text-blue-600' : 'text-blue-500'}`} />
           {lead.budget ? Number(lead.budget).toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '0'}
         </span>
-        <span className="text-gray-300">•</span>
+        <span className={isFrozenHighPotential ? 'text-blue-400' : 'text-gray-300'}>•</span>
         <span className="flex items-center gap-1">
-          <FaCalendarAlt className="text-gray-400 text-xs" />
+          <FaCalendarAlt className={`text-xs ${isFrozenHighPotential ? 'text-blue-500' : 'text-gray-400'}`} />
           {formatDate(lead.dateOfCreation)}
         </span>
       </div>
@@ -261,23 +339,27 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
 
         {/* Freeze Button - Only show for High Potential leads */}
         {isHighPotential() && (
-          <CustomTooltip text="Freeze Lead">
+          <CustomTooltip text={lead.isFreeze ? "Lead is frozen" : "Freeze Lead"}>
             <button
               type="button"
-              title="Freeze Lead"
+              title={lead.isFreeze ? "Lead is frozen" : "Freeze Lead"}
               onClick={handleFreezeLead}
-              disabled={isFreezing}
-              className="hover:bg-purple-50 rounded-full p-1 transition-colors text-gray-400 hover:text-purple-600 focus:outline-none focus:ring-1 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={lead.isFreeze}
+              className={`rounded-full p-1 transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed ${
+                lead.isFreeze 
+                  ? 'text-purple-600 bg-purple-100 ring-purple-300' 
+                  : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 focus:ring-purple-300'
+              }`}
             >
-              <FaSnowflake size={14} className={isFreezing ? 'animate-spin' : ''} />
+              <FaSnowflake size={14} />
             </button>
           </CustomTooltip>
         )}
 
         <button
           type="button"
-          title="Move to Junk"
-          onClick={() => onMarkJunk && onMarkJunk(lead.leadId)}
+          title="Mark as Lost or Junk"
+          onClick={handleTrashAction}
           className="hover:bg-red-50 rounded-full p-1 transition-colors text-gray-400 hover:text-red-600 focus:outline-none focus:ring-1 focus:ring-red-300"
         >
           <FaTrash size={14} />
@@ -301,6 +383,43 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
         role={teamModalRole}
         salesEmployees={managerEmployees}
         position={modalPosition}
+      />
+
+      {/* Freeze Lead Modal */}
+      <FreezeLeadModal
+        isOpen={showFreezeModal}
+        onClose={() => setShowFreezeModal(false)}
+        lead={lead}
+        onSuccess={handleFreezeSuccess}
+        position={freezeModalPosition}
+      />
+
+      {/* Junk Reason Modal */}
+      <JunkReasonModal
+        isOpen={showJunkModal}
+        onClose={() => setShowJunkModal(false)}
+        lead={lead}
+        onSuccess={handleJunkSuccess}
+        position={junkModalPosition}
+      />
+
+      {/* Lost Lead Modal */}
+      <LostLeadModal
+        isOpen={showLostModal}
+        onClose={() => setShowLostModal(false)}
+        lead={lead}
+        onSuccess={handleLostSuccess}
+        position={lostModalPosition}
+      />
+
+      {/* Lead Action Choice Modal */}
+      <LeadActionChoiceModal
+        isOpen={showChoiceModal}
+        onClose={() => setShowChoiceModal(false)}
+        lead={lead}
+        onChooseLost={handleChooseLost}
+        onChooseJunk={handleChooseJunk}
+        position={choiceModalPosition}
       />
     </div>
   );

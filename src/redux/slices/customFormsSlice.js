@@ -36,6 +36,10 @@ const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/custom-forms"
  * 7. PUT /api/asset-settings/custom-forms/{formId}
  *    - Toggle form status (enabled/disabled)
  *    - Used by: toggleFormStatus()
+  * 
+  * 8. PUT /api/asset-settings/custom-forms/{formId}/assign-subcategory
+  *    - Assign a form to a specific sub-category
+  *    - Used by: assignFormToSubCategory()
  */
 
 // Health check function to verify API server connectivity
@@ -447,6 +451,23 @@ export const toggleFormStatus = createAsyncThunk(
   }
 );
 
+// Assign form to sub-category
+export const assignFormToSubCategory = createAsyncThunk(
+  'customForms/assignSubCategory',
+  async ({ formId, subCategoryId }, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage('token', null);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.put(`${API_BASE}/${formId}/assign-subcategory`, { subCategoryId }, { headers });
+      console.log('Assign form to sub-category response:', response.data);
+      return { id: formId, subCategoryId };
+    } catch (error) {
+      console.error('Redux: Error assigning form to sub-category:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to assign form to sub-category');
+    }
+  }
+);
+
 const customFormsSlice = createSlice({
   name: 'customForms',
   initialState: {
@@ -575,6 +596,13 @@ const customFormsSlice = createSlice({
         const index = state.forms.findIndex(form => form.id === action.payload.id);
         if (index !== -1) {
           state.forms[index].enabled = action.payload.enabled;
+        }
+      })
+      // Assign sub-category
+      .addCase(assignFormToSubCategory.fulfilled, (state, action) => {
+        const index = state.forms.findIndex(form => form.id === action.payload.id);
+        if (index !== -1) {
+          state.forms[index].subCategoryId = action.payload.subCategoryId;
         }
       });
   }

@@ -285,6 +285,10 @@ export const fetchAssetCategories = createAsyncThunk(
           subCategories: Array.isArray(category.subCategories) 
             ? category.subCategories.map(subCat => {
                 console.log('Processing subcategory:', subCat);
+                const nextSeq = typeof subCat.nextSequence === 'number' ? subCat.nextSequence : undefined;
+                const paddedSuffix = nextSeq !== undefined
+                  ? String(Math.max(1, Math.min(9999, nextSeq))).padStart(4, '0')
+                  : undefined;
                 return {
                   ...subCat,
                   // Use the correct field names from API
@@ -294,7 +298,9 @@ export const fetchAssetCategories = createAsyncThunk(
                   id: subCat.id || subCat.subCategoryId,
                   // Ensure we have all required fields
                   categoryId: category.categoryId || category.id,
-                  isActive: subCat.isActive !== undefined ? subCat.isActive : true
+                  isActive: subCat.isActive !== undefined ? subCat.isActive : true,
+                  nextSequence: nextSeq,
+                  ...(paddedSuffix ? { autoIdSuffix: paddedSuffix, autoIdSuffixDraft: '' } : {})
                 };
               })
             : [],
@@ -535,8 +541,11 @@ export const addSubCategory = createAsyncThunk(
       console.log('Add subcategory API response:', response.data);
       console.log('Full response object:', response);
       
-      // Handle the API response structure: { message: "...", subCategory: {...} }
-      const data = response.data?.subCategory || response.data;
+      // Handle multiple API response structures
+      // 1) { subCategory: {...} }
+      // 2) { data: {...}, success: true, message: "..." }
+      // 3) raw object {...}
+      const data = response.data?.subCategory || response.data?.data || response.data;
       
       console.log('Extracted data from response:', data);
       
@@ -547,6 +556,9 @@ export const addSubCategory = createAsyncThunk(
         subCategoryCode: data.subCategoryCode || subCategoryData.name?.substring(0, 3).toUpperCase() || '',
         name: data.name || subCategoryData.name || '',
         id: data.id || data.subCategoryId,
+        // Map new fields used by UI for Auto ID
+        prefix: data.prefix || subCategoryData.prefix,
+        nextSequence: typeof data.nextSequence === 'number' ? data.nextSequence : subCategoryData.nextSequence,
         categoryId: categoryId,
         isActive: data.isActive !== undefined ? data.isActive : true
       };
@@ -576,17 +588,21 @@ export const updateSubCategory = createAsyncThunk(
       
       console.log('Update subcategory API response:', response.data);
       
-      // Handle the API response structure
-      const data = response.data?.subCategory || response.data;
-      
+      // Handle the API response structure. Some backends return only a message for PATCH.
+      const data = response.data?.subCategory || response.data || {};
+      // Derive padded suffix from nextSequence if we sent it
+      const nextSeq = typeof subCategoryData?.nextSequence === 'number' ? subCategoryData.nextSequence : undefined;
+      const paddedSuffix = nextSeq !== undefined ? String(Math.max(1, Math.min(9999, nextSeq))).padStart(4, '0') : undefined;
+
       return {
         categoryId,
         subCategory: {
-          ...data,
+          ...(typeof data === 'object' ? data : {}),
           subCategoryId: subCategoryId,
-          subCategoryCode: data.subCategoryCode || subCategoryData.name?.substring(0, 3).toUpperCase() || '',
-          name: data.name || subCategoryData.name || '',
-          id: data.id || subCategoryId
+          subCategoryCode: (typeof data === 'object' && data.subCategoryCode) || subCategoryData.name?.substring(0, 3).toUpperCase() || '',
+          name: (typeof data === 'object' && data.name) || subCategoryData.name || '',
+          id: (typeof data === 'object' && (data.id || data.subCategoryId)) || subCategoryId,
+          ...(paddedSuffix ? { autoIdSuffix: paddedSuffix, autoIdSuffixDraft: '' } : {})
         }
       };
     } catch (error) {
