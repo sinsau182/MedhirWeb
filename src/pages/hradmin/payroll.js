@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
-import { generatePayroll, getPayroll } from "@/redux/slices/payrollSlice";
+import { generatePayroll, getPayroll, sendPayslips, clearPayroll } from "@/redux/slices/payrollSlice";
 
 function PayrollManagement() {
   const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
@@ -31,6 +31,7 @@ function PayrollManagement() {
   const [isCalculatingPayroll, setIsCalculatingPayroll] = useState(false);
   const [hasAttemptedCalculate, setHasAttemptedCalculate] = useState(false);
   const [isFetchingView, setIsFetchingView] = useState(false);
+  const [dataLastUpdated, setDataLastUpdated] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const currentDate = new Date();
     const latestAvailableMonth = new Date(
@@ -54,6 +55,24 @@ function PayrollManagement() {
 
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
   const { publicRuntimeConfig } = getConfig();
+
+  // Helper function to format time as "X mins back"
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes === 1) return "1 min back";
+    if (diffInMinutes < 60) return `${diffInMinutes} mins back`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours === 1) return "1 hour back";
+    if (diffInHours < 24) return `${diffInHours} hours back`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return "1 day back";
+    return `${diffInDays} days back`;
+  };
 
   // Check if selected month is the latest available month (current month - 1)
   const isLatestAvailableMonth = () => {
@@ -96,7 +115,8 @@ function PayrollManagement() {
     setHasAttemptedCalculate(false);
     setShowCheckboxes(false);
     setSelectedEmployees([]);
-    setPayrollErrorDetails(null); // Clear previous month error details on month change
+    setPayrollErrorDetails(null);
+    setDataLastUpdated(null);
   };
 
   useEffect(() => {
@@ -145,6 +165,7 @@ function PayrollManagement() {
         setPayrollErrorDetails(null);
       } catch (error) {
         setPayrollErrorDetails(error);
+        dispatch(clearPayroll()); // Clear payroll state when there's an error
       } finally {
         setIsFetchingView(false);
       }
@@ -156,11 +177,11 @@ function PayrollManagement() {
   const renderPayrollTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
-            <tr>
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0">
+            <tr className="bg-gradient-to-r from-blue-50 to-indigo-50">
               {showCheckboxes && (
-                <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-gray-100">
                   <input
                     type="checkbox"
                     checked={selectedEmployees.length === employees.length}
@@ -177,51 +198,49 @@ function PayrollManagement() {
                   />
                 </th>
               )}
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 EMPLOYEE <br /> ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 NAME
               </th>
-
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-gray-100">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 MONTHLY <br /> CTC
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 PAID DAYS
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 THIS MONTH <br /> SALARY
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 BASIC
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 HRA
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 OTHER <br /> ALLOWANCES
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Fuel <br /> REIMB.
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Phone <br /> REIMB.
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-green-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 ARREARS
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 EMPLOYEE <br /> PF
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 EMPLOYER <br /> PF
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-red-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 DEDUCTIONS
               </th>
-
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200 bg-blue-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 NET PAY
               </th>
             </tr>
@@ -247,9 +266,9 @@ function PayrollManagement() {
                     : null;
 
                 return (
-                  <tr key={index} className="hover:bg-gray-50">
+                  <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
                     {showCheckboxes && (
-                      <td className="py-2 px-2 text-xs text-gray-600">
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                         <input
                           type="checkbox"
                           checked={selectedEmployees.includes(
@@ -273,65 +292,64 @@ function PayrollManagement() {
                         />
                       </td>
                     )}
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                       {employee.employeeId}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                       {employee.name}
                     </td>
-
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-gray-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                       {payrollItem
                         ? `₹ ${payrollItem.monthlyCTC || 0}`
                         : `₹ ${employee.salaryDetails?.monthlyCtc || 0}`}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem ? payrollItem.paidDays || 0 : "0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.thisMonthSalary || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.basicThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.hraThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.otherAllowancesThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.fuelReimbursement || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.phoneReimbursement || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-green-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem ? `₹ ${payrollItem.arrears || 0}` : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.employeePFThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.employerPFThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-red-50">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${
                             (payrollItem.professionalTax || 0) +
@@ -341,7 +359,7 @@ function PayrollManagement() {
                           }`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600 bg-blue-50 font-semibold">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-blue-50 font-semibold">
                       {payrollItem ? `₹ ${payrollItem.netPay || 0}` : "₹ 0"}
                     </td>
                   </tr>
@@ -356,11 +374,11 @@ function PayrollManagement() {
   const renderDeductionsTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
-            <tr>
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0">
+            <tr className="bg-gradient-to-r from-red-50 to-pink-50">
               {showCheckboxes && (
-                <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-gray-100">
                   <input
                     type="checkbox"
                     checked={selectedEmployees.length === employees.length}
@@ -377,31 +395,31 @@ function PayrollManagement() {
                   />
                 </th>
               )}
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Employee ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Name
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Department
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Employee PF
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Employer PF
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Professional Tax
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Advance Adjusted
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Other Deduction
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Net Deductions
               </th>
             </tr>
@@ -427,9 +445,9 @@ function PayrollManagement() {
                     : null;
 
                 return (
-                  <tr key={index} className="hover:bg-gray-50">
+                  <tr key={index} className="hover:bg-red-50 transition-colors duration-150">
                     {showCheckboxes && (
-                      <td className="py-2 px-2 text-xs text-gray-600">
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                         <input
                           type="checkbox"
                           checked={selectedEmployees.includes(
@@ -453,41 +471,41 @@ function PayrollManagement() {
                         />
                       </td>
                     )}
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                       {employee.employeeId}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                       {employee.name}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                       {employee.departmentName}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.employeePFThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.employerPFThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.professionalTax || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.advanceAdjusted || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.otherDeductions || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50 font-semibold">
                       {payrollItem
                         ? `₹ ${
                             (payrollItem.employeePFThisMonth || 0) +
@@ -509,11 +527,11 @@ function PayrollManagement() {
   const renderAdvanceTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
-            <tr>
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0">
+            <tr className="bg-gradient-to-r from-yellow-50 to-orange-50">
               {showCheckboxes && (
-                <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+                <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-gray-100">
                   <input
                     type="checkbox"
                     checked={selectedEmployees.length === employees.length}
@@ -530,25 +548,25 @@ function PayrollManagement() {
                   />
                 </th>
               )}
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Employee ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Name
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Department
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
                 Old Advance
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
                 This Month Advance
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
                 Deduct in This Month
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
                 Balance for Next Month
               </th>
             </tr>
@@ -559,9 +577,9 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => (
-                <tr key={index} className="hover:bg-gray-50">
+                <tr key={index} className="hover:bg-yellow-50 transition-colors duration-150">
                   {showCheckboxes && (
-                    <td className="py-2 px-2 text-xs text-gray-600">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                       <input
                         type="checkbox"
                         checked={selectedEmployees.includes(
@@ -585,25 +603,25 @@ function PayrollManagement() {
                       />
                     </td>
                   )}
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                     {employee.employeeId}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                     {employee.name}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                     {employee.departmentName}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
                     ₹{employee.oldAdvance}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
                     ₹{employee.thisMonthAdvance}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
                     ₹{employee.deductInThisMonth}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50 font-semibold">
                     ₹{employee.balanceForNextMonth}
                   </td>
                 </tr>
@@ -617,31 +635,31 @@ function PayrollManagement() {
   const renderReimbursementTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
-            <tr>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0">
+            <tr className="bg-gradient-to-r from-purple-50 to-indigo-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Employee ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Name
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Department
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-purple-100">
                 Type
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-purple-100">
                 Category
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-purple-100">
                 Description
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-purple-100">
                 Amount
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-purple-100">
                 Status
               </th>
             </tr>
@@ -652,29 +670,29 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                <tr key={index} className="hover:bg-purple-50 transition-colors duration-150">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                     {employee.employeeId}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                     {employee.name}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                     {employee.departmentName}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-purple-50">
                     {employee.type}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-purple-50">
                     {employee.category}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-purple-50">
                     {employee.description}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-purple-50">
                     ₹{employee.reimbursementAmount}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-purple-50">
                     {employee.status}
                   </td>
                 </tr>
@@ -688,28 +706,28 @@ function PayrollManagement() {
   const renderPaymentHistoryTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
       <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        <table className="w-full">
-          <thead className="sticky top-0 bg-gray-50">
-            <tr>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0">
+            <tr className="bg-gradient-to-r from-emerald-50 to-teal-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Employee ID
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Name
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Department
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-emerald-100">
                 Payment Date
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-emerald-100">
                 Amount
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-emerald-100">
                 Payment Mode
               </th>
-              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-b border-gray-200">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-emerald-100">
                 Status
               </th>
             </tr>
@@ -720,26 +738,26 @@ function PayrollManagement() {
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
               .map((employee, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                <tr key={index} className="hover:bg-emerald-50 transition-colors duration-150">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                     {employee.employeeId}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                     {employee.name}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                     {employee.departmentName}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-emerald-50">
                     {employee.paymentDate}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-emerald-50">
                     ₹{employee.amount}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-emerald-50">
                     {employee.paymentMode}
                   </td>
-                  <td className="py-2 px-2 text-xs text-gray-600">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-emerald-50">
                     {employee.status}
                   </td>
                 </tr>
@@ -771,6 +789,7 @@ function PayrollManagement() {
               <h1 className="text-xl font-semibold text-gray-800">
                 Payroll Management
               </h1>
+              
               <button
                 disabled={!isLatestAvailableMonth() || isCalculatingPayroll}
                 onClick={async () => {
@@ -827,6 +846,7 @@ function PayrollManagement() {
                       setIsFetchingView(false);
                       setPayrollErrorDetails(null);
                       setIsCalculatePayrollClicked(true);
+                      setDataLastUpdated(new Date());
                       toast.success("Payroll data loaded successfully!");
 
                     } catch (error) {
@@ -870,8 +890,14 @@ function PayrollManagement() {
                     : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
                 }`}
               >
-                {isCalculatingPayroll ? "Calculating..." : "Calculate Payroll"}
+                {isCalculatingPayroll 
+                  ? "Calculating..." 
+                  : isCalculatePayrollClicked 
+                    ? "Recalculate Payroll"
+                    : "Calculate Payroll"
+                }
               </button>
+              
               {isCalculatePayrollClicked && isLatestAvailableMonth() && (
                 <button
                   onClick={() => {
@@ -884,21 +910,30 @@ function PayrollManagement() {
                       );
                     }
                   }}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md font-medium text-sm transition-all duration-200 hover:bg-green-700"
+                  disabled={payroll?.sendPayslipsLoading}
+                  className="px-6 py-2 bg-green-600 text-white rounded-md font-medium text-sm transition-all duration-200 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Send Payslip
                 </button>
               )}
+              
               {showCheckboxes && (
                 <button
                   onClick={() => {
                     setShowCheckboxes(false);
                     setSelectedEmployees([]);
                   }}
-                  className="px-6 py-2 bg-red-500 text-white rounded-md font-medium text-sm transition-all duration-200 hover:bg-red-600"
+                  className="px-4 py-2 bg-red-500 text-white rounded-md font-medium text-sm transition-colors duration-200 hover:bg-red-600"
                 >
                   Cancel
                 </button>
+              )}
+              
+              {/* Status Indicator positioned after all buttons */}
+              {dataLastUpdated && (
+                <div className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                  Updated: {formatTimeAgo(dataLastUpdated)}
+                </div>
               )}
             </div>
             <div className="flex gap-4">
@@ -977,13 +1012,16 @@ function PayrollManagement() {
           {/* Minimal centered message before calculate */}
           {payrollErrorDetails && !hasAttemptedCalculate && !isFetchingView && (
             <div className="min-h-[60vh] flex items-center justify-center">
-              <div className="text-center max-w-3xl px-4">
-                <p className="text-gray-500 text-lg font-medium mb-3 leading-relaxed">
-                  {payrollErrorDetails?.message || "Payroll not available for this month."}
-                </p>
-                <p className="text-gray-400 text-sm">
-                  Complete attendance data for {selectedMonth} {selectedYear} to generate payroll.
-                </p>
+              <div className="text-center max-w-lg px-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-medium text-gray-800 mb-3">Payroll Not Available</h3>
+                  <p className="text-gray-600 mb-3">
+                    The payroll for {selectedMonth} {selectedYear} hasn't been generated yet.
+                  </p>
+                  <p className="text-gray-700 font-medium">
+                    Click the "Calculate Payroll" button above to generate payroll.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -1033,7 +1071,12 @@ function PayrollManagement() {
                     Go to Attendance
                   </button>
                   <button
-                    onClick={() => setPayrollErrorDetails(null)}
+                    onClick={() => {
+                      setPayrollErrorDetails(null);
+                      setHasAttemptedCalculate(false);
+                      setIsCalculatePayrollClicked(false);
+                      dispatch(clearPayroll()); // Clear payroll state from Redux
+                    }}
                     className="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
                   >
                     Dismiss
@@ -1043,8 +1086,8 @@ function PayrollManagement() {
             </div>
           )}
 
-          {/* Tabs - Only show when there's data or payroll has been calculated */}
-          {!payrollErrorDetails && !isFetchingView && (
+          {/* Tabs - Only show when there's valid data or payroll has been calculated */}
+          {!payrollErrorDetails && !isFetchingView && ((payroll && Array.isArray(payroll) && payroll.length > 0) || isCalculatePayrollClicked) && (
             <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
               <div className="flex min-w-max">
                 {[
@@ -1078,7 +1121,7 @@ function PayrollManagement() {
             </div>
           )}
 
-          {!payrollErrorDetails && !isFetchingView && (
+          {!payrollErrorDetails && !isFetchingView && ((payroll && Array.isArray(payroll) && payroll.length > 0) || isCalculatePayrollClicked) && (
             <>
               {selectedSection === "Salary Statement" && renderPayrollTable()}
               {selectedSection === "Deductions" && renderDeductionsTable()}
@@ -1121,18 +1164,28 @@ function PayrollManagement() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  // Here you would typically make an API call to send payslips
-                  toast.success(
-                    `Payslips sent to ${selectedEmployees.length} employees successfully!`
-                  );
-                  setShowConfirmationModal(false);
-                  setShowCheckboxes(false);
-                  setSelectedEmployees([]);
+                onClick={async () => {
+                  if (!selectedEmployees || selectedEmployees.length === 0) {
+                    return;
+                  }
+                  
+                  try {
+                    const result = await dispatch(sendPayslips(selectedEmployees));
+                    
+                    if (result.meta.requestStatus === 'fulfilled') {
+                      setShowConfirmationModal(false);
+                      setShowCheckboxes(false);
+                      setSelectedEmployees([]);
+                    }
+                    
+                  } catch (error) {
+                    console.error("Failed to send payslips:", error);
+                  }
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                disabled={payroll?.sendPayslipsLoading}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send Payslips
+                {payroll?.sendPayslipsLoading ? "Sending..." : "Send Payslips"}
               </button>
             </div>
           </div>
