@@ -144,7 +144,7 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
         {/* Content */}
         <div className="p-6 flex-1 overflow-y-auto">
           {/* Lead Info */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          {/* <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <FaCheck className="w-4 h-4 text-green-600" />
               Lead Information
@@ -167,7 +167,7 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
                 <p className="text-gray-900">{lead?.projectType || "N/A"}</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -256,7 +256,7 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
             </div>
 
             {/* Summary */}
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            {/* <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
               <h4 className="font-medium text-green-800 mb-2">
                 Update Summary
               </h4>
@@ -282,7 +282,7 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
                   {formData.requirements ? "Provided" : "Not provided"}
                 </p>
               </div>
-            </div>
+            </div> */}
           </form>
         </div>
 

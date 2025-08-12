@@ -214,7 +214,7 @@ const SemiContactedModal = ({
         {/* Content */}
         <div className="p-6 flex-1 overflow-y-auto">
           {/* Lead Info */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          {/* <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <FaCheck className="w-4 h-4 text-green-600" />
               Lead Information
@@ -237,7 +237,7 @@ const SemiContactedModal = ({
                 <p className="text-gray-900">{leadData?.projectType || "N/A"}</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
                      {/* Form */}
            <form onSubmit={handleSubmit} className="space-y-6">
@@ -306,7 +306,7 @@ const SemiContactedModal = ({
             </div>
 
             {/* Summary */}
-            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            {/* <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <h4 className="font-medium text-orange-800 mb-2">Update Summary</h4>
                              <div className="text-sm text-orange-700 space-y-1">
                  <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
@@ -314,7 +314,7 @@ const SemiContactedModal = ({
                  <p><strong>Budget:</strong> {formData.budget || "Not specified"}</p>
                  <p><strong>Call Date:</strong> {formData.firstCallDate ? new Date(formData.firstCallDate).toLocaleString() : "Not scheduled"}</p>
                </div>
-            </div>
+            </div> */}
           </form>
         </div>
 

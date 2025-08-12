@@ -211,7 +211,7 @@ const HighPotentialModal = ({
         {/* Content */}
         <div className="p-6 flex-1 overflow-y-auto">
           {/* Lead Info */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          {/* <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
               <FaCheck className="w-4 h-4 text-green-600" />
               Lead Information
@@ -234,7 +234,7 @@ const HighPotentialModal = ({
                 <p className="text-gray-900">{lead?.projectType || "N/A"}</p>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -334,7 +334,7 @@ const HighPotentialModal = ({
             </div>
 
             {/* Summary */}
-            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            {/* <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
               <h4 className="font-medium text-purple-800 mb-2">Update Summary</h4>
               <div className="text-sm text-purple-700 space-y-1">
                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
@@ -344,7 +344,7 @@ const HighPotentialModal = ({
                 <p><strong>Design Timeline:</strong> {formData.designTimeline || "Not specified"}</p>
                 <p><strong>Completion Timeline:</strong> {formData.completionTimeline || "Not specified"}</p>
               </div>
-            </div>
+            </div> */}
           </form>
         </div>
 
