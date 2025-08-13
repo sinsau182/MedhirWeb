@@ -209,6 +209,7 @@ const AssetDetailPage = () => {
     const [uploadingDoc, setUploadingDoc] = useState(false);
     const [editingOverview, setEditingOverview] = useState(false);
     const [overviewDraft, setOverviewDraft] = useState({
+        categoryId: '',
         serialNumber: '',
         statusLabelId: '',
         purchaseDate: '',
@@ -232,7 +233,7 @@ const AssetDetailPage = () => {
     }, [activeTab]);
     
     // Get data from Redux store
-    const { currentAsset: asset, loading: fetchingAsset, error: fetchAssetError, updatingAsset, updateAssetError } = useSelector(state => state.assets);
+    const { currentAsset: asset, fetchingAsset, fetchAssetError, updatingAsset, updateAssetError } = useSelector(state => state.assets);
     const { categories } = useSelector(state => state.assetCategories);
     const { locations } = useSelector(state => state.assetLocations);
     const { statuses } = useSelector(state => state.assetStatuses);
@@ -246,8 +247,8 @@ const AssetDetailPage = () => {
             // Clear previous asset data
             dispatch(clearCurrentAsset());
             
-            // Fetch the specific asset by asset ID (e.g., "D-03-3001")
-            dispatch(fetchAssetByAssetId(id));
+            // Fetch the specific asset
+            dispatch(fetchAssetById(id));
         }
         
         // Cleanup when component unmounts
@@ -294,22 +295,6 @@ const AssetDetailPage = () => {
         }
     }, [editingOverview, categories, statuses, dispatch]);
     
-    // Debug: Log asset object when it's loaded
-    useEffect(() => {
-        if (asset) {
-            console.log('Asset loaded:', asset);
-            console.log('Asset fields:', Object.keys(asset));
-            console.log('Asset subcategory fields:', {
-                subCategoryId: asset.subCategoryId,
-                subcategoryId: asset.subcategoryId,
-                sub_category_id: asset.sub_category_id,
-                subcategory_id: asset.subcategory_id,
-                subCategory: asset.subCategory,
-                subcategory: asset.subcategory
-            });
-        }
-    }, [asset]);
-    
     // Handle errors with toast notifications
     useEffect(() => {
         if (fetchAssetError) {
@@ -352,14 +337,8 @@ const AssetDetailPage = () => {
     const getEmployeeName = (employeeId) => {
         if (!employeeId) return '';
         if (!Array.isArray(employees) || employees.length === 0) return '';
-        
-        const emp = employees.find(e => {
-            const eId = e.employeeId || e.id || e._id;
-            return String(eId) === String(employeeId);
-        });
-        
+        const emp = employees.find(e => (e.employeeId || e.id || e._id) === employeeId);
         if (!emp) return '';
-        
         return emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
     };
 
@@ -808,8 +787,6 @@ const AssetDetailPage = () => {
     useEffect(() => {
         if (asset?.assetId) {
             fetchAssetHistory(asset.assetId, asset);
-            
-
         }
     }, [asset?.assetId]);
     
@@ -870,11 +847,11 @@ const AssetDetailPage = () => {
                 // Add other fields as needed
             };
             
-            await dispatch(patchAssetByAssetId({ assetId: id, assetData })).unwrap();
+            await dispatch(updateAsset({ assetId: id, assetData })).unwrap();
             toast.success('Asset updated successfully!');
             
             // Refresh the asset data to show changes instantly
-            dispatch(fetchAssetByAssetId(id));
+            dispatch(fetchAssetById(id));
         } catch (error) {
             console.error('Error updating asset:', error);
             toast.error(`Failed to update asset: ${error}`);
@@ -891,37 +868,23 @@ const AssetDetailPage = () => {
                 (departments || []).find(d => d.name === asset.assignedDepartment)?.id || 
                 (departments || []).find(d => d.name === asset.assignedDepartment)?.departmentId : '';
             
-            // Find the employee ID from the assignedTo name - try multiple approaches
-            let empId = '';
-            if (asset.assignedTo) {
-                // First try to find by exact name match
-                const emp = (employees || []).find(emp => {
-                    const empName = emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
-                    return empName === asset.assignedTo;
-                });
-                
-                if (emp) {
-                    empId = emp.employeeId || emp.id || emp._id;
-                } else {
-                    // If no exact match, try partial match
-                    const partialEmp = (employees || []).find(emp => {
-                        const empName = emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
-                        return empName.toLowerCase().includes(asset.assignedTo.toLowerCase()) || 
-                               asset.assignedTo.toLowerCase().includes(empName.toLowerCase());
-                    });
-                    
-                    if (partialEmp) {
-                        empId = partialEmp.employeeId || partialEmp.id || partialEmp._id;
-                    }
-                }
-            }
-            
-            // Also check if we have the employee ID directly from the asset
-            if (!empId && asset.assignedEmployeeId) {
-                empId = asset.assignedEmployeeId;
-            }
-            
-
+            // Find the employee ID from the assignedTo name
+            const empId = asset.assignedTo ? 
+                (employees || []).find(emp => 
+                    emp.name === asset.assignedTo || 
+                    emp.fullName === asset.assignedTo ||
+                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() === asset.assignedTo
+                )?.id || 
+                (employees || []).find(emp => 
+                    emp.name === asset.assignedTo || 
+                    emp.fullName === asset.assignedTo ||
+                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() === asset.assignedTo
+                )?.employeeId || 
+                (employees || []).find(emp => 
+                    emp.name === asset.assignedTo || 
+                    emp.fullName === asset.assignedTo ||
+                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() === asset.assignedTo
+                )?._id : '';
             
             newDraft.departmentId = deptId;
             newDraft.employeeId = empId;
@@ -956,10 +919,10 @@ const AssetDetailPage = () => {
             if (editingField === 'purchaseCost') payload.purchaseCost = draftValues.purchaseCost === '' ? null : Number(draftValues.purchaseCost);
             if (editingField === 'warrantyExpiry') payload.warrantyExpiry = draftValues.warrantyExpiry || null;
 
-            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+            await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
             toast.success('Asset updated successfully');
             setEditingField(null);
-            dispatch(fetchAssetByAssetId(id));
+            dispatch(fetchAssetById(id));
         } catch (error) {
             toast.error(`Failed to update: ${error}`);
         }
@@ -969,6 +932,7 @@ const AssetDetailPage = () => {
     const startOverviewEditing = () => {
         if (!asset) return;
         setOverviewDraft({
+            categoryId: asset.categoryId || '',
             serialNumber: asset.serialNumber || '',
             statusLabelId: asset.statusLabelId || '',
             purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '',
@@ -986,6 +950,7 @@ const AssetDetailPage = () => {
         try {
             setSavingOverview(true);
             const payload = {};
+            if (overviewDraft.categoryId !== (asset.categoryId || '')) payload.categoryId = overviewDraft.categoryId || null;
             if (overviewDraft.serialNumber !== (asset.serialNumber || '')) payload.serialNumber = overviewDraft.serialNumber || null;
             if (overviewDraft.statusLabelId !== (asset.statusLabelId || '')) payload.statusLabelId = overviewDraft.statusLabelId || null;
             if (overviewDraft.purchaseDate !== (asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '')) payload.purchaseDate = overviewDraft.purchaseDate || null;
@@ -998,10 +963,10 @@ const AssetDetailPage = () => {
                 setSavingOverview(false);
                 return;
             }
-            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+            await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
             toast.success('Overview updated');
             setEditingOverview(false);
-            dispatch(fetchAssetByAssetId(id));
+            dispatch(fetchAssetById(id));
         } catch (error) {
             toast.error(`Failed to update overview: ${error}`);
         } finally {
@@ -1037,10 +1002,10 @@ const AssetDetailPage = () => {
             if (Object.keys(payload.customFormData).length === 0) delete payload.customFormData;
 
             console.log('[Specs] Updating', { assetId: id, payload });
-            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+            await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
             toast.success('Specifications updated');
             setEditingSpecs(false);
-            dispatch(fetchAssetByAssetId(id));
+            dispatch(fetchAssetById(id));
         } catch (error) {
             console.error('[Specs] Update failed:', error);
             const message = error?.message || (typeof error === 'string' ? error : 'Unknown error');
@@ -1072,11 +1037,11 @@ const AssetDetailPage = () => {
                 updatedData.nextMaintenanceDate = maintenanceForm.nextMaintenanceDate;
             }
 
-            await dispatch(patchAssetByAssetId({ assetId: id, assetData: updatedData })).unwrap();
+            await dispatch(updateAsset({ assetId: id, assetData: updatedData })).unwrap();
             toast.success('Maintenance record added');
             setIsMaintenanceModalOpen(false);
             setMaintenanceForm({ date: '', type: '', description: '', cost: '', vendor: '', nextMaintenanceDate: '' });
-            dispatch(fetchAssetByAssetId(id));
+            dispatch(fetchAssetById(id));
         } catch (error) {
             toast.error(`Failed to add maintenance: ${error}`);
         }
@@ -1118,7 +1083,7 @@ const AssetDetailPage = () => {
             await handleUploadInvoice(documentFile);
             setIsDocumentModalOpen(false);
             setDocumentFile(null);
-            dispatch(fetchAssetByAssetId(id));
+            dispatch(fetchAssetById(id));
         } catch (error) {
             // toast shown inside handleUploadInvoice
         } finally {
@@ -1171,34 +1136,6 @@ const AssetDetailPage = () => {
             </AssetManagementLayout>
         );
     }
-    
-    // Helper to get subcategory name from asset
-    const getSubcategoryName = (assetObj) => {
-        if (!assetObj) return 'No Asset Data';
-        
-        // Debug: Log the asset object to see what fields are available
-        console.log('Asset object in getSubcategoryName:', assetObj);
-        console.log('Available fields:', Object.keys(assetObj));
-        
-        // Check for different possible subcategory field names
-        const subcategoryId = assetObj.subCategoryId || assetObj.subcategoryId || assetObj.sub_category_id || assetObj.subcategory_id || assetObj.subCategory || assetObj.subcategory;
-        
-        console.log('Subcategory ID found:', subcategoryId);
-        
-        if (!subcategoryId) return 'No Subcategory';
-        
-        if (!Array.isArray(categories) || categories.length === 0) return 'Loading...';
-        
-        for (const cat of categories) {
-            if (Array.isArray(cat.subCategories)) {
-                const subcat = cat.subCategories.find(
-                    s => (s.subCategoryId || s.id) === subcategoryId
-                );
-                if (subcat) return subcat.name || 'Unknown Subcategory';
-            }
-        }
-        return 'Unknown Subcategory';
-    };
     
     return (
         <AssetManagementLayout>
@@ -1272,30 +1209,13 @@ const AssetDetailPage = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-3">
                                                     <button onClick={async () => {
-                                                        const employeeName = getEmployeeName(draftValues.employeeId);
-                                                        const departmentName = getDepartmentName(draftValues.departmentId);
-                                                        
                                                         const payload = {
-                                                            assignedDepartment: departmentName || undefined,
+                                                            assignedDepartment: getDepartmentName(draftValues.departmentId) || undefined,
                                                             assignedDepartmentId: draftValues.departmentId || null,
                                                             assignedEmployeeId: draftValues.employeeId || null,
-                                                            assignedTo: employeeName || undefined,
+                                                            assignedTo: getEmployeeName(draftValues.employeeId) || undefined,
                                                         };
-                                                        
-
-                                                        
-                                                        // Validate that we have the required data
-                                                        if (!draftValues.employeeId) {
-                                                            toast.error('Please select an employee');
-                                                            return;
-                                                        }
-                                                        
-                                                        if (!employeeName) {
-                                                            toast.error('Could not resolve employee name. Please try again.');
-                                                            return;
-                                                        }
-                                                        
-                                                        await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+                                                        await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
                                                         toast.success('Assignment updated');
                                                         setEditingField(null);
                                                         dispatch(fetchAssetById(id));
@@ -1305,17 +1225,12 @@ const AssetDetailPage = () => {
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="font-semibold">
-                                                    {asset.assignedTo || 
-                                                     (asset.assignedEmployeeId ? getEmployeeName(asset.assignedEmployeeId) : '') || 
-                                                     'Unassigned'}
-                                                </p>
+                                                <p className="font-semibold">{asset.assignedTo || 'Unassigned'}</p>
                                                 {(asset.assignedDepartment || asset.assignedDepartmentId) && (
                                                     <p className="text-xs text-gray-500 mt-1">
                                                         {asset.assignedDepartment || getDepartmentName(asset.assignedDepartmentId) || 'Unknown'}
                                                     </p>
                                                 )}
-
                                             </div>
                                         )}
                                     </div>
@@ -1468,11 +1383,33 @@ const AssetDetailPage = () => {
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
                                                 <span className="text-gray-600">Category:</span>
+                                                {editingOverview ? (
+                                                    <select
+                                                        value={overviewDraft.categoryId}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, categoryId: e.target.value }))}
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                    >
+                                                        <option value="">Select Category...</option>
+                                                        {Array.isArray(categories) && categories.map(c => (
+                                                            <option key={c.categoryId || c.id} value={c.categoryId || c.id}>{c.name}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
                                                 <span className="font-medium">{getCategoryName(asset.categoryId)}</span>
+                                                )}
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
-                                                <span className="text-gray-600">Subcategory:</span>
-                                                <span className="font-medium">{getSubcategoryName(asset)}</span>
+                                                <span className="text-gray-600">Serial Number:</span>
+                                                {editingOverview ? (
+                                                    <input
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                        value={overviewDraft.serialNumber}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, serialNumber: e.target.value }))}
+                                                        placeholder="Serial Number"
+                                                    />
+                                                ) : (
+                                                <span className="font-medium">{asset.serialNumber || 'N/A'}</span>
+                                                )}
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
                                                 <span className="text-gray-600">Status:</span>
