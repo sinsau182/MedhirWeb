@@ -123,8 +123,7 @@ const modularMenus = {
       {
         label: "Dashboard",
         icon: <ChartColumnIncreasing className="w-4 h-4" />,
-        link: "/Sales/dashboard",
-        disabled: true,
+        link: "/Sales/dashboard"
       },
       {
         label: "Lead Management",

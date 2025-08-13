@@ -6,21 +6,11 @@ import {
   FaBullseye,
   FaMoneyBillWave,
   FaHandHoldingUsd,
-  FaExclamationCircle,
-  FaHourglassHalf,
-  FaUserPlus,
-  FaChartPie,
   FaExternalLinkAlt,
   FaFilter,
   FaCrown,
   FaPlus,
-  FaPhoneAlt,
-  FaEnvelope,
-  FaCalendarAlt,
-  FaStickyNote,
-  FaHandshake,
-  FaArrowRight,
-  FaClock,
+  FaClock, // added
 } from 'react-icons/fa';
 import {
   BarChart,
@@ -39,85 +29,20 @@ import AddLeadModal from '@/components/Sales/AddLeadModal';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { fetchPipelines } from '@/redux/slices/pipelineSlice';
-import withAuth from '@/components/withAuth';
 
 // --- MOCK DATA (Replace with API data) ---
 const MOCK_DATA = {
   kpis: {
+    // kept existing to avoid side effects elsewhere
     newLeads: { value: 42, change: 15 },
     conversionRate: { value: '18%', convertedCount: 12, change: -2 },
     avgDealValue: { value: 250000, change: 10 },
     revenueWon: { value: 1250000, change: 25 },
+
+    // added for the two new cards
+    avgDurationMonths: { value: 2.6, change: -5 },      // e.g., average duration time
+    avgSalesCycleMonths: { value: 3.8, change: -8 },    // e.g., average sales cycle
   },
-  actionCenter: {
-    unassignedLeads: [
-      { id: 'L401', name: 'Innovate Corp', source: 'Website' },
-      { id: 'L402', name: 'Global Tech', source: 'Referral' },
-    ],
-    overdueActivities: [
-      { id: 'L205', name: 'Quantum Solutions', task: 'Follow-up call', overdueBy: '2 days' },
-      { id: 'L112', name: 'Vertex Industries', task: 'Send proposal', overdueBy: '5 days' },
-    ],
-    staleLeads: [
-      { id: 'L150', name: 'Apex Enterprises', lastActivity: '10 days ago' },
-    ],
-  },
-  recentActivities: [
-    {
-      id: 1,
-      type: 'call',
-      leadName: 'Innovate Corp',
-      leadId: 'L401',
-      description: 'Alice completed a follow-up call',
-      timestamp: '2 minutes ago',
-      user: 'Alice'
-    },
-    {
-      id: 2,
-      type: 'stage_change',
-      leadName: 'Global Tech',
-      leadId: 'L402',
-      description: 'Bob moved lead from "Contacted" to "Qualified"',
-      timestamp: '15 minutes ago',
-      user: 'Bob'
-    },
-    {
-      id: 3,
-      type: 'email',
-      leadName: 'Quantum Solutions',
-      leadId: 'L205',
-      description: 'Charlie sent proposal email',
-      timestamp: '1 hour ago',
-      user: 'Charlie'
-    },
-    {
-      id: 4,
-      type: 'meeting',
-      leadName: 'Vertex Industries',
-      leadId: 'L112',
-      description: 'Dana scheduled site visit for tomorrow',
-      timestamp: '2 hours ago',
-      user: 'Dana'
-    },
-    {
-      id: 5,
-      type: 'note',
-      leadName: 'Apex Enterprises',
-      leadId: 'L150',
-      description: 'Alice added budget discussion notes',
-      timestamp: '3 hours ago',
-      user: 'Alice'
-    },
-    {
-      id: 6,
-      type: 'conversion',
-      leadName: 'Prime Solutions',
-      leadId: 'L301',
-      description: 'Bob converted lead to customer (₹3,50,000)',
-      timestamp: '4 hours ago',
-      user: 'Bob'
-    }
-  ],
   pipelineForecast: {
     funnel: [
       { name: 'New', value: 150 },
@@ -125,11 +50,6 @@ const MOCK_DATA = {
       { name: 'Qualified', value: 70 },
       { name: 'Quoted', value: 45 },
       { name: 'Converted', value: 25 },
-    ],
-    forecast: [
-      { stage: 'Qualified', value: 5000000, probability: '25%', forecastValue: 1250000 },
-      { stage: 'Quoted', value: 3000000, probability: '60%', forecastValue: 1800000 },
-      { stage: 'Negotiation', value: 1500000, probability: '80%', forecastValue: 1200000 },
     ],
   },
   teamPerformance: {
@@ -144,6 +64,16 @@ const MOCK_DATA = {
       { name: 'Social Media', value: 200 },
       { name: 'Cold Call', value: 100 },
     ],
+  },
+  // Targets & Results mock
+  currency: 'INR',
+  targets: [
+    { metric: 'revenue', target: 1200000, unit: 'currency' },
+    { metric: 'deals_won', target: 25, unit: 'count' },
+  ],
+  results: {
+    revenue: 980000,
+    deals_won: 18,
   },
 };
 
@@ -183,242 +113,64 @@ const defaultLeadData = {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-// --- Helper Functions ---
-function getActivityIcon(type) {
-  const iconClass = "w-4 h-4";
-  switch (type) {
-    case 'call':
-      return <FaPhoneAlt className={`${iconClass} text-blue-600`} />;
-    case 'email':
-      return <FaEnvelope className={`${iconClass} text-green-600`} />;
-    case 'meeting':
-      return <FaCalendarAlt className={`${iconClass} text-purple-600`} />;
-    case 'note':
-      return <FaStickyNote className={`${iconClass} text-yellow-600`} />;
-    case 'stage_change':
-      return <FaArrowRight className={`${iconClass} text-orange-600`} />;
-    case 'conversion':
-      return <FaHandshake className={`${iconClass} text-green-700`} />;
-    default:
-      return <FaClock className={`${iconClass} text-gray-500`} />;
-  }
-}
-
 // --- Reusable Components ---
 function KpiCard({ icon, label, value, change, currency = false, convertedCount }) {
   return (
-    <div className="bg-white p-5 rounded-lg shadow border border-gray-200">
+    <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
       <div className="flex items-center gap-4">
         <div className="bg-blue-100 text-blue-600 p-3 rounded-full">{icon}</div>
         <div>
           <p className="text-sm text-gray-500 font-medium">{label}</p>
-          <p className="text-2xl font-bold text-gray-800">
+          <p className="text-xl font-bold text-gray-800">
             {currency && '₹'}
             {typeof value === 'number' ? value.toLocaleString('en-IN') : value}
           </p>
           {convertedCount && (
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {convertedCount} converted this month
             </p>
           )}
         </div>
       </div>
-      <p className={`text-sm mt-2 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+      <p className={`text-xs mt-2 ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
         {change >= 0 ? `+${change}%` : `${change}%`} vs last month
       </p>
     </div>
   );
 }
 
-function ActionItem({ icon, title, subtitle, action }) {
+function SectionCard({ title, children, viewAllLink, right }) {
   return (
-    <div className="flex items-center justify-between gap-4 p-3 hover:bg-gray-50 rounded-md">
-      <div className="flex items-center gap-3">
-        <div className="text-gray-400">{icon}</div>
-        <div>
-          <p className="font-semibold text-gray-800 text-sm">{title}</p>
-          <p className="text-xs text-gray-500">{subtitle}</p>
-        </div>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function SectionCard({ title, children, viewAllLink }) {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow border border-gray-200 h-full">
-      <div className="flex justify-between items-center mb-4">
+    <div className="bg-white p-4 rounded-lg shadow border border-gray-200 h-full">
+      <div className="flex justify-between items-center mb-3">
         <h3 className="font-bold text-lg text-gray-800">{title}</h3>
-        {viewAllLink && (
-          <Link href={viewAllLink} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-            View All <FaExternalLinkAlt size={12}/>
-          </Link>
-        )}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function ActivityItem({ activity }) {
-  return (
-    <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-md">
-      <div className="flex-shrink-0 mt-1">
-        {getActivityIcon(activity.type)}
-      </div>
-      <div className="flex-grow min-w-0">
-        <p className="text-sm text-gray-800 font-medium">
-          <Link href={`/Sales/leads/${activity.leadId}`} className="text-blue-600 hover:underline">
-            {activity.leadName}
-          </Link>
-        </p>
-        <p className="text-xs text-gray-600 mt-1">{activity.description}</p>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-xs text-gray-500">{activity.timestamp}</span>
-          <span className="text-xs text-gray-400">•</span>
-          <span className="text-xs text-gray-500">by {activity.user}</span>
+        <div className="flex items-center gap-3">
+          {right}
+          {viewAllLink && (
+            <Link href={viewAllLink} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+              View All <FaExternalLinkAlt size={12}/>
+            </Link>
+          )}
         </div>
       </div>
+      <div className="space-y-3">{children}</div>
     </div>
-  );
-}
-
-// --- Dashboard Sections ---
-function ActionCenter({ data, onAssign }) {
-  const [selectedSalesRep, setSelectedSalesRep] = useState({});
-
-  const handleAssign = (leadId) => {
-    const repName = selectedSalesRep[leadId];
-    if (!repName) {
-      toast.error("Please select a sales rep.");
-      return;
-    }
-    onAssign(leadId, repName);
-    toast.success(`Lead ${leadId} assigned to ${repName}.`);
-  };
-
-  return (
-    <SectionCard title="Action Center">
-      <div>
-        <h4 className="font-semibold text-sm text-gray-600 mb-2">Unassigned Leads ({data.unassignedLeads.length})</h4>
-        {data.unassignedLeads.map(lead => (
-          <ActionItem
-            key={lead.id}
-            icon={<FaUserPlus size={20} />}
-            title={lead.name}
-            subtitle={`Source: ${lead.source}`}
-            action={
-              <div className="flex items-center gap-2">
-                <select 
-                  className="text-xs border-gray-300 rounded-md shadow-sm p-1"
-                  onChange={(e) => setSelectedSalesRep(prev => ({...prev, [lead.id]: e.target.value}))}
-                >
-                  <option value="">Assign to...</option>
-                  {/* salesPersons.map(p => <option key={p.id} value={p.name}>{p.name}</option>) */}
-                </select>
-                <button 
-                  onClick={() => handleAssign(lead.id)}
-                  className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                >
-                  Assign
-                </button>
-              </div>
-            }
-          />
-        ))}
-      </div>
-      <div className="border-t border-gray-200 pt-4 mt-4">
-        <h4 className="font-semibold text-sm text-gray-600 mb-2">Leads with Overdue Activities ({data.overdueActivities.length})</h4>
-        {data.overdueActivities.map(lead => (
-          <ActionItem
-            key={lead.id}
-            icon={<FaExclamationCircle className="text-red-500" size={20} />}
-            title={lead.name}
-            subtitle={`${lead.task} - Overdue by ${lead.overdueBy}`}
-            action={ <Link href={`/Sales/leads/${lead.id}`} className="text-xs text-blue-600 hover:underline">View</Link> }
-          />
-        ))}
-      </div>
-      <div className="border-t border-gray-200 pt-4 mt-4">
-        <h4 className="font-semibold text-sm text-gray-600 mb-2">Stale Leads ({data.staleLeads.length})</h4>
-        {data.staleLeads.map(lead => (
-          <ActionItem
-            key={lead.id}
-            icon={<FaHourglassHalf className="text-yellow-500" size={20} />}
-            title={lead.name}
-            subtitle={`Last activity: ${lead.lastActivity}`}
-            action={ <Link href={`/Sales/leads/${lead.id}`} className="text-xs text-blue-600 hover:underline">View</Link> }
-          />
-        ))}
-      </div>
-    </SectionCard>
-  );
-}
-
-function RecentActivity({ activities = [] }) {
-  return (
-    <SectionCard title="Recent Activity" viewAllLink="/SalesManager/Manager">
-      <div className="max-h-96 overflow-y-auto">
-        {activities && activities.length > 0 ? (
-          activities.map(activity => (
-            <ActivityItem key={activity.id} activity={activity} />
-          ))
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <FaClock className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No recent activities</p>
-          </div>
-        )}
-      </div>
-    </SectionCard>
   );
 }
 
 function SalesPipelineFunnel({ data }) {
   return (
     <SectionCard title="Sales Pipeline Funnel">
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
           <XAxis type="number" hide />
-          <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+          <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
           <Tooltip cursor={{ fill: '#f3f4f6' }} />
-          <Bar dataKey="value" fill="#3B82F6" barSize={30}>
+          <Bar dataKey="value" fill="#3B82F6" barSize={26}>
             {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </SectionCard>
-  );
-}
-
-function RevenueForecast({ data }) {
-  return (
-    <SectionCard title="Revenue Forecast (Weighted)">
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="text-left text-gray-500">
-              <th className="p-2">Stage</th>
-              <th className="p-2">Probability</th>
-              <th className="p-2 text-right">Forecast</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.forecast.map(item => (
-              <tr key={item.stage} className="border-b border-gray-100">
-                <td className="p-2 font-semibold">{item.stage}</td>
-                <td className="p-2 text-gray-600">{item.probability}</td>
-                <td className="p-2 text-right font-bold text-gray-800">₹{item.forecastValue.toLocaleString('en-IN')}</td>
-              </tr>
-            ))}
-            <tr className="font-bold bg-gray-50">
-              <td colSpan="2" className="p-2 text-right">Total Forecast</td>
-              <td className="p-2 text-right text-blue-600">₹{data.forecast.reduce((acc, i) => acc + i.forecastValue, 0).toLocaleString('en-IN')}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
     </SectionCard>
   );
 }
@@ -445,9 +197,9 @@ function TeamLeaderboard({ data }) {
 function LeadSourcePerformance({ data }) {
   return (
     <SectionCard title="Lead Source Performance">
-      <ResponsiveContainer width="100%" height={250}>
+      <ResponsiveContainer width="100%" height={180}>
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} fill="#8884d8">
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} fill="#8884d8">
             {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
           </Pie>
           <Tooltip />
@@ -458,6 +210,151 @@ function LeadSourcePerformance({ data }) {
   );
 }
 
+// --- Targets & Results (New) ---
+function formatCurrency(currency, value) {
+  try {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: currency || 'INR', maximumFractionDigits: 0 }).format(value || 0);
+  } catch {
+    return `₹${(value || 0).toLocaleString('en-IN')}`;
+  }
+}
+function getPeriodBounds(period) {
+  const now = new Date();
+  if (period === 'quarter') {
+    const q = Math.floor(now.getMonth() / 3);
+    const startMonth = q * 3;
+    const start = new Date(now.getFullYear(), startMonth, 1);
+    const end = new Date(now.getFullYear(), startMonth + 3, 0);
+    return { start, end };
+  }
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return { start, end };
+}
+function getExpectedPct(start, end) {
+  const today = new Date();
+  const clamped = today < start ? start : today > end ? end : today;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysElapsed = Math.floor((clamped - start) / msPerDay) + 1;
+  const daysTotal = Math.floor((end - start) / msPerDay) + 1;
+  return { expectedPct: daysElapsed / daysTotal, daysElapsed, daysTotal };
+}
+function StatusChip({ status }) {
+  const map = {
+    'On Track': 'bg-green-100 text-green-700 border-green-200',
+    'At Risk': 'bg-yellow-100 text-yellow-700 border-yellow-200',
+    'Off Track': 'bg-red-100 text-red-700 border-red-200',
+    'No Target': 'bg-gray-100 text-gray-600 border-gray-200',
+  };
+  return <span className={`px-2 py-0.5 text-xs rounded border ${map[status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>{status}</span>;
+}
+
+function TargetsResults({ targets = [], results = {}, currency = 'INR' }) {
+  const [period, setPeriod] = useState('month'); // 'month' | 'quarter'
+  const { start, end } = useMemo(() => getPeriodBounds(period), [period]);
+  const { expectedPct } = useMemo(() => getExpectedPct(start, end), [start, end]);
+
+  const metricDefs = [
+    { key: 'revenue', title: 'Revenue', unit: 'currency' },
+    { key: 'deals_won', title: 'Deals Won', unit: 'count' },
+];
+
+  const targetByMetric = useMemo(() => {
+    const map = {};
+    (targets || []).forEach(t => { map[t.metric] = t; });
+    return map;
+  }, [targets]);
+
+  const items = metricDefs.map(m => {
+    const target = targetByMetric[m.key]?.target ?? null;
+    const actual = results?.[m.key] ?? 0;
+    const expectedActual = target != null ? target * expectedPct : null;
+
+    let status = 'No Target';
+    if (target != null && target > 0) {
+      if (actual >= expectedActual * 0.9) status = 'On Track';
+      else if (actual >= expectedActual * 0.6) status = 'At Risk';
+      else status = 'Off Track';
+    }
+
+    const pctToTarget = target ? Math.min(1, Math.max(0, actual / target)) : 0;
+    const color =
+      status === 'On Track' ? 'bg-green-500' :
+      status === 'At Risk' ? 'bg-yellow-500' :
+      status === 'Off Track' ? 'bg-red-500' : 'bg-gray-400';
+
+    const fmt = (val) => m.unit === 'currency'
+      ? formatCurrency(currency, val || 0)
+      : (val || 0).toLocaleString('en-IN');
+
+    return {
+      ...m,
+      target, actual, pctToTarget, color, status, fmt
+    };
+  });
+
+  const revTarget = targetByMetric['revenue']?.target ?? null;
+  const revActual = results?.['revenue'] ?? null;
+  const overallAttainment = revTarget ? Math.round(((revActual || 0) / revTarget) * 100) : null;
+
+  const toggle = (
+    <div className="inline-flex border border-gray-200 rounded-md overflow-hidden">
+      <button
+        className={`px-3 py-1 text-sm ${period === 'month' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-700'}`}
+        onClick={() => setPeriod('month')}
+      >
+        Month
+      </button>
+      <button
+        className={`px-3 py-1 text-sm border-l border-gray-200 ${period === 'quarter' ? 'bg-blue-50 text-blue-600' : 'bg-white text-gray-700'}`}
+        onClick={() => setPeriod('quarter')}
+      >
+        Quarter
+      </button>
+    </div>
+  );
+
+  return (
+    <SectionCard title="Targets & Results" right={toggle}>
+      <div className="flex items-center justify-end text-sm text-gray-600">
+        {overallAttainment != null
+          ? <span>Overall Attainment: <span className="font-semibold text-gray-800">{overallAttainment}%</span></span>
+          : <span className="italic">Overall attainment not set</span>}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {items.map(item => (
+          <div key={item.key} className="rounded-md border border-gray-200 p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600">{item.title}</p>
+              <StatusChip status={item.status} />
+            </div>
+
+            {item.target != null ? (
+              <>
+                <p className="text-sm text-gray-700 mt-2">
+                  <span className="font-semibold text-gray-900">
+                    {item.fmt(item.actual)}
+                  </span> of {item.fmt(item.target)} — {Math.round(item.pctToTarget * 100)}%
+                </p>
+                <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${item.color}`}
+                    style={{ width: `${Math.round(item.pctToTarget * 100)}%` }}
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500 mt-2 italic">No target set for this period</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+// --- Main Page ---
 function MainDashboard() {
   const [dashboardData, setDashboardData] = useState(MOCK_DATA);
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
@@ -474,7 +371,6 @@ function MainDashboard() {
     dispatch(fetchPipelines());
   }, [dispatch]);
 
-  // Compute funnel data from pipeline stages sorted by orderIndex, excluding the last two
   const funnelData = useMemo(() => {
     if (!pipelines || pipelines.length === 0) return MOCK_DATA.pipelineForecast.funnel;
     const sorted = [...pipelines].sort((a, b) => {
@@ -490,52 +386,19 @@ function MainDashboard() {
     }));
   }, [pipelines]);
 
-  const handleAssignLead = (leadId, repName) => {
-    setDashboardData(prev => ({
-      ...prev,
-      actionCenter: {
-        ...prev.actionCenter,
-        unassignedLeads: prev.actionCenter.unassignedLeads.filter(l => l.id !== leadId),
-      }
-    }));
-  };
-
   const handleAddLeadSubmit = (formData) => {
     if (!formData.salesRep || !formData.designer) {
       toast.error('Please assign both Sales Person and Designer.');
       return;
     }
-    
-    const leadData = {
-      ...defaultLeadData,
-      ...formData,
-      status: formData.status || "New",
-      submittedBy: "SALESMANAGER",
-    };
-
-    // Generate a new lead ID
+    const leadData = { ...defaultLeadData, ...formData, status: formData.status || "New", submittedBy: "SALESMANAGER" };
     const newId = `LEAD${Math.floor(Math.random() * 100000)}`;
-    const newLead = { ...leadData, leadId: newId };
-
-    // Add new activity for lead creation
-    const newActivity = {
-      id: Date.now(),
-      type: 'note',
-      leadName: formData.name,
-      leadId: newId,
-      description: `Manager created new lead and assigned to ${formData.salesRep}`,
-      timestamp: 'Just now',
-      user: 'Manager'
-    };
-
-    // Update the dashboard data to reflect the new lead
     setDashboardData(prev => ({
       ...prev,
       kpis: {
         ...prev.kpis,
         newLeads: { ...prev.kpis.newLeads, value: prev.kpis.newLeads.value + 1 }
       },
-      recentActivities: [newActivity, ...(prev.recentActivities || [])],
       pipelineForecast: {
         ...prev.pipelineForecast,
         funnel: prev.pipelineForecast.funnel.map(stage => 
@@ -543,66 +406,59 @@ function MainDashboard() {
         )
       }
     }));
-
     toast.success(`Lead "${formData.name}" added successfully!`);
     setShowAddLeadModal(false);
   };
 
   return (
     <MainLayout>
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <header className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Sales Command Center</h1>
-            <p className="text-gray-600">Welcome back, Manager. Here&apos;s your sales overview for today.</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50 flex items-center gap-2">
-              <FaFilter /> Quick Filters
-            </button>
-            <button 
-              onClick={() => setShowAddLeadModal(true)}
-              className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2"
-            >
-              <FaPlus /> Add New Lead
-            </button>
-            <Link href="/SalesManager/Manager" className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Go to Pipeline
-            </Link>
-          </div>
-        </header>
-
+      <div className="p-4 bg-gray-50 h-screen overflow-hidden">
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <KpiCard icon={<FaUsers size={24}/>} label="New Leads" value={dashboardData.kpis.newLeads.value} change={dashboardData.kpis.newLeads.change} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          {/* Replaced New Leads with Avg. Duration Time (months) */}
+          <KpiCard
+            icon={<FaClock size={22}/>}
+            label="Avg. Duration Time"
+            value={`${dashboardData.kpis.avgDurationMonths.value} months`}
+            change={dashboardData.kpis.avgDurationMonths.change}
+          />
           <KpiCard 
-            icon={<FaBullseye size={24}/>} 
+            icon={<FaBullseye size={22}/>} 
             label="Conversion Rate" 
             value={dashboardData.kpis.conversionRate.value} 
             change={dashboardData.kpis.conversionRate.change} 
             convertedCount={dashboardData.kpis.conversionRate.convertedCount}
           />
-          <KpiCard icon={<FaHandHoldingUsd size={24}/>} label="Avg. Deal Value" value={dashboardData.kpis.avgDealValue.value} change={dashboardData.kpis.avgDealValue.change} currency={true} />
-          <KpiCard icon={<FaMoneyBillWave size={24}/>} label="Revenue Won" value={dashboardData.kpis.revenueWon.value} change={dashboardData.kpis.revenueWon.change} currency={true} />
+          <KpiCard
+            icon={<FaHandHoldingUsd size={22}/>}
+            label="Avg. Deal Value"
+            value={dashboardData.kpis.avgDealValue.value}
+            change={dashboardData.kpis.avgDealValue.change}
+            currency={true}
+          />
+          {/* Replaced Revenue Won with Avg. Sales Cycle (months) */}
+          <KpiCard
+            icon={<FaClock size={22}/>}
+            label="Avg. Sales Cycle"
+            value={`${dashboardData.kpis.avgSalesCycleMonths.value} months`}
+            change={dashboardData.kpis.avgSalesCycleMonths.change}
+          />
         </div>
 
-        {/* Main Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column (Action Center) */}
-          <div className="lg:col-span-1">
-            <ActionCenter data={dashboardData.actionCenter} onAssign={handleAssignLead} />
+        {/* Content order: Mobile shows Targets & Results before other modules; Desktop shows it after */}
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 order-2 lg:order-1">
+            <TeamLeaderboard data={dashboardData.teamPerformance.leaderboard} />
+            <SalesPipelineFunnel data={funnelData} />
+            <LeadSourcePerformance data={dashboardData.teamPerformance.sourcePerformance} />
           </div>
 
-          {/* Right Column (Charts & Forecasts) */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <SalesPipelineFunnel data={funnelData} />
-              <RecentActivity activities={dashboardData.recentActivities} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <TeamLeaderboard data={dashboardData.teamPerformance.leaderboard} />
-              <LeadSourcePerformance data={dashboardData.teamPerformance.sourcePerformance} />
-            </div>
+          <div className="order-1 lg:order-2">
+            <TargetsResults
+              targets={dashboardData.targets}
+              results={dashboardData.results}
+              currency={dashboardData.currency}
+            />
           </div>
         </div>
 
@@ -623,4 +479,4 @@ function MainDashboard() {
   );
 }
 
-export default withAuth(MainDashboard);
+export default MainDashboard;
