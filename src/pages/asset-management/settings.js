@@ -22,8 +22,6 @@ import {
     removeSubCategoryLocal
 } from '@/redux/slices/assetCategorySlice';
 
-import { checkAssetApiHealth } from '@/redux/slices/assetSlice';
-
 import { 
     fetchAssetLocations, 
     addAssetLocation, 
@@ -577,19 +575,18 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                 {editedLocations.map(loc => (
                     <div key={loc.id || loc.locationId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                         <div className="flex-1 flex gap-2 items-center">
-                            {loc.editing ? (
+                            {editing ? (
                                 <>
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={loc.name}
-                                        onChange={e => onFieldChange(loc.id || loc.locationId, 'name', e.target.value)}
+                                        onChange={e => onFieldChange(loc.id, 'name', e.target.value)}
                                         placeholder="Location name"
-                                        autoFocus
                                     />
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={loc.address}
-                                        onChange={e => onFieldChange(loc.id || loc.locationId, 'address', e.target.value)}
+                                        onChange={e => onFieldChange(loc.id, 'address', e.target.value)}
                                         placeholder="Address (optional)"
                                     />
                                 </>
@@ -598,41 +595,39 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                             )}
                         </div>
                         <div className="flex items-center gap-2">
-                            {loc.editing ? (
+                            {editing ? (
                                 <>
                                     <button
-                                        onClick={() => onSave(loc.id || loc.locationId)}
-                                        className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded"
+                                        onClick={() => onSave(loc.id)}
+                                        className="text-green-600 hover:text-green-800"
                                         title="Save Changes"
                                     >
                                         <FaSave />
                                     </button>
                                     <button
-                                        onClick={() => onCancel(loc.id || loc.locationId)}
-                                        className="text-gray-600 hover:text-gray-800 p-2 hover:bg-gray-50 rounded"
+                                        onClick={() => onCancel(loc.id)}
+                                        className="text-gray-600 hover:text-gray-800"
                                         title="Cancel"
                                     >
                                         <FaTimes />
                                     </button>
                                 </>
                             ) : (
-                                <>
                                 <button
-                                        onClick={() => onFieldChange(loc.id || loc.locationId, 'editing', true)}
-                                        className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
+                                    onClick={() => onFieldChange(loc.id, 'editing', true)}
+                                    className="text-blue-600 hover:text-blue-800"
                                     title="Edit Location"
                                 >
                                     <FaEdit />
                                 </button>
+                            )}
                             <button
-                                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
+                                className="text-red-500 hover:text-red-700"
                                 title="Delete Location"
                                 onClick={() => onDelete(loc.locationId || loc.id, loc.name)}
                             >
                                 <FaTrash />
                             </button>
-                                </>
-                            )}
                         </div>
                     </div>
                 ))}
@@ -666,84 +661,53 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
                     // Debug: Log the status object structure
                     console.log('Status object:', s);
                     return (
-                        <div key={s.statusLabelId || s.statusId || s.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <div key={s.id || s.statusId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                             <div className="flex-1 flex gap-2 items-center">
-                                {s.editing ? (
+                                {editing ? (
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={s.name}
-                                        onChange={e => {
-                                            // Use the correct ID field - prioritize statusLabelId, then statusId, then id
-                                            const statusIdToUse = s.statusLabelId || s.statusId || s.id;
-                                            onFieldChange(statusIdToUse, 'name', e.target.value);
-                                        }}
+                                        onChange={e => onFieldChange(s.id, 'name', e.target.value)}
                                         placeholder="Status name"
-                                        autoFocus
                                     />
                                 ) : (
                                     <span className="flex-1">{s.name}</span>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                {s.editing ? (
+                                {editing ? (
                                     <>
                                         <button
-                                            onClick={() => {
-                                                console.log('=== SAVE BUTTON CLICKED ===');
-                                                console.log('Status being saved:', s);
-                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
-                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
-                                                console.log('Status ID being passed:', statusIdToUse);
-                                                console.log('onSave function:', onSave);
-                                                onSave(statusIdToUse);
-                                            }}
-                                            className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded"
+                                            onClick={() => onSave(s.id)}
+                                            className="text-green-600 hover:text-green-800"
                                             title="Save Changes"
                                         >
                                             <FaSave />
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
-                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
-                                                onCancel(statusIdToUse);
-                                            }}
-                                            className="text-gray-600 hover:text-gray-800 p-2 hover:bg-gray-50 rounded"
+                                            onClick={() => onCancel(s.id)}
+                                            className="text-gray-600 hover:text-gray-800"
                                             title="Cancel"
                                         >
                                             <FaTimes />
                                         </button>
                                     </>
                                 ) : (
-                                    <>
                                     <button
-                                            onClick={() => {
-                                                console.log('=== EDIT BUTTON CLICKED ===');
-                                                console.log('Status being edited:', s);
-                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
-                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
-                                                console.log('Status ID being passed:', statusIdToUse);
-                                                console.log('onFieldChange function:', onFieldChange);
-                                                onFieldChange(statusIdToUse, 'editing', true);
-                                            }}
-                                            className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
+                                        onClick={() => onFieldChange(s.id, 'editing', true)}
+                                        className="text-blue-600 hover:text-blue-800"
                                         title="Edit Status"
                                     >
                                         <FaEdit />
                                     </button>
+                                )}
                                 <button
-                                            className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
+                                    className="text-red-500 hover:text-red-700"
                                     title="Delete Status Label"
-                                            onClick={() => {
-                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
-                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
-                                                onDelete(statusIdToUse, s.name);
-                                            }}
+                                    onClick={() => onDelete(s.statusLabelId || s.statusId || s.id, s.name)}
                                 >
                                     <FaTrash />
                                 </button>
-                                    </>
-                                )}
                             </div>
                         </div>
                     );
@@ -754,7 +718,7 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
 };
 
 // Enhanced Custom Form Builder Component with proper Redux integration
-const CustomFormBuilder = ({ editing, onDeleteForm }) => {
+const CustomFormBuilder = ({ editing }) => {
     const dispatch = useDispatch();
     const { categories, loading: categoriesLoading } = useSelector(state => state.assetCategories);
     const { forms, currentForm, loading: formsLoading, creating: creatingForm, updating: updatingForm } = useSelector(state => state.customForms);
@@ -982,67 +946,31 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     const handleToggleFormStatus = async (formId) => {
         try {
-            // Validate formId
-            if (!formId || formId === 'undefined' || formId === undefined) {
-                console.error('Invalid form ID:', formId);
-                toast.error('Invalid form ID. Please refresh the page and try again.');
-                return;
+            const form = forms.find(f => f.id === formId);
+            if (form) {
+                await dispatch(toggleFormStatus({ 
+                    formId, 
+                    enabled: !form.enabled 
+                })).unwrap();
+                toast.success("Form status updated successfully!");
             }
-            
-            const form = forms.find(f => f.id === formId || f.formId === formId);
-            if (!form) {
-                console.error('Form not found for ID:', formId);
-                toast.error('Form not found. Please refresh the page and try again.');
-                return;
-            }
-            
-            // Use the correct form ID (prioritize formId over id)
-            const actualFormId = form.formId || form.id;
-            
-            console.log('Toggling form status for:', { 
-                formId, 
-                actualFormId,
-                currentEnabled: form.enabled, 
-                newEnabled: !form.enabled,
-                form: form
-            });
-            
-            await dispatch(toggleFormStatus({ 
-                formId: actualFormId, 
-                enabled: !form.enabled 
-            })).unwrap();
-            
-            toast.success("Form status updated successfully!");
-            
-            // Refresh forms to get updated data
-            dispatch(fetchCustomForms());
         } catch (error) {
             console.error('Error toggling form status:', error);
-            
-            // Provide more specific error messages
-            let errorMessage = "Failed to update form status";
-            if (error?.payload) {
-                errorMessage = error.payload;
-            } else if (error?.message) {
-                errorMessage = error.message;
-            } else if (error?.data?.message) {
-                errorMessage = error.data.message;
-            }
-            
-            toast.error(errorMessage);
-            
-            // Log detailed error information
-            console.error('Toggle form status error details:', {
-                formId,
-                error: error,
-                payload: error?.payload,
-                message: error?.message,
-                data: error?.data
-            });
+            toast.error("Failed to update form status");
         }
     };
 
-
+    const handleDeleteForm = async (formId) => {
+        if (window.confirm('Are you sure you want to delete this form?')) {
+            try {
+                await dispatch(deleteCustomForm(formId)).unwrap();
+                toast.success("Form deleted successfully!");
+            } catch (error) {
+                console.error('Error deleting form:', error);
+                toast.error("Failed to delete form");
+            }
+        }
+    };
 
     const addField = () => {
         console.log('addField called. Current fields count:', fields.length);
@@ -1156,14 +1084,6 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         setError('');
 
         try {
-            // Debug the subcategory selection
-            console.log('selectedSubCategory value:', selectedSubCategory);
-            console.log('selectedSubCategory type:', typeof selectedSubCategory);
-            console.log('selectedSubCategory truthy check:', !!selectedSubCategory);
-            console.log('selectedSubCategory length:', selectedSubCategory ? selectedSubCategory.length : 'N/A');
-            console.log('subCategoriesForSelectedCategory:', subCategoriesForSelectedCategory);
-            console.log('Available subcategories for selected category:', subCategoriesForSelectedCategory.map(sub => ({ id: sub.subCategoryId || sub.id, name: sub.name })));
-            
             const formData = {
                 name: formName.trim(),
                 categoryId: selectedCategory,
@@ -1180,85 +1100,27 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 ...(selectedSubCategory ? { subCategoryId: selectedSubCategory } : {})
             };
             
-            console.log('Final formData object:', formData);
-            console.log('formData.subCategoryId:', formData.subCategoryId);
-            console.log('formData structure:', {
-                hasName: !!formData.name,
-                hasCategoryId: !!formData.categoryId,
-                hasSubCategoryId: !!formData.subCategoryId,
-                subCategoryIdValue: formData.subCategoryId,
-                subCategoryIdType: typeof formData.subCategoryId,
-                fieldsCount: formData.fields?.length || 0
-            });
-            
             let savedFormId = editingFormId;
             if (editingFormId) {
                 const updated = await dispatch(updateCustomForm({ 
                     formId: editingFormId, 
                     formData 
                 })).unwrap();
-                // For updates, always use the existing formId (editingFormId)
-                savedFormId = editingFormId; // Never fall back to MongoDB _id for updates
-                console.log('Form updated, savedFormId:', savedFormId, 'updated object:', updated);
-                console.log('Updated form ID analysis:', {
-                    formId: updated?.formId,
-                    id: updated?.id,
-                    editingFormId,
-                    finalSavedFormId: savedFormId,
-                    isFormId: savedFormId?.startsWith?.('FORM-'),
-                    isMongoId: /^\d+$/.test(savedFormId)
-                });
+                savedFormId = updated?.id || editingFormId;
                 toast.success("Form updated successfully!");
             } else {
                 const created = await dispatch(createCustomForm(formData)).unwrap();
-                // For new forms, try to get formId, but if not available, generate one
-                if (created?.formId) {
-                    savedFormId = created.formId;
-                } else if (created?.id && created.id.toString().startsWith('FORM-')) {
-                    savedFormId = created.id;
-                } else {
-                    // Generate a fallback formId if backend doesn't provide one
-                    savedFormId = `FORM-${Date.now()}`;
-                    console.warn('Backend did not return formId, generated fallback:', savedFormId);
-                }
-                console.log('Form created, savedFormId:', savedFormId, 'created object:', created);
-                console.log('Created form ID analysis:', {
-                    formId: created?.formId,
-                    id: created?.id,
-                    finalSavedFormId: savedFormId,
-                    isFormId: savedFormId?.startsWith?.('FORM-'),
-                    isMongoId: /^\d+$/.test(savedFormId)
-                });
+                savedFormId = created?.id || created?.formId;
                 toast.success("Form created successfully!");
             }
 
             // Assign to sub-category via dedicated endpoint if provided
             if (savedFormId && selectedSubCategory) {
-                console.log('Assigning subcategory to form:', {
-                    savedFormId,
-                    selectedSubCategory,
-                    savedFormIdType: typeof savedFormId,
-                    isFormId: savedFormId?.startsWith?.('FORM-'),
-                    isMongoId: /^\d+$/.test(savedFormId)
-                });
-                
-                // Validate that we have a proper formId, not a MongoDB _id
-                if (!savedFormId.toString().startsWith('FORM-')) {
-                    console.error('Invalid formId for subcategory assignment:', savedFormId);
-                    toast.error("Cannot assign subcategory: Invalid form ID format");
-                    return;
-                }
-                
                 try {
                     await dispatch(assignFormToSubCategory({ formId: savedFormId, subCategoryId: selectedSubCategory })).unwrap();
                     toast.success("Sub-category assigned to form");
                 } catch (e) {
                     console.error('Failed to assign sub-category:', e);
-                    console.error('Error details:', {
-                        error: e,
-                        response: e.response?.data,
-                        status: e.response?.status
-                    });
                     toast.error("Failed to assign sub-category");
                 }
             }
@@ -1462,15 +1324,16 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                     <tr>
                                         <th className="text-left p-4 font-semibold text-gray-700">Form Name</th>
                                         <th className="text-left p-4 font-semibold text-gray-700">Assigned Category</th>
+                                        <th className="text-left p-4 font-semibold text-gray-700">Status</th>
                                         <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {forms.map((form) => (
                                         <tr 
-                                            key={form.formId || form.id} 
+                                            key={form.id || form.formId} 
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                                            onClick={() => handleEditForm(form.formId || form.id)}
+                                            onClick={() => handleEditForm(form.id || form.formId)}
                                         >
                                             <td className="p-4 font-medium">{form.name}</td>
                                             <td className="p-4 text-gray-600">
@@ -1482,24 +1345,45 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                     return matchingCategory?.name || formCategoryId || 'No Category';
                                                 })()}
                                             </td>
-
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    form.enabled
+                                                        ? 'bg-green-100 text-green-700' 
+                                                        : 'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                    {form.enabled ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleEditForm(form.formId || form.id);
+                                                            handleEditForm(form.id || form.formId);
                                                         }}
                                                         className="text-blue-600 hover:text-blue-800"
                                                         title="Edit Form"
                                                     >
                                                         <FaEdit />
                                                     </button>
-
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            onDeleteForm(form.formId || form.id);
+                                                            handleToggleFormStatus(form.id || form.formId);
+                                                        }}
+                                                        className={`text-sm px-2 py-1 rounded ${
+                                                            form.enabled
+                                                                ? 'text-orange-600 hover:text-orange-800'
+                                                                : 'text-green-600 hover:text-green-800'
+                                                        }`}
+                                                        title={form.enabled ? 'Deactivate' : 'Activate'}
+                                                    >
+                                                        {form.enabled ? 'Deactivate' : 'Activate'}
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteForm(form.id || form.formId);
                                                         }}
                                                         className="text-red-600 hover:text-red-800"
                                                         title="Delete Form"
@@ -1575,14 +1459,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                         </label>
                                         <select
                                             value={selectedSubCategory}
-                                            onChange={(e) => {
-                                                console.log('Subcategory selection changed:', {
-                                                    oldValue: selectedSubCategory,
-                                                    newValue: e.target.value,
-                                                    event: e.target.value
-                                                });
-                                                setSelectedSubCategory(e.target.value);
-                                            }}
+                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
                                             className="w-full p-3 border border-gray-300 rounded-md"
                                             disabled={!selectedCategory || categoriesLoading}
                                         >
@@ -1914,65 +1791,18 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 };
 
 // Delete confirmation modals
-const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, assetsCount, assetsList }) => {
+const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName }) => {
     if (!open) return null;
-    
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Category
                 </h2>
-                
-                {warning ? (
-                    <div>
-                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <p className="text-yellow-800 font-medium mb-2">
-                                ⚠️ Cannot Delete Category
-                            </p>
-                            <p className="text-yellow-700 text-sm">
-                                The category <span className="font-semibold">&quot;{categoryName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
-                            </p>
-                        </div>
-                        
-                        {assetsList && assetsList.length > 0 && (
-                            <div className="mb-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Assets using this category:</p>
-                                <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
-                                    {assetsList.map((asset, index) => (
-                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
-                                            • {asset.name || asset.assetId} ({asset.assetId})
-                                        </div>
-                                    ))}
-                                    {assetsCount > 5 && (
-                                        <div className="text-sm text-gray-500 italic">
-                                            ... and {assetsCount - 5} more
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        
-                        <p className="text-sm text-gray-600 mb-4">
-                            Please change the category of these assets to a different category before deleting this one.
-                        </p>
-                    </div>
-                ) : (
-                    <p className="mb-4 text-gray-700">
-                        Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>
-                        This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.
-                    </p>
-                )}
-                
+                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
                 <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        {warning ? 'Close' : 'Cancel'}
-                    </button>
-                    {!warning && (
-                        <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
-                            Delete
-                        </button>
-                    )}
+                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
+                    <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
                 </div>
             </div>
         </div>
@@ -2109,41 +1939,6 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName, warning, asse
     );
 };
 
-const DeleteFormModal = ({ open, onClose, onConfirm, formName }) => {
-    if (!open) return null;
-    
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
-                    <FaTrash /> Delete Custom Form
-                </h2>
-                
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-red-800 font-medium mb-2">
-                        ⚠️ Warning: This action cannot be undone
-                    </p>
-                    <p className="text-red-700 text-sm">
-                        Are you sure you want to delete the custom form <span className="font-semibold">&quot;{formName}&quot;</span>?
-                    </p>
-                    <p className="text-red-600 text-sm mt-2">
-                        This will permanently remove the form and all its associated data.
-                    </p>
-                </div>
-                
-                <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        No, Cancel
-                    </button>
-                    <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
-                        Yes, Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // --- Main Page Component ---
 const AssetSettingsPage = () => {
     const dispatch = useDispatch();
@@ -2198,10 +1993,7 @@ const AssetSettingsPage = () => {
     
     // Fetch assets when component mounts for status deletion validation
     useEffect(() => {
-        dispatch(fetchAllAssets()).catch(error => {
-            console.error('Failed to fetch assets for validation:', error);
-            // Don't show error toast here as it's just for validation
-        });
+        dispatch(fetchAllAssets());
     }, [dispatch]);
     
     // Separate editing states for each section
@@ -2237,62 +2029,33 @@ const AssetSettingsPage = () => {
         assetsList: []
     });
 
-    const [deleteFormModal, setDeleteFormModal] = useState({ 
-        open: false, 
-        formId: null, 
-        formName: ''
-    });
-
-    const [deleteModal, setDeleteModal] = useState({ 
-        open: false, 
-        categoryId: null, 
-        name: '', 
-        warning: false,
-        assetsCount: 0,
-        assetsList: []
-    });
-
-    // Network status state
-    const [networkStatus, setNetworkStatus] = useState({ 
-        isOnline: true, 
-        lastChecked: null, 
-        apiHealth: null 
-    });
+    const [deleteModal, setDeleteModal] = useState({ open: false, categoryId: null, name: '' });
 
     // Initialize data
     useEffect(() => {
         console.log('Loading asset management data...');
         
-        // Check network and API health
-        const checkNetworkStatus = async () => {
-            try {
-                // Check if browser is online
-                const isOnline = navigator.onLine;
-                setNetworkStatus(prev => ({ ...prev, isOnline }));
-                
-                if (isOnline) {
-                    // Check API health
-                    const apiHealth = await checkAssetApiHealth();
-                    setNetworkStatus(prev => ({ 
-                        ...prev, 
-                        apiHealth,
-                        lastChecked: new Date()
-                    }));
-                    
-                    if (!apiHealth.isHealthy) {
-                        console.warn('API health check failed:', apiHealth.error);
-                        toast.warning('API server appears to be offline. Some features may not work properly.');
-                    }
-                } else {
-                    console.warn('Browser is offline');
-                    toast.warning('You appear to be offline. Please check your internet connection.');
-                }
-            } catch (error) {
-                console.error('Error checking network status:', error);
-            }
-        };
-        
-        checkNetworkStatus();
+        // Debug function to test API response - commented out to avoid network errors
+        // const debugApiResponse = async () => {
+        //     try {
+        //         const token = getItemFromSessionStorage('token', null);
+        //         const response = await axios.get(`${publicRuntimeConfig.apiURL}/api/asset-settings/categories`, {
+        //             headers: { Authorization: `Bearer ${token}` }
+        //         });
+        //         console.log('Raw API response:', response.data);
+        //         
+        //         // Test subcategory creation
+        //         if (response.data?.data?.length > 0) {
+        //             const firstCategory = response.data.data[0];
+        //             console.log('First category:', firstCategory);
+        //             console.log('Subcategories in first category:', firstCategory.subCategories);
+        //         }
+        //     } catch (error) {
+        //         console.error('Debug API call failed:', error);
+        //     }
+        // };
+        // 
+        // debugApiResponse();
         
         dispatch(fetchAssetCategories());
         dispatch(fetchAssetLocations());
@@ -2326,17 +2089,6 @@ const AssetSettingsPage = () => {
     }, [locations]);
 
     useEffect(() => {
-        console.log('=== STATUSES LOADED FROM REDUX ===');
-        console.log('Raw statuses from Redux:', statuses);
-        console.log('Statuses structure:', statuses?.map(s => ({
-            id: s.id,
-            statusId: s.statusId,
-            statusLabelId: s.statusLabelId,
-            name: s.name,
-            color: s.color,
-            description: s.description,
-            sortOrder: s.sortOrder
-        })));
         setEditedStatuses(statuses || []);
     }, [statuses]);
 
@@ -2433,31 +2185,11 @@ const AssetSettingsPage = () => {
         const hasSubCategories = category && category.subCategories && category.subCategories.length > 0;
         
         if (hasSubCategories) {
-            const subCatList = category.subCategories.slice(0, 3).map(sub => sub.name).join(', ');
-            const moreText = category.subCategories.length > 3 ? ` and ${category.subCategories.length - 3} more` : '';
-            toast.error(`Cannot delete category "${name}" because it has ${category.subCategories.length} sub-category(ies): ${subCatList}${moreText}. Please delete all sub-categories first.`);
+            toast.error(`Cannot delete category "${name}" because it has ${category.subCategories.length} sub-category(ies). Please delete all sub-categories first.`);
             return;
         }
         
-        // Check if any assets are using this category
-        const assetsUsingCategory = assets.filter(asset => 
-            asset.categoryId === categoryId || asset.category?.id === categoryId
-        );
-        
-        if (assetsUsingCategory.length > 0) {
-            // Show warning modal with details about assets using this category
-            setDeleteModal({ 
-                open: true, 
-                categoryId, 
-                name,
-                warning: true,
-                assetsCount: assetsUsingCategory.length,
-                assetsList: assetsUsingCategory.slice(0, 5) // Show first 5 assets
-            });
-        } else {
-            // No assets using this category, proceed with deletion
-            setDeleteModal({ open: true, categoryId, name, warning: false });
-        }
+        setDeleteModal({ open: true, categoryId, name });
     };
     
     const confirmDeleteCategory = async () => {
@@ -2467,24 +2199,14 @@ const AssetSettingsPage = () => {
             await dispatch(deleteAssetCategory(deleteModal.categoryId)).unwrap();
             toast.success("Category deleted successfully!");
         } catch (error) {
-            // Show backend response in toast
-            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete category";
-            toast.error(`Category deletion failed: ${errorMessage}`);
-            console.error('Backend error response:', error);
+            toast.error("Failed to delete category");
         }
         setDeleteModal({ open: false, categoryId: null, name: '' });
     };
     
     const cancelDeleteCategory = () => {
         console.log('cancelDeleteCategory called');
-        setDeleteModal({ 
-            open: false, 
-            categoryId: null, 
-            name: '', 
-            warning: false,
-            assetsCount: 0,
-            assetsList: []
-        });
+        setDeleteModal({ open: false, categoryId: null, name: '' });
     };
 
     // Enhanced sub-category management functions
@@ -2670,19 +2392,6 @@ const AssetSettingsPage = () => {
         
         console.log('Found category and subcategory for deletion:', { category, subCategory });
         
-        // Check if any assets are using this sub-category
-        const assetsUsingSubCategory = assets.filter(asset => 
-            asset.subCategoryId === subCategoryId || asset.subCategory?.id === subCategoryId
-        );
-        
-        if (assetsUsingSubCategory.length > 0) {
-            // Show warning toast about assets using this sub-category
-            const assetList = assetsUsingSubCategory.slice(0, 3).map(asset => asset.name || asset.assetId).join(', ');
-            const moreText = assetsUsingSubCategory.length > 3 ? ` and ${assetsUsingSubCategory.length - 3} more` : '';
-            toast.error(`Cannot delete sub-category "${subCategory?.name || 'Unknown'}" because it has ${assetsUsingSubCategory.length} asset(s) using it: ${assetList}${moreText}. Please change the sub-category of these assets first.`);
-            return;
-        }
-        
         if (subCategory?.subCategoryId) {
             // Delete from server
             try {
@@ -2691,9 +2400,7 @@ const AssetSettingsPage = () => {
                 toast.success("Sub-category deleted successfully!");
             } catch (error) {
                 console.error('Error deleting subcategory:', error);
-                // Show backend response in toast
-                const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete sub-category";
-                toast.error(`Sub-category deletion failed: ${errorMessage}`);
+                toast.error("Failed to delete sub-category");
             }
         } else {
             // Remove locally (for unsaved sub-categories)
@@ -3171,222 +2878,49 @@ const AssetSettingsPage = () => {
         }
         
         try {
-            // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
-            
-            if (!companyId) {
-                toast.error("Company ID not found in session");
-                return;
-            }
-            
-            // Prepare request payload according to API specification
-            const locationData = {
+            await dispatch(addAssetLocation({ 
                 name: newLocation.name, 
-                companyId: companyId,
-                isActive: true
-            };
-            
-            // Add address if it exists (though API doesn't show address field)
-            if (newLocation.address) {
-                locationData.address = newLocation.address;
-            }
-            
-            // Make direct API call to add location
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            
-            const addUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations`;
-            console.log('[add-location] POST', addUrl, locationData);
-            
-            const response = await fetch(addUrl, {
-                method: 'POST',
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(locationData)
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Location creation failed (${response.status})`);
-            }
-            
-            const result = await response.json();
-            console.log('Location creation response:', result);
-            
+                address: newLocation.address 
+            })).unwrap();
             setNewLocation({ name: '', address: '' });
             toast.success("Location added successfully!");
-            
-            // Refresh locations from backend to get new data
-            dispatch(fetchAssetLocations());
-            
         } catch (error) {
-            console.error('Error adding location:', error);
-            const errorMessage = error?.message || "Failed to add location";
-            toast.error(errorMessage);
+            toast.error("Failed to add location");
         }
     };
 
     const handleLocationFieldChange = (locId, key, value) => {
-        if (key === 'editing' && value === true) {
-            // Start editing mode
         dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
-        } else {
-            // Update field
-            dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
-        }
         
         // Also update local state for immediate UI feedback
         setEditedLocations(editedLocations.map(loc => 
-            (loc.id === locId || loc.locationId === locId) ? { ...loc, [key]: value } : loc
+            loc.id === locId ? { ...loc, [key]: value } : loc
         ));
     };
 
-    // Utility function for batch updating locations (if needed in the future)
-    const handleBatchUpdateLocations = async (locationsData) => {
+    const handleSaveLocations = async () => {
         try {
-            // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
-            
-            if (!companyId) {
-                toast.error("Company ID not found in session");
-                return false;
-            }
-            
-            // Prepare batch request payload
-            const batchPayload = locationsData.map(loc => ({
+            const payload = editedLocations.map(loc => ({
                 locationId: loc.locationId || loc.id,
                 name: loc.name,
-                companyId: companyId,
-                isActive: true
+                address: loc.address
             }));
             
-            // Make direct API call to batch update locations
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            
-            const batchUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations/batch`;
-            console.log('[batch-update-locations] PATCH', batchUrl, batchPayload);
-            
-            const response = await fetch(batchUrl, {
-                method: 'PATCH',
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(batchPayload)
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Batch location update failed (${response.status})`);
-            }
-            
-            const result = await response.json();
-            console.log('Batch location update response:', result);
-            
+            if (payload.length > 0) {
+                await dispatch(batchUpdateAssetLocations(payload)).unwrap();
                 toast.success("Locations updated successfully!");
-            return true;
-            
-        } catch (error) {
-            console.error('Error batch updating locations:', error);
-            const errorMessage = error?.message || "Failed to batch update locations";
-            toast.error(errorMessage);
-            return false;
-        }
-    };
-
-    const handleSaveLocations = async (locationId = null) => {
-        if (locationId) {
-            // Save individual location
-            const location = editedLocations.find(loc => loc.id === locationId || loc.locationId === locationId);
-            
-            if (location) {
-                try {
-                    // Get company ID from session storage
-                    const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                                     sessionStorage.getItem("companyId") || 
-                                     sessionStorage.getItem("company");
-                    
-                    if (!companyId) {
-                        toast.error("Company ID not found in session");
-                        return;
-                    }
-                    
-                    // Prepare request payload according to API specification
-                    const locationData = {
-                        name: location.name,
-                        companyId: companyId,
-                        isActive: true
-                    };
-                    
-                    // Add address if it exists (though API doesn't show address field)
-                    if (location.address) {
-                        locationData.address = location.address;
-                    }
-                    
-                    // Make direct API call to update location
-                    const tokenRaw = getItemFromSessionStorage('token', null);
-                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                    
-                    const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations/${location.locationId || location.id}`;
-                    console.log('[update-location] PATCH', updateUrl, locationData);
-                    
-                    const response = await fetch(updateUrl, {
-                        method: 'PATCH',
-                        headers: {
-                            ...headers,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(locationData)
-                    });
-                    
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(errorData.message || `Location update failed (${response.status})`);
-                    }
-                    
-                    const result = await response.json();
-                    console.log('Location update response:', result);
-                    
-                    // Clear editing state
-                    handleLocationFieldChange(locationId, 'editing', false);
-                    toast.success("Location updated successfully!");
-                    
-                    // Refresh locations from backend to get updated data
-                    dispatch(fetchAssetLocations());
-                    
-        } catch (error) {
-                    console.error('Error updating location:', error);
-                    const errorMessage = error?.message || "Failed to update location";
-                    toast.error(errorMessage);
-                }
             }
+            setEditingLocations(false);
+        } catch (error) {
+            toast.error("Failed to update locations");
         }
     };
 
-    const handleCancelLocations = (locationId = null) => {
-        if (locationId) {
-            // Cancel individual location editing
-            const originalLocation = locations.find(loc => loc.id === locationId || loc.locationId === locationId);
-            
-            if (originalLocation) {
-                setEditedLocations(editedLocations.map(loc => 
-                    (loc.id === locationId || loc.locationId === locationId) 
-                        ? { ...originalLocation, editing: false }
-                        : loc
-                ));
+    const handleCancelLocations = () => {
+        setEditedLocations(locations || []);
+        setNewLocation({ name: '', address: '' });
+        setEditingLocations(false);
         toast.info("Location changes cancelled.");
-            }
-        }
     };
 
     const handleDeleteLocation = (locationId, name) => {
@@ -3416,16 +2950,12 @@ const AssetSettingsPage = () => {
             await dispatch(deleteAssetLocation(deleteLocationModal.locationId)).unwrap();
             toast.success("Location deleted successfully!");
         } catch (error) {
-            // Show backend response in toast
-            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete location";
-            
             // Check if the error is about assets using this location
             if (error && error.includes && error.includes('assets')) {
                 toast.error("Cannot delete location: Assets are currently using this location");
             } else {
-                toast.error(`Location deletion failed: ${errorMessage}`);
+                toast.error("Failed to delete location");
             }
-            console.error('Backend error response:', error);
         }
         setDeleteLocationModal({ open: false, locationId: null, name: '', warning: false });
     };
@@ -3449,364 +2979,48 @@ const AssetSettingsPage = () => {
         }
         
         try {
-            // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
-            
-            if (!companyId) {
-                toast.error("Company ID not found in session");
-                return;
-            }
-            
-            // Prepare request payload according to API specification
-            const statusData = {
-                name: newStatus.name,
-                companyId: companyId,
-                isActive: true,
-                // Set default values as per API documentation
-                color: "#6B7280", // Default color
-                description: null,
-                sortOrder: 0 // Default sort order
-            };
-            
-            // Make direct API call to add status label
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-            
-            const addUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels`;
-            console.log('[add-status-label] POST', addUrl, statusData);
-            
-            const response = await fetch(addUrl, {
-                method: 'POST',
-                headers: {
-                    ...headers,
-                    'Content-Type': 'application/json'
-                    },
-                body: JSON.stringify(statusData)
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Status label creation failed (${response.status})`);
-            }
-            
-            const result = await response.json();
-            console.log('Status label creation response:', result);
-            
+            await dispatch(addAssetStatus({ name: newStatus.name })).unwrap();
             setNewStatus({ name: '' });
             toast.success("Status label added successfully!");
-            
-            // Refresh statuses from backend to get new data
-            dispatch(fetchAssetStatuses());
-            
-            // Also refresh the local state
-            setTimeout(() => {
-                dispatch(fetchAssetStatuses());
-            }, 100);
-            
         } catch (error) {
-            console.error('Error adding status label:', error);
-            const errorMessage = error?.message || "Failed to add status label";
-            toast.error(errorMessage);
+            toast.error("Failed to add status label");
         }
     };
 
     const handleStatusFieldChange = (statusId, field, value) => {
-        console.log('=== handleStatusFieldChange CALLED ===');
-        console.log('handleStatusFieldChange called:', { statusId, field, value });
-        console.log('Current editedStatuses before change:', editedStatuses);
-        
-        if (field === 'editing' && value === true) {
-            console.log('Starting editing mode for status:', statusId);
-            // Start editing mode
         dispatch(updateStatusLocal({ statusId, field, value }));
-        } else {
-            console.log('Updating field for status:', { statusId, field, value });
-            // Update field
-            dispatch(updateStatusLocal({ statusId, field, value }));
-        }
         
         // Also update local state for immediate UI feedback
-        setEditedStatuses(editedStatuses.map(s => {
-            const sId = s.statusLabelId || s.statusId || s.id;
-            const matches = (sId === statusId);
-            if (matches) {
-                console.log('Updating status in local state:', { 
-                    before: s, 
-                    field, 
-                    value, 
-                    after: { ...s, [field]: value } 
-                });
-            }
-            return matches ? { ...s, [field]: value } : s;
-        }));
-        
-        console.log('Current editedStatuses after change:', editedStatuses);
+        setEditedStatuses(editedStatuses.map(s => 
+            s.id === statusId ? { ...s, [field]: value } : s
+        ));
     };
 
-    // Utility function for batch updating status labels (if needed in the future)
-    const handleBatchUpdateStatuses = async (statusesData) => {
+    const handleSaveStatuses = async () => {
         try {
-            // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
-            
-            if (!companyId) {
-                toast.error("Company ID not found in session");
-                return false;
-            }
-            
-            // Prepare batch request payload
-            const batchPayload = statusesData.map(status => ({
-                statusLabelId: status.statusLabelId || status.statusId || status.id,
-                name: status.name,
-                companyId: companyId,
-                isActive: true,
-                color: status.color || "#6B7280", // Default color
-                description: status.description || null,
-                sortOrder: status.sortOrder || 0 // Default sort order
-            }));
-            
-            // Note: API doesn't show batch endpoint for status labels, but keeping this for future use
-            // For now, we'll update them individually
-            let successCount = 0;
-            for (const statusData of batchPayload) {
-                try {
-                    const tokenRaw = getItemFromSessionStorage('token', null);
-                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                    
-                    const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels/${statusData.statusLabelId}`;
-                    console.log('[batch-update-status-label] PATCH', updateUrl, statusData);
-                    
-                    const response = await fetch(updateUrl, {
-                        method: 'PATCH',
-                        headers: {
-                            ...headers,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(statusData)
-                    });
-                    
-                    if (response.ok) {
-                        successCount++;
-                    }
-                } catch (error) {
-                    console.error(`Error updating status label ${statusData.statusLabelId}:`, error);
-                }
-            }
-            
-            if (successCount === batchPayload.length) {
-                toast.success("All status labels updated successfully!");
-                return true;
-            } else if (successCount > 0) {
-                toast.warning(`${successCount} out of ${batchPayload.length} status labels updated successfully`);
-                return true;
-            } else {
-                toast.error("Failed to update any status labels");
-                return false;
-            }
-            
-        } catch (error) {
-            console.error('Error batch updating status labels:', error);
-            const errorMessage = error?.message || "Failed to batch update status labels";
-            toast.error(errorMessage);
-            return false;
-        }
-    };
-
-    const handleSaveStatuses = async (statusId = null) => {
-        console.log('=== STATUS SAVE FUNCTION CALLED ===');
-        console.log('handleSaveStatuses called with statusId:', statusId);
-        console.log('Current editedStatuses:', editedStatuses);
-        console.log('Current statuses from Redux:', statuses);
-        
-        if (statusId) {
-            // Save individual status
-            console.log('Looking for status with ID:', statusId);
-            console.log('Available statuses in editedStatuses:', editedStatuses.map(s => ({
-                id: s.id,
-                statusId: s.statusId,
+            const payload = editedStatuses
+                .filter(s => s.statusLabelId) // Only include those with a valid statusLabelId
+                .map(s => ({
                     statusLabelId: s.statusLabelId,
-                name: s.name
-            })));
-            
-            const status = editedStatuses.find(s => {
-                const sId = s.statusLabelId || s.statusId || s.id;
-                console.log('Checking status:', { 
                     name: s.name,
-                    sId, 
-                    matches: sId === statusId 
-                });
-                return sId === statusId;
-            });
-            console.log('Found status to update:', status);
-            console.log('Status ID fields:', { 
-                id: status?.id, 
-                statusId: status?.statusId, 
-                statusLabelId: status?.statusLabelId 
-            });
-            
-            if (status) {
-                console.log('Attempting to save status:', { statusId, status });
+                    ...(s.color ? { color: s.color } : {})
+                }));
                 
-                try {
-                    // Get company ID from session storage
-                    const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                                     sessionStorage.getItem("companyId") || 
-                                     sessionStorage.getItem("company");
-                    
-                    console.log('Company ID from session:', companyId);
-                    
-                    if (!companyId) {
-                        toast.error("Company ID not found in session");
-                        return;
-                    }
-                    
-                    // Prepare request payload according to API specification
-                    const statusData = {
-                        name: status.name,
-                        companyId: companyId,
-                        isActive: true,
-                        // Set default values as per API documentation
-                        color: status.color || "#6B7280", // Default color
-                        description: status.description || null,
-                        sortOrder: status.sortOrder || 0 // Default sort order
-                    };
-                    
-                    console.log('Status data to update:', statusData);
-                    console.log('Status ID being used:', status.statusLabelId || status.statusId || status.id);
-                    
-                    // Try direct API call first
-                    try {
-                        const tokenRaw = getItemFromSessionStorage('token', null);
-                        const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-                        
-                        // Use the correct API endpoint based on the documentation
-                        const statusLabelId = status.statusLabelId || status.statusId || status.id;
-                        const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels/${statusLabelId}`;
-                        console.log('[update-status-label] PATCH', updateUrl, statusData);
-                        
-                        const response = await fetch(updateUrl, {
-                            method: 'PATCH',
-                            headers: {
-                                ...headers,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(statusData)
-                        });
-                        
-                        console.log('API Response status:', response.status);
-                        console.log('API Response headers:', response.headers);
-                        
-                        if (!response.ok) {
-                            const errorData = await response.json().catch(() => ({}));
-                            console.error('API Error response:', errorData);
-                            throw new Error(errorData.message || `Status label update failed (${response.status})`);
-                        }
-                        
-                        const result = await response.json();
-                        console.log('Status label update response:', result);
-                        
-                        // Clear editing state
-                        handleStatusFieldChange(statusId, 'editing', false);
-                        toast.success("Status label updated successfully!");
-                        
-                        // Refresh statuses from backend to get updated data
-                        dispatch(fetchAssetStatuses());
-                        
-                        // Also refresh the local state
-                        setTimeout(() => {
-                            dispatch(fetchAssetStatuses());
-                        }, 100);
-                        
-                        return; // Success, exit function
-                        
-                    } catch (apiError) {
-                        console.error('Direct API call failed, trying Redux action as fallback:', apiError);
-                        
-                        // Fallback to Redux action
-                        try {
-                            console.log('Trying Redux action as fallback...');
-                            console.log('Redux action payload:', {
-                                statusLabelId: status.statusLabelId || status.statusId || status.id,
-                                assetData: { 
-                                    name: status.name,
-                                    ...(status.color && { color: status.color }),
-                                    ...(status.description && { description: status.description }),
-                                    ...(status.sortOrder && { sortOrder: status.sortOrder })
-                                }
-                            });
-                            
-                            const reduxResult = await dispatch(updateAssetStatus({
-                                statusLabelId: status.statusLabelId || status.statusId || status.id,
-                                assetData: { 
-                                    name: status.name,
-                                    color: status.color || "#6B7280",
-                                    description: status.description || null,
-                                    sortOrder: status.sortOrder || 0
-                                }
-                            })).unwrap();
-                            
-                            console.log('Redux action result:', reduxResult);
-                            
-                            // Clear editing state
-                            handleStatusFieldChange(statusId, 'editing', false);
-                            toast.success("Status label updated successfully via Redux!");
-                            
-                            // Refresh statuses from backend to get updated data
-                            dispatch(fetchAssetStatuses());
-                            
-                            // Also refresh the local state
-                            setTimeout(() => {
-                                dispatch(fetchAssetStatuses());
-                            }, 100);
-                            
-                        } catch (reduxError) {
-                            console.error('Redux action also failed:', reduxError);
-                            console.error('Redux error details:', {
-                                message: reduxError.message,
-                                stack: reduxError.stack,
-                                payload: reduxError.payload
-                            });
-                            throw new Error(`Both API and Redux failed: ${apiError.message} | Redux: ${reduxError.message}`);
-                        }
-                    }
-                    
-        } catch (error) {
-                    console.error('Error updating status label:', error);
-                    const errorMessage = error?.message || "Failed to update status label";
-                    toast.error(errorMessage);
-                }
-            } else {
-                console.error('Status not found for ID:', statusId);
-                toast.error("Status not found");
+            if (payload.length > 0) {
+                await dispatch(batchUpdateAssetStatuses(payload)).unwrap();
+                toast.success("Status labels updated successfully!");
             }
-        } else {
-            console.error('No status ID provided to handleSaveStatuses');
+            setEditingStatuses(false);
+        } catch (error) {
+            toast.error("Failed to update status labels");
         }
     };
 
-    const handleCancelStatuses = (statusId = null) => {
-        if (statusId) {
-            // Cancel individual status editing
-            const originalStatus = statuses.find(s => {
-                const sId = s.statusLabelId || s.statusId || s.id;
-                return sId === statusId;
-            });
-            
-            if (originalStatus) {
-                setEditedStatuses(editedStatuses.map(s => {
-                    const sId = s.statusLabelId || s.statusId || s.id;
-                    return sId === statusId ? { ...originalStatus, editing: false } : s;
-                }));
+    const handleCancelStatuses = () => {
+        setEditedStatuses(statuses || []);
+        setNewStatus({ name: '' });
+        setEditingStatuses(false);
         toast.info("Status changes cancelled.");
-            }
-        }
     };
 
     const handleDeleteStatus = (statusId, name) => {
@@ -3820,10 +3034,9 @@ const AssetSettingsPage = () => {
         console.log('Attempting to delete status label:', { statusId, name });
         
         // Check if any assets are using this status label
-        const assetsUsingStatus = assets.filter(asset => {
-            const assetStatusId = asset.statusLabelId || asset.statusId;
-            return assetStatusId === statusId;
-        });
+        const assetsUsingStatus = assets.filter(asset => 
+            asset.statusLabelId === statusId || asset.statusId === statusId
+        );
         
         if (assetsUsingStatus.length > 0) {
             // Show warning modal with details about assets using this status
@@ -3858,18 +3071,14 @@ const AssetSettingsPage = () => {
         } catch (error) {
             console.error('Error deleting status label:', error);
             
-            // Show backend response in toast
-            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete status label";
-            
             // Check if the error is about assets using this status
             if (error && error.includes && error.includes('assets')) {
                 toast.error("Cannot delete status label: Assets are currently using this status");
             } else if (error && error.includes && error.includes('Invalid status label ID')) {
                 toast.error("Invalid status label ID. Please refresh the page and try again.");
             } else {
-                toast.error(`Status label deletion failed: ${errorMessage}`);
+                toast.error("Failed to delete status label");
             }
-            console.error('Backend error response:', error);
         }
         setDeleteStatusModal({ open: false, statusId: null, name: '', warning: false });
     };
@@ -3883,35 +3092,6 @@ const AssetSettingsPage = () => {
             assetsCount: 0,
             assetsList: []
         });
-    };
-
-    // Custom Form management functions
-    const handleDeleteForm = (formId) => {
-        // Show custom confirmation modal instead of browser confirm
-        const form = forms.find(f => f.id === formId || f.formId === formId);
-        setDeleteFormModal({ 
-            open: true, 
-            formId, 
-            formName: form?.name || 'Unknown Form'
-        });
-    };
-
-    const confirmDeleteForm = async () => {
-        const { formId } = deleteFormModal;
-        try {
-            await dispatch(deleteCustomForm(formId)).unwrap();
-            toast.success("Form deleted successfully!");
-            setDeleteFormModal({ open: false, formId: null, formName: '' });
-        } catch (error) {
-            console.error('Error deleting form:', error);
-            // Show backend response in toast
-            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete form";
-            toast.error(`Form deletion failed: ${errorMessage}`);
-        }
-    };
-
-    const cancelDeleteForm = () => {
-        setDeleteFormModal({ open: false, formId: null, formName: '' });
     };
 
     // ID Format Management placeholder functions (implement as needed)
@@ -3974,12 +3154,12 @@ const AssetSettingsPage = () => {
             id: 'locations', 
             label: 'Locations', 
             icon: FaMapMarkedAlt, 
-            editing: false, // No global editing state - inline editing only
-            setEditing: () => {}, // No-op function
+            editing: editingLocations,
+            setEditing: setEditingLocations,
             onSave: null, // No global save button - inline editing
             onCancel: null, // No global cancel button - inline editing
             component: <LocationSettings 
-                editing={false} 
+                editing={editingLocations} 
                 editedLocations={editedLocations} 
                 setEditedLocations={setEditedLocations} 
                 newLocation={newLocation} 
@@ -3996,12 +3176,12 @@ const AssetSettingsPage = () => {
             id: 'statuses', 
             label: 'Status Labels', 
             icon: FaCheckSquare, 
-            editing: false, // No global editing state - inline editing only
-            setEditing: () => {}, // No-op function
+            editing: editingStatuses,
+            setEditing: setEditingStatuses,
             onSave: null, // No global save button - inline editing
             onCancel: null, // No global cancel button - inline editing
             component: <StatusSettings 
-                editing={false} 
+                editing={editingStatuses} 
                 editedStatuses={editedStatuses} 
                 setEditedStatuses={setEditedStatuses} 
                 newStatus={newStatus} 
@@ -4024,7 +3204,6 @@ const AssetSettingsPage = () => {
             onCancel: null, // No global cancel button - Custom Form Builder manages its own state
             component: <CustomFormBuilder 
                 editing={editingCustomFields} 
-                onDeleteForm={handleDeleteForm}
             /> 
         },
     ];
@@ -4036,9 +3215,6 @@ const AssetSettingsPage = () => {
                 onClose={cancelDeleteCategory}
                 onConfirm={confirmDeleteCategory}
                 categoryName={deleteModal.name}
-                warning={deleteModal.warning}
-                assetsCount={deleteModal.assetsCount}
-                assetsList={deleteModal.assetsList}
             />
                         <DeleteLocationModal 
                 open={deleteLocationModal.open} 
@@ -4058,12 +3234,6 @@ const AssetSettingsPage = () => {
                 assetsCount={deleteStatusModal.assetsCount}
                 assetsList={deleteStatusModal.assetsList}
             />
-            <DeleteFormModal 
-                open={deleteFormModal.open} 
-                onClose={cancelDeleteForm} 
-                onConfirm={confirmDeleteForm} 
-                formName={deleteFormModal.formName}
-            />
             <div className="p-6">
                 <header className="mb-6">
                     <div className="flex justify-between items-center">
@@ -4071,56 +3241,9 @@ const AssetSettingsPage = () => {
                             <h1 className="text-3xl font-bold text-gray-800">Asset Management Settings</h1>
                             <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
                         </div>
-                        
-                        {/* Network Status Indicator */}
-                        <div className="flex items-center gap-3">
-                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                                networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
-                                    ? 'bg-green-100 text-green-700'
-                                    : networkStatus.isOnline
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-red-100 text-red-700'
-                            }`}>
-                                <div className={`w-2 h-2 rounded-full ${
-                                    networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
-                                        ? 'bg-green-500'
-                                        : networkStatus.isOnline
-                                        ? 'bg-yellow-500'
-                                        : 'bg-red-500'
-                                }`}></div>
-                                <span>
-                                    {networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
-                                        ? 'Online'
-                                        : networkStatus.isOnline
-                                        ? 'API Offline'
-                                        : 'Offline'
-                                    }
-                                </span>
-                            </div>
-                            
-                            {networkStatus.lastChecked && (
-                                <button
-                                    onClick={async () => {
-                                        const apiHealth = await checkAssetApiHealth();
-                                        setNetworkStatus(prev => ({ 
-                                            ...prev, 
-                                            apiHealth,
-                                            lastChecked: new Date()
-                                        }));
-                                        if (apiHealth.isHealthy) {
-                                            toast.success('API connection restored!');
-                                        } else {
-                                            toast.error('API still offline');
-                                        }
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 text-sm"
-                                    title="Check API Status"
-                                >
-                                    🔄
-                                </button>
-                            )}
-                        </div>
                     </div>
+                    
+
                 </header>
                 
                 {/* Horizontal Navigation Tabs */}
