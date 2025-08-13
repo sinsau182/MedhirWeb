@@ -57,6 +57,7 @@ import ViewToggle from "@/components/Sales/ViewToggle";
 import SearchBar from "@/components/Sales/SearchBar";
 import DeletePipelineModal from "@/components/Sales/DeletePipelineModal";
 import LeadsTable from "../../components/Sales/LeadsTable";
+import withAuth from "@/components/withAuth";
 
 const defaultLeadData = {
   name: "",
@@ -358,7 +359,6 @@ const ManagerContent = ({ role }) => {
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over || !active) {
-      console.log("No over or active element");
       return;
     }
 
@@ -366,7 +366,6 @@ const ManagerContent = ({ role }) => {
     const newPipelineName = over.id;
 
     if (!leadId || !newPipelineName) {
-      console.log("Missing leadId or newPipelineName");
       return;
     }
 
@@ -374,7 +373,6 @@ const ManagerContent = ({ role }) => {
     const newPipeline = pipelines.find((p) => p.name === newPipelineName);
 
     if (!newPipeline) {
-      console.log("Pipeline not found for name:", newPipelineName);
       return;
     }
 
@@ -400,17 +398,10 @@ const ManagerContent = ({ role }) => {
     }
 
     if (!lead) {
-      console.log("Lead not found for ID:", leadId);
       return;
     }
 
     const newPipelineId = newPipeline.pipelineId || newPipeline.stageId;
-
-    console.log("Pipeline comparison:", {
-      currentPipelineId,
-      newPipelineId,
-      isDifferent: String(currentPipelineId) !== String(newPipelineId),
-    });
 
     if (String(currentPipelineId) !== String(newPipelineId)) {
       // Check if moving from stage index 0 to stage index 1
@@ -422,16 +413,11 @@ const ManagerContent = ({ role }) => {
         p.pipelineId === newPipelineId || p.stageId === newPipelineId
       );
       
-      // Log pipeline information for debugging
-      console.log("Pipeline index check:", {
-        currentPipelineIndex,
-        newPipelineIndex,
-        currentPipelineId,
-        newPipelineId,
-        currentPipelineName: pipelines[currentPipelineIndex]?.name,
-        newPipelineName: pipelines[newPipelineIndex]?.name,
-        newPipelineFormType: newPipeline.formType
-      });
+      // Check for backward movement restriction
+      if (currentPipelineIndex > newPipelineIndex) {
+        toast.error("Lead cannot be moved backward in kanban board");
+        return;
+      }
 
       // Check if moving to stages with specific form types
       if (newPipeline.formType === "SEMI") {
@@ -476,9 +462,10 @@ const ManagerContent = ({ role }) => {
       }
 
       // Otherwise, move lead directly
+
       dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
     } else {
-      console.log("Pipeline is the same, no move needed");
+      toast.error("Pipeline is the same, no move needed");
     }
   };
 
@@ -540,7 +527,6 @@ const ManagerContent = ({ role }) => {
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
-      console.error("Error saving lead:", error);
       toast.error("Failed to save lead. Please try again.");
     }
   };
@@ -611,7 +597,7 @@ const ManagerContent = ({ role }) => {
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
-      console.error("Assignment error:", error);
+      toast.error("Assignment error:", error);
       throw error;
     }
   };
@@ -637,7 +623,7 @@ const ManagerContent = ({ role }) => {
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
-      console.error("Team assignment error:", error);
+      toast.error("Team assignment error:", error);
       throw error;
     }
   };
@@ -663,7 +649,7 @@ const ManagerContent = ({ role }) => {
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
-      console.error("Semi contacted update error:", error);
+      toast.error("Semi contacted update error:", error);
       throw error;
     }
   };
@@ -689,7 +675,7 @@ const ManagerContent = ({ role }) => {
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
-      console.error("Potential update error:", error);
+      toast.error("Potential update error:", error);
       throw error;
     }
   };
@@ -716,7 +702,7 @@ const ManagerContent = ({ role }) => {
       // Refresh leads to get the updated grouped format
       dispatch(fetchLeads());
     } catch (error) {
-      console.error("High potential update error:", error);
+      toast.error("High potential update error:", error);
       throw error;
     }
   };
@@ -1157,4 +1143,4 @@ const Manager = ({ role }) => {
   );
 };
 
-export default Manager;
+export default withAuth(Manager);

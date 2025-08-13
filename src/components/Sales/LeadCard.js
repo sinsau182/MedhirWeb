@@ -46,8 +46,6 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
   useEffect(() => {
     dispatch(fetchPipelines());
   }, [dispatch]);
-
-  console.log(pipelines)
   
   const {
     attributes,

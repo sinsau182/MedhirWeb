@@ -163,9 +163,17 @@ function PayrollManagement() {
       try {
         await dispatch(getPayroll(params)).unwrap();
         setPayrollErrorDetails(null);
+        // If payroll data exists, automatically set as calculated
+        if (payroll && Array.isArray(payroll) && payroll.length > 0) {
+          setIsCalculatePayrollClicked(true);
+          setDataLastUpdated(new Date());
+        }
       } catch (error) {
         setPayrollErrorDetails(error);
         dispatch(clearPayroll()); // Clear payroll state when there's an error
+        // Reset calculation state when there's an error
+        setIsCalculatePayrollClicked(false);
+        setDataLastUpdated(null);
       } finally {
         setIsFetchingView(false);
       }
@@ -419,7 +427,7 @@ function PayrollManagement() {
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Other Deduction
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Net Deductions
               </th>
             </tr>
@@ -505,7 +513,7 @@ function PayrollManagement() {
                         ? `₹ ${payrollItem.otherDeductions || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50 font-semibold">
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-blue-50 font-semibold">
                       {payrollItem
                         ? `₹ ${
                             (payrollItem.employeePFThisMonth || 0) +
@@ -892,13 +900,13 @@ function PayrollManagement() {
               >
                 {isCalculatingPayroll 
                   ? "Calculating..." 
-                  : isCalculatePayrollClicked 
+                  : isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0))
                     ? "Recalculate Payroll"
                     : "Calculate Payroll"
                 }
               </button>
               
-              {isCalculatePayrollClicked && isLatestAvailableMonth() && (
+              {isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
                 <button
                   onClick={() => {
                     if (showCheckboxes) {
@@ -929,15 +937,9 @@ function PayrollManagement() {
                 </button>
               )}
               
-              {/* Status Indicator positioned after all buttons */}
-              {dataLastUpdated && (
-                <div className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                  Updated: {formatTimeAgo(dataLastUpdated)}
-                </div>
-              )}
             </div>
             <div className="flex gap-4">
-              {(!isLatestAvailableMonth() || isCalculatePayrollClicked) && (
+              {(!isLatestAvailableMonth() || isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
                 <div className="relative">
                   <input
                     type="text"

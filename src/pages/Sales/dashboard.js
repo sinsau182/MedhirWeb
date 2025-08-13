@@ -39,6 +39,7 @@ import AddLeadModal from '@/components/Sales/AddLeadModal';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { fetchPipelines } from '@/redux/slices/pipelineSlice';
+import withAuth from '@/components/withAuth';
 
 // --- MOCK DATA (Replace with API data) ---
 const MOCK_DATA = {
@@ -622,4 +623,4 @@ function MainDashboard() {
   );
 }
 
-export default MainDashboard;
+export default withAuth(MainDashboard);

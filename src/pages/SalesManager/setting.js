@@ -99,6 +99,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Tooltip } from "recharts";
+import withAuth from "@/components/withAuth";
 
 // Remove hardcoded arrays - will use dynamic data from Redux
 // const salesPersons = [
@@ -4113,4 +4114,4 @@ const Setting = () => {
   );
 };
 
-export default Setting;
+export default withAuth(Setting);

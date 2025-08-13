@@ -127,7 +127,6 @@ const Navbar = () => {
         if (token) {
           const decodedToken = jwtDecode(token); // Decode the JWT token
           setEmployeeData(decodedToken);
-          console.log(decodedToken)
         }
       } catch (error) {
         console.error("Error decoding token:", error);

@@ -62,6 +62,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 // Add Minio image system imports
 import MinioImage from "@/components/ui/MinioImage";
 import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
+import withAuth from "@/components/withAuth";
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -115,8 +116,11 @@ function formatRelativeTime(date) {
 
 const OdooHeader = ({ lead, pipelines, onStatusChange }) => {
 
-  // Find the index of the current stage
-  const currentIndex = pipelines.findIndex(
+  // Filter out LOST and JUNK stages
+  const filteredPipelines = pipelines.filter(stage => stage.formType !== "LOST" && stage.formType !== "JUNK");
+  
+  // Find the index of the current stage in the filtered pipelines
+  const currentIndex = filteredPipelines.findIndex(
     (stage) => stage.stageId === lead.stageId
   );
   const getPriorityLabel = (rating) => {
@@ -157,7 +161,7 @@ const OdooHeader = ({ lead, pipelines, onStatusChange }) => {
       <div className="flex items-center gap-4">
         {/* Pipeline Stepper */}
         <div className="flex items-center gap-2">
-          {pipelines.map((stage, idx) => {
+          {filteredPipelines.map((stage, idx) => {
             const isActive = idx === currentIndex;
             const isCompleted = idx < currentIndex;
             let customCircle = "";
@@ -202,7 +206,7 @@ const OdooHeader = ({ lead, pipelines, onStatusChange }) => {
                     {stage.name}
                   </span>
                 </div>
-                {idx < pipelines.length - 1 && (
+                {idx < filteredPipelines.length - 1 && (
                   <span className="text-gray-300">&gt;</span>
                 )}
               </React.Fragment>
@@ -249,7 +253,6 @@ const OdooDetailBody = ({
 
   const token = getItemFromSessionStorage("token");
   const isManager = jwtDecode(token).roles.includes("MANAGER");
-  console.log(isManager);
 
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
@@ -286,8 +289,10 @@ const OdooDetailBody = ({
       area: lead.area || "",
       budget: lead.budget || "",
       leadSource: lead.leadSource || "",
+      referralName: lead.referralName || "",
       designStyle: lead.designStyle || "",
-      projectTimeline: lead.projectTimeline || "",
+      designTimeline: lead.designTimeline || "",
+      completionTimeline: lead.completionTimeline || "",
     });
   }, [lead, isEditing]);
 
@@ -500,6 +505,12 @@ const OdooDetailBody = ({
 
   const handleSaveProject = async () => {
     try {
+      // Validate referral name if lead source is "Referral"
+      if (projectFields.leadSource === "Referral" && (!projectFields.referralName || !projectFields.referralName.trim())) {
+        toast.error("Referral name is required when lead source is Referral");
+        return;
+      }
+
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, projectFields, {
         headers: {
           Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
@@ -715,8 +726,13 @@ const OdooDetailBody = ({
                 },
                 { label: "Budget", field: "budget", type: "number" },
                 {
-                  label: "Project Timeline",
-                  field: "projectTimeline",
+                  label: "Design Timeline",
+                  field: "designTimeline",
+                  type: "text",
+                },
+                {
+                  label: "Completion Timeline",
+                  field: "completionTimeline",
                   type: "text",
                 },
                 {
@@ -727,7 +743,7 @@ const OdooDetailBody = ({
                   required: false,
                 },
                 { label: "Design Style", field: "designStyle", type: "text" },
-              ].map(({ label, field, type, options, required, optional }) => (
+              ].filter(({ conditional, condition }) => !conditional || condition).map(({ label, field, type, options, required, optional, conditional, condition }) => (
                 <div key={field} className="relative group flex flex-col">
                   {/* Floating label */}
                   <span className="text-xs font-semibold text-gray-500 mb-1 group-hover:text-blue-600 transition-all">
@@ -797,11 +813,44 @@ const OdooDetailBody = ({
                         ? lead.area
                           ? `${lead.area} sq. ft.`
                           : "N/A"
+                        : field === "referralName"
+                        ? (lead.referralName || (lead.leadSource === "Referral" ? "Not specified" : "N/A"))
                         : lead[field] || "N/A"}
                     </div>
                   )}
                 </div>
               ))}
+              
+              {/* Referral Name Field - Only show when editing and lead source is Referral */}
+              {isEditing && projectFields.leadSource === "Referral" && (
+                <div className="mt-4">
+                  <div className="relative group flex flex-col">
+                    <span className="text-xs font-semibold text-gray-500 mb-1 group-hover:text-blue-600 transition-all">
+                      Referral Name <span className="text-red-500">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      value={projectFields.referralName || ""}
+                      onChange={(e) => handleProjectFieldChange("referralName", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-base"
+                      placeholder="Enter referral name"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Show referral name when lead source is Referral but field is not in form */}
+              {!isEditing && lead.leadSource === "Referral" && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-blue-700">Referral Name:</span>
+                    <span className="text-sm font-semibold text-blue-900">
+                      {lead.referralName || "Not specified"}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1147,7 +1196,8 @@ const OdooDetailBody = ({
                     lead.paymentDetailsFileName ||
                     lead.bookingFormFileName ||
                     lead.initialQuote ||
-                    lead.projectTimeline ? (
+                    lead.designTimeline ||
+                    lead.completionTimeline ? (
                       <>
                         {/* <h3 className="text-2xl font-bold text-gray-900 mb-2">
                           Status Details
@@ -1227,8 +1277,12 @@ const OdooDetailBody = ({
                               {lead.panNumber || "N/A"}
                             </div>
                             <div>
-                              <strong>Project Timeline:</strong>{" "}
-                              {lead.projectTimeline || "N/A"}
+                              <strong>Design Timeline:</strong>{" "}
+                              {lead.designTimeline || "N/A"}
+                            </div>
+                            <div>
+                              <strong>Completion Timeline:</strong>{" "}
+                              {lead.completionTimeline || "N/A"}
                             </div>
                             <div>
                               <strong>Discount:</strong>{" "}
@@ -1308,7 +1362,8 @@ const OdooDetailBody = ({
                         lead.paymentDetailsFileName ||
                         lead.bookingFormFileName ||
                         lead.initialQuote ||
-                        lead.projectTimeline
+                        lead.designTimeline ||
+                        lead.completionTimeline
                       )) ||
                     (lead.stageName.toLowerCase() === "junk" &&
                       !lead.reasonForJunk) ||
@@ -1927,7 +1982,8 @@ const ConversionModal = ({ isOpen, onClose, onConfirm, lead }) => {
     paymentDate: lead?.paymentDate || "",
     paymentMode: lead?.paymentMode || "",
     panNumber: lead?.panNumber || "",
-    projectTimeline: lead?.projectTimeline || "",
+    designTimeline: lead?.designTimeline || "",
+    completionTimeline: lead?.completionTimeline || "",
     discount: lead?.discount || "",
     paymentDetails: null,
     bookingForm: null,
@@ -2028,12 +2084,24 @@ const ConversionModal = ({ isOpen, onClose, onConfirm, lead }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Project Timeline
+                  Design Timeline
                 </label>
                 <input
                   type="text"
-                  name="projectTimeline"
-                  value={form.projectTimeline}
+                  name="designTimeline"
+                  value={form.designTimeline}
+                  onChange={handleChange}
+                  className="mt-1 w-full p-2 border rounded-md"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Completion Timeline
+                </label>
+                <input
+                  type="text"
+                  name="completionTimeline"
+                  value={form.completionTimeline}
                   onChange={handleChange}
                   className="mt-1 w-full p-2 border rounded-md"
                 />
@@ -2275,8 +2343,25 @@ const LeadDetailContent = () => {
     const stage = pipelines.find((p) => p.name === stageName);
     if (!stage) return;
     
-
+    // Check for backward movement restriction
+    const currentPipelineIndex = pipelines.findIndex(p => 
+      p.stageId === lead.stageId
+    );
+    const newPipelineIndex = pipelines.findIndex(p => 
+      p.stageId === stage.stageId
+    );
     
+    if (currentPipelineIndex > newPipelineIndex) {
+      toast.error("Lead cannot be moved backward in kanban board");
+      return;
+    }
+    
+    // Prevent action when clicking on the same stage
+    if (currentPipelineIndex === newPipelineIndex) {
+      toast.error("Lead is already in this stage");
+      return;
+    }
+
     // Handle different form types
     if (stage.formType === "LOST") {
       setShowLostModal(true);
@@ -2837,4 +2922,4 @@ const LeadDetailPage = () => {
   );
 };
 
-export default LeadDetailPage;
+export default withAuth(LeadDetailPage);

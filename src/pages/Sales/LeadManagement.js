@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/table";
 import AdvancedScheduleActivityModal from "@/components/Sales/AdvancedScheduleActivityModal";
 import Tooltip from "@/components/ui/ToolTip";
+import withAuth from "@/components/withAuth";
 
 const defaultLeadData = {
   name: "",
@@ -564,14 +565,15 @@ const LeadManagementContent = ({ role }) => {
         p.pipelineId === newPipelineId || p.stageId === newPipelineId
       );
       
-      console.log("Pipeline index check:", {
-        currentPipelineIndex,
-        newPipelineIndex,
-        currentPipelineId,
-        newPipelineId,
-        currentPipelineName: pipelines[currentPipelineIndex]?.name,
-        newPipelineName: pipelines[newPipelineIndex]?.name
-      });
+      // Get current stage name
+      const currentStageName = pipelines[currentPipelineIndex]?.name || 'Unknown Stage';
+      const newStageName = pipelines[newPipelineIndex]?.name || 'Unknown Stage';
+
+            // Check for backward movement restriction
+            if (currentPipelineIndex > newPipelineIndex) {
+              toast.error("Lead cannot be moved backward in kanban board");
+              return;
+            }
       
       // If pipeline requires a form, open the modal instead of moving directly
       if (newPipeline.formType === "CONVERTED") {
@@ -609,7 +611,13 @@ const LeadManagementContent = ({ role }) => {
       }
 
       // Otherwise, move lead directly
-      console.log("Moving lead directly via API:", { leadId, newPipelineId });
+      console.log("✅ Moving lead directly via API:", { 
+        leadId, 
+        newPipelineId,
+        leadName: lead.name,
+        fromStage: currentStageName,
+        toStage: newStageName
+      });
       dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
     } else {
       console.log("Pipeline is the same, no move needed");
@@ -796,8 +804,6 @@ const LeadManagementContent = ({ role }) => {
       throw error;
     }
   };
-
-  console.log(managerEmployees)
 
   return (
     <div className="h-[calc(100vh-64px)] bg-gray-50 overflow-hidden flex flex-col">
@@ -1068,4 +1074,4 @@ const LeadManagement = ({ role }) => {
   );
 };
 
-export default LeadManagement;
+export default withAuth(LeadManagement);

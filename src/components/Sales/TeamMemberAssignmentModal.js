@@ -24,13 +24,6 @@ const TeamMemberAssignmentModal = ({
         setSelectedEmployee(lead?.assignDesignerEmpId || "");
       }
       setIsSubmitting(false);
-      
-             // Debug: Log the employee data
-       console.log('TeamMemberAssignmentModal - Role:', role);
-       console.log('TeamMemberAssignmentModal - Sales Employees:', salesEmployees);
-       console.log('TeamMemberAssignmentModal - Total Employees:', salesEmployees.length);
-       console.log('TeamMemberAssignmentModal - Employee sample:', salesEmployees.slice(0, 2));
-       console.log('TeamMemberAssignmentModal - Employee fields:', salesEmployees.length > 0 ? Object.keys(salesEmployees[0]) : 'No employees');
     }
   }, [isOpen, lead, role, salesEmployees]);
 
@@ -64,17 +57,6 @@ const TeamMemberAssignmentModal = ({
         salesRep: role === 'sales' ? selectedEmployee : lead?.assignSalesPersonEmpId,
         designer: role === 'designer' ? selectedEmployee : lead?.assignDesignerEmpId
       };
-      
-      console.log('TeamMemberAssignmentModal - Assignment Data:', assignmentData);
-      console.log('TeamMemberAssignmentModal - Role:', role);
-      console.log('TeamMemberAssignmentModal - Selected Employee ID:', selectedEmployee);
-      console.log('TeamMemberAssignmentModal - Lead data:', lead);
-      console.log('TeamMemberAssignmentModal - Current assignments:', {
-        assignSalesPersonEmpId: lead?.assignSalesPersonEmpId,
-        assignDesignerEmpId: lead?.assignDesignerEmpId,
-        salesRep: lead?.salesRep,
-        designer: lead?.designer
-      });
       
       await onAssign(assignmentData);
       
@@ -169,6 +151,11 @@ const TeamMemberAssignmentModal = ({
         {/* Assignment Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
+            {/* project address */}
+              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                {lead.projectAddress}
+              </div>
+
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {roleInfo.label} *
             </label>
@@ -186,7 +173,6 @@ const TeamMemberAssignmentModal = ({
                 salesEmployees.map((employee) => {
                   const displayName = employee.name || employee.employeeName || employee.employeeId || 'Unknown';
                   const employeeId = employee.employeeId || employee._id || employee.id;
-                  console.log('TeamMemberAssignmentModal - Employee in dropdown:', { employee, employeeId, displayName });
                   return (
                     <option key={employeeId} value={employeeId}>
                       {displayName} {employee.role ? `(${employee.role})` : ''}
