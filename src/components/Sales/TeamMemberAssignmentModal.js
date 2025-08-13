@@ -151,10 +151,24 @@ const TeamMemberAssignmentModal = ({
         {/* Assignment Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            {/* project address */}
-              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                {lead.projectAddress}
+            {/* Project Location */}
+            <div className="mb-3 p-3 bg-gradient-to-r from-slate-50 to-blue-50 rounded-lg border border-slate-200">
+              <div className="flex items-start gap-2">
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Project Location
+                  </h4>
+                  <p className="text-sm text-gray-800 font-medium leading-tight">
+                    {lead.address || "Location not specified"}
+                  </p>
+                </div>
               </div>
+            </div>
 
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {roleInfo.label} *
