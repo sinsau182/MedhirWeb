@@ -66,8 +66,7 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
         priority: formData.priority,
         initialQuote: formData.initialQuote ? parseFloat(formData.initialQuote) : null,
       });
-
-      console.log(formData)
+      
 
       toast.success("Lead updated successfully!");
       onClose();

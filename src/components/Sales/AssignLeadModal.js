@@ -16,17 +16,13 @@ const AssignLeadModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { lead: leadData } = useSelector((state) => state.leads);
-  console.log("AssignLeadModal - Lead Data:", leadData);
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setSelectedSalesRep("");
       setIsSubmitting(false);
       dispatch(fetchLeadById(lead.leadId));
-      
-             // Debug: Log the employee data
-       console.log("AssignLeadModal - All Team Members:", salesEmployees);
-       console.log("AssignLeadModal - Total Employees:", salesEmployees.length);
     }
   }, [isOpen, salesEmployees, lead]);
 

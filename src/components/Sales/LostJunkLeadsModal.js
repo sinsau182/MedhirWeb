@@ -37,11 +37,6 @@ const LostJunkLeadsModal = ({ isOpen, onClose, position = { x: 0, y: 0 } }) => {
     });
   }
 
-  // Debug logging
-  console.log('All leads data:', leads);
-  console.log('Lost leads:', lostLeads);
-  console.log('Junk leads:', junkLeads);
-
   // Calculate position to ensure popup stays within viewport
   const getAdjustedPosition = () => {
     const popupWidth = 600; // estimated width

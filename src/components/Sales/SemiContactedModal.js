@@ -24,13 +24,10 @@ const SemiContactedModal = ({
   const [floorPlanFile, setFloorPlanFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { lead: leadData } = useSelector((state) => state.leads);
-  console.log("SemiContactedModal - Lead Data:", leadData);
-
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      dispatch(fetchLeadById(lead.leadId));
+      // dispatch(fetchLeadById(lead.leadId));
       setFormData({
         budget: "",
         firstCallDate: ""

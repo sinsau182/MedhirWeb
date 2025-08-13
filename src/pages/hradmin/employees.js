@@ -253,7 +253,7 @@ function Employees() {
           <HradminNavbar />
           <div className="p-6 mt-16">
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              Error: {err}
+              Error: {typeof err === 'string' ? err : err?.message || err?.error || 'An unknown error occurred'}
             </div>
           </div>
         </div>

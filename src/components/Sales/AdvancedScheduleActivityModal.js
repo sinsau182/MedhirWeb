@@ -309,15 +309,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
           };
         }
         
-        // Handle file upload for editing
-        console.log('Saving activity with attachments:');
-        console.log('Todo attachment:', todo.attachment);
-        console.log('Email attachment:', email.attachment);
-        console.log('Call attachment:', call.attachment);
-        console.log('Meeting attachment:', meeting.attachment);
-        
         if (editingType === 'To-Do' && todo.attachment && todo.attachment instanceof File) {
-          console.log('Saving To-Do with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
           editFormData.append('file', todo.attachment);
@@ -327,7 +319,6 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
         } else if (editingType === 'Email' && email.attachment && email.attachment instanceof File) {
-          console.log('Saving Email with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
           editFormData.append('file', email.attachment);
@@ -337,7 +328,6 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
         } else if (editingType === 'Call' && call.attachment && call.attachment instanceof File) {
-          console.log('Saving Call with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
           editFormData.append('file', call.attachment);
@@ -347,7 +337,6 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
         } else if (editingType === 'Meeting' && meeting.attachment && meeting.attachment instanceof File) {
-          console.log('Saving Meeting with file attachment');
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
           editFormData.append('file', meeting.attachment);
@@ -356,8 +345,7 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
             editFormData,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
-        } else {
-          console.log('Saving without file attachment');
+        } else { 
           // Even without files, we need to send as FormData
           let editFormData = new FormData();
           editFormData.append('activity', JSON.stringify(activityToSend));
@@ -680,10 +668,8 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                 className="hidden"
                 ref={fileInputRef}
                 onChange={e => {
-                  console.log('File input changed:', e.target.files);
                   if (e.target.files && e.target.files[0]) {
                     const selectedFile = e.target.files[0];
-                    console.log('Selected file:', selectedFile);
                     setTabData({ ...tabData, attachment: selectedFile });
                     setAttachmentError(null); // Clear any previous errors
                   }
@@ -693,7 +679,6 @@ const AdvancedScheduleActivityModal = ({ isOpen, onClose, lead, initialData, onS
                 type="button"
                 className="cursor-pointer flex items-center gap-1 text-blue-600 hover:text-blue-800"
                 onClick={() => {
-                  console.log('File input button clicked');
                   if (fileInputRef.current) {
                     fileInputRef.current.click();
                   }
