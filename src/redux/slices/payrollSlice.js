@@ -54,6 +54,47 @@ export const getPayroll = createAsyncThunk(
   }
 );
 
+// Get Employee Payslip for specific month
+export const getEmployeePayslip = createAsyncThunk(
+  "payroll/getEmployeePayslip",
+  async ({ employeeId, year, month }, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083";
+      
+      // Convert month name to number
+      const monthMap = {
+        "January": 1, "February": 2, "March": 3, "April": 4,
+        "May": 5, "June": 6, "July": 7, "August": 8,
+        "September": 9, "October": 10, "November": 11, "December": 12
+      };
+      
+      const monthNumber = monthMap[month] || month;
+      
+      const response = await fetch(`${baseUrl}/api/payroll/employee/${employeeId}/payslip?year=${year}&month=${monthNumber}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 409) {
+          // No payslip found for this month
+          return rejectWithValue({ status: 409, message: "No payslip found for this month" });
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch payslip");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Send Payslips API
 export const sendPayslips = createAsyncThunk(
   "payroll/sendPayslips",
@@ -90,6 +131,9 @@ const initialState = {
   error: null,
   sendPayslipsLoading: false,
   sendPayslipsError: null,
+  employeePayslip: null,
+  employeePayslipLoading: false,
+  employeePayslipError: null,
 };
 
 const payrollSlice = createSlice({
@@ -144,6 +188,20 @@ const payrollSlice = createSlice({
         state.sendPayslipsLoading = false;
         state.sendPayslipsError = action.payload;
         toast.error(action.payload || "Failed to send payslips");
+      })
+      // Employee Payslip
+      .addCase(getEmployeePayslip.pending, (state) => {
+        state.employeePayslipLoading = true;
+        state.employeePayslipError = null;
+      })
+      .addCase(getEmployeePayslip.fulfilled, (state, action) => {
+        state.employeePayslipLoading = false;
+        state.employeePayslipError = null;
+        state.employeePayslip = action.payload;
+      })
+      .addCase(getEmployeePayslip.rejected, (state, action) => {
+        state.employeePayslipLoading = false;
+        state.employeePayslipError = action.payload;
       });
   },
 });

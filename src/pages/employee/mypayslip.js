@@ -8,9 +8,9 @@ import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import withAuth from "@/components/withAuth";
-import { toast } from "sonner";
 import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import { getEmployeePayslip } from "@/redux/slices/payrollSlice";
 
 const downloadPDF = () => {
   const content = document.getElementById("pdf-content");
@@ -75,6 +75,7 @@ const PayrollPage = () => {
   const dispatch = useDispatch();
   const { payslipData, employeeData, loading, error } = useSelector((state) => state.payslip);
   const { attendance } = useSelector((state) => state.attendances);
+  const { employeePayslip, employeePayslipLoading, employeePayslipError } = useSelector((state) => state.payroll);
 
   console.log(attendance);
   
@@ -83,6 +84,7 @@ const PayrollPage = () => {
   const [selectedMonth, setSelectedMonth] = useState(monthsList[latestMonthIndex]);
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
+  const [isManualSelection, setIsManualSelection] = useState(false);
 
   const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
 
@@ -91,18 +93,21 @@ const PayrollPage = () => {
     dispatch(fetchEmployeeDetails(employeeId));
 
     dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
-    // Fetch payslip details for the latest month
-    dispatch(fetchPayslipDetails({ 
-      employeeId, 
-      month: selectedMonth, 
-      year: selectedYear 
-    }));
+    
+    // Only fetch payslip details automatically if it's not a manual selection
+    if (!isManualSelection) {
+      dispatch(fetchPayslipDetails({ 
+        employeeId, 
+        month: selectedMonth, 
+        year: selectedYear 
+      }));
+    }
     
     // Cleanup function to reset state when component unmounts
     return () => {
       dispatch(resetPayslipState());
     };
-  }, [dispatch, employeeId, selectedMonth, selectedYear]);
+  }, [dispatch, employeeId, selectedMonth, selectedYear, isManualSelection]);
 
   // Update date of joining when employee data is fetched
   useEffect(() => {
@@ -120,12 +125,22 @@ const PayrollPage = () => {
     }));
   }, [dispatch, employeeId, selectedMonth, selectedYear]);
 
+  // Determine which payslip data to use
+  const currentPayslipData = isManualSelection ? employeePayslip : payslipData;
+  const currentLoading = isManualSelection ? employeePayslipLoading : loading;
+  const currentError = isManualSelection ? employeePayslipError : error;
+
+  // Debug logging
+  console.log("Current payslip data:", currentPayslipData);
+  console.log("Date of joining from API:", currentPayslipData?.dateOfJoining);
+  console.log("Is manual selection:", isManualSelection);
+
   // Show error toast if there's an error
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-    }
-  }, [error]);
+  // useEffect(() => {
+  //   if (error) {
+  //     toast.error(error);
+  //   }
+  // }, [error]);
 
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
@@ -134,17 +149,40 @@ const PayrollPage = () => {
     setSelectedMonth(month);
     setSelectedYear(year);
     setIsCalendarOpen(false);
+    setIsManualSelection(true);
+    
+    // Fetch payslip for manually selected month
+    dispatch(getEmployeePayslip({ 
+      employeeId, 
+      month: month, 
+      year: year 
+    }));
   };
 
   const formattedDateOfJoining = (date) => {
     if (!date) return "N/A";
     
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0"); // Ensures two-digit day
-    const month = d.toLocaleString("en-GB", { month: "short" }); // Short month name
-    const year = d.getFullYear().toString().slice(-2); // Last two digits of year
+    try {
+      const d = new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(d.getTime())) {
+        console.log("Invalid date:", date);
+        return "Invalid Date";
+      }
+      
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = d.toLocaleString("en-GB", { month: "short" });
+      const year = d.getFullYear().toString().slice(-2);
 
-    return `${day}-${month}-${year}`;
+      const formatted = `${day}-${month}-${year}`;
+      console.log("Original date:", date, "Parsed date:", d, "Formatted:", formatted);
+      
+      return formatted;
+    } catch (error) {
+      console.error("Error formatting date:", error, "Date value:", date);
+      return "Error";
+    }
   };
 
   // Update groupedPayrolls based on date of joining
@@ -169,6 +207,14 @@ const PayrollPage = () => {
       );
     }
   }
+
+  // Helper function to check if value should show -- or the actual value
+  const displayValue = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return "--";
+    }
+    return value;
+  };
 
   return (
     <div className="flex h-screen">
@@ -229,46 +275,32 @@ const PayrollPage = () => {
                 variant="default"
                 className="flex items-center"
                 onClick={downloadPDF}
-                disabled={!payslipData}
+                disabled={!currentPayslipData}
               >
                 <Download className="w-4 h-4 mr-1" />
                 Download
               </Button>
             </div>
 
-            {loading ? (
+            {currentLoading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md text-center">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-blue-800 mb-2">No Payslip Available</h3>
-                  <p className="text-sm text-blue-600 mb-4">
-                    No payslip data is available for {selectedMonth} {selectedYear}.
-                  </p>
-                  <p className="text-sm text-blue-600 mb-4 font-medium">
-                    Please ask your HR admin to click the "Calculate Payroll" button to generate your payslip.
-                  </p>
-                  <div className="bg-blue-100 border border-blue-300 rounded-md p-3">
-                    <p className="text-xs text-blue-700">
-                      💡 <strong>Note:</strong> Payroll generation requires complete attendance data and HR admin approval.
-                    </p>
-                  </div>
+            ) : currentError ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 max-w-md text-center">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                    Payslip for this month is not generated
+                  </h3>
                 </div>
               </div>
-            ) : payslipData ? (
+            ) : currentPayslipData ? (
               <div className="max-w-7xl mx-auto bg-white shadow-lg overflow-y-auto h-[calc(86vh-62px)] custom-scrollbar">
                 <div id="pdf-content">
                   {/* Header */}
                   <div className="bg-gray-600 text-white text-center py-2">
                     <h1 className="text-xl font-bold mb-1">
-                      PAYSLIP for the Month of {payslipData?.monthYearDisplay}
+                      PAYSLIP for the Month of {currentPayslipData?.monthYearDisplay}
                     </h1>
                   </div>
 
@@ -279,14 +311,14 @@ const PayrollPage = () => {
                         <div className="font-semibold py-1">Name</div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.employeeName || "--"}
+                          {displayValue(currentPayslipData?.employeeName)}
                         </div>
                       </div>
                       <div className="px-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
                         <div className="font-semibold py-1">EMP ID</div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.employeeId || "--"}
+                          {displayValue(currentPayslipData?.employeeId)}
                         </div>
                       </div>
                     </div>
@@ -297,14 +329,14 @@ const PayrollPage = () => {
                         </div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
-                          {formattedDateOfJoining(payslipData?.dateOfJoining) || "--"}
+                          {displayValue(currentPayslipData?.dateOfJoining)}
                         </div>
                       </div>
                       <div className="px-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
                         <div className="font-semibold py-1">Designation</div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
-                          {employeeData?.designationName || "--"}
+                          {displayValue(currentPayslipData?.designationName)}
                         </div>
                       </div>
                     </div>
@@ -313,14 +345,14 @@ const PayrollPage = () => {
                         <div className="font-semibold py-1">PAN</div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.panNumber || "--"}
+                          {displayValue(currentPayslipData?.panNumber)}
                         </div>
                       </div>
                       <div className="px-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
                         <div className="font-semibold py-1">UAN Number</div>
                         <div className="border-l-2 border-gray-400 h-full mx-2"></div>
                         <div className="flex-1 text-center">
-                          {payslipData?.uanNumber || "--"}
+                          {displayValue(currentPayslipData?.uanNumber)}
                         </div>
                       </div>
                     </div>
@@ -338,8 +370,8 @@ const PayrollPage = () => {
                       <div className="px-2 border-l-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
                         <div className="font-semibold py-1">Days in Month</div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.daysInMonth || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.daysInMonth)}
                         </div>
                       </div>
                       <div className="px-2 grid border-b-2 border-r-2 border-gray-400 grid-cols-[1fr_auto_1fr] items-center">
@@ -347,8 +379,8 @@ const PayrollPage = () => {
                           Salary Paid for Days
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.paidDays || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.paidDays)}
                         </div>
                       </div>
                     </div>
@@ -356,8 +388,8 @@ const PayrollPage = () => {
                       <div className="px-2 border-l-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
                         <div className="font-semibold py-1">Leaves Taken</div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.leavesTakenInThisMonth || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.leavesTakenInThisMonth)}
                         </div>
                       </div>
                       <div className="px-2 grid border-b-2 border-r-2 border-gray-400 grid-cols-[1fr_auto_1fr] items-center">
@@ -365,8 +397,8 @@ const PayrollPage = () => {
                           Loss of Pay Days
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.lossOfPayDays || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.lossOfPayDays)}
                         </div>
                       </div>
                     </div>
@@ -376,8 +408,8 @@ const PayrollPage = () => {
                           Annual Leaves Earned
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.annualLeavesEarned || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.leavesEarnedInThisMonth)}
                         </div>
                       </div>
                       <div className="px-2 grid border-b-2 border-r-2 border-gray-400 grid-cols-[1fr_auto_1fr] items-center">
@@ -385,19 +417,19 @@ const PayrollPage = () => {
                           Comp-off Leaves Earned
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.compOffEarnedInThisMonth || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.compOffEarnedInThisMonth)}
                         </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2">
-                      <div className="px-2 border-l-2 border-r-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
+                      <div className="px-2 border-l-2 border-r-2 border-b-2 border-gray-400 grid grid-cols-[1fr_auto_1fr] items-center">
                         <div className="font-semibold py-1">
                           Old Leaves Balance
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.oldLeaveBalanceFromPreviousMonth || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.oldLeaveBalanceFromPreviousMonth)}
                         </div>
                       </div>
                       <div className="px-2 grid border-r-2 border-gray-400 grid-cols-[1fr_auto_1fr] items-center">
@@ -405,8 +437,8 @@ const PayrollPage = () => {
                           New Leaves Balance
                         </div>
                         <div className="border-l-2 border-gray-400 h-full"></div>
-                        <div className="flex-1 text-center">
-                          {payslipData?.netLeaveBalance || "--"}
+                        <div className="text-center">
+                          {displayValue(currentPayslipData?.newLeaveBalance)}
                         </div>
                       </div>
                     </div>
@@ -438,77 +470,90 @@ const PayrollPage = () => {
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">Basic</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.basicPerMonth || "--"}
+                                {displayValue(currentPayslipData?.basicPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.basicThisMonth || "--"}
+                                {displayValue(currentPayslipData?.basicThisMonth)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">HRA</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.hraPerMonth || "--"}
+                                {displayValue(currentPayslipData?.hraPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.hraThisMonth || "--"}
+                                {displayValue(currentPayslipData?.hraThisMonth)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
-                              <td className="px-2 p-1">
-                                PF Employer Contribution
+                              <td className="px-2 p-1">PF Employer Contribution</td>
+                              <td className="px-2 p-1 text-right border-l-2 border-gray-400">
+                                {displayValue(currentPayslipData?.employerPFPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.employerPFPerMonth || "--"}
-                              </td>
-                              <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.employerPFDeduction || "--"}
+                                {displayValue(currentPayslipData?.employerPFThisMonth)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">PF Employee</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.employeePFPerMonth || "--"}
+                                {displayValue(currentPayslipData?.employeePFPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.employeePFDeduction || "--"}
+                                {displayValue(currentPayslipData?.employeePFThisMonth)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">Fuel Allowances</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.fuelAllowancesPerMonth || "--"}
+                                {displayValue(currentPayslipData?.fuelReimbursementPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.fuelReimbursement || "--"}
+                                {displayValue(currentPayslipData?.fuelReimbursementThisMonth)}
+                              </td>
+                            </tr>
+                            <tr className="border-b-2 border-l-2 border-gray-400">
+                              <td className="px-2 p-1">Phone Allowances</td>
+                              <td className="px-2 p-1 text-right border-l-2 border-gray-400">
+                                {displayValue(currentPayslipData?.phoneReimbursementPerMonth)}
+                              </td>
+                              <td className="px-2 p-1 text-right border-l-2 border-gray-400">
+                                {displayValue(currentPayslipData?.phoneReimbursementThisMonth)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">Other Allowances</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.otherAllowancesPerMonth || "--"}
+                                {displayValue(currentPayslipData?.otherAllowancesPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.otherAllowancesThisMonth || "--"}
+                                {displayValue(currentPayslipData?.otherAllowancesThisMonth)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">Arrears Paid</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.arrearsPerMonth || "--"}
+                                {displayValue(currentPayslipData?.arrearsPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.arrears || "--"}
+                                {displayValue(currentPayslipData?.arrears)}
                               </td>
                             </tr>
-                            <tr className="border-l-2 border-gray-400 bg-gray-100">
-                              <td className="px-2 p-1 font-semibold border-b-2 border-gray-400">
+                            <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-50">
+                              <td className="px-2 p-1 font-semibold">&nbsp;</td>
+                              <td className="px-2 p-1 text-center border-l-2 border-gray-400 font-semibold">
+                                &nbsp;
+                              </td>
+                            </tr>
+                            <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-100">
+                              <td className="px-2 p-1 font-semibold">
                                 Total Earnings
                               </td>
-                              <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold border-b-2">
-                                {payslipData?.totalEarningsPerMonth || "--"}
+                              <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
+                                {displayValue(currentPayslipData?.monthlyCTC)}
                               </td>
-                              <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold border-b-2">
-                                {payslipData?.totalEarningsThisMonth || "--"}
+                              <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
+                                {displayValue(currentPayslipData?.thisMonthSalary)}
                               </td>
                             </tr>
                           </tbody>
@@ -532,37 +577,37 @@ const PayrollPage = () => {
                                 PF Employer contribution
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.employerPFDeduction || "--"}
+                                {displayValue(currentPayslipData?.employerPFDeduction)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-r-2 border-gray-400">
                               <td className="px-2 p-1">PF Employee</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.employeePFDeduction || "--"}
+                                {displayValue(currentPayslipData?.employeePFDeduction)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-r-2 border-gray-400">
                               <td className="px-2 p-1">Professional Tax</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.professionalTax || "--"}
+                                {displayValue(currentPayslipData?.professionalTax)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-r-2 border-gray-400">
                               <td className="px-2 p-1">TDS</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.tds || "--"}
+                                {displayValue(currentPayslipData?.tds)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-r-2 border-gray-400">
                               <td className="px-2 p-1">Advance Adjusted</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.advanceAdjusted || "--"}
+                                {displayValue(currentPayslipData?.advanceAdjusted)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-r-2 border-gray-400">
                               <td className="px-2 p-1">Arrears Deducted</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {payslipData?.arrearsDeducted || "--"}
+                                {displayValue(currentPayslipData?.arrearsDeducted)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-r-2 border-gray-400 bg-gray-50">
@@ -576,15 +621,15 @@ const PayrollPage = () => {
                                 Total Deductions
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
-                                {payslipData?.totalDeductions || "--"}
+                                {displayValue(currentPayslipData?.totalDeductions)}
                               </td>
                             </tr>
-                            <tr>
+                            <tr className="border-b-2 border-r-2 border-gray-400">
                               <td className="px-2 p-1">
                                 Salary Advance Balance
                               </td>
-                              <td className="px-2 p-1 text-right border-l-2 border-r-2 border-gray-400">
-                                {payslipData?.salaryAdvanceBalance || "--"}
+                              <td className="px-2 p-1 text-right border-l-2 border-gray-400">
+                                {displayValue(currentPayslipData?.salaryAdvanceBalance)}
                               </td>
                             </tr>
                           </tbody>
@@ -598,32 +643,18 @@ const PayrollPage = () => {
                     <div className="grid grid-cols-2">
                       <div className="font-bold text-xl">Net Pay</div>
                       <div className="text-right font-bold text-xl">
-                        ₹ {payslipData?.netPay || "--"}
+                        ₹ {displayValue(currentPayslipData?.netPay)}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-64 space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 max-w-md text-center">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-blue-800 mb-2">No Payslip Available</h3>
-                  <p className="text-sm text-blue-600 mb-4">
-                    No payslip data is available for {selectedMonth} {selectedYear}.
-                  </p>
-                  <p className="text-sm text-blue-600 mb-4 font-medium">
-                    Please ask your HR admin to click the "Calculate Payroll" button to generate your payslip.
-                  </p>
-                  <div className="bg-blue-100 border border-blue-300 rounded-md p-3">
-                    <p className="text-xs text-blue-700">
-                      💡 <strong>Note:</strong> Payroll generation requires complete attendance data and HR admin approval.
-                    </p>
-                  </div>
+              <div className="flex items-center justify-center h-64">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 max-w-md text-center">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                    Payslip for this month is not generated
+                  </h3>
                 </div>
               </div>
             )}
@@ -635,3 +666,4 @@ const PayrollPage = () => {
 };
 
 export default withAuth(PayrollPage);
+
