@@ -52,7 +52,16 @@ const useSessionStorage = () => {
   const getSessionItem = useCallback((key, defaultValue = null) => {
     try {
       const item = sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
+      if (!item) return defaultValue;
+      
+      // Try to parse as JSON first, if it fails, return the raw string
+      try {
+        return JSON.parse(item);
+      } catch (parseError) {
+        // If JSON parsing fails, return the raw string value
+        // This handles cases where values like company IDs are stored as plain strings
+        return item;
+      }
     } catch (error) {
       toast.error('Error getting session storage item:', error);
       return defaultValue;
