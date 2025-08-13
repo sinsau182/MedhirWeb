@@ -104,7 +104,7 @@ export const fetchCustomForms = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
-      const companyId = getCompanyId();
+      const companyId = sessionStorage.getItem('employeeCompanyId');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
       if (!companyId) {
