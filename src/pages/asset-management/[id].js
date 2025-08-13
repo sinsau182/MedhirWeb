@@ -209,6 +209,7 @@ const AssetDetailPage = () => {
     const [uploadingDoc, setUploadingDoc] = useState(false);
     const [editingOverview, setEditingOverview] = useState(false);
     const [overviewDraft, setOverviewDraft] = useState({
+        categoryId: '',
         serialNumber: '',
         statusLabelId: '',
         purchaseDate: '',
@@ -293,22 +294,6 @@ const AssetDetailPage = () => {
             if (!statuses || statuses.length === 0) dispatch(fetchAssetStatuses());
         }
     }, [editingOverview, categories, statuses, dispatch]);
-    
-    // Debug: Log asset object when it's loaded
-    useEffect(() => {
-        if (asset) {
-            console.log('Asset loaded:', asset);
-            console.log('Asset fields:', Object.keys(asset));
-            console.log('Asset subcategory fields:', {
-                subCategoryId: asset.subCategoryId,
-                subcategoryId: asset.subcategoryId,
-                sub_category_id: asset.sub_category_id,
-                subcategory_id: asset.subcategory_id,
-                subCategory: asset.subCategory,
-                subcategory: asset.subcategory
-            });
-        }
-    }, [asset]);
     
     // Handle errors with toast notifications
     useEffect(() => {
@@ -969,6 +954,7 @@ const AssetDetailPage = () => {
     const startOverviewEditing = () => {
         if (!asset) return;
         setOverviewDraft({
+            categoryId: asset.categoryId || '',
             serialNumber: asset.serialNumber || '',
             statusLabelId: asset.statusLabelId || '',
             purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '',
@@ -986,6 +972,7 @@ const AssetDetailPage = () => {
         try {
             setSavingOverview(true);
             const payload = {};
+            if (overviewDraft.categoryId !== (asset.categoryId || '')) payload.categoryId = overviewDraft.categoryId || null;
             if (overviewDraft.serialNumber !== (asset.serialNumber || '')) payload.serialNumber = overviewDraft.serialNumber || null;
             if (overviewDraft.statusLabelId !== (asset.statusLabelId || '')) payload.statusLabelId = overviewDraft.statusLabelId || null;
             if (overviewDraft.purchaseDate !== (asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '')) payload.purchaseDate = overviewDraft.purchaseDate || null;
@@ -1116,34 +1103,8 @@ const AssetDetailPage = () => {
         try {
             setUploadingDoc(true);
             await handleUploadInvoice(documentFile);
-            
-            // Update the asset with the new document information
-            const newDocument = {
-                name: documentFile.name,
-                type: documentFile.type || 'File',
-                uploadDate: new Date().toISOString(),
-                fileUrl: null // Will be set by backend if available
-            };
-            
-            // Add to existing documents array
-            const updatedDocuments = [...(asset.documents || []), newDocument];
-            
-            // Update asset with new document
-            try {
-                await dispatch(patchAssetByAssetId({ 
-                    assetId: id, 
-                    assetData: { documents: updatedDocuments } 
-                })).unwrap();
-                toast.success('Document uploaded and asset updated successfully!');
-            } catch (updateError) {
-                console.warn('Failed to update asset with document info:', updateError);
-                toast.success('Document uploaded successfully!');
-            }
-            
             setIsDocumentModalOpen(false);
             setDocumentFile(null);
-            
-            // Refresh asset data to show the new document
             dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             // toast shown inside handleUploadInvoice
@@ -1197,34 +1158,6 @@ const AssetDetailPage = () => {
             </AssetManagementLayout>
         );
     }
-    
-    // Helper to get subcategory name from asset
-    const getSubcategoryName = (assetObj) => {
-        if (!assetObj) return 'No Asset Data';
-        
-        // Debug: Log the asset object to see what fields are available
-        console.log('Asset object in getSubcategoryName:', assetObj);
-        console.log('Available fields:', Object.keys(assetObj));
-        
-        // Check for different possible subcategory field names
-        const subcategoryId = assetObj.subCategoryId || assetObj.subcategoryId || assetObj.sub_category_id || assetObj.subcategory_id || assetObj.subCategory || assetObj.subcategory;
-        
-        console.log('Subcategory ID found:', subcategoryId);
-        
-        if (!subcategoryId) return 'No Subcategory';
-        
-        if (!Array.isArray(categories) || categories.length === 0) return 'Loading...';
-        
-        for (const cat of categories) {
-            if (Array.isArray(cat.subCategories)) {
-                const subcat = cat.subCategories.find(
-                    s => (s.subCategoryId || s.id) === subcategoryId
-                );
-                if (subcat) return subcat.name || 'Unknown Subcategory';
-            }
-        }
-        return 'Unknown Subcategory';
-    };
     
     return (
         <AssetManagementLayout>
@@ -1494,11 +1427,33 @@ const AssetDetailPage = () => {
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
                                                 <span className="text-gray-600">Category:</span>
+                                                {editingOverview ? (
+                                                    <select
+                                                        value={overviewDraft.categoryId}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, categoryId: e.target.value }))}
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                    >
+                                                        <option value="">Select Category...</option>
+                                                        {Array.isArray(categories) && categories.map(c => (
+                                                            <option key={c.categoryId || c.id} value={c.categoryId || c.id}>{c.name}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
                                                 <span className="font-medium">{getCategoryName(asset.categoryId)}</span>
+                                                )}
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
-                                                <span className="text-gray-600">Subcategory:</span>
-                                                <span className="font-medium">{getSubcategoryName(asset)}</span>
+                                                <span className="text-gray-600">Serial Number:</span>
+                                                {editingOverview ? (
+                                                    <input
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                        value={overviewDraft.serialNumber}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, serialNumber: e.target.value }))}
+                                                        placeholder="Serial Number"
+                                                    />
+                                                ) : (
+                                                <span className="font-medium">{asset.serialNumber || 'N/A'}</span>
+                                                )}
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
                                                 <span className="text-gray-600">Status:</span>
@@ -1801,50 +1756,23 @@ const AssetDetailPage = () => {
                                         <FaPlus /> Upload Document
                                     </button>
                                 </div>
-                                
-                                {/* Show uploaded attachment from asset creation if available */}
-                                {asset.documents && Array.isArray(asset.documents) && asset.documents.length > 0 ? (
-                                    <div className="space-y-4">
-                                        <h4 className="text-md font-medium text-gray-700">Uploaded Documents</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {asset.documents.map((doc, idx) => (
-                                                <div key={idx} className="p-4 border rounded-md bg-white flex items-center justify-between hover:bg-gray-50 transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <FaFileAlt className="text-blue-600 text-lg" />
-                                                        <div>
-                                                            <p className="font-medium text-gray-800">{doc.name || `Document ${idx + 1}`}</p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {doc.type || 'File'} • {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Recently uploaded'}
-                                                            </p>
-                                                            {doc.fileUrl && (
-                                                                <p className="text-xs text-blue-600 mt-1">File uploaded successfully</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {doc.fileUrl && (
-                                                            <a 
-                                                                href={doc.fileUrl} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer"
-                                                                className="text-blue-600 hover:text-blue-800 text-sm"
-                                                                title="View file"
-                                                            >
-                                                                View
-                                                            </a>
-                                                        )}
-                                                    </div>
+                                {Array.isArray(asset.documents) && asset.documents.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {asset.documents.map((doc, idx) => (
+                                            <div key={idx} className="p-4 border rounded-md bg-white flex items-center justify-between">
+                                                <div>
+                                                    <p className="font-medium text-gray-800">{doc.name || `Document ${idx + 1}`}</p>
+                                                    <p className="text-xs text-gray-500">{doc.type || 'File'} • {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : ''}</p>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-12">
-                                        <FaFileAlt className="text-4xl text-gray-400 mx-auto mb-4" />
-                                        <h4 className="text-lg font-semibold text-gray-600 mb-2">No Documents</h4>
-                                        <p className="text-gray-500">Upload documents and files related to this asset.</p>
-                                        <p className="text-sm text-gray-400 mt-2">Files uploaded during asset creation will appear here automatically.</p>
-                                    </div>
+                                <div className="text-center py-12">
+                                    <FaFileAlt className="text-4xl text-gray-400 mx-auto mb-4" />
+                                    <h4 className="text-lg font-semibold text-gray-600 mb-2">No Documents</h4>
+                                    <p className="text-gray-500">Upload documents and files related to this asset.</p>
+                                </div>
                                 )}
                             </div>
                         )}
