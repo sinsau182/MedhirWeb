@@ -1018,10 +1018,10 @@ function PayrollManagement() {
                 <div className="bg-white border border-gray-200 rounded-lg p-6">
                   <h3 className="text-lg font-medium text-gray-800 mb-3">Payroll Not Available</h3>
                   <p className="text-gray-600 mb-3">
-                    The payroll for {selectedMonth} {selectedYear} hasn't been generated yet.
+                    The payroll for {selectedMonth} {selectedYear} hasn&apos;t been generated yet.
                   </p>
                   <p className="text-gray-700 font-medium">
-                    Click the "Calculate Payroll" button above to generate payroll.
+                    Click the &quot;Calculate Payroll&quot; button above to generate payroll.
                   </p>
                 </div>
               </div>
