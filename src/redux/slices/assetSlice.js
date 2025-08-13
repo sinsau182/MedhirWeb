@@ -220,79 +220,71 @@ export const createAssetWithDTO = createAsyncThunk(
         console.log(`${key}:`, value);
       }
       
-      // Try with minimal required fields first
-      const minimalAsset = {
-        companyId: asset.companyId,
-        categoryId: asset.categoryId,
-        assetId: asset.assetId,
-        createdBy: asset.createdBy
-      };
+      // Send the complete asset data, not just minimal fields
+      console.log('Complete asset data to send:', asset);
       
-      console.log('Minimal asset data:', minimalAsset);
-      
-      // Try different endpoints and data formats
       let response;
       
-      // First try: FormData with /create endpoint (correct for file uploads)
+      // First try: JSON with /create endpoint (for endpoints that accept JSON)
       try {
-        console.log('Trying FormData with /create endpoint...');
-        const formData = new FormData();
-        formData.append('asset', JSON.stringify(minimalAsset));
-        if (invoiceScan) {
-          formData.append('invoiceScan', invoiceScan);
-        }
-        
-        response = await axios.post(`${ASSET_API_BASE}/create`, formData, { 
+        console.log('Trying JSON with /create endpoint...');
+        response = await axios.post(`${ASSET_API_BASE}/create`, asset, { 
           headers: { 
             ...headers,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'application/json'
           } 
         });
-        console.log('Asset created successfully with FormData + /create endpoint');
-      } catch (formDataCreateError) {
-        console.log('FormData + /create failed:', formDataCreateError.response?.data);
+        console.log('Asset created successfully with JSON + /create endpoint');
+      } catch (jsonCreateError) {
+        console.log('JSON + /create failed:', jsonCreateError.response?.data);
         
-        // Second try: JSON with /create endpoint (for endpoints that accept JSON)
-        try {
-          console.log('Trying JSON with /create endpoint...');
-          response = await axios.post(`${ASSET_API_BASE}/create`, minimalAsset, { 
-            headers: { 
-              ...headers,
-              'Content-Type': 'application/json'
-            } 
-          });
-          console.log('Asset created successfully with JSON + /create endpoint');
-        } catch (jsonCreateError) {
-          console.log('JSON + /create failed:', jsonCreateError.response?.data);
-          
-          // Third try: FormData with base endpoint
+        // Second try: FormData with /create endpoint (if file upload is needed)
+        if (invoiceScan) {
           try {
-            console.log('Trying FormData with base endpoint...');
+            console.log('Trying FormData with /create endpoint for file upload...');
             const formData = new FormData();
-            formData.append('asset', JSON.stringify(minimalAsset));
-            if (invoiceScan) {
-              formData.append('invoiceScan', invoiceScan);
-            }
+            formData.append('asset', JSON.stringify(asset));
+            formData.append('invoiceScan', invoiceScan);
             
-            response = await axios.post(`${ASSET_API_BASE}`, formData, { 
+            response = await axios.post(`${ASSET_API_BASE}/create`, formData, { 
               headers: { 
                 ...headers,
                 'Content-Type': 'multipart/form-data'
               } 
             });
-            console.log('Asset created successfully with FormData + base endpoint');
-          } catch (formDataBaseError) {
-            console.log('FormData + base failed:', formDataBaseError.response?.data);
+            console.log('Asset created successfully with FormData + /create endpoint');
+          } catch (formDataCreateError) {
+            console.log('FormData + /create failed:', formDataCreateError.response?.data);
             
-            // Fourth try: JSON with base endpoint
+            // Third try: JSON with base endpoint
+            try {
+              console.log('Trying JSON with base endpoint...');
+              response = await axios.post(`${ASSET_API_BASE}`, asset, { 
+                headers: { 
+                  ...headers,
+                  'Content-Type': 'application/json'
+                } 
+              });
+              console.log('Asset created successfully with JSON + base endpoint');
+            } catch (jsonBaseError) {
+              console.log('JSON + base failed:', jsonBaseError.response?.data);
+              throw jsonBaseError;
+            }
+          }
+        } else {
+          // No file upload needed, try base endpoint
+          try {
             console.log('Trying JSON with base endpoint...');
-            response = await axios.post(`${ASSET_API_BASE}`, minimalAsset, { 
+            response = await axios.post(`${ASSET_API_BASE}`, asset, { 
               headers: { 
                 ...headers,
                 'Content-Type': 'application/json'
               } 
             });
             console.log('Asset created successfully with JSON + base endpoint');
+          } catch (jsonBaseError) {
+            console.log('JSON + base failed:', jsonBaseError.response?.data);
+            throw jsonBaseError;
           }
         }
       }
@@ -584,10 +576,11 @@ const assetSlice = createSlice({
         // Update the asset in the list
         const index = state.assets.findIndex(asset => asset.assetId === action.payload.assetId);
         if (index !== -1) {
-          state.assets[index] = action.payload.asset;
+          state.assets[index] = { ...state.assets[index], ...action.payload };
         }
+        // Update current asset if it's the one being edited
         if (state.currentAsset && state.currentAsset.assetId === action.payload.assetId) {
-          state.currentAsset = action.payload.asset;
+          state.currentAsset = { ...state.currentAsset, ...action.payload };
         }
       })
       .addCase(patchAssetByAssetId.rejected, (state, action) => {

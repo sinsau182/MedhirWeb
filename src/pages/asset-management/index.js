@@ -262,7 +262,9 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         memory: '', 
         condition: 'New', 
         accessories: '', 
-        graphicsCard: ''
+        graphicsCard: '',
+        // Additional fields that might be needed
+        statusLabelId: ''
     });
 
     const [showITFields, setShowITFields] = useState(false);
@@ -389,8 +391,8 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                   : (tokenRaw?.token || tokenRaw?.accessToken || '');
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-                const url = `${publicRuntimeConfig.apiURL}/api/assets/next-id/on-subcategory-select?subcategoryId=${encodeURIComponent(subCategoryId)}`;
-                console.log('[next-id] GET', url, 'token?', !!token);
+                const url = `${publicRuntimeConfig.apiURL}/api/assets/auto-generate-next-id?subcategoryId=${encodeURIComponent(subCategoryId)}`;
+                console.log('[auto-generate-next-id] GET', url, 'token?', !!token);
 
                 let resp = null;
                 try {
@@ -405,7 +407,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     const data = await resp.json().catch(() => ({}));
                     if (data?.success && data?.nextAssetId) {
                         setGeneratedAssetId(String(data.nextAssetId));
-                        console.log('Generated Asset ID:', data.nextAssetId, 'Prefix:', data.prefix, 'Subcategory:', data.subcategoryName);
+                        console.log('Generated Asset ID:', data.nextAssetId, 'Prefix:', data.prefix, 'Subcategory:', data.subcategoryName, 'Logic:', data.logic);
                         return;
                     }
                 }
@@ -453,19 +455,38 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
 
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
+        console.log('handleChange called:', { name, value, type });
         if (type === 'file') {
-            setFormData(prev => ({ ...prev, [name]: files[0] }));
+            setFormData(prev => {
+                const newData = { ...prev, [name]: files[0] };
+                console.log('Updated formData (file):', newData);
+                return newData;
+            });
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => {
+                const newData = { ...prev, [name]: value };
+                console.log('Updated formData:', newData);
+                return newData;
+            });
         }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        // Debug: Log form data before validation
+        console.log('=== FORM SUBMISSION DEBUG ===');
+        console.log('formData at submission:', formData);
+        console.log('formData.location:', formData.location);
+        console.log('formData.purchaseDate:', formData.purchaseDate);
+        console.log('formData.purchaseCost:', formData.purchaseCost);
+        console.log('formData.invoiceNumber:', formData.invoiceNumber);
+        console.log('formData.gstRate:', formData.gstRate);
+        console.log('formData.warrantyExpiry:', formData.warrantyExpiry);
+        
         // Basic validation
-        if (!formData.category || !formData.subcategory || !formData.purchaseDate || !formData.purchaseCost) {
-            toast.error("Please fill all required fields.");
+        if (!formData.category || !formData.subcategory || !formData.purchaseDate || !formData.purchaseCost || !formData.location) {
+            toast.error("Please fill all required fields (Category, Subcategory, Purchase Date, Purchase Cost, and Location).");
             return;
         }
         
@@ -527,23 +548,26 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 categoryId: categoryData?.categoryId || categoryData?.id,
                 assetId: generatedAssetId,
                 subcategoryId: subcategoryData?.subCategoryId || subcategoryData?.id,
-                locationId: formData.location,
-                statusLabelId: formData.statusLabelId || undefined,
-                // assignedTo removed; only departmentId requested
-                assignedDepartment: formData.departmentName || undefined,
-                assignedDepartmentId: formData.departmentId || undefined,
-                assignedEmployeeId: formData.employeeId || undefined,
-                assignedToTeam: formData.team || undefined,
-                assignmentDate: formData.assignmentDate || undefined,
-                purchaseDate: formData.purchaseDate,
-                purchaseCost: parseFloat(formData.purchaseCost),
-                invoiceNumber: formData.invoiceNumber || '',
-                warrantyExpiryDate: formData.warrantyExpiry || null,
-                vendorId: formData.vendorId || undefined,
-                gstRate: parseFloat(formData.gstRate || '0'),
+                locationId: formData.location || null,
+                statusLabelId: formData.statusLabelId || null,
+                assignedToTeam: formData.team || null,
+                purchaseDate: formData.purchaseDate || null,
+                purchaseCost: formData.purchaseCost ? parseFloat(formData.purchaseCost) : null,
+                invoiceNumber: formData.invoiceNumber || null,
+                warrantyExpiry: formData.warrantyExpiry || null,
+                gstRate: formData.gstRate ? parseFloat(formData.gstRate) : null,
                 inputTaxCreditEligible: true,
                 createdBy: employeeId,
             };
+            
+            // Debug: Check what values are being set
+            console.log('=== FIELD VALUE DEBUG ===');
+            console.log('formData.location:', formData.location, '-> locationId:', assetData.locationId);
+            console.log('formData.purchaseDate:', formData.purchaseDate, '-> purchaseDate:', assetData.purchaseDate);
+            console.log('formData.purchaseCost:', formData.purchaseCost, '-> purchaseCost:', assetData.purchaseCost);
+            console.log('formData.invoiceNumber:', formData.invoiceNumber, '-> invoiceNumber:', assetData.invoiceNumber);
+            console.log('formData.gstRate:', formData.gstRate, '-> gstRate:', assetData.gstRate);
+            console.log('formData.warrantyExpiry:', formData.warrantyExpiry, '-> warrantyExpiry:', assetData.warrantyExpiry);
             
             // Validate required fields
             if (!assetData.companyId) {
@@ -586,10 +610,27 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 assetData.customFormData = formDataMap;
                 assetData.formData = formDataMap;
             }
+            
+            // Also add the static form fields (IT Equipment fields, etc.)
+            if (formData.processor) assetData.processor = formData.processor;
+            if (formData.ram) assetData.ram = formData.ram;
+            if (formData.memory) assetData.memory = formData.memory;
+            if (formData.graphicsCard) assetData.graphicsCard = formData.graphicsCard;
+            if (formData.laptopCompany) assetData.laptopCompany = formData.laptopCompany;
+            if (formData.condition) assetData.condition = formData.condition;
+            if (formData.accessories) assetData.accessories = formData.accessories;
+            if (formData.team) assetData.assignedToTeam = formData.team;
 
             
             // Debug: Log the data being sent
+            console.log('=== FORM DATA DEBUG ===');
+            console.log('formData state:', formData);
+            console.log('formData keys:', Object.keys(formData));
+            console.log('formData values:', Object.values(formData));
+            console.log('=== ASSET DATA DEBUG ===');
             console.log('Submitting asset data:', assetData);
+            console.log('Asset data keys:', Object.keys(assetData));
+            console.log('Asset data values:', Object.values(assetData));
             console.log('Attachment file:', formData.invoiceScan);
             console.log('Custom form data:', customFormData);
             console.log('Request payload structure:', {
@@ -597,21 +638,18 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 attachment: !!formData.invoiceScan
             });
 
-            // Create the request payload according to new API structure
-            const requestPayload = {
-                asset: assetData,
-                // choose default endpoint behavior (/api/assets) which expects stringified asset
-                endpoint: '/api/assets',
-                sendAsString: true,
-            };
-            
-            console.log('=== FINAL REQUEST PAYLOAD ===');
-            console.log('Request payload:', requestPayload);
+            console.log('=== FINAL ASSET DATA ===');
             console.log('Asset data keys:', Object.keys(assetData));
             console.log('Form data keys:', Object.keys(customFormData));
+            console.log('=== COMPLETE ASSET DATA ===');
+            console.log('Complete asset data being sent:', JSON.stringify(assetData, null, 2));
+            console.log('Invoice scan file:', formData.invoiceScan);
             
             // Fire-and-close: start save, close modal immediately; update when done
-            const savePromise = dispatch(createAssetWithDTO(requestPayload)).unwrap();
+            const savePromise = dispatch(createAssetWithDTO({ 
+                asset: assetData, 
+                invoiceScan: formData.invoiceScan 
+            })).unwrap();
 
             // Close modal fast for better UX; show promise-based toast
             onClose();
@@ -656,7 +694,8 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 category: '', subcategory: '', location: '', purchaseDate: '', invoiceNumber: '', purchaseCost: '',
                 gstRate: '', invoiceScan: null, warrantyExpiry: '',
                 team: '', laptopCompany: '', processor: '', ram: '', memory: '', 
-                condition: 'New', accessories: '', graphicsCard: ''
+                condition: 'New', accessories: '', graphicsCard: '',
+                statusLabelId: ''
             });
             setGeneratedAssetId('');
             setAvailableSubcategories([]);
@@ -681,6 +720,9 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     {/* Core Identification */}
                     <div className="p-4 border rounded-md">
                         <h3 className="font-semibold text-lg mb-4">Core Identification</h3>
+                        
+
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <SelectField 
                                 label="Category" 
@@ -700,13 +742,14 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                             </SelectField>
                             <SelectField 
                                 label="Subcategory" 
-                                name="subcategoryId"
-                                value={selectedSubcategoryId}
+                                name="subcategory"
+                                value={formData.subcategory}
                                 onChange={(e) => {
-                                    const id = e.target.value;
-                                    setSelectedSubcategoryId(id);
-                                    const sub = availableSubcategories.find(s => (s.subCategoryId || s.id) === id);
-                                    setFormData(prev => ({ ...prev, subcategory: sub?.name || '' })); // keep name for display/use elsewhere
+                                    const subName = e.target.value;
+                                    setFormData(prev => ({ ...prev, subcategory: subName }));
+                                    // Also set the selectedSubcategoryId for custom forms
+                                    const sub = availableSubcategories.find(s => s.name === subName);
+                                    setSelectedSubcategoryId(sub?.subCategoryId || sub?.id || '');
                                 }}
                                 required
                                 disabled={!formData.category || availableSubcategories.length === 0}
@@ -717,7 +760,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                      'Select Subcategory...'}
                                 </option>
                                 {availableSubcategories.map(sub => (
-                                    <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
+                                    <option key={sub.subCategoryId || sub.id} value={sub.name}>
                                         {sub.name}
                                     </option>
                                 ))}
@@ -768,6 +811,19 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 {Array.isArray(locations) && locations.map(l => (
                                     <option key={l.locationId || l.id} value={l.locationId || l.id}>
                                         {l.name}
+                                    </option>
+                                ))}
+                            </SelectField>
+                            <SelectField 
+                                label="Status" 
+                                name="statusLabelId" 
+                                value={formData.statusLabelId}
+                                onChange={handleChange}
+                            >
+                                <option value="">Select Status...</option>
+                                {Array.isArray(statuses) && statuses.map(s => (
+                                    <option key={s.statusLabelId || s.id} value={s.statusLabelId || s.id}>
+                                        {s.name}
                                     </option>
                                 ))}
                             </SelectField>
@@ -974,7 +1030,22 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 </div>
                 <div className="bg-gray-50 px-6 py-3 flex justify-between items-center rounded-b-lg">
                     <div className="text-sm text-gray-600">
-                        
+                        <button 
+                            type="button" 
+                            onClick={() => {
+                                console.log('=== TEST FORM STATE ===');
+                                console.log('formData:', formData);
+                                console.log('formData.location:', formData.location);
+                                console.log('formData.purchaseDate:', formData.purchaseDate);
+                                console.log('formData.purchaseCost:', formData.purchaseCost);
+                                console.log('formData.invoiceNumber:', formData.invoiceNumber);
+                                console.log('formData.gstRate:', formData.gstRate);
+                                console.log('formData.warrantyExpiry:', formData.warrantyExpiry);
+                            }}
+                            className="px-3 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                        >
+                            Test Form State
+                        </button>
                     </div>
                     <div className="flex items-center gap-2">
                         <button 

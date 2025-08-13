@@ -275,10 +275,10 @@ const CategorySettings = ({
                                 </div>
                             </div>
                             
-            {/* Add Sub-Category Input */}
+                        {/* Add Sub-Category Input */}
             <div className="mb-6">
                 {(() => {
-                    const current = newSubCatFieldsByCategory[categoryId] || { name: '', prefix: '', numbering: '' };
+                    const current = newSubCatFieldsByCategory[categoryId] || { name: '', prefix: '', suffix: '' };
                     const setField = (key, val) => {
                         setNewSubCatFieldsByCategory(prev => ({
                             ...prev,
@@ -286,12 +286,12 @@ const CategorySettings = ({
                         }));
                     };
                     const sanitizePrefix = (val) => val; // allow arbitrary prefix
-                    const sanitizeNumbering = (val) => val.replace(/\D/g, '').slice(0, 4);
+                    const sanitizeSuffix = (val) => val.replace(/\D/g, '').slice(0, 4);
                     const isValidPrefix = () => Boolean((current.prefix || '').trim());
-                    const isValid = current.name?.trim() && isValidPrefix() && (current.numbering && /\d+/.test(current.numbering));
-                    const previewSuffix = (current.numbering && current.numbering.length > 0) ? String(Math.max(1, Math.min(9999, parseInt(current.numbering, 10)))).padStart(4, '0') : '0001';
+                    const isValid = current.name?.trim() && isValidPrefix() && (current.suffix && /\d+/.test(current.suffix));
+                    const previewSuffix = (current.suffix && current.suffix.length > 0) ? String(Math.max(1, Math.min(9999, parseInt(current.suffix, 10)))).padStart(4, '0') : '0001';
                     const previewPrefix = (current.prefix || '').trim();
-                    const fullPreview = previewPrefix && current.numbering ? `${previewPrefix}-${previewSuffix}` : '';
+                    const fullPreview = previewPrefix && current.suffix ? `${previewPrefix}-${previewSuffix}` : '';
                     return (
                         <div className="space-y-3">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -305,7 +305,7 @@ const CategorySettings = ({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Asset ID Prefix (e.g., {categoryCode}-{getFirstThreeLetters(current.name)})</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Asset ID Prefix ({categoryCode}-{getFirstThreeLetters(current.name)})</label>
                                     <input
                                         value={current.prefix}
                                         onChange={(e) => setField('prefix', sanitizePrefix(e.target.value))}
@@ -314,10 +314,10 @@ const CategorySettings = ({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Numbering (4 digits)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Suffix (4 digits)</label>
                                     <input
-                                        value={current.numbering}
-                                        onChange={(e) => setField('numbering', sanitizeNumbering(e.target.value))}
+                                        value={current.suffix}
+                                        onChange={(e) => setField('suffix', sanitizeSuffix(e.target.value))}
                                         placeholder="0001"
                                         className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
                                     />
@@ -328,20 +328,20 @@ const CategorySettings = ({
                                     {fullPreview ? (
                                         <span>Preview: <span className="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">{fullPreview}</span></span>
                                     ) : (
-                                        <span className="text-gray-400">Enter prefix and numbering to see preview</span>
+                                        <span className="text-gray-400">Enter prefix and suffix to see preview</span>
                                     )}
                                 </div>
                                 <button
                                     onClick={async () => {
                                         const payload = {
                                             name: (current.name || '').trim(),
-                                            prefix: (current.prefix || '').replace(/-+$/,''),
-                                            numbering: current.numbering
+                                            prefix: (current.prefix || '').trim(),
+                                            suffix: current.suffix
                                         };
-                                        if (!payload.name || !isValidPrefix() || !payload.numbering) return;
+                                        if (!payload.name || !isValidPrefix() || !payload.suffix) return;
                                         try {
                                             await onAddSubCategory(categoryId, payload);
-                                            setNewSubCatFieldsByCategory(prev => ({ ...prev, [categoryId]: { name: '', prefix: '', numbering: '' } }));
+                                            setNewSubCatFieldsByCategory(prev => ({ ...prev, [categoryId]: { name: '', prefix: '', suffix: '' } }));
                                         } catch (e) {
                                             // Keep inputs for correction
                                         }
@@ -398,27 +398,40 @@ const CategorySettings = ({
                                                                 <span className="font-medium">{subCat.name || 'NO NAME'}</span>
                                                             )}
                                                         </td>
-                                                        <td className="p-3">
+                                                                                                                <td className="p-3">
                                                             <div className="flex items-center gap-2">
                                                                 {(() => {
                                                                      const prefixBase = (subCat.prefix && String(subCat.prefix).trim())
                                                                          ? String(subCat.prefix).trim()
                                                                          : `${getFirstThreeLetters(cat.name)}-${getFirstThreeLetters(subCat.name)}`;
                                                                      const prefix = `${prefixBase}-`;
-                                                                     const draft = subCat.autoIdSuffixDraft;
-                                                                     const committed = subCat.autoIdSuffix;
-                                                                     const seq = typeof subCat.nextSequence === 'number' ? subCat.nextSequence : undefined;
-                                                                     const displayWhenEditing = draft ?? (committed ?? (seq !== undefined ? formatSuffix(seq) : ''));
-                                                                     const displayWhenReadonly = formatSuffix(committed ?? (seq ?? (index + 1)));
+                                                                     const suffix = subCat.suffix || '0001';
                                                                      return (
                                                                         <div className="flex items-center gap-1">
-                                                                            <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-l select-none">
-                                                                                {prefix}
-                                                                            </span>
+                                                                            {subCat.editing ? (
+                                                                                <input
+                                                                                    className="w-20 font-mono text-sm border border-blue-300 rounded-l px-2 py-1"
+                                                                                    value={subCat.prefix || prefixBase}
+                                                                                    placeholder="CAT-SUB"
+                                                                                    onChange={(e) => {
+                                                                                        onEditSubCategory(
+                                                                                            categoryId,
+                                                                                            subCat.id || subCat.subCategoryId,
+                                                                                            'prefix',
+                                                                                            e.target.value
+                                                                                        );
+                                                                                    }}
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-l select-none">
+                                                                                    {prefix}
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="font-mono text-sm bg-blue-100 text-blue-800 px-1 py-1 select-none">-</span>
                                                                             {subCat.editing ? (
                                                                                 <input
                                                                                     className="w-16 font-mono text-sm border border-blue-300 rounded-r px-2 py-1"
-                                                                                    value={displayWhenEditing}
+                                                                                    value={suffix}
                                                                                     placeholder="0001"
                                                                                     maxLength={4}
                                                                                     onChange={(e) => {
@@ -427,41 +440,14 @@ const CategorySettings = ({
                                                                                         onEditSubCategory(
                                                                                             categoryId,
                                                                                             subCat.id || subCat.subCategoryId,
-                                                                                            'autoIdSuffixDraft',
+                                                                                            'suffix',
                                                                                             digits
-                                                                                        );
-                                                                                    }}
-                                                                                    onBlur={(e) => {
-                                                                                        const padded = formatSuffix(e.target.value);
-                                                                                        onEditSubCategory(
-                                                                                            categoryId,
-                                                                                            subCat.id || subCat.subCategoryId,
-                                                                                            'autoIdSuffix',
-                                                                                            padded
-                                                                                        );
-                                                                                         // Keep nextSequence in sync locally if present
-                                                                                         if (padded) {
-                                                                                             const numeric = parseInt(String(padded).replace(/\D/g, '') || '0', 10);
-                                                                                             if (!Number.isNaN(numeric) && numeric > 0) {
-                                                                                                 onEditSubCategory(
-                                                                                                     categoryId,
-                                                                                                     subCat.id || subCat.subCategoryId,
-                                                                                                     'nextSequence',
-                                                                                                     numeric
-                                                                                                 );
-                                                                                             }
-                                                                                         }
-                                                                                        onEditSubCategory(
-                                                                                            categoryId,
-                                                                                            subCat.id || subCat.subCategoryId,
-                                                                                            'autoIdSuffixDraft',
-                                                                                            ''
                                                                                         );
                                                                                     }}
                                                                                 />
                                                                             ) : (
                                                                                 <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-r">
-                                                                                    {displayWhenReadonly}
+                                                                                    {suffix}
                                                                                 </span>
                                                                             )}
                                                                         </div>
@@ -2233,22 +2219,20 @@ const AssetSettingsPage = () => {
             subCategories: cat.subCategories
         })));
 
-        // If called with the new object payload { name, prefix, numbering }
+        // If called with the new object payload { name, prefix, suffix }
         if (typeof payloadOrName === 'object' && payloadOrName !== null) {
             const name = (payloadOrName.name || '').trim();
-            const rawPrefix = (payloadOrName.prefix || '').trim();
-            const numberingRaw = String(payloadOrName.numbering || '');
-            if (!name || !rawPrefix || !numberingRaw) {
-                toast.error('Please provide sub-category name, prefix and numbering');
+            const prefix = (payloadOrName.prefix || '').trim();
+            const suffix = String(payloadOrName.suffix || '');
+            if (!name || !prefix || !suffix) {
+                toast.error('Please provide sub-category name, prefix and suffix');
                 return;
             }
-            const nextSequence = Math.max(1, Math.min(9999, parseInt(numberingRaw.replace(/\D/g, '') || '1', 10)));
-            const autoIdPreview = `${rawPrefix}-${String(nextSequence).padStart(4, '0')}`;
 
-            console.log('Adding subcategory to server with extended data:', { categoryId, name, prefix: rawPrefix, nextSequence, autoIdPreview });
+            console.log('Adding subcategory to server with actual field values:', { categoryId, name, prefix, suffix });
             dispatch(addSubCategory({
                 categoryId,
-                subCategoryData: { name, prefix: rawPrefix, nextSequence, autoIdPreview }
+                subCategoryData: { name, prefix, suffix }
             })).then((result) => {
                 if (result.meta.requestStatus === 'fulfilled') {
                     console.log('Subcategory added successfully:', result.payload);
@@ -2316,39 +2300,21 @@ const AssetSettingsPage = () => {
         })));
         
         if (subCategory && subCategory.name && subCategory.name.trim()) {
-            // Derive nextSequence from committed or draft suffix; fallback to position+1
-            const committedSuffixRaw = (subCategory.autoIdSuffix ?? '').toString();
-            const draftSuffixRaw = (subCategory.autoIdSuffixDraft ?? '').toString();
-            const chosenRaw = committedSuffixRaw || draftSuffixRaw;
-            let nextSequence;
-            if (chosenRaw) {
-                const digits = chosenRaw.replace(/\D/g, '').slice(0, 4);
-                nextSequence = digits ? Math.max(1, Math.min(9999, parseInt(digits, 10))) : undefined;
-            }
-            if (nextSequence === undefined) {
-                const idx = category?.subCategories?.findIndex(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId) ?? -1;
-                nextSequence = Math.max(1, (idx >= 0 ? idx + 1 : 1));
-            }
-
-            // Compute codes and full preview ID to send
-            const categoryNameForCode = category?.name || '';
-            const subCategoryNameForCode = subCategory.name || '';
-            const categoryCode = getFirstThreeLetters(categoryNameForCode);
-            const subCategoryCode = getFirstThreeLetters(subCategoryNameForCode);
-            const autoIdPreview = `${categoryCode}-${subCategoryCode}-${String(nextSequence).padStart(4, '0')}`;
+            // Get the actual values from the form fields
+            const name = subCategory.name.trim();
+            const prefix = subCategory.prefix || '';
+            const suffix = subCategory.suffix || '';
 
             if (subCategory.subCategoryId) {
                 // Update existing
-                console.log('Updating existing subcategory:', { categoryId, subCategoryId, name: subCategory.name, nextSequence });
+                console.log('Updating existing subcategory with actual field values:', { categoryId, subCategoryId, name, prefix, suffix });
                 dispatch(updateSubCategory({
                     categoryId,
                     subCategoryId: subCategory.subCategoryId,
                     subCategoryData: {
-                        name: subCategory.name,
-                        nextSequence,
-                        categoryCode,
-                        subCategoryCode,
-                        autoIdPreview
+                        name,
+                        prefix,
+                        suffix
                     }
                 })).then((result) => {
                     if (result.meta.requestStatus === 'fulfilled') {
@@ -2361,15 +2327,13 @@ const AssetSettingsPage = () => {
                 });
             } else {
                 // Create new
-                console.log('Creating new subcategory:', { categoryId, name: subCategory.name, nextSequence });
+                console.log('Creating new subcategory with actual field values:', { categoryId, name, prefix, suffix });
                 dispatch(addSubCategory({
                     categoryId,
                     subCategoryData: {
-                        name: subCategory.name,
-                        nextSequence,
-                        categoryCode,
-                        subCategoryCode,
-                        autoIdPreview
+                        name,
+                        prefix,
+                        suffix
                     }
                 })).then((result) => {
                     if (result.meta.requestStatus === 'fulfilled') {

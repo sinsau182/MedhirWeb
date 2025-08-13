@@ -39,7 +39,22 @@ const RoleToggle = () => {
   const [roleDisplayLabels, setRoleDisplayLabels] = useState(roleLabels);
 
   useEffect(() => {
-    const roles = JSON.parse(sessionStorage.getItem("roles") || "[]");
+    let roles = [];
+    try {
+      const rolesData = sessionStorage.getItem("roles");
+      if (rolesData) {
+        // Try to parse as JSON first, if it fails, use the raw string
+        try {
+          roles = JSON.parse(rolesData);
+        } catch (parseError) {
+          // If JSON parsing fails, treat it as a single role string
+          roles = [rolesData];
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing roles from session storage:', error);
+      roles = [];
+    }
 
     if (roles.length > 0) {
       // Sort roles according to the defined order

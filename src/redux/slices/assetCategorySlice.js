@@ -558,7 +558,7 @@ export const addSubCategory = createAsyncThunk(
         id: data.id || data.subCategoryId,
         // Map new fields used by UI for Auto ID
         prefix: data.prefix || subCategoryData.prefix,
-        nextSequence: typeof data.nextSequence === 'number' ? data.nextSequence : subCategoryData.nextSequence,
+        suffix: data.suffix || subCategoryData.suffix,
         categoryId: categoryId,
         isActive: data.isActive !== undefined ? data.isActive : true
       };
@@ -599,10 +599,11 @@ export const updateSubCategory = createAsyncThunk(
         subCategory: {
           ...(typeof data === 'object' ? data : {}),
           subCategoryId: subCategoryId,
-          subCategoryCode: (typeof data === 'object' && data.subCategoryCode) || subCategoryData.name?.substring(0, 3).toUpperCase() || '',
-          name: (typeof data === 'object' && data.name) || subCategoryData.name || '',
+          subCategoryCode: (typeof data === 'object' && data.subCategoryCode) || (subCategoryData.subcategoryName || subCategoryData.name)?.substring(0, 3).toUpperCase() || '',
+          name: (typeof data === 'object' && data.name) || subCategoryData.subcategoryName || subCategoryData.name || '',
           id: (typeof data === 'object' && (data.id || data.subCategoryId)) || subCategoryId,
-          ...(paddedSuffix ? { autoIdSuffix: paddedSuffix, autoIdSuffixDraft: '' } : {})
+          prefix: (typeof data === 'object' && data.prefix) || subCategoryData.prefix || '',
+          suffix: (typeof data === 'object' && data.suffix) || subCategoryData.suffix || ''
         }
       };
     } catch (error) {
