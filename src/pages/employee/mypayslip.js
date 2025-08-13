@@ -130,6 +130,29 @@ const PayrollPage = () => {
   const currentLoading = isManualSelection ? employeePayslipLoading : loading;
   const currentError = isManualSelection ? employeePayslipError : error;
 
+  // Auto-update calendar display to match actual payslip month
+  useEffect(() => {
+    if (currentPayslipData && !isManualSelection) {
+      const payslipMonth = currentPayslipData.month;
+      const payslipYear = currentPayslipData.year;
+      
+      if (payslipMonth && payslipYear) {
+        // Convert month number to month name
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const monthName = monthNames[payslipMonth - 1]; // month is 1-based
+        
+        // Only update if different from current selection
+        if (monthName !== selectedMonth || payslipYear !== selectedYear) {
+          setSelectedMonth(monthName);
+          setSelectedYear(payslipYear);
+        }
+      }
+    }
+  }, [currentPayslipData, isManualSelection, selectedMonth, selectedYear]);
+
   // Debug logging
   console.log("Current payslip data:", currentPayslipData);
   console.log("Date of joining from API:", currentPayslipData?.dateOfJoining);
