@@ -30,20 +30,54 @@ const MOCK_TEAMS = ['Marketing', 'Production', 'Sales', 'HR', 'Finance'];
 const MOCK_LAPTOP_COMPANIES = ['Dell', 'HP', 'Lenovo', 'Apple', 'Asus', 'Acer'];
 
 // Input and Select components defined outside to prevent re-creation on each render
-const InputField = ({ label, name, value, onChange, ...props }) => (
-    <div>
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <input 
-            name={name} 
-            onChange={onChange} 
-            value={value || ''} 
-            {...props} 
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm" 
-        />
-    </div>
-);
+const InputField = ({ label, name, value, onChange, type, error, ...props }) => {
+    // Special handling for file inputs to show selected filename
+    if (type === 'file') {
+        return (
+            <div>
+                <label className="block text-sm font-medium text-gray-700">{label}</label>
+                <div className="relative">
+                    <input 
+                        name={name} 
+                        onChange={onChange} 
+                        type="file"
+                        {...props} 
+                        className={`mt-1 w-full p-2 border rounded-md shadow-sm ${error ? 'border-red-500' : 'border-gray-300'}`}
+                    />
+                    {value && (
+                        <div className="absolute inset-0 flex items-center px-2 pointer-events-none">
+                            <span className="text-sm text-gray-600 truncate">
+                                {value.name}
+                            </span>
+                        </div>
+                    )}
+                </div>
+                {error && (
+                    <p className="mt-1 text-sm text-red-600">{error}</p>
+                )}
+            </div>
+        );
+    }
 
-const SelectField = ({ label, name, value, onChange, children, ...props }) => (
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-700">{label}</label>
+            <input 
+                name={name} 
+                onChange={onChange} 
+                value={value || ''} 
+                type={type}
+                {...props} 
+                className={`mt-1 w-full p-2 border rounded-md shadow-sm ${error ? 'border-red-500' : 'border-gray-300'}`}
+            />
+            {error && (
+                <p className="mt-1 text-sm text-red-600">{error}</p>
+            )}
+        </div>
+    );
+};
+
+const SelectField = ({ label, name, value, onChange, children, error, ...props }) => (
     <div>
         <label className="block text-sm font-medium text-gray-700">{label}</label>
         <select 
@@ -51,15 +85,18 @@ const SelectField = ({ label, name, value, onChange, children, ...props }) => (
             onChange={onChange} 
             value={value || ''} 
             {...props} 
-            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
+            className={`mt-1 w-full p-2 border rounded-md shadow-sm ${error ? 'border-red-500' : 'border-gray-300'}`}
         >
             {children}
         </select>
+        {error && (
+            <p className="mt-1 text-sm text-red-600">{error}</p>
+        )}
     </div>
 );
 
 // Component to render dynamic custom form fields for asset creation
-const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, selectedCategory }) => {
+const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, selectedCategory, validationErrors }) => {
     // Only show custom forms if a category is selected
     if (!selectedCategory) {
         return null;
@@ -114,6 +151,7 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                         value={fieldValue}
                         onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
                         placeholder={placeholder}
+                        error={validationErrors[`custom_${form.id}_${field.id}`]}
                     />
                 );
             case 'dropdown':
@@ -124,6 +162,7 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                         label={`${fieldName}${isRequired ? ' *' : ''}`}
                         value={fieldValue}
                         onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
+                        error={validationErrors[`custom_${form.id}_${field.id}`]}
                     >
                         <option value="">Select {fieldName}...</option>
                         {options && Array.isArray(options) && options.map((option, index) => (
@@ -144,8 +183,11 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
                             placeholder={placeholder}
                             rows={3}
-                            className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                            className={`mt-1 w-full p-2 border rounded-md shadow-sm ${validationErrors[`custom_${form.id}_${field.id}`] ? 'border-red-500' : 'border-gray-300'}`}
                         />
+                        {validationErrors[`custom_${form.id}_${field.id}`] && (
+                            <p className="mt-1 text-sm text-red-600">{validationErrors[`custom_${form.id}_${field.id}`]}</p>
+                        )}
                     </div>
                 );
             case 'date':
@@ -156,6 +198,7 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                         type="date"
                         value={fieldValue}
                         onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
+                        error={validationErrors[`custom_${form.id}_${field.id}`]}
                     />
                 );
             case 'checkbox':
@@ -181,8 +224,11 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             <input
                                 type="file"
                                 onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.files[0])}
-                                className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                                className={`mt-1 w-full p-2 border rounded-md shadow-sm ${validationErrors[`custom_${form.id}_${field.id}`] ? 'border-red-500' : 'border-gray-300'}`}
                             />
+                            {validationErrors[`custom_${form.id}_${field.id}`] && (
+                                <p className="mt-1 text-sm text-red-600">{validationErrors[`custom_${form.id}_${field.id}`]}</p>
+                                )}
                         </div>
                     );
                 default:
@@ -194,6 +240,7 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             value={fieldValue}
                             onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
                             placeholder={placeholder}
+                            error={validationErrors[`custom_${form.id}_${field.id}`]}
                         />
                     );
         }
@@ -274,6 +321,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     const [selectedCategoryData, setSelectedCategoryData] = useState(null);
     const [customFormData, setCustomFormData] = useState({});
     const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('');
+    const [validationErrors, setValidationErrors] = useState({});
 
     // Get custom forms for the selected category (moved after state declarations)
     let customForms = [];
@@ -456,6 +504,27 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     const handleChange = (e) => {
         const { name, value, type, files } = e.target;
         console.log('handleChange called:', { name, value, type });
+        
+        // Clear validation error for this field when user starts typing/selecting
+        if (validationErrors[name]) {
+            setValidationErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+        
+        // Also clear custom form validation errors for this field
+        setValidationErrors(prev => {
+            const newErrors = { ...prev };
+            Object.keys(newErrors).forEach(key => {
+                if (key.startsWith('custom_') && key.includes(`_${name}`)) {
+                    delete newErrors[key];
+                }
+            });
+            return newErrors;
+        });
+        
         if (type === 'file') {
             setFormData(prev => {
                 const newData = { ...prev, [name]: files[0] };
@@ -484,9 +553,30 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         console.log('formData.gstRate:', formData.gstRate);
         console.log('formData.warrantyExpiry:', formData.warrantyExpiry);
         
-        // Basic validation
-        if (!formData.category || !formData.subcategory || !formData.purchaseDate || !formData.purchaseCost || !formData.location) {
-            toast.error("Please fill all required fields (Category, Subcategory, Purchase Date, Purchase Cost, and Location).");
+        // Clear previous validation errors
+        setValidationErrors({});
+        
+        // Custom frontend validation with field-specific errors
+        const newValidationErrors = {};
+        
+        if (!formData.category) {
+            newValidationErrors.category = "Please select a category";
+        }
+        if (!formData.subcategory) {
+            newValidationErrors.subcategory = "Please select a subcategory";
+        }
+        if (!formData.purchaseDate) {
+            newValidationErrors.purchaseDate = "Please enter the purchase date";
+        }
+        if (!formData.purchaseCost) {
+            newValidationErrors.purchaseCost = "Please enter the purchase cost";
+        }
+        if (!formData.location) {
+            newValidationErrors.location = "Please select a location";
+        }
+        
+        if (Object.keys(newValidationErrors).length > 0) {
+            setValidationErrors(newValidationErrors);
             return;
         }
         
@@ -512,12 +602,18 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                             });
                             
                             if (!fieldValue || fieldValue === '') {
-                                toast.error(`Please fill the required field: ${fieldName}`);
-                                return;
+                                // Set custom form validation error
+                                newValidationErrors[`custom_${form.id}_${field.id}`] = `Please fill "${fieldName}"`;
                             }
                         }
                     }
                 }
+            }
+            
+            // Check if there are custom form validation errors
+            if (Object.keys(newValidationErrors).length > 0) {
+                setValidationErrors(newValidationErrors);
+                return;
             }
         }
         
@@ -610,6 +706,16 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 assetData.customFormData = formDataMap;
                 assetData.formData = formDataMap;
             }
+
+            // Add uploaded file information to documents array
+            if (formData.invoiceScan) {
+                assetData.documents = [{
+                    name: formData.invoiceScan.name,
+                    type: formData.invoiceScan.type || 'File',
+                    uploadDate: new Date().toISOString(),
+                    originalFile: formData.invoiceScan // Keep reference to original file
+                }];
+            }
             
             // Also add the static form fields (IT Equipment fields, etc.)
             if (formData.processor) assetData.processor = formData.processor;
@@ -681,7 +787,29 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                         const errJson = await uploadResp.json().catch(() => ({}));
                         throw new Error(errJson.message || `Attachment upload failed (${uploadResp.status})`);
                     }
-                    toast.success('Attachment uploaded');
+                    
+                    // Update the asset with document information after successful upload
+                    const documentData = {
+                        documents: [{
+                            name: formData.invoiceScan.name,
+                            type: formData.invoiceScan.type || 'File',
+                            uploadDate: new Date().toISOString(),
+                            fileUrl: uploadResp.headers.get('file-url') || null // If backend returns file URL
+                        }]
+                    };
+                    
+                    // Update asset with document info
+                    try {
+                        await dispatch(patchAssetByAssetId({ 
+                            assetId: resolvedAssetId, 
+                            assetData: documentData 
+                        })).unwrap();
+                    } catch (updateError) {
+                        console.warn('Failed to update asset with document info:', updateError);
+                        // Don't fail the whole process if document update fails
+                    }
+                    
+                    toast.success('Attachment uploaded and asset updated');
                 } catch (e) {
                     const message = e?.message || 'Failed to upload attachment';
                     console.error('[upload-doc] error:', message);
@@ -701,11 +829,19 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             setAvailableSubcategories([]);
             setSelectedCategoryData(null);
             setCustomFormData({});
+            setValidationErrors({});
         } catch (error) {
             // Error is already handled by Redux and useEffect
             console.error('Error adding asset:', error);
         }
     };
+
+    // Clear validation errors when modal is closed
+    useEffect(() => {
+        if (!isOpen) {
+            setValidationErrors({});
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -725,11 +861,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <SelectField 
-                                label="Category" 
+                                label="Category *" 
                                 name="category" 
                                 value={formData.category}
                                 onChange={handleChange}
-                                required
+                                error={validationErrors.category}
                             >
                                 <option value="">
                                     {categoriesLoading ? 'Loading categories...' : 'Select Category...'}
@@ -741,7 +877,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 ))}
                             </SelectField>
                             <SelectField 
-                                label="Subcategory" 
+                                label="Subcategory *" 
                                 name="subcategory"
                                 value={formData.subcategory}
                                 onChange={(e) => {
@@ -751,7 +887,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                     const sub = availableSubcategories.find(s => s.name === subName);
                                     setSelectedSubcategoryId(sub?.subCategoryId || sub?.id || '');
                                 }}
-                                required
+                                error={validationErrors.subcategory}
                                 disabled={!formData.category || availableSubcategories.length === 0}
                             >
                                 <option value="">
@@ -768,7 +904,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     <FaIdCard className="inline mr-1" />
-                                    Asset ID
+                                    Asset ID *
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <input
@@ -799,11 +935,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 )}
                             </div>
                             <SelectField 
-                                label="Location" 
+                                label="Location *" 
                                 name="location" 
                                 value={formData.location}
                                 onChange={handleChange}
-                                required
+                                error={validationErrors.location}
                             >
                                 <option value="">
                                     {locationsLoading ? 'Loading locations...' : 'Select Location...'}
@@ -815,10 +951,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 ))}
                             </SelectField>
                             <SelectField 
-                                label="Status" 
+                                label="Status *" 
                                 name="statusLabelId" 
                                 value={formData.statusLabelId}
                                 onChange={handleChange}
+                                error={validationErrors.statusLabelId}
                             >
                                 <option value="">Select Status...</option>
                                 {Array.isArray(statuses) && statuses.map(s => (
@@ -835,12 +972,12 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                         <h3 className="font-semibold text-lg mb-4">Financial & Purchase Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <InputField 
-                                label="Purchase Date" 
+                                label="Purchase Date *" 
                                 name="purchaseDate" 
                                 value={formData.purchaseDate}
                                 onChange={handleChange}
                                 type="date" 
-                                required 
+                                error={validationErrors.purchaseDate}
                             />
                             <InputField 
                                 label="Invoice / Bill Number" 
@@ -849,12 +986,12 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 onChange={handleChange}
                             />
                             <InputField 
-                                label="Purchase Cost (Gross)" 
+                                label="Purchase Cost (Gross) *" 
                                 name="purchaseCost" 
                                 value={formData.purchaseCost}
                                 onChange={handleChange}
                                 type="number" 
-                                required 
+                                error={validationErrors.purchaseCost}
                             />
                             <InputField 
                                 label="GST Rate (%)" 
@@ -876,7 +1013,8 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 name="invoiceScan" 
                                 onChange={handleChange}
                                 type="file" 
-                                accept=".pdf,.jpg,.jpeg,.png" 
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                title={formData.invoiceScan ? `Selected: ${formData.invoiceScan.name}` : "Choose file"}
                             />
                         </div>
                     </div>
@@ -899,6 +1037,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                     customFormData={customFormData}
                                     setCustomFormData={setCustomFormData}
                                     selectedCategory={formData.category}
+                                    validationErrors={validationErrors}
                                 />
                             )}
                             {formData.category && !selectedSubcategoryId && (
@@ -917,7 +1056,6 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 value={formData.processor}
                                                 onChange={handleChange}
                                                 placeholder="Enter processor details"
-                                                required
                                             />
                                         </div>
                                         <div>
@@ -927,7 +1065,6 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 value={formData.ram}
                                                 onChange={handleChange}
                                                 placeholder="e.g., 16GB"
-                                                required
                                             />
                                         </div>
                                         <div>
@@ -937,7 +1074,6 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 value={formData.memory}
                                                 onChange={handleChange}
                                                 placeholder="e.g., 512GB SSD"
-                                                required
                                             />
                                         </div>
                                         <div>
@@ -947,7 +1083,6 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                                 value={formData.graphicsCard}
                                                 onChange={handleChange}
                                                 placeholder="Enter graphics card details"
-                                                required
                                             />
                                         </div>
                                     </div>
@@ -1028,25 +1163,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
 
 
                 </div>
-                <div className="bg-gray-50 px-6 py-3 flex justify-between items-center rounded-b-lg">
-                    <div className="text-sm text-gray-600">
-                        <button 
-                            type="button" 
-                            onClick={() => {
-                                console.log('=== TEST FORM STATE ===');
-                                console.log('formData:', formData);
-                                console.log('formData.location:', formData.location);
-                                console.log('formData.purchaseDate:', formData.purchaseDate);
-                                console.log('formData.purchaseCost:', formData.purchaseCost);
-                                console.log('formData.invoiceNumber:', formData.invoiceNumber);
-                                console.log('formData.gstRate:', formData.gstRate);
-                                console.log('formData.warrantyExpiry:', formData.warrantyExpiry);
-                            }}
-                            className="px-3 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                        >
-                            Test Form State
-                        </button>
-                    </div>
+                <div className="bg-gray-50 px-6 py-3 flex justify-end items-center rounded-b-lg">
                     <div className="flex items-center gap-2">
                         <button 
                             type="button" 
