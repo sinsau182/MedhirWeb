@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { fetchPipelines } from '@/redux/slices/pipelineSlice';
 
+
 // --- MOCK DATA (Replace with API data) ---
 const MOCK_DATA = {
   kpis: {
@@ -360,6 +361,7 @@ function MainDashboard() {
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
   const { pipelines } = useSelector((state) => state.pipelines);
+
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -372,18 +374,43 @@ function MainDashboard() {
   }, [dispatch]);
 
   const funnelData = useMemo(() => {
-    if (!pipelines || pipelines.length === 0) return MOCK_DATA.pipelineForecast.funnel;
+    console.log('Raw pipelines data:', pipelines);
+    console.log('Pipelines type:', typeof pipelines);
+    console.log('Pipelines length:', pipelines?.length);
+    
+    if (!pipelines || pipelines.length === 0) {
+      console.log('No pipelines data, using mock data');
+      return MOCK_DATA.pipelineForecast.funnel;
+    }
+    
+    // Sort pipelines by order
     const sorted = [...pipelines].sort((a, b) => {
       const ao = typeof a.orderIndex === 'number' ? a.orderIndex : (a.order || 0);
       const bo = typeof b.orderIndex === 'number' ? b.orderIndex : (b.order || 0);
       return ao - bo;
     });
-    const trimmed = sorted.slice(0, Math.max(0, sorted.length - 2));
-    const total = trimmed.length;
-    return trimmed.map((stage, index) => ({
-      name: stage.name,
-      value: total - index || 1,
-    }));
+    
+    console.log('Sorted pipelines:', sorted);
+    
+    // Filter out Lost and Junk stages
+    const filtered = sorted.filter(stage => 
+      stage.formType !== 'LOST' && stage.formType !== 'JUNK'
+    );
+    
+    console.log('Filtered pipelines:', filtered);
+    
+    // Map pipeline stages to funnel data with actual lead counts
+    const result = filtered.map(stage => {
+      const leadCount = stage.leads ? stage.leads.length : 0;
+      console.log(`Stage ${stage.formType}: ${leadCount} leads`, stage.leads);
+      return {
+        name: stage.formType || stage.name,
+        value: leadCount,
+      };
+    });
+    
+    console.log('Final funnel data:', result);
+    return result;
   }, [pipelines]);
 
   const handleAddLeadSubmit = (formData) => {

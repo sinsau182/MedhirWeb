@@ -575,18 +575,19 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                 {editedLocations.map(loc => (
                     <div key={loc.id || loc.locationId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                         <div className="flex-1 flex gap-2 items-center">
-                            {editing ? (
+                            {loc.editing ? (
                                 <>
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={loc.name}
-                                        onChange={e => onFieldChange(loc.id, 'name', e.target.value)}
+                                        onChange={e => onFieldChange(loc.id || loc.locationId, 'name', e.target.value)}
                                         placeholder="Location name"
+                                        autoFocus
                                     />
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={loc.address}
-                                        onChange={e => onFieldChange(loc.id, 'address', e.target.value)}
+                                        onChange={e => onFieldChange(loc.id || loc.locationId, 'address', e.target.value)}
                                         placeholder="Address (optional)"
                                     />
                                 </>
@@ -595,39 +596,41 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                             )}
                         </div>
                         <div className="flex items-center gap-2">
-                            {editing ? (
+                            {loc.editing ? (
                                 <>
                                     <button
-                                        onClick={() => onSave(loc.id)}
-                                        className="text-green-600 hover:text-green-800"
+                                        onClick={() => onSave(loc.id || loc.locationId)}
+                                        className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded"
                                         title="Save Changes"
                                     >
                                         <FaSave />
                                     </button>
                                     <button
-                                        onClick={() => onCancel(loc.id)}
-                                        className="text-gray-600 hover:text-gray-800"
+                                        onClick={() => onCancel(loc.id || loc.locationId)}
+                                        className="text-gray-600 hover:text-gray-800 p-2 hover:bg-gray-50 rounded"
                                         title="Cancel"
                                     >
                                         <FaTimes />
                                     </button>
                                 </>
                             ) : (
-                                <button
-                                    onClick={() => onFieldChange(loc.id, 'editing', true)}
-                                    className="text-blue-600 hover:text-blue-800"
-                                    title="Edit Location"
-                                >
-                                    <FaEdit />
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => onFieldChange(loc.id || loc.locationId, 'editing', true)}
+                                        className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
+                                        title="Edit Location"
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                    <button
+                                        className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
+                                        title="Delete Location"
+                                        onClick={() => onDelete(loc.locationId || loc.id, loc.name)}
+                                    >
+                                        <FaTrash />
+                                    </button>
+                                </>
                             )}
-                            <button
-                                className="text-red-500 hover:text-red-700"
-                                title="Delete Location"
-                                onClick={() => onDelete(loc.locationId || loc.id, loc.name)}
-                            >
-                                <FaTrash />
-                            </button>
                         </div>
                     </div>
                 ))}
@@ -661,53 +664,84 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
                     // Debug: Log the status object structure
                     console.log('Status object:', s);
                     return (
-                        <div key={s.id || s.statusId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <div key={s.statusLabelId || s.statusId || s.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                             <div className="flex-1 flex gap-2 items-center">
-                                {editing ? (
+                                {s.editing ? (
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={s.name}
-                                        onChange={e => onFieldChange(s.id, 'name', e.target.value)}
+                                        onChange={e => {
+                                            // Use the correct ID field - prioritize statusLabelId, then statusId, then id
+                                            const statusIdToUse = s.statusLabelId || s.statusId || s.id;
+                                            onFieldChange(statusIdToUse, 'name', e.target.value);
+                                        }}
                                         placeholder="Status name"
+                                        autoFocus
                                     />
                                 ) : (
                                     <span className="flex-1">{s.name}</span>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                {editing ? (
+                                {s.editing ? (
                                     <>
                                         <button
-                                            onClick={() => onSave(s.id)}
-                                            className="text-green-600 hover:text-green-800"
+                                            onClick={() => {
+                                                console.log('=== SAVE BUTTON CLICKED ===');
+                                                console.log('Status being saved:', s);
+                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
+                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
+                                                console.log('Status ID being passed:', statusIdToUse);
+                                                console.log('onSave function:', onSave);
+                                                onSave(statusIdToUse);
+                                            }}
+                                            className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded"
                                             title="Save Changes"
                                         >
                                             <FaSave />
                                         </button>
                                         <button
-                                            onClick={() => onCancel(s.id)}
-                                            className="text-gray-600 hover:text-gray-800"
+                                            onClick={() => {
+                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
+                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
+                                                onCancel(statusIdToUse);
+                                            }}
+                                            className="text-gray-600 hover:text-gray-800 p-2 hover:bg-gray-50 rounded"
                                             title="Cancel"
                                         >
                                             <FaTimes />
                                         </button>
                                     </>
                                 ) : (
-                                    <button
-                                        onClick={() => onFieldChange(s.id, 'editing', true)}
-                                        className="text-blue-600 hover:text-blue-800"
-                                        title="Edit Status"
-                                    >
-                                        <FaEdit />
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                console.log('=== EDIT BUTTON CLICKED ===');
+                                                console.log('Status being edited:', s);
+                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
+                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
+                                                console.log('Status ID being passed:', statusIdToUse);
+                                                console.log('onFieldChange function:', onFieldChange);
+                                                onFieldChange(statusIdToUse, 'editing', true);
+                                            }}
+                                            className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
+                                            title="Edit Status"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                        <button
+                                            className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
+                                            title="Delete Status Label"
+                                            onClick={() => {
+                                                // Use the correct ID field - prioritize statusLabelId, then statusId, then id
+                                                const statusIdToUse = s.statusLabelId || s.statusId || s.id;
+                                                onDelete(statusIdToUse, s.name);
+                                            }}
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    </>
                                 )}
-                                <button
-                                    className="text-red-500 hover:text-red-700"
-                                    title="Delete Status Label"
-                                    onClick={() => onDelete(s.statusLabelId || s.statusId || s.id, s.name)}
-                                >
-                                    <FaTrash />
-                                </button>
                             </div>
                         </div>
                     );
@@ -2174,6 +2208,17 @@ const AssetSettingsPage = () => {
     }, [locations]);
 
     useEffect(() => {
+        console.log('=== STATUSES LOADED FROM REDUX ===');
+        console.log('Raw statuses from Redux:', statuses);
+        console.log('Statuses structure:', statuses?.map(s => ({
+            id: s.id,
+            statusId: s.statusId,
+            statusLabelId: s.statusLabelId,
+            name: s.name,
+            color: s.color,
+            description: s.description,
+            sortOrder: s.sortOrder
+        })));
         setEditedStatuses(statuses || []);
     }, [statuses]);
 
@@ -3008,49 +3053,222 @@ const AssetSettingsPage = () => {
         }
         
         try {
-            await dispatch(addAssetLocation({ 
-                name: newLocation.name, 
-                address: newLocation.address 
-            })).unwrap();
+            // Get company ID from session storage
+            const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                             sessionStorage.getItem("companyId") || 
+                             sessionStorage.getItem("company");
+            
+            if (!companyId) {
+                toast.error("Company ID not found in session");
+                return;
+            }
+            
+            // Prepare request payload according to API specification
+            const locationData = {
+                name: newLocation.name,
+                companyId: companyId,
+                isActive: true
+            };
+            
+            // Add address if it exists (though API doesn't show address field)
+            if (newLocation.address) {
+                locationData.address = newLocation.address;
+            }
+            
+            // Make direct API call to add location
+            const tokenRaw = getItemFromSessionStorage('token', null);
+            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            
+            const addUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations`;
+            console.log('[add-location] POST', addUrl, locationData);
+            
+            const response = await fetch(addUrl, {
+                method: 'POST',
+                headers: {
+                    ...headers,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(locationData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Location creation failed (${response.status})`);
+            }
+            
+            const result = await response.json();
+            console.log('Location creation response:', result);
+            
             setNewLocation({ name: '', address: '' });
             toast.success("Location added successfully!");
+            
+            // Refresh locations from backend to get new data
+            dispatch(fetchAssetLocations());
+            
         } catch (error) {
-            toast.error("Failed to add location");
+            console.error('Error adding location:', error);
+            const errorMessage = error?.message || "Failed to add location";
+            toast.error(errorMessage);
         }
     };
 
     const handleLocationFieldChange = (locId, key, value) => {
-        dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
+        if (key === 'editing' && value === true) {
+            // Start editing mode
+            dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
+        } else {
+            // Update field
+            dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
+        }
         
         // Also update local state for immediate UI feedback
         setEditedLocations(editedLocations.map(loc => 
-            loc.id === locId ? { ...loc, [key]: value } : loc
+            (loc.id === locId || loc.locationId === locId) ? { ...loc, [key]: value } : loc
         ));
     };
 
-    const handleSaveLocations = async () => {
+    // Utility function for batch updating locations (if needed in the future)
+    const handleBatchUpdateLocations = async (locationsData) => {
         try {
-            const payload = editedLocations.map(loc => ({
+            // Get company ID from session storage
+            const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                             sessionStorage.getItem("companyId") || 
+                             sessionStorage.getItem("company");
+            
+            if (!companyId) {
+                toast.error("Company ID not found in session");
+                return false;
+            }
+            
+            // Prepare batch request payload
+            const batchPayload = locationsData.map(loc => ({
                 locationId: loc.locationId || loc.id,
                 name: loc.name,
-                address: loc.address
+                companyId: companyId,
+                isActive: true
             }));
             
-            if (payload.length > 0) {
-                await dispatch(batchUpdateAssetLocations(payload)).unwrap();
-                toast.success("Locations updated successfully!");
+            // Make direct API call to batch update locations
+            const tokenRaw = getItemFromSessionStorage('token', null);
+            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            
+            const batchUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations/batch`;
+            console.log('[batch-update-locations] PATCH', batchUrl, batchPayload);
+            
+            const response = await fetch(batchUrl, {
+                method: 'PATCH',
+                headers: {
+                    ...headers,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(batchPayload)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Batch location update failed (${response.status})`);
             }
-            setEditingLocations(false);
+            
+            const result = await response.json();
+            console.log('Batch location update response:', result);
+            
+            toast.success("Locations updated successfully!");
+            return true;
+            
         } catch (error) {
-            toast.error("Failed to update locations");
+            console.error('Error batch updating locations:', error);
+            const errorMessage = error?.message || "Failed to batch update locations";
+            toast.error(errorMessage);
+            return false;
         }
     };
 
-    const handleCancelLocations = () => {
-        setEditedLocations(locations || []);
-        setNewLocation({ name: '', address: '' });
-        setEditingLocations(false);
-        toast.info("Location changes cancelled.");
+    const handleSaveLocations = async (locationId = null) => {
+        if (locationId) {
+            // Save individual location
+            const location = editedLocations.find(loc => loc.id === locationId || loc.locationId === locationId);
+            
+            if (location) {
+                try {
+                    // Get company ID from session storage
+                    const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                                     sessionStorage.getItem("companyId") || 
+                                     sessionStorage.getItem("company");
+                    
+                    if (!companyId) {
+                        toast.error("Company ID not found in session");
+                        return;
+                    }
+                    
+                    // Prepare request payload according to API specification
+                    const locationData = {
+                        name: location.name,
+                        companyId: companyId,
+                        isActive: true
+                    };
+                    
+                    // Add address if it exists (though API doesn't show address field)
+                    if (location.address) {
+                        locationData.address = location.address;
+                    }
+                    
+                    // Make direct API call to update location
+                    const tokenRaw = getItemFromSessionStorage('token', null);
+                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                    
+                    const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations/${location.locationId || location.id}`;
+                    console.log('[update-location] PATCH', updateUrl, locationData);
+                    
+                    const response = await fetch(updateUrl, {
+                        method: 'PATCH',
+                        headers: {
+                            ...headers,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(locationData)
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || `Location update failed (${response.status})`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Location update response:', result);
+                    
+                    // Clear editing state
+                    handleLocationFieldChange(locationId, 'editing', false);
+                    toast.success("Location updated successfully!");
+                    
+                    // Refresh locations from backend to get updated data
+                    dispatch(fetchAssetLocations());
+                    
+                } catch (error) {
+                    console.error('Error updating location:', error);
+                    const errorMessage = error?.message || "Failed to update location";
+                    toast.error(errorMessage);
+                }
+            }
+        }
+    };
+
+    const handleCancelLocations = (locationId = null) => {
+        if (locationId) {
+            // Cancel individual location editing
+            const originalLocation = locations.find(loc => loc.id === locationId || loc.locationId === locationId);
+            
+            if (originalLocation) {
+                setEditedLocations(editedLocations.map(loc => 
+                    (loc.id === locationId || loc.locationId === locationId) 
+                        ? { ...originalLocation, editing: false }
+                        : loc
+                ));
+                toast.info("Location changes cancelled.");
+            }
+        }
     };
 
     const handleDeleteLocation = (locationId, name) => {
@@ -3113,48 +3331,364 @@ const AssetSettingsPage = () => {
         }
         
         try {
-            await dispatch(addAssetStatus({ name: newStatus.name })).unwrap();
+            // Get company ID from session storage
+            const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                             sessionStorage.getItem("companyId") || 
+                             sessionStorage.getItem("company");
+            
+            if (!companyId) {
+                toast.error("Company ID not found in session");
+                return;
+            }
+            
+            // Prepare request payload according to API specification
+            const statusData = {
+                name: newStatus.name,
+                companyId: companyId,
+                isActive: true,
+                // Set default values as per API documentation
+                color: "#6B7280", // Default color
+                description: null,
+                sortOrder: 0 // Default sort order
+            };
+            
+            // Make direct API call to add status label
+            const tokenRaw = getItemFromSessionStorage('token', null);
+            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            
+            const addUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels`;
+            console.log('[add-status-label] POST', addUrl, statusData);
+            
+            const response = await fetch(addUrl, {
+                method: 'POST',
+                headers: {
+                    ...headers,
+                    'Content-Type': 'application/json'
+                    },
+                body: JSON.stringify(statusData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Status label creation failed (${response.status})`);
+            }
+            
+            const result = await response.json();
+            console.log('Status label creation response:', result);
+            
             setNewStatus({ name: '' });
             toast.success("Status label added successfully!");
+            
+            // Refresh statuses from backend to get new data
+            dispatch(fetchAssetStatuses());
+            
+            // Also refresh the local state
+            setTimeout(() => {
+                dispatch(fetchAssetStatuses());
+            }, 100);
+            
         } catch (error) {
-            toast.error("Failed to add status label");
+            console.error('Error adding status label:', error);
+            const errorMessage = error?.message || "Failed to add status label";
+            toast.error(errorMessage);
         }
     };
 
     const handleStatusFieldChange = (statusId, field, value) => {
-        dispatch(updateStatusLocal({ statusId, field, value }));
+        console.log('=== handleStatusFieldChange CALLED ===');
+        console.log('handleStatusFieldChange called:', { statusId, field, value });
+        console.log('Current editedStatuses before change:', editedStatuses);
+        
+        if (field === 'editing' && value === true) {
+            console.log('Starting editing mode for status:', statusId);
+            // Start editing mode
+            dispatch(updateStatusLocal({ statusId, field, value }));
+        } else {
+            console.log('Updating field for status:', { statusId, field, value });
+            // Update field
+            dispatch(updateStatusLocal({ statusId, field, value }));
+        }
         
         // Also update local state for immediate UI feedback
-        setEditedStatuses(editedStatuses.map(s => 
-            s.id === statusId ? { ...s, [field]: value } : s
-        ));
+        setEditedStatuses(editedStatuses.map(s => {
+            const sId = s.statusLabelId || s.statusId || s.id;
+            const matches = (sId === statusId);
+            if (matches) {
+                console.log('Updating status in local state:', { 
+                    before: s, 
+                    field, 
+                    value, 
+                    after: { ...s, [field]: value } 
+                });
+            }
+            return matches ? { ...s, [field]: value } : s;
+        }));
+        
+        console.log('Current editedStatuses after change:', editedStatuses);
     };
 
-    const handleSaveStatuses = async () => {
+    // Utility function for batch updating status labels (if needed in the future)
+    const handleBatchUpdateStatuses = async (statusesData) => {
         try {
-            const payload = editedStatuses
-                .filter(s => s.statusLabelId) // Only include those with a valid statusLabelId
-                .map(s => ({
-                    statusLabelId: s.statusLabelId,
-                    name: s.name,
-                    ...(s.color ? { color: s.color } : {})
-                }));
-                
-            if (payload.length > 0) {
-                await dispatch(batchUpdateAssetStatuses(payload)).unwrap();
-                toast.success("Status labels updated successfully!");
+            // Get company ID from session storage
+            const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                             sessionStorage.getItem("companyId") || 
+                             sessionStorage.getItem("company");
+            
+            if (!companyId) {
+                toast.error("Company ID not found in session");
+                return false;
             }
-            setEditingStatuses(false);
+            
+            // Prepare batch request payload
+            const batchPayload = statusesData.map(status => ({
+                statusLabelId: status.statusLabelId || status.statusId || status.id,
+                name: status.name,
+                companyId: companyId,
+                isActive: true,
+                color: status.color || "#6B7280", // Default color
+                description: status.description || null,
+                sortOrder: status.sortOrder || 0 // Default sort order
+            }));
+            
+            // Note: API doesn't show batch endpoint for status labels, but keeping this for future use
+            // For now, we'll update them individually
+            let successCount = 0;
+            for (const statusData of batchPayload) {
+                try {
+                    const tokenRaw = getItemFromSessionStorage('token', null);
+                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                    
+                    const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels/${statusData.statusLabelId}`;
+                    console.log('[batch-update-status-label] PATCH', updateUrl, statusData);
+                    
+                    const response = await fetch(updateUrl, {
+                        method: 'PATCH',
+                        headers: {
+                            ...headers,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(statusData)
+                    });
+                    
+                    if (response.ok) {
+                        successCount++;
+                    }
+                } catch (error) {
+                    console.error(`Error updating status label ${statusData.statusLabelId}:`, error);
+                }
+            }
+            
+            if (successCount === batchPayload.length) {
+                toast.success("All status labels updated successfully!");
+                return true;
+            } else if (successCount > 0) {
+                toast.warning(`${successCount} out of ${batchPayload.length} status labels updated successfully`);
+                return true;
+            } else {
+                toast.error("Failed to update any status labels");
+                return false;
+            }
+            
         } catch (error) {
-            toast.error("Failed to update status labels");
+            console.error('Error batch updating status labels:', error);
+            const errorMessage = error?.message || "Failed to batch update status labels";
+            toast.error(errorMessage);
+            return false;
         }
     };
 
-    const handleCancelStatuses = () => {
-        setEditedStatuses(statuses || []);
-        setNewStatus({ name: '' });
-        setEditingStatuses(false);
-        toast.info("Status changes cancelled.");
+    const handleSaveStatuses = async (statusId = null) => {
+        console.log('=== STATUS SAVE FUNCTION CALLED ===');
+        console.log('handleSaveStatuses called with statusId:', statusId);
+        console.log('Current editedStatuses:', editedStatuses);
+        console.log('Current statuses from Redux:', statuses);
+        
+        if (statusId) {
+            // Save individual status
+            console.log('Looking for status with ID:', statusId);
+            console.log('Available statuses in editedStatuses:', editedStatuses.map(s => ({
+                id: s.id,
+                statusId: s.statusId,
+                statusLabelId: s.statusLabelId,
+                name: s.name
+            })));
+            
+            const status = editedStatuses.find(s => {
+                const sId = s.statusLabelId || s.statusId || s.id;
+                console.log('Checking status:', { 
+                    name: s.name, 
+                    sId, 
+                    matches: sId === statusId 
+                });
+                return sId === statusId;
+            });
+            console.log('Found status to update:', status);
+            console.log('Status ID fields:', { 
+                id: status?.id, 
+                statusId: status?.statusId, 
+                statusLabelId: status?.statusLabelId 
+            });
+            
+            if (status) {
+                console.log('Attempting to save status:', { statusId, status });
+                
+                try {
+                    // Get company ID from session storage
+                    const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                                     sessionStorage.getItem("companyId") || 
+                                     sessionStorage.getItem("company");
+                    
+                    console.log('Company ID from session:', companyId);
+                    
+                    if (!companyId) {
+                        toast.error("Company ID not found in session");
+                        return;
+                    }
+                    
+                    // Prepare request payload according to API specification
+                    const statusData = {
+                        name: status.name,
+                        companyId: companyId,
+                        isActive: true,
+                        // Set default values as per API documentation
+                        color: status.color || "#6B7280", // Default color
+                        description: status.description || null,
+                        sortOrder: status.sortOrder || 0 // Default sort order
+                    };
+                    
+                    console.log('Status data to update:', statusData);
+                    console.log('Status ID being used:', status.statusLabelId || status.statusId || status.id);
+                    
+                    // Try direct API call first
+                    try {
+                        const tokenRaw = getItemFromSessionStorage('token', null);
+                        const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                        
+                        // Use the correct API endpoint based on the documentation
+                        const statusLabelId = status.statusLabelId || status.statusId || status.id;
+                        const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels/${statusLabelId}`;
+                        console.log('[update-status-label] PATCH', updateUrl, statusData);
+                        
+                        const response = await fetch(updateUrl, {
+                            method: 'PATCH',
+                            headers: {
+                                ...headers,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(statusData)
+                        });
+                        
+                        console.log('API Response status:', response.status);
+                        console.log('API Response headers:', response.headers);
+                        
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            console.error('API Error response:', errorData);
+                            throw new Error(errorData.message || `Status label update failed (${response.status})`);
+                        }
+                        
+                        const result = await response.json();
+                        console.log('Status label update response:', result);
+                        
+                        // Clear editing state
+                        handleStatusFieldChange(statusId, 'editing', false);
+                        toast.success("Status label updated successfully!");
+                        
+                        // Refresh statuses from backend to get updated data
+                        dispatch(fetchAssetStatuses());
+                        
+                        // Also refresh the local state
+                        setTimeout(() => {
+                            dispatch(fetchAssetStatuses());
+                        }, 100);
+                        
+                        return; // Success, exit function
+                        
+                    } catch (apiError) {
+                        console.error('Direct API call failed, trying Redux action as fallback:', apiError);
+                        
+                        // Fallback to Redux action
+                        try {
+                            console.log('Trying Redux action as fallback...');
+                            console.log('Redux action payload:', {
+                                statusLabelId: status.statusLabelId || status.statusId || status.id,
+                                assetData: { 
+                                    name: status.name,
+                                    ...(status.color && { color: status.color }),
+                                    ...(status.description && { description: status.description }),
+                                    ...(status.sortOrder && { sortOrder: status.sortOrder })
+                                }
+                            });
+                            
+                            const reduxResult = await dispatch(updateAssetStatus({
+                                statusLabelId: status.statusLabelId || status.statusId || status.id,
+                                assetData: { 
+                                    name: status.name,
+                                    color: status.color || "#6B7280",
+                                    description: status.description || null,
+                                    sortOrder: status.sortOrder || 0
+                                }
+                            })).unwrap();
+                            
+                            console.log('Redux action result:', reduxResult);
+                            
+                            // Clear editing state
+                            handleStatusFieldChange(statusId, 'editing', false);
+                            toast.success("Status label updated successfully via Redux!");
+                            
+                            // Refresh statuses from backend to get updated data
+                            dispatch(fetchAssetStatuses());
+                            
+                            // Also refresh the local state
+                            setTimeout(() => {
+                                dispatch(fetchAssetStatuses());
+                            }, 100);
+                            
+                        } catch (reduxError) {
+                            console.error('Redux action also failed:', reduxError);
+                            console.error('Redux error details:', {
+                                message: reduxError.message,
+                                stack: reduxError.stack,
+                                payload: reduxError.payload
+                            });
+                            throw new Error(`Both API and Redux failed: ${apiError.message} | Redux: ${reduxError.message}`);
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error updating status label:', error);
+                    const errorMessage = error?.message || "Failed to update status label";
+                    toast.error(errorMessage);
+                }
+            } else {
+                console.error('Status not found for ID:', statusId);
+                toast.error("Status not found");
+            }
+        } else {
+            console.error('No status ID provided to handleSaveStatuses');
+        }
+    };
+
+    const handleCancelStatuses = (statusId = null) => {
+        if (statusId) {
+            // Cancel individual status editing
+            const originalStatus = statuses.find(s => {
+                const sId = s.statusLabelId || s.statusId || s.id;
+                return sId === statusId;
+            });
+            
+            if (originalStatus) {
+                setEditedStatuses(editedStatuses.map(s => {
+                    const sId = s.statusLabelId || s.statusId || s.id;
+                    return sId === statusId ? { ...originalStatus, editing: false } : s;
+                }));
+                toast.info("Status changes cancelled.");
+            }
+        }
     };
 
     const handleDeleteStatus = (statusId, name) => {
@@ -3168,9 +3702,10 @@ const AssetSettingsPage = () => {
         console.log('Attempting to delete status label:', { statusId, name });
         
         // Check if any assets are using this status label
-        const assetsUsingStatus = assets.filter(asset => 
-            asset.statusLabelId === statusId || asset.statusId === statusId
-        );
+        const assetsUsingStatus = assets.filter(asset => {
+            const assetStatusId = asset.statusLabelId || asset.statusId;
+            return assetStatusId === statusId;
+        });
         
         if (assetsUsingStatus.length > 0) {
             // Show warning modal with details about assets using this status
@@ -3321,12 +3856,12 @@ const AssetSettingsPage = () => {
             id: 'locations', 
             label: 'Locations', 
             icon: FaMapMarkedAlt, 
-            editing: editingLocations,
-            setEditing: setEditingLocations,
+            editing: false, // No global editing state - inline editing only
+            setEditing: () => {}, // No-op function
             onSave: null, // No global save button - inline editing
             onCancel: null, // No global cancel button - inline editing
             component: <LocationSettings 
-                editing={editingLocations} 
+                editing={false} 
                 editedLocations={editedLocations} 
                 setEditedLocations={setEditedLocations} 
                 newLocation={newLocation} 
@@ -3343,12 +3878,12 @@ const AssetSettingsPage = () => {
             id: 'statuses', 
             label: 'Status Labels', 
             icon: FaCheckSquare, 
-            editing: editingStatuses,
-            setEditing: setEditingStatuses,
+            editing: false, // No global editing state - inline editing only
+            setEditing: () => {}, // No-op function
             onSave: null, // No global save button - inline editing
             onCancel: null, // No global cancel button - inline editing
             component: <StatusSettings 
-                editing={editingStatuses} 
+                editing={false} 
                 editedStatuses={editedStatuses} 
                 setEditedStatuses={setEditedStatuses} 
                 newStatus={newStatus} 
