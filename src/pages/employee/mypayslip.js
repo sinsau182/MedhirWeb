@@ -77,8 +77,6 @@ const PayrollPage = () => {
   const { attendance } = useSelector((state) => state.attendances);
   const { employeePayslip, employeePayslipLoading, employeePayslipError } = useSelector((state) => state.payroll);
   const { sentPayslips, sentPayslipsLoading, sentPayslipsError } = useSelector((state) => state.payslip);
-
-  console.log(attendance);
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -173,10 +171,7 @@ const PayrollPage = () => {
     }
   }, [currentPayslipData, isManualSelection]);
 
-  // Debug logging
-  console.log("Current payslip data:", currentPayslipData);
-  console.log("Date of joining from API:", currentPayslipData?.dateOfJoining);
-  console.log("Is manual selection:", isManualSelection);
+  // Debug logging removed
 
   // Show error toast if there's an error
   // useEffect(() => {
@@ -213,7 +208,6 @@ const PayrollPage = () => {
       
       // Check if date is valid
       if (isNaN(d.getTime())) {
-        console.log("Invalid date:", date);
         return "Invalid Date";
       }
       
@@ -222,7 +216,6 @@ const PayrollPage = () => {
       const year = d.getFullYear().toString().slice(-2);
 
       const formatted = `${day}-${month}-${year}`;
-      console.log("Original date:", date, "Parsed date:", d, "Formatted:", formatted);
       
       return formatted;
     } catch (error) {
@@ -293,10 +286,7 @@ const PayrollPage = () => {
   // Get filtered available months
   const availableMonths = getAvailableMonths();
 
-  // Debug logging
-  console.log("Available months:", availableMonths);
-  console.log("Sent payslips:", sentPayslips);
-  console.log("Grouped payrolls:", groupedPayrolls);
+  // Debug logging removed
 
   // Helper function to check if value should show -- or the actual value
   const displayValue = (value) => {
@@ -317,59 +307,73 @@ const PayrollPage = () => {
         <HradminNavbar />
         <div className="container mt-14 mx-auto">
           <div className="space-y-4 mx-auto px-9 py-6">
-            <div className="flex items-center justify-between relative">
-              <h1 className="text-3xl font-bold">My Payslips</h1>
-              <div className="relative">
-                <Badge
-                  variant="outline"
-                  className="w-[160px] h-[40px] px-4 py-3 cursor-pointer bg-white border border-gray-600 rounded-md flex items-center justify-center bg-gray-100"
-                  onClick={toggleCalendar}
-                >
-                  <CalendarIcon className="mr-1 h-3 w-3" />
-                  {selectedMonth ? `${selectedYear}-${selectedMonth}` : 'Loading...'}
-                </Badge>
+                         <div className="flex items-center justify-between relative">
+               <h1 className="text-3xl font-bold">My Payslips</h1>
+               {/* Only show calendar if we have available months and not in continuous loading */}
+               {Object.keys(availableMonths).length > 0 && !sentPayslipsLoading && (
+                 <div className="relative">
+                   {selectedMonth ? (
+                     <>
+                       <Badge
+                         variant="outline"
+                         className="w-[160px] h-[40px] px-4 py-3 cursor-pointer bg-white border border-gray-600 rounded-md flex items-center justify-center bg-gray-100"
+                         onClick={toggleCalendar}
+                       >
+                         <CalendarIcon className="mr-1 h-3 w-3" />
+                         {selectedYear}-{selectedMonth}
+                       </Badge>
 
-                {isCalendarOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
-                    {Object.entries(availableMonths)
-                      .sort(([b], [a]) => b - a)
-                      .map(([year, months]) => (
-                        <div key={year} className="border-b-2">
-                          <div className="px-4 py-2 bg-gray-400 font-medium">
-                            {year}
-                          </div>
-                          <ul className="py-2">
-                            {months.map((month) => (
-                              <li
-                                key={month}
-                                className={`px-4 py-2 cursor-pointer ${
-                                  month === selectedMonth &&
-                                  parseInt(year) === selectedYear
-                                    ? "bg-gray-300 font-semibold"
-                                    : "hover:bg-gray-200"
-                                }`}
-                                onClick={() => {
-                                  handleMonthSelection(month, parseInt(year));
-                                }}
-                              >
-                                {month}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="default"
-                className="flex items-center"
-                onClick={downloadPDF}
-                disabled={!currentPayslipData}
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Download
-              </Button>
+                       {isCalendarOpen && (
+                         <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                           {Object.entries(availableMonths)
+                             .sort(([b], [a]) => b - a)
+                             .map(([year, months]) => (
+                               <div key={year} className="border-b-2">
+                                 <div className="px-4 py-2 bg-gray-400 font-medium">
+                                   {year}
+                                 </div>
+                                 <ul className="py-2">
+                                   {months.map((month) => (
+                                     <li
+                                       key={month}
+                                       className={`px-4 py-2 cursor-pointer ${
+                                         month === selectedMonth &&
+                                         parseInt(year) === selectedYear
+                                           ? "bg-gray-300 font-semibold"
+                                           : "hover:bg-gray-200"
+                                       }`}
+                                       onClick={() => {
+                                         handleMonthSelection(month, parseInt(year));
+                                       }}
+                                     >
+                                       {month}
+                                     </li>
+                                   ))}
+                                 </ul>
+                               </div>
+                             ))}
+                         </div>
+                       )}
+                     </>
+                   ) : (
+                     <div className="w-[160px] h-[40px] px-4 py-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center">
+                       <span className="text-gray-500 text-sm">Loading...</span>
+                     </div>
+                   )}
+                 </div>
+               )}
+              {/* Only show download button if we have available months and not in continuous loading */}
+              {Object.keys(availableMonths).length > 0 && !sentPayslipsLoading && (
+                <Button
+                  variant="default"
+                  className="flex items-center"
+                  onClick={downloadPDF}
+                  disabled={!currentPayslipData}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Download
+                </Button>
+              )}
             </div>
 
             {!selectedMonth && sentPayslipsLoading ? (
