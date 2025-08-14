@@ -405,7 +405,7 @@ const PayrollPage = () => {
                   {/* Header */}
                   <div className="bg-gray-600 text-white text-center py-2">
                     <h1 className="text-xl font-bold mb-1">
-                      PAYSLIP for the Month of {currentPayslipData?.monthYearDisplay}
+                      PAYSLIP for the Month of {selectedMonth} {selectedYear}
                     </h1>
                   </div>
 
