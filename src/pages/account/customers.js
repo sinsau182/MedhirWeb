@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes, FaFileAlt } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
-import Sidebar from "../../components/Sidebar";
-import HradminNavbar from "../../components/HradminNavbar";
+import MainLayout from '@/components/MainLayout'; // Import MainLayout
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
@@ -466,21 +465,12 @@ const Customers = () => {
   const { invoices } = useSelector(state => state.invoices);
   const { customers, loading: customersLoading, error: customersError } = useSelector(state => state.customers);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState('invoice');
   const [showAddForm, setShowAddForm] = useState(null);
   const [invoiceForReceipt, setInvoiceForReceipt] = useState(null);
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
   const [selectedReceiptForPreview, setSelectedReceiptForPreview] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [customerActiveTab, setCustomerActiveTab] = useState('invoices');
-  const [showCustomerPreview, setShowCustomerPreview] = useState(false);
-  const [selectedCustomerForPreview, setSelectedCustomerForPreview] = useState(null);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [selectedReceipt, setSelectedReceipt] = useState(null);
-  const [selectedDateRange, setSelectedDateRange] = useState('thisMonth');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
-  const [showCustomDateInputs, setShowCustomDateInputs] = useState(false);
 
   useEffect(() => {
     dispatch(fetchReceipts());
@@ -494,14 +484,6 @@ const Customers = () => {
     dispatch(fetchCustomers());
   }, [dispatch]);
 
-  // Update statement when custom dates change
-  useEffect(() => {
-    if (selectedDateRange === 'custom' && customStartDate && customEndDate) {
-      // This will trigger a re-render of the statement with new date range
-      // The getDateRange function will use the updated customStartDate and customEndDate
-    }
-  }, [customStartDate, customEndDate, selectedDateRange]);
-
   // const [invoices, setInvoices] = useState([
   //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
   //   { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
@@ -513,92 +495,16 @@ const Customers = () => {
   // ]);
   // Remove the static clients state since we're now using Redux
 
-  const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-  
-  // Function to get date range based on selection
-  const getDateRange = (range) => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    switch (range) {
-      case 'thisMonth':
-        return {
-          startDate: new Date(currentYear, currentMonth, 1),
-          endDate: new Date(currentYear, currentMonth + 1, 0)
-        };
-      case 'lastMonth':
-        return {
-          startDate: new Date(currentYear, currentMonth - 1, 1),
-          endDate: new Date(currentYear, currentMonth, 0)
-        };
-      case 'last3Months':
-        return {
-          startDate: new Date(currentYear, currentMonth - 3, 1),
-          endDate: new Date(currentYear, currentMonth + 1, 0)
-        };
-      case 'last6Months':
-        return {
-          startDate: new Date(currentYear, currentMonth - 6, 1),
-          endDate: new Date(currentYear, currentMonth + 1, 0)
-        };
-      case 'thisYear':
-        return {
-          startDate: new Date(currentYear, 0, 1),
-          endDate: new Date(currentYear, 11, 31)
-        };
-      case 'lastYear':
-        return {
-          startDate: new Date(currentYear - 1, 0, 1),
-          endDate: new Date(currentYear - 1, 11, 31)
-        };
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            startDate: new Date(customStartDate),
-            endDate: new Date(customEndDate)
-          };
-        }
-        // Fallback to current month if custom dates are not set
-        return {
-          startDate: new Date(currentYear, currentMonth, 1),
-          endDate: new Date(currentYear, currentMonth + 1, 0)
-        };
-      default:
-        return {
-          startDate: new Date(currentYear, currentMonth, 1),
-          endDate: new Date(currentYear, currentMonth + 1, 0)
-        };
-    }
-  };
-  
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const handleTabClick = (tab) => { setActiveTab(tab); setShowAddForm(null); };
   const handleAddClick = () => {
-    setShowAddForm('client');
-  };
-
-  const handleDateRangeChange = (range) => {
-    setSelectedDateRange(range);
-    if (range === 'custom') {
-      setShowCustomDateInputs(true);
-      // Set default custom dates to current month
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      setCustomStartDate(new Date(currentYear, currentMonth, 1).toISOString().split('T')[0]);
-      setCustomEndDate(new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]);
-    } else {
-      setShowCustomDateInputs(false);
-    }
+    if (activeTab === 'invoice') setShowAddForm('invoice');
+    else if (activeTab === 'receipts') setShowAddForm('receipt');
+    else if (activeTab === 'clients') setShowAddForm('client');
   };
   const handleBackFromForm = () => {
     setShowAddForm(null);
     setInvoiceForReceipt(null);
-    setSelectedInvoice(null);
-    setSelectedReceipt(null);
-    
-    // Don't clear selectedCustomer - this ensures the customer remains selected when returning from forms
   };
 
   const handleGenerateReceiptClick = (invoice) => {
@@ -628,7 +534,6 @@ const handleInvoiceSubmit = (data) => {
       toast.success('Invoice added!');
       dispatch(fetchInvoices());
       setShowAddForm(null);
-        setSelectedInvoice(null);
     })
     .catch((err) => {
       toast.error('Failed to add invoice: ' + (err?.message || 'Unknown error'));
@@ -637,12 +542,12 @@ const handleInvoiceSubmit = (data) => {
 
 
   const handleReceiptSubmit = (data) => {
-    setShowAddForm(null);     // Close the form
+    setActiveTab('receipts'); // Switch to Receipts tab FIRST
+    setShowAddForm(null);     // Then close the form
     setInvoiceForReceipt(null);
-    setSelectedReceipt(null);
     dispatch(fetchReceipts()); // Refresh receipts list
     dispatch(fetchInvoices()); // Refresh invoices list so amountReceived is updated
-    toast.success('Receipt added!');
+    // toast.success('Receipt added!');
   };
 
 
@@ -652,26 +557,30 @@ const handleInvoiceSubmit = (data) => {
     dispatch(fetchCustomers()); // Refresh the customers list
   };
 
-
+  const tabs = [
+    { id: 'invoice', label: 'Invoice', icon: FaFileInvoiceDollar },
+    { id: 'receipts', label: 'Receipts', icon: FaReceipt },
+    { id: 'clients', label: 'Customers', icon: FaUsers },
+  ];
+  
+  const getAddButtonLabel = () => {
+    switch (activeTab) {
+      case 'invoice': return 'Add Invoice';
+      case 'receipts': return 'Add Receipt';
+      case 'clients': return 'Add Customers';
+      default: return 'Add';
+    }
+  };
 
   const renderAddForm = () => {
     const commonProps = { onCancel: handleBackFromForm };
+    const formTitle = `Add New ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
 
     let formComponent;
-    let formTitle;
     switch (showAddForm) {
-      case 'invoice': 
-        formComponent = <AddInvoiceForm {...commonProps} onSubmit={handleInvoiceSubmit} />; 
-        formTitle = 'Add New Invoice';
-        break;
-      case 'receipt': 
-        formComponent = <AddReceiptForm {...commonProps} onSubmit={handleReceiptSubmit} initialData={invoiceForReceipt} />; 
-        formTitle = 'Add New Receipt';
-        break;
-      case 'client': 
-        formComponent = <AddClientForm {...commonProps} onSubmit={handleClientSubmit} />; 
-        formTitle = 'Add New Customer';
-        break;
+      case 'invoice': formComponent = <AddInvoiceForm {...commonProps} onSubmit={handleInvoiceSubmit} />; break;
+      case 'receipt': formComponent = <AddReceiptForm {...commonProps} onSubmit={handleReceiptSubmit} initialData={invoiceForReceipt} />; break;
+      case 'client': formComponent = <AddClientForm {...commonProps} onSubmit={handleClientSubmit} />; break;
       default: return null;
     }
 
@@ -691,723 +600,272 @@ const handleInvoiceSubmit = (data) => {
   const renderContent = () => {
     if (showAddForm) return renderAddForm();
 
-    // Only show customers view for now
+    let table;
+    switch (activeTab) {
+      case 'invoice':
+        const filteredInvoices = invoices.filter(invoice =>
+          (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.project?.projectName && invoice.project.projectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.customer?.customerName && invoice.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (invoice.status && invoice.status.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        table = (
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice no.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Remaining</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                {/* <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Receipt Generated</th> */}
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+              {filteredInvoices.map(invoice => {
+                const amountRemaining = invoice.totalAmount - invoice.amountReceived;
+                return (
+                  <tr key={invoice.id}>
+                    <td className="px-6 py-4 text-sm font-medium text-blue-600">{invoice.invoiceNumber}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.project?.projectName}</td>
+                    <td className="px-6 py-4 text-sm">{invoice.customer?.customerName}</td>
+                    <td className="px-6 py-4 text-sm">${invoice.totalAmount.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm text-green-600">${invoice.amountReceived.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-sm font-semibold text-red-600">${amountRemaining.toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        invoice.status?.toLowerCase() === 'received' || invoice.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
+                        invoice.status?.toLowerCase() === 'partial received' || invoice.status?.toLowerCase() === 'partial paid' || invoice.status?.toLowerCase() === 'partially paid' || invoice.status?.toLowerCase() === 'partiallypaid' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {invoice.status}
+                      </span>
+                    </td>
+                    {/* <td className="px-6 py-4 text-sm text-center">
+                      <span className={`font-medium ${invoice.receiptGenerated === 'Yes' ? 'text-green-600' : 'text-gray-500'}`}>
+                        {invoice.receiptGenerated}
+                      </span>
+                    </td> */}
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => setSelectedInvoiceForPreview(invoice)} className="text-gray-500 hover:text-blue-600">
+                        <FaEye />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+                </tbody>
+              </table>
+        );
+        break;
+      case 'receipts':
+        const filteredReceipts = receipts.filter(r =>
+          (r.receiptNumber && r.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.project?.projectName && r.project.projectName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.customer?.customerName && r.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.paymentMethod && r.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          (r.paymentTransactionId && r.paymentTransactionId.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+        table = (
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt No.</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount Received</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Method</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment trans. Id</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Attachment</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+              {filteredReceipts.map(r => {
+                // Debug: Log receipt data to see available fields
+                console.log('Receipt data:', r);
+                return (
+                <tr key={r.id}>
+                  <td className="px-6 py-4 text-sm font-medium text-blue-600 whitespace-nowrap max-w-xs truncate">{r.receiptNumber}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.project?.projectName}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.customer?.customerName}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.receiptDate}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-green-600">₹{r.amountReceived}</td>
+                  <td className="px-6 py-4 text-sm whitespace-nowrap max-w-xs truncate">{r.paymentMethod}</td>
+                  <td className="px-6 py-4 text-sm font-mono whitespace-nowrap max-w-xs truncate">{r.paymentTransactionId}</td>
+                  <td className="px-6 py-4 text-center">
+                    <AttachmentPreview 
+                      fileUrl={r.receiptFileUrl || r.attachmentUrl}
+                      onClick={async () => {
+                        try {
+                          const result = await dispatch(fetchImageFromMinio({ url: r.receiptFileUrl || r.attachmentUrl })).unwrap();
+                          if (result.dataUrl) {
+                            window.open(result.dataUrl, '_blank', 'noopener,noreferrer');
+                          } else {
+                            // Fallback to direct URL if authentication failed or access denied
+                            const directUrl = r.receiptFileUrl || r.attachmentUrl;
+                            if (directUrl) {
+                              window.open(directUrl, '_blank', 'noopener,noreferrer');
+                            } else {
+                              toast.error('Unable to open attachment');
+                            }
+                          }
+                        } catch (error) {
+                          console.error('Receipt file preview error:', error);
+                          // Fallback to direct URL
+                          const directUrl = r.receiptFileUrl || r.attachmentUrl;
+                          if (directUrl) {
+                            window.open(directUrl, '_blank', 'noopener,noreferrer');
+                          } else {
+                            toast.error('Unable to open attachment');
+                          }
+                        }
+                      }}
+                    />
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button onClick={() => setSelectedReceiptForPreview(r)} className="text-gray-500 hover:text-blue-600">
+                      <FaEye />
+                    </button>
+                  </td>
+                  </tr>
+              );
+              })}
+                </tbody>
+              </table>
+        );
+        break;
+      case 'clients':
         if (customersLoading) {
-      return (
-        <div className="bg-white rounded-lg shadow-md p-6">
+          table = (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading customers...</p>
-            </div>
               </div>
             </div>
           );
         } else if (customersError) {
-      return (
-        <div className="bg-white rounded-lg shadow-md p-6">
+          table = (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <p className="text-red-600 mb-2">Error loading customers</p>
                 <p className="text-gray-600 text-sm">{customersError}</p>
-            </div>
               </div>
             </div>
           );
-    }
-
-    return (
-            <div className="flex gap-6">
-        {/* Customer List - 40% width */}
-        <div className="w-2/5 bg-white rounded-lg shadow">
-          {/* Table Header */}
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Customer List</h3>
-          </div>
-          
-          {/* Table Content */}
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Customer Name</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Receivables</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {customers
-                .filter(customer =>
-                  (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                  (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                  (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                  (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
-                )
-                .map((customer) => {
-                  // Calculate net receivables for this customer
-                  const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === customer.customerId);
-                  const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === customer.customerId);
-                  
-                  const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-                  const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
-                  const netReceivables = totalInvoiced - totalReceived;
-                  
-                  return (
-                    <tr 
-                      key={customer.customerId} 
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => setSelectedCustomer(customer)}
-                    >
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{customer.customerName}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm text-gray-700">{customer.companyName || 'N/A'}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`text-sm font-semibold ${
-                          netReceivables > 0 ? 'text-red-600' : netReceivables < 0 ? 'text-green-600' : 'text-gray-600'
-                        }`}>
-                          ₹{netReceivables.toLocaleString('en-IN')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCustomerForPreview(customer);
-                            setShowCustomerPreview(true);
-                          }}
-                          className="text-gray-600 hover:text-blue-600 transition-colors"
-                          title="Preview Customer"
-                        >
-                          <FaEye className="w-4 h-4 mx-auto" />
-                        </button>
-                      </td>
+        } else {
+          const filteredCustomers = customers.filter(customer =>
+            (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+          );
+          table = (
+                <table className="min-w-full bg-white">
+                  <thead className="bg-gray-100">
+                    <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact Number</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
                     </tr>
-                  );
-                })}
-            </tbody>
-          </table>
-        </div>
-              
-              {/* Right side - 60% width - Customer Details with Tabs */}
-              <div className="w-3/5 bg-white shadow-sm border border-gray-200">
-                {selectedCustomer ? (
-                  <div className="p-6">
-                    {/* Tab Navigation */}
-                    <div className="border-b border-gray-200 mb-6">
-                      <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                        <button
-                          onClick={() => setCustomerActiveTab('invoices')}
-                          className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
-                            customerActiveTab === 'invoices'
-                              ? 'border-blue-500 text-blue-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          Invoices
-                        </button>
-                        <button
-                          onClick={() => setCustomerActiveTab('receipts')}
-                          className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
-                            customerActiveTab === 'receipts'
-                              ? 'border-blue-500 text-blue-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          Receipts
-                        </button>
-                        <button
-                          onClick={() => setCustomerActiveTab('statement')}
-                          className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
-                            customerActiveTab === 'statement'
-                              ? 'border-blue-500 text-blue-600'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          Statement
-                        </button>
-                      </nav>
-                    </div>
-
-                    {/* Tab Content */}
-                    {customerActiveTab === 'invoices' && (
-                      <div>
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Customer Invoices</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Invoice No.</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Project Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Invoice Date</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount Received</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                          <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                              {(() => {
-                                const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
-                                return customerInvoices.length > 0 ? customerInvoices.map((invoice) => (
-                            <tr 
-                              key={invoice.id} 
-                              className="hover:bg-gray-50 cursor-pointer transition-colors"
-                              onClick={() => {
-                                setSelectedInvoice(invoice);
-                                setShowAddForm('invoice');
-                              }}
-                            >
-                                    <td className="px-4 py-4 whitespace-nowrap">
-                                      <span className="text-sm font-medium text-blue-600">{invoice.invoiceNumber}</span>
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.project?.projectName || 'N/A'}</td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.invoiceDate}</td>
-                                    <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="text-sm font-semibold text-gray-900">₹{invoice.totalAmount}</span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="text-sm font-semibold text-green-600">₹{invoice.amountReceived}</span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  invoice.status?.toLowerCase() === 'received' || invoice.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-800' :
-                                  invoice.status?.toLowerCase() === 'partial received' || invoice.status?.toLowerCase() === 'partial paid' || invoice.status?.toLowerCase() === 'partially paid' || invoice.status?.toLowerCase() === 'partiallypaid' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {invoice.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-center">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedInvoiceForPreview(invoice);
-                                  }}
-                                  className="text-gray-500 hover:text-blue-600"
-                                >
-                                  <FaEye className="w-4 h-4" />
-                                </button>
-                                    </td>
-                                  </tr>
-                                )) : (
-                                  <tr>
-                              <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                                      No invoices found for this customer
-                                    </td>
-                                  </tr>
-                                );
-                              })()}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {customerActiveTab === 'receipts' && (
-                      <div>
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Customer Receipts</h3>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
-                              <tr>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Receipt No.</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Project Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Receipt Date</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount Received</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Method</th>
-                          <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                              {(() => {
-                                const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
-                                return customerReceipts.length > 0 ? customerReceipts.map((receipt) => (
-                            <tr 
-                              key={receipt.id} 
-                              className="hover:bg-gray-50 cursor-pointer transition-colors"
-                              onClick={() => {
-                                setSelectedReceipt(receipt);
-                                setShowAddForm('receipt');
-                              }}
-                            >
-                                    <td className="px-4 py-4 whitespace-nowrap">
-                                      <span className="text-sm font-medium text-blue-600">{receipt.receiptNumber}</span>
-                                    </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.project?.projectName || 'N/A'}</td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.receiptDate}</td>
-                                    <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="text-sm font-semibold text-green-600">₹{receipt.amountReceived}</span>
-                                    </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                  receipt.paymentMethod === 'Bank Transfer' 
-                                    ? 'bg-blue-100 text-blue-800' 
-                                    : receipt.paymentMethod === 'Credit Card'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {receipt.paymentMethod}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 text-center">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedReceiptForPreview(receipt);
-                                  }}
-                                  className="text-gray-500 hover:text-blue-600"
-                                >
-                                  <FaEye className="w-4 h-4" />
-                                </button>
-                              </td>
-                                  </tr>
-                                )) : (
-                                  <tr>
-                                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                                      No receipts found for this customer
-                                    </td>
-                                  </tr>
-                                );
-                              })()}
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map(customer => (
+                    <tr key={customer.customerId}>
+                      <td className="px-6 py-4 text-sm font-medium text-blue-600">{customer.customerId}</td>
+                      <td className="px-6 py-4 text-sm font-semibold">{customer.customerName}</td>
+                      <td className="px-6 py-4 text-sm">{customer.companyName || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{customer.email || '-'}</td>
+                      <td className="px-6 py-4 text-sm">{customer.contactNumber}</td>
+                      <td className="px-6 py-4 text-sm">{customer.address || '-'}</td>
+                      </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      {searchTerm ? 'No customers found matching your search.' : 'No customers found.'}
+                    </td>
+                  </tr>
+                )}
                   </tbody>
                 </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {customerActiveTab === 'statement' && (
-                      <div>
-                        {/* Statement Title */}
-                        <div className="text-center mb-6">
-                          <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">Statement of Accounts</h2>
-                    <div className="mt-2 text-sm text-gray-600">
-                          {(() => {
-                        const dateRange = getDateRange(selectedDateRange);
-                        const startDate = dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                        const endDate = dateRange.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                        return `${startDate} - ${endDate}`;
-                          })()}
-                    </div>
-                        </div>
-
-                        {/* Recipient and Account Summary - Inline */}
-                        <div className="flex justify-between items-start mb-6">
-                          {/* Left Side - Recipient Section */}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-700 mb-1">To:</p>
-                            <p className="text-sm font-semibold text-gray-900">{selectedCustomer.customerName}</p>
-                      <p className="text-sm text-gray-600">{selectedCustomer.companyName || ''}</p>
-                          </div>
-
-                          {/* Right Side - Account Summary */}
-                          <div className="w-64">
-                            <div className="bg-gray-50 border border-gray-200 rounded overflow-hidden">
-                              <table className="min-w-full">
-                                <thead className="bg-gray-100">
-                                  <tr>
-                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Account Summary</th>
-                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 bg-gray-100"></th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(() => {
-                                    const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
-                                    const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
-                                    
-                                    const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-                                    const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
-                                    const balanceDue = totalInvoiced - totalReceived;
-                                    
-                                    return (
-                                      <>
-                                        <tr className="border-b border-gray-200">
-                                          <td className="px-4 py-2 text-sm text-gray-600">Opening Balance</td>
-                                          <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ 0.00</td>
-                                        </tr>
-                                        <tr className="border-b border-gray-200">
-                                    <td className="px-4 py-2 text-sm text-gray-600">Invoiced Amount</td>
-                                          <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalInvoiced.toFixed(2)}</td>
-                                        </tr>
-                                        <tr className="border-b border-gray-200">
-                                          <td className="px-4 py-2 text-sm text-gray-600">Amount Received</td>
-                                          <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalReceived.toFixed(2)}</td>
-                                        </tr>
-                                        <tr className="border-t-2 border-gray-300">
-                                          <td className="px-4 py-2 text-sm font-semibold text-gray-700">Balance Due</td>
-                                          <td className={`px-4 py-2 text-sm font-bold text-right ${balanceDue > 0 ? 'text-red-600' : balanceDue < 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                                            ₹ {balanceDue.toFixed(2)}
-                                          </td>
-                                        </tr>
-                                      </>
-                                    );
-                                  })()}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Transaction Table */}
-                        <div className="mb-6">
-                          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Transaction Details</h3>
-                          <div className="border border-gray-200 rounded overflow-hidden">
-                            <table className="min-w-full">
-                              <thead className="bg-gray-100">
-                                <tr>
-                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Date</th>
-                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Transaction</th>
-                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Details</th>
-                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Amount</th>
-                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Receipts</th>
-                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Balance</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(() => {
-                                  // Get customer's invoices and receipts
-                                  const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
-                                  const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
-                            
-                            // Get selected date range
-                            const dateRange = getDateRange(selectedDateRange);
-                                  
-                                  // Create transaction history with proper chronological order
-                                  const transactions = [];
-                                  let runningBalance = 0;
-                                  
-                                  // Add opening balance
-                                  transactions.push({
-                              date: dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                                    type: 'Opening Balance',
-                                    details: '***Opening Balance***',
-                                    amount: 0,
-                              receipt: 0,
-                                    balance: runningBalance,
-                              timestamp: dateRange.startDate.getTime()
-                                  });
-                                  
-                            // Add invoices within date range
-                                  customerInvoices.forEach(invoice => {
-                              const invoiceDate = new Date(invoice.invoiceDate || 'N/A');
-                              if (invoiceDate >= dateRange.startDate && invoiceDate <= dateRange.endDate) {
-                                    runningBalance += invoice.totalAmount || 0;
-                                    transactions.push({
-                                      date: invoice.invoiceDate || 'N/A',
-                                      type: 'Invoice',
-                                      details: `Invoice No: ${invoice.invoiceNumber || 'N/A'}`,
-                                      amount: invoice.totalAmount || 0,
-                                  receipt: 0,
-                                      balance: runningBalance,
-                                  timestamp: invoiceDate.getTime()
-                                    });
-                              }
-                                  });
-                                  
-                            // Add receipts within date range
-                                  customerReceipts.forEach(receipt => {
-                              const receiptDate = new Date(receipt.receiptDate || 'N/A');
-                              if (receiptDate >= dateRange.startDate && receiptDate <= dateRange.endDate) {
-                                    runningBalance -= receipt.amountReceived || 0;
-                                    transactions.push({
-                                      date: receipt.receiptDate || 'N/A',
-                                  type: 'Receipt',
-                                  details: `Receipt ID: ${receipt.receiptNumber || 'N/A'}`,
-                                      amount: 0,
-                                  receipt: receipt.amountReceived || 0,
-                                      balance: runningBalance,
-                                  timestamp: receiptDate.getTime()
-                                    });
-                              }
-                                  });
-                                  
-                            // Sort transactions by actual chronological order
-                                  transactions.sort((a, b) => {
-                                    const dateA = new Date(a.date);
-                                    const dateB = new Date(b.date);
-                                    
-                                    if (dateA.getTime() !== dateB.getTime()) {
-                                      return dateA - dateB;
-                                    }
-                                    
-                                    return 0;
-                                  });
-                                  
-                                  return transactions.map((transaction, index) => (
-                                    <tr key={index} className={`border-b border-gray-200 ${index % 2 === 1 ? 'bg-gray-50' : ''}`}>
-                                      <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
-                                        {transaction.date}
-                                      </td>
-                                      <td className="px-4 py-2 text-sm text-gray-700 border-r border-gray-200 font-medium">
-                                        {transaction.type}
-                                      </td>
-                                      <td className="px-4 py-2 text-sm text-gray-600 border-r border-gray-200">
-                                        {transaction.details}
-                                      </td>
-                                      <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
-                                        {transaction.amount > 0 ? `₹${transaction.amount.toFixed(2)}` : '-'}
-                                      </td>
-                                      <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
-                                  {transaction.receipt > 0 ? `₹${transaction.receipt.toFixed(2)}` : '-'}
-                                      </td>
-                                      <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                                        ₹{transaction.balance.toFixed(2)}
-                                      </td>
-                                    </tr>
-                                  ));
-                                })()}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-
-                        {/* Final Balance */}
-                        <div className="text-right">
-                          {(() => {
-                            const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
-                            const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
-                            
-                            const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-                            const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
-                            const balanceDue = totalInvoiced - totalReceived;
-                            
-                            return (
-                              <div className={`inline-block rounded px-4 py-2 border ${
-                                balanceDue > 0 
-                                  ? 'bg-red-50 border-red-200' 
-                                  : balanceDue < 0 
-                                  ? 'bg-green-50 border-green-200' 
-                                  : 'bg-gray-50 border-gray-200'
-                              }`}>
-                                <span className={`text-sm font-medium ${
-                                  balanceDue > 0 
-                                    ? 'text-red-700' 
-                                    : balanceDue < 0 
-                                    ? 'text-green-700' 
-                                    : 'text-gray-700'
-                                }`}>
-                                  {balanceDue > 0 ? 'Balance Due: ' : balanceDue < 0 ? 'Credit Balance: ' : 'Balance: '}
-                                </span>
-                                <span className={`text-lg font-bold ${
-                                  balanceDue > 0 
-                                    ? 'text-red-600' 
-                                    : balanceDue < 0 
-                                    ? 'text-green-600' 
-                                    : 'text-gray-600'
-                                }`}>
-                                  ₹{Math.abs(balanceDue).toFixed(2)}
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-6 text-center">
-                    <div className="text-gray-400">
-                      <FaUsers className="w-16 h-16 mx-auto mb-3" />
-                      <p className="text-sm">Click on any customer row in the left table to view their details</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+          );
+        }
+        break;
+      default: return null;
+    }
+    
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="overflow-x-auto">{table}</div>
       </div>
     );
   };
 
   return (
-    <>
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <Sidebar
-          isCollapsed={isSidebarCollapsed}
-          toggleSidebar={toggleSidebar}
-          currentRole={"employee"}
-        />
-
-        {/* Fixed Customers Header */}
-        <div 
-          className={`fixed top-16 z-50 bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between transition-all duration-300 ${
-            isSidebarCollapsed ? "left-20 right-0" : "left-60 right-0"
-          }`}
-        >
-          {/* Left: Title + Search + Filter */}
+    <MainLayout>
+      <div className="p-6 space-y-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Customers</h1>
+          <p className="text-gray-600">Manage customer relationships and transactions</p>
+      </div>
+        <div className="flex justify-between items-center mb-6 bg-gray-50 rounded-lg px-4 py-3">
+          <div className="flex items-center">
+            <nav className="flex space-x-6">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
+                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                  style={{ minWidth: 110 }}
+              >
+                <tab.icon className="w-5 h-5" />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-900">Customers</h1>
-            
-            <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-64">
+            <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}>
+              <FaPlus className="w-4 h-4" /> <span>{getAddButtonLabel()}</span>
+            </button>
+            <div className="flex items-center bg-white rounded-md shadow-sm p-2 border border-gray-300">
               <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
               <input
                 type="text"
-                placeholder="Search customers..."
-                className="flex-1 outline-none text-gray-900 placeholder-gray-500 bg-transparent text-sm"
+                placeholder="Search..."
+                className="flex-1 outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-
-            <select
-              value={selectedDateRange}
-              onChange={(e) => handleDateRangeChange(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer text-sm"
-            >
-              <option value="thisMonth">This Month</option>
-              <option value="lastMonth">Previous Month</option>
-              <option value="last3Months">Last 3 Months</option>
-              <option value="last6Months">Last 6 Months</option>
-              <option value="thisYear">This Year</option>
-              <option value="lastYear">Last Year</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            
-            {/* Custom Date Inputs */}
-            {showCustomDateInputs && (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
-                  placeholder="Start Date"
-                />
-                <span className="text-gray-500 text-xs">to</span>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
-                  placeholder="End Date"
-                />
-              </div>
-            )}
           </div>
-
-          {/* Right: Action Buttons */}
-          <div className="flex items-center space-x-3">
-            <button 
-              onClick={() => {
-                setSelectedInvoice(null);
-                setShowAddForm('invoice');
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
-            >
-              <FaPlus className="w-3 h-3" /> <span>New Invoice</span>
-            </button>
-            <button 
-              onClick={() => {
-                setSelectedReceipt(null);
-                setShowAddForm('receipt');
-              }}
-              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
-            >
-              <FaPlus className="w-3 h-3" /> <span>New Receipt</span>
-            </button>
-            <button 
-              onClick={handleAddClick} 
-              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
-            >
-              <FaPlus className="w-3 h-3" /> <span>New Customer</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div
-          className={`flex-1 ${
-            isSidebarCollapsed ? "ml-20" : "ml-60"
-          } transition-all duration-300`}
-        >
-          {/* Navbar */}
-          <HradminNavbar />
-
-          {/* Page Container */}
-          <div className="flex flex-col h-full pt-32">
-            {/* Main Scrollable Content */}
-            <div className="flex-1 overflow-y-auto pl-1 pr-6 pt-8">
-              {renderContent()}
-            </div>
-          </div>
-        </div>
       </div>
-
-      {/* Modals */}
-      {selectedInvoiceForPreview && (
-        <InvoicePreviewModal 
-          invoice={selectedInvoiceForPreview} 
-          receipts={receipts}
-          onClose={() => setSelectedInvoiceForPreview(null)} 
-        />
-      )}
-      {selectedReceiptForPreview && (
-        <ReceiptPreviewModal
-          receipt={selectedReceiptForPreview}
-          onClose={() => setSelectedReceiptForPreview(null)}
-        />
-      )}
-      
-      {/* Customer Preview Modal */}
-      {showCustomerPreview && selectedCustomerForPreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Customer Preview: {selectedCustomerForPreview.customerName}</h2>
-              <button 
-                onClick={() => setShowCustomerPreview(false)} 
-                className="text-gray-500 hover:text-gray-800"
-              >
-                <FaTimes />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Basic Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Customer ID:</span>
-                      <span className="font-medium">{selectedCustomerForPreview.customerId}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Name:</span>
-                      <span className="font-medium">{selectedCustomerForPreview.customerName}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Company:</span>
-                      <span className="font-medium">{selectedCustomerForPreview.companyName || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
-                      <span className="font-medium">{selectedCustomerForPreview.email || 'N/A'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Contact:</span>
-                      <span className="font-medium">{selectedCustomerForPreview.contactNumber}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Address Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Address:</span>
-                      <span className="text-right max-w-xs">{selectedCustomerForPreview.address || 'N/A'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+        {renderContent()}
+        {selectedInvoiceForPreview && (
+          <InvoicePreviewModal 
+            invoice={selectedInvoiceForPreview} 
+            receipts={receipts}
+            onClose={() => setSelectedInvoiceForPreview(null)} 
+          />
+        )}
+        {selectedReceiptForPreview && (
+          <ReceiptPreviewModal
+            receipt={selectedReceiptForPreview}
+            onClose={() => setSelectedReceiptForPreview(null)}
+          />
+        )}
+      </div>
+    </MainLayout>
   );
 };
 
