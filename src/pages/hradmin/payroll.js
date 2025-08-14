@@ -206,49 +206,49 @@ function PayrollManagement() {
                   />
                 </th>
               )}
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 EMPLOYEE <br /> ID
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 NAME
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 MONTHLY <br /> CTC
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 PAID DAYS
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 THIS MONTH <br /> SALARY
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 BASIC
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 HRA
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 OTHER <br /> ALLOWANCES
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Fuel <br /> REIMB.
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Phone <br /> REIMB.
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 ARREARS
               </th>
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 EMPLOYEE <br /> PF
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 EMPLOYER <br /> PF
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 DEDUCTIONS
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+              <th className="py-3 px-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 NET PAY
               </th>
             </tr>
@@ -303,7 +303,7 @@ function PayrollManagement() {
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                       {employee.employeeId}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                    <td className="py-2 px-2 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
                       {employee.name}
                     </td>
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
@@ -319,12 +319,12 @@ function PayrollManagement() {
                         ? `₹ ${payrollItem.thisMonthSalary || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                    <td className="py-2 px-1 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.basicThisMonth || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                    <td className="py-2 px-1 text-xs text-gray-600 border border-gray-300 bg-green-50">
                       {payrollItem
                         ? `₹ ${payrollItem.hraThisMonth || 0}`
                         : "₹ 0"}
