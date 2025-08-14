@@ -71,6 +71,29 @@ export const getAvailablePayslipMonths = () => {
   return availableMonths;
 };
 
+// Async thunk for fetching sent payslips (months with generated payslips)
+export const fetchSentPayslips = createAsyncThunk(
+  "payslip/fetchSentPayslips",
+  async (employeeId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      
+      const response = await axios.get(
+        `${publicRuntimeConfig.apiURL}/api/payroll/employee/${employeeId}/sent-payslips`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch sent payslips");
+    }
+  }
+);
+
 // Async thunk for fetching payslip details
 export const fetchPayslipDetails = createAsyncThunk(
   "payslip/fetchPayslipDetails",
@@ -161,6 +184,9 @@ export const fetchEmployeeDetails = createAsyncThunk(
 const initialState = {
   payslipData: null,
   employeeData: null,
+  sentPayslips: null,
+  sentPayslipsLoading: false,
+  sentPayslipsError: null,
   loading: false,
   error: null,
 };
@@ -219,6 +245,19 @@ const payslipSlice = createSlice({
       .addCase(fetchEmployeeDetails.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Fetch Sent Payslips
+      .addCase(fetchSentPayslips.pending, (state) => {
+        state.sentPayslipsLoading = true;
+        state.sentPayslipsError = null;
+      })
+      .addCase(fetchSentPayslips.fulfilled, (state, action) => {
+        state.sentPayslipsLoading = false;
+        state.sentPayslips = action.payload;
+      })
+      .addCase(fetchSentPayslips.rejected, (state, action) => {
+        state.sentPayslipsLoading = false;
+        state.sentPayslipsError = action.payload;
       });
   },
 });
