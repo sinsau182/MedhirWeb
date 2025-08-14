@@ -129,6 +129,12 @@ function AttendanceTracker({
 
   // Ref to track if we're currently fetching employee data
   const isFetchingEmployeeDataRef = useRef(false);
+  
+  // Ref to track previous modal state for auto-refresh
+  const prevModalStateRef = useRef({
+    singleEmployee: false,
+    allEmployees: false
+  });
 
   // Universal close function for all modals and popups
   const closeAllModals = () => {
@@ -167,6 +173,38 @@ function AttendanceTracker({
   const switchToAllEmployeesTab = () => {
     setIsSingleEmployeeModalOpen(false);
     setIsAllEmployeesDateModalOpen(true);
+    
+    // Set the appropriate date for better UX when switching to All Employees Date view
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    const currentDay = today.getDate();
+    
+    // Check if we're viewing the current month
+    const selectedMonthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const selectedYearNum = parseInt(selectedYear);
+    
+    let dateToSelect;
+    if (selectedYearNum === currentYear && selectedMonthIndex === currentMonth) {
+      // Current month: select today's date for better UX
+      dateToSelect = currentDay;
+    } else if (selectedYearNum > currentYear || (selectedYearNum === currentYear && selectedMonthIndex > currentMonth)) {
+      // Future month: select the first date of that month
+      dateToSelect = 1;
+    } else {
+      // Past month: select the last date of that month
+      const daysInSelectedMonth = new Date(selectedYearNum, selectedMonthIndex + 1, 0).getDate();
+      dateToSelect = daysInSelectedMonth;
+    }
+    
+    // Update the main view selected date
+    setSelectedDate(dateToSelect);
+    
+    // Update the All Employees Date modal date to match the main view
+    // Convert the selected date to YYYY-MM-DD format for the modal
+    const monthIndex = selectedMonthIndex + 1; // getMonth() returns 0-11, so add 1
+    const formattedDate = `${selectedYearNum}-${monthIndex.toString().padStart(2, '0')}-${dateToSelect.toString().padStart(2, '0')}`;
+    setSelectedDateForAll(formattedDate);
   };
 
   // Function to check if there are changes in Single Employee Month modal
@@ -417,27 +455,61 @@ function AttendanceTracker({
     dispatch,
   ]);
 
-  // Remove automatic API call when modals are closed - only call when date is selected
-  // useEffect(() => {
-  //   // Refresh attendance data when both modals are closed (returning to Attendance Tracker)
-  //   if (!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen) {
-  //     // Convert month name to numeric month (1-12)
-  //     const monthIndex = new Date(
-  //       `${selectedMonth} 1, ${selectedYear}`
-  //     ).getMonth();
-  //     const numericMonth = monthIndex + 1;
-  //     const year = selectedYear;
-  //     let apiParams = { month: numericMonth, year, role };
-  //     dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
-  //   }
-  // }, [
-  //   isSingleEmployeeModalOpen,
-  //   isAllEmployeesDateModalOpen,
-  //   selectedMonth,
-  //   selectedYear,
-  //   role,
-  //   dispatch,
-  // ]);
+  // Auto-refresh attendance data when returning from modals
+  useEffect(() => {
+    // Check if we're returning from a modal (both were closed and at least one was previously open)
+    const wasAnyModalOpen = prevModalStateRef.current.singleEmployee || prevModalStateRef.current.allEmployees;
+    const isAnyModalOpen = isSingleEmployeeModalOpen || isAllEmployeesDateModalOpen;
+    
+    if (!isAnyModalOpen && wasAnyModalOpen) {
+      // Convert month name to numeric month (1-12)
+      const monthIndex = new Date(
+        `${selectedMonth} 1, ${selectedYear}`
+      ).getMonth();
+      const numericMonth = monthIndex + 1;
+      const year = selectedYear;
+      
+      // Prepare API parameters with current filters
+      let apiParams = { month: numericMonth, year, role };
+      
+      // Add date filter if a specific date is selected
+      if (selectedDate) {
+        apiParams.date = selectedDate;
+      }
+      
+      // Add status filter if any statuses are selected
+      if (selectedStatuses.length > 0) {
+        apiParams.status = selectedStatuses.join(",");
+      }
+      
+      dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+    }
+    
+    // Update the ref to track current modal state
+    prevModalStateRef.current = {
+      singleEmployee: isSingleEmployeeModalOpen,
+      allEmployees: isAllEmployeesDateModalOpen
+    };
+  }, [
+    isSingleEmployeeModalOpen,
+    isAllEmployeesDateModalOpen,
+    selectedMonth,
+    selectedYear,
+    selectedDate,
+    selectedStatuses,
+    role,
+    dispatch,
+  ]);
+
+  // Synchronize monthYear state with main selectedMonth/selectedYear when single employee modal opens
+  useEffect(() => {
+    if (isSingleEmployeeModalOpen) {
+      setMonthYear({
+        month: selectedMonth,
+        year: selectedYear
+      });
+    }
+  }, [isSingleEmployeeModalOpen, selectedMonth, selectedYear]);
 
   // Close cell popover when switching views or opening modals
   useEffect(() => {
@@ -921,7 +993,12 @@ function AttendanceTracker({
     setSelectedDate(dateToSelect);
     setIsCalendarOpen(false);
     setSelectedEmployeeId(null);
-  }, []);
+
+    // Trigger API call to fetch new month's attendance data
+    const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
+    const apiParams = { month: numericMonth, year, role };
+    dispatch(fetchAllEmployeeAttendanceOneMonth(apiParams));
+  }, [dispatch, role]);
 
   const handleEmployeeRowClick = useCallback((employeeId) => {
     setSelectedEmployeeId((prevId) => {
@@ -1002,6 +1079,18 @@ function AttendanceTracker({
       setSelectedDateForAll(todayString);
     }
   }, [isAllEmployeesDateModalOpen, selectedDateForAll]);
+
+  // Synchronize selectedDateForAll with main view when month changes and modal is open
+  useEffect(() => {
+    if (isAllEmployeesDateModalOpen && selectedDate) {
+      // Convert the main view selected date to YYYY-MM-DD format for the modal
+      const selectedMonthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+      const selectedYearNum = parseInt(selectedYear);
+      const monthIndex = selectedMonthIndex + 1; // getMonth() returns 0-11, so add 1
+      const formattedDate = `${selectedYearNum}-${monthIndex.toString().padStart(2, '0')}-${selectedDate.toString().padStart(2, '0')}`;
+      setSelectedDateForAll(formattedDate);
+    }
+  }, [isAllEmployeesDateModalOpen, selectedDate, selectedMonth, selectedYear]);
 
   // Populate attendance data when attendance data is fetched for All Employees Date modal
   useEffect(() => {
@@ -1749,6 +1838,8 @@ function AttendanceTracker({
         </h1>
       </div>
 
+
+
       {/* Combined Controls Row: action buttons + tabs in one line */}
       {!isSingleEmployeeModalOpen && !isAllEmployeesDateModalOpen && (
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -1756,14 +1847,14 @@ function AttendanceTracker({
           <div className="flex items-center gap-4">
             <div className="relative" ref={employeeDropdownRef}>
               <button
-                className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen);
                 }}
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1777,7 +1868,7 @@ function AttendanceTracker({
                 </svg>
                 <span>Single Employee Month</span>
                 <svg
-                  className="w-4 h-4"
+                  className="w-3 h-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1852,12 +1943,12 @@ function AttendanceTracker({
               )}
             </div>
             <button
-              className="flex items-center gap-3 px-6 py-3 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
               onClick={() => {
                 switchToAllEmployeesTab();
               }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
               <span>All Employees Date</span>

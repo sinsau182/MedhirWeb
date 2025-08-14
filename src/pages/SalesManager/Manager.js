@@ -19,6 +19,7 @@ import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
+import LostJunkLeadsView from "@/components/Sales/LostJunkLeadsView";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
 import AssignLeadModal from "@/components/Sales/AssignLeadModal";
 import SemiContactedModal from "@/components/Sales/SemiContactedModal";
@@ -837,7 +838,11 @@ const ManagerContent = ({ role }) => {
           </div>
 
           <SearchBar filterText={filterText} setFilterText={setFilterText} />
-          <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+          <ViewToggle 
+            viewMode={viewMode} 
+            setViewMode={setViewMode}
+            onShowLostJunk={() => setViewMode('lost-junk')}
+          />
         </div>
       </div>
 
@@ -883,7 +888,7 @@ const ManagerContent = ({ role }) => {
             )}
 
             {viewMode === "table" && (
-              <div className="h-full w-full overflow-auto">
+              <div className="h-full w-full overflow-auto p-4">
                 <LeadsTable
                   leads={dedupedLeads.filter((lead) =>
                     (unassignedOnly ? !lead.salesRep : true) && (
@@ -894,6 +899,10 @@ const ManagerContent = ({ role }) => {
                   )}
                 />
               </div>
+            )}
+            
+            {viewMode === "lost-junk" && (
+              <LostJunkLeadsView />
             )}
           </>
         )}

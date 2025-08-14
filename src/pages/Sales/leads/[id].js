@@ -724,7 +724,7 @@ const OdooDetailBody = ({
                   field: "area",
                   type: "number",
                 },
-                { label: "Budget", field: "budget", type: "number" },
+                { label: "Estimated Budget", field: "budget", type: "number" },
                 {
                   label: "Design Timeline",
                   field: "designTimeline",
