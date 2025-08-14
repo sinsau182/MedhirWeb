@@ -8,7 +8,7 @@ import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import withAuth from "@/components/withAuth";
-import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
+import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState, fetchSentPayslips } from "@/redux/slices/payslipSlice";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 import { getEmployeePayslip } from "@/redux/slices/payrollSlice";
 
@@ -76,38 +76,19 @@ const PayrollPage = () => {
   const { payslipData, employeeData, loading, error } = useSelector((state) => state.payslip);
   const { attendance } = useSelector((state) => state.attendances);
   const { employeePayslip, employeePayslipLoading, employeePayslipError } = useSelector((state) => state.payroll);
+  const { sentPayslips, sentPayslipsLoading, sentPayslipsError } = useSelector((state) => state.payslip);
 
   console.log(attendance);
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(monthsList[latestMonthIndex]);
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
   const [isManualSelection, setIsManualSelection] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
-
-  useEffect(() => {
-    // Fetch employee details to get date of joining
-    dispatch(fetchEmployeeDetails(employeeId));
-
-    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
-    
-    // Only fetch payslip details automatically if it's not a manual selection
-    if (!isManualSelection) {
-      dispatch(fetchPayslipDetails({ 
-        employeeId, 
-        month: selectedMonth, 
-        year: selectedYear 
-      }));
-    }
-    
-    // Cleanup function to reset state when component unmounts
-    return () => {
-      dispatch(resetPayslipState());
-    };
-  }, [dispatch, employeeId, selectedMonth, selectedYear, isManualSelection]);
 
   // Update date of joining when employee data is fetched
   useEffect(() => {
@@ -116,42 +97,81 @@ const PayrollPage = () => {
     }
   }, [employeeData]);
 
-  // Update payslip data when month or year changes
-  useEffect(() => {
-    dispatch(fetchPayslipDetails({ 
-      employeeId, 
-      month: selectedMonth, 
-      year: selectedYear 
-    }));
-  }, [dispatch, employeeId, selectedMonth, selectedYear]);
-
   // Determine which payslip data to use
   const currentPayslipData = isManualSelection ? employeePayslip : payslipData;
   const currentLoading = isManualSelection ? employeePayslipLoading : loading;
   const currentError = isManualSelection ? employeePayslipError : error;
 
-  // Auto-update calendar display to match actual payslip month
+  // Main useEffect for initial data fetching
   useEffect(() => {
-    if (currentPayslipData && !isManualSelection) {
-      const payslipMonth = currentPayslipData.month;
-      const payslipYear = currentPayslipData.year;
+    // Fetch employee details to get date of joining
+    dispatch(fetchEmployeeDetails(employeeId));
+
+    // Fetch sent payslips to get months with generated payslips
+    dispatch(fetchSentPayslips(employeeId));
+    
+    // Only fetch attendance and payslip details if we have a selected month
+    if (selectedMonth) {
+      dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
       
-      if (payslipMonth && payslipYear) {
-        // Convert month number to month name
-        const monthNames = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        const monthName = monthNames[payslipMonth - 1]; // month is 1-based
-        
-        // Only update if different from current selection
-        if (monthName !== selectedMonth || payslipYear !== selectedYear) {
-          setSelectedMonth(monthName);
-          setSelectedYear(payslipYear);
+      // Only fetch payslip details automatically if it's not a manual selection
+      // This will be handled by the separate useEffect for sentPayslips
+    }
+    
+    // Cleanup function to reset state when component unmounts
+    return () => {
+      dispatch(resetPayslipState());
+    };
+  }, [dispatch, employeeId, selectedMonth, selectedYear, isManualSelection]);
+
+  // Update initial month selection when sent payslips are loaded
+  useEffect(() => {
+    if (sentPayslips && Array.isArray(sentPayslips) && sentPayslips.length > 0 && !isManualSelection && !hasInitialized) {
+      // Find the latest month with payslip
+      const latestPayslip = sentPayslips.reduce((latest, current) => {
+        if (current.year > latest.year || 
+            (current.year === latest.year && current.month > latest.month)) {
+          return current;
         }
+        return latest;
+      });
+      
+      // Only update if we don't have any payslip data yet
+      if (!currentPayslipData && latestPayslip.monthName && latestPayslip.year) {
+        // Convert month name to proper case
+        const monthName = latestPayslip.monthName.charAt(0).toUpperCase() + latestPayslip.monthName.slice(1).toLowerCase();
+        setSelectedMonth(monthName);
+        setSelectedYear(latestPayslip.year);
+        setHasInitialized(true);
+        
+        // Fetch payslip for the latest available month using the month number from API response
+        dispatch(fetchPayslipDetails({ 
+          employeeId, 
+          month: latestPayslip.month, // Use month number from API response instead of converting month name
+          year: latestPayslip.year 
+        }));
       }
     }
-  }, [currentPayslipData, isManualSelection, selectedMonth, selectedYear]);
+  }, [sentPayslips, dispatch, employeeId, isManualSelection, currentPayslipData, hasInitialized]);
+
+  // Auto-update calendar display to match actual payslip month
+  useEffect(() => {
+    if (currentPayslipData && !isManualSelection && currentPayslipData.month && currentPayslipData.year) {
+      // Convert month number to month name
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      const monthName = monthNames[currentPayslipData.month - 1]; // month is 1-based
+      const payslipYear = currentPayslipData.year;
+      
+      // Only update if different from current selection and we have valid data
+      if (monthName && payslipYear && (monthName !== selectedMonth || payslipYear !== selectedYear)) {
+        setSelectedMonth(monthName);
+        setSelectedYear(payslipYear);
+      }
+    }
+  }, [currentPayslipData, isManualSelection]);
 
   // Debug logging
   console.log("Current payslip data:", currentPayslipData);
@@ -174,19 +194,22 @@ const PayrollPage = () => {
     setIsCalendarOpen(false);
     setIsManualSelection(true);
     
-    // Fetch payslip for manually selected month
+    // Fetch payslip for manually selected month using the month name
     dispatch(getEmployeePayslip({ 
       employeeId, 
-      month: month, 
+      month: month, // month name like "May", "June" etc.
       year: year 
     }));
+    
+    // Also fetch attendance for the selected month
+    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: month.slice(0, 3), year: year, employeeId }));
   };
 
   const formattedDateOfJoining = (date) => {
     if (!date) return "N/A";
     
     try {
-      const d = new Date(date);
+    const d = new Date(date);
       
       // Check if date is valid
       if (isNaN(d.getTime())) {
@@ -231,6 +254,50 @@ const PayrollPage = () => {
     }
   }
 
+  // Function to get available months based on sent payslips
+  const getAvailableMonths = () => {
+    if (!sentPayslips || !Array.isArray(sentPayslips)) {
+      return groupedPayrolls;
+    }
+
+    const availableMonths = {};
+    
+    // Process sent payslips to get available months
+    sentPayslips.forEach(payslip => {
+      const year = payslip.year.toString();
+      if (!availableMonths[year]) {
+        availableMonths[year] = [];
+      }
+      
+      // Convert month name to proper case (e.g., "MAY" -> "May")
+      const monthName = payslip.monthName.charAt(0).toUpperCase() + payslip.monthName.slice(1).toLowerCase();
+      
+      // Only add if not already in the array
+      if (!availableMonths[year].includes(monthName)) {
+        availableMonths[year].push(monthName);
+      }
+    });
+    
+    // Sort months within each year
+    Object.keys(availableMonths).forEach(year => {
+      const monthOrder = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      availableMonths[year].sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+    });
+    
+    return availableMonths;
+  };
+
+  // Get filtered available months
+  const availableMonths = getAvailableMonths();
+
+  // Debug logging
+  console.log("Available months:", availableMonths);
+  console.log("Sent payslips:", sentPayslips);
+  console.log("Grouped payrolls:", groupedPayrolls);
+
   // Helper function to check if value should show -- or the actual value
   const displayValue = (value) => {
     if (value === null || value === undefined || value === "") {
@@ -259,12 +326,12 @@ const PayrollPage = () => {
                   onClick={toggleCalendar}
                 >
                   <CalendarIcon className="mr-1 h-3 w-3" />
-                  {selectedYear}-{selectedMonth}
+                  {selectedMonth ? `${selectedYear}-${selectedMonth}` : 'Loading...'}
                 </Badge>
 
                 {isCalendarOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    {Object.entries(groupedPayrolls)
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                    {Object.entries(availableMonths)
                       .sort(([b], [a]) => b - a)
                       .map(([year, months]) => (
                         <div key={year} className="border-b-2">
@@ -305,7 +372,22 @@ const PayrollPage = () => {
               </Button>
             </div>
 
-            {currentLoading ? (
+            {!selectedMonth && sentPayslipsLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : !selectedMonth && (!sentPayslips || sentPayslips.length === 0) ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 max-w-md text-center">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                    No payslips available
+                  </h3>
+                  <p className="text-gray-600">
+                    No payslips have been generated for your account yet.
+                  </p>
+                </div>
+              </div>
+            ) : currentLoading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>

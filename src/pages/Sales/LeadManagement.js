@@ -286,7 +286,7 @@ const LeadsTable = ({ leads }) => (
 const LeadManagementContent = ({ role }) => {
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
-  const { leads } = useSelector((state) => state.leads);
+  const { leads, loading: leadsLoading } = useSelector((state) => state.leads);
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
   // Add pipeline modal state
@@ -808,7 +808,15 @@ const LeadManagementContent = ({ role }) => {
   return (
     <div className="h-[calc(100vh-64px)] bg-gray-50 overflow-hidden flex flex-col">
       <div className="flex-1 overflow-hidden">
-        <KanbanBoardClientOnly
+        {leadsLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="text-gray-600">Loading leads...</span>
+            </div>
+          </div>
+        ) : (
+          <KanbanBoardClientOnly
           leadsByStatus={leadsByStatus}
           statuses={pipelines
             .filter((p) => 
@@ -830,6 +838,7 @@ const LeadManagementContent = ({ role }) => {
           // Debug props
           debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
         />
+        )}
       </div>
       <DeletePipelineModal
         isOpen={showDeletePipelineModal}
