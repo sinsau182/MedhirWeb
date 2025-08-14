@@ -6,6 +6,7 @@ import { fetchLeadById } from "@/redux/slices/leadsSlice";
 import axios from "axios";
 import getConfig from "next/config";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
+import { Input } from "../ui/input";
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -18,6 +19,7 @@ const SemiContactedModal = ({
 }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
+    projectName: "",
     budget: "",
     firstCallDate: ""
   });
@@ -29,6 +31,7 @@ const SemiContactedModal = ({
     if (isOpen) {
       // dispatch(fetchLeadById(lead.leadId));
       setFormData({
+        projectName: "",
         budget: "",
         firstCallDate: ""
       });
@@ -41,6 +44,11 @@ const SemiContactedModal = ({
     e.preventDefault();
     
     // Enhanced validation
+    if (!formData.projectName.trim()) {
+      toast.error("Please provide the project name");
+      return;
+    }
+
     if (!floorPlanFile) {
       toast.error("Please upload a floor plan file");
       return;
@@ -67,16 +75,6 @@ const SemiContactedModal = ({
       toast.error("Please select the first call date");
       return;
     }
-    
-    // Validate meeting date is not in the past
-    // const meetingDate = new Date(formData.firstCallDate);
-    // const today = new Date();
-    // today.setHours(0, 0, 0, 0);
-    
-    // if (meetingDate < today) {
-    //   toast.error("Meeting date cannot be in the past");
-    //   return;
-    // }
 
     setIsSubmitting(true);
     
@@ -86,6 +84,7 @@ const SemiContactedModal = ({
       
       // Prepare lead data as JSON string
       const leadData = {
+        projectName: formData.projectName.trim(),
         budget: formData.budget.trim(),
         firstCallDate: formData.firstCallDate
       };
@@ -155,6 +154,10 @@ const SemiContactedModal = ({
 
     // Apply input restrictions based on field type
     switch (field) {
+      case 'projectName':
+        processedValue = value;
+        break;
+
       case 'budget':
         // Only allow numbers and decimal point
         processedValue = value.replace(/[^\d.]/g, '');
@@ -186,11 +189,8 @@ const SemiContactedModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-orange-50 to-yellow-50">
+        <div className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <FaFileAlt className="w-5 h-5 text-orange-600" />
-            </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">
                 Semi Contacted Details
@@ -210,39 +210,30 @@ const SemiContactedModal = ({
 
         {/* Content */}
         <div className="p-6 flex-1 overflow-y-auto">
-          {/* Lead Info */}
-          {/* <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FaCheck className="w-4 h-4 text-green-600" />
-              Lead Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">Name:</span>
-                <p className="text-gray-900">{lead?.name || "N/A"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Contact:</span>
-                <p className="text-gray-900">{leadData?.contactNumber || "N/A"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Email:</span>
-                <p className="text-gray-900">{leadData?.email || "N/A"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Project Type:</span>
-                <p className="text-gray-900">{leadData?.projectType || "N/A"}</p>
-              </div>
-            </div>
-          </div> */}
 
-                     {/* Form */}
+          {/* Form */}
            <form onSubmit={handleSubmit} className="space-y-6">
-                          {/* Floor Plan File Upload */}
+                         {/* Project Name */}
              <div>
                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                 <FaUpload className="w-4 h-4 text-green-600" />
-                 Floor Plan File *
+                 Project Name <span className="text-red-500 font-bold">*</span>
+               </label>
+               <Input
+                 type="text"
+                 value={formData.projectName}
+                 onChange={(e) => handleInputChange('projectName', e.target.value)}
+                 placeholder="Enter project name"
+                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                 required
+               />
+               <p className="text-xs text-gray-500 mt-1">
+                 Enter the name of the project
+               </p>
+             </div>
+             {/* Floor Plan File Upload */}
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                 Floor Plan File <span className="text-red-500 font-bold">*</span>
                </label>
               <div className="relative">
                 <input
@@ -268,8 +259,7 @@ const SemiContactedModal = ({
             {/* Estimated Budget */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaDollarSign className="w-4 h-4 text-green-600" />
-                Estimated Budget *
+                Estimated Budget <span className="text-red-500 font-bold">*</span>
               </label>
               <input
                 type="text"
@@ -287,8 +277,7 @@ const SemiContactedModal = ({
             {/* First Meeting Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaCalendarAlt className="w-4 h-4 text-purple-600" />
-                First Call Date *
+                First Call Date <span className="text-red-500 font-bold">*</span>
               </label>
               <input
                 type="datetime-local"
@@ -301,22 +290,11 @@ const SemiContactedModal = ({
                 Enter the first call date with the client
               </p>
             </div>
-
-            {/* Summary */}
-            {/* <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-              <h4 className="font-medium text-orange-800 mb-2">Update Summary</h4>
-                             <div className="text-sm text-orange-700 space-y-1">
-                 <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                 <p><strong>Floor Plan File:</strong> {floorPlanFile ? floorPlanFile.name : "Not uploaded"}</p>
-                 <p><strong>Budget:</strong> {formData.budget || "Not specified"}</p>
-                 <p><strong>Call Date:</strong> {formData.firstCallDate ? new Date(formData.firstCallDate).toLocaleString() : "Not scheduled"}</p>
-               </div>
-            </div> */}
           </form>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end items-center gap-3 border-t flex-shrink-0">
+        <div className="px-6 py-3 flex justify-end items-center gap-3 border-t flex-shrink-0">
           <button
             type="button"
             onClick={handleCancel}
@@ -325,12 +303,12 @@ const SemiContactedModal = ({
           >
             Cancel
           </button>
-          <button
-            type="submit"
-            onClick={handleSubmit}
-                         disabled={isSubmitting || !floorPlanFile || !formData.budget.trim() || !formData.firstCallDate}
-            className="px-6 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
-          >
+                     <button
+             type="submit"
+             onClick={handleSubmit}
+             disabled={isSubmitting || !formData.projectName.trim() || !floorPlanFile || !formData.budget.trim() || !formData.firstCallDate}
+             className="px-6 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium flex items-center gap-2"
+           >
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

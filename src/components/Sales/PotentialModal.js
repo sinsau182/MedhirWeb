@@ -66,7 +66,7 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
         priority: formData.priority,
         initialQuote: formData.initialQuote ? parseFloat(formData.initialQuote) : null,
       });
-      
+
 
       toast.success("Lead updated successfully!");
       onClose();
@@ -118,11 +118,8 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+        <div className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <FaClipboardList className="w-5 h-5 text-green-600" />
-            </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">
                 Potential Lead Details
@@ -143,37 +140,12 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
         {/* Content */}
         <div className="p-6 flex-1 overflow-y-auto">
           {/* Lead Info */}
-          {/* <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FaCheck className="w-4 h-4 text-green-600" />
-              Lead Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">Name:</span>
-                <p className="text-gray-900">{lead?.name || "N/A"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Contact:</span>
-                <p className="text-gray-900">{lead?.contactNumber || "N/A"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Email:</span>
-                <p className="text-gray-900">{lead?.email || "N/A"}</p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Project Type:</span>
-                <p className="text-gray-900">{lead?.projectType || "N/A"}</p>
-              </div>
-            </div>
-          </div> */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* First Meeting Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaCalendarAlt className="w-4 h-4 text-blue-600" />
                 First Meeting Date
               </label>
               <input
@@ -192,7 +164,6 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
             {/* Priority */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaExclamationTriangle className="w-4 h-4 text-orange-600" />
                 Priority *
               </label>
               <select
@@ -216,7 +187,6 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
             {/* Initial Quote */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaDollarSign className="w-4 h-4 text-green-600" />
                 Initial Quote
               </label>
               <input
@@ -236,7 +206,6 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
             {/* Requirements */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaClipboardList className="w-4 h-4 text-purple-600" />
                 Requirements *
               </label>
               <textarea
@@ -253,40 +222,11 @@ const PotentialModal = ({ isOpen, onClose, lead, onSuccess }) => {
                 Provide detailed requirements for the project (10-500 characters)
               </p>
             </div>
-
-            {/* Summary */}
-            {/* <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h4 className="font-medium text-green-800 mb-2">
-                Update Summary
-              </h4>
-              <div className="text-sm text-green-700 space-y-1">
-                <p>
-                  <strong>Lead:</strong> {lead?.name || "N/A"}
-                </p>
-                <p>
-                  <strong>First Meeting Date:</strong>{" "}
-                  {formData.firstMeetingDate
-                    ? new Date(formData.firstMeetingDate).toLocaleDateString()
-                    : "Not scheduled"}
-                </p>
-                <p>
-                  <strong>Priority:</strong> {formData.priority}
-                </p>
-                <p>
-                  <strong>Initial Quote:</strong>{" "}
-                  {formData.initialQuote ? `$${formData.initialQuote}` : "Not provided"}
-                </p>
-                <p>
-                  <strong>Requirements:</strong>{" "}
-                  {formData.requirements ? "Provided" : "Not provided"}
-                </p>
-              </div>
-            </div> */}
           </form>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end items-center gap-3 border-t flex-shrink-0">
+        <div className="px-6 py-3 flex justify-end items-center gap-3 border-t flex-shrink-0">
           <button
             type="button"
             onClick={handleCancel}

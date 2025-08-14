@@ -114,13 +114,13 @@ export const deletePublicHoliday = createAsyncThunk(
   }
 );
 
-export const processHolidayAttendance = createAsyncThunk(
-  "publicHoliday/processHolidayAttendance",
+export const processCompanyMonthAttendance = createAsyncThunk(
+  "publicHoliday/processCompanyMonthAttendance",
   async ({ companyId, yearNum, monthIdx }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.post(
-        `${ATTENDANCE_URL}/attendance/daily/process-holiday-attendance/${companyId}/${yearNum}/${monthIdx}`,
+        `${ATTENDANCE_URL}/attendance/daily/process-company-month/${companyId}/${yearNum}/${monthIdx}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -132,10 +132,10 @@ export const processHolidayAttendance = createAsyncThunk(
     } catch (error) {
       if (error.response) {
         return rejectWithValue(
-          error.response.data.message || "Failed to process holiday attendance"
+          error.response.data.message || "Failed to process company month attendance"
         );
       }
-      return rejectWithValue("Network error: Unable to process holiday attendance");
+      return rejectWithValue("Network error: Unable to process company month attendance");
     }
   }
 );
@@ -221,15 +221,15 @@ const publicHolidaySlice = createSlice({
         state.error = action.payload;
         state.deleteSuccess = false;
       })
-      .addCase(processHolidayAttendance.pending, (state) => {
+      .addCase(processCompanyMonthAttendance.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(processHolidayAttendance.fulfilled, (state) => {
+      .addCase(processCompanyMonthAttendance.fulfilled, (state) => {
         state.loading = false;
         state.error = null;
       })
-      .addCase(processHolidayAttendance.rejected, (state, action) => {
+      .addCase(processCompanyMonthAttendance.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

@@ -2,14 +2,18 @@ import React, { useState } from 'react';
 import { FaThLarge, FaListUl, FaTrash } from 'react-icons/fa';
 import LostJunkLeadsModal from './LostJunkLeadsModal';
 
-export default function ViewToggle({ viewMode, setViewMode }) {
+export default function ViewToggle({ viewMode, setViewMode, onShowLostJunk }) {
   const [showLostJunkModal, setShowLostJunkModal] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
   const handleTrashClick = (e) => {
     e.stopPropagation();
-    setModalPosition({ x: e.clientX, y: e.clientY });
-    setShowLostJunkModal(true);
+    if (onShowLostJunk) {
+      onShowLostJunk();
+    } else {
+      setModalPosition({ x: e.clientX, y: e.clientY });
+      setShowLostJunkModal(true);
+    }
   };
 
   return (
@@ -38,7 +42,11 @@ export default function ViewToggle({ viewMode, setViewMode }) {
           <FaListUl size={18} />
         </button>
         <button
-          className="p-2 rounded-md transition-colors hover:bg-red-100 text-gray-600 hover:text-red-600"
+          className={`p-2 rounded-md transition-colors ${
+            viewMode === 'lost-junk'
+              ? 'bg-red-200 shadow text-red-600'
+              : 'hover:bg-red-100 text-gray-600 hover:text-red-600'
+          }`}
           onClick={handleTrashClick}
           title="View Lost & Junk Leads"
         >
