@@ -574,7 +574,7 @@ const handleInvoiceSubmit = (data) => {
 
   const renderAddForm = () => {
     const commonProps = { onCancel: handleBackFromForm };
-    const formTitle = `Add New ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1, -1)}`;
+    const formTitle = `Add New ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`;
 
     let formComponent;
     switch (showAddForm) {

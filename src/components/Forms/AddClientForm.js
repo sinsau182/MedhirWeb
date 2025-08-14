@@ -60,7 +60,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
 
   const validateEmail = (email) => {
     const trimmed = (email || '').trim();
-    if (trimmed === '') return true; // Optional
+    if (trimmed === '') return false; // Required
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
@@ -79,7 +79,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
       newErrors.customerName = 'Customer name must be uppercase letters and spaces only';
     }
     if (!validateEmail(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = formData.email.trim() === '' ? 'Email is required' : 'Invalid email format';
     }
     if (formData.contactNumber.trim() && !validateContactNumber(formData.contactNumber)) {
       newErrors.contactNumber = 'Contact number must be exactly 10 digits';
@@ -97,7 +97,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
         const customerData = {
           customerName: formData.customerName,
           companyName: formData.companyName,
-          email: formData.email.trim() || '',
+          email: formData.email.trim(),
           contactNumber: formData.contactNumber,
           address: formData.address,
           addressDetails: {
@@ -159,7 +159,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
                     />
                 </div>
                  <div>
-                    <label>Email</label>
+                    <label>Email <span className="text-red-500">*</span></label>
                     <input 
                       type="email" 
                       name="email" 
