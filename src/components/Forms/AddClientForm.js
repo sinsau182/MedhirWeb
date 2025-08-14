@@ -11,7 +11,6 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
     companyName: '',
     email: '',
     contactNumber: '',
-    projectId: '',
     address: '',
     gst: '', // NEW FIELD
     addressDetails: {
@@ -61,7 +60,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
 
   const validateEmail = (email) => {
     const trimmed = (email || '').trim();
-    if (trimmed === '') return true; // Optional
+    if (trimmed === '') return false; // Required
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
@@ -80,7 +79,7 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
       newErrors.customerName = 'Customer name must be uppercase letters and spaces only';
     }
     if (!validateEmail(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = formData.email.trim() === '' ? 'Email is required' : 'Invalid email format';
     }
     if (formData.contactNumber.trim() && !validateContactNumber(formData.contactNumber)) {
       newErrors.contactNumber = 'Contact number must be exactly 10 digits';
@@ -98,9 +97,8 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
         const customerData = {
           customerName: formData.customerName,
           companyName: formData.companyName,
-          email: formData.email.trim() || '',
+          email: formData.email.trim(),
           contactNumber: formData.contactNumber,
-          projectId: formData.projectId.trim() || '',
           address: formData.address,
           addressDetails: {
             address: formData.addressDetails.address || formData.address,
@@ -134,134 +132,117 @@ const AddClientForm = ({ onSubmit, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="space-y-8">
-        {/* Basic Information Section */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information<span className="text-red-500">*</span></h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
-              <input
-                type="text"
-                name="projectId"
-                value={formData.projectId}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                placeholder="Enter Project ID"
-              />
-              <div className="text-xs text-gray-500 mt-1">Enter the associated project identifier</div>
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Basic Information<span className="text-red-500">*</span></h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label>Customer Name <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text" 
+                      name="customerName" 
+                      value={formData.customerName} 
+                      onChange={handleChange} 
+                      className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`} 
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Only uppercase letters and spaces (e.g., JOHN DOE)</div>
+                    {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
+                </div>
+                <div>
+                    <label>Company Name</label>
+                    <input 
+                      type="text" 
+                      name="companyName" 
+                      value={formData.companyName} 
+                      onChange={handleChange} 
+                      className="w-full mt-2 px-4 py-2 border rounded-lg" 
+                    />
+                </div>
+                 <div>
+                    <label>Email <span className="text-red-500">*</span></label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      value={formData.email} 
+                      onChange={handleChange} 
+                      className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`} 
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Format: username@domain.com</div>
+                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                </div>
+                 <div>
+                    <label>Contact Number <span className="text-red-500">*</span></label>
+                    <input 
+                      type="tel" 
+                      name="contactNumber" 
+                      value={formData.contactNumber} 
+                      onChange={handleChange} 
+                      inputMode="numeric"
+                      maxLength={10}
+                      className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Format: 10 digits only (e.g., 9876543210)</div>
+                    {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
+                </div>
+                <div>
+                    <label>GST Number <span className="text-gray-400 text-xs">(Optional)</span></label>
+                    <input
+                      type="text"
+                      name="gst"
+                      value={formData.gst}
+                      onChange={handleChange}
+                      className={`w-full mt-2 px-4 py-2 border rounded-lg ${errors.gst ? 'border-red-500' : 'border-gray-300'}`}
+                      maxLength={15}
+                    />
+                    <div className="text-xs text-gray-400 mt-1">Format: 27AAECS1234F1Z2 (15 characters length)</div>
+                    {errors.gst && <p className="text-red-500 text-sm mt-1">{errors.gst}</p>}
+                </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                name="customerName" 
-                value={formData.customerName} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`} 
-              />
-              <div className="text-xs text-gray-500 mt-1">Only uppercase letters and spaces (e.g., JOHN DOE)</div>
-              {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-              <input 
-                type="text" 
-                name="companyName" 
-                value={formData.companyName} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input 
-                type="email" 
-                name="email" 
-                value={formData.email} 
-                onChange={handleChange} 
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.email ? 'border-red-500' : 'border-gray-300'}`} 
-              />
-              <div className="text-xs text-gray-500 mt-1">Format: username@domain.com</div>
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Number <span className="text-red-500">*</span></label>
-              <input 
-                type="tel" 
-                name="contactNumber" 
-                value={formData.contactNumber} 
-                onChange={handleChange} 
-                inputMode="numeric"
-                maxLength={10}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.contactNumber ? 'border-red-500' : 'border-gray-300'}`} 
-              />
-              <div className="text-xs text-gray-500 mt-1">Format: 10 digits only (e.g., 9876543210)</div>
-              {errors.contactNumber && <p className="text-red-500 text-sm mt-1">{errors.contactNumber}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">GST Number <span className="text-gray-400 text-xs">(Optional)</span></label>
-              <input
-                type="text"
-                name="gst"
-                value={formData.gst}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${errors.gst ? 'border-red-500' : 'border-gray-300'}`}
-                maxLength={15}
-              />
-              <div className="text-xs text-gray-500 mt-1">Format: 27AAECS1234F1Z2 (15 characters length)</div>
-              {errors.gst && <p className="text-red-500 text-sm mt-1">{errors.gst}</p>}
-            </div>
-          </div>
         </div>
-
-        {/* Address Details Section */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-              <input 
-                type="text" 
-                name="address" 
-                value={formData.address} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
-              />
+         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Address Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                    <label>Address</label>
+                    <input 
+                      type="text" 
+                      name="address" 
+                      value={formData.address} 
+                      onChange={handleChange} 
+                      className="w-full mt-2 px-4 py-2 border rounded-lg" 
+                    />
+                </div>
+                 <div>
+                    <label>City</label>
+                    <input 
+                      type="text" 
+                      name="addressDetails.city" 
+                      value={formData.addressDetails.city} 
+                      onChange={handleChange} 
+                      className="w-full mt-2 px-4 py-2 border rounded-lg" 
+                    />
+                </div>
+                <div>
+                    <label>State</label>
+                    <select 
+                      name="addressDetails.state" 
+                      value={formData.addressDetails.state} 
+                      onChange={handleChange} 
+                      className="w-full mt-2 px-4 py-2 border rounded-lg"
+                    >
+                        <option value="">Select State</option>
+                        {indianStates.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-              <input 
-                type="text" 
-                name="addressDetails.city" 
-                value={formData.addressDetails.city} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-              <select 
-                name="addressDetails.state" 
-                value={formData.addressDetails.state} 
-                onChange={handleChange} 
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              >
-                <option value="">Select State</option>
-                {indianStates.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-end space-x-4 pt-4">
-          <button type="button" onClick={onCancel} className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
-            Cancel
-          </button>
-          <button type="submit" className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
-            Save Customer
-          </button>
+        <div className="flex justify-end space-x-4">
+            <button type="button" onClick={onCancel} className="px-6 py-2 border rounded-lg">
+              Cancel
+            </button>
+            <button type="submit" className="px-6 py-2 bg-purple-600 text-white rounded-lg">
+              Save Customer
+            </button>
         </div>
       </div>
     </form>
