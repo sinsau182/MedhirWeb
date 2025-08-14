@@ -233,7 +233,7 @@ const AssetDetailPage = () => {
     }, [activeTab]);
     
     // Get data from Redux store
-    const { currentAsset: asset, fetchingAsset, fetchAssetError, updatingAsset, updateAssetError } = useSelector(state => state.assets);
+    const { currentAsset: asset, loading: fetchingAsset, error: fetchAssetError, updatingAsset, updateAssetError } = useSelector(state => state.assets);
     const { categories } = useSelector(state => state.assetCategories);
     const { locations } = useSelector(state => state.assetLocations);
     const { statuses } = useSelector(state => state.assetStatuses);
@@ -247,8 +247,8 @@ const AssetDetailPage = () => {
             // Clear previous asset data
             dispatch(clearCurrentAsset());
             
-            // Fetch the specific asset
-            dispatch(fetchAssetById(id));
+            // Fetch the specific asset by asset ID (e.g., "D-03-3001")
+            dispatch(fetchAssetByAssetId(id));
         }
         
         // Cleanup when component unmounts
@@ -337,8 +337,14 @@ const AssetDetailPage = () => {
     const getEmployeeName = (employeeId) => {
         if (!employeeId) return '';
         if (!Array.isArray(employees) || employees.length === 0) return '';
-        const emp = employees.find(e => (e.employeeId || e.id || e._id) === employeeId);
+        
+        const emp = employees.find(e => {
+            const eId = e.employeeId || e.id || e._id;
+            return String(eId) === String(employeeId);
+        });
+        
         if (!emp) return '';
+        
         return emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
     };
 
@@ -787,6 +793,8 @@ const AssetDetailPage = () => {
     useEffect(() => {
         if (asset?.assetId) {
             fetchAssetHistory(asset.assetId, asset);
+            
+
         }
     }, [asset?.assetId]);
     
@@ -847,11 +855,11 @@ const AssetDetailPage = () => {
                 // Add other fields as needed
             };
             
-            await dispatch(updateAsset({ assetId: id, assetData })).unwrap();
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData })).unwrap();
             toast.success('Asset updated successfully!');
             
             // Refresh the asset data to show changes instantly
-            dispatch(fetchAssetById(id));
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             console.error('Error updating asset:', error);
             toast.error(`Failed to update asset: ${error}`);
@@ -868,23 +876,37 @@ const AssetDetailPage = () => {
                 (departments || []).find(d => d.name === asset.assignedDepartment)?.id || 
                 (departments || []).find(d => d.name === asset.assignedDepartment)?.departmentId : '';
             
-            // Find the employee ID from the assignedTo name
-            const empId = asset.assignedTo ? 
-                (employees || []).find(emp => 
-                    emp.name === asset.assignedTo || 
-                    emp.fullName === asset.assignedTo ||
-                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() === asset.assignedTo
-                )?.id || 
-                (employees || []).find(emp => 
-                    emp.name === asset.assignedTo || 
-                    emp.fullName === asset.assignedTo ||
-                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() === asset.assignedTo
-                )?.employeeId || 
-                (employees || []).find(emp => 
-                    emp.name === asset.assignedTo || 
-                    emp.fullName === asset.assignedTo ||
-                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() === asset.assignedTo
-                )?._id : '';
+            // Find the employee ID from the assignedTo name - try multiple approaches
+            let empId = '';
+            if (asset.assignedTo) {
+                // First try to find by exact name match
+                const emp = (employees || []).find(emp => {
+                    const empName = emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                    return empName === asset.assignedTo;
+                });
+                
+                if (emp) {
+                    empId = emp.employeeId || emp.id || emp._id;
+                } else {
+                    // If no exact match, try partial match
+                    const partialEmp = (employees || []).find(emp => {
+                        const empName = emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                        return empName.toLowerCase().includes(asset.assignedTo.toLowerCase()) || 
+                               asset.assignedTo.toLowerCase().includes(empName.toLowerCase());
+                    });
+                    
+                    if (partialEmp) {
+                        empId = partialEmp.employeeId || partialEmp.id || partialEmp._id;
+                    }
+                }
+            }
+            
+            // Also check if we have the employee ID directly from the asset
+            if (!empId && asset.assignedEmployeeId) {
+                empId = asset.assignedEmployeeId;
+            }
+            
+
             
             newDraft.departmentId = deptId;
             newDraft.employeeId = empId;
@@ -919,10 +941,10 @@ const AssetDetailPage = () => {
             if (editingField === 'purchaseCost') payload.purchaseCost = draftValues.purchaseCost === '' ? null : Number(draftValues.purchaseCost);
             if (editingField === 'warrantyExpiry') payload.warrantyExpiry = draftValues.warrantyExpiry || null;
 
-            await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
             toast.success('Asset updated successfully');
             setEditingField(null);
-            dispatch(fetchAssetById(id));
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             toast.error(`Failed to update: ${error}`);
         }
@@ -963,10 +985,10 @@ const AssetDetailPage = () => {
                 setSavingOverview(false);
                 return;
             }
-            await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
             toast.success('Overview updated');
             setEditingOverview(false);
-            dispatch(fetchAssetById(id));
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             toast.error(`Failed to update overview: ${error}`);
         } finally {
@@ -1002,10 +1024,10 @@ const AssetDetailPage = () => {
             if (Object.keys(payload.customFormData).length === 0) delete payload.customFormData;
 
             console.log('[Specs] Updating', { assetId: id, payload });
-            await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
             toast.success('Specifications updated');
             setEditingSpecs(false);
-            dispatch(fetchAssetById(id));
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             console.error('[Specs] Update failed:', error);
             const message = error?.message || (typeof error === 'string' ? error : 'Unknown error');
@@ -1037,11 +1059,11 @@ const AssetDetailPage = () => {
                 updatedData.nextMaintenanceDate = maintenanceForm.nextMaintenanceDate;
             }
 
-            await dispatch(updateAsset({ assetId: id, assetData: updatedData })).unwrap();
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: updatedData })).unwrap();
             toast.success('Maintenance record added');
             setIsMaintenanceModalOpen(false);
             setMaintenanceForm({ date: '', type: '', description: '', cost: '', vendor: '', nextMaintenanceDate: '' });
-            dispatch(fetchAssetById(id));
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             toast.error(`Failed to add maintenance: ${error}`);
         }
@@ -1081,9 +1103,35 @@ const AssetDetailPage = () => {
         try {
             setUploadingDoc(true);
             await handleUploadInvoice(documentFile);
+            
+            // Update the asset with the new document information
+            const newDocument = {
+                name: documentFile.name,
+                type: documentFile.type || 'File',
+                uploadDate: new Date().toISOString(),
+                fileUrl: null // Will be set by backend if available
+            };
+            
+            // Add to existing documents array
+            const updatedDocuments = [...(asset.documents || []), newDocument];
+            
+            // Update asset with new document
+            try {
+                await dispatch(patchAssetByAssetId({ 
+                    assetId: id, 
+                    assetData: { documents: updatedDocuments } 
+                })).unwrap();
+                toast.success('Document uploaded and asset updated successfully!');
+            } catch (updateError) {
+                console.warn('Failed to update asset with document info:', updateError);
+                toast.success('Document uploaded successfully!');
+            }
+            
             setIsDocumentModalOpen(false);
             setDocumentFile(null);
-            dispatch(fetchAssetById(id));
+            
+            // Refresh asset data to show the new document
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             // toast shown inside handleUploadInvoice
         } finally {
@@ -1209,13 +1257,30 @@ const AssetDetailPage = () => {
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-3">
                                                     <button onClick={async () => {
+                                                        const employeeName = getEmployeeName(draftValues.employeeId);
+                                                        const departmentName = getDepartmentName(draftValues.departmentId);
+                                                        
                                                         const payload = {
-                                                            assignedDepartment: getDepartmentName(draftValues.departmentId) || undefined,
+                                                            assignedDepartment: departmentName || undefined,
                                                             assignedDepartmentId: draftValues.departmentId || null,
                                                             assignedEmployeeId: draftValues.employeeId || null,
-                                                            assignedTo: getEmployeeName(draftValues.employeeId) || undefined,
+                                                            assignedTo: employeeName || undefined,
                                                         };
-                                                        await dispatch(updateAsset({ assetId: id, assetData: payload })).unwrap();
+                                                        
+
+                                                        
+                                                        // Validate that we have the required data
+                                                        if (!draftValues.employeeId) {
+                                                            toast.error('Please select an employee');
+                                                            return;
+                                                        }
+                                                        
+                                                        if (!employeeName) {
+                                                            toast.error('Could not resolve employee name. Please try again.');
+                                                            return;
+                                                        }
+                                                        
+                                                        await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
                                                         toast.success('Assignment updated');
                                                         setEditingField(null);
                                                         dispatch(fetchAssetById(id));
@@ -1225,12 +1290,17 @@ const AssetDetailPage = () => {
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="font-semibold">{asset.assignedTo || 'Unassigned'}</p>
+                                                <p className="font-semibold">
+                                                    {asset.assignedTo || 
+                                                     (asset.assignedEmployeeId ? getEmployeeName(asset.assignedEmployeeId) : '') || 
+                                                     'Unassigned'}
+                                                </p>
                                                 {(asset.assignedDepartment || asset.assignedDepartmentId) && (
                                                     <p className="text-xs text-gray-500 mt-1">
                                                         {asset.assignedDepartment || getDepartmentName(asset.assignedDepartmentId) || 'Unknown'}
                                                     </p>
                                                 )}
+
                                             </div>
                                         )}
                                     </div>
@@ -1712,23 +1782,50 @@ const AssetDetailPage = () => {
                                         <FaPlus /> Upload Document
                                     </button>
                                 </div>
-                                {Array.isArray(asset.documents) && asset.documents.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {asset.documents.map((doc, idx) => (
-                                            <div key={idx} className="p-4 border rounded-md bg-white flex items-center justify-between">
-                                                <div>
-                                                    <p className="font-medium text-gray-800">{doc.name || `Document ${idx + 1}`}</p>
-                                                    <p className="text-xs text-gray-500">{doc.type || 'File'} • {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : ''}</p>
+                                
+                                {/* Show uploaded attachment from asset creation if available */}
+                                {asset.documents && Array.isArray(asset.documents) && asset.documents.length > 0 ? (
+                                    <div className="space-y-4">
+                                        <h4 className="text-md font-medium text-gray-700">Uploaded Documents</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {asset.documents.map((doc, idx) => (
+                                                <div key={idx} className="p-4 border rounded-md bg-white flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <FaFileAlt className="text-blue-600 text-lg" />
+                                                        <div>
+                                                            <p className="font-medium text-gray-800">{doc.name || `Document ${idx + 1}`}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {doc.type || 'File'} • {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Recently uploaded'}
+                                                            </p>
+                                                            {doc.fileUrl && (
+                                                                <p className="text-xs text-blue-600 mt-1">File uploaded successfully</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {doc.fileUrl && (
+                                                            <a 
+                                                                href={doc.fileUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-600 hover:text-blue-800 text-sm"
+                                                                title="View file"
+                                                            >
+                                                                View
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : (
-                                <div className="text-center py-12">
-                                    <FaFileAlt className="text-4xl text-gray-400 mx-auto mb-4" />
-                                    <h4 className="text-lg font-semibold text-gray-600 mb-2">No Documents</h4>
-                                    <p className="text-gray-500">Upload documents and files related to this asset.</p>
-                                </div>
+                                    <div className="text-center py-12">
+                                        <FaFileAlt className="text-4xl text-gray-400 mx-auto mb-4" />
+                                        <h4 className="text-lg font-semibold text-gray-600 mb-2">No Documents</h4>
+                                        <p className="text-gray-500">Upload documents and files related to this asset.</p>
+                                        <p className="text-sm text-gray-400 mt-2">Files uploaded during asset creation will appear here automatically.</p>
+                                    </div>
                                 )}
                             </div>
                         )}
