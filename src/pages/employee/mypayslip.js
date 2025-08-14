@@ -82,7 +82,7 @@ const PayrollPage = () => {
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(monthsList[latestMonthIndex]);
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
   const [isManualSelection, setIsManualSelection] = useState(false);
@@ -107,18 +107,15 @@ const PayrollPage = () => {
     // Fetch employee details to get date of joining
     dispatch(fetchEmployeeDetails(employeeId));
 
-    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
-    
     // Fetch sent payslips to get months with generated payslips
     dispatch(fetchSentPayslips(employeeId));
     
-    // Only fetch payslip details automatically if it's not a manual selection
-    if (!isManualSelection) {
-    dispatch(fetchPayslipDetails({ 
-      employeeId, 
-      month: selectedMonth, 
-      year: selectedYear 
-    }));
+    // Only fetch attendance and payslip details if we have a selected month
+    if (selectedMonth) {
+      dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
+      
+      // Only fetch payslip details automatically if it's not a manual selection
+      // This will be handled by the separate useEffect for sentPayslips
     }
     
     // Cleanup function to reset state when component unmounts
@@ -133,7 +130,7 @@ const PayrollPage = () => {
       // Find the latest month with payslip
       const latestPayslip = sentPayslips.reduce((latest, current) => {
         if (current.year > latest.year || 
-            (current.year === latest.year && current.monthNumber > latest.monthNumber)) {
+            (current.year === latest.year && current.month > latest.month)) {
           return current;
         }
         return latest;
@@ -141,16 +138,18 @@ const PayrollPage = () => {
       
       // Only update if we don't have any payslip data yet
       if (!currentPayslipData && latestPayslip.monthName && latestPayslip.year) {
-        setSelectedMonth(latestPayslip.monthName);
+        // Convert month name to proper case
+        const monthName = latestPayslip.monthName.charAt(0).toUpperCase() + latestPayslip.monthName.slice(1).toLowerCase();
+        setSelectedMonth(monthName);
         setSelectedYear(latestPayslip.year);
         setHasInitialized(true);
         
-        // Fetch payslip for the latest month
-    dispatch(fetchPayslipDetails({ 
-      employeeId, 
-          month: latestPayslip.monthName, 
+        // Fetch payslip for the latest available month using the month number from API response
+        dispatch(fetchPayslipDetails({ 
+          employeeId, 
+          month: latestPayslip.month, // Use month number from API response instead of converting month name
           year: latestPayslip.year 
-    }));
+        }));
       }
     }
   }, [sentPayslips, dispatch, employeeId, isManualSelection, currentPayslipData, hasInitialized]);
@@ -195,12 +194,15 @@ const PayrollPage = () => {
     setIsCalendarOpen(false);
     setIsManualSelection(true);
     
-    // Fetch payslip for manually selected month
+    // Fetch payslip for manually selected month using the month name
     dispatch(getEmployeePayslip({ 
       employeeId, 
-      month: month, 
+      month: month, // month name like "May", "June" etc.
       year: year 
     }));
+    
+    // Also fetch attendance for the selected month
+    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: month.slice(0, 3), year: year, employeeId }));
   };
 
   const formattedDateOfJoining = (date) => {
@@ -252,7 +254,7 @@ const PayrollPage = () => {
     }
   }
 
-  // Function to get available months based on date of joining and sent payslips
+  // Function to get available months based on sent payslips
   const getAvailableMonths = () => {
     if (!sentPayslips || !Array.isArray(sentPayslips)) {
       return groupedPayrolls;
@@ -260,43 +262,30 @@ const PayrollPage = () => {
 
     const availableMonths = {};
     
-    // Process each year
-    Object.entries(groupedPayrolls).forEach(([year, months]) => {
-      const yearInt = parseInt(year);
-      const availableMonthsForYear = [];
+    // Process sent payslips to get available months
+    sentPayslips.forEach(payslip => {
+      const year = payslip.year.toString();
+      if (!availableMonths[year]) {
+        availableMonths[year] = [];
+      }
       
-      months.forEach(month => {
-        // Check if this month has a payslip - normalize month names for comparison
-        const normalizedMonth = month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
-        const hasPayslip = sentPayslips.some(payslip => 
-          payslip.year === yearInt && 
-          payslip.monthName.toUpperCase() === normalizedMonth.toUpperCase()
-        );
-        
-        if (hasPayslip) {
-          availableMonthsForYear.push(month);
-        }
-      });
+      // Convert month name to proper case (e.g., "MAY" -> "May")
+      const monthName = payslip.monthName.charAt(0).toUpperCase() + payslip.monthName.slice(1).toLowerCase();
       
-      if (availableMonthsForYear.length > 0) {
-        availableMonths[year] = availableMonthsForYear;
+      // Only add if not already in the array
+      if (!availableMonths[year].includes(monthName)) {
+        availableMonths[year].push(monthName);
       }
     });
     
-    // If no months found through filtering, create a fallback from sent payslips
-    if (Object.keys(availableMonths).length === 0) {
-      const fallbackMonths = {};
-      sentPayslips.forEach(payslip => {
-        const year = payslip.year.toString();
-        if (!fallbackMonths[year]) {
-          fallbackMonths[year] = [];
-        }
-        // Convert month name to proper case (e.g., "MAY" -> "May")
-        const monthName = payslip.monthName.charAt(0).toUpperCase() + payslip.monthName.slice(1).toLowerCase();
-        fallbackMonths[year].push(monthName);
-      });
-      return fallbackMonths;
-    }
+    // Sort months within each year
+    Object.keys(availableMonths).forEach(year => {
+      const monthOrder = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      availableMonths[year].sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+    });
     
     return availableMonths;
   };
@@ -337,7 +326,7 @@ const PayrollPage = () => {
                   onClick={toggleCalendar}
                 >
                   <CalendarIcon className="mr-1 h-3 w-3" />
-                  {selectedYear}-{selectedMonth}
+                  {selectedMonth ? `${selectedYear}-${selectedMonth}` : 'Loading...'}
                 </Badge>
 
                 {isCalendarOpen && (
@@ -383,7 +372,22 @@ const PayrollPage = () => {
               </Button>
             </div>
 
-            {currentLoading ? (
+            {!selectedMonth && sentPayslipsLoading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
+            ) : !selectedMonth && (!sentPayslips || sentPayslips.length === 0) ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 max-w-md text-center">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                    No payslips available
+                  </h3>
+                  <p className="text-gray-600">
+                    No payslips have been generated for your account yet.
+                  </p>
+                </div>
+              </div>
+            ) : currentLoading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
