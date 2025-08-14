@@ -32,6 +32,10 @@ function PayrollManagement() {
   const [hasAttemptedCalculate, setHasAttemptedCalculate] = useState(false);
   const [isFetchingView, setIsFetchingView] = useState(false);
   const [dataLastUpdated, setDataLastUpdated] = useState(null);
+  const [editingArrears, setEditingArrears] = useState({});
+  const [arrearsValues, setArrearsValues] = useState({});
+  const [editingAdvance, setEditingAdvance] = useState({});
+  const [advanceValues, setAdvanceValues] = useState({});
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const currentDate = new Date();
     const latestAvailableMonth = new Date(
@@ -72,6 +76,71 @@ function PayrollManagement() {
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays === 1) return "1 day back";
     return `${diffInDays} days back`;
+  };
+
+  // Helper functions for arrears editing
+  const handleArrearsEdit = (employeeId) => {
+    setEditingArrears(prev => ({ ...prev, [employeeId]: true }));
+    // Clear the input field when starting to edit
+    setArrearsValues(prev => ({ ...prev, [employeeId]: '' }));
+  };
+
+  const handleArrearsSave = (employeeId) => {
+    setEditingArrears(prev => ({ ...prev, [employeeId]: false }));
+    // Convert string input to number for saving
+    const inputValue = arrearsValues[employeeId];
+    const numericValue = inputValue === '' || inputValue === '-' ? 0 : parseFloat(inputValue) || 0;
+    setArrearsValues(prev => ({ ...prev, [employeeId]: numericValue }));
+    // Here you can add API call to save the updated arrears value
+    toast.success(`Arrears updated to ₹${numericValue} for employee ${employeeId}`);
+  };
+
+  const handleArrearsCancel = (employeeId) => {
+    setEditingArrears(prev => ({ ...prev, [employeeId]: false }));
+    // Reset to original value
+    const payrollItem = payroll?.find(item => item.employeeId === employeeId);
+    setArrearsValues(prev => ({ ...prev, [employeeId]: payrollItem?.arrears ?? 0 }));
+  };
+
+  const handleArrearsChange = (employeeId, value) => {
+    // Keep the raw input value to allow for partial typing (like "-" or "123.")
+    setArrearsValues(prev => ({ ...prev, [employeeId]: value }));
+  };
+
+  // Helper functions for advance editing (positive values only)
+  const handleAdvanceEdit = (employeeId, field) => {
+    const key = `${employeeId}_${field}`;
+    setEditingAdvance(prev => ({ ...prev, [key]: true }));
+    // Clear the input field when starting to edit
+    setAdvanceValues(prev => ({ ...prev, [key]: '' }));
+  };
+
+  const handleAdvanceSave = (employeeId, field) => {
+    const key = `${employeeId}_${field}`;
+    setEditingAdvance(prev => ({ ...prev, [key]: false }));
+    // Convert string input to positive number for saving
+    const inputValue = advanceValues[key];
+    const numericValue = inputValue === '' ? 0 : Math.max(0, parseFloat(inputValue) || 0);
+    setAdvanceValues(prev => ({ ...prev, [key]: numericValue }));
+    // Here you can add API call to save the updated advance value
+    toast.success(`${field === 'thisMonth' ? 'This Month Advance' : 'Deduct This Month'} updated to ₹${numericValue} for employee ${employeeId}`);
+  };
+
+  const handleAdvanceCancel = (employeeId, field) => {
+    const key = `${employeeId}_${field}`;
+    setEditingAdvance(prev => ({ ...prev, [key]: false }));
+    // Reset to original value (from employee data)
+    const originalValue = field === 'thisMonth' 
+      ? employees.find(emp => emp.employeeId === employeeId)?.thisMonthAdvance || 0
+      : employees.find(emp => emp.employeeId === employeeId)?.deductInThisMonth || 0;
+    setAdvanceValues(prev => ({ ...prev, [key]: originalValue }));
+  };
+
+  const handleAdvanceChange = (employeeId, field, value) => {
+    const key = `${employeeId}_${field}`;
+    // Only allow positive numbers - prevent negative input
+    if (value.startsWith('-')) return; // Block negative input
+    setAdvanceValues(prev => ({ ...prev, [key]: value }));
   };
 
   // Check if selected month is the latest available month (current month - 1)
@@ -117,6 +186,10 @@ function PayrollManagement() {
     setSelectedEmployees([]);
     setPayrollErrorDetails(null);
     setDataLastUpdated(null);
+    setEditingArrears({});
+    setArrearsValues({});
+    setEditingAdvance({});
+    setAdvanceValues({});
   };
 
   useEffect(() => {
@@ -179,6 +252,29 @@ function PayrollManagement() {
       }
     })();
   }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
+
+  // Initialize arrears values when payroll data is loaded
+  useEffect(() => {
+    if (payroll && Array.isArray(payroll) && payroll.length > 0) {
+      const initialArrearsValues = {};
+      payroll.forEach(item => {
+        initialArrearsValues[item.employeeId] = item.arrears ?? 0;
+      });
+      setArrearsValues(initialArrearsValues);
+    }
+  }, [payroll]);
+
+  // Initialize advance values when employees data is loaded
+  useEffect(() => {
+    if (employees && Array.isArray(employees) && employees.length > 0) {
+      const initialAdvanceValues = {};
+      employees.forEach(employee => {
+        initialAdvanceValues[`${employee.employeeId}_thisMonth`] = employee.thisMonthAdvance ?? 0;
+        initialAdvanceValues[`${employee.employeeId}_deduct`] = employee.deductInThisMonth ?? 0;
+      });
+      setAdvanceValues(initialAdvanceValues);
+    }
+  }, [employees]);
 
   console.log(payroll);
 
@@ -345,7 +441,60 @@ function PayrollManagement() {
                         : "₹ 0"}
                     </td>
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem ? `₹ ${payrollItem.arrears || 0}` : "₹ 0"}
+                      {editingArrears[employee.employeeId] ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={arrearsValues[employee.employeeId] ?? ''}
+                            onChange={(e) => handleArrearsChange(employee.employeeId, e.target.value)}
+                            className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            step="0.01"
+                            placeholder="Enter amount"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleArrearsSave(employee.employeeId)}
+                            className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors"
+                            title="Save"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleArrearsCancel(employee.employeeId)}
+                            className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between group">
+                          {(() => {
+                            // Get the display value
+                            let displayValue = 0;
+                            if (arrearsValues[employee.employeeId] !== undefined) {
+                              displayValue = typeof arrearsValues[employee.employeeId] === 'number' 
+                                ? arrearsValues[employee.employeeId] 
+                                : parseFloat(arrearsValues[employee.employeeId]) || 0;
+                            } else if (payrollItem) {
+                              displayValue = payrollItem.arrears ?? 0;
+                            }
+                            
+                            return (
+                              <span className={displayValue < 0 ? 'text-red-600' : ''}>
+                                ₹ {displayValue}
+                              </span>
+                            );
+                          })()}
+                          <button
+                            onClick={() => handleArrearsEdit(employee.employeeId)}
+                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                            title="Edit Arrears"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
@@ -624,10 +773,98 @@ function PayrollManagement() {
                     ₹{employee.oldAdvance}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
-                    ₹{employee.thisMonthAdvance}
+                    {editingAdvance[`${employee.employeeId}_thisMonth`] ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={advanceValues[`${employee.employeeId}_thisMonth`] ?? ''}
+                          onChange={(e) => handleAdvanceChange(employee.employeeId, 'thisMonth', e.target.value)}
+                          className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          min="0"
+                          step="0.01"
+                          placeholder="Enter amount"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleAdvanceSave(employee.employeeId, 'thisMonth')}
+                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors"
+                          title="Save"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleAdvanceCancel(employee.employeeId, 'thisMonth')}
+                          className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between group">
+                        <span>
+                          ₹{advanceValues[`${employee.employeeId}_thisMonth`] !== undefined 
+                            ? (typeof advanceValues[`${employee.employeeId}_thisMonth`] === 'number' 
+                                ? advanceValues[`${employee.employeeId}_thisMonth`] 
+                                : parseFloat(advanceValues[`${employee.employeeId}_thisMonth`]) || 0)
+                            : (employee.thisMonthAdvance || 0)}
+                        </span>
+                        <button
+                          onClick={() => handleAdvanceEdit(employee.employeeId, 'thisMonth')}
+                          className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                          title="Edit This Month Advance"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
-                    ₹{employee.deductInThisMonth}
+                    {editingAdvance[`${employee.employeeId}_deduct`] ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={advanceValues[`${employee.employeeId}_deduct`] ?? ''}
+                          onChange={(e) => handleAdvanceChange(employee.employeeId, 'deduct', e.target.value)}
+                          className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          min="0"
+                          step="0.01"
+                          placeholder="Enter amount"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleAdvanceSave(employee.employeeId, 'deduct')}
+                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors"
+                          title="Save"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleAdvanceCancel(employee.employeeId, 'deduct')}
+                          className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
+                          title="Cancel"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between group">
+                        <span>
+                          ₹{advanceValues[`${employee.employeeId}_deduct`] !== undefined 
+                            ? (typeof advanceValues[`${employee.employeeId}_deduct`] === 'number' 
+                                ? advanceValues[`${employee.employeeId}_deduct`] 
+                                : parseFloat(advanceValues[`${employee.employeeId}_deduct`]) || 0)
+                            : (employee.deductInThisMonth || 0)}
+                        </span>
+                        <button
+                          onClick={() => handleAdvanceEdit(employee.employeeId, 'deduct')}
+                          className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                          title="Edit Deduct This Month"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50 font-semibold">
                     ₹{employee.balanceForNextMonth}

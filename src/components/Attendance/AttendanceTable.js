@@ -2,7 +2,7 @@ import React from "react";
 import { useDispatch } from "react-redux";
 import { Search, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { processHolidayAttendance } from "@/redux/slices/publicHolidaySlice";
+import { processCompanyMonthAttendance } from "@/redux/slices/publicHolidaySlice";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 import { toast } from "sonner";
 
@@ -54,13 +54,13 @@ const AttendanceTable = ({
 
   const dispatch = useDispatch();
 
-  const handleProcessHolidayAttendance = async () => {
+  const handleProcessCompanyMonthAttendance = async () => {
     try {
       const companyId = sessionStorage.getItem("employeeCompanyId");
       const yearNum = parseInt(selectedYear);
       const monthIdx = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth() + 1;
-      const result = await dispatch(processHolidayAttendance({ companyId, yearNum, monthIdx })).unwrap();
-      toast.success("Holiday attendance processed successfully:", result);
+      const result = await dispatch(processCompanyMonthAttendance({ companyId, yearNum, monthIdx })).unwrap();
+      toast.success("Company month attendance processed successfully:", result);
 
       // Refresh attendance view with current filters
       const apiParams = { month: monthIdx, year: selectedYear };
@@ -247,23 +247,75 @@ const AttendanceTable = ({
     <div className="bg-white rounded-lg shadow-md p-4 space-y-6">
       {/* Header row with dynamic message + calendar anchored right */}
       <div className="flex items-center gap-4 mb-2">
-        {(selectedEmployeeId && !selectedDate) ? (
+        {/* Month Navigation with Display */}
+        <div className="flex items-center gap-4">
+          {/* Left Arrow - Always visible for previous month */}
+          <button
+            onClick={() => {
+              const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+              const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+              const prevMonthName = prevMonth.toLocaleString("default", { month: "long" });
+              const prevYear = prevMonth.getFullYear().toString();
+              handleMonthSelection(prevMonthName, prevYear);
+            }}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-600 hover:text-gray-800"
+            title="Previous Month"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Month Display */}
           <div className="text-gray-700 font-medium text-base">
-            Showing attendance of an employee with EMP ID{" "}
-            <span className="font-semibold">{selectedEmployeeId}</span> on {selectedMonth} {selectedYear}
+            {selectedEmployeeId && !selectedDate ? (
+              <>
+                Showing attendance of an employee with EMP ID{" "}
+                <span className="font-semibold">{selectedEmployeeId}</span> on {selectedMonth} {selectedYear}
+              </>
+            ) : !selectedEmployeeId && selectedDate ? (
+              <>
+                Showing attendance of the employees on{" "}
+                <span className="font-semibold">
+                  {selectedDate} {selectedMonth} {selectedYear}
+                </span>
+              </>
+            ) : (
+              <>
+                Showing attendance of the employees in {selectedMonth} {selectedYear}
+              </>
+            )}
           </div>
-        ) : (!selectedEmployeeId && selectedDate) ? (
-          <div className="text-gray-700 font-medium text-base">
-            Showing attendance of the employees on{" "}
-            <span className="font-semibold">
-              {selectedDate} {selectedMonth} {selectedYear}
-            </span>
-          </div>
-        ) : (
-          <div className="text-gray-700 font-medium text-base">
-            Showing attendance of the employees in {selectedMonth} {selectedYear}
-          </div>
-        )}
+
+          {/* Right Arrow - Only visible when not on current month */}
+          {(() => {
+            const currentDate = new Date();
+            const currentMonth = currentDate.toLocaleString("default", { month: "long" });
+            const currentYear = currentDate.getFullYear().toString();
+            const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
+            
+            if (!isCurrentMonth) {
+              return (
+                <button
+                  onClick={() => {
+                    const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+                    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                    const nextMonthName = nextMonth.toLocaleString("default", { month: "long" });
+                    const nextYear = nextMonth.getFullYear().toString();
+                    handleMonthSelection(nextMonthName, nextYear);
+                  }}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-600 hover:text-gray-800"
+                  title="Next Month"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              );
+            }
+            return null;
+          })()}
+        </div>
         {/* Calendar - Hide only when Single Employee Month is open */}
         {!isSingleEmployeeModalOpen && (
           <div className="relative ml-auto" ref={calendarRef}>
@@ -288,9 +340,9 @@ const AttendanceTable = ({
                     onChange={(e) => {
                       const newYear = e.target.value;
                       if (newYear === "2024") {
-                        handleMonthSelection("Aug", newYear);
+                        handleMonthSelection("August", newYear);
                       } else {
-                        handleMonthSelection("Jan", newYear);
+                        handleMonthSelection("January", newYear);
                       }
                     }}
                     className="ml-2 border rounded px-2 py-1 text-sm"
@@ -337,9 +389,15 @@ const AttendanceTable = ({
                             ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
                             : "hover:bg-gray-50 text-gray-700"
                         }`}
-                        onClick={() =>
-                          handleMonthSelection(month, selectedYear)
-                        }
+                        onClick={() => {
+                          const monthMap = {
+                            "Jan": "January", "Feb": "February", "Mar": "March", "Apr": "April",
+                            "May": "May", "Jun": "June", "Jul": "July", "Aug": "August",
+                            "Sep": "September", "Oct": "October", "Nov": "November", "Dec": "December"
+                          };
+                          const fullMonthName = monthMap[month] || month;
+                          handleMonthSelection(fullMonthName, selectedYear);
+                        }}
                       >
                         {month}
                       </button>
@@ -353,11 +411,11 @@ const AttendanceTable = ({
         {!isSingleEmployeeModalOpen && (
           <button
             type="button"
-            onClick={handleProcessHolidayAttendance}
+                          onClick={handleProcessCompanyMonthAttendance}
             className="ml-2 px-4 py-2 rounded bg-indigo-500 text-white text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            title="Process holiday attendance for selected month"
+                          title="Process company month attendance for selected month"
           >
-            Process Holidays
+            Process Attendance
           </button>
         )}
       </div>
