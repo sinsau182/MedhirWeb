@@ -93,13 +93,14 @@ const TeamMemberAssignmentModal = ({
 
   // Calculate position to ensure popup stays within viewport
   const getAdjustedPosition = () => {
-    const popupWidth = 200; // min-width
-    const popupHeight = 100; // estimated height
+    const popupWidth = 280; // min-width from className
+    const popupHeight = 300; // estimated height for the modal
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
     let adjustedX = position.x;
-    let adjustedY = position.y - 10;
+    let adjustedY = position.y;
+    let transform = 'translate(-50%, -100%)'; // Default: center horizontally, above the point
     
     // Ensure popup doesn't go off the right edge
     if (adjustedX + popupWidth / 2 > viewportWidth) {
@@ -111,12 +112,21 @@ const TeamMemberAssignmentModal = ({
       adjustedX = popupWidth / 2 + 10;
     }
     
-    // If popup would go above viewport, show it below the element
-    if (adjustedY - popupHeight < 0) {
-      adjustedY = position.y + 30; // Show below
+    // Check if popup would go above viewport (top edge)
+    if (adjustedY - popupHeight < 20) {
+      // Show below the element instead
+      adjustedY = position.y + 20;
+      transform = 'translate(-50%, 0%)'; // Center horizontally, no vertical offset
     }
     
-    return { x: adjustedX, y: adjustedY };
+    // Check if popup would go below viewport (bottom edge)
+    if (adjustedY + popupHeight > viewportHeight - 20) {
+      // Show above the element
+      adjustedY = position.y - 20;
+      transform = 'translate(-50%, -100%)'; // Center horizontally, above the point
+    }
+    
+    return { x: adjustedX, y: adjustedY, transform };
   };
 
   const adjustedPosition = getAdjustedPosition();
@@ -134,7 +144,7 @@ const TeamMemberAssignmentModal = ({
           position: 'fixed',
           left: adjustedPosition.x,
           top: adjustedPosition.y,
-          transform: 'translate(-50%, -100%)',
+          transform: adjustedPosition.transform,
           zIndex: 100000,
           pointerEvents: 'auto'
         }}
@@ -159,11 +169,11 @@ const TeamMemberAssignmentModal = ({
                     <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 max-w-[200px]">
                   <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
                     Project Location
                   </h4>
-                  <p className="text-sm text-gray-800 font-medium leading-tight">
+                  <p className="text-sm text-gray-800 font-medium leading-tight break-words whitespace-pre-wrap">
                     {lead.address || "Location not specified"}
                   </p>
                 </div>
