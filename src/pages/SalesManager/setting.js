@@ -101,19 +101,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Tooltip } from "recharts";
 import withAuth from "@/components/withAuth";
 
-// Remove hardcoded arrays - will use dynamic data from Redux
-// const salesPersons = [
-//   { id: 1, name: "Alice" },
-//   { id: 2, name: "Bob" },
-//   { id: 3, name: "Charlie" },
-//   { id: 4, name: "Dana" },
-// ];
-// const designers = [
-//   { id: 1, name: "Bob" },
-//   { id: 2, name: "Dana" },
-//   { id: 3, name: "Frank" },
-//   { id: 4, name: "Jack" },
-// ];
+
 
 const defaultLeadData = {
   name: "",
