@@ -718,7 +718,7 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
 };
 
 // Enhanced Custom Form Builder Component with proper Redux integration
-const CustomFormBuilder = ({ editing }) => {
+const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     const dispatch = useDispatch();
     const { categories, loading: categoriesLoading } = useSelector(state => state.assetCategories);
     const { forms, currentForm, loading: formsLoading, creating: creatingForm, updating: updatingForm } = useSelector(state => state.customForms);
@@ -960,17 +960,7 @@ const CustomFormBuilder = ({ editing }) => {
         }
     };
 
-    const handleDeleteForm = async (formId) => {
-        if (window.confirm('Are you sure you want to delete this form?')) {
-            try {
-                await dispatch(deleteCustomForm(formId)).unwrap();
-                toast.success("Form deleted successfully!");
-            } catch (error) {
-                console.error('Error deleting form:', error);
-                toast.error("Failed to delete form");
-            }
-        }
-    };
+
 
     const addField = () => {
         console.log('addField called. Current fields count:', fields.length);
@@ -1383,7 +1373,7 @@ const CustomFormBuilder = ({ editing }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleDeleteForm(form.id || form.formId);
+                                                            onDeleteForm(form.id || form.formId);
                                                         }}
                                                         className="text-red-600 hover:text-red-800"
                                                         title="Delete Form"
@@ -1791,18 +1781,65 @@ const CustomFormBuilder = ({ editing }) => {
 };
 
 // Delete confirmation modals
-const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName }) => {
+const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, assetsCount, assetsList }) => {
     if (!open) return null;
+    
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
                 <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
                     <FaTrash /> Delete Category
                 </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
+                
+                {warning ? (
+                    <div>
+                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-yellow-800 font-medium mb-2">
+                                ⚠️ Cannot Delete Category
+                            </p>
+                            <p className="text-yellow-700 text-sm">
+                                The category <span className="font-semibold">&quot;{categoryName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
+                            </p>
+                        </div>
+                        
+                        {assetsList && assetsList.length > 0 && (
+                            <div className="mb-4">
+                                <p className="text-sm font-medium text-gray-700 mb-2">Assets using this category:</p>
+                                <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
+                                    {assetsList.map((asset, index) => (
+                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
+                                            • {asset.name || asset.assetId} ({asset.assetId})
+                                        </div>
+                                    ))}
+                                    {assetsCount > 5 && (
+                                        <div className="text-sm text-gray-500 italic">
+                                            ... and {assetsCount - 5} more
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        
+                        <p className="text-sm text-gray-600 mb-4">
+                            Please change the category of these assets to a different category before deleting this one.
+                        </p>
+                    </div>
+                ) : (
+                    <p className="mb-4 text-gray-700">
+                        Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>
+                        This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.
+                    </p>
+                )}
+                
                 <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
-                    <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
+                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        {warning ? 'Close' : 'Cancel'}
+                    </button>
+                    {!warning && (
+                        <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
+                            Delete
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -1939,6 +1976,41 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName, warning, asse
     );
 };
 
+const DeleteFormModal = ({ open, onClose, onConfirm, formName }) => {
+    if (!open) return null;
+    
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
+                    <FaTrash /> Delete Custom Form
+                </h2>
+                
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-red-800 font-medium mb-2">
+                        ⚠️ Warning: This action cannot be undone
+                    </p>
+                    <p className="text-red-700 text-sm">
+                        Are you sure you want to delete the custom form <span className="font-semibold">&quot;{formName}&quot;</span>?
+                    </p>
+                    <p className="text-red-600 text-sm mt-2">
+                        This will permanently remove the form and all its associated data.
+                    </p>
+                </div>
+                
+                <div className="flex justify-end gap-3 mt-6">
+                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        No, Cancel
+                    </button>
+                    <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
+                        Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Page Component ---
 const AssetSettingsPage = () => {
     const dispatch = useDispatch();
@@ -2029,7 +2101,20 @@ const AssetSettingsPage = () => {
         assetsList: []
     });
 
-    const [deleteModal, setDeleteModal] = useState({ open: false, categoryId: null, name: '' });
+    const [deleteFormModal, setDeleteFormModal] = useState({ 
+        open: false, 
+        formId: null, 
+        formName: ''
+    });
+
+    const [deleteModal, setDeleteModal] = useState({ 
+        open: false, 
+        categoryId: null, 
+        name: '', 
+        warning: false,
+        assetsCount: 0,
+        assetsList: []
+    });
 
     // Initialize data
     useEffect(() => {
@@ -2185,11 +2270,31 @@ const AssetSettingsPage = () => {
         const hasSubCategories = category && category.subCategories && category.subCategories.length > 0;
         
         if (hasSubCategories) {
-            toast.error(`Cannot delete category "${name}" because it has ${category.subCategories.length} sub-category(ies). Please delete all sub-categories first.`);
+            const subCatList = category.subCategories.slice(0, 3).map(sub => sub.name).join(', ');
+            const moreText = category.subCategories.length > 3 ? ` and ${category.subCategories.length - 3} more` : '';
+            toast.error(`Cannot delete category "${name}" because it has ${category.subCategories.length} sub-category(ies): ${subCatList}${moreText}. Please delete all sub-categories first.`);
             return;
         }
         
-        setDeleteModal({ open: true, categoryId, name });
+        // Check if any assets are using this category
+        const assetsUsingCategory = assets.filter(asset => 
+            asset.categoryId === categoryId || asset.category?.id === categoryId
+        );
+        
+        if (assetsUsingCategory.length > 0) {
+            // Show warning modal with details about assets using this category
+            setDeleteModal({ 
+                open: true, 
+                categoryId, 
+                name,
+                warning: true,
+                assetsCount: assetsUsingCategory.length,
+                assetsList: assetsUsingCategory.slice(0, 5) // Show first 5 assets
+            });
+        } else {
+            // No assets using this category, proceed with deletion
+            setDeleteModal({ open: true, categoryId, name, warning: false });
+        }
     };
     
     const confirmDeleteCategory = async () => {
@@ -2199,14 +2304,24 @@ const AssetSettingsPage = () => {
             await dispatch(deleteAssetCategory(deleteModal.categoryId)).unwrap();
             toast.success("Category deleted successfully!");
         } catch (error) {
-            toast.error("Failed to delete category");
+            // Show backend response in toast
+            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete category";
+            toast.error(`Category deletion failed: ${errorMessage}`);
+            console.error('Backend error response:', error);
         }
         setDeleteModal({ open: false, categoryId: null, name: '' });
     };
     
     const cancelDeleteCategory = () => {
         console.log('cancelDeleteCategory called');
-        setDeleteModal({ open: false, categoryId: null, name: '' });
+        setDeleteModal({ 
+            open: false, 
+            categoryId: null, 
+            name: '', 
+            warning: false,
+            assetsCount: 0,
+            assetsList: []
+        });
     };
 
     // Enhanced sub-category management functions
@@ -2392,6 +2507,19 @@ const AssetSettingsPage = () => {
         
         console.log('Found category and subcategory for deletion:', { category, subCategory });
         
+        // Check if any assets are using this sub-category
+        const assetsUsingSubCategory = assets.filter(asset => 
+            asset.subCategoryId === subCategoryId || asset.subCategory?.id === subCategoryId
+        );
+        
+        if (assetsUsingSubCategory.length > 0) {
+            // Show warning toast about assets using this sub-category
+            const assetList = assetsUsingSubCategory.slice(0, 3).map(asset => asset.name || asset.assetId).join(', ');
+            const moreText = assetsUsingSubCategory.length > 3 ? ` and ${assetsUsingSubCategory.length - 3} more` : '';
+            toast.error(`Cannot delete sub-category "${subCategory?.name || 'Unknown'}" because it has ${assetsUsingSubCategory.length} asset(s) using it: ${assetList}${moreText}. Please change the sub-category of these assets first.`);
+            return;
+        }
+        
         if (subCategory?.subCategoryId) {
             // Delete from server
             try {
@@ -2400,7 +2528,9 @@ const AssetSettingsPage = () => {
                 toast.success("Sub-category deleted successfully!");
             } catch (error) {
                 console.error('Error deleting subcategory:', error);
-                toast.error("Failed to delete sub-category");
+                // Show backend response in toast
+                const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete sub-category";
+                toast.error(`Sub-category deletion failed: ${errorMessage}`);
             }
         } else {
             // Remove locally (for unsaved sub-categories)
@@ -2950,12 +3080,16 @@ const AssetSettingsPage = () => {
             await dispatch(deleteAssetLocation(deleteLocationModal.locationId)).unwrap();
             toast.success("Location deleted successfully!");
         } catch (error) {
+            // Show backend response in toast
+            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete location";
+            
             // Check if the error is about assets using this location
             if (error && error.includes && error.includes('assets')) {
                 toast.error("Cannot delete location: Assets are currently using this location");
             } else {
-                toast.error("Failed to delete location");
+                toast.error(`Location deletion failed: ${errorMessage}`);
             }
+            console.error('Backend error response:', error);
         }
         setDeleteLocationModal({ open: false, locationId: null, name: '', warning: false });
     };
@@ -3071,14 +3205,18 @@ const AssetSettingsPage = () => {
         } catch (error) {
             console.error('Error deleting status label:', error);
             
+            // Show backend response in toast
+            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete status label";
+            
             // Check if the error is about assets using this status
             if (error && error.includes && error.includes('assets')) {
                 toast.error("Cannot delete status label: Assets are currently using this status");
             } else if (error && error.includes && error.includes('Invalid status label ID')) {
                 toast.error("Invalid status label ID. Please refresh the page and try again.");
             } else {
-                toast.error("Failed to delete status label");
+                toast.error(`Status label deletion failed: ${errorMessage}`);
             }
+            console.error('Backend error response:', error);
         }
         setDeleteStatusModal({ open: false, statusId: null, name: '', warning: false });
     };
@@ -3092,6 +3230,35 @@ const AssetSettingsPage = () => {
             assetsCount: 0,
             assetsList: []
         });
+    };
+
+    // Custom Form management functions
+    const handleDeleteForm = (formId) => {
+        // Show custom confirmation modal instead of browser confirm
+        const form = forms.find(f => f.id === formId || f.formId === formId);
+        setDeleteFormModal({ 
+            open: true, 
+            formId, 
+            formName: form?.name || 'Unknown Form'
+        });
+    };
+
+    const confirmDeleteForm = async () => {
+        const { formId } = deleteFormModal;
+        try {
+            await dispatch(deleteCustomForm(formId)).unwrap();
+            toast.success("Form deleted successfully!");
+            setDeleteFormModal({ open: false, formId: null, formName: '' });
+        } catch (error) {
+            console.error('Error deleting form:', error);
+            // Show backend response in toast
+            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete form";
+            toast.error(`Form deletion failed: ${errorMessage}`);
+        }
+    };
+
+    const cancelDeleteForm = () => {
+        setDeleteFormModal({ open: false, formId: null, formName: '' });
     };
 
     // ID Format Management placeholder functions (implement as needed)
@@ -3203,7 +3370,8 @@ const AssetSettingsPage = () => {
             onSave: null, // No global save button - Custom Form Builder has its own Save button
             onCancel: null, // No global cancel button - Custom Form Builder manages its own state
             component: <CustomFormBuilder 
-                editing={editingCustomFields} 
+                editing={editingCustomFields}
+                onDeleteForm={handleDeleteForm}
             /> 
         },
     ];
@@ -3215,6 +3383,9 @@ const AssetSettingsPage = () => {
                 onClose={cancelDeleteCategory}
                 onConfirm={confirmDeleteCategory}
                 categoryName={deleteModal.name}
+                warning={deleteModal.warning}
+                assetsCount={deleteModal.assetsCount}
+                assetsList={deleteModal.assetsList}
             />
                         <DeleteLocationModal 
                 open={deleteLocationModal.open} 
@@ -3233,6 +3404,12 @@ const AssetSettingsPage = () => {
                 warning={deleteStatusModal.warning}
                 assetsCount={deleteStatusModal.assetsCount}
                 assetsList={deleteStatusModal.assetsList}
+            />
+            <DeleteFormModal 
+                open={deleteFormModal.open} 
+                onClose={cancelDeleteForm} 
+                onConfirm={confirmDeleteForm} 
+                formName={deleteFormModal.formName}
             />
             <div className="p-6">
                 <header className="mb-6">
