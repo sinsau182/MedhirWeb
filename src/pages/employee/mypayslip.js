@@ -648,12 +648,6 @@ const PayrollPage = () => {
                                 {displayValue(currentPayslipData?.arrears)}
                               </td>
                             </tr>
-                            <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-50">
-                              <td className="px-2 p-1 font-semibold">&nbsp;</td>
-                              <td className="px-2 p-1 text-center border-l-2 border-gray-400 font-semibold">
-                                &nbsp;
-                              </td>
-                            </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-100">
                               <td className="px-2 p-1 font-semibold">
                                 Total Earnings
