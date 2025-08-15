@@ -1615,6 +1615,114 @@ function PayrollManagement() {
                 Payroll Management
               </h1>
               
+              <button
+                disabled={!isLatestAvailableMonth() || isCalculatingPayroll}
+                onClick={async () => {
+                  if (isLatestAvailableMonth() && !isCalculatingPayroll) {
+                    setHasAttemptedCalculate(true);
+                    setIsCalculatingPayroll(true);
+                    // Hide tables while we recalculate and fetch fresh data
+                    setIsFetchingView(true);
+                    // Clear previous error while we attempt
+                    setPayrollErrorDetails(null);
+
+                    try {
+                      console.log("Starting payroll calculation...");
+
+                      // Convert month name to month number
+                      const monthMap = {
+                        January: 1,
+                        February: 2,
+                        March: 3,
+                        April: 4,
+                        May: 5,
+                        June: 6,
+                        July: 7,
+                        August: 8,
+                        September: 9,
+                        October: 10,
+                        November: 11,
+                        December: 12,
+                      };
+
+                      const requestBody = {
+                        companyId: selectedCompanyId,
+                        year: parseInt(selectedYear),
+                        month: monthMap[selectedMonth],
+                      };
+
+                      console.log("Calling generatePayroll API with:", requestBody);
+
+                      // Try to generate payroll (POST). If it fails, we'll still query view to surface exact message
+                      await dispatch(generatePayroll(requestBody)).unwrap();
+                      console.log("Generate payroll succeeded");
+                      toast.success("Payroll calculation completed!");
+
+                      // Then, fetch the generated payroll data (GET request)
+                      const params = {
+                        companyId: selectedCompanyId,
+                        year: parseInt(selectedYear),
+                        month: monthMap[selectedMonth],
+                      };
+
+                      console.log("Calling getPayroll API with:", params);
+                      setIsFetchingView(true);
+                      await dispatch(getPayroll(params)).unwrap();
+                      setIsFetchingView(false);
+                      setPayrollErrorDetails(null);
+                      setIsCalculatePayrollClicked(true);
+                      setDataLastUpdated(new Date());
+                      toast.success("Payroll data loaded successfully!");
+
+                    } catch (error) {
+                      // Always surface the error coming from getPayroll (view) for precise messaging
+                      try {
+                        const monthMap = {
+                          January: 1,
+                          February: 2,
+                          March: 3,
+                          April: 4,
+                          May: 5,
+                          June: 6,
+                          July: 7,
+                          August: 8,
+                          September: 9,
+                          October: 10,
+                          November: 11,
+                          December: 12,
+                        };
+                        const params = {
+                          companyId: selectedCompanyId,
+                          year: parseInt(selectedYear),
+                          month: monthMap[selectedMonth],
+                        };
+                        setIsFetchingView(true);
+                        await dispatch(getPayroll(params)).unwrap();
+                        setPayrollErrorDetails(null);
+                      } catch (viewError) {
+                        setPayrollErrorDetails(viewError);
+                      } finally {
+                        setIsFetchingView(false);
+                      }
+                    } finally {
+                      setIsCalculatingPayroll(false);
+                    }
+                  }
+                }}
+                className={`px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
+                  isLatestAvailableMonth() && !isCalculatingPayroll
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
+                }`}
+              >
+                {isCalculatingPayroll 
+                  ? "Calculating..." 
+                  : isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0))
+                    ? "Recalculate Payroll"
+                    : "Calculate Payroll"
+                }
+              </button>
+              
               {isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
                 <button
                   onClick={() => {
