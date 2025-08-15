@@ -8,7 +8,7 @@ import { Download, CalendarIcon } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import withAuth from "@/components/withAuth";
-import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState, fetchSentPayslips } from "@/redux/slices/payslipSlice";
+import { fetchPayslipDetails, fetchEmployeeDetails, resetPayslipState } from "@/redux/slices/payslipSlice";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 import { getEmployeePayslip } from "@/redux/slices/payrollSlice";
 
@@ -76,7 +76,8 @@ const PayrollPage = () => {
   const { payslipData, employeeData, loading, error } = useSelector((state) => state.payslip);
   const { attendance } = useSelector((state) => state.attendances);
   const { employeePayslip, employeePayslipLoading, employeePayslipError } = useSelector((state) => state.payroll);
-  const { sentPayslips, sentPayslipsLoading, sentPayslipsError } = useSelector((state) => state.payslip);
+
+  console.log(attendance);
   
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -84,7 +85,6 @@ const PayrollPage = () => {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [dateOfJoining, setDateOfJoining] = useState(null);
   const [isManualSelection, setIsManualSelection] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
 
   const employeeId = sessionStorage.getItem("employeeId"); // Retrieve the employee ID from sessionStorage
 
@@ -105,15 +105,15 @@ const PayrollPage = () => {
     // Fetch employee details to get date of joining
     dispatch(fetchEmployeeDetails(employeeId));
 
-    // Fetch sent payslips to get months with generated payslips
-    dispatch(fetchSentPayslips(employeeId));
+    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
     
-    // Only fetch attendance and payslip details if we have a selected month
-    if (selectedMonth) {
-      dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
-      
-      // Only fetch payslip details automatically if it's not a manual selection
-      // This will be handled by the separate useEffect for sentPayslips
+    // Only fetch payslip details automatically if it's not a manual selection
+    if (!isManualSelection) {
+      dispatch(fetchPayslipDetails({ 
+        employeeId, 
+        month: selectedMonth, 
+        year: selectedYear 
+      }));
     }
     
     // Cleanup function to reset state when component unmounts
@@ -152,26 +152,38 @@ const PayrollPage = () => {
     }
   }, [sentPayslips, dispatch, employeeId, isManualSelection, currentPayslipData, hasInitialized]);
 
+  // Determine which payslip data to use
+  const currentPayslipData = isManualSelection ? employeePayslip : payslipData;
+  const currentLoading = isManualSelection ? employeePayslipLoading : loading;
+  const currentError = isManualSelection ? employeePayslipError : error;
+
   // Auto-update calendar display to match actual payslip month
   useEffect(() => {
-    if (currentPayslipData && !isManualSelection && currentPayslipData.month && currentPayslipData.year) {
-      // Convert month number to month name
-      const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      const monthName = monthNames[currentPayslipData.month - 1]; // month is 1-based
+    if (currentPayslipData && !isManualSelection) {
+      const payslipMonth = currentPayslipData.month;
       const payslipYear = currentPayslipData.year;
       
-      // Only update if different from current selection and we have valid data
-      if (monthName && payslipYear && (monthName !== selectedMonth || payslipYear !== selectedYear)) {
-        setSelectedMonth(monthName);
-        setSelectedYear(payslipYear);
+      if (payslipMonth && payslipYear) {
+        // Convert month number to month name
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const monthName = monthNames[payslipMonth - 1]; // month is 1-based
+        
+        // Only update if different from current selection
+        if (monthName !== selectedMonth || payslipYear !== selectedYear) {
+          setSelectedMonth(monthName);
+          setSelectedYear(payslipYear);
+        }
       }
     }
-  }, [currentPayslipData, isManualSelection]);
+  }, [currentPayslipData, isManualSelection, selectedMonth, selectedYear]);
 
-  // Debug logging removed
+  // Debug logging
+  console.log("Current payslip data:", currentPayslipData);
+  console.log("Date of joining from API:", currentPayslipData?.dateOfJoining);
+  console.log("Is manual selection:", isManualSelection);
 
   // Show error toast if there's an error
   // useEffect(() => {
@@ -189,25 +201,23 @@ const PayrollPage = () => {
     setIsCalendarOpen(false);
     setIsManualSelection(true);
     
-    // Fetch payslip for manually selected month using the month name
+    // Fetch payslip for manually selected month
     dispatch(getEmployeePayslip({ 
       employeeId, 
-      month: month, // month name like "May", "June" etc.
+      month: month, 
       year: year 
     }));
-    
-    // Also fetch attendance for the selected month
-    dispatch(fetchOneEmployeeAttendanceOneMonth({ month: month.slice(0, 3), year: year, employeeId }));
   };
 
   const formattedDateOfJoining = (date) => {
     if (!date) return "N/A";
     
     try {
-    const d = new Date(date);
+      const d = new Date(date);
       
       // Check if date is valid
       if (isNaN(d.getTime())) {
+        console.log("Invalid date:", date);
         return "Invalid Date";
       }
       
@@ -216,6 +226,7 @@ const PayrollPage = () => {
       const year = d.getFullYear().toString().slice(-2);
 
       const formatted = `${day}-${month}-${year}`;
+      console.log("Original date:", date, "Parsed date:", d, "Formatted:", formatted);
       
       return formatted;
     } catch (error) {
@@ -246,47 +257,6 @@ const PayrollPage = () => {
       );
     }
   }
-
-  // Function to get available months based on sent payslips
-  const getAvailableMonths = () => {
-    if (!sentPayslips || !Array.isArray(sentPayslips)) {
-      return groupedPayrolls;
-    }
-
-    const availableMonths = {};
-    
-    // Process sent payslips to get available months
-    sentPayslips.forEach(payslip => {
-      const year = payslip.year.toString();
-      if (!availableMonths[year]) {
-        availableMonths[year] = [];
-      }
-      
-      // Convert month name to proper case (e.g., "MAY" -> "May")
-      const monthName = payslip.monthName.charAt(0).toUpperCase() + payslip.monthName.slice(1).toLowerCase();
-      
-      // Only add if not already in the array
-      if (!availableMonths[year].includes(monthName)) {
-        availableMonths[year].push(monthName);
-      }
-    });
-    
-    // Sort months within each year
-    Object.keys(availableMonths).forEach(year => {
-      const monthOrder = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ];
-      availableMonths[year].sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
-    });
-    
-    return availableMonths;
-  };
-
-  // Get filtered available months
-  const availableMonths = getAvailableMonths();
-
-  // Debug logging removed
 
   // Helper function to check if value should show -- or the actual value
   const displayValue = (value) => {
@@ -323,75 +293,50 @@ const PayrollPage = () => {
                          {selectedYear}-{selectedMonth}
                        </Badge>
 
-                       {isCalendarOpen && (
-                         <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
-                           {Object.entries(availableMonths)
-                             .sort(([b], [a]) => b - a)
-                             .map(([year, months]) => (
-                               <div key={year} className="border-b-2">
-                                 <div className="px-4 py-2 bg-gray-400 font-medium">
-                                   {year}
-                                 </div>
-                                 <ul className="py-2">
-                                   {months.map((month) => (
-                                     <li
-                                       key={month}
-                                       className={`px-4 py-2 cursor-pointer ${
-                                         month === selectedMonth &&
-                                         parseInt(year) === selectedYear
-                                           ? "bg-gray-300 font-semibold"
-                                           : "hover:bg-gray-200"
-                                       }`}
-                                       onClick={() => {
-                                         handleMonthSelection(month, parseInt(year));
-                                       }}
-                                     >
-                                       {month}
-                                     </li>
-                                   ))}
-                                 </ul>
-                               </div>
-                             ))}
-                         </div>
-                       )}
-                     </>
-                   ) : (
-                     <div className="w-[160px] h-[40px] px-4 py-3 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center">
-                       <span className="text-gray-500 text-sm">Loading...</span>
-                     </div>
-                   )}
-                 </div>
-               )}
-              {/* Only show download button if we have available months and not in continuous loading */}
-              {Object.keys(availableMonths).length > 0 && !sentPayslipsLoading && (
-                <Button
-                  variant="default"
-                  className="flex items-center"
-                  onClick={downloadPDF}
-                  disabled={!currentPayslipData}
-                >
-                  <Download className="w-4 h-4 mr-1" />
-                  Download
-                </Button>
-              )}
+                {isCalendarOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    {Object.entries(groupedPayrolls)
+                      .sort(([b], [a]) => b - a)
+                      .map(([year, months]) => (
+                        <div key={year} className="border-b-2">
+                          <div className="px-4 py-2 bg-gray-400 font-medium">
+                            {year}
+                          </div>
+                          <ul className="py-2">
+                            {months.map((month) => (
+                              <li
+                                key={month}
+                                className={`px-4 py-2 cursor-pointer ${
+                                  month === selectedMonth &&
+                                  parseInt(year) === selectedYear
+                                    ? "bg-gray-300 font-semibold"
+                                    : "hover:bg-gray-200"
+                                }`}
+                                onClick={() => {
+                                  handleMonthSelection(month, parseInt(year));
+                                }}
+                              >
+                                {month}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="default"
+                className="flex items-center"
+                onClick={downloadPDF}
+                disabled={!currentPayslipData}
+              >
+                <Download className="w-4 h-4 mr-1" />
+                Download
+              </Button>
             </div>
 
-            {!selectedMonth && sentPayslipsLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : !selectedMonth && (!sentPayslips || sentPayslips.length === 0) ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 max-w-md text-center">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                    No payslips available
-                  </h3>
-                  <p className="text-gray-600">
-                    No payslips have been generated for your account yet.
-                  </p>
-                </div>
-              </div>
-            ) : currentLoading ? (
+            {currentLoading ? (
               <div className="flex justify-center items-center h-64">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
               </div>
@@ -409,7 +354,7 @@ const PayrollPage = () => {
                   {/* Header */}
                   <div className="bg-gray-600 text-white text-center py-2">
                     <h1 className="text-xl font-bold mb-1">
-                      PAYSLIP for the Month of {selectedMonth} {selectedYear}
+                      PAYSLIP for the Month of {currentPayslipData?.monthYearDisplay}
                     </h1>
                   </div>
 
@@ -613,7 +558,7 @@ const PayrollPage = () => {
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
-                              <td className="px-2 p-1">Fuel Reimbursement</td>
+                              <td className="px-2 p-1">Phone Reimbursement</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
                                 {displayValue(currentPayslipData?.fuelReimbursementPerMonth)}
                               </td>
@@ -622,7 +567,7 @@ const PayrollPage = () => {
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400">
-                              <td className="px-2 p-1">Phone Reimbursement</td>
+                              <td className="px-2 p-1">Phone Allowances</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
                                 {displayValue(currentPayslipData?.phoneReimbursementPerMonth)}
                               </td>
@@ -648,15 +593,21 @@ const PayrollPage = () => {
                                 {displayValue(currentPayslipData?.arrears)}
                               </td>
                             </tr>
+                            <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-50">
+                              <td className="px-2 p-1 font-semibold">&nbsp;</td>
+                              <td className="px-2 p-1 text-center border-l-2 border-gray-400 font-semibold">
+                                &nbsp;
+                              </td>
+                            </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-100">
                               <td className="px-2 p-1 font-semibold">
                                 Total Earnings
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
-                                {displayValue(currentPayslipData?.totalEarningsPerMonth)}
+                                {displayValue(currentPayslipData?.monthlyCTC)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
-                                {displayValue(currentPayslipData?.totalEarningsThisMonth)}
+                                {displayValue(currentPayslipData?.thisMonthSalary)}
                               </td>
                             </tr>
                           </tbody>
@@ -769,3 +720,4 @@ const PayrollPage = () => {
 };
 
 export default withAuth(PayrollPage);
+

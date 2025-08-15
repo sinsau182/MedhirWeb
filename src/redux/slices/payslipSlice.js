@@ -71,29 +71,6 @@ export const getAvailablePayslipMonths = () => {
   return availableMonths;
 };
 
-// Async thunk for fetching sent payslips (months with generated payslips)
-export const fetchSentPayslips = createAsyncThunk(
-  "payslip/fetchSentPayslips",
-  async (employeeId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage("token", null);
-      
-      const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/api/payroll/employee/${employeeId}/sent-payslips`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch sent payslips");
-    }
-  }
-);
-
 // Async thunk for fetching payslip details
 export const fetchPayslipDetails = createAsyncThunk(
   "payslip/fetchPayslipDetails",
@@ -101,18 +78,19 @@ export const fetchPayslipDetails = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       
-      // Convert month name to month number if month is passed as string
+      // Convert month name to month number and implement n-1 logic
       const monthMap = {
         "January": 1, "February": 2, "March": 3, "April": 4, "May": 5, "June": 6,
         "July": 7, "August": 8, "September": 9, "October": 10, "November": 11, "December": 12
       };
       
-      // Use the month parameter passed to the function, convert if it's a string
-      const monthNumber = typeof month === 'string' ? monthMap[month] : month;
+      // Get current month number and calculate n-1 month
+      const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11
+      const targetMonth = currentMonth - 1; // n-1 month
       
-      // Fetch payslip for the specified month and year
+      // Try to fetch payslip for target month first
       let response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/api/payroll/employee/${employeeId}/payslip?year=${year}&month=${monthNumber}`,
+        `${publicRuntimeConfig.apiURL}/api/payroll/employee/${employeeId}/payslip?year=${year}&month=${targetMonth}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -123,6 +101,37 @@ export const fetchPayslipDetails = createAsyncThunk(
       return response.data;
       
     } catch (error) {
+      // If target month fails, try previous months
+      if (error.response?.status === 409) {
+        try {
+          const token = getItemFromSessionStorage("token", null);
+          const currentMonth = new Date().getMonth() + 1;
+          
+          // Try previous months (n-2, n-3, etc.)
+          for (let monthOffset = 2; monthOffset <= 6; monthOffset++) {
+            const fallbackMonth = currentMonth - monthOffset;
+            if (fallbackMonth > 0) {
+              try {
+                const fallbackResponse = await axios.get(
+                  `${publicRuntimeConfig.apiURL}/api/payroll/employee/${employeeId}/payslip?year=${year}&month=${fallbackMonth}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+                return fallbackResponse.data;
+              } catch (fallbackError) {
+                // Continue to next month if this one fails
+                continue;
+              }
+            }
+          }
+        } catch (fallbackError) {
+          // If all fallback attempts fail, return the original error
+        }
+      }
+      
       return rejectWithValue(error.response?.data?.message || "Failed to fetch payslip details");
     }
   }
