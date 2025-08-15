@@ -713,6 +713,11 @@ const OdooDetailBody = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
               {[
                 {
+                  label: "Project Name",
+                  field: "projectName",
+                  type: "text",
+                },
+                {
                   label: "Project Type",
                   field: "projectType",
                   type: "select",

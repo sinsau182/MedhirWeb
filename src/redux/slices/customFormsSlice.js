@@ -104,7 +104,7 @@ export const fetchCustomForms = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
-      const companyId = sessionStorage.getItem('employeeCompanyId');
+      const companyId = getCompanyId();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
       if (!companyId) {
@@ -301,7 +301,8 @@ export const createCustomForm = createAsyncThunk(
           required: field.required !== undefined ? field.required : false,
           placeholder: field.placeholder || '',
           options: field.options || []
-        }))
+        })),
+        ...(formData.subCategoryId && { subCategoryId: formData.subCategoryId })
       };
       
       console.log('Creating custom form with DTO:', customFormDTO);
@@ -312,6 +313,14 @@ export const createCustomForm = createAsyncThunk(
       });
       
       console.log('Create form response:', response.data);
+      console.log('Response data structure:', {
+        hasData: !!response.data.data,
+        hasSuccess: !!response.data.success,
+        isDirectData: !response.data.data && !response.data.success,
+        formId: response.data.data?.formId || response.data?.formId,
+        id: response.data.data?.id || response.data?.id,
+        _id: response.data.data?._id || response.data?._id
+      });
       
       // Handle different response formats
       let createdForm = null;
@@ -332,10 +341,20 @@ export const createCustomForm = createAsyncThunk(
         createdForm = response.data;
       }
       
-      // Map _id to id for consistency
+      // Map _id to id for consistency and ensure formId is available
+      // NEVER use MongoDB _id as formId - it must be a proper custom formId
+      let finalFormId = createdForm.formId;
+      
+      // If backend didn't provide formId, generate one
+      if (!finalFormId || !finalFormId.toString().startsWith('FORM-')) {
+        finalFormId = `FORM-${Date.now()}`;
+        console.warn('Backend did not return proper formId, generated:', finalFormId);
+      }
+      
       return {
         ...createdForm,
-        id: createdForm.id || createdForm._id || createdForm.formId,
+        id: createdForm.id || createdForm._id || finalFormId,
+        formId: finalFormId, // Always use proper formId, never MongoDB _id
         name: createdForm.name || createdForm.title,
         enabled: createdForm.enabled !== undefined ? createdForm.enabled : createdForm.isActive !== undefined ? createdForm.isActive : true
       };
@@ -345,8 +364,10 @@ export const createCustomForm = createAsyncThunk(
       // If it's a network error (server not running), return a mock success
       if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
         console.warn('API server appears to be down, creating mock form');
+        const mockFormId = `FORM-${Date.now()}`;
         return {
-          id: Date.now().toString(),
+          id: mockFormId, // Use the same ID for consistency
+          formId: mockFormId, // Always use proper formId format
           name: formData.name,
           companyId: getCompanyId(),
           categoryId: formData.categoryId,
@@ -386,7 +407,8 @@ export const updateCustomForm = createAsyncThunk(
           required: field.required !== undefined ? field.required : false,
           placeholder: field.placeholder || '',
           options: field.options || []
-        }))
+        })),
+        ...(formData.subCategoryId && { subCategoryId: formData.subCategoryId })
       };
       
       console.log('Updating custom form with DTO:', { formId, customFormDTO });
@@ -394,10 +416,23 @@ export const updateCustomForm = createAsyncThunk(
       const response = await axios.put(`${API_BASE}/${formId}`, customFormDTO, { headers });
       
       console.log('Update form response:', response.data);
+      console.log('Update response data structure:', {
+        formId: response.data?.formId,
+        id: response.data?.id,
+        _id: response.data?._id
+      });
       
       // Return updated form data
+      // Ensure formId is always a proper custom formId, never MongoDB _id
+      let finalFormId = formId;
+      if (!finalFormId || !finalFormId.toString().startsWith('FORM-')) {
+        finalFormId = `FORM-${Date.now()}`;
+        console.warn('Update: Invalid formId provided, generated:', finalFormId);
+      }
+      
       return {
-        id: formId,
+        id: finalFormId, // Use the same ID for consistency
+        formId: finalFormId, // Always use proper formId format
         name: formData.name,
         companyId: companyId,
         categoryId: formData.categoryId,
@@ -437,10 +472,24 @@ export const toggleFormStatus = createAsyncThunk(
   async ({ formId, enabled }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
+      const companyId = getCompanyId();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      // Since there's no direct toggle endpoint, we'll update the form
-      const response = await axios.put(`${API_BASE}/${formId}`, { enabled }, { headers });
+      if (!companyId) {
+        throw new Error('Company ID not found');
+      }
+      
+      // Send the complete form data structure that the backend expects
+      const formData = {
+        enabled: enabled,
+        companyId: companyId
+      };
+      
+      console.log('Toggling form status with data:', { formId, formData });
+      
+      const response = await axios.put(`${API_BASE}/${formId}`, formData, { headers });
+      
+      console.log('Toggle form status response:', response.data);
       
       return { id: formId, enabled };
     } catch (error) {
@@ -456,6 +505,18 @@ export const assignFormToSubCategory = createAsyncThunk(
   'customForms/assignSubCategory',
   async ({ formId, subCategoryId }, { rejectWithValue }) => {
     try {
+      console.log('=== assignFormToSubCategory called ===');
+      console.log('Received formId:', formId);
+      console.log('Received subCategoryId:', subCategoryId);
+      console.log('formId analysis:', {
+        value: formId,
+        type: typeof formId,
+        isFormId: formId?.startsWith?.('FORM-'),
+        isMongoId: /^\d+$/.test(formId),
+        length: formId?.length
+      });
+      console.log('API endpoint being called:', `${API_BASE}/${formId}/assign-subcategory`);
+      
       const token = getItemFromSessionStorage('token', null);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await axios.put(`${API_BASE}/${formId}/assign-subcategory`, { subCategoryId }, { headers });
@@ -463,6 +524,12 @@ export const assignFormToSubCategory = createAsyncThunk(
       return { id: formId, subCategoryId };
     } catch (error) {
       console.error('Redux: Error assigning form to sub-category:', error);
+      console.error('Error details:', {
+        error: error,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
+      });
       return rejectWithValue(error.response?.data?.message || 'Failed to assign form to sub-category');
     }
   }

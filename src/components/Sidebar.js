@@ -126,12 +126,12 @@ const modularMenus = {
         link: "/Sales/dashboard"
       },
       {
-        label: "Lead Management",
+        label: "My Leads",
         icon: <FaTasks className="w-4 h-4" />,
         link: "/Sales/LeadManagement",
       },
       {
-        label: "Team Leads",
+        label: "All Leads",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
@@ -150,17 +150,22 @@ const modularMenus = {
     icon: <FaFileInvoiceDollar className="w-5 h-5" />,
     items: [
       {
-        label: "Customers",
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/account/dashboard",
+      },
+      {
+        label: "Sales",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/account/customers",
       },
       {
-        label: "Vendors",
+        label: "Purchases",
         icon: <FaBuilding className="w-4 h-4" />,
         link: "/account/vendor",
       },
       {
-        label: "Employees",
+        label: "Reimbursements",
         icon: <FaUserTie className="w-4 h-4" />,
         link: "/account/employee",
       },
