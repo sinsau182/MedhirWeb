@@ -11,6 +11,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import getConfig from "next/config";
 import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
 import { generatePayroll, getPayroll, sendPayslips, clearPayroll } from "@/redux/slices/payrollSlice";
+import { createOrUpdateEmployeeAdvance, fetchCompanyEmployeeAdvances, clearError, clearSuccess } from "@/redux/slices/employeeAdvanceSlice";
 
 function PayrollManagement() {
   const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
@@ -18,6 +19,15 @@ function PayrollManagement() {
 
   const { attendance } = useSelector((state) => state.attendances);
   const { payroll } = useSelector((state) => state.payroll);
+  const { 
+    loading: advanceLoading, 
+    error: advanceError, 
+    success: advanceSuccess, 
+    message: advanceMessage,
+    companyAdvances,
+    companyAdvancesLoading,
+    companyAdvancesError
+  } = useSelector((state) => state.employeeAdvance);
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -34,8 +44,13 @@ function PayrollManagement() {
   const [dataLastUpdated, setDataLastUpdated] = useState(null);
   const [editingArrears, setEditingArrears] = useState({});
   const [arrearsValues, setArrearsValues] = useState({});
+  const [originalArrearsValues, setOriginalArrearsValues] = useState({});
+  const [editingArrearsDeducted, setEditingArrearsDeducted] = useState({});
+  const [arrearsDeductedValues, setArrearsDeductedValues] = useState({});
+  const [originalArrearsDeductedValues, setOriginalArrearsDeductedValues] = useState({});
   const [editingAdvance, setEditingAdvance] = useState({});
   const [advanceValues, setAdvanceValues] = useState({});
+  const [originalAdvanceValues, setOriginalAdvanceValues] = useState({});
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const currentDate = new Date();
     const latestAvailableMonth = new Date(
@@ -80,9 +95,16 @@ function PayrollManagement() {
 
   // Helper functions for arrears editing
   const handleArrearsEdit = (employeeId) => {
+    // Only allow editing for current month
+    if (!isCurrentMonth()) {
+      toast.error("Arrears can only be edited for the current month");
+      return;
+    }
     setEditingArrears(prev => ({ ...prev, [employeeId]: true }));
-    // Clear the input field when starting to edit
-    setArrearsValues(prev => ({ ...prev, [employeeId]: '' }));
+    // Store original value before editing starts
+    const currentValue = arrearsValues[employeeId] || 0;
+    setOriginalArrearsValues(prev => ({ ...prev, [employeeId]: currentValue }));
+    setArrearsValues(prev => ({ ...prev, [employeeId]: currentValue.toString() }));
   };
 
   const handleArrearsSave = (employeeId) => {
@@ -97,9 +119,9 @@ function PayrollManagement() {
 
   const handleArrearsCancel = (employeeId) => {
     setEditingArrears(prev => ({ ...prev, [employeeId]: false }));
-    // Reset to original value
-    const payrollItem = payroll?.find(item => item.employeeId === employeeId);
-    setArrearsValues(prev => ({ ...prev, [employeeId]: payrollItem?.arrears ?? 0 }));
+    // Reset to original value that was stored before editing started
+    const originalValue = originalArrearsValues[employeeId] || 0;
+    setArrearsValues(prev => ({ ...prev, [employeeId]: originalValue }));
   };
 
   const handleArrearsChange = (employeeId, value) => {
@@ -107,32 +129,120 @@ function PayrollManagement() {
     setArrearsValues(prev => ({ ...prev, [employeeId]: value }));
   };
 
-  // Helper functions for advance editing (positive values only)
-  const handleAdvanceEdit = (employeeId, field) => {
-    const key = `${employeeId}_${field}`;
-    setEditingAdvance(prev => ({ ...prev, [key]: true }));
-    // Clear the input field when starting to edit
-    setAdvanceValues(prev => ({ ...prev, [key]: '' }));
+  // Helper functions for arrears deducted editing
+  const handleArrearsDeductedEdit = (employeeId) => {
+    // Only allow editing for current month
+    if (!isCurrentMonth()) {
+      toast.error("Arrears deducted can only be edited for the current month");
+      return;
+    }
+    setEditingArrearsDeducted(prev => ({ ...prev, [employeeId]: true }));
+    // Store original value before editing starts
+    const currentValue = arrearsDeductedValues[employeeId] || 0;
+    setOriginalArrearsDeductedValues(prev => ({ ...prev, [employeeId]: currentValue }));
+    setArrearsDeductedValues(prev => ({ ...prev, [employeeId]: currentValue.toString() }));
   };
 
-  const handleAdvanceSave = (employeeId, field) => {
+  const handleArrearsDeductedSave = (employeeId) => {
+    setEditingArrearsDeducted(prev => ({ ...prev, [employeeId]: false }));
+    // Convert string input to number for saving
+    const inputValue = arrearsDeductedValues[employeeId];
+    const numericValue = inputValue === '' || inputValue === '-' ? 0 : parseFloat(inputValue) || 0;
+    setArrearsDeductedValues(prev => ({ ...prev, [employeeId]: numericValue }));
+    // Here you can add API call to save the updated arrears deducted value
+    toast.success(`Arrears deducted updated to ₹${numericValue} for employee ${employeeId}`);
+  };
+
+  const handleArrearsDeductedCancel = (employeeId) => {
+    setEditingArrearsDeducted(prev => ({ ...prev, [employeeId]: false }));
+    // Reset to original value that was stored before editing started
+    const originalValue = originalArrearsDeductedValues[employeeId] || 0;
+    setArrearsDeductedValues(prev => ({ ...prev, [employeeId]: originalValue }));
+  };
+
+  const handleArrearsDeductedChange = (employeeId, value) => {
+    // Keep the raw input value to allow for partial typing (like "-" or "123.")
+    setArrearsDeductedValues(prev => ({ ...prev, [employeeId]: value }));
+  };
+
+  // Helper functions for advance editing (positive values only)
+  const handleAdvanceEdit = (employeeId, field) => {
+    // Only allow editing for current month
+    if (!isCurrentMonth()) {
+      toast.error("Advance fields can only be edited for the current month");
+      return;
+    }
     const key = `${employeeId}_${field}`;
-    setEditingAdvance(prev => ({ ...prev, [key]: false }));
-    // Convert string input to positive number for saving
+    setEditingAdvance(prev => ({ ...prev, [key]: true }));
+    // Store original value before editing starts
+    const advanceData = companyAdvances?.find(advance => advance.employeeId === employeeId);
+    const currentValue = field === 'thisMonth' 
+      ? advanceData?.thisMonthAdvance || 0
+      : advanceData?.deductedThisMonth || 0;
+    setOriginalAdvanceValues(prev => ({ ...prev, [key]: currentValue }));
+    setAdvanceValues(prev => ({ ...prev, [key]: currentValue.toString() }));
+  };
+
+  const handleAdvanceSave = async (employeeId, field) => {
+    const key = `${employeeId}_${field}`;
     const inputValue = advanceValues[key];
-    const numericValue = inputValue === '' ? 0 : Math.max(0, parseFloat(inputValue) || 0);
-    setAdvanceValues(prev => ({ ...prev, [key]: numericValue }));
-    // Here you can add API call to save the updated advance value
-    toast.success(`${field === 'thisMonth' ? 'This Month Advance' : 'Deduct This Month'} updated to ₹${numericValue} for employee ${employeeId}`);
+    
+    // Check if amount is entered
+    if (!inputValue || inputValue === '' || parseFloat(inputValue) === 0) {
+      toast.error("No amount entered. Please enter an amount to save.");
+      return;
+    }
+    
+    // Convert string input to positive number for saving
+    const numericValue = Math.max(0, parseFloat(inputValue) || 0);
+    
+    // Get current month and year for API call
+    const monthMap = {
+      January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
+      July: 7, August: 8, September: 9, October: 10, November: 11, December: 12
+    };
+    
+    const month = monthMap[selectedMonth];
+    const year = parseInt(selectedYear);
+    
+    try {
+      // Call API to update employee advance
+      // Get existing advance data for this employee to preserve other fields
+      const existingAdvanceData = companyAdvances?.find(
+        (advance) => advance.employeeId === employeeId
+      );
+      
+      const payload = {
+        companyId: selectedCompanyId,
+        employeeId,
+        month,
+        year,
+        // Preserve existing values and update only the field being edited
+        oldAdvance: existingAdvanceData?.oldAdvance || 0,
+        thisMonthAdvance: field === 'thisMonth' ? numericValue : (existingAdvanceData?.thisMonthAdvance || 0),
+        deductedThisMonth: field === 'deduct' ? numericValue : (existingAdvanceData?.deductedThisMonth || 0)
+      };
+      
+      await dispatch(createOrUpdateEmployeeAdvance(payload)).unwrap();
+      
+      // Update local state only after successful API call
+      setAdvanceValues(prev => ({ ...prev, [key]: numericValue }));
+      setEditingAdvance(prev => ({ ...prev, [key]: false }));
+      
+      // Fetch fresh company advances data after successful update
+      fetchCompanyAdvances();
+      
+    } catch (error) {
+      console.error("Failed to update employee advance:", error);
+      // Don't update local state if API fails
+    }
   };
 
   const handleAdvanceCancel = (employeeId, field) => {
     const key = `${employeeId}_${field}`;
     setEditingAdvance(prev => ({ ...prev, [key]: false }));
-    // Reset to original value (from employee data)
-    const originalValue = field === 'thisMonth' 
-      ? employees.find(emp => emp.employeeId === employeeId)?.thisMonthAdvance || 0
-      : employees.find(emp => emp.employeeId === employeeId)?.deductInThisMonth || 0;
+    // Reset to original value that was stored before editing started
+    const originalValue = originalAdvanceValues[key] || 0;
     setAdvanceValues(prev => ({ ...prev, [key]: originalValue }));
   };
 
@@ -156,6 +266,19 @@ function PayrollManagement() {
     });
     const latestYear = latestAvailableMonth.getFullYear().toString();
     return selectedMonth === latestMonth && selectedYear === latestYear;
+  };
+
+  // Check if selected month is the current month for payroll editing (current month - 1)
+  const isCurrentMonth = () => {
+    const currentDate = new Date();
+    const payrollCurrentMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - 1,
+      1
+    );
+    const payrollMonth = payrollCurrentMonth.toLocaleString("default", { month: "long" });
+    const payrollYear = payrollCurrentMonth.getFullYear().toString();
+    return selectedMonth === payrollMonth && selectedYear === payrollYear;
   };
 
   const handleMonthSelection = (month, year) => {
@@ -188,8 +311,13 @@ function PayrollManagement() {
     setDataLastUpdated(null);
     setEditingArrears({});
     setArrearsValues({});
+    setOriginalArrearsValues({});
+    setEditingArrearsDeducted({});
+    setArrearsDeductedValues({});
+    setOriginalArrearsDeductedValues({});
     setEditingAdvance({});
     setAdvanceValues({});
+    setOriginalAdvanceValues({});
   };
 
   useEffect(() => {
@@ -247,6 +375,15 @@ function PayrollManagement() {
         // Reset calculation state when there's an error
         setIsCalculatePayrollClicked(false);
         setDataLastUpdated(null);
+        setEditingArrears({});
+        setArrearsValues({});
+        setOriginalArrearsValues({});
+        setEditingArrearsDeducted({});
+        setArrearsDeductedValues({});
+        setOriginalArrearsDeductedValues({});
+        setEditingAdvance({});
+        setAdvanceValues({});
+        setOriginalAdvanceValues({});
       } finally {
         setIsFetchingView(false);
       }
@@ -257,10 +394,16 @@ function PayrollManagement() {
   useEffect(() => {
     if (payroll && Array.isArray(payroll) && payroll.length > 0) {
       const initialArrearsValues = {};
+      const initialArrearsDeductedValues = {};
       payroll.forEach(item => {
         initialArrearsValues[item.employeeId] = item.arrears ?? 0;
+        initialArrearsDeductedValues[item.employeeId] = item.arrearsDeducted ?? 0;
       });
       setArrearsValues(initialArrearsValues);
+      setArrearsDeductedValues(initialArrearsDeductedValues);
+      // Also set original values for cancel functionality
+      setOriginalArrearsValues(initialArrearsValues);
+      setOriginalArrearsDeductedValues(initialArrearsDeductedValues);
     }
   }, [payroll]);
 
@@ -269,12 +412,62 @@ function PayrollManagement() {
     if (employees && Array.isArray(employees) && employees.length > 0) {
       const initialAdvanceValues = {};
       employees.forEach(employee => {
-        initialAdvanceValues[`${employee.employeeId}_thisMonth`] = employee.thisMonthAdvance ?? 0;
-        initialAdvanceValues[`${employee.employeeId}_deduct`] = employee.deductInThisMonth ?? 0;
+        // Find corresponding advance data for this employee
+        const advanceData = companyAdvances?.find(
+          (advance) => advance.employeeId === employee.employeeId
+        );
+        
+        initialAdvanceValues[`${employee.employeeId}_thisMonth`] = advanceData?.thisMonthAdvance ?? employee.thisMonthAdvance ?? 0;
+        initialAdvanceValues[`${employee.employeeId}_deduct`] = advanceData?.deductedThisMonth ?? employee.deductInThisMonth ?? 0;
       });
       setAdvanceValues(initialAdvanceValues);
+      // Also set original values for cancel functionality
+      setOriginalAdvanceValues(initialAdvanceValues);
     }
-  }, [employees]);
+  }, [employees, companyAdvances]);
+
+  // Handle employee advance success and error messages
+  useEffect(() => {
+    if (advanceSuccess) {
+      toast.success(advanceMessage);
+      dispatch(clearSuccess());
+    }
+    if (advanceError) {
+      toast.error(advanceError);
+      dispatch(clearError());
+    }
+  }, [advanceSuccess, advanceError, advanceMessage, dispatch]);
+
+  // Function to fetch company employee advances
+  const fetchCompanyAdvances = useCallback(() => {
+    const monthMap = {
+      January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
+      July: 7, August: 8, September: 9, October: 10, November: 11, December: 12
+    };
+    
+    const month = monthMap[selectedMonth];
+    const year = parseInt(selectedYear);
+    
+    dispatch(fetchCompanyEmployeeAdvances({
+      companyId: selectedCompanyId,
+      month,
+      year
+    }));
+  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
+
+  // Fetch company advances when Advance tab is selected
+  useEffect(() => {
+    if (selectedSection === "Advance") {
+      fetchCompanyAdvances();
+    }
+  }, [selectedSection, fetchCompanyAdvances]);
+
+  // Fetch company advances when month/year changes (if Advance tab is active)
+  useEffect(() => {
+    if (selectedSection === "Advance") {
+      fetchCompanyAdvances();
+    }
+  }, [selectedMonth, selectedYear, selectedSection, fetchCompanyAdvances]);
 
   console.log(payroll);
 
@@ -332,9 +525,7 @@ function PayrollManagement() {
               <th className="py-3 px-1 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Phone <br /> REIMB.
               </th>
-              <th className="py-3 px-1 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
-                ARREARS
-              </th>
+
               <th className="py-3 px-1 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 EMPLOYEE <br /> PF
               </th>
@@ -440,62 +631,7 @@ function PayrollManagement() {
                         ? `₹ ${payrollItem.phoneReimbursement || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {editingArrears[employee.employeeId] ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            value={arrearsValues[employee.employeeId] ?? ''}
-                            onChange={(e) => handleArrearsChange(employee.employeeId, e.target.value)}
-                            className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                            step="0.01"
-                            placeholder="Enter amount"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => handleArrearsSave(employee.employeeId)}
-                            className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors"
-                            title="Save"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleArrearsCancel(employee.employeeId)}
-                            className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
-                            title="Cancel"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between group">
-                          {(() => {
-                            // Get the display value
-                            let displayValue = 0;
-                            if (arrearsValues[employee.employeeId] !== undefined) {
-                              displayValue = typeof arrearsValues[employee.employeeId] === 'number' 
-                                ? arrearsValues[employee.employeeId] 
-                                : parseFloat(arrearsValues[employee.employeeId]) || 0;
-                            } else if (payrollItem) {
-                              displayValue = payrollItem.arrears ?? 0;
-                            }
-                            
-                            return (
-                              <span className={displayValue < 0 ? 'text-red-600' : ''}>
-                                ₹ {displayValue}
-                              </span>
-                            );
-                          })()}
-                          <button
-                            onClick={() => handleArrearsEdit(employee.employeeId)}
-                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
-                            title="Edit Arrears"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
+                    
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
                       {payrollItem
                         ? `₹ ${payrollItem.employeePFThisMonth || 0}`
@@ -683,8 +819,31 @@ function PayrollManagement() {
 
   const renderAdvanceTable = () => (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-      <div className="max-h-[calc(100vh-280px)] overflow-auto">
-        <table className="w-full border-collapse">
+      {companyAdvancesLoading && (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Loading advance data...</span>
+        </div>
+      )}
+      {companyAdvancesError && (
+        <div className="p-4 text-center text-red-600">
+          Error loading advance data: {companyAdvancesError}
+        </div>
+      )}
+            {!companyAdvancesLoading && !companyAdvancesError && (
+        <div className="max-h-[calc(100vh-280px)] overflow-auto">
+          <div className="flex justify-between items-center p-3 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">Employee Advances</h3>
+            <button
+              onClick={fetchCompanyAdvances}
+              disabled={companyAdvancesLoading}
+              className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh advance data"
+            >
+              {companyAdvancesLoading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+          <table className="w-full border-collapse">
           <thead className="sticky top-0">
             <tr className="bg-gradient-to-r from-yellow-50 to-orange-50">
               {showCheckboxes && (
@@ -733,8 +892,14 @@ function PayrollManagement() {
               .filter((employee) =>
                 employee.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
-              .map((employee, index) => (
-                <tr key={index} className="hover:bg-yellow-50 transition-colors duration-150">
+              .map((employee, index) => {
+                // Find corresponding advance data for this employee
+                const advanceData = companyAdvances?.find(
+                  (advance) => advance.employeeId === employee.employeeId
+                );
+                
+                return (
+                  <tr key={index} className="hover:bg-yellow-50 transition-colors duration-150">
                   {showCheckboxes && (
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                       <input
@@ -770,7 +935,7 @@ function PayrollManagement() {
                     {employee.departmentName}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
-                    ₹{employee.oldAdvance}
+                    ₹{advanceData?.oldAdvance || employee.oldAdvance || 0}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
                     {editingAdvance[`${employee.employeeId}_thisMonth`] ? (
@@ -787,10 +952,15 @@ function PayrollManagement() {
                         />
                         <button
                           onClick={() => handleAdvanceSave(employee.employeeId, 'thisMonth')}
-                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors"
+                          disabled={advanceLoading}
+                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Save"
                         >
-                          <Check className="h-4 w-4" />
+                          {advanceLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </button>
                         <button
                           onClick={() => handleAdvanceCancel(employee.employeeId, 'thisMonth')}
@@ -807,15 +977,17 @@ function PayrollManagement() {
                             ? (typeof advanceValues[`${employee.employeeId}_thisMonth`] === 'number' 
                                 ? advanceValues[`${employee.employeeId}_thisMonth`] 
                                 : parseFloat(advanceValues[`${employee.employeeId}_thisMonth`]) || 0)
-                            : (employee.thisMonthAdvance || 0)}
+                            : (advanceData?.thisMonthAdvance || employee.thisMonthAdvance || 0)}
                         </span>
-                        <button
-                          onClick={() => handleAdvanceEdit(employee.employeeId, 'thisMonth')}
-                          className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
-                          title="Edit This Month Advance"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+                        {isCurrentMonth() && (
+                          <button
+                            onClick={() => handleAdvanceEdit(employee.employeeId, 'thisMonth')}
+                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                            title="Edit This Month Advance"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
@@ -834,10 +1006,15 @@ function PayrollManagement() {
                         />
                         <button
                           onClick={() => handleAdvanceSave(employee.employeeId, 'deduct')}
-                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors"
+                          disabled={advanceLoading}
+                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Save"
                         >
-                          <Check className="h-4 w-4" />
+                          {advanceLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </button>
                         <button
                           onClick={() => handleAdvanceCancel(employee.employeeId, 'deduct')}
@@ -854,26 +1031,32 @@ function PayrollManagement() {
                             ? (typeof advanceValues[`${employee.employeeId}_deduct`] === 'number' 
                                 ? advanceValues[`${employee.employeeId}_deduct`] 
                                 : parseFloat(advanceValues[`${employee.employeeId}_deduct`]) || 0)
-                            : (employee.deductInThisMonth || 0)}
+                            : (advanceData?.deductedThisMonth || employee.deductInThisMonth || 0)}
                         </span>
-                        <button
-                          onClick={() => handleAdvanceEdit(employee.employeeId, 'deduct')}
-                          className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
-                          title="Edit Deduct This Month"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
+                        {isCurrentMonth() && (
+                          <button
+                            onClick={() => handleAdvanceEdit(employee.employeeId, 'deduct')}
+                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                            title="Edit Deduct This Month"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50 font-semibold">
-                    ₹{employee.balanceForNextMonth}
+                    <span className={advanceData?.balanceForNextMonth < 0 ? 'text-red-600' : ''}>
+                      ₹{advanceData?.balanceForNextMonth || employee.balanceForNextMonth || 0}
+                    </span>
                   </td>
                 </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+                );
+              })}
+            </tbody>
+          </table>
+                </div>
+      )}
     </div>
   );
 
@@ -1013,6 +1196,145 @@ function PayrollManagement() {
     </div>
   );
 
+  const renderArrearsTable = () => (
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
+      <div className="max-h-[calc(100vh-280px)] overflow-auto">
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0">
+            <tr className="bg-gradient-to-r from-blue-50 to-indigo-50">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+                Employee ID
+              </th>
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+                Name
+              </th>
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
+                Department
+              </th>
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
+                Arrears Paid
+              </th>
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
+                Arrears Deducted
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {employees
+              .filter((employee) =>
+                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map((employee, index) => (
+                <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                    {employee.employeeId}
+                  </td>
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                    {employee.name}
+                  </td>
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                    {employee.departmentName}
+                  </td>
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                    {editingArrears[employee.employeeId] ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={arrearsValues[employee.employeeId] || ''}
+                          onChange={(e) => handleArrearsChange(employee.employeeId, e.target.value)}
+                          className="w-24 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                        <button
+                          onClick={() => handleArrearsSave(employee.employeeId)}
+                          className="p-1 text-green-600 hover:text-green-800"
+                          title="Save"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleArrearsCancel(employee.employeeId)}
+                          className="p-1 text-red-600 hover:text-red-800"
+                          title="Cancel"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between group">
+                        <span>₹{arrearsValues[employee.employeeId] || 0}</span>
+                        {isCurrentMonth() && (
+                          <button
+                            onClick={() => handleArrearsEdit(employee.employeeId)}
+                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                            title="Edit arrears paid"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                    {editingArrearsDeducted[employee.employeeId] ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={arrearsDeductedValues[employee.employeeId] || ''}
+                          onChange={(e) => handleArrearsDeductedChange(employee.employeeId, e.target.value)}
+                          className="w-24 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                        <button
+                          onClick={() => handleArrearsDeductedSave(employee.employeeId)}
+                          className="p-1 text-green-600 hover:text-green-800"
+                          title="Save"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleArrearsDeductedCancel(employee.employeeId)}
+                          className="p-1 text-red-600 hover:text-red-800"
+                          title="Cancel"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 12">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between group">
+                        <span>₹{arrearsDeductedValues[employee.employeeId] || 0}</span>
+                        {isCurrentMonth() && (
+                          <button
+                            onClick={() => handleArrearsDeductedEdit(employee.employeeId)}
+                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                            title="Edit arrears deducted"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.6 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        )}
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       <Sidebar
@@ -1031,6 +1353,39 @@ function PayrollManagement() {
           {/* Header with Search and Title */}
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-4">
+              {/* Left Arrow - Before Payroll Management */}
+              <button
+                onClick={() => {
+                  const monthMap = {
+                    January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
+                    July: 6, August: 7, September: 8, October: 9, November: 10, December: 11
+                  };
+                  const currentMonthIndex = monthMap[selectedMonth];
+                  const currentYear = parseInt(selectedYear);
+                  
+                  let newMonthIndex, newYear;
+                  if (currentMonthIndex === 0) {
+                    // January -> December of previous year
+                    newMonthIndex = 11;
+                    newYear = currentYear - 1;
+                  } else {
+                    newMonthIndex = currentMonthIndex - 1;
+                    newYear = currentYear;
+                  }
+                  
+                  const monthNames = ["January", "February", "March", "April", "May", "June",
+                                    "July", "August", "September", "October", "November", "December"];
+                  const newMonth = monthNames[newMonthIndex];
+                  
+                  setSelectedMonth(newMonth);
+                  setSelectedYear(newYear.toString());
+                }}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center text-gray-600 font-bold text-lg border border-gray-200"
+                title="Previous month"
+              >
+                &lt;
+              </button>
+              
               <h1 className="text-xl font-semibold text-gray-800">
                 Payroll Management
               </h1>
@@ -1171,6 +1526,41 @@ function PayrollManagement() {
                   className="px-4 py-2 bg-red-500 text-white rounded-md font-medium text-sm transition-colors duration-200 hover:bg-red-600"
                 >
                   Cancel
+                </button>
+              )}
+              
+              {/* Right Arrow - After action buttons */}
+              {!isLatestAvailableMonth() && (
+                <button
+                  onClick={() => {
+                    const monthMap = {
+                      January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
+                      July: 6, August: 7, September: 8, October: 9, November: 10, December: 11
+                    };
+                    const currentMonthIndex = monthMap[selectedMonth];
+                    const currentYear = parseInt(selectedYear);
+                    
+                    let newMonthIndex, newYear;
+                    if (currentMonthIndex === 11) {
+                      // December -> January of next year
+                      newMonthIndex = 0;
+                      newYear = currentYear + 1;
+                    } else {
+                      newMonthIndex = currentMonthIndex + 1;
+                      newYear = currentYear;
+                    }
+                    
+                    const monthNames = ["January", "February", "March", "April", "May", "June",
+                                      "July", "August", "September", "October", "November", "December"];
+                    const newMonth = monthNames[newMonthIndex];
+                    
+                    setSelectedMonth(newMonth);
+                    setSelectedYear(newYear.toString());
+                  }}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 flex items-center justify-center text-gray-600 font-bold text-lg border border-gray-200"
+                  title="Next month"
+                >
+                  &gt;
                 </button>
               )}
               
@@ -1325,14 +1715,22 @@ function PayrollManagement() {
             </div>
           )}
 
+          {/* Professional reminder message */}
+          {(isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
+            <div className="mb-4 text-sm text-blue-600 bg-blue-50 px-4 py-2 rounded-md border border-blue-200 max-w-2xl">
+              <span className="font-medium">Note:</span> After calculating or recalculating payroll, please remember to send payslips to employees.
+            </div>
+          )}
+
           {/* Tabs - Only show when there's valid data or payroll has been calculated */}
           {!payrollErrorDetails && !isFetchingView && ((payroll && Array.isArray(payroll) && payroll.length > 0) || isCalculatePayrollClicked) && (
             <div className="bg-gray-50 overflow-x-auto scrollbar-thin">
               <div className="flex min-w-max">
-                {[
+                {                [
                   "Salary Statement",
                   "Deductions",
                   "Advance",
+                  "Arrears",
                   "Reimbursement",
                   "Payment History",
                 ].map((section) => {
@@ -1365,6 +1763,7 @@ function PayrollManagement() {
               {selectedSection === "Salary Statement" && renderPayrollTable()}
               {selectedSection === "Deductions" && renderDeductionsTable()}
               {selectedSection === "Advance" && renderAdvanceTable()}
+              {selectedSection === "Arrears" && renderArrearsTable()}
               {selectedSection === "Reimbursement" &&
                 renderReimbursementTable()}
               {selectedSection === "Payment History" &&

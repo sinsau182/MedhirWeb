@@ -1707,6 +1707,51 @@ function AttendanceTracker({
     return false;
   };
 
+  // Check if the current month is editable (for button disabling)
+  const isCurrentMonthEditable = () => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth(); // 0-11
+    const currentDay = currentDate.getDate();
+    
+    // Get selected month and year
+    const selectedMonthIndex = new Date(`${selectedMonth} 1, ${selectedYear}`).getMonth();
+    const selectedYearNum = parseInt(selectedYear);
+    
+    // If payroll settings are available, use them for freeze logic
+    if (payrollSettings && payrollSettings.payrollEnablementDate && payrollSettings.freezeAfterDays) {
+      const payrollEnablementDate = payrollSettings.payrollEnablementDate;
+      const freezeAfterDays = payrollSettings.freezeAfterDays;
+      
+      // Check if current date is past the freeze date for current month
+      const isCurrentMonthFrozen = currentDay > payrollEnablementDate + freezeAfterDays;
+      
+      if (selectedYearNum === currentYear) {
+        if (selectedMonthIndex === currentMonth) {
+          // Current month: always editable
+          return true;
+        } else if (selectedMonthIndex === currentMonth - 1) {
+          // Previous month: check if it's frozen
+          return !isCurrentMonthFrozen;
+        }
+      } else if (selectedYearNum === currentYear - 1) {
+        // Previous year: only allow if it's December and current month is January
+        return selectedMonthIndex === 11 && currentMonth === 0 && !isCurrentMonthFrozen;
+      }
+    } else {
+      // Fallback to original logic if payroll settings not available
+      if (selectedYearNum === currentYear) {
+        // Same year: allow current month and previous month
+        return selectedMonthIndex >= currentMonth - 1;
+      } else if (selectedYearNum === currentYear - 1) {
+        // Previous year: only allow if it's December (previous month)
+        return selectedMonthIndex === 11 && currentMonth === 0;
+      }
+    }
+    
+    return false;
+  };
+
   // Check if the current cell is editable
   const isCurrentCellEditable = () => {
     const editableStatuses = ["P", "A", "P/A", null, undefined, ""];
@@ -1847,11 +1892,22 @@ function AttendanceTracker({
           <div className="flex items-center gap-4">
             <div className="relative" ref={employeeDropdownRef}>
               <button
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                  isCurrentMonthEditable()
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                }`}
                 onClick={(e) => {
+                  if (!isCurrentMonthEditable()) return;
                   e.stopPropagation();
                   setIsEmployeeDropdownOpen(!isEmployeeDropdownOpen);
                 }}
+                disabled={!isCurrentMonthEditable()}
+                title={
+                  !isCurrentMonthEditable()
+                    ? "Cannot edit attendance for this month - outside editable range"
+                    : "Edit attendance for a single employee"
+                }
               >
                 <svg
                   className="w-4 h-4"
@@ -1943,10 +1999,21 @@ function AttendanceTracker({
               )}
             </div>
             <button
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 bg-blue-500 text-white hover:bg-blue-600"
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                isCurrentMonthEditable()
+                  ? "bg-blue-500 text-white hover:bg-blue-600"
+                  : "bg-gray-400 text-gray-200 cursor-not-allowed"
+              }`}
               onClick={() => {
+                if (!isCurrentMonthEditable()) return;
                 switchToAllEmployeesTab();
               }}
+              disabled={!isCurrentMonthEditable()}
+              title={
+                !isCurrentMonthEditable()
+                  ? "Cannot edit attendance for this month - outside editable range"
+                  : "Edit attendance for all employees on a specific date"
+              }
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -1954,6 +2021,8 @@ function AttendanceTracker({
               <span>All Employees Date</span>
             </button>
           </div>
+          
+
 
           {/* Right: tabs */}
           <div className="flex items-center gap-6">
@@ -2878,6 +2947,7 @@ function AttendanceTracker({
             handleMonthSelection={handleMonthSelection}
             isSingleEmployeeModalOpen={isSingleEmployeeModalOpen}
             isDateEditable={isDateEditable}
+            isCurrentMonthEditable={isCurrentMonthEditable()}
           />
         ) : (
           <LeaveTable
