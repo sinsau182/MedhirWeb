@@ -653,10 +653,10 @@ const PayrollPage = () => {
                             <tr className="border-b-2 border-l-2 border-gray-400">
                               <td className="px-2 p-1">Arrears Paid</td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {displayValue(currentPayslipData?.arrearsPerMonth)}
+                                --
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400">
-                                {displayValue(currentPayslipData?.arrears)}
+                                {displayValue(currentPayslipData?.arrearsPaid)}
                               </td>
                             </tr>
                             <tr className="border-b-2 border-l-2 border-gray-400 bg-gray-100">
