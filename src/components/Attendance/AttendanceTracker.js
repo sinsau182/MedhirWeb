@@ -2049,7 +2049,7 @@ function AttendanceTracker({
       {/* Content Area (relative for overlays) */}
       <div className="relative" id="attendance-table-container">
         {isSingleEmployeeModalOpen ? (
-          <div className="bg-white rounded-2xl shadow-xl p-4 w-full h-full flex flex-col border border-gray-100 z-40">
+          <div className="bg-white rounded-2xl shadow-xl p-4 w-full h-[85vh] flex flex-col border border-gray-100 z-40">
             {/* Modern Header - More Compact */}
             <div className="pb-4 mb-4 border-b border-gray-100">
               {/* Employee Info Row - Top */}
@@ -2592,12 +2592,67 @@ function AttendanceTracker({
                       Apply
                     </button>
                   </div>
+
+                  {/* Save Attendance Button */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      &nbsp;
+                    </label>
+                    <button
+                      onClick={handleSaveMonthAttendance}
+                      disabled={
+                        manualAttendanceLoading || !hasSingleEmployeeChanges()
+                      }
+                      className="px-4 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {manualAttendanceLoading ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-1 h-3 w-3 text-white inline"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Attendance"
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Cancel Button */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      &nbsp;
+                    </label>
+                    <button
+                      onClick={closeAllModals}
+                      className="px-4 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Show calendar directly since employee is already selected */}
-            <div className="animate-fade-in-up space-y-3">
+            <div className="animate-fade-in-up space-y-3 flex-1 overflow-y-auto custom-scrollbar">
               {/* Compact Calendar Grid */}
               <div className="bg-white border border-gray-200 rounded-lg p-3">
                 <h4 className="font-semibold text-gray-800 text-sm mb-2">
@@ -2854,63 +2909,7 @@ function AttendanceTracker({
               </div>
 
               {/* Compact Footer */}
-              {selectedEmployeeForMonth && (
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">
-                      {
-                        Object.values(monthAttendanceData).filter(
-                          (status) => status !== null && status !== ""
-                        ).length
-                      }
-                    </span>{" "}
-                    days marked
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={closeAllModals}
-                      className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-base font-medium hover:bg-gray-100 hover:border-gray-400 transition-colors shadow-sm"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSaveMonthAttendance}
-                      disabled={
-                        manualAttendanceLoading || !hasSingleEmployeeChanges()
-                      }
-                      className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {manualAttendanceLoading ? (
-                        <>
-                          <svg
-                            className="animate-spin -ml-1 mr-1 h-4 w-4 text-white inline"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Attendance"
-                      )}
-                    </button>
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
         ) : activeTab === "Attendance Tracker" ? (
@@ -2969,7 +2968,7 @@ function AttendanceTracker({
 
         {/* All Employees Date Playcard - moved here! */}
         {isAllEmployeesDateModalOpen && (
-          <div className="absolute inset-0 flex flex-col w-full h-full bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up z-40">
+          <div className="absolute inset-0 flex flex-col w-full h-[85vh] bg-white rounded-2xl shadow-xl border border-gray-100 animate-fade-in-up z-40">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100">
               {/* Title */}
@@ -3442,6 +3441,61 @@ function AttendanceTracker({
                   Apply
                 </button>
               </div>
+
+              {/* Save Attendance Button */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">
+                  &nbsp;
+                </label>
+                <button
+                  onClick={handleSaveAllEmployeesAttendance}
+                  disabled={
+                    manualAttendanceLoading || !hasAllEmployeesChanges()
+                  }
+                  className="px-4 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {manualAttendanceLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-1 h-3 w-3 text-white inline"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Attendance"
+                  )}
+                </button>
+              </div>
+
+              {/* Cancel Button */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-gray-600">
+                  &nbsp;
+                </label>
+                <button
+                  onClick={closeAllModals}
+                  className="px-4 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
 
             {/* Employee List and Attendance Grid */}
@@ -3654,62 +3708,7 @@ function AttendanceTracker({
                 </table>
               </div>
             </div>
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-3 mt-3 border-t border-gray-200 bg-gray-50 rounded-b-2xl p-4">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">
-                  {
-                    Object.values(allEmployeesAttendanceData).filter(
-                      (status) => status !== null && status !== ""
-                    ).length
-                  }
-                </span>{" "}
-                employees marked
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={closeAllModals}
-                  className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-base font-medium hover:bg-gray-100 hover:border-gray-400 transition-colors shadow-sm"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveAllEmployeesAttendance}
-                  disabled={
-                    manualAttendanceLoading || !hasAllEmployeesChanges()
-                  }
-                  className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-base font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {manualAttendanceLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-1 h-4 w-4 text-white inline"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Attendance"
-                  )}
-                </button>
-              </div>
-            </div>
+
           </div>
         )}
         {/* Attendance Cell Popover */}

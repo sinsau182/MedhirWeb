@@ -1720,30 +1720,6 @@ const OdooDetailBody = ({
               <h3 className="text-base font-semibold text-gray-800">
                 Assigned Team
               </h3>
-              {/* {isEditingTeam ? (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsEditingTeam(false)}
-                    className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveTeam}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold shadow-sm hover:bg-blue-700"
-                  >
-                    Save
-                  </button>
-                </div>
-              ) : (
-                isManager &&
-                <button
-                  onClick={() => setIsEditingTeam(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold hover:bg-gray-50"
-                >
-                  <FaPencilAlt className="w-3 h-3" /> Edit
-                </button>
-              )} */}
             </div>
             <div className="border-b border-gray-200 mb-4"></div>
             {isEditingTeam ? (

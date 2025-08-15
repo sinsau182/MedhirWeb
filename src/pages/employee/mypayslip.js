@@ -108,19 +108,21 @@ const PayrollPage = () => {
     // Fetch sent payslips to get months with generated payslips
     dispatch(fetchSentPayslips(employeeId));
     
-    // Only fetch attendance and payslip details if we have a selected month
-    if (selectedMonth) {
-      dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
-      
-      // Only fetch payslip details automatically if it's not a manual selection
-      // This will be handled by the separate useEffect for sentPayslips
-    }
-    
     // Cleanup function to reset state when component unmounts
     return () => {
       dispatch(resetPayslipState());
     };
-  }, [dispatch, employeeId, selectedMonth, selectedYear, isManualSelection]);
+  }, [dispatch, employeeId]);
+
+  // Separate useEffect to fetch attendance when month selection changes
+  useEffect(() => {
+    // Only fetch attendance if we have a selected month and it's a manual selection
+    // or if we're initializing with the latest available month
+    if (selectedMonth && selectedYear) {
+      console.log(`Fetching attendance for: ${selectedMonth} ${selectedYear}`);
+      dispatch(fetchOneEmployeeAttendanceOneMonth({ month: selectedMonth.slice(0, 3), year: selectedYear, employeeId }));
+    }
+  }, [dispatch, employeeId, selectedMonth, selectedYear]);
 
   // Update initial month selection when sent payslips are loaded
   useEffect(() => {
@@ -138,6 +140,7 @@ const PayrollPage = () => {
       if (!currentPayslipData && latestPayslip.monthName && latestPayslip.year) {
         // Convert month name to proper case
         const monthName = latestPayslip.monthName.charAt(0).toUpperCase() + latestPayslip.monthName.slice(1).toLowerCase();
+        console.log(`Setting initial month from sentPayslips: ${monthName} ${latestPayslip.year}`);
         setSelectedMonth(monthName);
         setSelectedYear(latestPayslip.year);
         setHasInitialized(true);
@@ -147,6 +150,13 @@ const PayrollPage = () => {
           employeeId, 
           month: latestPayslip.month, // Use month number from API response instead of converting month name
           year: latestPayslip.year 
+        }));
+        
+        // Fetch attendance for the selected month
+        dispatch(fetchOneEmployeeAttendanceOneMonth({ 
+          month: monthName.slice(0, 3), 
+          year: latestPayslip.year, 
+          employeeId 
         }));
       }
     }
@@ -184,6 +194,7 @@ const PayrollPage = () => {
   const toggleCalendar = () => setIsCalendarOpen(!isCalendarOpen);
 
   const handleMonthSelection = (month, year) => {
+    console.log(`Manual month selection: ${month} ${year}`);
     setSelectedMonth(month);
     setSelectedYear(year);
     setIsCalendarOpen(false);
