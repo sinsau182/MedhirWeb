@@ -20,6 +20,7 @@ const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, 
   });
   const [proofFile, setProofFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const employeeId = sessionStorage.getItem("employeeId");
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -95,7 +96,7 @@ const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, 
       }
 
       // Refresh the page to update the UI
-      dispatch(fetchLeads());
+      dispatch(fetchLeads({ employeeId }));
       
       onClose();
       

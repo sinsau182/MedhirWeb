@@ -376,14 +376,25 @@ const LeadManagementContent = ({ role }) => {
         );
         
         if (pipeline) {
-          grouped[pipeline.name] = stageLeads;
+          // Add stage information to each lead
+          const leadsWithStageInfo = stageLeads.map(lead => ({
+            ...lead,
+            stageName: pipeline.name,
+            formType: pipeline.formType
+          }));
+          grouped[pipeline.name] = leadsWithStageInfo;
         } else {
           // Create a fallback name if pipeline not found
           const originalPipeline = pipelines.find(p => 
             p.stageId === stageId || p.pipelineId === stageId
           );
           if (originalPipeline) {
-            grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
+            const leadsWithStageInfo = stageLeads.map(lead => ({
+              ...lead,
+              stageName: originalPipeline.name,
+              formType: originalPipeline.formType
+            }));
+            grouped[`Stage-${stageId.slice(-8)}`] = leadsWithStageInfo;
           }
         }
       });
@@ -408,7 +419,14 @@ const LeadManagementContent = ({ role }) => {
           return isMatch;
         });
 
-        grouped[pipeline.name] = matchingLeads;
+        // Add stage information to each lead
+        const leadsWithStageInfo = matchingLeads.map(lead => ({
+          ...lead,
+          stageName: pipeline.name,
+          formType: pipeline.formType
+        }));
+
+        grouped[pipeline.name] = leadsWithStageInfo;
       });
 
       // Handle leads without pipelineId - assign to first stage
@@ -423,10 +441,17 @@ const LeadManagementContent = ({ role }) => {
       if (leadsWithoutPipeline.length > 0) {
         const firstStage = filteredPipelines[0];
         if (firstStage) {
+          // Add stage information to leads without pipeline
+          const leadsWithStageInfo = leadsWithoutPipeline.map(lead => ({
+            ...lead,
+            stageName: firstStage.name,
+            formType: firstStage.formType
+          }));
+          
           if (!grouped[firstStage.name]) {
             grouped[firstStage.name] = [];
           }
-          grouped[firstStage.name] = [...grouped[firstStage.name], ...leadsWithoutPipeline];
+          grouped[firstStage.name] = [...grouped[firstStage.name], ...leadsWithStageInfo];
         }
       }
     }
