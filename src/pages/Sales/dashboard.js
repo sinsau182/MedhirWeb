@@ -163,18 +163,145 @@ function SectionCard({ title, children, viewAllLink, right }) {
 }
 
 function SalesPipelineFunnel({ data }) {
+  // Enhanced color palette for better visual appeal
+  const enhancedColors = [
+    '#3B82F6', // Blue - New
+    '#10B981', // Green - Semi
+    '#F59E0B', // Amber - Potential
+    '#EF4444', // Red - High Potential
+    '#8B5CF6', // Purple - Converted
+    '#6B7280', // Gray - Lost
+    '#F97316', // Orange - Junk
+  ];
+
+  // Custom tooltip content
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
+          <p className="font-semibold text-gray-800">{label}</p>
+          <p className="text-blue-600 font-bold">
+            {payload[0].value} leads
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <SectionCard title="Sales Pipeline Funnel">
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-          <XAxis type="number" hide />
-          <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 12 }} />
-          <Tooltip cursor={{ fill: '#f3f4f6' }} />
-          <Bar dataKey="value" fill="#3B82F6" barSize={26}>
-            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="relative">
+        {/* Background gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-purple-50/30 rounded-lg pointer-events-none"></div>
+        
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart 
+            data={data} 
+            layout="vertical" 
+            margin={{ top: 10, right: 30, left: 15, bottom: 10 }}
+            barGap={2}
+          >
+            <defs>
+              {/* Gradient definitions for bars */}
+              <linearGradient id="blueGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#3B82F6" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="greenGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#10B981" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#10B981" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="amberGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#F59E0B" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="redGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#EF4444" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#EF4444" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="purpleGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#8B5CF6" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="grayGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#6B7280" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#6B7280" stopOpacity={1} />
+              </linearGradient>
+              <linearGradient id="orangeGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#F97316" stopOpacity={0.8} />
+                <stop offset="100%" stopColor="#F97316" stopOpacity={1} />
+              </linearGradient>
+            </defs>
+            
+            <XAxis 
+              type="number" 
+              hide 
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis 
+              type="category" 
+              dataKey="name" 
+              width={120} 
+              tick={{ 
+                fontSize: 13, 
+                fontWeight: 600,
+                fill: '#374151'
+              }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar 
+              dataKey="value" 
+              barSize={32}
+              radius={[0, 4, 4, 0]}
+              shadow={{ blur: 4, color: 'rgba(0,0,0,0.1)', offsetX: 2, offsetY: 2 }}
+            >
+              {data.map((entry, index) => {
+                const gradients = [
+                  'url(#blueGradient)',
+                  'url(#greenGradient)', 
+                  'url(#amberGradient)',
+                  'url(#redGradient)',
+                  'url(#purpleGradient)',
+                  'url(#grayGradient)',
+                  'url(#orangeGradient)'
+                ];
+                return (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={gradients[index % gradients.length]}
+                    stroke={enhancedColors[index % enhancedColors.length]}
+                    strokeWidth={1}
+                  />
+                );
+              })}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+        
+        {/* Summary stats */}
+        <div className="mt-4 pt-3 border-t border-gray-100">
+          <div className="flex justify-between items-center text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-600">Total Leads:</span>
+              <span className="font-semibold text-gray-800">
+                {data.reduce((sum, item) => sum + (item.value || 0), 0)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+              <span className="text-gray-600">Converted:</span>
+              <span className="font-semibold text-gray-800">
+                {data.find(item => item.name.toLowerCase().includes('converted'))?.value || 0}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </SectionCard>
   );
 }
@@ -182,28 +309,30 @@ function SalesPipelineFunnel({ data }) {
 function TeamLeaderboard({ data }) {
   return (
     <SectionCard title="Team Leaderboard" viewAllLink="/manager/team">
-      {data.map(member => (
-        <div key={member.rank} className="border-b border-gray-100 last:border-b-0 py-3">
-          <div className="flex items-center gap-3 text-sm mb-2">
-            <div className="font-bold text-gray-500 w-6">{member.rank === 1 ? <FaCrown className="text-yellow-500"/> : member.rank}.</div>
-            <div className="flex-grow font-semibold text-gray-800">{member.name}</div>
+      <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        {data.map(member => (
+          <div key={member.rank} className="border-b border-gray-100 last:border-b-0 py-3">
+            <div className="flex items-center gap-3 text-sm mb-2">
+              <div className="font-bold text-gray-500 w-6">{member.rank === 1 ? <FaCrown className="text-yellow-500"/> : member.rank}.</div>
+              <div className="flex-grow font-semibold text-gray-800">{member.name}</div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="text-center">
+                <p className="font-semibold text-gray-900">{member.dealsWon}</p>
+                <p className="text-gray-500">Deals Won</p>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-gray-900">₹{(member.avgDealValue || 0).toLocaleString('en-IN')}</p>
+                <p className="text-gray-500">Avg Deal</p>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-gray-900">₹{(member.revenueWon || 0).toLocaleString('en-IN')}</p>
+                <p className="text-gray-500">Revenue</p>
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="text-center">
-              <p className="font-semibold text-gray-900">{member.dealsWon}</p>
-              <p className="text-gray-500">Deals Won</p>
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-gray-900">₹{(member.avgDealValue || 0).toLocaleString('en-IN')}</p>
-              <p className="text-gray-500">Avg Deal</p>
-            </div>
-            <div className="text-center">
-              <p className="font-semibold text-gray-900">₹{(member.revenueWon || 0).toLocaleString('en-IN')}</p>
-              <p className="text-gray-500">Revenue</p>
-            </div>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </SectionCard>
   );
 }
@@ -528,9 +657,9 @@ function MainDashboard() {
 
   return (
     <MainLayout>
-      <div className="p-4 bg-gray-50 h-screen overflow-hidden">
+      <div className="p-4 bg-gray-50 min-h-screen">
         {leadsLoading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center min-h-[60vh]">
             <div className="flex items-center gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="text-gray-600">Loading dashboard data...</span>
@@ -555,11 +684,11 @@ function MainDashboard() {
                 currency={true}
               />
               <KpiCard
-                icon={<FaMoneyBillWave size={22}/>}
-                label="Revenue Won"
-                value={dashboardData.kpis.revenueWon.value}
-                change={dashboardData.kpis.revenueWon.change}
-                currency={true}
+                icon={<FaClock size={22}/>}
+                label="Average Duration Time"
+                value={`${dashboardData.kpis.avgDurationMonths.value} months`}
+                change={dashboardData.kpis.avgDurationMonths.change}
+                currency={false}
               />
               <KpiCard
                 icon={<FaClock size={22}/>}
