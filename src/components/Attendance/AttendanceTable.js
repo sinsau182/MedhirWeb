@@ -38,6 +38,7 @@ const AttendanceTable = ({
   handleMonthSelection,
   isSingleEmployeeModalOpen,
   isDateEditable,
+  isCurrentMonthEditable,
 }) => {
   // Helper function to get attendance status for a specific date from the new API format
   const getAttendanceStatusForDate = (attendanceRecord, dayNumber) => {
@@ -246,6 +247,8 @@ const AttendanceTable = ({
   return (
     <div className="bg-white rounded-lg shadow-md p-4 space-y-6">
       {/* Header row with dynamic message + calendar anchored right */}
+
+
       <div className="flex items-center gap-4 mb-2">
         {/* Month Navigation with Display */}
         <div className="flex items-center gap-4">
@@ -323,6 +326,7 @@ const AttendanceTable = ({
               variant="outline"
               className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
               onClick={toggleCalendar}
+              title="Change month and year"
             >
               <Calendar className="h-4 w-4" />
               <span className="font-medium text-sm">
@@ -411,9 +415,9 @@ const AttendanceTable = ({
         {!isSingleEmployeeModalOpen && (
           <button
             type="button"
-                          onClick={handleProcessCompanyMonthAttendance}
+            onClick={handleProcessCompanyMonthAttendance}
             className="ml-2 px-4 py-2 rounded bg-indigo-500 text-white text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                          title="Process company month attendance for selected month"
+            title="Process company month attendance for selected month"
           >
             Process Attendance
           </button>

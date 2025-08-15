@@ -653,10 +653,10 @@ const PayrollPage = () => {
                                 Total Earnings
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
-                                {displayValue(currentPayslipData?.monthlyCTC)}
+                                {displayValue(currentPayslipData?.totalEarningsPerMonth)}
                               </td>
                               <td className="px-2 p-1 text-right border-l-2 border-gray-400 font-semibold">
-                                {displayValue(currentPayslipData?.thisMonthSalary)}
+                                {displayValue(currentPayslipData?.totalEarningsThisMonth)}
                               </td>
                             </tr>
                           </tbody>
