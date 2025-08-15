@@ -22,6 +22,8 @@ import {
     removeSubCategoryLocal
 } from '@/redux/slices/assetCategorySlice';
 
+import { checkAssetApiHealth } from '@/redux/slices/assetSlice';
+
 import { 
     fetchAssetLocations, 
     addAssetLocation, 
@@ -980,17 +982,63 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     const handleToggleFormStatus = async (formId) => {
         try {
-            const form = forms.find(f => f.id === formId);
-            if (form) {
-                await dispatch(toggleFormStatus({ 
-                    formId, 
-                    enabled: !form.enabled 
-                })).unwrap();
-                toast.success("Form status updated successfully!");
+            // Validate formId
+            if (!formId || formId === 'undefined' || formId === undefined) {
+                console.error('Invalid form ID:', formId);
+                toast.error('Invalid form ID. Please refresh the page and try again.');
+                return;
             }
+            
+            const form = forms.find(f => f.id === formId || f.formId === formId);
+            if (!form) {
+                console.error('Form not found for ID:', formId);
+                toast.error('Form not found. Please refresh the page and try again.');
+                return;
+            }
+            
+            // Use the correct form ID (prioritize formId over id)
+            const actualFormId = form.formId || form.id;
+            
+            console.log('Toggling form status for:', { 
+                formId, 
+                actualFormId,
+                currentEnabled: form.enabled, 
+                newEnabled: !form.enabled,
+                form: form
+            });
+            
+            await dispatch(toggleFormStatus({ 
+                formId: actualFormId, 
+                enabled: !form.enabled 
+            })).unwrap();
+            
+            toast.success("Form status updated successfully!");
+            
+            // Refresh forms to get updated data
+            dispatch(fetchCustomForms());
         } catch (error) {
             console.error('Error toggling form status:', error);
-            toast.error("Failed to update form status");
+            
+            // Provide more specific error messages
+            let errorMessage = "Failed to update form status";
+            if (error?.payload) {
+                errorMessage = error.payload;
+            } else if (error?.message) {
+                errorMessage = error.message;
+            } else if (error?.data?.message) {
+                errorMessage = error.data.message;
+            }
+            
+            toast.error(errorMessage);
+            
+            // Log detailed error information
+            console.error('Toggle form status error details:', {
+                formId,
+                error: error,
+                payload: error?.payload,
+                message: error?.message,
+                data: error?.data
+            });
         }
     };
 
@@ -1108,6 +1156,14 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         setError('');
 
         try {
+            // Debug the subcategory selection
+            console.log('selectedSubCategory value:', selectedSubCategory);
+            console.log('selectedSubCategory type:', typeof selectedSubCategory);
+            console.log('selectedSubCategory truthy check:', !!selectedSubCategory);
+            console.log('selectedSubCategory length:', selectedSubCategory ? selectedSubCategory.length : 'N/A');
+            console.log('subCategoriesForSelectedCategory:', subCategoriesForSelectedCategory);
+            console.log('Available subcategories for selected category:', subCategoriesForSelectedCategory.map(sub => ({ id: sub.subCategoryId || sub.id, name: sub.name })));
+            
             const formData = {
                 name: formName.trim(),
                 categoryId: selectedCategory,
@@ -1124,27 +1180,85 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 ...(selectedSubCategory ? { subCategoryId: selectedSubCategory } : {})
             };
             
+            console.log('Final formData object:', formData);
+            console.log('formData.subCategoryId:', formData.subCategoryId);
+            console.log('formData structure:', {
+                hasName: !!formData.name,
+                hasCategoryId: !!formData.categoryId,
+                hasSubCategoryId: !!formData.subCategoryId,
+                subCategoryIdValue: formData.subCategoryId,
+                subCategoryIdType: typeof formData.subCategoryId,
+                fieldsCount: formData.fields?.length || 0
+            });
+            
             let savedFormId = editingFormId;
             if (editingFormId) {
                 const updated = await dispatch(updateCustomForm({ 
                     formId: editingFormId, 
                     formData 
                 })).unwrap();
-                savedFormId = updated?.id || editingFormId;
+                // For updates, always use the existing formId (editingFormId)
+                savedFormId = editingFormId; // Never fall back to MongoDB _id for updates
+                console.log('Form updated, savedFormId:', savedFormId, 'updated object:', updated);
+                console.log('Updated form ID analysis:', {
+                    formId: updated?.formId,
+                    id: updated?.id,
+                    editingFormId,
+                    finalSavedFormId: savedFormId,
+                    isFormId: savedFormId?.startsWith?.('FORM-'),
+                    isMongoId: /^\d+$/.test(savedFormId)
+                });
                 toast.success("Form updated successfully!");
             } else {
                 const created = await dispatch(createCustomForm(formData)).unwrap();
-                savedFormId = created?.id || created?.formId;
+                // For new forms, try to get formId, but if not available, generate one
+                if (created?.formId) {
+                    savedFormId = created.formId;
+                } else if (created?.id && created.id.toString().startsWith('FORM-')) {
+                    savedFormId = created.id;
+                } else {
+                    // Generate a fallback formId if backend doesn't provide one
+                    savedFormId = `FORM-${Date.now()}`;
+                    console.warn('Backend did not return formId, generated fallback:', savedFormId);
+                }
+                console.log('Form created, savedFormId:', savedFormId, 'created object:', created);
+                console.log('Created form ID analysis:', {
+                    formId: created?.formId,
+                    id: created?.id,
+                    finalSavedFormId: savedFormId,
+                    isFormId: savedFormId?.startsWith?.('FORM-'),
+                    isMongoId: /^\d+$/.test(savedFormId)
+                });
                 toast.success("Form created successfully!");
             }
 
             // Assign to sub-category via dedicated endpoint if provided
             if (savedFormId && selectedSubCategory) {
+                console.log('Assigning subcategory to form:', {
+                    savedFormId,
+                    selectedSubCategory,
+                    savedFormIdType: typeof savedFormId,
+                    isFormId: savedFormId?.startsWith?.('FORM-'),
+                    isMongoId: /^\d+$/.test(savedFormId)
+                });
+                
+                // Validate that we have a proper formId, not a MongoDB _id
+                if (!savedFormId.toString().startsWith('FORM-')) {
+                    console.error('Invalid formId for subcategory assignment:', savedFormId);
+                    toast.error("Cannot assign subcategory: Invalid form ID format");
+                    return;
+                }
+                
                 try {
                     await dispatch(assignFormToSubCategory({ formId: savedFormId, subCategoryId: selectedSubCategory })).unwrap();
                     toast.success("Sub-category assigned to form");
                 } catch (e) {
                     console.error('Failed to assign sub-category:', e);
+                    console.error('Error details:', {
+                        error: e,
+                        response: e.response?.data,
+                        status: e.response?.status
+                    });
                     toast.error("Failed to assign sub-category");
                 }
             }
@@ -1348,16 +1462,15 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                     <tr>
                                         <th className="text-left p-4 font-semibold text-gray-700">Form Name</th>
                                         <th className="text-left p-4 font-semibold text-gray-700">Assigned Category</th>
-                                        <th className="text-left p-4 font-semibold text-gray-700">Status</th>
                                         <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {forms.map((form) => (
                                         <tr 
-                                            key={form.id || form.formId} 
+                                            key={form.formId || form.id} 
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                                            onClick={() => handleEditForm(form.id || form.formId)}
+                                            onClick={() => handleEditForm(form.formId || form.id)}
                                         >
                                             <td className="p-4 font-medium">{form.name}</td>
                                             <td className="p-4 text-gray-600">
@@ -1369,45 +1482,24 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                     return matchingCategory?.name || formCategoryId || 'No Category';
                                                 })()}
                                             </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    form.enabled
-                                                        ? 'bg-green-100 text-green-700' 
-                                                        : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {form.enabled ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
+
                                             <td className="p-4">
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleEditForm(form.id || form.formId);
+                                                            handleEditForm(form.formId || form.id);
                                                         }}
                                                         className="text-blue-600 hover:text-blue-800"
                                                         title="Edit Form"
                                                     >
                                                         <FaEdit />
                                                     </button>
+
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleToggleFormStatus(form.id || form.formId);
-                                                        }}
-                                                        className={`text-sm px-2 py-1 rounded ${
-                                                            form.enabled
-                                                                ? 'text-orange-600 hover:text-orange-800'
-                                                                : 'text-green-600 hover:text-green-800'
-                                                        }`}
-                                                        title={form.enabled ? 'Deactivate' : 'Activate'}
-                                                    >
-                                                        {form.enabled ? 'Deactivate' : 'Activate'}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onDeleteForm(form.id || form.formId);
+                                                            onDeleteForm(form.formId || form.id);
                                                         }}
                                                         className="text-red-600 hover:text-red-800"
                                                         title="Delete Form"
@@ -1483,7 +1575,14 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                         </label>
                                         <select
                                             value={selectedSubCategory}
-                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
+                                            onChange={(e) => {
+                                                console.log('Subcategory selection changed:', {
+                                                    oldValue: selectedSubCategory,
+                                                    newValue: e.target.value,
+                                                    event: e.target.value
+                                                });
+                                                setSelectedSubCategory(e.target.value);
+                                            }}
                                             className="w-full p-3 border border-gray-300 rounded-md"
                                             disabled={!selectedCategory || categoriesLoading}
                                         >
@@ -2099,7 +2198,10 @@ const AssetSettingsPage = () => {
     
     // Fetch assets when component mounts for status deletion validation
     useEffect(() => {
-        dispatch(fetchAllAssets());
+        dispatch(fetchAllAssets()).catch(error => {
+            console.error('Failed to fetch assets for validation:', error);
+            // Don't show error toast here as it's just for validation
+        });
     }, [dispatch]);
     
     // Separate editing states for each section
@@ -2150,31 +2252,47 @@ const AssetSettingsPage = () => {
         assetsList: []
     });
 
+    // Network status state
+    const [networkStatus, setNetworkStatus] = useState({ 
+        isOnline: true, 
+        lastChecked: null, 
+        apiHealth: null 
+    });
+
     // Initialize data
     useEffect(() => {
         console.log('Loading asset management data...');
         
-        // Debug function to test API response - commented out to avoid network errors
-        // const debugApiResponse = async () => {
-        //     try {
-        //         const token = getItemFromSessionStorage('token', null);
-        //         const response = await axios.get(`${publicRuntimeConfig.apiURL}/api/asset-settings/categories`, {
-        //             headers: { Authorization: `Bearer ${token}` }
-        //         });
-        //         console.log('Raw API response:', response.data);
-        //         
-        //         // Test subcategory creation
-        //         if (response.data?.data?.length > 0) {
-        //             const firstCategory = response.data.data[0];
-        //             console.log('First category:', firstCategory);
-        //             console.log('Subcategories in first category:', firstCategory.subCategories);
-        //         }
-        //     } catch (error) {
-        //         console.error('Debug API call failed:', error);
-        //     }
-        // };
-        // 
-        // debugApiResponse();
+        // Check network and API health
+        const checkNetworkStatus = async () => {
+            try {
+                // Check if browser is online
+                const isOnline = navigator.onLine;
+                setNetworkStatus(prev => ({ ...prev, isOnline }));
+                
+                if (isOnline) {
+                    // Check API health
+                    const apiHealth = await checkAssetApiHealth();
+                    setNetworkStatus(prev => ({ 
+                        ...prev, 
+                        apiHealth,
+                        lastChecked: new Date()
+                    }));
+                    
+                    if (!apiHealth.isHealthy) {
+                        console.warn('API health check failed:', apiHealth.error);
+                        toast.warning('API server appears to be offline. Some features may not work properly.');
+                    }
+                } else {
+                    console.warn('Browser is offline');
+                    toast.warning('You appear to be offline. Please check your internet connection.');
+                }
+            } catch (error) {
+                console.error('Error checking network status:', error);
+            }
+        };
+        
+        checkNetworkStatus();
         
         dispatch(fetchAssetCategories());
         dispatch(fetchAssetLocations());
@@ -3953,9 +4071,56 @@ const AssetSettingsPage = () => {
                             <h1 className="text-3xl font-bold text-gray-800">Asset Management Settings</h1>
                             <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
                         </div>
+                        
+                        {/* Network Status Indicator */}
+                        <div className="flex items-center gap-3">
+                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                                networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
+                                    ? 'bg-green-100 text-green-700'
+                                    : networkStatus.isOnline
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-red-100 text-red-700'
+                            }`}>
+                                <div className={`w-2 h-2 rounded-full ${
+                                    networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
+                                        ? 'bg-green-500'
+                                        : networkStatus.isOnline
+                                        ? 'bg-yellow-500'
+                                        : 'bg-red-500'
+                                }`}></div>
+                                <span>
+                                    {networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
+                                        ? 'Online'
+                                        : networkStatus.isOnline
+                                        ? 'API Offline'
+                                        : 'Offline'
+                                    }
+                                </span>
+                            </div>
+                            
+                            {networkStatus.lastChecked && (
+                                <button
+                                    onClick={async () => {
+                                        const apiHealth = await checkAssetApiHealth();
+                                        setNetworkStatus(prev => ({ 
+                                            ...prev, 
+                                            apiHealth,
+                                            lastChecked: new Date()
+                                        }));
+                                        if (apiHealth.isHealthy) {
+                                            toast.success('API connection restored!');
+                                        } else {
+                                            toast.error('API still offline');
+                                        }
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                    title="Check API Status"
+                                >
+                                    🔄
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    
-
                 </header>
                 
                 {/* Horizontal Navigation Tabs */}
