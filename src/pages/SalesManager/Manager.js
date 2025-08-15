@@ -983,6 +983,7 @@ const ManagerContent = ({ role }) => {
           lead={pendingLost?.lead}
           onClose={handleLostModalClose}
           onSuccess={pendingLost ? handleLostSuccess : undefined}
+          activeRoleTab={"manager"}
         />
       )}
       {showJunkReasonModal && (
@@ -990,6 +991,7 @@ const ManagerContent = ({ role }) => {
           lead={pendingJunk?.lead}
           onClose={handleJunkModalClose}
           onSuccess={pendingJunk ? handleJunkSuccess : undefined}
+          activeRoleTab={"manager"}
         />
       )}
 
