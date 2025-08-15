@@ -195,8 +195,58 @@ const ManagerContent = ({ role }) => {
     }
   }, [dispatch, selectedEmployeeId, unassignedOnly]);
 
-  // Deduplicate leads by leadId (keep first occurrence) - Manager specific
-  const dedupedLeads = useFlattenedLeads(leads);
+  // Deduplicate leads by leadId and add stage information - Manager specific
+  const dedupedLeads = useMemo(() => {
+    const seen = new Set();
+    let flatLeads = [];
+    
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && Array.isArray(leads[0].leads)) {
+      // New grouped format: leads grouped by stageId
+      leads.forEach((stageGroup) => {
+        if (Array.isArray(stageGroup.leads)) {
+          // Find the pipeline/stage for this stageId
+          const pipeline = pipelines.find(p => 
+            p.stageId === stageGroup.stageId || p.pipelineId === stageGroup.stageId
+          );
+          
+          const stageName = pipeline ? pipeline.name : `Stage-${stageGroup.stageId?.slice(-8)}`;
+          const stageId = stageGroup.stageId;
+          
+          // Add stage information to each lead
+          const leadsWithStage = stageGroup.leads.map(lead => ({
+            ...lead,
+            stageId: stageId,
+            stageName: stageName
+          }));
+          
+          flatLeads = flatLeads.concat(leadsWithStage);
+        }
+      });
+    } else if (Array.isArray(leads)) {
+      // Old flat format: individual leads with pipelineId/stageId
+      flatLeads = leads.map(lead => {
+        const pipeline = pipelines.find(p => 
+          p.stageId === (lead.pipelineId || lead.stageId) || 
+          p.pipelineId === (lead.pipelineId || lead.stageId)
+        );
+        
+        return {
+          ...lead,
+          stageId: lead.pipelineId || lead.stageId,
+          stageName: pipeline ? pipeline.name : 'Unknown Stage'
+        };
+      });
+    }
+    
+    // Deduplicate by leadId
+    return flatLeads.filter((lead) => {
+      if (lead && lead.leadId && !seen.has(lead.leadId)) {
+        seen.add(lead.leadId);
+        return true;
+      }
+      return false;
+    });
+  }, [leads, pipelines]);
 
   // Group leads by pipelineId for Kanban board
   const leadsByStatus = useMemo(() => {

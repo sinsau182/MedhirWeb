@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Table,
   TableHeader,
@@ -7,8 +8,18 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table"; // Adjust this import to your actual table component path
+import { fetchPipelines } from "@/redux/slices/pipelineSlice";
 
-const LeadsTable = ({ leads }) => (
+const LeadsTable = ({ leads }) => {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchPipelines());
+  }, [dispatch]);
+  const pipelines = useSelector((state) => state.pipelines.pipelines);
+  console.log(pipelines);
+  console.log(leads);
+
+  return (
   <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
     <Table>
       <TableHeader>
@@ -16,7 +27,7 @@ const LeadsTable = ({ leads }) => (
           <TableHead>Name</TableHead>
           <TableHead>Contact</TableHead>
           <TableHead>Email</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead>Stage</TableHead>
           <TableHead>Sales Rep</TableHead>
           <TableHead>Designer</TableHead>
         </TableRow>
@@ -27,7 +38,7 @@ const LeadsTable = ({ leads }) => (
             <TableCell className="font-medium">{lead.name}</TableCell>
             <TableCell>{lead.contactNumber}</TableCell>
             <TableCell>{lead.email}</TableCell>
-            <TableCell>{lead.status}</TableCell>
+            <TableCell>{lead.stageName || 'Unknown Stage'}</TableCell>
             <TableCell>
               {lead.salesRep || (
                 <span className="text-gray-400">Unassigned</span>
@@ -43,6 +54,7 @@ const LeadsTable = ({ leads }) => (
       </TableBody>
     </Table>
   </div>
-);
+  );
+};
 
 export default LeadsTable;
