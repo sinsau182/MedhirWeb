@@ -145,7 +145,6 @@ const CategorySettings = ({
     onSaveIdFormat, 
     onCancelIdFormat 
 }) => {
-    const isAddDisabled = !newCategory.name || loading;
     const [newSubCatFieldsByCategory, setNewSubCatFieldsByCategory] = useState({});
     
     console.log('CategorySettings rendered with categories:', editedCategories);
@@ -182,16 +181,20 @@ const CategorySettings = ({
             
             {/* Step 1: Add New Category */}
             <div className="flex items-end gap-4 mb-6 w-full max-w-3xl mx-auto">
-                <input 
-                    value={newCategory.name} 
-                    onChange={e => setNewCategory({...newCategory, name: e.target.value})} 
-                    placeholder="New Category Name (e.g., IT Equipment)" 
-                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
-                />
+                <div className="flex-1 min-w-[220px]">
+                    <input 
+                        value={newCategory.name} 
+                        onChange={e => setNewCategory({...newCategory, name: e.target.value, showError: false})} 
+                        placeholder="New Category Name (e.g., IT Equipment)" 
+                        className="w-full p-3 border rounded-md text-base" 
+                    />
+                    {newCategory.showError && (
+                        <p className="text-red-600 text-sm mt-1">Enter Category name</p>
+                    )}
+                </div>
                 <button 
                     onClick={onAdd} 
-                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isAddDisabled}
+                    className="px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 hover:bg-blue-700"
                 >
                     <FaPlus className="inline mr-1" /> Add Category
                 </button>
@@ -282,7 +285,7 @@ const CategorySettings = ({
                     const setField = (key, val) => {
                         setNewSubCatFieldsByCategory(prev => ({
                             ...prev,
-                            [categoryId]: { ...(prev[categoryId] || {}), [key]: val }
+                            [categoryId]: { ...(prev[categoryId] || {}), [key]: val, showError: false }
                         }));
                     };
                     const sanitizePrefix = (val) => val; // allow arbitrary prefix
@@ -303,6 +306,9 @@ const CategorySettings = ({
                                         placeholder="e.g., Laptop, Monitor, Printer"
                                         className="w-full p-3 border border-gray-300 rounded-md text-base"
                                     />
+                                    {current.showError && !current.name?.trim() && (
+                                        <p className="text-red-600 text-sm mt-1">Enter Sub-Category name</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Asset ID Prefix ({categoryCode}-{getFirstThreeLetters(current.name)})</label>
@@ -312,6 +318,9 @@ const CategorySettings = ({
                                         placeholder="CAT-SUB"
                                         className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
                                     />
+                                    {current.showError && !current.prefix?.trim() && (
+                                        <p className="text-red-600 text-sm mt-1">Enter Asset ID Prefix</p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Suffix (4 digits)</label>
@@ -321,6 +330,9 @@ const CategorySettings = ({
                                         placeholder="0001"
                                         className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
                                     />
+                                    {current.showError && !current.suffix && (
+                                        <p className="text-red-600 text-sm mt-1">Enter Suffix</p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -338,16 +350,25 @@ const CategorySettings = ({
                                             prefix: (current.prefix || '').trim(),
                                             suffix: current.suffix
                                         };
-                                        if (!payload.name || !isValidPrefix() || !payload.suffix) return;
+                                        if (!payload.name || !isValidPrefix() || !payload.suffix) {
+                                            // Show error for empty fields
+                                            setNewSubCatFieldsByCategory(prev => ({ 
+                                                ...prev, 
+                                                [categoryId]: { 
+                                                    ...current, 
+                                                    showError: true 
+                                                } 
+                                            }));
+                                            return;
+                                        }
                                         try {
                                             await onAddSubCategory(categoryId, payload);
-                                            setNewSubCatFieldsByCategory(prev => ({ ...prev, [categoryId]: { name: '', prefix: '', suffix: '' } }));
+                                            setNewSubCatFieldsByCategory(prev => ({ ...prev, [categoryId]: { name: '', prefix: '', suffix: '', showError: false } }));
                                         } catch (e) {
                                             // Keep inputs for correction
                                         }
                                     }}
-                                    disabled={!isValid || loading}
-                                    className={`px-6 py-3 rounded-md flex items-center gap-2 font-medium ${(!isValid || loading) ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
+                                    className="px-6 py-3 rounded-md flex items-center gap-2 font-medium bg-green-600 text-white hover:bg-green-700"
                                 >
                                     <FaPlus /> Create Sub-Category
                                 </button>
@@ -546,16 +567,20 @@ const CategorySettings = ({
 };
 
 const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLocation, setNewLocation, onAdd, onFieldChange, loading, onDelete, onSave, onCancel }) => {
-    const isAddDisabled = !newLocation.name || loading;
     return (
         <SettingsSection title="Asset Locations" subtitle="Manage the physical locations where assets are stored or assigned.">
             <div className="flex items-end gap-4 mb-4 w-full max-w-3xl mx-auto">
-                <input 
-                    value={newLocation.name} 
-                    onChange={e => setNewLocation({...newLocation, name: e.target.value})} 
-                    placeholder="New Location Name (e.g., Mumbai Office)" 
-                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
-                />
+                <div className="flex-1 min-w-[220px]">
+                    <input 
+                        value={newLocation.name} 
+                        onChange={e => setNewLocation({...newLocation, name: e.target.value, showError: false})} 
+                        placeholder="New Location Name (e.g., Mumbai Office)" 
+                        className="w-full p-3 border rounded-md text-base" 
+                    />
+                    {newLocation.showError && (
+                        <p className="text-red-600 text-sm mt-1">Enter Location name</p>
+                    )}
+                </div>
                 <input 
                     value={newLocation.address} 
                     onChange={e => setNewLocation({...newLocation, address: e.target.value})} 
@@ -564,8 +589,7 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                 />
                 <button 
                     onClick={onAdd} 
-                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isAddDisabled}
+                    className="px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 hover:bg-blue-700"
                 >
                     <FaPlus className="inline mr-1" /> Add
                 </button>
@@ -640,20 +664,23 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
 };
 
 const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus, setNewStatus, onAdd, onFieldChange, loading, onDelete, onSave, onCancel }) => {
-    const isAddDisabled = !newStatus.name || loading;
     return (
         <SettingsSection title="Asset Status Labels" subtitle="Customize the lifecycle statuses for your assets.">
             <div className="flex items-end gap-4 mb-4 w-full max-w-2xl mx-auto">
-                <input 
-                    value={newStatus.name} 
-                    onChange={e => setNewStatus({ name: e.target.value })} 
-                    placeholder="New Status Name (e.g., In Transit)" 
-                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
-                />
+                <div className="flex-1 min-w-[220px]">
+                    <input 
+                        value={newStatus.name} 
+                        onChange={e => setNewStatus({ name: e.target.value, showError: false })} 
+                        placeholder="New Status Name (e.g., In Transit)" 
+                        className="w-full p-3 border rounded-md text-base" 
+                    />
+                    {newStatus.showError && (
+                        <p className="text-red-600 text-sm mt-1">Enter Status name</p>
+                    )}
+                </div>
                 <button 
                     onClick={onAdd} 
-                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isAddDisabled}
+                    className="px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 hover:bg-blue-700"
                 >
                     <FaPlus className="inline mr-1" /> Add
                 </button>
@@ -887,6 +914,16 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         setError('');
         dispatch(clearCurrentForm());
     };
+    
+    const handleFormNameChange = (value) => {
+        setFormName(value);
+        if (error) setError('');
+    };
+    
+    const handleCategoryChange = (value) => {
+        setSelectedCategory(value);
+        if (error) setError('');
+    };
 
     // Helper function to map API fields to frontend format
     const mapApiFieldsToFrontend = (apiFields) => {
@@ -933,6 +970,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             // Use assignedCategoryId if categoryId is null/empty
             const categoryToUse = form.categoryId || form.assignedCategoryId || '';
             setSelectedCategory(categoryToUse);
+            setError(''); // Clear any previous errors
             
             // Map API fields to frontend format and ensure proper state update
             const mappedFields = mapApiFieldsToFrontend(form.fields || []);
@@ -1039,6 +1077,9 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         );
         console.log('Updated fields after field update:', updatedFields);
         setFields(updatedFields);
+        
+        // Clear error when user starts typing
+        if (error) setError('');
     };
 
     const addDropdownOption = (fieldId) => {
@@ -1077,34 +1118,48 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     };
 
     const handleSaveForm = async () => {
+        let hasErrors = false;
+        
+        // Validate form name
         if (!formName || !formName.trim()) {
             setError('Form name is required');
-            return;
+            hasErrors = true;
         }
 
+        // Validate category selection
         if (!selectedCategory) {
             setError('Please select a category');
-            return;
-        }
-
-        if (fields.length === 0) {
-            setError('At least one field is required');
-            return;
+            hasErrors = true;
         }
 
         // Validate fields
+        if (fields.length === 0) {
+            setError('At least one field is required');
+            hasErrors = true;
+        }
+
+        // Validate individual fields
         for (let field of fields) {
             if (!field.name || !field.name.trim()) {
                 setError('All fields must have a name');
-                return;
+                hasErrors = true;
+                break;
             }
             if (field.type === 'dropdown' && field.options.length === 0) {
                 setError('Dropdown fields must have at least one option');
-                return;
+                hasErrors = true;
+                break;
             }
+        }
+        
+        if (hasErrors) {
+            return;
         }
 
         setLoading(true);
+        setError('');
+        
+        // Clear any previous errors
         setError('');
 
         try {
@@ -1599,14 +1654,13 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
                             {/* Save Button */}
                             <div className="pt-4">
-                                <button
-                                    onClick={handleSaveForm}
-                                    disabled={loading || !formName.trim() || !selectedCategory || fields.length === 0}
-                                    className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                    {loading ? 'Saving...' : '💾 Save Form'}
-                                </button>
-                                {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+                                                            <button
+                                onClick={handleSaveForm}
+                                className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                            >
+                                {loading ? 'Saving...' : '💾 Save Form'}
+                            </button>
+                            {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
                             </div>
                         </div>
 
@@ -1815,7 +1869,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 };
 
 // Delete confirmation modals
-const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, assetsCount, assetsList }) => {
+const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, assetsCount, assetsList, hasSubCategories, subCategoriesCount, subCategoriesList, backendError }) => {
     if (!open) return null;
     
     return (
@@ -1831,32 +1885,72 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, 
                             <p className="text-yellow-800 font-medium mb-2">
                                 ⚠️ Cannot Delete Category
                             </p>
-                            <p className="text-yellow-700 text-sm">
-                                The category <span className="font-semibold">&quot;{categoryName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
-                            </p>
-                        </div>
-                        
-                        {assetsList && assetsList.length > 0 && (
-                            <div className="mb-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Assets using this category:</p>
-                                <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
-                                    {assetsList.map((asset, index) => (
-                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
-                                            • {asset.name || asset.assetId} ({asset.assetId})
-                                        </div>
-                                    ))}
-                                    {assetsCount > 5 && (
-                                        <div className="text-sm text-gray-500 italic">
-                                            ... and {assetsCount - 5} more
+                            
+                            {hasSubCategories ? (
+                                <div>
+                                    <p className="text-yellow-700 text-sm">
+                                        The category <span className="font-semibold">&quot;{categoryName}&quot;</span> has <span className="font-semibold">{subCategoriesCount} sub-category(ies)</span>.
+                                    </p>
+                                    
+                                    {subCategoriesList && subCategoriesList.length > 0 && (
+                                        <div className="mt-3">
+                                            <p className="text-sm font-medium text-gray-700 mb-2">Sub-categories in this category:</p>
+                                            <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
+                                                {subCategoriesList.map((sub, index) => (
+                                                    <div key={sub.id || sub.subCategoryId} className="text-sm text-gray-600 py-1">
+                                                        • {sub.name} ({sub.subCategoryId || sub.id})
+                                                    </div>
+                                                ))}
+                                                {subCategoriesCount > 5 && (
+                                                    <div className="text-sm text-gray-500 italic">
+                                                        ... and {subCategoriesCount - 5} more
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
+                                    
+                                    <p className="text-sm text-gray-600 mt-3">
+                                        Please delete all sub-categories first before deleting this category.
+                                    </p>
                                 </div>
+                            ) : (
+                                <div>
+                                    <p className="text-yellow-700 text-sm">
+                                        The category <span className="font-semibold">&quot;{categoryName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
+                                    </p>
+                                    
+                                    {assetsList && assetsList.length > 0 && (
+                                        <div className="mt-3">
+                                            <p className="text-sm font-medium text-gray-700 mb-2">Assets using this category:</p>
+                                            <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
+                                                {assetsList.map((asset, index) => (
+                                                    <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
+                                                        • {asset.name || asset.assetId} ({asset.assetId})
+                                                    </div>
+                                                ))}
+                                                {assetsCount > 5 && (
+                                                    <div className="text-sm text-gray-500 italic">
+                                                        ... and {assetsCount - 5} more
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    <p className="text-sm text-gray-600 mt-3">
+                                        Please change the category of these assets to a different category before deleting this one.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {backendError && (
+                            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
+                                <p className="text-sm font-medium text-gray-700 mb-2">Backend Error Message:</p>
+                                <p className="text-sm text-gray-600 italic">{backendError}</p>
                             </div>
                         )}
-                        
-                        <p className="text-sm text-gray-600 mb-4">
-                            Please change the category of these assets to a different category before deleting this one.
-                        </p>
                     </div>
                 ) : (
                     <p className="mb-4 text-gray-700">
@@ -1877,8 +1971,8 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, 
                 </div>
             </div>
         </div>
-    );
-};
+        );
+    };
 
 const DeleteLocationModal = ({ open, onClose, onConfirm, locationName, warning, assetsCount, assetsList }) => {
     if (!open) return null;
@@ -2045,6 +2139,60 @@ const DeleteFormModal = ({ open, onClose, onConfirm, formName }) => {
     );
 };
 
+const DeleteSubCategoryModal = ({ open, onClose, onConfirm, subCategoryName, warning, assetsCount, errorMessage }) => {
+    if (!open) return null;
+    
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+                <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
+                    <FaTrash /> Delete Sub-Category
+                </h2>
+                
+                {warning ? (
+                    <div>
+                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <p className="text-yellow-800 font-medium mb-2">
+                                ⚠️ Cannot Delete Sub-Category
+                            </p>
+                            <p className="text-yellow-700 text-sm">
+                                The sub-category <span className="font-semibold">&quot;{subCategoryName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
+                            </p>
+                        </div>
+                        
+                        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
+                            <p className="text-sm font-medium text-gray-700 mb-2">Backend Error Message:</p>
+                            <p className="text-sm text-gray-600 italic">{errorMessage}</p>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-4">
+                            Please change the sub-category of these assets to a different sub-category before deleting this one.
+                        </p>
+                    </div>
+                ) : (
+                    <div>
+                        <p className="mb-4 text-gray-700">
+                            Are you sure you want to delete the sub-category <span className="font-semibold">&quot;{subCategoryName}&quot;</span>?<br/>
+                            This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this sub-category.
+                        </p>
+                    </div>
+                )}
+                
+                <div className="flex justify-end gap-3 mt-6">
+                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        {warning ? 'Close' : 'Cancel'}
+                    </button>
+                    {!warning && (
+                        <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
+                            Delete
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Page Component ---
 const AssetSettingsPage = () => {
     const dispatch = useDispatch();
@@ -2111,10 +2259,10 @@ const AssetSettingsPage = () => {
     
     // State for editing
     const [editedCategories, setEditedCategories] = useState([]);
-    const [newCategory, setNewCategory] = useState({ name: '' });
+    const [newCategory, setNewCategory] = useState({ name: '', showError: false });
 
     const [editedLocations, setEditedLocations] = useState([]);
-    const [newLocation, setNewLocation] = useState({ name: '', address: '' });
+    const [newLocation, setNewLocation] = useState({ name: '', address: '', showError: false });
     const [deleteLocationModal, setDeleteLocationModal] = useState({ 
         open: false, 
         locationId: null, 
@@ -2125,7 +2273,7 @@ const AssetSettingsPage = () => {
     });
 
     const [editedStatuses, setEditedStatuses] = useState([]);
-    const [newStatus, setNewStatus] = useState({ name: '' });
+    const [newStatus, setNewStatus] = useState({ name: '', showError: false });
     const [deleteStatusModal, setDeleteStatusModal] = useState({ 
         open: false, 
         statusId: null, 
@@ -2139,6 +2287,16 @@ const AssetSettingsPage = () => {
         open: false, 
         formId: null, 
         formName: ''
+    });
+
+    const [deleteSubCategoryModal, setDeleteSubCategoryModal] = useState({ 
+        open: false, 
+        categoryId: null, 
+        subCategoryId: null,
+        subCategoryName: '',
+        warning: false,
+        assetsCount: 0,
+        errorMessage: ''
     });
 
     const [deleteModal, setDeleteModal] = useState({ 
@@ -2226,14 +2384,14 @@ const AssetSettingsPage = () => {
     const handleAddCategory = async () => {
         console.log('handleAddCategory called with name:', newCategory.name);
         
-        if (!newCategory.name) { 
-            toast.error("Category name is required."); 
+        if (!newCategory.name || !newCategory.name.trim()) { 
+            setNewCategory(prev => ({ ...prev, showError: true }));
             return; 
         }
         
         try {
-            await dispatch(addAssetCategory({ name: newCategory.name })).unwrap();
-            setNewCategory({ name: '' });
+            await dispatch(addAssetCategory({ name: newCategory.name.trim() })).unwrap();
+            setNewCategory({ name: '', showError: false });
             toast.success("Category added successfully!");
         } catch (error) {
             toast.error("Failed to add category");
@@ -2315,9 +2473,18 @@ const AssetSettingsPage = () => {
         const hasSubCategories = category && category.subCategories && category.subCategories.length > 0;
         
         if (hasSubCategories) {
-            const subCatList = category.subCategories.slice(0, 3).map(sub => sub.name).join(', ');
-            const moreText = category.subCategories.length > 3 ? ` and ${category.subCategories.length - 3} more` : '';
-            toast.error(`Cannot delete category "${name}" because it has ${category.subCategories.length} sub-category(ies): ${subCatList}${moreText}. Please delete all sub-categories first.`);
+            // Show warning modal instead of toast for sub-categories
+            setDeleteModal({ 
+                open: true, 
+                categoryId, 
+                name,
+                warning: true,
+                assetsCount: 0,
+                assetsList: [],
+                hasSubCategories: true,
+                subCategoriesCount: category.subCategories.length,
+                subCategoriesList: category.subCategories.slice(0, 5)
+            });
             return;
         }
         
@@ -2334,11 +2501,18 @@ const AssetSettingsPage = () => {
                 name,
                 warning: true,
                 assetsCount: assetsUsingCategory.length,
-                assetsList: assetsUsingCategory.slice(0, 5) // Show first 5 assets
+                assetsList: assetsUsingCategory.slice(0, 5), // Show first 5 assets
+                hasSubCategories: false
             });
         } else {
             // No assets using this category, proceed with deletion
-            setDeleteModal({ open: true, categoryId, name, warning: false });
+            setDeleteModal({ 
+                open: true, 
+                categoryId, 
+                name, 
+                warning: false,
+                hasSubCategories: false
+            });
         }
     };
     
@@ -2348,13 +2522,48 @@ const AssetSettingsPage = () => {
         try {
             await dispatch(deleteAssetCategory(deleteModal.categoryId)).unwrap();
             toast.success("Category deleted successfully!");
+            
+            // Refresh categories to update the UI
+            dispatch(fetchAssetCategories());
+            
         } catch (error) {
-            // Show backend response in toast
-            const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete category";
+            console.error('Error deleting category:', error);
+            
+            // Check if the error is about assets or sub-categories using this category
+            const errorMessage = error?.message || error?.data?.message || error?.error || error?.payload || "Failed to delete category";
+            
+            if (errorMessage.includes('assets') || errorMessage.includes('sub-category') || errorMessage.includes('subcategory')) {
+                // Show warning modal instead of error toast
+                setDeleteModal({ 
+                    open: true, 
+                    categoryId: deleteModal.categoryId, 
+                    name: deleteModal.name,
+                    warning: true,
+                    assetsCount: 0,
+                    assetsList: [],
+                    hasSubCategories: false,
+                    backendError: errorMessage
+                });
+                return; // Don't close modal, show warning instead
+            }
+            
+            // For other types of errors, show toast and close modal
             toast.error(`Category deletion failed: ${errorMessage}`);
-            console.error('Backend error response:', error);
         }
-        setDeleteModal({ open: false, categoryId: null, name: '' });
+        
+        // Close modal only on success or non-asset/subcategory errors
+        setDeleteModal({ 
+            open: false, 
+            categoryId: null, 
+            name: '', 
+            warning: false,
+            assetsCount: 0,
+            assetsList: [],
+            hasSubCategories: false,
+            subCategoriesCount: 0,
+            subCategoriesList: [],
+            backendError: ''
+        });
     };
     
     const cancelDeleteCategory = () => {
@@ -2365,7 +2574,11 @@ const AssetSettingsPage = () => {
             name: '', 
             warning: false,
             assetsCount: 0,
-            assetsList: []
+            assetsList: [],
+            hasSubCategories: false,
+            subCategoriesCount: 0,
+            subCategoriesList: [],
+            backendError: ''
         });
     };
 
@@ -2552,30 +2765,158 @@ const AssetSettingsPage = () => {
         
         console.log('Found category and subcategory for deletion:', { category, subCategory });
         
-        // Check if any assets are using this sub-category
-        const assetsUsingSubCategory = assets.filter(asset => 
-            asset.subCategoryId === subCategoryId || asset.subCategory?.id === subCategoryId
-        );
-        
-        if (assetsUsingSubCategory.length > 0) {
-            // Show warning toast about assets using this sub-category
-            const assetList = assetsUsingSubCategory.slice(0, 3).map(asset => asset.name || asset.assetId).join(', ');
-            const moreText = assetsUsingSubCategory.length > 3 ? ` and ${assetsUsingSubCategory.length - 3} more` : '';
-            toast.error(`Cannot delete sub-category "${subCategory?.name || 'Unknown'}" because it has ${assetsUsingSubCategory.length} asset(s) using it: ${assetList}${moreText}. Please change the sub-category of these assets first.`);
-            return;
-        }
-        
         if (subCategory?.subCategoryId) {
-            // Delete from server
+            // Validate subCategoryId before making the request
+            if (!subCategory.subCategoryId || subCategory.subCategoryId === 'undefined' || subCategory.subCategoryId === undefined) {
+                console.error('Invalid subcategory ID:', subCategory.subCategoryId);
+                toast.error('Cannot delete: Invalid subcategory ID');
+                return;
+            }
+            
+            // Try direct API call first to get better error information
             try {
-                const result = await dispatch(deleteSubCategory({ categoryId, subCategoryId: subCategory.subCategoryId })).unwrap();
-                console.log('Subcategory deleted successfully:', result);
+                console.log('Attempting to delete subcategory with ID:', subCategory.subCategoryId);
+                console.log('Category ID:', categoryId);
+                console.log('Subcategory object:', subCategory);
+                
+                // Get company ID from session storage
+                const companyId = sessionStorage.getItem("employeeCompanyId") || 
+                                 sessionStorage.getItem("companyId") || 
+                                 sessionStorage.getItem("company");
+                
+                if (!companyId) {
+                    toast.error("Company ID not found in session");
+                    return;
+                }
+                
+                // Make direct API call to get better error information
+                const tokenRaw = getItemFromSessionStorage('token', null);
+                const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                
+                const deleteUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/sub-categories/${subCategory.subCategoryId}`;
+                console.log('[delete-subcategory] DELETE', deleteUrl);
+                console.log('Headers:', headers);
+                
+                const response = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('API Response status:', response.status);
+                console.log('API Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('API Error response:', errorData);
+                    
+                    // Check if the error is about assets using this sub-category
+                    if (errorData.error && errorData.error.includes('assets') && errorData.error.includes('using this sub-category')) {
+                        // Extract asset count from error message
+                        const assetCountMatch = errorData.error.match(/(\d+) asset\(s\)/);
+                        const assetCount = assetCountMatch ? parseInt(assetCountMatch[1]) : 0;
+                        
+                        // Show warning modal instead of error toast
+                        setDeleteSubCategoryModal({ 
+                            open: true, 
+                            categoryId, 
+                            subCategoryId,
+                            subCategoryName: subCategory?.name || 'Unknown',
+                            warning: true,
+                            assetsCount: assetCount,
+                            errorMessage: errorData.error
+                        });
+                        return;
+                    }
+                    
+                    throw new Error(errorData.message || errorData.error || `Sub-category deletion failed (${response.status})`);
+                }
+                
+                const result = await response.json().catch(() => ({}));
+                console.log('Sub-category deletion response:', result);
+                
                 toast.success("Sub-category deleted successfully!");
-            } catch (error) {
-                console.error('Error deleting subcategory:', error);
-                // Show backend response in toast
-                const errorMessage = error?.message || error?.data?.message || error?.error || "Failed to delete sub-category";
-                toast.error(`Sub-category deletion failed: ${errorMessage}`);
+                
+                // Refresh categories to update the UI
+                dispatch(fetchAssetCategories());
+                
+            } catch (apiError) {
+                console.error('Direct API call failed, trying Redux action as fallback:', apiError);
+                
+                // Check if the API error is about assets using this sub-category
+                if (apiError.message && apiError.message.includes('assets') && apiError.message.includes('using this sub-category')) {
+                    // Extract asset count from error message
+                    const assetCountMatch = apiError.message.match(/(\d+) asset\(s\)/);
+                    const assetCount = assetCountMatch ? parseInt(assetCountMatch[1]) : 0;
+                    
+                    // Show warning modal instead of error toast
+                    setDeleteSubCategoryModal({ 
+                        open: true, 
+                        categoryId, 
+                        subCategoryId,
+                        subCategoryName: subCategory?.name || 'Unknown',
+                        warning: true,
+                        assetsCount: assetCount,
+                        errorMessage: apiError.message
+                    });
+                    return;
+                }
+                
+                // Fallback to Redux action
+                try {
+                    console.log('Trying Redux action as fallback...');
+                    const result = await dispatch(deleteSubCategory({ 
+                        categoryId: categoryId, 
+                        subCategoryId: subCategory.subCategoryId 
+                    })).unwrap();
+                    console.log('Subcategory deleted successfully via Redux:', result);
+                    toast.success("Sub-category deleted successfully via Redux!");
+                    
+                    // Refresh categories to update the UI
+                    dispatch(fetchAssetCategories());
+                    
+                } catch (reduxError) {
+                    console.error('Redux action also failed:', reduxError);
+                    console.error('Redux error details:', {
+                        message: reduxError.message,
+                        stack: reduxError.stack,
+                        payload: reduxError.payload
+                    });
+                    
+                    // Check if the Redux error is about assets using this sub-category
+                    if (reduxError.payload && reduxError.payload.includes('assets') && reduxError.payload.includes('using this sub-category')) {
+                        // Extract asset count from error message
+                        const assetCountMatch = reduxError.payload.match(/(\d+) asset\(s\)/);
+                        const assetCount = assetCountMatch ? parseInt(assetCountMatch[1]) : 0;
+                        
+                        // Show warning modal instead of error toast
+                        setDeleteSubCategoryModal({ 
+                            open: true, 
+                            categoryId, 
+                            subCategoryId,
+                            subCategoryName: subCategory?.name || 'Unknown',
+                            warning: true,
+                            assetsCount: assetCount,
+                            errorMessage: reduxError.payload
+                        });
+                        return;
+                    }
+                    
+                    // Show the most specific error message
+                    let errorMessage = "Failed to delete sub-category";
+                    if (apiError?.message) {
+                        errorMessage = `API Error: ${apiError.message}`;
+                    } else if (reduxError?.payload) {
+                        errorMessage = `Redux Error: ${reduxError.payload}`;
+                    } else if (reduxError?.message) {
+                        errorMessage = `Redux Error: ${reduxError.message}`;
+                    }
+                    
+                    toast.error(errorMessage);
+                }
             }
         } else {
             // Remove locally (for unsaved sub-categories)
@@ -3047,8 +3388,8 @@ const AssetSettingsPage = () => {
 
     // Location management functions
     const handleAddLocation = async () => {
-        if (!newLocation.name) { 
-            toast.error("Location name is required."); 
+        if (!newLocation.name || !newLocation.name.trim()) { 
+            setNewLocation(prev => ({ ...prev, showError: true }));
             return; 
         }
         
@@ -3100,7 +3441,7 @@ const AssetSettingsPage = () => {
             const result = await response.json();
             console.log('Location creation response:', result);
             
-            setNewLocation({ name: '', address: '' });
+            setNewLocation({ name: '', address: '', showError: false });
             toast.success("Location added successfully!");
             
             // Refresh locations from backend to get new data
@@ -3325,8 +3666,8 @@ const AssetSettingsPage = () => {
 
     // Status management functions
     const handleAddStatus = async () => {
-        if (!newStatus.name) { 
-            toast.error("Status name is required."); 
+        if (!newStatus.name || !newStatus.name.trim()) { 
+            setNewStatus(prev => ({ ...prev, showError: true }));
             return; 
         }
         
@@ -3377,7 +3718,7 @@ const AssetSettingsPage = () => {
             const result = await response.json();
             console.log('Status label creation response:', result);
             
-            setNewStatus({ name: '' });
+            setNewStatus({ name: '', showError: false });
             toast.success("Status label added successfully!");
             
             // Refresh statuses from backend to get new data
@@ -3796,6 +4137,63 @@ const AssetSettingsPage = () => {
         setDeleteFormModal({ open: false, formId: null, formName: '' });
     };
 
+    const cancelDeleteSubCategory = () => {
+        setDeleteSubCategoryModal({ 
+            open: false, 
+            categoryId: null, 
+            subCategoryId: null,
+            subCategoryName: '',
+            warning: false,
+            assetsCount: 0,
+            errorMessage: ''
+        });
+    };
+
+    const confirmDeleteSubCategory = async () => {
+        const { categoryId, subCategoryId } = deleteSubCategoryModal;
+        
+        if (!categoryId || !subCategoryId) {
+            toast.error('Invalid sub-category information');
+            return;
+        }
+        
+        try {
+            // Try to delete again (in case assets were reassigned)
+            const result = await dispatch(deleteSubCategory({ 
+                categoryId, 
+                subCategoryId 
+            })).unwrap();
+            
+            console.log('Sub-category deleted successfully:', result);
+            toast.success("Sub-category deleted successfully!");
+            
+            // Refresh categories to update the UI
+            dispatch(fetchAssetCategories());
+            
+        } catch (error) {
+            console.error('Error deleting sub-category:', error);
+            
+            // Check if the error is still about assets using this sub-category
+            if (error?.payload && error.payload.includes('assets') && error.payload.includes('using this sub-category')) {
+                toast.error("Sub-category still has assets assigned to it. Please reassign or delete those assets first.");
+            } else {
+                const errorMessage = error?.payload || error?.message || "Failed to delete sub-category";
+                toast.error(`Sub-category deletion failed: ${errorMessage}`);
+            }
+        }
+        
+        // Close the modal
+        setDeleteSubCategoryModal({ 
+            open: false, 
+            categoryId: null, 
+            subCategoryId: null,
+            subCategoryName: '',
+            warning: false,
+            assetsCount: 0,
+            errorMessage: ''
+        });
+    };
+
     // ID Format Management placeholder functions (implement as needed)
     const handleAddIdFormat = (categoryId) => {
         console.log('Add ID format for category:', categoryId);
@@ -3921,6 +4319,10 @@ const AssetSettingsPage = () => {
                 warning={deleteModal.warning}
                 assetsCount={deleteModal.assetsCount}
                 assetsList={deleteModal.assetsList}
+                hasSubCategories={deleteModal.hasSubCategories}
+                subCategoriesCount={deleteModal.subCategoriesCount}
+                subCategoriesList={deleteModal.subCategoriesList}
+                backendError={deleteModal.backendError}
             />
                         <DeleteLocationModal 
                 open={deleteLocationModal.open} 
@@ -3945,6 +4347,15 @@ const AssetSettingsPage = () => {
                 onClose={cancelDeleteForm} 
                 onConfirm={confirmDeleteForm} 
                 formName={deleteFormModal.formName}
+            />
+            <DeleteSubCategoryModal 
+                open={deleteSubCategoryModal.open} 
+                onClose={cancelDeleteSubCategory} 
+                onConfirm={confirmDeleteSubCategory} 
+                subCategoryName={deleteSubCategoryModal.subCategoryName}
+                warning={deleteSubCategoryModal.warning}
+                assetsCount={deleteSubCategoryModal.assetsCount}
+                errorMessage={deleteSubCategoryModal.errorMessage}
             />
             <div className="p-6">
                 <header className="mb-6">
